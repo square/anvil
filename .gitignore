@@ -1,0 +1,41 @@
+# Maven
+target
+pom.xml.*
+release.properties
+gen-external-apklibs
+
+# Gradle
+.gradle
+build/
+!/scripts/**/build
+local.properties
+/reports/
+
+# Gradle Profiler
+profile-out*
+gradle-user-home
+
+# IntelliJ IDEA
+.idea/
+!.idea/vcs.xml
+!.idea/runConfigurations/
+!.idea/scopes/
+*.iml
+*.ipl
+*.ipr
+*.iws
+classes/
+idea-classes/
+coverage-error.log
+.shelf/
+
+# Android
+gen
+bin
+!/scripts/**/bin
+project.properties
+out
+.cxx
+
+# Steve Jobs
+.DS_Store

@@ -1,0 +1,35 @@
+// The Kotlin subplugin wants to know the version and group of the Kotlin compiler plugin artifact
+// before it gives us a Project to retrieve the value from Gradle properties. This workaround
+// generates a Kotlin file that becomes part of the source set and contains necessary values.
+
+def generatedDirPath = 'generated/sources/build-properties/kotlin/main'
+
+sourceSets {
+  main.java.srcDirs += "$buildDir/$generatedDirPath"
+}
+
+def generateBuildProperties = project.tasks.register('generateBuildProperties') {
+  def version = project.findProperty('VERSION_NAME')
+  def group = project.findProperty('GROUP')
+
+  File buildPropertiesFile = new File(new File(project.buildDir, generatedDirPath), 'BuildProperties.kt')
+
+  inputs.property 'version', version
+  inputs.property 'group', group
+
+  outputs.file buildPropertiesFile
+
+  doLast {
+    buildPropertiesFile.parentFile.mkdirs()
+    buildPropertiesFile.write """\
+      package com.squareup.hephaestus.plugin
+      
+      internal const val VERSION = "$version"
+      internal const val GROUP = "$group"
+    """.stripIndent()
+  }
+}
+
+compileKotlin {
+  dependsOn generateBuildProperties
+}

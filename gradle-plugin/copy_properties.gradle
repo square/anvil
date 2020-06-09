@@ -1,0 +1,6 @@
+Properties properties = new Properties()
+file("../gradle.properties").withInputStream { properties.load(it) }
+
+properties.each { key, value ->
+  ext.set(key, value)
+}

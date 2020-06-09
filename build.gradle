@@ -1,0 +1,78 @@
+buildscript {
+  apply from: rootProject.file('dependencies.gradle')
+
+  repositories {
+    google()
+    gradlePluginPortal()
+    mavenCentral()
+    jcenter()
+  }
+
+  dependencies {
+    classpath deps.android_gradle_plugin
+    classpath deps.kotlin.gradle_plugin
+    classpath deps.ktlint_plugin
+    classpath deps.hephaestus_plugin
+    classpath deps.maven_publishing_plugin
+  }
+}
+
+allprojects {
+  repositories {
+    google()
+    mavenCentral()
+    jcenter()
+  }
+}
+
+subprojects {
+  apply plugin: 'org.jlleitschuh.gradle.ktlint'
+
+  tasks.withType(Test).configureEach {
+    testLogging {
+      events 'passed', 'failed', 'skipped', 'standardOut', 'standardError'
+      exceptionFormat 'FULL'
+      showCauses true
+      showExceptions true
+      showStackTraces true
+      showStandardStreams true
+    }
+  }
+
+  //noinspection UnnecessaryQualifiedReference
+  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+    kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8
+  }
+
+  // TODO: fix obscure dependency substitution error
+  // This is the ideal solution, but doesn't quite work for some reason. The workaround below is
+  // needed to make it work for now.
+  configurations.all {
+    resolutionStrategy.dependencySubstitution {
+      substitute module("com.squareup.hephaestus:annotations") with project(':annotations')
+      substitute module("com.squareup.hephaestus:compiler") with project(':compiler')
+    }
+  }
+  // This is an ugly workaround.
+  def brokenProjects = [
+      project(':integration-tests:library'),
+      project(':integration-tests:tests'),
+      project(':sample:library'),
+      project(':sample:app')
+  ]
+  brokenProjects.each { brokenProject ->
+    brokenProject.configurations.whenObjectAdded {
+      if (it.name == 'api') {
+        brokenProject.dependencies.add('api', project(':annotations'))
+      }
+      if (it.name == 'kotlinCompilerPluginClasspath') {
+        brokenProject.dependencies.add('kotlinCompilerPluginClasspath', project(':compiler'))
+      }
+    }
+  }
+  // End ugly workaround.
+}
+
+task clean(type: Delete) {
+  delete rootProject.buildDir
+}

@@ -1,0 +1,17 @@
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'org.jetbrains.kotlin.kapt'
+apply plugin: 'com.squareup.hephaestus'
+
+dependencies {
+  api project(':sample:scopes')
+  api deps.dagger2.dagger
+  api deps.kotlin.stdlib
+
+  kapt deps.dagger2.compiler
+}
+
+compileKotlin {
+  kotlinOptions {
+    freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+  }
+}

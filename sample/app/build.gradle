@@ -1,0 +1,52 @@
+apply plugin: 'com.android.application'
+apply plugin: 'org.jetbrains.kotlin.android'
+apply plugin: 'org.jetbrains.kotlin.kapt'
+apply plugin: 'com.squareup.hephaestus'
+
+android {
+  compileSdkVersion 29
+
+  defaultConfig {
+    applicationId "com.squareup.hephaestus.sample"
+    minSdkVersion 23
+    targetSdkVersion 29
+    versionCode 1
+    versionName "1.0.0"
+
+    testInstrumentationRunner "com.squareup.hephaestus.sample.TestRunner"
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
+
+  lintOptions {
+    warningsAsErrors true
+  }
+}
+
+dependencies {
+  implementation project(':sample:library')
+  implementation project(':sample:scopes')
+
+  implementation deps.kotlin.stdlib
+  implementation deps.androidx.appcompat
+  implementation deps.androidx.core
+  implementation deps.androidx.material
+  implementation deps.dagger2.dagger
+
+  kapt deps.dagger2.compiler
+
+  testImplementation deps.junit
+  testImplementation deps.truth
+
+  androidTestImplementation deps.androidx.test.core
+  androidTestImplementation deps.androidx.test.espresso.core
+  androidTestImplementation deps.androidx.test.junit
+  androidTestImplementation deps.androidx.test.rules
+  androidTestImplementation deps.androidx.test.runner
+  androidTestImplementation deps.junit
+
+  kaptAndroidTest deps.dagger2.compiler
+}
