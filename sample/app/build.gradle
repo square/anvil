@@ -24,6 +24,13 @@ android {
   lintOptions {
     warningsAsErrors true
   }
+
+  variantFilter { variant ->
+    //noinspection UnnecessaryQualifiedReference
+    if (variant.buildType.name == com.android.builder.core.BuilderConstants.RELEASE) {
+      variant.setIgnore(true)
+    }
+  }
 }
 
 dependencies {
