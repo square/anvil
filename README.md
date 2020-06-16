@@ -1,5 +1,8 @@
 # Hephaestus
 
+[![Maven Central](https://img.shields.io/maven-central/v/com.squareup.hephaestus/gradle-plugin.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.squareup.hephaestus%22)
+[![CI](https://github.com/square/hephaestus/workflows/CI/badge.svg)](https://github.com/square/hephaestus/actions?query=branch%3Amain)
+
 Hephaestus is a Kotlin compiler plugin to make dependency injection with [Dagger](https://dagger.dev/)
 easier by automatically merging Dagger modules and component interfaces. In a nutshell, instead of
 manually adding modules to a Dagger component and making the Dagger component extend all component
