@@ -1,0 +1,83 @@
+name: CI
+
+on: [push, pull_request]
+
+jobs:
+  assemble:
+
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    
+    steps:
+      # These setup steps should be common across all jobs in this workflow.
+      - uses: actions/checkout@v2
+      - uses: gradle/wrapper-validation-action@v1
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Assemble with Gradle
+        run: ./gradlew assemble --no-build-cache --no-daemon --stacktrace
+
+  # Runs all check tasks in parallel.
+  check:
+    name: Check
+    needs: assemble
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    strategy:
+      # Run all checks, even if some fail.
+      fail-fast: false
+      matrix:
+        gradle-task:
+          # Unit tests
+          - test
+          - lint
+          - ktlintCheck
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: ${{ matrix.gradle-task }} with Gradle
+        run: ./gradlew ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace
+
+  instrumentation-tests:
+    name: Instrumentation tests
+    needs: assemble
+    runs-on: macos-latest
+    timeout-minutes: 20
+    strategy:
+      # Allow tests to continue on other devices if they fail on one device.
+      fail-fast: false
+      matrix:
+        api-level:
+          # Consider other devices in case it's needed.
+          #- 21
+          #- 23
+          #- 24
+          - 29
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      # Actual task
+      - name: Instrumentation Tests
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          script: ./gradlew connectedCheck --no-build-cache --no-daemon --stacktrace
+
+      - name: Upload results
+        uses: actions/upload-artifact@v2
+        with:
+          name: insrumentation-test-results
+          path: ./**/build/reports/androidTests/connected/**
