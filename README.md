@@ -33,14 +33,28 @@ Notice that `AppComponent` automatically includes `DaggerModule` and extends `Co
 ## Setup
 
 The plugin consists of a Gradle plugin and Kotlin compiler plugin. The Gradle plugin automatically
-adds the Kotlin compiler plugin and annotation dependencies:
+adds the Kotlin compiler plugin and annotation dependencies. It needs to be applied in all modules
+that either contribute classes to the dependency graph or merge them:
 
 ```groovy
-apply plugin: 'com.squareup.hephaestus'
+plugins {
+  id 'com.squareup.hephaestus' version "${latest_version}"
+}
 ```
 
-The Gradle plugin needs to be applied in all modules that either contribute classes to the
-dependency graph or merge them.
+Or you can use the old way to apply a plugin:
+```groovy
+buildscript {
+  repositories {
+    mavenCentral()
+  }
+  dependencies {
+    classpath "com.squareup.hepheastus:gradle-plugin:${latest_version}"
+  }
+}
+
+apply plugin: 'com.squareup.hephaestus'
+```
 
 ## Quick Start
 
