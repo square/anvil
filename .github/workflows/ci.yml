@@ -30,7 +30,7 @@ jobs:
           java-version: 1.8
 
       - name: ${{ matrix.gradle-task }} with Gradle
-        run: ./gradlew ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace
+        run: ./gradlew ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
 
   instrumentation-tests:
     name: Instrumentation tests
