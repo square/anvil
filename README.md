@@ -52,7 +52,7 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath "com.squareup.hepheastus:gradle-plugin:${latest_version}"
+    classpath "com.squareup.hephaestus:gradle-plugin:${latest_version}"
   }
 }
 
