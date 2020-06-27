@@ -1,10 +1,8 @@
 package com.squareup.hephaestus.plugin
 
-import org.gradle.api.DefaultTask
 import org.gradle.api.GradleException
+import org.gradle.api.Project
 import org.gradle.api.plugins.JavaPluginConvention
-import org.gradle.api.tasks.Internal
-import org.gradle.api.tasks.TaskAction
 import org.jetbrains.kotlin.gradle.internal.Kapt3GradleSubplugin
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
@@ -20,11 +18,12 @@ import java.io.File
  * these module using this task.
  */
 @ExperimentalStdlibApi
-open class CheckMixedSourceSetTask : DefaultTask() {
+open class CheckMixedSourceSet(
+  private val project: Project,
+  private val compileTask: KotlinCompile
+) {
 
-  @get:Internal lateinit var compileTask: KotlinCompile
-
-  @TaskAction fun disablePreciseJavaTracking() {
+  fun disablePreciseJavaTrackingIfNeeded() {
     val sourceFiles = when {
       project.isAndroidProject -> getSourceFilesAndroidProject()
       project.isKotlinJvmProject -> getSourceFilesJavaProject()

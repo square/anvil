@@ -33,8 +33,10 @@ open class HephaestusPlugin : Plugin<Project> {
     }
     project.afterEvaluate {
       if (!once.get()) {
-        throw GradleException("No supported plugins for Hephaestus found on project " +
-            "'${project.name}'. Only Android and Java modules are supported for now.")
+        throw GradleException(
+            "No supported plugins for Hephaestus found on project " +
+                "'${project.path}'. Only Android and Java modules are supported for now."
+        )
       }
     }
   }
@@ -58,17 +60,13 @@ open class HephaestusPlugin : Plugin<Project> {
   ) {
     project.tasks
         .withType(KotlinCompile::class.java)
-        .all { compileTask ->
-          val checkMixedSourceSet = project.tasks.register(
-              compileTask.name + "CheckMixedSourceSetHephaestus",
-              CheckMixedSourceSetTask::class.java
-          ) {
-            it.compileTask = compileTask
-          }
-
-          compileTask.dependsOn(checkMixedSourceSet)
-
+        .configureEach { compileTask ->
           compileTask.doFirst {
+            // Disable precise java tracking if needed. Note that the doFirst() action only runs
+            // if the task is not up to date. That's ideal, because if nothing needs to be
+            // compiled, then we don't need to disable the flag.
+            CheckMixedSourceSet(project, compileTask).disablePreciseJavaTrackingIfNeeded()
+
             compileTask.logger.info(
                 "Hephaestus: Use precise java tracking: ${compileTask.usePreciseJavaTracking}"
             )
@@ -141,14 +139,14 @@ open class HephaestusPlugin : Plugin<Project> {
 }
 
 /**
- * Returns all variants including the androidTest variants, but excludes unit tests. Unit tests
- * can't contribute classes and if we need to support merging components in unit tests, then we
- * can add the capability later. YAGNI.
+ * Returns all variants including the androidTest and unit test variants.
  */
 fun Project.androidVariants(): Set<BaseVariant> {
   return when (val androidExtension = project.extensions.findByName("android")) {
-    is AppExtension -> androidExtension.applicationVariants + androidExtension.testVariants
-    is LibraryExtension -> androidExtension.libraryVariants + androidExtension.testVariants
+    is AppExtension -> androidExtension.applicationVariants + androidExtension.testVariants +
+        androidExtension.unitTestVariants
+    is LibraryExtension -> androidExtension.libraryVariants + androidExtension.testVariants +
+        androidExtension.unitTestVariants
     else -> throw GradleException("Unknown Android module type for project ${project.path}")
   }
 }
@@ -175,6 +173,7 @@ val Project.isAndroidProject: Boolean
   get() = AGP_ON_CLASSPATH &&
       (plugins.hasPlugin(AppPlugin::class.java) || plugins.hasPlugin(LibraryPlugin::class.java))
 
+@Suppress("SENSELESS_COMPARISON")
 private val AGP_ON_CLASSPATH = try {
   Class.forName("com.android.build.gradle.AppPlugin") != null
 } catch (t: Throwable) {
