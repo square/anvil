@@ -1,18 +1,3 @@
-pluginManagement {
-  resolutionStrategy {
-    eachPlugin {
-      String id = requested.id.id
-      if (id.startsWith("com.android")) {
-        useModule("com.android.tools.build:gradle:4.0.0")
-      } else if (id.startsWith("org.jetbrains.kotlin")) {
-        String kotlinVersion = hasProperty('square.kotlinVersion') ?
-            getProperty('square.kotlinVersion') : '1.3.72'
-        useModule("org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion")
-      }
-    }
-  }
-}
-
 include ':annotations'
 include ':compiler'
 include ':integration-tests:library'
