@@ -5,23 +5,43 @@ import com.android.build.gradle.AppPlugin
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.LibraryPlugin
 import com.android.build.gradle.api.BaseVariant
+import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.plugins.AppliedPlugin
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.Locale.US
+import java.util.concurrent.atomic.AtomicBoolean
 
 open class HephaestusPlugin : Plugin<Project> {
   @ExperimentalStdlibApi
   override fun apply(project: Project) {
-    if (!project.isAndroidProject && !project.isKotlinJvmProject) {
-      throw GradleException("Only Android and Java modules are supported for now.")
+    val once = AtomicBoolean()
+    val innerApply = Action<AppliedPlugin> {
+      if (once.compareAndSet(false, true)) {
+        realApply(project)
+      }
     }
+    project.pluginManager.apply {
+      withPlugin("com.android.application", innerApply)
+      withPlugin("com.android.library", innerApply)
+      withPlugin("org.jetbrains.kotlin.jvm", innerApply)
+    }
+    project.afterEvaluate {
+      if (!once.get()) {
+        throw GradleException("No supported plugins for Hephaestus found on project " +
+            "'${project.name}'. Only Android and Java modules are supported for now.")
+      }
+    }
+  }
 
+  @ExperimentalStdlibApi
+  private fun realApply(project: Project) {
     disableIncrementalKotlinCompilation(project)
     disablePreciseJavaTracking(project)
 
