@@ -28,8 +28,7 @@ open class HephaestusPlugin : Plugin<Project> {
       }
     }
     project.pluginManager.apply {
-      withPlugin("com.android.application", innerApply)
-      withPlugin("com.android.library", innerApply)
+      withPlugin("org.jetbrains.kotlin.android", innerApply)
       withPlugin("org.jetbrains.kotlin.jvm", innerApply)
     }
     project.afterEvaluate {
