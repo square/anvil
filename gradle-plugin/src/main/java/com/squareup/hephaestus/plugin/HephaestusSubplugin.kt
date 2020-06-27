@@ -38,7 +38,7 @@ class HephaestusSubplugin : KotlinGradleSubplugin<AbstractCompile> {
     // Notice that we use the name of the Kotlin compile task as a directory name. Generated code
     // for this specific compile task will be included in the task output. The output of different
     // compile tasks shouldn't be mixed.
-    val srcGenDir = File(project.buildDir, "hephaestus/${kotlinCompile.name}")
+    val srcGenDir = File(project.buildDir, "hephaestus/src-gen-${kotlinCompile.name}")
 
     return listOf(
         SubpluginOption(
