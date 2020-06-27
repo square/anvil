@@ -37,7 +37,7 @@ open class HephaestusPlugin : Plugin<Project> {
   ) {
     project.tasks
         .withType(KotlinCompile::class.java)
-        .all { compileTask ->
+        .configureEach { compileTask ->
           val checkMixedSourceSet = project.tasks.register(
               compileTask.name + "CheckMixedSourceSetHephaestus",
               CheckMixedSourceSetTask::class.java
@@ -61,7 +61,7 @@ open class HephaestusPlugin : Plugin<Project> {
   ) {
     project.tasks
         .withType(KotlinCompile::class.java)
-        .all { compileTask ->
+        .configureEach { compileTask ->
           val isStubGeneratingTask = compileTask is KaptGenerateStubsTask
 
           if (isStubGeneratingTask) {
