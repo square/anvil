@@ -44,8 +44,10 @@ open class HephaestusPlugin : Plugin<Project> {
     disableIncrementalKotlinCompilation(project)
     disablePreciseJavaTracking(project)
 
-    // This needs to be disabled, otherwise compiler plugins fail in weird ways when generating stubs.
-    project.extensions.findByType(KaptExtension::class.java)?.correctErrorTypes = false
+    project.pluginManager.withPlugin("org.jetbrains.kotlin.kapt") {
+      // This needs to be disabled, otherwise compiler plugins fail in weird ways when generating stubs.
+      project.extensions.findByType(KaptExtension::class.java)?.correctErrorTypes = false
+    }
 
     project.dependencies.add("api", "$GROUP:annotations:$VERSION")
   }
