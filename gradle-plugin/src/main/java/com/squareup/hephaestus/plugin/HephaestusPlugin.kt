@@ -27,7 +27,7 @@ open class HephaestusPlugin : Plugin<Project> {
         realApply(project)
       }
     }
-    project.pluginManager.apply {
+    with(project.pluginManager) {
       withPlugin("org.jetbrains.kotlin.android", innerApply)
       withPlugin("org.jetbrains.kotlin.jvm", innerApply)
     }
