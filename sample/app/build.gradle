@@ -1,7 +1,9 @@
-apply plugin: 'com.android.application'
-apply plugin: 'org.jetbrains.kotlin.android'
-apply plugin: 'org.jetbrains.kotlin.kapt'
-apply plugin: 'com.squareup.hephaestus'
+plugins {
+  id 'com.android.application'
+  id 'org.jetbrains.kotlin.android'
+  id 'org.jetbrains.kotlin.kapt'
+  id 'com.squareup.hephaestus'
+}
 
 android {
   compileSdkVersion 29
