@@ -32,6 +32,14 @@ jobs:
       - name: ${{ matrix.gradle-task }} with Gradle
         run: ./gradlew ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
 
+      - name: Upload Lint Results
+        uses: actions/upload-artifact@v2
+        if: ${{ startsWith(matrix.gradle-task, 'lint') && failure() }}
+        with:
+          # Use the Kotlin version to prevent overrides.
+          name: lint-results-${{ matrix.kotlin-version }}
+          path: ./**/build/reports/lint-results.html
+
   instrumentation-tests:
     name: Instrumentation tests
     runs-on: macos-latest
