@@ -13,7 +13,6 @@ import org.gradle.api.plugins.AppliedPlugin
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
-import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.Locale.US
 import java.util.concurrent.atomic.AtomicBoolean
@@ -81,57 +80,39 @@ open class HephaestusPlugin : Plugin<Project> {
     project.tasks
         .withType(KotlinCompile::class.java)
         .all { compileTask ->
-          val isStubGeneratingTask = compileTask is KaptGenerateStubsTask
-
-          if (isStubGeneratingTask) {
-            check(
-                compileTask.name.startsWith("kaptGenerateStubs") &&
-                    compileTask.name.endsWith("Kotlin")
-            ) {
-              // It's better to verify this naming pattern and fail early when it changes.
-              // See also: https://github.com/JetBrains/kotlin/blob/897c48f97eac4e0a5190773cd7b5c31683d601eb/libraries/tools/kotlin-gradle-plugin/src/main/kotlin/org/jetbrains/kotlin/gradle/internal/kapt/Kapt3KotlinGradleSubplugin.kt#L490
-              "It's expected that the stub generating task is named " +
-                  "kaptGenerateStubs{variant}{buildType}Kotlin."
+          if (compileTask is KaptGenerateStubsTask) {
+            // Disable incremental compilation for the stub generating task. If any of the
+            // dependencies in the compile classpath have changed, then this we need to trigger the
+            // compiler plugin. This will make sure that we pick up any change from a dependency
+            // when merging all the classes. Without this workaround we could make changes in any
+            // library, but these changes wouldn't be contributed to the Dagger graph, because
+            // incremental compilation tricked us.
+            compileTask.doFirst {
+              compileTask.incremental = false
+              compileTask.logger.info(
+                  "Hephaestus: Incremental compilation enabled: ${compileTask.incremental} (stub)"
+              )
             }
+            return@all
           }
 
-          val configurationNameForIncrementalChecks = when {
-            // Disable incremental compilation, if the compiler plugin dependency isn't up-to-date.
-            // This will trigger a full compilation of a module using Hephaestus even though its
-            // source files might not have changed. This workaround is necessary, otherwise
-            // incremental builds are broken. See https://youtrack.jetbrains.com/issue/KT-38570
-            !isStubGeneratingTask -> PLUGIN_CLASSPATH_CONFIGURATION_NAME
-
-            // For Java / Kotlin projects it doesn't change.
-            project.isKotlinJvmProject -> "compileClasspath"
-
-            // Disable incremental compilation for the stub generating task, if any of the
-            // dependencies in the compile classpath have changed. This will make sure that we pick
-            // up any change from a dependency when merging all the classes. Without this workaround
-            // we could make changes in any library, but these changes wouldn't be contributed to the
-            // Dagger graph, because incremental compilation tricked us.
-            else -> {
-              val variant = project.androidVariants()
-                  .findVariantForCompileTask(compileTask)
-
-              "${variant.name}CompileClasspath"
-            }
-          }
-
-          val checkIfCompilerPluginChangedTaskProvider = project.tasks
-              .register(
-                  compileTask.name + "CheckIncrementalCompilationHephaestus",
-                  DisableIncrementalCompilationTask::class.java
-              ) {
-                it.compileTask = compileTask
-                it.configurationName = configurationNameForIncrementalChecks
-              }
-
-          compileTask.dependsOn(checkIfCompilerPluginChangedTaskProvider)
+          // Disable incremental compilation, if the compiler plugin dependency isn't up-to-date.
+          // This will trigger a full compilation of a module using Hephaestus even though its
+          // source files might not have changed. This workaround is necessary, otherwise
+          // incremental builds are broken. See https://youtrack.jetbrains.com/issue/KT-38570
+          val name = compileTask.name + "CheckIncrementalCompilationHephaestus"
+          compileTask.dependsOn(
+              project.tasks.register(name, DisableIncrementalCompilationTask::class.java)
+          )
 
           compileTask.doFirst {
+            val task = project.tasks.getByName(name) as DisableIncrementalCompilationTask
+            if (task.didClassPathChange) {
+              compileTask.incremental = false
+            }
+
             compileTask.logger.info(
-                "Hephaestus: Incremental compilation enabled: ${compileTask.incremental}"
+                "Hephaestus: Incremental compilation enabled: ${compileTask.incremental} (compile)"
             )
           }
         }
