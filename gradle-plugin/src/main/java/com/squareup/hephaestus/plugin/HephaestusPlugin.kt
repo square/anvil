@@ -91,6 +91,7 @@ open class HephaestusPlugin : Plugin<Project> {
         }
   }
 
+  @Suppress("UnstableApiUsage")
   @ExperimentalStdlibApi
   private fun disableIncrementalKotlinCompilation(
     project: Project,
@@ -112,6 +113,12 @@ open class HephaestusPlugin : Plugin<Project> {
           }
         }
 
+    // Use this signal to share state between DisableIncrementalCompilationTask and the Kotlin
+    // compile task. If the plugin classpath changed, then DisableIncrementalCompilationTask sets
+    // the signal to false.
+    val incrementalSignal = project.gradle.sharedServices
+        .registerIfAbsent("incrementalSignal", IncrementalSignal::class.java) { }
+
     val disableIncrementalCompilationAction: (String) -> Unit = { compileTaskName ->
       // Disable incremental compilation, if the compiler plugin dependency isn't up-to-date.
       // This will trigger a full compilation of a module using Hephaestus even though its
@@ -120,14 +127,19 @@ open class HephaestusPlugin : Plugin<Project> {
       val disableIncrementalCompilationTaskProvider = project.tasks.register(
           compileTaskName + "CheckIncrementalCompilationHephaestus",
           DisableIncrementalCompilationTask::class.java
-      )
+      ) { task ->
+        task.incrementalSignal.set(incrementalSignal)
+      }
 
       project.tasks.named(compileTaskName, KotlinCompile::class.java) { compileTask ->
         compileTask.dependsOn(disableIncrementalCompilationTaskProvider)
 
         compileTask.doFirst {
-          if (disableIncrementalCompilationTaskProvider.get().didClassPathChange) {
-            compileTask.incremental = false
+          // If the signal is set, then the plugin classpath changed. Apply the setting that
+          // DisableIncrementalCompilationTask requested.
+          val incremental = incrementalSignal.get().incremental[project.path]
+          if (incremental != null) {
+            compileTask.incremental = incremental
           }
 
           compileTask.logger.info(
