@@ -15,6 +15,7 @@ import org.gradle.api.plugins.PluginManager
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
+import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.Locale.US
 import java.util.concurrent.atomic.AtomicBoolean
@@ -128,6 +129,9 @@ open class HephaestusPlugin : Plugin<Project> {
           compileTaskName + "CheckIncrementalCompilationHephaestus",
           DisableIncrementalCompilationTask::class.java
       ) { task ->
+        task.pluginClasspath.from(
+            project.configurations.getByName(PLUGIN_CLASSPATH_CONFIGURATION_NAME)
+        )
         task.incrementalSignal.set(incrementalSignal)
       }
 
