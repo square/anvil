@@ -147,6 +147,27 @@ class ModuleMergerTest(
     }
   }
 
+  @Test fun `module interfaces are merged`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.hephaestus.annotations.ContributesTo
+        $import
+        
+        @ContributesTo(Any::class)
+        @dagger.Module
+        interface DaggerModule1
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+    """
+    ) {
+      val component = componentInterface.anyDaggerComponent
+      assertThat(component.modules).containsExactly(daggerModule1.kotlin)
+    }
+  }
+
   @Test fun `modules are merged with predefined modules`() {
     compile(
         """
