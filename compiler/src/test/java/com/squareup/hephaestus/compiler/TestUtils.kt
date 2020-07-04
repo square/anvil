@@ -83,7 +83,7 @@ internal val Result.daggerModule4: Class<*>
 internal val Result.innerModule: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ComponentInterface\$InnerModule")
 
-@ExperimentalStdlibApi
+@OptIn(ExperimentalStdlibApi::class)
 internal val Class<*>.hint: KClass<*>?
   get() {
     // The capitalize doesn't make sense, I don't know where this is coming from the compile testing

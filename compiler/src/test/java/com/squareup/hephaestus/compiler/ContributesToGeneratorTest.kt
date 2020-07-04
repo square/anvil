@@ -5,7 +5,6 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERRO
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test
 
-@ExperimentalStdlibApi
 class ContributesToGeneratorTest {
 
   @Test fun `there is no hint for merge annotations`() {

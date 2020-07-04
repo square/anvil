@@ -17,7 +17,6 @@ import java.io.File
  * The workaround for now is to set the kotlin.incremental.usePreciseJavaTracking flag to false for
  * these module using this task.
  */
-@ExperimentalStdlibApi
 open class CheckMixedSourceSet(
   private val project: Project,
   private val compileTask: KotlinCompile
@@ -43,6 +42,7 @@ open class CheckMixedSourceSet(
     }
   }
 
+  @OptIn(ExperimentalStdlibApi::class)
   private fun getSourceFilesAndroidProject(): Sequence<File> {
     return project.androidVariants()
         .findVariantForCompileTask(compileTask)
