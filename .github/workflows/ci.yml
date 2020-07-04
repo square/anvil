@@ -8,7 +8,7 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 15
     continue-on-error: ${{ startsWith(matrix.kotlin-version, '1.4') }}
 
@@ -20,6 +20,7 @@ jobs:
       matrix:
         gradle-task: [assemble, test, lint, ktlintCheck]
         kotlin-version: [1.3.72, 1.4-M2, 1.4.20-dev-1680]
+        os: [ubuntu-latest, windows-latest]
 
     steps:
       - uses: actions/checkout@v2
@@ -29,8 +30,19 @@ jobs:
         with:
           java-version: 1.8
 
-      - name: ${{ matrix.gradle-task }} with Gradle
+      # On Windows the command looks a little bit different. Notice that we use the .bat file and
+      # quotes for the Kotlin version, because dots "." in the Kotlin version and parameter name
+      # cause issues.
+      #
+      # Expressions in Github actions are limited. If there would be an if expression, then we
+      # wouldn't need to duplicate the next step and depending on the OS enable / disable them.
+      - name: ${{ matrix.gradle-task }} with Gradle Ubuntu
         run: ./gradlew ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+
+      - name: ${{ matrix.gradle-task }} with Gradle Windows
+        run: ./gradlew.bat ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace "-Psquare.kotlinVersion=${{ matrix.kotlin-version }}"
+        if: ${{ startsWith(matrix.os, 'windows') }}
 
       - name: Upload Lint Results
         uses: actions/upload-artifact@v2
