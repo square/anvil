@@ -9,14 +9,16 @@ class MergeModulesTest {
 
   @Test fun `contributed modules are merged app scope`() {
     val annotation = CompositeAppModule::class.java.getAnnotation(Module::class.java)!!
-    assertThat(annotation.includes.toList()).contains(AppModule::class)
-    assertThat(annotation.includes.toList()).doesNotContain(SubModule::class)
+    assertThat(annotation.includes.toList()).containsExactly(AppModule1::class, AppModule2::class)
+    assertThat(annotation.includes.toList()).doesNotContain(SubModule1::class)
+    assertThat(annotation.includes.toList()).doesNotContain(SubModule2::class)
   }
 
   @Test fun `contributed modules are merge sub scope`() {
     val annotation = CompositeSubModule::class.java.getAnnotation(Module::class.java)!!
-    assertThat(annotation.includes.toList()).contains(SubModule::class)
-    assertThat(annotation.includes.toList()).doesNotContain(AppModule::class)
+    assertThat(annotation.includes.toList()).containsExactly(SubModule1::class, SubModule2::class)
+    assertThat(annotation.includes.toList()).doesNotContain(AppModule1::class)
+    assertThat(annotation.includes.toList()).doesNotContain(AppModule2::class)
   }
 
   @MergeModules(AppScope::class)
