@@ -52,6 +52,14 @@ jobs:
           name: lint-results-${{ matrix.kotlin-version }}
           path: ./**/build/reports/lint-results.html
 
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v2
+        if: ${{ startsWith(matrix.gradle-task, 'test') && failure() }}
+        with:
+          # Use the Kotlin version to prevent overrides.
+          name: test-results-${{ matrix.kotlin-version }}
+          path: ./**/build/reports/tests/
+
   instrumentation-tests:
     name: Instrumentation tests
     runs-on: macos-latest
