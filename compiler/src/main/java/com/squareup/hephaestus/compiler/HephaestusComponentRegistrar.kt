@@ -51,6 +51,6 @@ class HephaestusComponentRegistrar : ComponentRegistrar {
           srcFile.parentFile.relativeTo(srcDir).path
         }
         .distinct()
-        .map { it.replace('/', '.') }
+        .map { it.replace(File.separatorChar, '.') }
   }
 }
