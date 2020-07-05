@@ -4,12 +4,14 @@ import com.android.build.gradle.AppExtension
 import com.android.build.gradle.AppPlugin
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.LibraryPlugin
+import com.android.build.gradle.TestExtension
+import com.android.build.gradle.TestedExtension
 import com.android.build.gradle.api.BaseVariant
-import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.AppliedPlugin
+import org.gradle.api.plugins.PluginManager
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
@@ -22,26 +24,44 @@ open class HephaestusPlugin : Plugin<Project> {
   @ExperimentalStdlibApi
   override fun apply(project: Project) {
     val once = AtomicBoolean()
-    val innerApply = Action<AppliedPlugin> {
-      if (once.compareAndSet(false, true)) {
-        realApply(project)
+
+    fun PluginManager.withPluginOnce(
+      id: String,
+      action: (AppliedPlugin) -> Unit
+    ) {
+      withPlugin(id) {
+        if (once.compareAndSet(false, true)) {
+          action(it)
+        }
       }
     }
-    with(project.pluginManager) {
-      withPlugin("org.jetbrains.kotlin.android", innerApply)
-      withPlugin("org.jetbrains.kotlin.jvm", innerApply)
+
+    // Apply the Hephaestus plugin after the Kotlin plugin was applied. There could be a timing
+    // issue. Also make sure to apply it only once. A module could accidentally apply the JVM and
+    // Android Kotlin plugin.
+    project.pluginManager.withPluginOnce("org.jetbrains.kotlin.android") {
+      realApply(project, true)
     }
+    project.pluginManager.withPluginOnce("org.jetbrains.kotlin.jvm") {
+      realApply(project, false)
+    }
+
     project.afterEvaluate {
       if (!once.get()) {
-        throw GradleException("No supported plugins for Hephaestus found on project " +
-            "'${project.name}'. Only Android and Java modules are supported for now.")
+        throw GradleException(
+            "No supported plugins for Hephaestus found on project " +
+                "'${project.path}'. Only Android and Java modules are supported for now."
+        )
       }
     }
   }
 
   @ExperimentalStdlibApi
-  private fun realApply(project: Project) {
-    disableIncrementalKotlinCompilation(project)
+  private fun realApply(
+    project: Project,
+    isAndroidProject: Boolean
+  ) {
+    disableIncrementalKotlinCompilation(project, isAndroidProject)
     disablePreciseJavaTracking(project)
 
     project.pluginManager.withPlugin("org.jetbrains.kotlin.kapt") {
@@ -58,17 +78,13 @@ open class HephaestusPlugin : Plugin<Project> {
   ) {
     project.tasks
         .withType(KotlinCompile::class.java)
-        .all { compileTask ->
-          val checkMixedSourceSet = project.tasks.register(
-              compileTask.name + "CheckMixedSourceSetHephaestus",
-              CheckMixedSourceSetTask::class.java
-          ) {
-            it.compileTask = compileTask
-          }
-
-          compileTask.dependsOn(checkMixedSourceSet)
-
+        .configureEach { compileTask ->
           compileTask.doFirst {
+            // Disable precise java tracking if needed. Note that the doFirst() action only runs
+            // if the task is not up to date. That's ideal, because if nothing needs to be
+            // compiled, then we don't need to disable the flag.
+            CheckMixedSourceSet(project, compileTask).disablePreciseJavaTrackingIfNeeded()
+
             compileTask.logger.info(
                 "Hephaestus: Use precise java tracking: ${compileTask.usePreciseJavaTracking}"
             )
@@ -76,80 +92,111 @@ open class HephaestusPlugin : Plugin<Project> {
         }
   }
 
+  @Suppress("UnstableApiUsage")
   @ExperimentalStdlibApi
   private fun disableIncrementalKotlinCompilation(
-    project: Project
+    project: Project,
+    isAndroidProject: Boolean
   ) {
     project.tasks
-        .withType(KotlinCompile::class.java)
-        .all { compileTask ->
-          val isStubGeneratingTask = compileTask is KaptGenerateStubsTask
-
-          if (isStubGeneratingTask) {
-            check(
-                compileTask.name.startsWith("kaptGenerateStubs") &&
-                    compileTask.name.endsWith("Kotlin")
-            ) {
-              // It's better to verify this naming pattern and fail early when it changes.
-              // See also: https://github.com/JetBrains/kotlin/blob/897c48f97eac4e0a5190773cd7b5c31683d601eb/libraries/tools/kotlin-gradle-plugin/src/main/kotlin/org/jetbrains/kotlin/gradle/internal/kapt/Kapt3KotlinGradleSubplugin.kt#L490
-              "It's expected that the stub generating task is named " +
-                  "kaptGenerateStubs{variant}{buildType}Kotlin."
-            }
-          }
-
-          val configurationNameForIncrementalChecks = when {
-            // Disable incremental compilation, if the compiler plugin dependency isn't up-to-date.
-            // This will trigger a full compilation of a module using Hephaestus even though its
-            // source files might not have changed. This workaround is necessary, otherwise
-            // incremental builds are broken. See https://youtrack.jetbrains.com/issue/KT-38570
-            !isStubGeneratingTask -> PLUGIN_CLASSPATH_CONFIGURATION_NAME
-
-            // For Java / Kotlin projects it doesn't change.
-            project.isKotlinJvmProject -> "compileClasspath"
-
-            // Disable incremental compilation for the stub generating task, if any of the
-            // dependencies in the compile classpath have changed. This will make sure that we pick
-            // up any change from a dependency when merging all the classes. Without this workaround
-            // we could make changes in any library, but these changes wouldn't be contributed to the
-            // Dagger graph, because incremental compilation tricked us.
-            else -> {
-              val variant = project.androidVariants()
-                  .findVariantForCompileTask(compileTask)
-
-              "${variant.name}CompileClasspath"
-            }
-          }
-
-          val checkIfCompilerPluginChangedTaskProvider = project.tasks
-              .register(
-                  compileTask.name + "CheckIncrementalCompilationHephaestus",
-                  DisableIncrementalCompilationTask::class.java
-              ) {
-                it.compileTask = compileTask
-                it.configurationName = configurationNameForIncrementalChecks
-              }
-
-          compileTask.dependsOn(checkIfCompilerPluginChangedTaskProvider)
-
-          compileTask.doFirst {
-            compileTask.logger.info(
-                "Hephaestus: Incremental compilation enabled: ${compileTask.incremental}"
+        .withType(KaptGenerateStubsTask::class.java)
+        .configureEach { stubsTask ->
+          // Disable incremental compilation for the stub generating task. Trigger the compiler
+          // plugin if any dependencies in the compile classpath have changed. This will make sure
+          // that we pick up any change from a dependency when merging all the classes. Without
+          // this workaround we could make changes in any library, but these changes wouldn't be
+          // contributed to the Dagger graph, because incremental compilation tricked us.
+          stubsTask.doFirst {
+            stubsTask.incremental = false
+            stubsTask.logger.info(
+                "Hephaestus: Incremental compilation enabled: ${stubsTask.incremental} (stub)"
             )
           }
         }
+
+    // Use this signal to share state between DisableIncrementalCompilationTask and the Kotlin
+    // compile task. If the plugin classpath changed, then DisableIncrementalCompilationTask sets
+    // the signal to false.
+    val incrementalSignal = project.gradle.sharedServices
+        .registerIfAbsent("incrementalSignal", IncrementalSignal::class.java) { }
+
+    val disableIncrementalCompilationAction: (String) -> Unit = { compileTaskName ->
+      // Disable incremental compilation, if the compiler plugin dependency isn't up-to-date.
+      // This will trigger a full compilation of a module using Hephaestus even though its
+      // source files might not have changed. This workaround is necessary, otherwise
+      // incremental builds are broken. See https://youtrack.jetbrains.com/issue/KT-38570
+      val disableIncrementalCompilationTaskProvider = project.tasks.register(
+          compileTaskName + "CheckIncrementalCompilationHephaestus",
+          DisableIncrementalCompilationTask::class.java
+      ) { task ->
+        task.pluginClasspath.from(
+            project.configurations.getByName(PLUGIN_CLASSPATH_CONFIGURATION_NAME)
+        )
+        task.incrementalSignal.set(incrementalSignal)
+      }
+
+      project.tasks.named(compileTaskName, KotlinCompile::class.java) { compileTask ->
+        compileTask.dependsOn(disableIncrementalCompilationTaskProvider)
+
+        compileTask.doFirst {
+          // If the signal is set, then the plugin classpath changed. Apply the setting that
+          // DisableIncrementalCompilationTask requested.
+          val incremental = incrementalSignal.get().incremental[project.path]
+          if (incremental != null) {
+            compileTask.incremental = incremental
+          }
+
+          compileTask.logger.info(
+              "Hephaestus: Incremental compilation enabled: ${compileTask.incremental} (compile)"
+          )
+        }
+      }
+    }
+
+    if (isAndroidProject) {
+      project.androidVariantsConfigure { variant ->
+        val compileTaskName = "compile${variant.name.capitalize(US)}Kotlin"
+        disableIncrementalCompilationAction(compileTaskName)
+      }
+    } else {
+      // The Java plugin has two Kotlin tasks we care about: compileKotlin and compileTestKotlin.
+      disableIncrementalCompilationAction("compileKotlin")
+      disableIncrementalCompilationAction("compileTestKotlin")
+    }
   }
 }
 
 /**
- * Returns all variants including the androidTest variants, but excludes unit tests. Unit tests
- * can't contribute classes and if we need to support merging components in unit tests, then we
- * can add the capability later. YAGNI.
+ * Returns all variants including the androidTest and unit test variants.
  */
 fun Project.androidVariants(): Set<BaseVariant> {
   return when (val androidExtension = project.extensions.findByName("android")) {
-    is AppExtension -> androidExtension.applicationVariants + androidExtension.testVariants
-    is LibraryExtension -> androidExtension.libraryVariants + androidExtension.testVariants
+    is AppExtension -> androidExtension.applicationVariants + androidExtension.testVariants +
+        androidExtension.unitTestVariants
+    is LibraryExtension -> androidExtension.libraryVariants + androidExtension.testVariants +
+        androidExtension.unitTestVariants
     else -> throw GradleException("Unknown Android module type for project ${project.path}")
+  }
+}
+
+/**
+ * Runs the given [action] for each Android variant including androidTest and unit test variants.
+ */
+fun Project.androidVariantsConfigure(action: (BaseVariant) -> Unit) {
+  val androidExtension = project.extensions.findByName("android")
+
+  if (androidExtension is AppExtension) {
+    androidExtension.applicationVariants.configureEach(action)
+  }
+  if (androidExtension is LibraryExtension) {
+    androidExtension.libraryVariants.configureEach(action)
+  }
+  if (androidExtension is TestExtension) {
+    androidExtension.applicationVariants.configureEach(action)
+  }
+  if (androidExtension is TestedExtension) {
+    androidExtension.unitTestVariants.configureEach(action)
+    androidExtension.testVariants.configureEach(action)
   }
 }
 
@@ -175,6 +222,7 @@ val Project.isAndroidProject: Boolean
   get() = AGP_ON_CLASSPATH &&
       (plugins.hasPlugin(AppPlugin::class.java) || plugins.hasPlugin(LibraryPlugin::class.java))
 
+@Suppress("SENSELESS_COMPARISON")
 private val AGP_ON_CLASSPATH = try {
   Class.forName("com.android.build.gradle.AppPlugin") != null
 } catch (t: Throwable) {
