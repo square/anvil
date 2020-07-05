@@ -39,13 +39,8 @@ internal class InterfaceMerger(
     }
 
     val classes = classScanner
-        .findContributedClassesInDependencyGraph(thisDescriptor.module)
+        .findContributedClasses(thisDescriptor.module)
         .asSequence()
-        .plus(
-            classScanner.findTopLevelClassesInThisModule(thisDescriptor.module)
-                .asSequence()
-                .findInnerClasses(thisDescriptor, scope)
-        )
         .filter {
           DescriptorUtils.isInterface(it) && it.findAnnotation(daggerModuleFqName) == null
         }
@@ -111,36 +106,5 @@ internal class InterfaceMerger(
 
     supertypes += contributedClasses
     super.addSyntheticSupertypes(thisDescriptor, supertypes)
-  }
-
-  private fun Sequence<ClassDescriptor>.findInnerClasses(
-    thisDescriptor: ClassDescriptor,
-    scope: ClassDescriptor
-  ): Sequence<ClassDescriptor> {
-    return flatMap {
-      // It's necessary to exclude thisDescriptor and merged component interfaces, otherwise we
-      // could end up in nested loops while finding all classes and compiling the code. While
-      // compiling the code this extension would be called to add super classes.
-      if (it.fqNameSafe == thisDescriptor.fqNameSafe ||
-          it.findAnnotation(mergeComponentFqName) != null ||
-          it.findAnnotation(mergeSubcomponentFqName) != null ||
-          it.findAnnotation(mergeInterfacesFqName) != null
-      ) {
-        sequenceOf(it)
-      } else {
-        try {
-          classScanner.innerClasses(it)
-              .asSequence() + it
-        } catch (e: Throwable) {
-          throw HephaestusCompilationException(
-              classDescriptor = it,
-              message = "Something went terribly wrong while looking for inner classes for " +
-                  "${it.fqNameSafe}. The current descriptor is ${thisDescriptor.fqNameSafe}, " +
-                  "the scope is ${scope.fqNameSafe}.",
-              cause = e
-          )
-        }
-      }
-    }
   }
 }

@@ -2,7 +2,6 @@ package com.squareup.hephaestus.compiler
 
 import com.google.common.truth.Truth.assertThat
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
-import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test
 
 class ContributesToGeneratorTest {
@@ -164,9 +163,4 @@ class ContributesToGeneratorTest {
       }
     }
   }
-
-  private fun compile(
-    source: String,
-    block: Result.() -> Unit = { }
-  ): Result = compile(source, skipAnalysis = false, block = block)
 }

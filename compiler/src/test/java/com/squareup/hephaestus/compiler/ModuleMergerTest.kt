@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.hephaestus.annotations.MergeComponent
 import com.squareup.hephaestus.annotations.MergeSubcomponent
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
-import com.tschuchort.compiletesting.KotlinCompilation.Result
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import dagger.Component
 import dagger.Subcomponent
 import org.junit.Test
@@ -15,20 +15,16 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class ModuleMergerTest(
-  private val annotationClass: KClass<*>,
-  private val skipAnalysis: Boolean
+  private val annotationClass: KClass<*>
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
   private val import = "import ${annotationClass.java.canonicalName}"
 
   companion object {
-    @Parameters(name = "{0}, skipAnalysis: {1}")
-    @JvmStatic fun annotationClasses(): Collection<Array<Any>> {
+    @Parameters(name = "{0}")
+    @JvmStatic fun annotationClasses(): Collection<Any> {
       return listOf(MergeComponent::class, MergeSubcomponent::class)
-          .flatMap { clazz ->
-            listOf(true, false).map { arrayOf(clazz, it) }
-          }
     }
   }
 
@@ -468,6 +464,29 @@ class ModuleMergerTest(
         import com.squareup.hephaestus.annotations.ContributesTo
         $import
         
+        interface ComponentInterface {
+          @ContributesTo(Any::class)
+          @dagger.Module
+          abstract class InnerModule
+        }
+        
+        $annotation(Any::class)
+        interface SubcomponentInterface
+    """
+    ) {
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.toList())
+          .containsExactly(innerModule.kotlin)
+    }
+  }
+
+  @Test fun `inner modules in a merged component fail`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.hephaestus.annotations.ContributesTo
+        $import
+        
         $annotation(Any::class)
         interface ComponentInterface {
           @ContributesTo(Any::class)
@@ -476,15 +495,10 @@ class ModuleMergerTest(
         }
     """
     ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.toList())
-          .containsExactly(innerModule.kotlin)
+      assertThat(exitCode).isEqualTo(INTERNAL_ERROR)
+      assertThat(messages).contains("File being compiled: (10,18)")
     }
   }
-
-  private fun compile(
-    source: String,
-    block: Result.() -> Unit = { }
-  ): Result = compile(source, skipAnalysis, block = block)
 
   private val Class<*>.anyDaggerComponent: AnyDaggerComponent
     get() = anyDaggerComponent(annotationClass)

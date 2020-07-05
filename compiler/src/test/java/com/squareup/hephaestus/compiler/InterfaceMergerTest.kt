@@ -5,7 +5,7 @@ import com.squareup.hephaestus.annotations.MergeComponent
 import com.squareup.hephaestus.annotations.MergeSubcomponent
 import com.squareup.hephaestus.annotations.compat.MergeInterfaces
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
-import com.tschuchort.compiletesting.KotlinCompilation.Result
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -14,20 +14,16 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class InterfaceMergerTest(
-  private val annotationClass: KClass<*>,
-  private val skipAnalysis: Boolean
+  private val annotationClass: KClass<*>
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
   private val import = "import ${annotationClass.java.canonicalName}"
 
   companion object {
-    @Parameters(name = "{0}, skipAnalysis: {1}")
-    @JvmStatic fun annotationClasses(): Collection<Array<Any>> {
+    @Parameters(name = "{0}")
+    @JvmStatic fun annotationClasses(): Collection<Any> {
       return listOf(MergeComponent::class, MergeSubcomponent::class, MergeInterfaces::class)
-          .flatMap { clazz ->
-            listOf(true, false).map { arrayOf(clazz, it) }
-          }
     }
   }
 
@@ -111,7 +107,7 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `code must be in com_squareup package`() {
+  @Test fun `code can be in any package`() {
     compile(
         """
         package com.other
@@ -129,7 +125,7 @@ class InterfaceMergerTest(
       assertThat(
           classLoader.loadClass("com.other.ComponentInterface") extends
               classLoader.loadClass("com.other.ContributingInterface")
-      ).isFalse()
+      ).isTrue()
     }
   }
 
@@ -198,8 +194,9 @@ class InterfaceMergerTest(
     """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-      // Position to the class.
-      assertThat(messages).contains("Source.kt: (13, 11)")
+      // Position to the class. Unfortunately, a different error is reported that the class is
+      // missing an @Module annotation.
+      assertThat(messages).contains("Source.kt: (7, 7)")
     }
   }
 
@@ -394,7 +391,7 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `inner interfaces in merged component are not merged`() {
+  @Test fun `inner interfaces in merged component fail`() {
     // They could cause errors while compiling code when adding our contributed super classes.
     compile(
         """
@@ -410,10 +407,12 @@ class InterfaceMergerTest(
         }
     """
     ) {
-      assertThat(
-          componentInterface extends
-              classLoader.loadClass("com.squareup.test.ComponentInterface\$InnerInterface")
-      ).isFalse()
+      assertThat(exitCode).isEqualTo(INTERNAL_ERROR)
+      // Position to the class.
+      assertThat(messages).contains(
+          "org.jetbrains.kotlin.util.KotlinFrontEndException: " +
+              "Exception while analyzing expression at (8,18)"
+      )
     }
   }
 
@@ -441,9 +440,4 @@ class InterfaceMergerTest(
       assertThat(componentInterface extends secondContributingInterface).isFalse()
     }
   }
-
-  private fun compile(
-    source: String,
-    block: Result.() -> Unit = { }
-  ): Result = compile(source, skipAnalysis, block = block)
 }

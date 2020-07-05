@@ -2,22 +2,9 @@ package com.squareup.hephaestus.compiler
 
 import com.google.common.truth.Truth.assertThat
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
-import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
 
-@RunWith(Parameterized::class)
-class MergeModulesTest(
-  private val skipAnalysis: Boolean
-) {
-  companion object {
-    @Parameters(name = "skipAnalysis: {0}")
-    @JvmStatic fun annotationClasses(): Collection<Any> {
-      return listOf(true, false)
-    }
-  }
+class MergeModulesTest {
 
   @Test fun `Dagger modules are empty without arguments`() {
     compile(
@@ -398,9 +385,4 @@ class MergeModulesTest(
           .containsExactly(innerModule.kotlin)
     }
   }
-
-  private fun compile(
-    source: String,
-    block: Result.() -> Unit = { }
-  ): Result = compile(source, skipAnalysis, block = block)
 }

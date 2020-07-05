@@ -53,16 +53,8 @@ internal class ModuleMerger(
           ?.map { it.toType(codegen) }
 
     val modules = classScanner
-        .findContributedClassesInDependencyGraph(codegen.descriptor.module)
+        .findContributedClasses(codegen.descriptor.module)
         .asSequence()
-        .plus(
-            classScanner.findTopLevelClassesInThisModule(codegen.descriptor.module)
-                .asSequence()
-                .flatMap {
-                  classScanner.innerClasses(it)
-                      .asSequence() + it
-                }
-        )
         .mapNotNull {
           val contributesAnnotation =
             it.findAnnotation(contributesToFqName, scope = scope) ?: return@mapNotNull null

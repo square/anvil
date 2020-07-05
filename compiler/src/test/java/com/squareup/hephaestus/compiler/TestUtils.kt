@@ -16,7 +16,6 @@ import kotlin.reflect.KClass
 
 internal fun compile(
   source: String,
-  skipAnalysis: Boolean,
   block: Result.() -> Unit = { }
 ): Result {
   return KotlinCompilation()
@@ -29,11 +28,6 @@ internal fun compile(
         commandLineProcessors = listOf(commandLineProcessor)
 
         pluginOptions = listOf(
-            PluginOption(
-                pluginId = commandLineProcessor.pluginId,
-                optionName = skipAnalysisName,
-                optionValue = skipAnalysis.toString()
-            ),
             PluginOption(
                 pluginId = commandLineProcessor.pluginId,
                 optionName = srcGenDirName,
