@@ -10,7 +10,8 @@ dependencies {
   kapt deps.dagger2.compiler
 }
 
-compileKotlin {
+//noinspection UnnecessaryQualifiedReference
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   kotlinOptions {
     freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
   }

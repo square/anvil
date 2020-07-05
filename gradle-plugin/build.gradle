@@ -62,8 +62,12 @@ pluginBundle {
   tags = ['dagger2', 'dagger2-android', 'kotlin', 'kotlin-compiler-plugin']
 }
 
-compileKotlin {
-  kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8
+//noinspection UnnecessaryQualifiedReference
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+  kotlinOptions {
+    jvmTarget = JavaVersion.VERSION_1_8
+    freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+  }
 }
 
 dependencies {

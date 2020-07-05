@@ -17,3 +17,11 @@ dependencies {
   testImplementation deps.kotlin.compiler
   testImplementation deps.truth
 }
+
+//noinspection UnnecessaryQualifiedReference
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+  kotlinOptions {
+    jvmTarget = JavaVersion.VERSION_1_8
+    freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
+  }
+}

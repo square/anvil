@@ -21,7 +21,6 @@ import java.util.Locale.US
 import java.util.concurrent.atomic.AtomicBoolean
 
 open class HephaestusPlugin : Plugin<Project> {
-  @ExperimentalStdlibApi
   override fun apply(project: Project) {
     val once = AtomicBoolean()
 
@@ -56,7 +55,6 @@ open class HephaestusPlugin : Plugin<Project> {
     }
   }
 
-  @ExperimentalStdlibApi
   private fun realApply(
     project: Project,
     isAndroidProject: Boolean
@@ -72,7 +70,6 @@ open class HephaestusPlugin : Plugin<Project> {
     project.dependencies.add("api", "$GROUP:annotations:$VERSION")
   }
 
-  @ExperimentalStdlibApi
   private fun disablePreciseJavaTracking(
     project: Project
   ) {
@@ -92,8 +89,7 @@ open class HephaestusPlugin : Plugin<Project> {
         }
   }
 
-  @Suppress("UnstableApiUsage")
-  @ExperimentalStdlibApi
+  @OptIn(ExperimentalStdlibApi::class)
   private fun disableIncrementalKotlinCompilation(
     project: Project,
     isAndroidProject: Boolean
@@ -117,6 +113,7 @@ open class HephaestusPlugin : Plugin<Project> {
     // Use this signal to share state between DisableIncrementalCompilationTask and the Kotlin
     // compile task. If the plugin classpath changed, then DisableIncrementalCompilationTask sets
     // the signal to false.
+    @Suppress("UnstableApiUsage")
     val incrementalSignal = project.gradle.sharedServices
         .registerIfAbsent("incrementalSignal", IncrementalSignal::class.java) { }
 
@@ -200,7 +197,7 @@ fun Project.androidVariantsConfigure(action: (BaseVariant) -> Unit) {
   }
 }
 
-@ExperimentalStdlibApi
+@OptIn(ExperimentalStdlibApi::class)
 fun Collection<BaseVariant>.findVariantForCompileTask(
   compileTask: KotlinCompile
 ): BaseVariant = this
