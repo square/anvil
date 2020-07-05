@@ -73,7 +73,7 @@ internal class ContributeToGenerator(
           val className = clazz.requireFqName()
               .asString()
 
-          val directory = File(codeGenDir, generatedPackage.replace('.', '/'))
+          val directory = File(codeGenDir, generatedPackage.replace('.', File.separatorChar))
           val file = File(directory, "${className.replace('.', '_')}.kt")
               .also {
                 check(it.parentFile.exists() || it.parentFile.mkdirs()) {
