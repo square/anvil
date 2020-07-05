@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.impl.ExtensionPointImpl
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
@@ -54,14 +55,35 @@ class HephaestusComponentRegistrar : ComponentRegistrar {
     val registeredExtensions = AnalysisHandlerExtension.getInstances(project)
     registeredExtensions.forEach {
       // This doesn't work reliably, but that's the best we can do with public APIs. There's a bug
-      // for inner classes where they convert the given class to "a.b.C.Inner" and then try to
-      // remove "a.b.C$Inner". Good times!
+      // for inner classes where they convert the given class to a String "a.b.C.Inner" and then
+      // try to remove "a.b.C$Inner". Good times! Workaround is below.
       analysisHandlerExtensionPoint.unregisterExtension(it::class.java)
     }
 
-    val removedExtensions = registeredExtensions - AnalysisHandlerExtension.getInstances(project)
+    if (analysisHandlerExtensionPoint.hasAnyExtensions() &&
+        analysisHandlerExtensionPoint is ExtensionPointImpl<AnalysisHandlerExtension>
+    ) {
+      AnalysisHandlerExtension.getInstances(project)
+          .forEach {
+            analysisHandlerExtensionPoint.unregisterExtensionFixed(it::class.java)
+          }
+    }
+
+    check(!analysisHandlerExtensionPoint.hasAnyExtensions()) {
+      "There are still registered extensions."
+    }
 
     AnalysisHandlerExtension.registerExtension(project, extension)
-    removedExtensions.forEach { AnalysisHandlerExtension.registerExtension(project, it) }
+    registeredExtensions.forEach { AnalysisHandlerExtension.registerExtension(project, it) }
+  }
+
+  private fun <T : AnalysisHandlerExtension> ExtensionPointImpl<T>.unregisterExtensionFixed(
+    extensionClass: Class<out T>
+  ) {
+    // The bug is that they use "extensionClass.canonicalName".
+    val classNameToUnregister = extensionClass.name
+    unregisterExtensions({ className, _ ->
+      classNameToUnregister != className
+    }, true)
   }
 }
