@@ -46,7 +46,9 @@ internal class InterfaceMerger(
                 .asSequence()
                 .findInnerClasses(thisDescriptor, scope)
         )
-        .filter { DescriptorUtils.isInterface(it) }
+        .filter {
+          DescriptorUtils.isInterface(it) && it.findAnnotation(daggerModuleFqName) == null
+        }
         .mapNotNull {
           val contributeAnnotation =
             it.findAnnotation(contributesToFqName, scope = scope) ?: return@mapNotNull null

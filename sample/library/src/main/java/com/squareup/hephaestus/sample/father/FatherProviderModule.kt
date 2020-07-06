@@ -7,6 +7,6 @@ import dagger.Module
 
 @Module
 @ContributesTo(AppScope::class)
-abstract class FatherProviderModule {
-  @Binds abstract fun bindFatherProvider(provider: RealFatherProvider): FatherProvider
+interface FatherProviderModule {
+  @Binds fun bindFatherProvider(provider: RealFatherProvider): FatherProvider
 }

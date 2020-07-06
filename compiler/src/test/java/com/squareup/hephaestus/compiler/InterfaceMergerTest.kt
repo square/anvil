@@ -417,6 +417,31 @@ class InterfaceMergerTest(
     }
   }
 
+  @Test fun `module interfaces are not merged`() {
+    // They could cause errors while compiling code when adding our contributed super classes.
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.hephaestus.annotations.ContributesTo
+        $import
+        
+        @ContributesTo(Any::class)
+        interface ContributingInterface
+        
+        @dagger.Module
+        @ContributesTo(Any::class)
+        interface SecondContributingInterface
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+    """
+    ) {
+      assertThat(componentInterface extends contributingInterface).isTrue()
+      assertThat(componentInterface extends secondContributingInterface).isFalse()
+    }
+  }
+
   private fun compile(
     source: String,
     block: Result.() -> Unit = { }
