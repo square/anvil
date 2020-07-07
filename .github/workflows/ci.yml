@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         gradle-task: [assemble, test, lint, ktlintCheck]
-        kotlin-version: [1.3.72, 1.4-M2, 1.4.20-dev-1680]
+        kotlin-version: [1.3.72, 1.4-M3, 1.4.20-dev-1680]
         os: [ubuntu-latest, windows-latest]
 
     steps:
