@@ -24,7 +24,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.org.objectweb.asm.Type
-import javax.annotation.Generated
 
 internal val mergeComponentFqName = FqName(MergeComponent::class.java.canonicalName)
 internal val mergeSubcomponentFqName = FqName(MergeSubcomponent::class.java.canonicalName)
@@ -34,8 +33,6 @@ internal val contributesToFqName = FqName(ContributesTo::class.java.canonicalNam
 internal val daggerComponentFqName = FqName(Component::class.java.canonicalName)
 internal val daggerSubcomponentFqName = FqName(Subcomponent::class.java.canonicalName)
 internal val daggerModuleFqName = FqName(Module::class.java.canonicalName)
-private val generatedFqName = FqName(Generated::class.java.canonicalName)
-private val suppressWarningsFqName = FqName(SuppressWarnings::class.java.canonicalName)
 
 internal const val HINT_PACKAGE_PREFIX = "hint.hephaestus"
 
@@ -45,7 +42,19 @@ internal fun ClassDescriptor.findAnnotation(
 ): AnnotationDescriptor? {
   // Must be JVM, we don't support anything else.
   if (!module.platform.has<JvmPlatform>()) return null
-  val annotationDescriptor = annotations.findAnnotation(annotationFqName)
+  val annotationDescriptor = try {
+    annotations.findAnnotation(annotationFqName)
+  } catch (e: IllegalStateException) {
+    // In some scenarios this exception is thrown. Throw a new exception with a better explanation.
+    // Caused by: java.lang.IllegalStateException: Should not be called!
+    // at org.jetbrains.kotlin.types.ErrorUtils$1.getPackage(ErrorUtils.java:95)
+    throw HephaestusCompilationException(
+        this,
+        message = "It seems like you tried to contribute an inner class to its outer class. This " +
+            "is not supported and results in a compiler error.",
+        cause = e
+    )
+  }
   if (scope == null || annotationDescriptor == null) return annotationDescriptor
 
   val foundTarget = annotationDescriptor.scope(scope.module)
@@ -70,10 +79,8 @@ internal fun AnnotationDescriptor.getAnnotationValue(key: String): ConstantValue
 
 internal fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescriptor {
   val kClassValue = requireNotNull(getAnnotationValue("scope")) as KClassValue
-  return DescriptorUtils.getClassDescriptorForType(kClassValue.getType(module).argumentType())
-}
-
-internal fun ClassDescriptor.isGeneratedDaggerComponent(): Boolean {
-  return fqNameSafe.shortName().asString().startsWith("Dagger") &&
-      (findAnnotation(generatedFqName) != null || findAnnotation(suppressWarningsFqName) != null)
+  return DescriptorUtils.getClassDescriptorForType(
+      kClassValue.getType(module)
+          .argumentType()
+  )
 }
