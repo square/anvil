@@ -11,6 +11,7 @@
 * Fixed file path issues on Windows #13 #24.
 * Allow Dagger modules that are interfaces #14 #24.
 * Test Hephaestus with Kotlin `1.4` and `1.4.2`.
+* Use `1.0.1-1.4-M3` to use Hephaestus in projects with Kotlin 1.4-M3.
 
 ## 1.0.0 (2020-06-16)
 
