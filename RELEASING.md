@@ -1,6 +1,6 @@
 # Production Releases
 
-1. Checkout `origin/trunk`.
+1. Checkout `origin/main`.
 1. Update the `CHANGELOG.md` file with the changes of this release.
 1. Update the version in `gradle.properties` and remove the `-SNAPSHOT` suffix.
 1. Commit the changes and create a tag:
