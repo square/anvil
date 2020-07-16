@@ -12,6 +12,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.AppliedPlugin
 import org.gradle.api.plugins.PluginManager
+import org.gradle.api.provider.Provider
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
@@ -80,7 +81,7 @@ open class HephaestusPlugin : Plugin<Project> {
             // Disable precise java tracking if needed. Note that the doFirst() action only runs
             // if the task is not up to date. That's ideal, because if nothing needs to be
             // compiled, then we don't need to disable the flag.
-            CheckMixedSourceSet(project, compileTask).disablePreciseJavaTrackingIfNeeded()
+            CheckMixedSourceSet(compileTask.project, compileTask).disablePreciseJavaTrackingIfNeeded()
 
             compileTask.logger.info(
                 "Hephaestus: Use precise java tracking: ${compileTask.usePreciseJavaTracking}"
@@ -117,48 +118,61 @@ open class HephaestusPlugin : Plugin<Project> {
     val incrementalSignal = project.gradle.sharedServices
         .registerIfAbsent("incrementalSignal", IncrementalSignal::class.java) { }
 
-    val disableIncrementalCompilationAction: (String) -> Unit = { compileTaskName ->
-      // Disable incremental compilation, if the compiler plugin dependency isn't up-to-date.
-      // This will trigger a full compilation of a module using Hephaestus even though its
-      // source files might not have changed. This workaround is necessary, otherwise
-      // incremental builds are broken. See https://youtrack.jetbrains.com/issue/KT-38570
-      val disableIncrementalCompilationTaskProvider = project.tasks.register(
-          compileTaskName + "CheckIncrementalCompilationHephaestus",
-          DisableIncrementalCompilationTask::class.java
-      ) { task ->
-        task.pluginClasspath.from(
-            project.configurations.getByName(PLUGIN_CLASSPATH_CONFIGURATION_NAME)
-        )
-        task.incrementalSignal.set(incrementalSignal)
-      }
-
-      project.tasks.named(compileTaskName, KotlinCompile::class.java) { compileTask ->
-        compileTask.dependsOn(disableIncrementalCompilationTaskProvider)
-
-        compileTask.doFirst {
-          // If the signal is set, then the plugin classpath changed. Apply the setting that
-          // DisableIncrementalCompilationTask requested.
-          val incremental = incrementalSignal.get().incremental[project.path]
-          if (incremental != null) {
-            compileTask.incremental = incremental
-          }
-
-          compileTask.logger.info(
-              "Hephaestus: Incremental compilation enabled: ${compileTask.incremental} (compile)"
-          )
-        }
-      }
-    }
-
     if (isAndroidProject) {
       project.androidVariantsConfigure { variant ->
         val compileTaskName = "compile${variant.name.capitalize(US)}Kotlin"
-        disableIncrementalCompilationAction(compileTaskName)
+        disableIncrementalCompilationAction(project, incrementalSignal, compileTaskName)
       }
     } else {
       // The Java plugin has two Kotlin tasks we care about: compileKotlin and compileTestKotlin.
-      disableIncrementalCompilationAction("compileKotlin")
-      disableIncrementalCompilationAction("compileTestKotlin")
+      disableIncrementalCompilationAction(project, incrementalSignal, "compileKotlin")
+      disableIncrementalCompilationAction(project, incrementalSignal, "compileTestKotlin")
+    }
+  }
+
+  fun disableIncrementalCompilationAction(
+    project: Project,
+    incrementalSignal: Provider<IncrementalSignal>,
+    compileTaskName: String
+  ) {
+    // Disable incremental compilation, if the compiler plugin dependency isn't up-to-date.
+    // This will trigger a full compilation of a module using Hephaestus even though its
+    // source files might not have changed. This workaround is necessary, otherwise
+    // incremental builds are broken. See https://youtrack.jetbrains.com/issue/KT-38570
+    val disableIncrementalCompilationTaskProvider = project.tasks.register(
+        compileTaskName + "CheckIncrementalCompilationHephaestus",
+        DisableIncrementalCompilationTask::class.java
+    ) { task ->
+      task.pluginClasspath.from(
+          project.configurations.getByName(PLUGIN_CLASSPATH_CONFIGURATION_NAME)
+      )
+      task.incrementalSignal.set(incrementalSignal)
+    }
+
+    project.tasks.named(compileTaskName, KotlinCompile::class.java) { compileTask ->
+      compileTask.dependsOn(disableIncrementalCompilationTaskProvider)
+    }
+
+    // We avoid a reference to the project in the doFirst.
+    val projectPath = project.path
+
+    // If we merge the block below and the block above, it looks like
+    // the kotlin compiler is generating byte code for
+    // disableIncrementalCompilationTaskProvider to be visible from the doFirst block
+
+    project.tasks.named(compileTaskName, KotlinCompile::class.java) { compileTask ->
+      compileTask.doFirst {
+        // If the signal is set, then the plugin classpath changed. Apply the setting that
+        // DisableIncrementalCompilationTask requested.
+        val incremental = incrementalSignal.get().incremental[projectPath]
+        if (incremental != null) {
+          compileTask.incremental = incremental
+        }
+
+        compileTask.logger.info(
+            "Hephaestus: Incremental compilation enabled: ${compileTask.incremental} (compile)"
+        )
+      }
     }
   }
 }

@@ -5,8 +5,6 @@ package com.squareup.hephaestus.plugin
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
 import org.gradle.api.provider.Property
-import org.gradle.api.services.BuildService
-import org.gradle.api.services.BuildServiceParameters.None
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.InputFiles
 import org.gradle.api.tasks.Internal
@@ -37,9 +35,4 @@ abstract class DisableIncrementalCompilationTask : DefaultTask() {
     // in the classpath, then this task wouldn't run at all and be skipped.
     incrementalSignal.get().incremental[projectPath] = false
   }
-}
-
-/** This signal is used to share state between the task above and Kotlin compile tasks. */
-abstract class IncrementalSignal : BuildService<None> {
-  val incremental = mutableMapOf<String, Boolean?>()
 }
