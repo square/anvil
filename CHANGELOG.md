@@ -4,6 +4,11 @@
 
 *
 
+## 1.0.3-1.4-M3 (2020-07-17)
+
+* Bug fix for Gradle's configuration caching #29.
+* Same as `1.0.3`, only built with Kotlin 1.4-M3.
+
 ## 1.0.3 (2020-07-17)
 
 * Bug fix for Gradle's configuration caching #29.
