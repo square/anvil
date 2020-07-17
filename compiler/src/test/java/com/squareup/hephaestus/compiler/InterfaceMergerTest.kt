@@ -254,7 +254,7 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `predefined interfaces is not excluded`() {
+  @Test fun `predefined interfaces cannot be excluded`() {
     compile(
         """
         package com.squareup.test
@@ -267,18 +267,27 @@ class InterfaceMergerTest(
         
         @ContributesTo(Any::class)
         interface SecondContributingInterface
+        
+        interface OtherInterface : SecondContributingInterface
 
         $annotation(
             scope = Any::class,
             exclude = [
-              ContributingInterface::class
+              ContributingInterface::class,
+              SecondContributingInterface::class
             ]
         )
-        interface ComponentInterface : ContributingInterface
+        interface ComponentInterface : ContributingInterface, OtherInterface
     """
     ) {
-      assertThat(componentInterface extends contributingInterface).isTrue()
-      assertThat(componentInterface extends secondContributingInterface).isTrue()
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      // Position to the class.
+      assertThat(messages).contains(
+          "ComponentInterface excludes types that it implements or extends. These types cannot " +
+              "be excluded. Look at all the super types to find these classes: " +
+              "com.squareup.test.ContributingInterface, " +
+              "com.squareup.test.SecondContributingInterface"
+      )
     }
   }
 
