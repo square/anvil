@@ -2,7 +2,7 @@
 
 ## Next Version
 
-*
+* Ensure that types cannot be included and excluded at the same time, which leads to unexpected results.
 
 ## 1.0.3-1.4-M3 (2020-07-17)
 
