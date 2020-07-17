@@ -4,6 +4,10 @@
 
 *
 
+## 1.0.2 (2020-07-17)
+
+* Bug fix Gradle's configuration caching #29.
+
 ## 1.0.1 (2020-07-09)
 
 * Added support for Gradle's configuration caching and made task configuration lazy #19.
