@@ -272,39 +272,6 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `included modules are not excluded`() {
-    compile(
-        """
-        package com.squareup.test
-
-        import com.squareup.hephaestus.annotations.compat.MergeModules
-        import com.squareup.hephaestus.annotations.ContributesTo
-
-        @ContributesTo(Any::class)
-        @dagger.Module
-        abstract class DaggerModule2
-
-        @ContributesTo(Any::class)
-        @dagger.Module
-        abstract class DaggerModule3
-
-        @MergeModules(
-            scope = Any::class,
-            includes = [
-              DaggerModule2::class
-            ],
-            exclude = [
-              DaggerModule2::class,
-              DaggerModule3::class
-            ]
-        )
-        class DaggerModule1
-    """
-    ) {
-      assertThat(daggerModule1.daggerModule.includes.toList()).containsExactly(daggerModule2.kotlin)
-    }
-  }
-
   @Test fun `modules are added to merged modules with corresponding scope`() {
     compile(
         """
@@ -383,6 +350,35 @@ class MergeModulesTest {
 
       assertThat(daggerModule1.daggerModule.includes.toList())
           .containsExactly(innerModule.kotlin)
+    }
+  }
+
+  @Test fun `a module is not allowed to be included and excluded`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.hephaestus.annotations.compat.MergeModules
+        import com.squareup.hephaestus.annotations.ContributesTo
+
+        @ContributesTo(Any::class)
+        @dagger.Module
+        abstract class DaggerModule1
+
+        @MergeModules(
+            scope = Any::class,
+            includes = [
+              DaggerModule1::class
+            ],
+            exclude = [
+              DaggerModule1::class
+            ]
+        )
+        interface ComponentInterface
+    """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains("Source.kt: (19, 11)")
     }
   }
 }

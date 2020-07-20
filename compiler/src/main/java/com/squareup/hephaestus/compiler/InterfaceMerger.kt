@@ -3,14 +3,17 @@ package com.squareup.hephaestus.compiler
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
 import org.jetbrains.kotlin.descriptors.effectiveVisibility
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getClassDescriptorForType
+import org.jetbrains.kotlin.resolve.DescriptorUtils.getFqNameSafe
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.typeUtil.supertypes
 
 /**
  * Finds all contributed component interfaces and adds them as super types to Dagger components
@@ -94,6 +97,20 @@ internal class InterfaceMerger(
         ?.map { it.fqNameSafe }
         ?: emptyList()
 
+    if (excludedClasses.isNotEmpty()) {
+      val intersect = supertypes.getAllSuperTypes()
+          .intersect(excludedClasses)
+
+      if (intersect.isNotEmpty()) {
+        throw HephaestusCompilationException(
+            classDescriptor = thisDescriptor,
+            message = "${thisDescriptor.name} excludes types that it implements or extends. " +
+                "These types cannot be excluded. Look at all the super types to find these " +
+                "classes: ${intersect.joinToString()}"
+        )
+      }
+    }
+
     val contributedClasses = classes
         .map { it.first }
         .filterNot {
@@ -107,4 +124,12 @@ internal class InterfaceMerger(
     supertypes += contributedClasses
     super.addSyntheticSupertypes(thisDescriptor, supertypes)
   }
+
+  private fun List<KotlinType>.getAllSuperTypes(): List<FqName> =
+    generateSequence(this) { kotlinTypes ->
+      if (kotlinTypes.isEmpty()) null else kotlinTypes.flatMap { it.supertypes() }
+    }
+        .flatMap { it.asSequence() }
+        .map { getFqNameSafe(getClassDescriptorForType(it)) }
+        .toList()
 }

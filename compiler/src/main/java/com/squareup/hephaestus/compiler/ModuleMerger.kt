@@ -110,6 +110,16 @@ internal class ModuleMerger(
         ?.map { it.toType(codegen) }
         ?: emptyList()
 
+    if (predefinedModules != null) {
+      val intersect = predefinedModules.intersect(excludedModules)
+      if (intersect.isNotEmpty()) {
+        throw HephaestusCompilationException(
+            codegen.descriptor, "${codegen.descriptor.name} includes and excludes modules " +
+            "at the same time: ${intersect.joinToString { it.className }}"
+        )
+      }
+    }
+
     val contributedModules = modules
         .map { it.first }
         .map { codegen.typeMapper.mapType(it) }
