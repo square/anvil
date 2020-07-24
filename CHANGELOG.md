@@ -2,6 +2,12 @@
 
 ## Next Version
 
+## 1.0.4-1.4-M3 (2020-07-24)
+
+* Ensure that types cannot be included and excluded at the same time, which leads to unexpected results.
+* Fix a classpath issue in the Gradle plugin when using the new plugin syntax #31.
+* Same as `1.0.4`, only built with Kotlin 1.4-M3.
+
 ## 1.0.4 (2020-07-24)
 
 * Ensure that types cannot be included and excluded at the same time, which leads to unexpected results.
