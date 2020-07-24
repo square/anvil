@@ -2,7 +2,10 @@
 
 ## Next Version
 
+## 1.0.4 (2020-07-24)
+
 * Ensure that types cannot be included and excluded at the same time, which leads to unexpected results.
+* Fix a classpath issue in the Gradle plugin when using the new plugin syntax #31.
 
 ## 1.0.3-1.4-M3 (2020-07-17)
 
