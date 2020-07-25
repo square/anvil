@@ -9,6 +9,6 @@ include ':sample:scopes'
 // Use the local version instead of a remote artifact.
 includeBuild('gradle-plugin') {
   dependencySubstitution {
-    substitute module('com.squareup.hephaestus:gradle-plugin') with project(':')
+    substitute module('com.squareup.anvil:gradle-plugin') with project(':')
   }
 }

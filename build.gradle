@@ -18,7 +18,7 @@ buildscript {
     classpath deps.android_gradle_plugin
     classpath deps.kotlin.gradle_plugin
     classpath deps.ktlint_plugin
-    classpath deps.hephaestus_plugin
+    classpath deps.anvil_plugin
     classpath deps.maven_publishing_plugin
   }
 }
@@ -71,8 +71,8 @@ subprojects {
   // needed to make it work for now.
   configurations.all {
     resolutionStrategy.dependencySubstitution {
-      substitute module("com.squareup.hephaestus:annotations") with project(':annotations')
-      substitute module("com.squareup.hephaestus:compiler") with project(':compiler')
+      substitute module("com.squareup.anvil:annotations") with project(':annotations')
+      substitute module("com.squareup.anvil:compiler") with project(':compiler')
     }
   }
   // This is an ugly workaround.

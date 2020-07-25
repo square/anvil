@@ -1,6 +1,6 @@
 apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'org.jetbrains.kotlin.kapt'
-apply plugin: 'com.squareup.hephaestus'
+apply plugin: 'com.squareup.anvil'
 
 dependencies {
   testImplementation project(':integration-tests:library')

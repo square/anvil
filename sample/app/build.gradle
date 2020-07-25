@@ -2,20 +2,20 @@ plugins {
   id 'com.android.application'
   id 'org.jetbrains.kotlin.android'
   id 'org.jetbrains.kotlin.kapt'
-  id 'com.squareup.hephaestus'
+  id 'com.squareup.anvil'
 }
 
 android {
   compileSdkVersion 29
 
   defaultConfig {
-    applicationId "com.squareup.hephaestus.sample"
+    applicationId "com.squareup.anvil.sample"
     minSdkVersion 23
     targetSdkVersion 29
     versionCode 1
     versionName "1.0.0"
 
-    testInstrumentationRunner "com.squareup.hephaestus.sample.TestRunner"
+    testInstrumentationRunner "com.squareup.anvil.sample.TestRunner"
   }
 
   compileOptions {

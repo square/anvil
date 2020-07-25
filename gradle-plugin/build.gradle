@@ -47,10 +47,10 @@ apply from: rootProject.file('generate_build_properties.gradle')
 
 gradlePlugin {
   plugins {
-    hephaestusPlugin {
-      id = "com.squareup.hephaestus"
+    anvilPlugin {
+      id = "com.squareup.anvil"
       displayName = project.findProperty('POM_NAME')
-      implementationClass = "com.squareup.hephaestus.plugin.HephaestusPlugin"
+      implementationClass = "com.squareup.anvil.plugin.AnvilPlugin"
       description = project.findProperty('POM_DESCRIPTION')
     }
   }

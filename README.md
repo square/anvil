@@ -1,9 +1,9 @@
-# Hephaestus
+# Anvil
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.squareup.hephaestus/gradle-plugin.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.squareup.hephaestus%22)
-[![CI](https://github.com/square/hephaestus/workflows/CI/badge.svg)](https://github.com/square/hephaestus/actions?query=branch%3Amain)
+[![Maven Central](https://img.shields.io/maven-central/v/com.squareup.anvil/gradle-plugin.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.squareup.anvil%22)
+[![CI](https://github.com/square/anvil/workflows/CI/badge.svg)](https://github.com/square/anvil/actions?query=branch%3Amain)
 
-Hephaestus is a Kotlin compiler plugin to make dependency injection with [Dagger](https://dagger.dev/)
+Anvil is a Kotlin compiler plugin to make dependency injection with [Dagger](https://dagger.dev/)
 easier by automatically merging Dagger modules and component interfaces. In a nutshell, instead of
 manually adding modules to a Dagger component and making the Dagger component extend all component
 interfaces, these modules and interfaces can be included in a component automatically:
@@ -41,7 +41,7 @@ that either contribute classes to the dependency graph or merge them:
 
 ```groovy
 plugins {
-  id 'com.squareup.hephaestus' version "${latest_version}"
+  id 'com.squareup.anvil' version "${latest_version}"
 }
 ```
 
@@ -52,22 +52,22 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath "com.squareup.hephaestus:gradle-plugin:${latest_version}"
+    classpath "com.squareup.anvil:gradle-plugin:${latest_version}"
   }
 }
 
-apply plugin: 'com.squareup.hephaestus'
+apply plugin: 'com.squareup.anvil'
 ```
 
 ## Quick Start
 
-There are three important annotations to work with Hephaestus.
+There are three important annotations to work with Anvil.
 
 `@ContributesTo` can be added to Dagger modules and component interfaces that should be included
 in the Dagger component. Classes with this annotation are automatically merged by the compiler
 plugin as long as they are on the compile classpath.
 
-`@MergeComponent` is used instead of the Dagger annotation `@Component`. Hephaestus will generate
+`@MergeComponent` is used instead of the Dagger annotation `@Component`. Anvil will generate
 the Dagger annotation and automatically include all modules and component interfaces that were
 contributed the same scope.
 
@@ -81,7 +81,7 @@ Scope classes are only markers. The class `AppScope` from the sample could look 
 abstract class AppScope private constructor()
 ```
 
-These scope classes help Hephaestus make a connection between the Dagger component and which Dagger
+These scope classes help Anvil make a connection between the Dagger component and which Dagger
 modules and other component interfaces to include.
 
 Scope classes are independent of the Dagger scopes. It's still necessary to set a scope for
@@ -114,7 +114,7 @@ object DevelopmentApplicationTestModule {
 
 The compiler plugin will find both classes on the classpath. Adding both modules
 `DevelopmentApplicationModule` and `DevelopmentApplicationTestModule` to the Dagger graph would
-lead to duplicate bindings. Hephaestus sees that the test module wants to replace the other and
+lead to duplicate bindings. Anvil sees that the test module wants to replace the other and
 ignores it. This replacement rule has a global effect for all applications which are including the
 classes on the classpath.
 
@@ -142,7 +142,7 @@ Adding Dagger modules to components in a large modularized codebase with many ap
 is overhead. You need to know where components are defined when creating a new Dagger module and
 which modules to add when setting up a new application. This task involves many syncs in the IDE
 after adding new module dependencies in the build graph. The process is tedious and cumbersome.
-With Hephaestus you only add a dependency in your build graph and then you can immediately test
+With Anvil you only add a dependency in your build graph and then you can immediately test
 the build.
 
 Aligning the build graph and Dagger's dependency graph brings a lot of consistency. If code is on
@@ -151,23 +151,23 @@ the compile classpath, then it's also included in the Dagger dependency graph.
 Modules implicitly have a scope, if provided objects are tied to a scope. Now the scope of a module
 is clear without looking at any binding.
 
-With Hephaestus you don't need any composite Dagger module anymore, which only purpose is to
+With Anvil you don't need any composite Dagger module anymore, which only purpose is to
 combine multiple modules to avoid repeating the setup for multiple applications. Composite modules
 easily become hairballs. If one application wants to exclude a module, then it has to repeat the
 setup. These forked graphs are painful and confusing. With Dagger you want to make the decision
 which modules fulfill dependencies as late as possible, ideally in the application module.
-Hephaestus makes this approach a lot easier by generating the code for included modules. Composite
+Anvil makes this approach a lot easier by generating the code for included modules. Composite
 modules are redundant. You make the decision which bindings to use by importing the desired module
 in the application module.
 
 ## Performance
 
-Hephaestus is a convenience tool. Similar to Dagger it doesn't improve build speed compared to
+Anvil is a convenience tool. Similar to Dagger it doesn't improve build speed compared to
 writing all code manually before running a build. The savings are in developer time.
 
-The median overhead of Hephaestus is around 4%, which often means only a few hundred milliseconds
+The median overhead of Anvil is around 4%, which often means only a few hundred milliseconds
 on top. The overhead is marginal, because Kotlin code is still compiled incrementally and Kotlin
-compile tasks are skipped entirely, if nothing has changed. This doesn't change with Hephaestus.
+compile tasks are skipped entirely, if nothing has changed. This doesn't change with Anvil.
 
 ![Benchmark](images/benchmark.png?raw=true "Benchmark")
 
@@ -183,12 +183,12 @@ Kotlin compiler plugin API isn't stable and contains bugs we decided to write a 
 
 #### No Java support
 
-Hephaestus is a Kotlin compiler plugin, thus Java isn’t supported. You can use Hephaestus in
+Anvil is a Kotlin compiler plugin, thus Java isn’t supported. You can use Anvil in
 modules with mixed Java and Kotlin code for Kotlin classes, though.
 
 #### Incremental Kotlin compilation breaks compiler plugins
 
-There are two bugs that affect the Hephaestus Kotlin compiler plugin:
+There are two bugs that affect the Anvil Kotlin compiler plugin:
 * [Incremental compilation breaks compiler plugins](https://youtrack.jetbrains.com/issue/KT-38570)
 * [AnalysisResult.RetryWithAdditionalRoots crashes during incremental compilation with java classes in classpath](https://youtrack.jetbrains.com/issue/KT-38576)
 
@@ -200,15 +200,15 @@ module contains Java code.
 ## Hilt
 
 [Hilt](https://dagger.dev/hilt/) is Google's opinionated guide how to dependency injection on
-Android. It provides a similar feature with `@InstallIn` for entry points and modules as Hephaestus.
-If you use Hilt, then you don't need to use Hephaestus.
+Android. It provides a similar feature with `@InstallIn` for entry points and modules as Anvil.
+If you use Hilt, then you don't need to use Anvil.
 
 Hilt includes many other features and comes with some restrictions. For us it was infeasible to
 migrate a codebase to Hilt with thousands of modules and many Dagger components while we only
 needed the feature to merge modules and component interfaces automatically. We also restrict the
 usage of the Dagger annotation processor to only [specific modules](https://speakerdeck.com/vrallev/android-at-scale-at-square?slide=36)
 for performance reasons. With Hilt we wouldn't be able to enforce this requirement anymore for
-component interfaces. The development of Hephaestus started long before Hilt was announced and the
+component interfaces. The development of Anvil started long before Hilt was announced and the
 internal version is being used in production for a while.
 
 ## License

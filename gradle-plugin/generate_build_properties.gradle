@@ -22,7 +22,7 @@ def generateBuildProperties = project.tasks.register('generateBuildProperties') 
   doLast {
     buildPropertiesFile.parentFile.mkdirs()
     buildPropertiesFile.write """\
-      package com.squareup.hephaestus.plugin
+      package com.squareup.anvil.plugin
       
       internal const val VERSION = "$version"
       internal const val GROUP = "$group"
