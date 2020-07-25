@@ -2,7 +2,9 @@
 
 ## Next Version
 
-* Renamed the project from Hephaestus to Anvil #12. **IMPORTANT:** Anvil is not compatible with Hephaestus and you must upgrade the plugin in all of your libraries.
+## 1.0.5 (2020-07-24)
+
+* Renamed the project from Hephaestus to Anvil #12. **IMPORTANT:** Anvil is not compatible with Hephaestus and you must upgrade the plugin in all of your libraries. The artifact coordinates changed, too.
 
 ## 1.0.4-1.4-M3 (2020-07-24)
 
