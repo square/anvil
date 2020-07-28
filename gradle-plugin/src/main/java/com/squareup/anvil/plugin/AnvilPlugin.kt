@@ -116,9 +116,7 @@ open class AnvilPlugin : Plugin<Project> {
     // compile task. If the plugin classpath changed, then DisableIncrementalCompilationTask sets
     // the signal to false.
     @Suppress("UnstableApiUsage")
-    val incrementalSignal = project.gradle.sharedServices
-        .registerIfAbsent("incrementalSignal", IncrementalSignal::class.java) { }
-
+    val incrementalSignal = IncrementalSignal.registerIfAbsent(project)
     if (isAndroidProject) {
       project.androidVariantsConfigure { variant ->
         val compileTaskName = "compile${variant.name.capitalize(US)}Kotlin"
@@ -165,7 +163,7 @@ open class AnvilPlugin : Plugin<Project> {
       compileTask.doFirst {
         // If the signal is set, then the plugin classpath changed. Apply the setting that
         // DisableIncrementalCompilationTask requested.
-        val incremental = incrementalSignal.get().incremental[projectPath]
+        val incremental = incrementalSignal.get().isIncremental(projectPath)
         if (incremental != null) {
           compileTask.incremental = incremental
         }

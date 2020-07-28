@@ -33,6 +33,6 @@ abstract class DisableIncrementalCompilationTask : DefaultTask() {
   @TaskAction fun toggleFlag() {
     // Disable incremental compilation if something in the classpath changed. If nothing has changed
     // in the classpath, then this task wouldn't run at all and be skipped.
-    incrementalSignal.get().incremental[projectPath] = false
+    incrementalSignal.get().setIncremental(projectPath, false)
   }
 }
