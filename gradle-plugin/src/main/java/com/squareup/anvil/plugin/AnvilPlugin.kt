@@ -7,8 +7,6 @@ import com.android.build.gradle.LibraryPlugin
 import com.android.build.gradle.TestExtension
 import com.android.build.gradle.TestedExtension
 import com.android.build.gradle.api.BaseVariant
-import com.squareup.anvil.plugin.GROUP
-import com.squareup.anvil.plugin.VERSION
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -82,7 +80,8 @@ open class AnvilPlugin : Plugin<Project> {
             // Disable precise java tracking if needed. Note that the doFirst() action only runs
             // if the task is not up to date. That's ideal, because if nothing needs to be
             // compiled, then we don't need to disable the flag.
-            CheckMixedSourceSet(compileTask.project, compileTask).disablePreciseJavaTrackingIfNeeded()
+            CheckMixedSourceSet(compileTask.project, compileTask)
+                .disablePreciseJavaTrackingIfNeeded()
 
             compileTask.logger.info(
                 "Anvil: Use precise java tracking: ${compileTask.usePreciseJavaTracking}"

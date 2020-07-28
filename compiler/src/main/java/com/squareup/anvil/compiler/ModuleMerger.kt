@@ -97,8 +97,8 @@ internal class ModuleMerger(
             throw AnvilCompilationException(
                 classDescriptor,
                 "${classDescriptor.fqNameSafe} wants to replace " +
-                    "${classDescriptorForReplacement.fqNameSafe}, but the class being replaced is " +
-                    "not a Dagger module."
+                    "${classDescriptorForReplacement.fqNameSafe}, but the class being replaced " +
+                    "is not a Dagger module."
             )
           }
 
