@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler.codegen
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.HINT_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import dagger.Module
@@ -25,10 +26,8 @@ internal class ContributesToGenerator : CodeGenerator {
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>
-  ): Boolean {
-    var didGenerateCode = false
-
-    projectFiles.asSequence()
+  ): Collection<GeneratedFile> {
+    return projectFiles.asSequence()
         .flatMap { it.classesAndInnerClasses() }
         .filter { it.hasAnnotation(contributesToFqName) }
         .onEach { clazz ->
@@ -49,7 +48,7 @@ internal class ContributesToGenerator : CodeGenerator {
             )
           }
         }
-        .forEach { clazz ->
+        .map { clazz ->
           val packageName = clazz.containingKtFile.packageFqName.asString()
           val generatedPackage = "$HINT_PACKAGE_PREFIX.$packageName"
           val className = clazz.requireFqName()
@@ -57,24 +56,20 @@ internal class ContributesToGenerator : CodeGenerator {
 
           val directory = File(codeGenDir, generatedPackage.replace('.', File.separatorChar))
           val file = File(directory, "${className.replace('.', '_')}.kt")
-              .also {
-                check(it.parentFile.exists() || it.parentFile.mkdirs()) {
-                  "Could not generate package directory: $this"
-                }
-              }
+          check(file.parentFile.exists() || file.parentFile.mkdirs()) {
+            "Could not generate package directory: $this"
+          }
 
-          file.writeText(
-              """
-          package $generatedPackage
-          
-          val ${className.replace('.', '_')} = $className::class
-        """.trimIndent()
-          )
+          val content = """
+              package $generatedPackage
+              
+              val ${className.replace('.', '_')} = $className::class
+          """.trimIndent()
+          file.writeText(content)
 
-          didGenerateCode = true
+          GeneratedFile(file, content)
         }
-
-    return didGenerateCode
+        .toList()
   }
 
   private fun KtFile.classesAndInnerClasses(): Sequence<KtClassOrObject> {

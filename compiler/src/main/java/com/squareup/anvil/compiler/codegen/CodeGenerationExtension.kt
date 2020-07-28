@@ -1,11 +1,15 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.analyzer.AnalysisResult.RetryWithAdditionalRoots
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
+import org.jetbrains.kotlin.com.intellij.psi.PsiManager
+import org.jetbrains.kotlin.com.intellij.testFramework.LightVirtualFile
 import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.idea.KotlinFileType
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
@@ -47,9 +51,34 @@ internal class CodeGenerationExtension(
           }
         }
 
-    codeGenerators.forEach {
-      it.generateCode(codeGenDir, module, files)
+    fun generateCode(files: Collection<KtFile>): Collection<GeneratedFile> =
+      codeGenerators
+          .flatMap {
+            it.generateCode(codeGenDir, module, files)
+          }
+
+    val psiManager = PsiManager.getInstance(project)
+
+    var newFiles = generateCode(files)
+    while (newFiles.isNotEmpty()) {
+      // Parse the KtFile for each generated file. Then feed the code generators with the new
+      // parsed files until no new files are generated.
+      val newKtFiles = newFiles
+          .mapNotNull { (file, content) ->
+            val virtualFile = LightVirtualFile(
+                file.relativeTo(codeGenDir).path,
+                KotlinFileType.INSTANCE,
+                content
+            )
+
+            psiManager.findFile(virtualFile)
+          }
+          .filterIsInstance<KtFile>()
+
+      newFiles = generateCode(newKtFiles)
     }
+
+    codeGenerators.forEach { it.flush(codeGenDir, module) }
 
     // This restarts the analysis phase and will include our files.
     return RetryWithAdditionalRoots(
