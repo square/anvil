@@ -4,8 +4,10 @@ package com.squareup.anvil.plugin
 
 import org.gradle.api.DefaultTask
 import org.gradle.api.file.ConfigurableFileCollection
+import org.gradle.api.provider.Property
 import org.gradle.api.tasks.Classpath
 import org.gradle.api.tasks.InputFiles
+import org.gradle.api.tasks.Internal
 import org.gradle.api.tasks.Optional
 import org.gradle.api.tasks.OutputFile
 import org.gradle.api.tasks.TaskAction
@@ -23,13 +25,14 @@ abstract class DisableIncrementalCompilationTask : DefaultTask() {
   @get:OutputFile @get:Optional
   val someFile = File(project.buildDir, "not-existing-file-because-gradle-needs-an-output")
 
-  private val serviceKey: IncrementalSignalServiceKey = IncrementalSignalServiceKey(project.path)
+  @get:Internal
+  abstract val incrementalSignal: Property<IncrementalSignal>
+
+  private val projectPath = project.path
 
   @TaskAction fun toggleFlag() {
     // Disable incremental compilation if something in the classpath changed. If nothing has changed
     // in the classpath, then this task wouldn't run at all and be skipped.
-    useIncrementalSignalService(serviceKey) {
-      it.incremental = false
-    }
+    incrementalSignal.get().incremental[projectPath] = false
   }
 }
