@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
+import com.squareup.anvil.compiler.codegen.ContributesBindingGenerator
 import com.squareup.anvil.compiler.codegen.ContributesToGenerator
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -29,7 +30,8 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     val codeGenerationExtension = CodeGenerationExtension(
         codeGenDir = sourceGenFolder,
         codeGenerators = listOf(
-            ContributesToGenerator()
+            ContributesToGenerator(),
+            ContributesBindingGenerator()
         )
     )
 

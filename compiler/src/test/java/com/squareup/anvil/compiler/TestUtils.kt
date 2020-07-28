@@ -78,13 +78,36 @@ internal val Result.innerModule: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ComponentInterface\$InnerModule")
 
 @OptIn(ExperimentalStdlibApi::class)
-internal val Class<*>.hint: KClass<*>?
+internal val Class<*>.hintContributes: KClass<*>?
   get() {
     // The capitalize doesn't make sense, I don't know where this is coming from the compile testing
     // library. Maybe a bug?
     val className = "${canonicalName.replace('.', '_').capitalize(US)}Kt"
     val clazz = try {
-      classLoader.loadClass("$HINT_PACKAGE_PREFIX.${`package`.name}.$className")
+      classLoader.loadClass("$HINT_CONTRIBUTES_PACKAGE_PREFIX.${`package`.name}.$className")
+    } catch (e: ClassNotFoundException) {
+      return null
+    }
+
+    return clazz.declaredFields
+        .map {
+          it.isAccessible = true
+          it.get(null)
+        }
+        .filterIsInstance<KClass<*>>()
+        .filter { it.java == this }
+        .also { assertThat(it.size).isEqualTo(1) }
+        .first()
+  }
+
+@OptIn(ExperimentalStdlibApi::class)
+internal val Class<*>.hintBinding: KClass<*>?
+  get() {
+    // The capitalize doesn't make sense, I don't know where this is coming from the compile testing
+    // library. Maybe a bug?
+    val className = "${canonicalName.replace('.', '_').capitalize(US)}Kt"
+    val clazz = try {
+      classLoader.loadClass("$HINT_BINDING_PACKAGE_PREFIX.${`package`.name}.$className")
     } catch (e: ClassNotFoundException) {
       return null
     }

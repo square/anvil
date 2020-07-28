@@ -1,12 +1,9 @@
 package com.squareup.anvil.compiler.codegen
 
-import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.AnvilCompilationException
-import com.squareup.anvil.compiler.HINT_CONTRIBUTES_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
-import com.squareup.anvil.compiler.contributesToFqName
-import com.squareup.anvil.compiler.daggerModuleFqName
-import dagger.Module
+import com.squareup.anvil.compiler.contributesBindingFqName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtFile
@@ -14,11 +11,11 @@ import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import java.io.File
 
 /**
- * Generates a hint for each contributed class in the `hint.anvil` packages. This allows the
- * compiler plugin to find all contributed classes a lot faster when merging modules and component
- * interfaces.
+ * Generates a hint for each contributed class in the `anvil.hint.bindings` package. This allows
+ * the compiler plugin to find all contributed bindings a lot faster when merging modules and
+ * component interfaces.
  */
-internal class ContributesToGenerator : CodeGenerator {
+internal class ContributesBindingGenerator : CodeGenerator {
   override fun generateCode(
     codeGenDir: File,
     module: ModuleDescriptor,
@@ -26,28 +23,19 @@ internal class ContributesToGenerator : CodeGenerator {
   ): Collection<GeneratedFile> {
     return projectFiles.asSequence()
         .flatMap { it.classesAndInnerClasses() }
-        .filter { it.hasAnnotation(contributesToFqName) }
+        .filter { it.hasAnnotation(contributesBindingFqName) }
         .onEach { clazz ->
-          if (!clazz.isInterface() && !clazz.hasAnnotation(daggerModuleFqName)) {
-            throw AnvilCompilationException(
-                "${clazz.requireFqName()} is annotated with " +
-                    "@${ContributesTo::class.simpleName}, but this class is neither an interface " +
-                    "nor a Dagger module. Did you forget to add @${Module::class.simpleName}?",
-                element = clazz.identifyingElement
-            )
-          }
-
           if (clazz.visibilityModifierTypeOrDefault().value != KtTokens.PUBLIC_KEYWORD.value) {
             throw AnvilCompilationException(
-                "${clazz.requireFqName()} is contributed to the Dagger graph, but the " +
-                    "module is not public. Only public modules are supported.",
+                "${clazz.requireFqName()} is binding a type, but the class is not public. Only " +
+                    "public types are supported.",
                 element = clazz.identifyingElement
             )
           }
         }
         .map { clazz ->
           val packageName = clazz.containingKtFile.packageFqName.asString()
-          val generatedPackage = "$HINT_CONTRIBUTES_PACKAGE_PREFIX.$packageName"
+          val generatedPackage = "$HINT_BINDING_PACKAGE_PREFIX.$packageName"
           val className = clazz.requireFqName()
               .asString()
 
@@ -58,9 +46,9 @@ internal class ContributesToGenerator : CodeGenerator {
           }
 
           val content = """
-              package $generatedPackage
-              
-              val ${className.replace('.', '_')} = $className::class
+            package $generatedPackage
+            
+            val ${className.replace('.', '_')} = $className::class
           """.trimIndent()
           file.writeText(content)
 

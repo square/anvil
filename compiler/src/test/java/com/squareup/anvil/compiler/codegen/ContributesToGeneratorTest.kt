@@ -5,7 +5,7 @@ import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule1
-import com.squareup.anvil.compiler.hint
+import com.squareup.anvil.compiler.hintContributes
 import com.squareup.anvil.compiler.innerInterface
 import com.squareup.anvil.compiler.innerModule
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
@@ -24,7 +24,7 @@ class ContributesToGeneratorTest {
         interface ComponentInterface
     """
     ) {
-      assertThat(componentInterface.hint).isNull()
+      assertThat(componentInterface.hintContributes).isNull()
     }
 
     compile(
@@ -37,7 +37,7 @@ class ContributesToGeneratorTest {
         interface ComponentInterface
     """
     ) {
-      assertThat(componentInterface.hint).isNull()
+      assertThat(componentInterface.hintContributes).isNull()
     }
   }
 
@@ -53,7 +53,7 @@ class ContributesToGeneratorTest {
         abstract class DaggerModule1
     """
     ) {
-      assertThat(daggerModule1.hint?.java).isEqualTo(daggerModule1)
+      assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
     }
   }
 
@@ -68,7 +68,7 @@ class ContributesToGeneratorTest {
         interface ContributingInterface
     """
     ) {
-      assertThat(contributingInterface.hint?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintContributes?.java).isEqualTo(contributingInterface)
     }
   }
 
@@ -86,7 +86,7 @@ class ContributesToGeneratorTest {
         }
     """
     ) {
-      assertThat(innerModule.hint?.java).isEqualTo(innerModule)
+      assertThat(innerModule.hintContributes?.java).isEqualTo(innerModule)
     }
   }
 
@@ -103,7 +103,7 @@ class ContributesToGeneratorTest {
         }
     """
     ) {
-      assertThat(innerInterface.hint?.java).isEqualTo(innerInterface)
+      assertThat(innerInterface.hintContributes?.java).isEqualTo(innerInterface)
     }
   }
 
