@@ -69,7 +69,7 @@ open class AnvilPlugin : Plugin<Project> {
       project.extensions.findByType(KaptExtension::class.java)?.correctErrorTypes = false
     }
 
-    project.dependencies.add("api", "$GROUP:annotations:$VERSION")
+    project.dependencies.add("implementation", "$GROUP:annotations:$VERSION")
   }
 
   private fun disablePreciseJavaTracking(
