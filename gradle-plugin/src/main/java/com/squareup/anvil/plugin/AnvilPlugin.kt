@@ -7,8 +7,6 @@ import com.android.build.gradle.LibraryPlugin
 import com.android.build.gradle.TestExtension
 import com.android.build.gradle.TestedExtension
 import com.android.build.gradle.api.BaseVariant
-import com.squareup.anvil.plugin.GROUP
-import com.squareup.anvil.plugin.VERSION
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project

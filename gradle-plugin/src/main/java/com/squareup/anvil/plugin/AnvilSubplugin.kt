@@ -1,9 +1,6 @@
 package com.squareup.anvil.plugin
 
 import com.google.auto.service.AutoService
-import com.squareup.anvil.plugin.AnvilPlugin
-import com.squareup.anvil.plugin.GROUP
-import com.squareup.anvil.plugin.VERSION
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions

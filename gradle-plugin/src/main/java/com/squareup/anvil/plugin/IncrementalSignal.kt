@@ -13,7 +13,7 @@ import java.util.UUID
 
 /** Used to get unique build service name. Each class loader will initialize it's onw version. */
 private val ANVIL_INCREMENTAL_SIGNAL_BUILD_SERVICE_NAME =
-    "anvil-incremental-signal-build-service" + UUID.randomUUID().toString()
+  "anvil-incremental-signal-build-service" + UUID.randomUUID()
 
 /**
  * Registers incremental signal build service and returns a service key that can be used to access
@@ -24,7 +24,8 @@ fun registerIncrementalSignalBuildService(project: Project): IncrementalSignalSe
       ANVIL_INCREMENTAL_SIGNAL_BUILD_SERVICE_NAME,
       IncrementalSignalBuildService::class.java
   ) {}
-  return buildServiceProvider.get().registerIncrementalSignalService(project.path)
+  return buildServiceProvider.get()
+      .registerIncrementalSignalService(project.path)
 }
 
 /**
@@ -36,18 +37,19 @@ var incrementalSignalServiceRegistry: WorkerActionServiceRegistry = WorkerAction
 /** Intended for use from worker actions. */
 @Throws(ProcessException::class, IOException::class)
 fun useIncrementalSignalService(
-    incrementalSignalServiceKey: IncrementalSignalServiceKey,
-    serviceRegistry: WorkerActionServiceRegistry = incrementalSignalServiceRegistry,
-    block: (IncrementalSignalService) -> Unit
+  incrementalSignalServiceKey: IncrementalSignalServiceKey,
+  serviceRegistry: WorkerActionServiceRegistry = incrementalSignalServiceRegistry,
+  block: (IncrementalSignalService) -> Unit
 ) = serviceRegistry.getService(incrementalSignalServiceKey).service.let(block)
 
 fun getIncrementalSignalService(
-    incrementalSignalServiceKey: IncrementalSignalServiceKey,
-    serviceRegistry: WorkerActionServiceRegistry = incrementalSignalServiceRegistry
+  incrementalSignalServiceKey: IncrementalSignalServiceKey,
+  serviceRegistry: WorkerActionServiceRegistry = incrementalSignalServiceRegistry
 ): IncrementalSignalService = serviceRegistry.getService(incrementalSignalServiceKey).service
 
-data class IncrementalSignalServiceKey(val projectPath: String)
-  : WorkerActionServiceRegistry.ServiceKey<IncrementalSignalService> {
+data class IncrementalSignalServiceKey(
+  val projectPath: String
+) : WorkerActionServiceRegistry.ServiceKey<IncrementalSignalService> {
   override val type: Class<IncrementalSignalService> get() = IncrementalSignalService::class.java
 }
 
@@ -60,8 +62,8 @@ abstract class IncrementalSignalBuildService : BuildService<None>, AutoCloseable
 
   @Synchronized
   fun registerIncrementalSignalService(
-      projectPath: String,
-      serviceRegistry: WorkerActionServiceRegistry = incrementalSignalServiceRegistry
+    projectPath: String,
+    serviceRegistry: WorkerActionServiceRegistry = incrementalSignalServiceRegistry
   ): IncrementalSignalServiceKey {
     val key = IncrementalSignalServiceKey(projectPath)
 
