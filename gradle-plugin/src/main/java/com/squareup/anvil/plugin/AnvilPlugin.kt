@@ -80,7 +80,8 @@ open class AnvilPlugin : Plugin<Project> {
             // Disable precise java tracking if needed. Note that the doFirst() action only runs
             // if the task is not up to date. That's ideal, because if nothing needs to be
             // compiled, then we don't need to disable the flag.
-            CheckMixedSourceSet(compileTask.project, compileTask).disablePreciseJavaTrackingIfNeeded()
+            CheckMixedSourceSet(compileTask.project, compileTask)
+                .disablePreciseJavaTrackingIfNeeded()
 
             compileTask.logger.info(
                 "Anvil: Use precise java tracking: ${compileTask.usePreciseJavaTracking}"

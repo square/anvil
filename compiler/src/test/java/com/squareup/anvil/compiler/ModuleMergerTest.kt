@@ -98,7 +98,8 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `it's not allowed to have @Component and @MergeComponent annotation at the same time`() {
+  @Test
+  fun `it's not allowed to have @Component and @MergeComponent annotation at the same time`() {
     val daggerComponentClass = when (annotationClass) {
       MergeComponent::class -> Component::class
       MergeSubcomponent::class -> Subcomponent::class

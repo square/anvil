@@ -76,8 +76,8 @@ internal class InterfaceMerger(
             throw AnvilCompilationException(
                 classDescriptor,
                 "${classDescriptor.fqNameSafe} wants to replace " +
-                    "${classDescriptorForReplacement.fqNameSafe}, but the class being replaced is " +
-                    "not an interface."
+                    "${classDescriptorForReplacement.fqNameSafe}, but the class being replaced " +
+                    "is not an interface."
             )
           }
 
