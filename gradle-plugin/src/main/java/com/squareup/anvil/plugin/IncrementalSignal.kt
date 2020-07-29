@@ -1,80 +1,42 @@
-@file:Suppress("UnstableApiUsage")
-
 package com.squareup.anvil.plugin
 
-import com.android.build.gradle.internal.workeractions.WorkerActionServiceRegistry
-import com.android.ide.common.process.ProcessException
-import com.google.common.io.Closer
 import org.gradle.api.Project
+import org.gradle.api.provider.Provider
 import org.gradle.api.services.BuildService
 import org.gradle.api.services.BuildServiceParameters.None
-import java.io.IOException
-import java.util.UUID
+import kotlin.random.Random
 
-/** Used to get unique build service name. Each class loader will initialize it's onw version. */
-private val ANVIL_INCREMENTAL_SIGNAL_BUILD_SERVICE_NAME =
-  "anvil-incremental-signal-build-service" + UUID.randomUUID()
-
-/**
- * Registers incremental signal build service and returns a service key that can be used to access
- * the service later.
+/*
+ * The key is important. Gradle uses different class loaders for different modules when the plugin
+ * is applied through the new plugins { } syntax. If we'd use the same key, then the
+ * IncrementalSignal class would be different for the same entry and Gradle would throw an error.
+ *
+ * By using a random key per class loader we avoid this issue. Since this service isn't shared
+ * across modules and only within a module it's not causing any problems tasks only use the service
+ * for their project.
+ *
+ * We could also create one service per module, but that seems wasteful. When the Gradle plugin is
+ * added to classpath of the root project, then the key is always the same and all modules share
+ * a single build service and a single cache.
  */
-fun registerIncrementalSignalBuildService(project: Project): IncrementalSignalServiceKey {
-  val buildServiceProvider = project.gradle.sharedServices.registerIfAbsent(
-      ANVIL_INCREMENTAL_SIGNAL_BUILD_SERVICE_NAME,
-      IncrementalSignalBuildService::class.java
-  ) {}
-  return buildServiceProvider.get()
-      .registerIncrementalSignalService(project.path)
-}
-
-/**
- * Service registry used to store IncrementalSignal services so they are accessible from the worker
- * actions.
- */
-var incrementalSignalServiceRegistry: WorkerActionServiceRegistry = WorkerActionServiceRegistry()
-
-/** Intended for use from worker actions. */
-@Throws(ProcessException::class, IOException::class)
-fun useIncrementalSignalService(
-  incrementalSignalServiceKey: IncrementalSignalServiceKey,
-  serviceRegistry: WorkerActionServiceRegistry = incrementalSignalServiceRegistry,
-  block: (IncrementalSignalService) -> Unit
-) = serviceRegistry.getService(incrementalSignalServiceKey).service.let(block)
-
-fun getIncrementalSignalService(
-  incrementalSignalServiceKey: IncrementalSignalServiceKey,
-  serviceRegistry: WorkerActionServiceRegistry = incrementalSignalServiceRegistry
-): IncrementalSignalService = serviceRegistry.getService(incrementalSignalServiceKey).service
-
-data class IncrementalSignalServiceKey(
-  val projectPath: String
-) : WorkerActionServiceRegistry.ServiceKey<IncrementalSignalService> {
-  override val type: Class<IncrementalSignalService> get() = IncrementalSignalService::class.java
-}
-
-data class IncrementalSignalService(var incremental: Boolean? = null)
+private val KEY = "incrementalSignal-" + Random.nextLong()
 
 /** This signal is used to share state between the task above and Kotlin compile tasks. */
-abstract class IncrementalSignalBuildService : BuildService<None>, AutoCloseable {
-  private val registeredServices = mutableSetOf<IncrementalSignalServiceKey>()
-  private val closer = Closer.create()
+@Suppress("UnstableApiUsage")
+abstract class IncrementalSignal : BuildService<None> {
+  private val incremental = mutableMapOf<String, Boolean?>()
 
-  @Synchronized
-  fun registerIncrementalSignalService(
+  @Synchronized fun setIncremental(
     projectPath: String,
-    serviceRegistry: WorkerActionServiceRegistry = incrementalSignalServiceRegistry
-  ): IncrementalSignalServiceKey {
-    val key = IncrementalSignalServiceKey(projectPath)
-
-    if (registeredServices.add(key)) {
-      closer.register(serviceRegistry.registerServiceAsCloseable(key, IncrementalSignalService()))
-    }
-
-    return key
+    incremental: Boolean
+  ) {
+    this.incremental[projectPath] = incremental
   }
 
-  override fun close() {
-    closer.close()
+  @Synchronized fun isIncremental(projectPath: String): Boolean? = incremental[projectPath]
+
+  companion object {
+    fun registerIfAbsent(project: Project): Provider<IncrementalSignal> =
+      project.gradle.sharedServices.registerIfAbsent(KEY, IncrementalSignal::class.java) { }
   }
 }

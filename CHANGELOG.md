@@ -3,6 +3,7 @@
 ## Next Version
 
 * Add the annotation artifact as an `implementation` dependency instead of `api` #40.
+* Remove the strong dependency on the Android Gradle Plugin and allow Anvil to be used in pure JVM modules #39.
 
 ## 1.0.5-1.4-M3 (2020-07-24)
 

@@ -12,6 +12,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.AppliedPlugin
 import org.gradle.api.plugins.PluginManager
+import org.gradle.api.provider.Provider
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
@@ -115,26 +116,24 @@ open class AnvilPlugin : Plugin<Project> {
     // compile task. If the plugin classpath changed, then DisableIncrementalCompilationTask sets
     // the signal to false.
     @Suppress("UnstableApiUsage")
-    val incrementalSignalServiceKey = registerIncrementalSignalBuildService(project)
-
+    val incrementalSignal = IncrementalSignal.registerIfAbsent(project)
     if (isAndroidProject) {
       project.androidVariantsConfigure { variant ->
         val compileTaskName = "compile${variant.name.capitalize(US)}Kotlin"
-        disableIncrementalCompilationAction(project, incrementalSignalServiceKey, compileTaskName)
+        disableIncrementalCompilationAction(project, incrementalSignal, compileTaskName)
       }
     } else {
       // The Java plugin has two Kotlin tasks we care about: compileKotlin and compileTestKotlin.
-      disableIncrementalCompilationAction(project, incrementalSignalServiceKey, "compileKotlin")
-      disableIncrementalCompilationAction(project, incrementalSignalServiceKey, "compileTestKotlin")
+      disableIncrementalCompilationAction(project, incrementalSignal, "compileKotlin")
+      disableIncrementalCompilationAction(project, incrementalSignal, "compileTestKotlin")
     }
   }
 
   fun disableIncrementalCompilationAction(
     project: Project,
-    incrementalSignalServiceKey: IncrementalSignalServiceKey,
+    incrementalSignal: Provider<IncrementalSignal>,
     compileTaskName: String
   ) {
-
     // Disable incremental compilation, if the compiler plugin dependency isn't up-to-date.
     // This will trigger a full compilation of a module using Anvil even though its
     // source files might not have changed. This workaround is necessary, otherwise
@@ -146,11 +145,15 @@ open class AnvilPlugin : Plugin<Project> {
       task.pluginClasspath.from(
           project.configurations.getByName(PLUGIN_CLASSPATH_CONFIGURATION_NAME)
       )
+      task.incrementalSignal.set(incrementalSignal)
     }
 
     project.tasks.named(compileTaskName, KotlinCompile::class.java) { compileTask ->
       compileTask.dependsOn(disableIncrementalCompilationTaskProvider)
     }
+
+    // We avoid a reference to the project in the doFirst.
+    val projectPath = project.path
 
     // If we merge the block below and the block above, it looks like
     // the kotlin compiler is generating byte code for
@@ -160,7 +163,7 @@ open class AnvilPlugin : Plugin<Project> {
       compileTask.doFirst {
         // If the signal is set, then the plugin classpath changed. Apply the setting that
         // DisableIncrementalCompilationTask requested.
-        val incremental = getIncrementalSignalService(incrementalSignalServiceKey).incremental
+        val incremental = incrementalSignal.get().isIncremental(projectPath)
         if (incremental != null) {
           compileTask.incremental = incremental
         }
