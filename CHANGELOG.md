@@ -2,8 +2,12 @@
 
 ## Next Version
 
+## 1.0.6 (2020-07-29)
+
 * Add the annotation artifact as an `implementation` dependency instead of `api` #40.
 * Remove the strong dependency on the Android Gradle Plugin and allow Anvil to be used in pure JVM modules #39.
+
+**Note:** This version is compatible with Kotlin `1.3.72` and `1.4.0-rc`. The [bug](https://youtrack.jetbrains.com/issue/KT-40214) that required special builds for the 1.4 milestone releases was fixed.
 
 ## 1.0.5-1.4-M3 (2020-07-24)
 
