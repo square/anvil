@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
+import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesBindingGenerator
 import com.squareup.anvil.compiler.codegen.ContributesToGenerator
@@ -31,7 +32,8 @@ class AnvilComponentRegistrar : ComponentRegistrar {
         codeGenDir = sourceGenFolder,
         codeGenerators = listOf(
             ContributesToGenerator(),
-            ContributesBindingGenerator()
+            ContributesBindingGenerator(),
+            BindingModuleGenerator()
         )
     )
 

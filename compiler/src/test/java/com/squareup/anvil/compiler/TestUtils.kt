@@ -59,8 +59,16 @@ internal val Result.parentInterface: Class<*>
 internal val Result.componentInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ComponentInterface")
 
+internal val Result.componentInterfaceAnvilModule: Class<*>
+  get() = classLoader
+      .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.ComponentInterfaceAnvilModule")
+
 internal val Result.subcomponentInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface")
+
+internal val Result.subcomponentInterfaceAnvilModule: Class<*>
+  get() = classLoader
+      .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.SubcomponentInterfaceAnvilModule")
 
 internal val Result.daggerModule1: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule1")
@@ -143,3 +151,7 @@ internal infix fun Class<*>.extends(other: Class<*>): Boolean = other.isAssignab
 internal fun assumeMergeComponent(annotationClass: KClass<*>) {
   assumeTrue(annotationClass == MergeComponent::class)
 }
+
+internal fun Array<KClass<*>>.withoutAnvilModule(): List<KClass<*>> = toList().withoutAnvilModule()
+internal fun Collection<KClass<*>>.withoutAnvilModule(): List<KClass<*>> =
+  filterNot { it.qualifiedName!!.startsWith(MODULE_PACKAGE_PREFIX) }

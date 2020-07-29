@@ -38,6 +38,7 @@ internal val daggerModuleFqName = FqName(Module::class.java.canonicalName)
 
 internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "hint.anvil"
 internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
+internal const val MODULE_PACKAGE_PREFIX = "anvil.module"
 
 internal fun ClassDescriptor.annotationOrNull(
   annotationFqName: FqName,
