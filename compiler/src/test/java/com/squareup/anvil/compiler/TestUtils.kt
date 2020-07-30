@@ -9,6 +9,7 @@ import com.tschuchort.compiletesting.SourceFile
 import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
+import org.jetbrains.kotlin.name.FqName
 import org.junit.Assume.assumeTrue
 import java.io.File
 import java.util.Locale.US
@@ -154,4 +155,4 @@ internal fun assumeMergeComponent(annotationClass: KClass<*>) {
 
 internal fun Array<KClass<*>>.withoutAnvilModule(): List<KClass<*>> = toList().withoutAnvilModule()
 internal fun Collection<KClass<*>>.withoutAnvilModule(): List<KClass<*>> =
-  filterNot { it.qualifiedName!!.startsWith(MODULE_PACKAGE_PREFIX) }
+  filterNot { FqName(it.qualifiedName!!).isAnvilModule() }

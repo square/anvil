@@ -44,6 +44,8 @@ internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "hint.anvil"
 internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
 internal const val MODULE_PACKAGE_PREFIX = "anvil.module"
 
+internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
+
 internal fun ClassDescriptor.annotationOrNull(
   annotationFqName: FqName,
   scope: ClassDescriptor? = null
@@ -88,6 +90,11 @@ internal fun ConstantValue<*>.toType(
 
 // When the Kotlin type is of the form: KClass<OurType>.
 internal fun KotlinType.argumentType(): KotlinType = arguments.first().type
+
+internal fun FqName.isAnvilModule(): Boolean {
+  val name = asString()
+  return name.startsWith(MODULE_PACKAGE_PREFIX) && name.endsWith(ANVIL_MODULE_SUFFIX)
+}
 
 internal fun AnnotationDescriptor.getAnnotationValue(key: String): ConstantValue<*>? =
   allValueArguments[Name.identifier(key)]

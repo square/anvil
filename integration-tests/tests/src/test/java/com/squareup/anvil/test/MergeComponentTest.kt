@@ -29,11 +29,24 @@ class MergeComponentTest {
     assertThat(AppComponent::class extends SubModule2::class).isFalse()
   }
 
+  @Test fun `contributed bindings bind types for each scope`() {
+    val appComponent = DaggerMergeComponentTest_AppComponent.create()
+    val subComponent = appComponent.subComponent()
+
+    assertThat(appComponent.parentType()).isInstanceOf(AppBinding::class.java)
+    assertThat(subComponent.parentType()).isInstanceOf(AppBinding::class.java)
+    assertThat(subComponent.middleType()).isInstanceOf(SubcomponentBinding::class.java)
+  }
+
   @MergeComponent(AppScope::class)
   interface AppComponent {
     fun subComponent(): SubComponent
+    fun parentType(): ParentType
   }
 
   @MergeSubcomponent(SubScope::class)
-  interface SubComponent
+  interface SubComponent {
+    fun middleType(): MiddleType
+    fun parentType(): ParentType
+  }
 }
