@@ -36,7 +36,7 @@ internal val daggerModuleFqName = FqName(Module::class.java.canonicalName)
 
 internal const val HINT_PACKAGE_PREFIX = "hint.anvil"
 
-internal fun ClassDescriptor.findAnnotation(
+internal fun ClassDescriptor.annotationOrNull(
   annotationFqName: FqName,
   scope: ClassDescriptor? = null
 ): AnnotationDescriptor? {
@@ -59,6 +59,13 @@ internal fun ClassDescriptor.findAnnotation(
 
   val foundTarget = annotationDescriptor.scope(scope.module)
   return if (scope.fqNameSafe == foundTarget.fqNameSafe) annotationDescriptor else null
+}
+
+internal fun ClassDescriptor.annotation(
+  annotationFqName: FqName,
+  scope: ClassDescriptor? = null
+): AnnotationDescriptor = requireNotNull(annotationOrNull(annotationFqName, scope)) {
+  "Couldn't find $annotationFqName with scope ${scope?.fqNameSafe} for $fqNameSafe."
 }
 
 internal fun ConstantValue<*>.toType(
