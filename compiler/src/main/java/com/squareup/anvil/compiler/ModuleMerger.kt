@@ -111,7 +111,7 @@ internal class ModuleMerger(
           // non-Dagger module.
           val kotlinType = kClassValue.getType(codegen.descriptor.module)
               .argumentType()
-          val classDescriptorForReplacement = DescriptorUtils.getClassDescriptorForType(kotlinType)
+          val classDescriptorForReplacement = kotlinType.classDescriptorForType()
           if (classDescriptorForReplacement.annotationOrNull(daggerModuleFqName) == null) {
             throw AnvilCompilationException(
                 classDescriptor,

@@ -91,6 +91,8 @@ internal fun ConstantValue<*>.toType(
 // When the Kotlin type is of the form: KClass<OurType>.
 internal fun KotlinType.argumentType(): KotlinType = arguments.first().type
 
+internal fun KotlinType.classDescriptorForType() = DescriptorUtils.getClassDescriptorForType(this)
+
 internal fun FqName.isAnvilModule(): Boolean {
   val name = asString()
   return name.startsWith(MODULE_PACKAGE_PREFIX) && name.endsWith(ANVIL_MODULE_SUFFIX)
@@ -101,10 +103,9 @@ internal fun AnnotationDescriptor.getAnnotationValue(key: String): ConstantValue
 
 internal fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescriptor {
   val kClassValue = requireNotNull(getAnnotationValue("scope")) as KClassValue
-  return DescriptorUtils.getClassDescriptorForType(
-      kClassValue.getType(module)
-          .argumentType()
-  )
+  return kClassValue.getType(module)
+      .argumentType()
+      .classDescriptorForType()
 }
 
 internal fun AnnotationDescriptor.boundType(
@@ -114,7 +115,8 @@ internal fun AnnotationDescriptor.boundType(
   (getAnnotationValue("boundType") as? KClassValue)
       ?.getType(module)
       ?.argumentType()
-      ?.let { return DescriptorUtils.getClassDescriptorForType(it) }
+      ?.classDescriptorForType()
+      ?.let { return it }
 
   val directSuperTypes = annotatedClass.getSuperInterfaces() +
       (annotatedClass.getSuperClassNotAny()

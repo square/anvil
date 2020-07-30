@@ -5,7 +5,6 @@ import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
 import org.jetbrains.kotlin.descriptors.effectiveVisibility
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.DescriptorUtils.getClassDescriptorForType
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getFqNameSafe
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
@@ -75,7 +74,7 @@ internal class InterfaceMerger(
           // to replace a class that is not an interface.
           val kotlinType = kClassValue.getType(classDescriptor.module)
               .argumentType()
-          val classDescriptorForReplacement = getClassDescriptorForType(kotlinType)
+          val classDescriptorForReplacement = kotlinType.classDescriptorForType()
           if (!DescriptorUtils.isInterface(classDescriptorForReplacement)) {
             throw AnvilCompilationException(
                 classDescriptor,
@@ -92,10 +91,9 @@ internal class InterfaceMerger(
     val excludedClasses = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)
         ?.value
         ?.map {
-          getClassDescriptorForType(
-              it.getType(thisDescriptor.module)
-                  .argumentType()
-          )
+          it.getType(thisDescriptor.module)
+              .argumentType()
+              .classDescriptorForType()
         }
         ?.filter { DescriptorUtils.isInterface(it) }
         ?.map { it.fqNameSafe }
@@ -134,6 +132,6 @@ internal class InterfaceMerger(
       if (kotlinTypes.isEmpty()) null else kotlinTypes.flatMap { it.supertypes() }
     }
         .flatMap { it.asSequence() }
-        .map { getFqNameSafe(getClassDescriptorForType(it)) }
+        .map { getFqNameSafe(it.classDescriptorForType()) }
         .toList()
 }
