@@ -26,9 +26,9 @@ internal class InterfaceMerger(
     thisDescriptor: ClassDescriptor,
     supertypes: MutableList<KotlinType>
   ) {
-    val mergeAnnotation = thisDescriptor.findAnnotation(mergeComponentFqName)
-        ?: thisDescriptor.findAnnotation(mergeSubcomponentFqName)
-        ?: thisDescriptor.findAnnotation(mergeInterfacesFqName)
+    val mergeAnnotation = thisDescriptor.annotationOrNull(mergeComponentFqName)
+        ?: thisDescriptor.annotationOrNull(mergeSubcomponentFqName)
+        ?: thisDescriptor.annotationOrNull(mergeInterfacesFqName)
 
     if (mergeAnnotation == null) {
       super.addSyntheticSupertypes(thisDescriptor, supertypes)
@@ -45,11 +45,11 @@ internal class InterfaceMerger(
         .findContributedClasses(thisDescriptor.module)
         .asSequence()
         .filter {
-          DescriptorUtils.isInterface(it) && it.findAnnotation(daggerModuleFqName) == null
+          DescriptorUtils.isInterface(it) && it.annotationOrNull(daggerModuleFqName) == null
         }
         .mapNotNull {
           val contributeAnnotation =
-            it.findAnnotation(contributesToFqName, scope = scope) ?: return@mapNotNull null
+            it.annotationOrNull(contributesToFqName, scope = scope) ?: return@mapNotNull null
           it to contributeAnnotation
         }
         .onEach { (classDescriptor, _) ->

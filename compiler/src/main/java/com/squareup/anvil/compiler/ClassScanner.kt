@@ -34,7 +34,7 @@ internal class ClassScanner {
           }
           .filterIsInstance<PropertyDescriptor>()
           .map { DescriptorUtils.getClassDescriptorForType(it.type.argumentType()) }
-          .filter { it.findAnnotation(contributesToFqName) != null }
+          .filter { it.annotationOrNull(contributesToFqName) != null }
           .toList()
     }
   }

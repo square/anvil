@@ -37,7 +37,7 @@ internal class ModuleMerger(
     val holder = AnnotationHolder.create(codegen.descriptor) ?: return
     val (mergeAnnotation, annotationClass, daggerClass, daggerFqName, modulesKeyword) = holder
 
-    if (codegen.descriptor.findAnnotation(daggerFqName) != null) {
+    if (codegen.descriptor.annotationOrNull(daggerFqName) != null) {
       throw AnvilCompilationException(
           codegen.descriptor,
           "When using @${annotationClass.simpleName} it's not allowed to annotate the same " +
@@ -57,11 +57,11 @@ internal class ModuleMerger(
         .asSequence()
         .mapNotNull {
           val contributesAnnotation =
-            it.findAnnotation(contributesToFqName, scope = scope) ?: return@mapNotNull null
+            it.annotationOrNull(contributesToFqName, scope = scope) ?: return@mapNotNull null
           it to contributesAnnotation
         }
         .filter { (classDescriptor, _) ->
-          val moduleAnnotation = classDescriptor.findAnnotation(daggerModuleFqName)
+          val moduleAnnotation = classDescriptor.annotationOrNull(daggerModuleFqName)
           if (!DescriptorUtils.isInterface(classDescriptor) && moduleAnnotation == null) {
             throw AnvilCompilationException(
                 classDescriptor,
@@ -93,7 +93,7 @@ internal class ModuleMerger(
           val kotlinType = kClassValue.getType(codegen.descriptor.module)
               .argumentType()
           val classDescriptorForReplacement = DescriptorUtils.getClassDescriptorForType(kotlinType)
-          if (classDescriptorForReplacement.findAnnotation(daggerModuleFqName) == null) {
+          if (classDescriptorForReplacement.annotationOrNull(daggerModuleFqName) == null) {
             throw AnvilCompilationException(
                 classDescriptor,
                 "${classDescriptor.fqNameSafe} wants to replace " +
@@ -184,21 +184,21 @@ private data class AnnotationHolder private constructor(
 
   companion object {
     fun create(descriptor: ClassDescriptor): AnnotationHolder? {
-      descriptor.findAnnotation(mergeComponentFqName)
+      descriptor.annotationOrNull(mergeComponentFqName)
           ?.let {
             return AnnotationHolder(
                 it, MergeComponent::class, Component::class,
                 daggerComponentFqName, "modules"
             )
           }
-      descriptor.findAnnotation(mergeSubcomponentFqName)
+      descriptor.annotationOrNull(mergeSubcomponentFqName)
           ?.let {
             return AnnotationHolder(
                 it, MergeSubcomponent::class, Subcomponent::class,
                 daggerSubcomponentFqName, "modules"
             )
           }
-      descriptor.findAnnotation(mergeModulesFqName)
+      descriptor.annotationOrNull(mergeModulesFqName)
           ?.let {
             return AnnotationHolder(
                 it, MergeModules::class, Module::class,
