@@ -18,5 +18,5 @@ class AnvilCompilationException(
   ) : this(message, cause = cause, element = classDescriptor.identifier)
 }
 
-private val ClassDescriptor.identifier: PsiElement
-  get() = requireNotNull((findPsi() as? PsiNameIdentifierOwner)?.identifyingElement)
+private val ClassDescriptor.identifier: PsiElement?
+  get() = (findPsi() as? PsiNameIdentifierOwner)?.identifyingElement

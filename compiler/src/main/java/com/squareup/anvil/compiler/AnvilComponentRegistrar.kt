@@ -33,7 +33,7 @@ class AnvilComponentRegistrar : ComponentRegistrar {
         codeGenerators = listOf(
             ContributesToGenerator(),
             ContributesBindingGenerator(),
-            BindingModuleGenerator()
+            BindingModuleGenerator(scanner)
         )
     )
 

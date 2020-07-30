@@ -10,14 +10,19 @@ import com.squareup.anvil.compiler.anyDaggerComponent
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.componentInterfaceAnvilModule
+import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule
 import com.squareup.anvil.compiler.daggerModule1
+import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.squareup.anvil.compiler.subcomponentInterfaceAnvilModule
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import dagger.Binds
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
+import java.lang.reflect.Modifier.isAbstract
 import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
@@ -127,6 +132,71 @@ class BindingModuleGeneratorTest(
       val className =
         "$MODULE_PACKAGE_PREFIX.com.squareup.test.SomeClassComponentInterfaceAnvilModule"
       assertThat(classLoader.loadClass(className)).isNotNull()
+    }
+  }
+
+  @Test fun `the Dagger binding method is generated`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBinding
+        $import
+
+        interface ParentInterface
+        
+        interface Middle : ParentInterface
+
+        @ContributesBinding(Any::class, ParentInterface::class)
+        interface ContributingInterface : Middle
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+    """
+    ) {
+      val modules = if (annotationClass == MergeModules::class) {
+        componentInterface.daggerModule.includes.toList()
+      } else {
+        componentInterface.anyDaggerComponent.modules
+      }
+      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+
+      val methods = modules.first().java.declaredMethods
+      assertThat(methods).hasLength(1)
+
+      with(methods[0]) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract(modifiers)).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      }
+    }
+  }
+
+  @Test fun `the contributed binding class must extend the bound type`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBinding
+        $import
+
+        interface ParentInterface
+
+        @ContributesBinding(Any::class, ParentInterface::class)
+        interface ContributingInterface
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+    """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+
+      assertThat(messages).contains("Source.kt: (9, 11)")
+      assertThat(messages).contains(
+          "com.squareup.test.ContributingInterface contributes a binding for " +
+              "com.squareup.test.ParentInterface, but doesn't extend this type."
+      )
     }
   }
 

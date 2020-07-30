@@ -53,7 +53,11 @@ internal class ModuleMerger(
           ?.map { it.toType(codegen) }
 
     val modules = classScanner
-        .findContributedClasses(codegen.descriptor.module)
+        .findContributedClasses(
+            module = codegen.descriptor.module,
+            packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
+            annotation = contributesToFqName
+        )
         .asSequence()
         .mapNotNull {
           val contributesAnnotation =

@@ -42,7 +42,11 @@ internal class InterfaceMerger(
     }
 
     val classes = classScanner
-        .findContributedClasses(thisDescriptor.module)
+        .findContributedClasses(
+            module = thisDescriptor.module,
+            packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
+            annotation = contributesToFqName
+        )
         .asSequence()
         .filter {
           DescriptorUtils.isInterface(it) && it.annotationOrNull(daggerModuleFqName) == null
