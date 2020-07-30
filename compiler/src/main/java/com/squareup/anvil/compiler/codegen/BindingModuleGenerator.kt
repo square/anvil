@@ -8,12 +8,15 @@ import com.squareup.anvil.compiler.HINT_CONTRIBUTES_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.annotation
 import com.squareup.anvil.compiler.annotationOrNull
+import com.squareup.anvil.compiler.argumentType
 import com.squareup.anvil.compiler.boundType
+import com.squareup.anvil.compiler.classDescriptorForType
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerBindsFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
+import com.squareup.anvil.compiler.getAnnotationValue
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
@@ -31,6 +34,7 @@ import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
 import java.io.File
@@ -50,6 +54,8 @@ internal class BindingModuleGenerator(
   // but technically there can be multiple.
   private val mergedScopes = mutableMapOf<FqName, MutableList<Pair<File, KtClassOrObject>>>()
       .withDefault { mutableListOf() }
+
+  private val excludedTypesForScope = mutableMapOf<FqName, List<ClassDescriptor>>()
 
   private val contributedBindingClasses = mutableListOf<FqName>()
   private val contributedModuleAndInterfaceClasses = mutableListOf<FqName>()
@@ -84,12 +90,21 @@ internal class BindingModuleGenerator(
                 )
 
           // The annotation must be present due to the filter above.
-          val scope = supportedFqNames
-              .mapNotNull {
-                classDescriptor.annotationOrNull(it)
-                    ?.scope(module)
+          val mergeAnnotation = supportedFqNames
+              .mapNotNull { classDescriptor.annotationOrNull(it) }
+              .first()
+
+          val scope = mergeAnnotation.scope(module).fqNameSafe
+
+          // Remember for which scopes which types were excluded so that we later don't generate
+          // a binding method for these types.
+          (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)?.value
+              ?.map {
+                it.getType(module)
+                    .argumentType()
+                    .classDescriptorForType()
               }
-              .first().fqNameSafe
+              ?.let { excludedTypesForScope[scope] = it }
 
           val packageName = generatePackageName(psiClass)
           val className = generateClassName(psiClass)
@@ -154,6 +169,7 @@ internal class BindingModuleGenerator(
 
       val bindingMethods = (contributedBindingsThisModule + contributedBindingsDependencies)
           .minus(bindingsReplacedInDaggerModules)
+          .minus(excludedTypesForScope[scope].orEmpty())
           .filter {
             val annotation = it.annotationOrNull(contributesBindingFqName)
             annotation != null && scope == annotation.scope(module).fqNameSafe

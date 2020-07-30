@@ -307,6 +307,32 @@ class MergeModulesTest {
     }
   }
 
+  @Test fun `contributed bindings can be excluded`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.compat.MergeModules
+        import com.squareup.anvil.annotations.ContributesBinding
+
+        interface ParentInterface
+
+        @ContributesBinding(Any::class)
+        interface ContributingInterface : ParentInterface
+
+        @MergeModules(
+            scope = Any::class,
+            exclude = [
+              ContributingInterface::class
+            ]
+        )
+        interface ComponentInterface
+    """
+    ) {
+      assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
+    }
+  }
+
   @Test fun `modules are added to merged modules with corresponding scope`() {
     compile(
         """
