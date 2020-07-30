@@ -51,7 +51,8 @@ internal class InterfaceMerger(
         }
         .mapNotNull {
           val contributeAnnotation =
-            it.annotationOrNull(contributesToFqName, scope = scope) ?: return@mapNotNull null
+            it.annotationOrNull(contributesToFqName, scope = scope.fqNameSafe)
+                ?: return@mapNotNull null
           it to contributeAnnotation
         }
         .onEach { (classDescriptor, _) ->

@@ -48,7 +48,7 @@ internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
 
 internal fun ClassDescriptor.annotationOrNull(
   annotationFqName: FqName,
-  scope: ClassDescriptor? = null
+  scope: FqName? = null
 ): AnnotationDescriptor? {
   // Must be JVM, we don't support anything else.
   if (!module.platform.has<JvmPlatform>()) return null
@@ -65,17 +65,18 @@ internal fun ClassDescriptor.annotationOrNull(
         cause = e
     )
   }
-  if (scope == null || annotationDescriptor == null) return annotationDescriptor
-
-  val foundTarget = annotationDescriptor.scope(scope.module)
-  return if (scope.fqNameSafe == foundTarget.fqNameSafe) annotationDescriptor else null
+  return if (scope == null || annotationDescriptor == null) {
+    annotationDescriptor
+  } else {
+    annotationDescriptor.takeIf { scope == it.scope(module).fqNameSafe }
+  }
 }
 
 internal fun ClassDescriptor.annotation(
   annotationFqName: FqName,
-  scope: ClassDescriptor? = null
+  scope: FqName? = null
 ): AnnotationDescriptor = requireNotNull(annotationOrNull(annotationFqName, scope)) {
-  "Couldn't find $annotationFqName with scope ${scope?.fqNameSafe} for $fqNameSafe."
+  "Couldn't find $annotationFqName with scope $scope for $fqNameSafe."
 }
 
 internal fun ConstantValue<*>.toType(

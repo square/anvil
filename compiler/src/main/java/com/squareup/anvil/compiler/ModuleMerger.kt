@@ -76,7 +76,8 @@ internal class ModuleMerger(
         }
         .mapNotNull {
           val contributesAnnotation =
-            it.annotationOrNull(contributesToFqName, scope = scope) ?: return@mapNotNull null
+            it.annotationOrNull(contributesToFqName, scope = scope.fqNameSafe)
+                ?: return@mapNotNull null
           it to contributesAnnotation
         }
         .filter { (classDescriptor, _) ->
