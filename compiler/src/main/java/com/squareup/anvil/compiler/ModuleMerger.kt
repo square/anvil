@@ -110,7 +110,8 @@ internal class ModuleMerger(
 
           // Verify has @Module annotation. It doesn't make sense for a Dagger module to replace a
           // non-Dagger module.
-          if (classDescriptorForReplacement.annotationOrNull(daggerModuleFqName) == null) {
+          if (classDescriptorForReplacement.annotationOrNull(daggerModuleFqName) == null &&
+              classDescriptorForReplacement.annotationOrNull(contributesBindingFqName) == null) {
             throw AnvilCompilationException(
                 classDescriptor,
                 "${classDescriptor.fqNameSafe} wants to replace " +
