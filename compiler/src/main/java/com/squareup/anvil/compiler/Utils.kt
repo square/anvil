@@ -108,6 +108,13 @@ internal fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescript
       .classDescriptorForType()
 }
 
+internal fun AnnotationDescriptor.replaces(module: ModuleDescriptor): ClassDescriptor? {
+  return (getAnnotationValue("replaces") as? KClassValue)
+      ?.getType(module)
+      ?.argumentType()
+      ?.classDescriptorForType()
+}
+
 internal fun AnnotationDescriptor.boundType(
   module: ModuleDescriptor,
   annotatedClass: ClassDescriptor

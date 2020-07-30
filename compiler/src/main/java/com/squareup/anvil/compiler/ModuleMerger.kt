@@ -9,6 +9,7 @@ import dagger.Module
 import dagger.Subcomponent
 import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.codegen.ImplementationBodyCodegen
+import org.jetbrains.kotlin.codegen.asmType
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
@@ -18,7 +19,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
@@ -104,14 +104,11 @@ internal class ModuleMerger(
 
     val replacedModules = modules
         .mapNotNull { (classDescriptor, contributeAnnotation) ->
-          val kClassValue = contributeAnnotation.getAnnotationValue("replaces")
-              as? KClassValue ?: return@mapNotNull null
+          val classDescriptorForReplacement =
+            contributeAnnotation.replaces(codegen.descriptor.module) ?: return@mapNotNull null
 
           // Verify has @Module annotation. It doesn't make sense for a Dagger module to replace a
           // non-Dagger module.
-          val kotlinType = kClassValue.getType(codegen.descriptor.module)
-              .argumentType()
-          val classDescriptorForReplacement = kotlinType.classDescriptorForType()
           if (classDescriptorForReplacement.annotationOrNull(daggerModuleFqName) == null) {
             throw AnvilCompilationException(
                 classDescriptor,
@@ -121,7 +118,7 @@ internal class ModuleMerger(
             )
           }
 
-          kClassValue.toType(codegen)
+          classDescriptorForReplacement.defaultType.asmType(codegen.typeMapper)
         }
 
     val excludedModules = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)

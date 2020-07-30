@@ -7,7 +7,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getFqNameSafe
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
@@ -67,14 +66,11 @@ internal class InterfaceMerger(
 
     val replacedClasses = classes
         .mapNotNull { (classDescriptor, contributeAnnotation) ->
-          val kClassValue = contributeAnnotation.getAnnotationValue("replaces")
-              as? KClassValue ?: return@mapNotNull null
+          val classDescriptorForReplacement = contributeAnnotation.replaces(classDescriptor.module)
+              ?: return@mapNotNull null
 
           // Verify the other class is an interface. It doesn't make sense for a contributed interface
           // to replace a class that is not an interface.
-          val kotlinType = kClassValue.getType(classDescriptor.module)
-              .argumentType()
-          val classDescriptorForReplacement = kotlinType.classDescriptorForType()
           if (!DescriptorUtils.isInterface(classDescriptorForReplacement)) {
             throw AnvilCompilationException(
                 classDescriptor,
