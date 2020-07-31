@@ -1,6 +1,8 @@
 package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
+import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
+import com.squareup.anvil.compiler.codegen.ContributesToGenerator
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
@@ -24,6 +26,13 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     val scanner = ClassScanner()
     val sourceGenFolder = File(configuration.getNotNull(srcGenDirKey))
 
+    val codeGenerationExtension = CodeGenerationExtension(
+        codeGenDir = sourceGenFolder,
+        codeGenerators = listOf(
+            ContributesToGenerator()
+        )
+    )
+
     // It's important to register our extension at the first position. The compiler calls each
     // extension one by one. If an extension returns a result, then the compiler won't call any
     // other extension. That usually happens with Kapt in the stub generating task.
@@ -33,7 +42,7 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     // take over. If we wouldn't do this and any other extension won't let our's run, then we
     // couldn't generate any code.
     AnalysisHandlerExtension.registerExtensionFirst(
-        project, ContributeToGenerator(sourceGenFolder)
+        project, codeGenerationExtension
     )
 
     SyntheticResolveExtension.registerExtension(

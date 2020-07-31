@@ -1,6 +1,13 @@
-package com.squareup.anvil.compiler
+package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.compile
+import com.squareup.anvil.compiler.componentInterface
+import com.squareup.anvil.compiler.contributingInterface
+import com.squareup.anvil.compiler.daggerModule1
+import com.squareup.anvil.compiler.hint
+import com.squareup.anvil.compiler.innerInterface
+import com.squareup.anvil.compiler.innerModule
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import org.junit.Test
 

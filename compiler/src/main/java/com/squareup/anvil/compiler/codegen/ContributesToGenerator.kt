@@ -1,12 +1,12 @@
-package com.squareup.anvil.compiler
+package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.annotations.ContributesTo
+import com.squareup.anvil.compiler.AnvilCompilationException
+import com.squareup.anvil.compiler.HINT_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.squareup.anvil.compiler.contributesToFqName
+import com.squareup.anvil.compiler.daggerModuleFqName
 import dagger.Module
-import org.jetbrains.kotlin.analyzer.AnalysisResult
-import org.jetbrains.kotlin.analyzer.AnalysisResult.RetryWithAdditionalRoots
-import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.container.ComponentProvider
-import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
@@ -14,8 +14,6 @@ import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
-import org.jetbrains.kotlin.resolve.BindingTrace
-import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
 
 /**
@@ -23,45 +21,13 @@ import java.io.File
  * compiler plugin to find all contributed classes a lot faster when merging moduled and component
  * interfaces.
  */
-/*
- * Note that this extension doesn't run when generating Java stubs for Kapt.
- */
-internal class ContributeToGenerator(
-  private val codeGenDir: File
-) : AnalysisHandlerExtension {
-
-  private var didRecompile = false
-
-  override fun doAnalysis(
-    project: Project,
+internal class ContributesToGenerator : CodeGenerator {
+  override fun generateCode(
+    codeGenDir: File,
     module: ModuleDescriptor,
-    projectContext: ProjectContext,
-    files: Collection<KtFile>,
-    bindingTrace: BindingTrace,
-    componentProvider: ComponentProvider
-  ): AnalysisResult? {
-    // Tell the compiler that we have something to do in the analysisCompleted() method if
-    // necessary.
-    return if (!didRecompile) AnalysisResult.EMPTY else null
-  }
-
-  override fun analysisCompleted(
-    project: Project,
-    module: ModuleDescriptor,
-    bindingTrace: BindingTrace,
-    files: Collection<KtFile>
-  ): AnalysisResult? {
-    if (didRecompile) return null
-    didRecompile = true
-
-    codeGenDir.listFiles()
-        ?.forEach {
-          check(it.deleteRecursively()) {
-            "Could not clean file: $it"
-          }
-        }
-
-    files.asSequence()
+    projectFiles: Collection<KtFile>
+  ): Collection<GeneratedFile> {
+    return projectFiles.asSequence()
         .flatMap { it.classesAndInnerClasses() }
         .filter { it.hasAnnotation(contributesToFqName) }
         .onEach { clazz ->
@@ -82,7 +48,7 @@ internal class ContributeToGenerator(
             )
           }
         }
-        .forEach { clazz ->
+        .map { clazz ->
           val packageName = clazz.containingKtFile.packageFqName.asString()
           val generatedPackage = "$HINT_PACKAGE_PREFIX.$packageName"
           val className = clazz.requireFqName()
@@ -90,32 +56,28 @@ internal class ContributeToGenerator(
 
           val directory = File(codeGenDir, generatedPackage.replace('.', File.separatorChar))
           val file = File(directory, "${className.replace('.', '_')}.kt")
-              .also {
-                check(it.parentFile.exists() || it.parentFile.mkdirs()) {
-                  "Could not generate package directory: $this"
-                }
-              }
+          check(file.parentFile.exists() || file.parentFile.mkdirs()) {
+            "Could not generate package directory: $this"
+          }
 
-          file.writeText(
-              """
-          package $generatedPackage
-          
-          val ${className.replace('.', '_')} = $className::class
-        """.trimIndent()
-          )
+          val content = """
+              package $generatedPackage
+              
+              val ${className.replace('.', '_')} = $className::class
+          """.trimIndent()
+          file.writeText(content)
+
+          GeneratedFile(file, content)
         }
-
-    // This restarts the analysis phase and will include our file.
-    return RetryWithAdditionalRoots(
-        bindingTrace.bindingContext, module, emptyList(), listOf(codeGenDir), true
-    )
+        .toList()
   }
 
   private fun KtFile.classesAndInnerClasses(): Sequence<KtClassOrObject> {
     val children = findChildrenByClass(KtClassOrObject::class.java)
 
     return generateSequence(children.toList()) { list ->
-      list.flatMap {
+      list
+          .flatMap {
             it.declarations.filterIsInstance<KtClassOrObject>()
           }
           .ifEmpty { null }
