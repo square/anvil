@@ -54,7 +54,7 @@ internal class ContributesToGenerator : CodeGenerator {
           val directory = File(codeGenDir, generatedPackage.replace('.', File.separatorChar))
           val file = File(directory, "${className.replace('.', '_')}.kt")
           check(file.parentFile.exists() || file.parentFile.mkdirs()) {
-            "Could not generate package directory: $this"
+            "Could not generate package directory: ${file.parentFile}"
           }
 
           val content = """
