@@ -6,7 +6,6 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -401,7 +400,6 @@ class InterfaceMergerTest(
     }
   }
 
-  @Ignore("Need to investigate. Somehow these compilations are successful now.")
   @Test fun `inner interfaces in merged component fail`() {
     // They could cause errors while compiling code when adding our contributed super classes.
     compile(
