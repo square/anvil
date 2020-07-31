@@ -17,7 +17,7 @@ class MergeModulesTest {
         class DaggerModule1
     """
     ) {
-      assertThat(daggerModule1.daggerModule.includes).isEmpty()
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule()).isEmpty()
       assertThat(daggerModule1.daggerModule.subcomponents).isEmpty()
     }
   }
@@ -39,7 +39,7 @@ class MergeModulesTest {
         class DaggerModule1
     """
     ) {
-      assertThat(daggerModule1.daggerModule.includes.toList())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(Boolean::class, Int::class)
     }
   }
@@ -66,7 +66,7 @@ class MergeModulesTest {
     """
     ) {
       val module = daggerModule1.daggerModule
-      assertThat(module.includes.toList()).containsExactly(Boolean::class, Int::class)
+      assertThat(module.includes.withoutAnvilModule()).containsExactly(Boolean::class, Int::class)
       assertThat(module.subcomponents.toList()).containsExactly(Boolean::class, Int::class)
     }
   }
@@ -105,7 +105,8 @@ class MergeModulesTest {
         class DaggerModule1
     """
     ) {
-      assertThat(daggerModule1.daggerModule.includes.toList()).containsExactly(daggerModule2.kotlin)
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+          .containsExactly(daggerModule2.kotlin)
     }
   }
 
@@ -131,7 +132,7 @@ class MergeModulesTest {
         class DaggerModule1
     """
     ) {
-      assertThat(daggerModule1.daggerModule.includes.toList())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(daggerModule2.kotlin, Int::class, Boolean::class)
     }
   }
@@ -180,7 +181,8 @@ class MergeModulesTest {
         class DaggerModule1
     """
     ) {
-      assertThat(daggerModule1.daggerModule.includes.toList()).containsExactly(daggerModule3.kotlin)
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+          .containsExactly(daggerModule3.kotlin)
     }
   }
 
@@ -238,7 +240,7 @@ class MergeModulesTest {
         class DaggerModule1
     """
     ) {
-      assertThat(daggerModule1.daggerModule.includes.toList())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(daggerModule2.kotlin, daggerModule3.kotlin)
     }
   }
@@ -268,7 +270,8 @@ class MergeModulesTest {
         class DaggerModule1
     """
     ) {
-      assertThat(daggerModule1.daggerModule.includes.toList()).containsExactly(daggerModule3.kotlin)
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+          .containsExactly(daggerModule3.kotlin)
     }
   }
 
@@ -295,9 +298,9 @@ class MergeModulesTest {
         class DaggerModule2
     """
     ) {
-      assertThat(daggerModule1.daggerModule.includes.toList())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(daggerModule3.kotlin)
-      assertThat(daggerModule2.daggerModule.includes.toList())
+      assertThat(daggerModule2.daggerModule.includes.withoutAnvilModule())
           .containsExactly(daggerModule4.kotlin)
     }
   }
@@ -348,7 +351,7 @@ class MergeModulesTest {
     ) {
       val innerModule = classLoader.loadClass("com.squareup.test.DaggerModule1\$InnerModule")
 
-      assertThat(daggerModule1.daggerModule.includes.toList())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(innerModule.kotlin)
     }
   }

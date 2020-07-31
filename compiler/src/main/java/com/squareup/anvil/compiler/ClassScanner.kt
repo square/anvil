@@ -18,9 +18,12 @@ internal class ClassScanner {
    */
   fun findContributedClasses(
     module: ModuleDescriptor,
-    packageName: String = HINT_CONTRIBUTES_PACKAGE_PREFIX
+    packageName: String,
+    annotation: FqName
   ): List<ClassDescriptor> {
-    return cache.getOrPut(packageName) {
+    val key = packageName + annotation.asString()
+
+    return cache.getOrPut(key) {
       val packageDescriptor = module.getPackage(FqName(packageName))
       generateSequence(packageDescriptor.subPackages()) { subPackages ->
         subPackages
@@ -34,7 +37,7 @@ internal class ClassScanner {
           }
           .filterIsInstance<PropertyDescriptor>()
           .map { DescriptorUtils.getClassDescriptorForType(it.type.argumentType()) }
-          .filter { it.annotationOrNull(contributesToFqName) != null }
+          .filter { it.annotationOrNull(annotation) != null }
           .toList()
     }
   }

@@ -1,6 +1,6 @@
 package com.squareup.anvil.test
 
-import com.google.common.truth.Truth
+import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.Component
@@ -11,28 +11,22 @@ class MergeComponentTest {
 
   @Test fun `component merges modules and interfaces`() {
     val annotation = AppComponent::class.java.getAnnotation(Component::class.java)!!
-    Truth.assertThat(annotation.modules.toList())
+    assertThat(annotation.modules.withoutAnvilModule())
         .containsExactly(AppModule1::class, AppModule2::class)
 
-    Truth.assertThat(AppComponent::class extends AppComponentInterface::class)
-        .isTrue()
-    Truth.assertThat(AppComponent::class extends AppModule2::class)
-        .isFalse()
-    Truth.assertThat(AppComponent::class extends SubModule2::class)
-        .isFalse()
+    assertThat(AppComponent::class extends AppComponentInterface::class).isTrue()
+    assertThat(AppComponent::class extends AppModule2::class).isFalse()
+    assertThat(AppComponent::class extends SubModule2::class).isFalse()
   }
 
   @Test fun `subcomponent merges modules and interfaces`() {
     val annotation = SubComponent::class.java.getAnnotation(Subcomponent::class.java)!!
-    Truth.assertThat(annotation.modules.toList())
+    assertThat(annotation.modules.withoutAnvilModule())
         .containsExactly(SubModule1::class, SubModule2::class)
 
-    Truth.assertThat(SubComponent::class extends SubComponentInterface::class)
-        .isTrue()
-    Truth.assertThat(AppComponent::class extends AppModule2::class)
-        .isFalse()
-    Truth.assertThat(AppComponent::class extends SubModule2::class)
-        .isFalse()
+    assertThat(SubComponent::class extends SubComponentInterface::class).isTrue()
+    assertThat(AppComponent::class extends AppModule2::class).isFalse()
+    assertThat(AppComponent::class extends SubModule2::class).isFalse()
   }
 
   @MergeComponent(AppScope::class)

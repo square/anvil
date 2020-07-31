@@ -6,6 +6,7 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
+import dagger.Binds
 import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
@@ -35,9 +36,11 @@ internal val contributesBindingFqName = FqName(ContributesBinding::class.java.ca
 internal val daggerComponentFqName = FqName(Component::class.java.canonicalName)
 internal val daggerSubcomponentFqName = FqName(Subcomponent::class.java.canonicalName)
 internal val daggerModuleFqName = FqName(Module::class.java.canonicalName)
+internal val daggerBindsFqName = FqName(Binds::class.java.canonicalName)
 
 internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "hint.anvil"
 internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
+internal const val MODULE_PACKAGE_PREFIX = "anvil.module"
 
 internal fun ClassDescriptor.annotationOrNull(
   annotationFqName: FqName,
@@ -89,6 +92,14 @@ internal fun AnnotationDescriptor.getAnnotationValue(key: String): ConstantValue
 
 internal fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescriptor {
   val kClassValue = requireNotNull(getAnnotationValue("scope")) as KClassValue
+  return DescriptorUtils.getClassDescriptorForType(
+      kClassValue.getType(module)
+          .argumentType()
+  )
+}
+
+internal fun AnnotationDescriptor.boundType(module: ModuleDescriptor): ClassDescriptor {
+  val kClassValue = requireNotNull(getAnnotationValue("boundType")) as KClassValue
   return DescriptorUtils.getClassDescriptorForType(
       kClassValue.getType(module)
           .argumentType()
