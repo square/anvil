@@ -218,6 +218,36 @@ class MergeModulesTest {
     }
   }
 
+  @Test fun `module can be replaced by contributed binding`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.compat.MergeModules
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.anvil.annotations.ContributesTo
+
+        interface ParentInterface
+
+        @ContributesTo(Any::class)
+        @dagger.Module
+        abstract class DaggerModule2
+
+        @ContributesBinding(
+            Any::class,
+            replaces = DaggerModule2::class
+        )
+        interface ContributingInterface : ParentInterface
+
+        @MergeModules(Any::class)
+        class DaggerModule1
+    """
+    ) {
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule()).isEmpty()
+      assertThat(daggerModule1AnvilModule.declaredMethods).hasLength(1)
+    }
+  }
+
   @Test fun `replaced modules must be Dagger modules`() {
     compile(
         """
