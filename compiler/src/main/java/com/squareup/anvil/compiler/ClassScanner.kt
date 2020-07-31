@@ -18,7 +18,7 @@ internal class ClassScanner {
    */
   fun findContributedClasses(
     module: ModuleDescriptor,
-    packageName: String = HINT_PACKAGE_PREFIX
+    packageName: String = HINT_CONTRIBUTES_PACKAGE_PREFIX
   ): List<ClassDescriptor> {
     return cache.getOrPut(packageName) {
       val packageDescriptor = module.getPackage(FqName(packageName))
