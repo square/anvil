@@ -7,7 +7,6 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERRO
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import dagger.Component
 import dagger.Subcomponent
-import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -535,7 +534,6 @@ class ModuleMergerTest(
     }
   }
 
-  @Ignore("Need to investigate. Somehow these compilations are successful now.")
   @Test fun `inner modules in a merged component fail`() {
     compile(
         """

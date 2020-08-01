@@ -9,8 +9,6 @@ import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 
 internal class ClassScanner {
 
-  private val cache = mutableMapOf<String, List<ClassDescriptor>>()
-
   /**
    * Returns a list of classes from the dependency graph annotated with `@ContributesTo`. Note that
    * the list includes inner classes already.
@@ -20,28 +18,24 @@ internal class ClassScanner {
     packageName: String,
     annotation: FqName
   ): List<ClassDescriptor> {
-    val key = packageName + annotation.asString()
-
-    return cache.getOrPut(key) {
-      val packageDescriptor = module.getPackage(FqName(packageName))
-      generateSequence(packageDescriptor.subPackages()) { subPackages ->
-        subPackages
-            .flatMap { it.subPackages() }
-            .ifEmpty { null }
-      }
-          .flatMap { it.asSequence() }
-          .flatMap {
-            it.memberScope.getContributedDescriptors(DescriptorKindFilter.VALUES)
-                .asSequence()
-          }
-          .filterIsInstance<PropertyDescriptor>()
-          .map {
-            it.type.argumentType()
-                .classDescriptorForType()
-          }
-          .filter { it.annotationOrNull(annotation) != null }
-          .toList()
+    val packageDescriptor = module.getPackage(FqName(packageName))
+    return generateSequence(packageDescriptor.subPackages()) { subPackages ->
+      subPackages
+          .flatMap { it.subPackages() }
+          .ifEmpty { null }
     }
+        .flatMap { it.asSequence() }
+        .flatMap {
+          it.memberScope.getContributedDescriptors(DescriptorKindFilter.VALUES)
+              .asSequence()
+        }
+        .filterIsInstance<PropertyDescriptor>()
+        .map {
+          it.type.argumentType()
+              .classDescriptorForType()
+        }
+        .filter { it.annotationOrNull(annotation) != null }
+        .toList()
   }
 }
 
