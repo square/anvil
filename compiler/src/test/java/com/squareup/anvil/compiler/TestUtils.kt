@@ -74,6 +74,10 @@ internal val Result.subcomponentInterfaceAnvilModule: Class<*>
 internal val Result.daggerModule1: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule1")
 
+internal val Result.daggerModule1AnvilModule: Class<*>
+  get() = classLoader
+      .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.DaggerModule1AnvilModule")
+
 internal val Result.daggerModule2: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule2")
 

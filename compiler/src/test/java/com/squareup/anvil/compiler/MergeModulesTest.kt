@@ -186,6 +186,68 @@ class MergeModulesTest {
     }
   }
 
+  @Test fun `contributed binding can be replaced`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.compat.MergeModules
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.anvil.annotations.ContributesTo
+
+        interface ParentInterface
+
+        @ContributesBinding(Any::class)
+        interface ContributingInterface : ParentInterface
+
+        @ContributesTo(
+            Any::class,
+            replaces = ContributingInterface::class
+        )
+        @dagger.Module
+        abstract class DaggerModule2
+
+        @MergeModules(Any::class)
+        class DaggerModule1
+    """
+    ) {
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+          .containsExactly(daggerModule2.kotlin)
+
+      assertThat(daggerModule1AnvilModule.declaredMethods).isEmpty()
+    }
+  }
+
+  @Test fun `module can be replaced by contributed binding`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.compat.MergeModules
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.anvil.annotations.ContributesTo
+
+        interface ParentInterface
+
+        @ContributesTo(Any::class)
+        @dagger.Module
+        abstract class DaggerModule2
+
+        @ContributesBinding(
+            Any::class,
+            replaces = DaggerModule2::class
+        )
+        interface ContributingInterface : ParentInterface
+
+        @MergeModules(Any::class)
+        class DaggerModule1
+    """
+    ) {
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule()).isEmpty()
+      assertThat(daggerModule1AnvilModule.declaredMethods).hasLength(1)
+    }
+  }
+
   @Test fun `replaced modules must be Dagger modules`() {
     compile(
         """
@@ -272,6 +334,32 @@ class MergeModulesTest {
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(daggerModule3.kotlin)
+    }
+  }
+
+  @Test fun `contributed bindings can be excluded`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.compat.MergeModules
+        import com.squareup.anvil.annotations.ContributesBinding
+
+        interface ParentInterface
+
+        @ContributesBinding(Any::class)
+        interface ContributingInterface : ParentInterface
+
+        @MergeModules(
+            scope = Any::class,
+            exclude = [
+              ContributingInterface::class
+            ]
+        )
+        interface ComponentInterface
+    """
+    ) {
+      assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
     }
   }
 

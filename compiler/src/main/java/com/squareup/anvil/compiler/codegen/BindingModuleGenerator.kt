@@ -4,18 +4,23 @@ import com.squareup.anvil.compiler.ANVIL_MODULE_SUFFIX
 import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.ClassScanner
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.HINT_CONTRIBUTES_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.annotation
 import com.squareup.anvil.compiler.annotationOrNull
+import com.squareup.anvil.compiler.argumentType
 import com.squareup.anvil.compiler.boundType
+import com.squareup.anvil.compiler.classDescriptorForType
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerBindsFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
+import com.squareup.anvil.compiler.getAnnotationValue
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
+import com.squareup.anvil.compiler.replaces
 import com.squareup.anvil.compiler.scope
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -29,6 +34,7 @@ import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
 import java.io.File
@@ -49,7 +55,10 @@ internal class BindingModuleGenerator(
   private val mergedScopes = mutableMapOf<FqName, MutableList<Pair<File, KtClassOrObject>>>()
       .withDefault { mutableListOf() }
 
+  private val excludedTypesForScope = mutableMapOf<FqName, List<ClassDescriptor>>()
+
   private val contributedBindingClasses = mutableListOf<FqName>()
+  private val contributedModuleAndInterfaceClasses = mutableListOf<FqName>()
 
   override fun generateCode(
     codeGenDir: File,
@@ -62,9 +71,16 @@ internal class BindingModuleGenerator(
     // method for them later.
     findContributedBindingClasses(projectFiles)
 
+    val classes = projectFiles.flatMap {
+      it.classesAndInnerClasses()
+          .toList()
+    }
+
+    // Similar to the explanation above, we must track contributed modules.
+    findContributedModules(classes)
+
     // Generate a Dagger module for each @MergeComponent and friends.
-    return projectFiles.asSequence()
-        .flatMap { it.classesAndInnerClasses() }
+    return classes
         .filter { psiClass -> supportedFqNames.any { psiClass.hasAnnotation(it) } }
         .map { psiClass ->
           val classDescriptor =
@@ -74,12 +90,21 @@ internal class BindingModuleGenerator(
                 )
 
           // The annotation must be present due to the filter above.
-          val scope = supportedFqNames
-              .mapNotNull {
-                classDescriptor.annotationOrNull(it)
-                    ?.scope(module)
+          val mergeAnnotation = supportedFqNames
+              .mapNotNull { classDescriptor.annotationOrNull(it) }
+              .first()
+
+          val scope = mergeAnnotation.scope(module).fqNameSafe
+
+          // Remember for which scopes which types were excluded so that we later don't generate
+          // a binding method for these types.
+          (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)?.value
+              ?.map {
+                it.getType(module)
+                    .argumentType()
+                    .classDescriptorForType()
               }
-              .first().fqNameSafe
+              ?.let { excludedTypesForScope[scope] = it }
 
           val packageName = generatePackageName(psiClass)
           val className = generateClassName(psiClass)
@@ -117,6 +142,7 @@ internal class BindingModuleGenerator(
   ) {
     mergedScopes.forEach { (scope, daggerModuleFiles) ->
       val contributedBindingsThisModule = contributedBindingClasses
+          .asSequence()
           .mapNotNull { clazz ->
             module.resolveClassByFqName(clazz, NoLookupLocation.FROM_BACKEND)
           }
@@ -124,9 +150,33 @@ internal class BindingModuleGenerator(
           module,
           packageName = HINT_BINDING_PACKAGE_PREFIX,
           annotation = contributesBindingFqName
-      )
+      ).asSequence()
+
+      val replacedBindings = (contributedBindingsThisModule + contributedBindingsDependencies)
+          .mapNotNull {
+            it.annotationOrNull(contributesBindingFqName, scope = scope)
+                ?.replaces(module)
+          }
+
+      // Contributed Dagger modules can replace other Dagger modules but also contributed bindings.
+      // If a binding is replaced, then we must not generate the binding method.
+      val bindingsReplacedInDaggerModules = contributedModuleAndInterfaceClasses.asSequence()
+          .mapNotNull { module.resolveClassByFqName(it, NoLookupLocation.FROM_BACKEND) }
+          .plus(classScanner.findContributedClasses(
+              module,
+              packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
+              annotation = contributesToFqName
+          ))
+          .filter { it.annotationOrNull(daggerModuleFqName) != null }
+          .mapNotNull {
+            it.annotationOrNull(contributesToFqName, scope)
+                ?.replaces(module)
+          }
 
       val bindingMethods = (contributedBindingsThisModule + contributedBindingsDependencies)
+          .minus(replacedBindings)
+          .minus(bindingsReplacedInDaggerModules)
+          .minus(excludedTypesForScope[scope].orEmpty())
           .filter {
             val annotation = it.annotationOrNull(contributesBindingFqName)
             annotation != null && scope == annotation.scope(module).fqNameSafe
@@ -154,6 +204,7 @@ internal class BindingModuleGenerator(
               |  ): ${boundType.fqNameSafe}
             """.trimMargin()
           }
+          .toList()
 
       daggerModuleFiles.forEach { (file, psiClass) ->
         file.writeText(
@@ -183,6 +234,12 @@ internal class BindingModuleGenerator(
               ?.text
               ?.let { FqName(it) }
         }
+  }
+
+  private fun findContributedModules(classes: List<KtClassOrObject>) {
+    contributedModuleAndInterfaceClasses += classes
+        .filter { it.hasAnnotation(contributesToFqName) }
+        .map { it.requireFqName() }
   }
 
   private fun checkExtendsBoundType(

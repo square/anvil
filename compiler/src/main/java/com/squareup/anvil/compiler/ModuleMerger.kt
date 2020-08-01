@@ -47,7 +47,9 @@ internal class ModuleMerger(
       )
     }
 
-    val scope = mergeAnnotation.scope(codegen.descriptor.module)
+    val module = codegen.descriptor.module
+    val scope = mergeAnnotation.scope(module)
+    val scopeFqName = scope.fqNameSafe
 
     val predefinedModules =
       (mergeAnnotation.getAnnotationValue(modulesKeyword) as? ArrayValue)
@@ -58,7 +60,7 @@ internal class ModuleMerger(
 
     val modules = classScanner
         .findContributedClasses(
-            module = codegen.descriptor.module,
+            module = module,
             packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
             annotation = contributesToFqName
         )
@@ -76,7 +78,7 @@ internal class ModuleMerger(
         }
         .mapNotNull {
           val contributesAnnotation =
-            it.annotationOrNull(contributesToFqName, scope = scope.fqNameSafe)
+            it.annotationOrNull(contributesToFqName, scope = scopeFqName)
                 ?: return@mapNotNull null
           it to contributesAnnotation
         }
@@ -106,11 +108,12 @@ internal class ModuleMerger(
     val replacedModules = modules
         .mapNotNull { (classDescriptor, contributeAnnotation) ->
           val classDescriptorForReplacement =
-            contributeAnnotation.replaces(codegen.descriptor.module) ?: return@mapNotNull null
+            contributeAnnotation.replaces(module) ?: return@mapNotNull null
 
           // Verify has @Module annotation. It doesn't make sense for a Dagger module to replace a
           // non-Dagger module.
-          if (classDescriptorForReplacement.annotationOrNull(daggerModuleFqName) == null) {
+          if (classDescriptorForReplacement.annotationOrNull(daggerModuleFqName) == null &&
+              classDescriptorForReplacement.annotationOrNull(contributesBindingFqName) == null) {
             throw AnvilCompilationException(
                 classDescriptor,
                 "${classDescriptor.fqNameSafe} wants to replace " +
@@ -120,6 +123,22 @@ internal class ModuleMerger(
           }
 
           classDescriptorForReplacement.defaultType.asmType(codegen.typeMapper)
+        }
+
+    val replacedModulesByContributedBindings = classScanner
+        .findContributedClasses(
+            module = module,
+            packageName = HINT_BINDING_PACKAGE_PREFIX,
+            annotation = contributesBindingFqName
+        )
+        .asSequence()
+        .mapNotNull {
+          val annotation = it.annotation(contributesBindingFqName)
+          if (scopeFqName == annotation.scope(module).fqNameSafe) {
+            annotation.replaces(module)?.defaultType?.asmType(codegen.typeMapper)
+          } else {
+            null
+          }
         }
 
     val excludedModules = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)
@@ -141,6 +160,7 @@ internal class ModuleMerger(
         .map { it.first }
         .map { codegen.typeMapper.mapType(it) }
         .minus(replacedModules)
+        .minus(replacedModulesByContributedBindings)
         .minus(excludedModules)
         .distinct()
 

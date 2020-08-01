@@ -14,6 +14,7 @@ import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.parentInterface
+import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.squareup.anvil.compiler.subcomponentInterfaceAnvilModule
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
@@ -293,6 +294,48 @@ class BindingModuleGeneratorTest(
           "com.squareup.test.ContributingInterface contributes a binding for " +
               "com.squareup.test.ParentInterface, but doesn't extend this type."
       )
+    }
+  }
+
+  @Test fun `contributed bindings can replace other contributed bindings`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBinding
+        $import
+
+        interface ParentInterface
+
+        @ContributesBinding(Any::class)
+        interface ContributingInterface : ParentInterface
+        
+        @ContributesBinding(
+            Any::class,
+            replaces = ContributingInterface::class
+        )
+        interface SecondContributingInterface : ParentInterface
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+    """
+    ) {
+      val modules = if (annotationClass == MergeModules::class) {
+        componentInterface.daggerModule.includes.toList()
+      } else {
+        componentInterface.anyDaggerComponent.modules
+      }
+      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+
+      val methods = modules.first().java.declaredMethods
+      assertThat(methods).hasLength(1)
+
+      with(methods[0]) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(secondContributingInterface)
+        assertThat(isAbstract(modifiers)).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      }
     }
   }
 

@@ -25,7 +25,6 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     project: MockProject,
     configuration: CompilerConfiguration
   ) {
-    val scanner = ClassScanner()
     val sourceGenFolder = File(configuration.getNotNull(srcGenDirKey))
 
     val codeGenerationExtension = CodeGenerationExtension(
@@ -33,7 +32,11 @@ class AnvilComponentRegistrar : ComponentRegistrar {
         codeGenerators = listOf(
             ContributesToGenerator(),
             ContributesBindingGenerator(),
-            BindingModuleGenerator(scanner)
+
+            // Note that this class scanner cannot be shared with the other extensions. These
+            // code generators create new code and the ClassScanner maintains a cache that would
+            // be invalid.
+            BindingModuleGenerator(ClassScanner())
         )
     )
 
@@ -49,6 +52,7 @@ class AnvilComponentRegistrar : ComponentRegistrar {
         project, codeGenerationExtension
     )
 
+    val scanner = ClassScanner()
     SyntheticResolveExtension.registerExtension(
         project, InterfaceMerger(scanner)
     )
