@@ -5,10 +5,8 @@ import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
 import org.jetbrains.kotlin.descriptors.effectiveVisibility
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.DescriptorUtils.getClassDescriptorForType
 import org.jetbrains.kotlin.resolve.DescriptorUtils.getFqNameSafe
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
@@ -53,7 +51,8 @@ internal class InterfaceMerger(
         }
         .mapNotNull {
           val contributeAnnotation =
-            it.annotationOrNull(contributesToFqName, scope = scope) ?: return@mapNotNull null
+            it.annotationOrNull(contributesToFqName, scope = scope.fqNameSafe)
+                ?: return@mapNotNull null
           it to contributeAnnotation
         }
         .onEach { (classDescriptor, _) ->
@@ -68,14 +67,11 @@ internal class InterfaceMerger(
 
     val replacedClasses = classes
         .mapNotNull { (classDescriptor, contributeAnnotation) ->
-          val kClassValue = contributeAnnotation.getAnnotationValue("replaces")
-              as? KClassValue ?: return@mapNotNull null
+          val classDescriptorForReplacement = contributeAnnotation.replaces(classDescriptor.module)
+              ?: return@mapNotNull null
 
           // Verify the other class is an interface. It doesn't make sense for a contributed interface
           // to replace a class that is not an interface.
-          val kotlinType = kClassValue.getType(classDescriptor.module)
-              .argumentType()
-          val classDescriptorForReplacement = getClassDescriptorForType(kotlinType)
           if (!DescriptorUtils.isInterface(classDescriptorForReplacement)) {
             throw AnvilCompilationException(
                 classDescriptor,
@@ -92,10 +88,9 @@ internal class InterfaceMerger(
     val excludedClasses = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)
         ?.value
         ?.map {
-          getClassDescriptorForType(
-              it.getType(thisDescriptor.module)
-                  .argumentType()
-          )
+          it.getType(thisDescriptor.module)
+              .argumentType()
+              .classDescriptorForType()
         }
         ?.filter { DescriptorUtils.isInterface(it) }
         ?.map { it.fqNameSafe }
@@ -134,6 +129,6 @@ internal class InterfaceMerger(
       if (kotlinTypes.isEmpty()) null else kotlinTypes.flatMap { it.supertypes() }
     }
         .flatMap { it.asSequence() }
-        .map { getFqNameSafe(getClassDescriptorForType(it)) }
+        .map { getFqNameSafe(it.classDescriptorForType()) }
         .toList()
 }

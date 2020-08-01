@@ -5,7 +5,6 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 
 internal class ClassScanner {
@@ -36,7 +35,10 @@ internal class ClassScanner {
                 .asSequence()
           }
           .filterIsInstance<PropertyDescriptor>()
-          .map { DescriptorUtils.getClassDescriptorForType(it.type.argumentType()) }
+          .map {
+            it.type.argumentType()
+                .classDescriptorForType()
+          }
           .filter { it.annotationOrNull(annotation) != null }
           .toList()
     }

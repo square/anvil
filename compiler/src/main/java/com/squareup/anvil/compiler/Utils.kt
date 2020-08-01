@@ -48,7 +48,7 @@ internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
 
 internal fun ClassDescriptor.annotationOrNull(
   annotationFqName: FqName,
-  scope: ClassDescriptor? = null
+  scope: FqName? = null
 ): AnnotationDescriptor? {
   // Must be JVM, we don't support anything else.
   if (!module.platform.has<JvmPlatform>()) return null
@@ -65,17 +65,18 @@ internal fun ClassDescriptor.annotationOrNull(
         cause = e
     )
   }
-  if (scope == null || annotationDescriptor == null) return annotationDescriptor
-
-  val foundTarget = annotationDescriptor.scope(scope.module)
-  return if (scope.fqNameSafe == foundTarget.fqNameSafe) annotationDescriptor else null
+  return if (scope == null || annotationDescriptor == null) {
+    annotationDescriptor
+  } else {
+    annotationDescriptor.takeIf { scope == it.scope(module).fqNameSafe }
+  }
 }
 
 internal fun ClassDescriptor.annotation(
   annotationFqName: FqName,
-  scope: ClassDescriptor? = null
+  scope: FqName? = null
 ): AnnotationDescriptor = requireNotNull(annotationOrNull(annotationFqName, scope)) {
-  "Couldn't find $annotationFqName with scope ${scope?.fqNameSafe} for $fqNameSafe."
+  "Couldn't find $annotationFqName with scope $scope for $fqNameSafe."
 }
 
 internal fun ConstantValue<*>.toType(
@@ -91,6 +92,8 @@ internal fun ConstantValue<*>.toType(
 // When the Kotlin type is of the form: KClass<OurType>.
 internal fun KotlinType.argumentType(): KotlinType = arguments.first().type
 
+internal fun KotlinType.classDescriptorForType() = DescriptorUtils.getClassDescriptorForType(this)
+
 internal fun FqName.isAnvilModule(): Boolean {
   val name = asString()
   return name.startsWith(MODULE_PACKAGE_PREFIX) && name.endsWith(ANVIL_MODULE_SUFFIX)
@@ -101,10 +104,16 @@ internal fun AnnotationDescriptor.getAnnotationValue(key: String): ConstantValue
 
 internal fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescriptor {
   val kClassValue = requireNotNull(getAnnotationValue("scope")) as KClassValue
-  return DescriptorUtils.getClassDescriptorForType(
-      kClassValue.getType(module)
-          .argumentType()
-  )
+  return kClassValue.getType(module)
+      .argumentType()
+      .classDescriptorForType()
+}
+
+internal fun AnnotationDescriptor.replaces(module: ModuleDescriptor): ClassDescriptor? {
+  return (getAnnotationValue("replaces") as? KClassValue)
+      ?.getType(module)
+      ?.argumentType()
+      ?.classDescriptorForType()
 }
 
 internal fun AnnotationDescriptor.boundType(
@@ -114,7 +123,8 @@ internal fun AnnotationDescriptor.boundType(
   (getAnnotationValue("boundType") as? KClassValue)
       ?.getType(module)
       ?.argumentType()
-      ?.let { return DescriptorUtils.getClassDescriptorForType(it) }
+      ?.classDescriptorForType()
+      ?.let { return it }
 
   val directSuperTypes = annotatedClass.getSuperInterfaces() +
       (annotatedClass.getSuperClassNotAny()
