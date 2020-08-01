@@ -23,6 +23,8 @@ import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
+import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.org.objectweb.asm.Type
@@ -41,6 +43,8 @@ internal val daggerBindsFqName = FqName(Binds::class.java.canonicalName)
 internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "hint.anvil"
 internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
 internal const val MODULE_PACKAGE_PREFIX = "anvil.module"
+
+internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
 
 internal fun ClassDescriptor.annotationOrNull(
   annotationFqName: FqName,
@@ -87,6 +91,11 @@ internal fun ConstantValue<*>.toType(
 // When the Kotlin type is of the form: KClass<OurType>.
 internal fun KotlinType.argumentType(): KotlinType = arguments.first().type
 
+internal fun FqName.isAnvilModule(): Boolean {
+  val name = asString()
+  return name.startsWith(MODULE_PACKAGE_PREFIX) && name.endsWith(ANVIL_MODULE_SUFFIX)
+}
+
 internal fun AnnotationDescriptor.getAnnotationValue(key: String): ConstantValue<*>? =
   allValueArguments[Name.identifier(key)]
 
@@ -98,10 +107,26 @@ internal fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescript
   )
 }
 
-internal fun AnnotationDescriptor.boundType(module: ModuleDescriptor): ClassDescriptor {
-  val kClassValue = requireNotNull(getAnnotationValue("boundType")) as KClassValue
-  return DescriptorUtils.getClassDescriptorForType(
-      kClassValue.getType(module)
-          .argumentType()
-  )
+internal fun AnnotationDescriptor.boundType(
+  module: ModuleDescriptor,
+  annotatedClass: ClassDescriptor
+): ClassDescriptor {
+  (getAnnotationValue("boundType") as? KClassValue)
+      ?.getType(module)
+      ?.argumentType()
+      ?.let { return DescriptorUtils.getClassDescriptorForType(it) }
+
+  val directSuperTypes = annotatedClass.getSuperInterfaces() +
+      (annotatedClass.getSuperClassNotAny()
+          ?.let { listOf(it) }
+          ?: emptyList())
+
+  return directSuperTypes.singleOrNull()
+      ?: throw AnvilCompilationException(
+          classDescriptor = annotatedClass,
+          message = "${annotatedClass.fqNameSafe} contributes a binding, but does not " +
+              "specify the bound type. This is only allowed with one direct super type. If " +
+              "there are multiple, then the bound type must be explicitly defined in the " +
+              "@${contributesBindingFqName.shortName()} annotation."
+      )
 }

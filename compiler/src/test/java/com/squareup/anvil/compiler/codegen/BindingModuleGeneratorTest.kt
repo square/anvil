@@ -173,6 +173,102 @@ class BindingModuleGeneratorTest(
     }
   }
 
+  @Test fun `the bound type is implied when there is only one super type`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBinding
+        $import
+
+        interface ParentInterface
+
+        @ContributesBinding(Any::class)
+        interface ContributingInterface : ParentInterface
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+    """
+    ) {
+      val modules = if (annotationClass == MergeModules::class) {
+        componentInterface.daggerModule.includes.toList()
+      } else {
+        componentInterface.anyDaggerComponent.modules
+      }
+      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+
+      val methods = modules.first().java.declaredMethods
+      assertThat(methods).hasLength(1)
+
+      with(methods[0]) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract(modifiers)).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      }
+    }
+  }
+
+  @Test fun `the bound type can only be implied with on super type (2 interfaces)`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBinding
+        $import
+
+        interface ParentInterface
+        
+        @ContributesBinding(Any::class)
+        interface ContributingInterface : ParentInterface, CharSequence
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+    """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+
+      assertThat(messages).contains("Source.kt: (9, 11)")
+      assertThat(messages).contains(
+          "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
+              "the bound type. This is only allowed with one direct super type. If there are " +
+              "multiple, then the bound type must be explicitly defined in the " +
+              "@ContributesBinding annotation."
+      )
+    }
+  }
+
+  @Test fun `the bound type can only be implied with on super type (class and interface)`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBinding
+        $import
+
+        interface ParentInterface
+        
+        open class Abc
+        
+        @ContributesBinding(Any::class)
+        interface ContributingInterface : Abc(), ParentInterface
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+    """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+
+      assertThat(messages).contains("Source.kt: (11, 11)")
+      assertThat(messages).contains(
+          "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
+              "the bound type. This is only allowed with one direct super type. If there are " +
+              "multiple, then the bound type must be explicitly defined in the " +
+              "@ContributesBinding annotation."
+      )
+    }
+  }
+
   @Test fun `the contributed binding class must extend the bound type`() {
     compile(
         """

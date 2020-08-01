@@ -2,7 +2,9 @@ package com.squareup.anvil.test
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.compat.MergeModules
+import dagger.Component
 import dagger.Module
+import dagger.Subcomponent
 import org.junit.Test
 
 class MergeModulesTest {
@@ -23,9 +25,30 @@ class MergeModulesTest {
     assertThat(annotation.includes.toList()).doesNotContain(AppModule2::class)
   }
 
+  @Test fun `contributed bindings bind types for each scope`() {
+    val appComponent = DaggerMergeModulesTest_AppComponent.create()
+    val subComponent = appComponent.subComponent()
+
+    assertThat(appComponent.parentType()).isInstanceOf(AppBinding::class.java)
+    assertThat(subComponent.parentType()).isInstanceOf(AppBinding::class.java)
+    assertThat(subComponent.middleType()).isInstanceOf(SubcomponentBinding::class.java)
+  }
+
   @MergeModules(AppScope::class)
   abstract class CompositeAppModule
 
   @MergeModules(SubScope::class)
   abstract class CompositeSubModule
+
+  @Component(modules = [CompositeAppModule::class])
+  interface AppComponent {
+    fun subComponent(): SubComponent
+    fun parentType(): ParentType
+  }
+
+  @Subcomponent(modules = [CompositeSubModule::class])
+  interface SubComponent {
+    fun middleType(): MiddleType
+    fun parentType(): ParentType
+  }
 }

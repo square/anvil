@@ -7,6 +7,7 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
+import org.jetbrains.kotlin.backend.common.serialization.findPackage
 import org.jetbrains.kotlin.codegen.ImplementationBodyCodegen
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -20,6 +21,7 @@ import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
+import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
 import org.jetbrains.org.objectweb.asm.AnnotationVisitor
 import org.jetbrains.org.objectweb.asm.Type
 import kotlin.reflect.KClass
@@ -52,6 +54,8 @@ internal class ModuleMerger(
           ?.value
           ?.map { it.toType(codegen) }
 
+    val anvilModuleName = createAnvilModuleName(codegen.descriptor)
+
     val modules = classScanner
         .findContributedClasses(
             module = codegen.descriptor.module,
@@ -59,6 +63,17 @@ internal class ModuleMerger(
             annotation = contributesToFqName
         )
         .asSequence()
+        .filter {
+          // We generate a Dagger module for each merged component. We use Anvil itself to
+          // contribute this generated module. It's possible that there are multiple components
+          // merging the same scope or the same scope is merged in different Gradle modules which
+          // depend on each other. This would cause duplicate bindings, because the generated
+          // modules contain the same bindings and are contributed to the same scope. To avoid this
+          // issue we filter all generated Anvil modules except for the one that was generated for
+          // this specific class.
+          val fqName = it.fqNameSafe
+          !fqName.isAnvilModule() || fqName == anvilModuleName
+        }
         .mapNotNull {
           val contributesAnnotation =
             it.annotationOrNull(contributesToFqName, scope = scope) ?: return@mapNotNull null
@@ -172,6 +187,20 @@ internal class ModuleMerger(
   private inline fun AnnotationVisitor.use(block: AnnotationVisitor.() -> Unit) {
     block(this)
     visitEnd()
+  }
+
+  private fun createAnvilModuleName(classDescriptor: ClassDescriptor): FqName {
+    val name = "$MODULE_PACKAGE_PREFIX.${classDescriptor.findPackage().fqName}." +
+        classDescriptor.parentsWithSelf
+            .filterIsInstance<ClassDescriptor>()
+            .toList()
+            .reversed()
+            .joinToString(separator = "", postfix = ANVIL_MODULE_SUFFIX) {
+              it.fqNameSafe
+                  .shortName()
+                  .asString()
+            }
+    return FqName(name)
   }
 }
 

@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.squareup.anvil.compiler.ANVIL_MODULE_SUFFIX
 import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.ClassScanner
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
@@ -132,7 +133,7 @@ internal class BindingModuleGenerator(
           }
           .map { contributedClass ->
             val annotation = contributedClass.annotation(contributesBindingFqName)
-            val boundType = annotation.boundType(module)
+            val boundType = annotation.boundType(module, contributedClass)
 
             checkExtendsBoundType(type = contributedClass, boundType = boundType)
 
@@ -206,7 +207,7 @@ internal class BindingModuleGenerator(
         .filterIsInstance<KtClassOrObject>()
         .toList()
         .reversed()
-        .joinToString(separator = "", postfix = "AnvilModule") {
+        .joinToString(separator = "", postfix = ANVIL_MODULE_SUFFIX) {
           it.requireFqName()
               .shortName()
               .asString()
