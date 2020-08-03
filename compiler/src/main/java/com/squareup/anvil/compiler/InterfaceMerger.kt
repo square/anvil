@@ -43,9 +43,9 @@ internal class InterfaceMerger(
         .findContributedClasses(
             module = thisDescriptor.module,
             packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
-            annotation = contributesToFqName
+            annotation = contributesToFqName,
+            scope = scope.fqNameSafe
         )
-        .asSequence()
         .filter {
           DescriptorUtils.isInterface(it) && it.annotationOrNull(daggerModuleFqName) == null
         }

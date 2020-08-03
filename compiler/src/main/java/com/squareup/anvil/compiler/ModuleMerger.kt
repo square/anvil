@@ -62,9 +62,9 @@ internal class ModuleMerger(
         .findContributedClasses(
             module = module,
             packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
-            annotation = contributesToFqName
+            annotation = contributesToFqName,
+            scope = scopeFqName
         )
-        .asSequence()
         .filter {
           // We generate a Dagger module for each merged component. We use Anvil itself to
           // contribute this generated module. It's possible that there are multiple components
@@ -131,9 +131,9 @@ internal class ModuleMerger(
         .findContributedClasses(
             module = module,
             packageName = HINT_BINDING_PACKAGE_PREFIX,
-            annotation = contributesBindingFqName
+            annotation = contributesBindingFqName,
+            scope = scopeFqName
         )
-        .asSequence()
         .flatMap { contributedClass ->
           val annotation = contributedClass.annotation(contributesBindingFqName)
           if (scopeFqName == annotation.scope(module).fqNameSafe) {

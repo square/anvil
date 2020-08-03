@@ -3,6 +3,8 @@ package com.squareup.anvil.compiler.codegen
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.HINT_CONTRIBUTES_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.REFERENCE_SUFFIX
+import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
@@ -57,10 +59,13 @@ internal class ContributesToGenerator : CodeGenerator {
             "Could not generate package directory: ${file.parentFile}"
           }
 
+          val scope = clazz.scope(contributesToFqName, module)
+
           val content = """
               package $generatedPackage
               
-              val ${className.replace('.', '_')} = $className::class
+              val ${className.replace('.', '_')}$REFERENCE_SUFFIX = $className::class
+              val ${className.replace('.', '_')}$SCOPE_SUFFIX = $scope::class
           """.trimIndent()
           file.writeText(content)
 

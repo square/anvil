@@ -47,6 +47,10 @@ internal const val MODULE_PACKAGE_PREFIX = "anvil.module"
 
 internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
 
+internal const val REFERENCE_SUFFIX = "_reference"
+internal const val SCOPE_SUFFIX = "_scope"
+internal val propertySuffixes = arrayOf(REFERENCE_SUFFIX, SCOPE_SUFFIX)
+
 internal fun ClassDescriptor.annotationOrNull(
   annotationFqName: FqName,
   scope: FqName? = null

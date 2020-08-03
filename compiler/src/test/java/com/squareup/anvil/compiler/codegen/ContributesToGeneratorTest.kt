@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.hintContributes
+import com.squareup.anvil.compiler.hintContributesScope
 import com.squareup.anvil.compiler.innerInterface
 import com.squareup.anvil.compiler.innerModule
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
@@ -25,6 +26,7 @@ class ContributesToGeneratorTest {
     """
     ) {
       assertThat(componentInterface.hintContributes).isNull()
+      assertThat(componentInterface.hintContributesScope).isNull()
     }
 
     compile(
@@ -38,6 +40,7 @@ class ContributesToGeneratorTest {
     """
     ) {
       assertThat(componentInterface.hintContributes).isNull()
+      assertThat(componentInterface.hintContributesScope).isNull()
     }
   }
 
@@ -54,6 +57,7 @@ class ContributesToGeneratorTest {
     """
     ) {
       assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
+      assertThat(daggerModule1.hintContributesScope).isEqualTo(Any::class)
     }
   }
 
@@ -69,6 +73,22 @@ class ContributesToGeneratorTest {
     """
     ) {
       assertThat(contributingInterface.hintContributes?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintContributesScope).isEqualTo(Any::class)
+    }
+  }
+
+  @Test fun `the order of the scope can be changed with named parameters`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesTo
+
+        @ContributesTo(replaces = [Unit::class], scope = Int::class)
+        interface ContributingInterface
+    """
+    ) {
+      assertThat(contributingInterface.hintContributesScope).isEqualTo(Int::class)
     }
   }
 
@@ -87,6 +107,7 @@ class ContributesToGeneratorTest {
     """
     ) {
       assertThat(innerModule.hintContributes?.java).isEqualTo(innerModule)
+      assertThat(innerModule.hintContributesScope).isEqualTo(Any::class)
     }
   }
 
@@ -104,6 +125,7 @@ class ContributesToGeneratorTest {
     """
     ) {
       assertThat(innerInterface.hintContributes?.java).isEqualTo(innerInterface)
+      assertThat(innerInterface.hintContributesScope).isEqualTo(Any::class)
     }
   }
 

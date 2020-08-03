@@ -2,6 +2,8 @@ package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.REFERENCE_SUFFIX
+import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.contributesBindingFqName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -45,10 +47,13 @@ internal class ContributesBindingGenerator : CodeGenerator {
             "Could not generate package directory: ${file.parentFile}"
           }
 
+          val scope = clazz.scope(contributesBindingFqName, module)
+
           val content = """
             package $generatedPackage
             
-            val ${className.replace('.', '_')} = $className::class
+            val ${className.replace('.', '_')}$REFERENCE_SUFFIX = $className::class
+            val ${className.replace('.', '_')}$SCOPE_SUFFIX = $scope::class
           """.trimIndent()
           file.writeText(content)
 
