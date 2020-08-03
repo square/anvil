@@ -41,7 +41,7 @@ internal val daggerSubcomponentFqName = FqName(Subcomponent::class.java.canonica
 internal val daggerModuleFqName = FqName(Module::class.java.canonicalName)
 internal val daggerBindsFqName = FqName(Binds::class.java.canonicalName)
 
-internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "hint.anvil"
+internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "anvil.hint.merge"
 internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
 internal const val MODULE_PACKAGE_PREFIX = "anvil.module"
 
