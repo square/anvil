@@ -58,34 +58,17 @@ internal fun ClassDescriptor.annotationOrNull(
   // Must be JVM, we don't support anything else.
   if (!module.platform.has<JvmPlatform>()) return null
   val annotationDescriptor = try {
-    println("This: $this | annotation: $annotationFqName")
     annotations.findAnnotation(annotationFqName)
-  } catch (t: Throwable) {
-    // In some scenarios these exceptions are thrown. Throw a new exception with a better
-    // explanation.
-    when {
-      // Caused by: java.lang.IllegalStateException: Should not be called!
-      // at org.jetbrains.kotlin.types.ErrorUtils$1.getPackage(ErrorUtils.java:95)
-      t is IllegalStateException -> throw AnvilCompilationException(
-          this,
-          message = "It seems like you tried to contribute an inner class to its outer class. This " +
-              "is not supported and results in a compiler error.",
-          cause = t
-      )
-
-      // e: java.lang.AssertionError: Recursion detected on input: ANNOTATION_ENTRY
-      // under LockBasedStorageManager@199db68d (TopDownAnalyzer for JVM)
-      t is AssertionError &&
-          t.message?.startsWith("Recursion detected on input: ANNOTATION_ENTRY") == true ->
-        throw AnvilCompilationException(
-            this,
-            message = "It seems like you tried to contribute an inner class of a merged " +
-                "component to another component. This is not supported and results in a " +
-                "compiler error.",
-            cause = t
-        )
-      else -> throw t
-    }
+  } catch (e: IllegalStateException) {
+    // In some scenarios this exception is thrown. Throw a new exception with a better explanation.
+    // Caused by: java.lang.IllegalStateException: Should not be called!
+    // at org.jetbrains.kotlin.types.ErrorUtils$1.getPackage(ErrorUtils.java:95)
+    throw AnvilCompilationException(
+        this,
+        message = "It seems like you tried to contribute an inner class to its outer class. This " +
+            "is not supported and results in a compiler error.",
+        cause = e
+    )
   }
   return if (scope == null || annotationDescriptor == null) {
     annotationDescriptor

@@ -555,6 +555,33 @@ class ModuleMergerTest(
     }
   }
 
+  @Test fun `inner modules in a merged component with different scope are merged`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesTo
+        $import
+        
+        $annotation(Unit::class)
+        interface ComponentInterface
+        
+        $annotation(Any::class)
+        interface SubcomponentInterface {
+          @ContributesTo(Unit::class)
+          @dagger.Module
+          abstract class InnerModule
+        }
+    """
+    ) {
+      val innerModule = classLoader
+          .loadClass("com.squareup.test.SubcomponentInterface\$InnerModule")
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+          .containsExactly(innerModule.kotlin)
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule()).isEmpty()
+    }
+  }
+
   @Test fun `a module is not allowed to be included and excluded`() {
     compile(
         """

@@ -425,7 +425,7 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `inner interface in a merged component with different scope fail`() {
+  @Test fun `inner interface in a merged component with different scope are merged`() {
     assumeMergeComponent(annotationClass)
 
     compile(
@@ -442,16 +442,15 @@ class InterfaceMergerTest(
         @MergeSubcomponent(Any::class)
         interface SubcomponentInterface {
           @ContributesTo(Unit::class)
-          interface InnerComponent
+          interface InnerInterface
         }
     """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-      assertThat(messages).contains("File being compiled: (13,13)")
-      assertThat(messages).contains(
-          "It seems like you tried to contribute an inner class of a merged component to " +
-              "another component. This is not supported and results in a compiler error."
-      )
+      val innerInterface = classLoader
+          .loadClass("com.squareup.test.SubcomponentInterface\$InnerInterface")
+      assertThat(componentInterface extends innerInterface).isTrue()
+      assertThat(componentInterface.interfaces).hasLength(1)
+      assertThat(subcomponentInterface.interfaces).hasLength(0)
     }
   }
 
