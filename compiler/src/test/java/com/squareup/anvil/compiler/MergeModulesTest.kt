@@ -172,7 +172,7 @@ class MergeModulesTest {
 
         @ContributesTo(
             Any::class,
-            replaces = DaggerModule2::class
+            replaces = [DaggerModule2::class]
         )
         @dagger.Module
         abstract class DaggerModule3
@@ -202,7 +202,7 @@ class MergeModulesTest {
 
         @ContributesTo(
             Any::class,
-            replaces = ContributingInterface::class
+            replaces = [ContributingInterface::class]
         )
         @dagger.Module
         abstract class DaggerModule2
@@ -235,7 +235,7 @@ class MergeModulesTest {
 
         @ContributesBinding(
             Any::class,
-            replaces = DaggerModule2::class
+            replaces = [DaggerModule2::class]
         )
         interface ContributingInterface : ParentInterface
 
@@ -260,7 +260,7 @@ class MergeModulesTest {
 
         @ContributesTo(
             Any::class,
-            replaces = DaggerModule3::class
+            replaces = [DaggerModule3::class]
         )
         @dagger.Module
         abstract class DaggerModule2
@@ -288,7 +288,7 @@ class MergeModulesTest {
 
         @ContributesTo(
             Any::class,
-            replaces = DaggerModule2::class
+            replaces = [DaggerModule2::class]
         )
         @dagger.Module
         abstract class DaggerModule3

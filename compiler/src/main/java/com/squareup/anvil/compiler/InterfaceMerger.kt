@@ -66,22 +66,22 @@ internal class InterfaceMerger(
         }
 
     val replacedClasses = classes
-        .mapNotNull { (classDescriptor, contributeAnnotation) ->
-          val classDescriptorForReplacement = contributeAnnotation.replaces(classDescriptor.module)
-              ?: return@mapNotNull null
-
-          // Verify the other class is an interface. It doesn't make sense for a contributed interface
-          // to replace a class that is not an interface.
-          if (!DescriptorUtils.isInterface(classDescriptorForReplacement)) {
-            throw AnvilCompilationException(
-                classDescriptor,
-                "${classDescriptor.fqNameSafe} wants to replace " +
-                    "${classDescriptorForReplacement.fqNameSafe}, but the class being replaced " +
-                    "is not an interface."
-            )
-          }
-
-          classDescriptorForReplacement.fqNameSafe
+        .flatMap { (classDescriptor, contributeAnnotation) ->
+          contributeAnnotation.replaces(classDescriptor.module)
+              .asSequence()
+              .onEach { classDescriptorForReplacement ->
+                // Verify the other class is an interface. It doesn't make sense for a contributed
+                // interface to replace a class that is not an interface.
+                if (!DescriptorUtils.isInterface(classDescriptorForReplacement)) {
+                  throw AnvilCompilationException(
+                      classDescriptor,
+                      "${classDescriptor.fqNameSafe} wants to replace " +
+                          "${classDescriptorForReplacement.fqNameSafe}, but the class being " +
+                          "replaced is not an interface."
+                  )
+                }
+              }
+              .map { it.fqNameSafe }
         }
         .toSet()
 

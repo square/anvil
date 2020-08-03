@@ -10,7 +10,7 @@ import dagger.Module
 @Module
 @ContributesTo(
     scope = AppScope::class,
-    replaces = FatherProviderModule::class
+    replaces = [FatherProviderModule::class]
 )
 abstract class FakeFatherProviderModule {
   @Binds abstract fun bindFatherProvider(provider: FakeFatherProvider): FatherProvider

@@ -45,7 +45,7 @@ import kotlin.reflect.KClass
  * ```
  * @ContributesBinding(
  *     scope = AppScope::class,
- *     replaces = RealAuthenticator::class
+ *     replaces = [RealAuthenticator::class]
  * )
  * class FakeAuthenticator @Inject constructor() : Authenticator
  * ```
@@ -55,5 +55,5 @@ import kotlin.reflect.KClass
 annotation class ContributesBinding(
   val scope: KClass<*>,
   val boundType: KClass<*> = Unit::class,
-  val replaces: KClass<*> = Unit::class
+  val replaces: Array<KClass<*>> = []
 )
