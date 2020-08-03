@@ -425,6 +425,36 @@ class InterfaceMergerTest(
     }
   }
 
+  @Test fun `inner interface in a merged component with different scope fail`() {
+    assumeMergeComponent(annotationClass)
+
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+        import com.squareup.anvil.annotations.MergeSubcomponent
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+        
+        @MergeSubcomponent(Any::class)
+        interface SubcomponentInterface {
+          @ContributesTo(Unit::class)
+          interface InnerComponent
+        }
+    """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains("File being compiled: (13,13)")
+      assertThat(messages).contains(
+          "It seems like you tried to contribute an inner class of a merged component to " +
+              "another component. This is not supported and results in a compiler error."
+      )
+    }
+  }
+
   @Test fun `module interfaces are not merged`() {
     // They could cause errors while compiling code when adding our contributed super classes.
     compile(
