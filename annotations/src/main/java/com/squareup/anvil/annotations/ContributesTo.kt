@@ -28,7 +28,7 @@ import kotlin.reflect.KClass
  * @Module
  * @ContributesTo(
  *     AppScope::class,
- *     replaces = DevelopmentApplicationModule::class
+ *     replaces = [DevelopmentApplicationModule::class]
  * )
  * object DevelopmentApplicationTestModule {
  *   @Provides
@@ -40,5 +40,5 @@ import kotlin.reflect.KClass
 @Retention(RUNTIME)
 annotation class ContributesTo(
   val scope: KClass<*>,
-  val replaces: KClass<*> = Unit::class
+  val replaces: Array<KClass<*>> = []
 )

@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.platform.has
 import org.jetbrains.kotlin.platform.jvm.JvmPlatform
 import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -109,11 +110,15 @@ internal fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescript
       .classDescriptorForType()
 }
 
-internal fun AnnotationDescriptor.replaces(module: ModuleDescriptor): ClassDescriptor? {
-  return (getAnnotationValue("replaces") as? KClassValue)
-      ?.getType(module)
-      ?.argumentType()
-      ?.classDescriptorForType()
+internal fun AnnotationDescriptor.replaces(module: ModuleDescriptor): List<ClassDescriptor> {
+  return (getAnnotationValue("replaces") as? ArrayValue)
+      ?.value
+      ?.map {
+        it.getType(module)
+            .argumentType()
+            .classDescriptorForType()
+      }
+      ?: emptyList()
 }
 
 internal fun AnnotationDescriptor.boundType(

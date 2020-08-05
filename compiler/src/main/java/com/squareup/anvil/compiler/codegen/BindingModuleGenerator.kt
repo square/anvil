@@ -153,9 +153,11 @@ internal class BindingModuleGenerator(
       ).asSequence()
 
       val replacedBindings = (contributedBindingsThisModule + contributedBindingsDependencies)
-          .mapNotNull {
+          .flatMap {
             it.annotationOrNull(contributesBindingFqName, scope = scope)
                 ?.replaces(module)
+                ?.asSequence()
+                ?: emptySequence()
           }
 
       // Contributed Dagger modules can replace other Dagger modules but also contributed bindings.
@@ -168,9 +170,11 @@ internal class BindingModuleGenerator(
               annotation = contributesToFqName
           ))
           .filter { it.annotationOrNull(daggerModuleFqName) != null }
-          .mapNotNull {
+          .flatMap {
             it.annotationOrNull(contributesToFqName, scope)
                 ?.replaces(module)
+                ?.asSequence()
+                ?: emptySequence()
           }
 
       val bindingMethods = (contributedBindingsThisModule + contributedBindingsDependencies)

@@ -104,7 +104,7 @@ different bindings for instrumentation tests, e.g.
 @Module
 @ContributesTo(
     scope = AppScope::class,
-    replaces = DevelopmentApplicationModule::class
+    replaces = [DevelopmentApplicationModule::class]
 )
 object DevelopmentApplicationTestModule {
   @Provides

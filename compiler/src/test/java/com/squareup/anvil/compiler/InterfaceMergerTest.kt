@@ -159,7 +159,7 @@ class InterfaceMergerTest(
         
         @ContributesTo(
             Any::class,
-            replaces = ContributingInterface::class
+            replaces = [ContributingInterface::class]
         )
         interface SecondContributingInterface        
 
@@ -185,7 +185,7 @@ class InterfaceMergerTest(
         
         @ContributesTo(
             Any::class,
-            replaces = ContributingInterface::class
+            replaces = [ContributingInterface::class]
         )
         interface SecondContributingInterface        
 
@@ -213,7 +213,7 @@ class InterfaceMergerTest(
         
         @ContributesTo(
             Any::class,
-            replaces = ContributingInterface::class
+            replaces = [ContributingInterface::class]
         )
         interface SecondContributingInterface
 

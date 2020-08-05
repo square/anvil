@@ -312,7 +312,7 @@ class BindingModuleGeneratorTest(
         
         @ContributesBinding(
             Any::class,
-            replaces = ContributingInterface::class
+            replaces = [ContributingInterface::class]
         )
         interface SecondContributingInterface : ParentInterface
         
