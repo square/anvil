@@ -92,49 +92,54 @@ internal val Result.innerModule: Class<*>
 
 @OptIn(ExperimentalStdlibApi::class)
 internal val Class<*>.hintContributes: KClass<*>?
-  get() {
-    // The capitalize doesn't make sense, I don't know where this is coming from the compile testing
-    // library. Maybe a bug?
-    val className = "${canonicalName.replace('.', '_').capitalize(US)}Kt"
-    val clazz = try {
-      classLoader.loadClass("$HINT_CONTRIBUTES_PACKAGE_PREFIX.${`package`.name}.$className")
-    } catch (e: ClassNotFoundException) {
-      return null
-    }
+  get() = contributedProperties(HINT_CONTRIBUTES_PACKAGE_PREFIX)
+      ?.filter { it.java == this }
+      ?.also { assertThat(it.size).isEqualTo(1) }
+      ?.first()
 
-    return clazz.declaredFields
-        .map {
-          it.isAccessible = true
-          it.get(null)
-        }
-        .filterIsInstance<KClass<*>>()
-        .filter { it.java == this }
-        .also { assertThat(it.size).isEqualTo(1) }
-        .first()
-  }
+@OptIn(ExperimentalStdlibApi::class)
+internal val Class<*>.hintContributesScope: KClass<*>?
+  get() = contributedProperties(HINT_CONTRIBUTES_PACKAGE_PREFIX)
+      ?.also { assertThat(it.size).isEqualTo(2) }
+      ?.filter { it.java != this }
+      ?.also { assertThat(it.size).isEqualTo(1) }
+      ?.first()
 
 @OptIn(ExperimentalStdlibApi::class)
 internal val Class<*>.hintBinding: KClass<*>?
-  get() {
-    // The capitalize doesn't make sense, I don't know where this is coming from the compile testing
-    // library. Maybe a bug?
-    val className = "${canonicalName.replace('.', '_').capitalize(US)}Kt"
-    val clazz = try {
-      classLoader.loadClass("$HINT_BINDING_PACKAGE_PREFIX.${`package`.name}.$className")
-    } catch (e: ClassNotFoundException) {
-      return null
-    }
+  get() = contributedProperties(HINT_BINDING_PACKAGE_PREFIX)
+      ?.filter { it.java == this }
+      ?.also { assertThat(it.size).isEqualTo(1) }
+      ?.first()
 
-    return clazz.declaredFields
-        .map {
-          it.isAccessible = true
-          it.get(null)
-        }
-        .filterIsInstance<KClass<*>>()
-        .filter { it.java == this }
-        .also { assertThat(it.size).isEqualTo(1) }
-        .first()
+@OptIn(ExperimentalStdlibApi::class)
+internal val Class<*>.hintBindingScope: KClass<*>?
+  get() = contributedProperties(HINT_BINDING_PACKAGE_PREFIX)
+      ?.also { assertThat(it.size).isEqualTo(2) }
+      ?.filter { it.java != this }
+      ?.also { assertThat(it.size).isEqualTo(1) }
+      ?.first()
+
+@OptIn(ExperimentalStdlibApi::class)
+private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*>>? {
+  // The capitalize() doesn't make sense, I don't know where this is coming from. Maybe it's a
+  // bug in the compile testing library?
+  val className = canonicalName.replace('.', '_')
+      .capitalize(US) + "Kt"
+
+  val clazz = try {
+    classLoader.loadClass("$packagePrefix.${`package`.name}.$className")
+  } catch (e: ClassNotFoundException) {
+    return null
   }
+
+  return clazz.declaredFields
+      .map {
+        it.isAccessible = true
+        it.get(null)
+      }
+      .filterIsInstance<KClass<*>>()
+}
 
 internal val Class<*>.daggerComponent: Component
   get() = annotations.filterIsInstance<Component>()

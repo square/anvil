@@ -149,8 +149,9 @@ internal class BindingModuleGenerator(
       val contributedBindingsDependencies = classScanner.findContributedClasses(
           module,
           packageName = HINT_BINDING_PACKAGE_PREFIX,
-          annotation = contributesBindingFqName
-      ).asSequence()
+          annotation = contributesBindingFqName,
+          scope = scope
+      )
 
       val replacedBindings = (contributedBindingsThisModule + contributedBindingsDependencies)
           .flatMap {
@@ -167,7 +168,8 @@ internal class BindingModuleGenerator(
           .plus(classScanner.findContributedClasses(
               module,
               packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
-              annotation = contributesToFqName
+              annotation = contributesToFqName,
+              scope = scope
           ))
           .filter { it.annotationOrNull(daggerModuleFqName) != null }
           .flatMap {

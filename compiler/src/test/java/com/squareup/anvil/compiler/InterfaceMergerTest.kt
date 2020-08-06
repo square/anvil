@@ -425,6 +425,35 @@ class InterfaceMergerTest(
     }
   }
 
+  @Test fun `inner interface in a merged component with different scope are merged`() {
+    assumeMergeComponent(annotationClass)
+
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+        import com.squareup.anvil.annotations.MergeSubcomponent
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+        
+        @MergeSubcomponent(Any::class)
+        interface SubcomponentInterface {
+          @ContributesTo(Unit::class)
+          interface InnerInterface
+        }
+    """
+    ) {
+      val innerInterface = classLoader
+          .loadClass("com.squareup.test.SubcomponentInterface\$InnerInterface")
+      assertThat(componentInterface extends innerInterface).isTrue()
+      assertThat(componentInterface.interfaces).hasLength(1)
+      assertThat(subcomponentInterface.interfaces).hasLength(0)
+    }
+  }
+
   @Test fun `module interfaces are not merged`() {
     // They could cause errors while compiling code when adding our contributed super classes.
     compile(

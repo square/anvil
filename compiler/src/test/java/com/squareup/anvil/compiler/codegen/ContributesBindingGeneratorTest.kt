@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.hintBinding
+import com.squareup.anvil.compiler.hintBindingScope
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import org.junit.Test
 
@@ -23,6 +24,7 @@ class ContributesBindingGeneratorTest {
     """
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
     }
   }
 
@@ -40,6 +42,24 @@ class ContributesBindingGeneratorTest {
     """
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
+    }
+  }
+
+  @Test fun `the order of the scope can be changed with named parameters`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesBinding
+
+        interface ParentInterface
+
+        @ContributesBinding(boundType = ParentInterface::class, scope = Int::class)
+        class ContributingInterface : ParentInterface
+    """
+    ) {
+      assertThat(contributingInterface.hintBindingScope).isEqualTo(Int::class)
     }
   }
 
@@ -61,6 +81,7 @@ class ContributesBindingGeneratorTest {
       val contributingInterface =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingInterface")
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
     }
   }
 
@@ -82,6 +103,7 @@ class ContributesBindingGeneratorTest {
       val contributingClass =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingClass")
       assertThat(contributingClass.hintBinding?.java).isEqualTo(contributingClass)
+      assertThat(contributingClass.hintBindingScope).isEqualTo(Any::class)
     }
   }
 
