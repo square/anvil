@@ -97,7 +97,7 @@ interface AppComponent
 
 The `@ContributesBinding` annotation generates a Dagger binding method for an annotated class and 
 contributes this binding method to the given scope. Imagine this example:
-```
+```kotlin
 interface Authenticator
 
 class RealAuthenticator @Inject constructor() : Authenticator
@@ -111,7 +111,7 @@ abstract class AuthenticatorModule {
 This is a lot of boilerplate if you always want to use `RealAuthenticator` when injecting
 `Authenticator`. You can replace this entire Dagger module with the `@ContributesBinding` 
 annotation. The equivalent would be:
-```
+```kotlin
 interface Authenticator
 
 @ContributesBinding(AppScope::class)
