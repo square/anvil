@@ -93,6 +93,31 @@ the Dagger component, e.g.
 interface AppComponent
 ```
 
+## Contributed bindings
+
+The `@ContributesBinding` annotation generates a Dagger binding method for an annotated class and 
+contributes this binding method to the given scope. Imagine this example:
+```
+interface Authenticator
+
+class RealAuthenticator @Inject constructor() : Authenticator
+
+@Module
+@ContributesTo(AppScope::class)
+abstract class AuthenticatorModule {
+  @Binds abstract fun bindRealAuthenticator(authenticator: RealAuthenticator): Authenticator
+}
+```
+This is a lot of boilerplate if you always want to use `RealAuthenticator` when injecting
+`Authenticator`. You can replace this entire Dagger module with the `@ContributesBinding` 
+annotation. The equivalent would be:
+```
+interface Authenticator
+
+@ContributesBinding(AppScope::class)
+class RealAuthenticator @Inject constructor() : Authenticator
+```
+
 ## Exclusions
 
 Dagger modules and component interfaces can be excluded in two different levels.
