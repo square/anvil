@@ -6,7 +6,7 @@
 
 * Change the `replaces` attribute from a single class to an array. This gives the API more flexibility and avoids redundant classes. E.g. one Dagger module with several binding and provider methods may wish to replace multiple other Dagger modules.
 * Introduce the new `@ContributesBinding` annotation. This annotation allows you to contribute binding methods without actually writing a Dagger module.
-```
+```kotlin
 interface Authenticator
 
 @ContributesBinding(AppScope::class)
