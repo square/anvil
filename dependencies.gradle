@@ -1,5 +1,5 @@
 ext {
-  autoServiceVersion = '1.0-rc6'
+  autoServiceVersion = '1.0-rc7'
   daggerVersion = '2.28'
   espressoVersion = '3.2.0'
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
