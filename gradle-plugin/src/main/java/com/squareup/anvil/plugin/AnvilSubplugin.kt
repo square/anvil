@@ -56,6 +56,14 @@ class AnvilSubplugin : KotlinGradleSubplugin<AbstractCompile> {
       )
     }
 
-    return listOf(srcGenDirOption)
+    val extension = project.extensions.findByType(AnvilExtension::class.java) ?: AnvilExtension()
+
+    return listOf(
+        srcGenDirOption,
+        SubpluginOption(
+            key = "generate-dagger-factories",
+            value = extension.generateDaggerFactories.toString()
+        )
+    )
   }
 }
