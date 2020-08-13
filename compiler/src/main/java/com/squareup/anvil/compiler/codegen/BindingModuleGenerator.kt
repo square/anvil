@@ -16,6 +16,7 @@ import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerBindsFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
+import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.getAnnotationValue
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
@@ -33,7 +34,6 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
@@ -108,7 +108,7 @@ internal class BindingModuleGenerator(
               ?.let { excludedTypesForScope[scope] = it }
 
           val packageName = generatePackageName(psiClass)
-          val className = generateClassName(psiClass)
+          val className = psiClass.generateClassName()
 
           val directory = File(codeGenDir, packageName.replace('.', File.separatorChar))
           val file = File(directory, "$className.kt")
@@ -294,16 +294,8 @@ internal class BindingModuleGenerator(
     }
   }
 
-  private fun generateClassName(psiClass: KtClassOrObject): String =
-    psiClass.parentsWithSelf
-        .filterIsInstance<KtClassOrObject>()
-        .toList()
-        .reversed()
-        .joinToString(separator = "", postfix = ANVIL_MODULE_SUFFIX) {
-          it.requireFqName()
-              .shortName()
-              .asString()
-        }
+  private fun KtClassOrObject.generateClassName(): String =
+    generateClassName(separator = "") + ANVIL_MODULE_SUFFIX
 
   private fun generatePackageName(psiClass: KtClassOrObject): String =
     "$MODULE_PACKAGE_PREFIX.${psiClass.containingKtFile.packageFqName}"
@@ -314,7 +306,7 @@ internal class BindingModuleGenerator(
     bindingMethods: List<String>
   ): String {
     val packageName = generatePackageName(psiClass)
-    val className = generateClassName(psiClass)
+    val className = psiClass.generateClassName()
 
     return """
       package $packageName

@@ -9,6 +9,7 @@ import com.tschuchort.compiletesting.SourceFile
 import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
+import dagger.internal.codegen.ComponentProcessor
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Assume.assumeTrue
 import java.io.File
@@ -17,6 +18,8 @@ import kotlin.reflect.KClass
 
 internal fun compile(
   source: String,
+  enableDaggerAnnotationProcessor: Boolean = false,
+  generateDaggerFactories: Boolean = false,
   block: Result.() -> Unit = { }
 ): Result {
   return KotlinCompilation()
@@ -24,6 +27,10 @@ internal fun compile(
         compilerPlugins = listOf(AnvilComponentRegistrar())
         useIR = false
         inheritClassPath = true
+
+        if (enableDaggerAnnotationProcessor) {
+          annotationProcessors = listOf(ComponentProcessor())
+        }
 
         val commandLineProcessor = AnvilCommandLineProcessor()
         commandLineProcessors = listOf(commandLineProcessor)
@@ -33,6 +40,11 @@ internal fun compile(
                 pluginId = commandLineProcessor.pluginId,
                 optionName = srcGenDirName,
                 optionValue = File(workingDir, "build/anvil").absolutePath
+            ),
+            PluginOption(
+                pluginId = commandLineProcessor.pluginId,
+                optionName = generateDaggerFactoriesName,
+                optionValue = generateDaggerFactories.toString()
             )
         )
 
@@ -90,6 +102,9 @@ internal val Result.daggerModule4: Class<*>
 internal val Result.innerModule: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ComponentInterface\$InnerModule")
 
+internal val Result.injectClass: Class<*>
+  get() = classLoader.loadClass("com.squareup.test.InjectClass")
+
 @OptIn(ExperimentalStdlibApi::class)
 internal val Class<*>.hintContributes: KClass<*>?
   get() = contributedProperties(HINT_CONTRIBUTES_PACKAGE_PREFIX)
@@ -119,6 +134,35 @@ internal val Class<*>.hintBindingScope: KClass<*>?
       ?.filter { it.java != this }
       ?.also { assertThat(it.size).isEqualTo(1) }
       ?.first()
+
+@OptIn(ExperimentalStdlibApi::class)
+internal fun Class<*>.moduleFactoryClass(
+  providerMethodName: String,
+  companion: Boolean = false
+): Class<*> {
+  val companionString = if (companion) "_Companion" else ""
+  val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
+
+  return classLoader.loadClass(
+      "${`package`.name}.$enclosingClassString$simpleName$companionString" +
+          "_${providerMethodName.capitalize(US)}Factory"
+  )
+}
+
+@OptIn(ExperimentalStdlibApi::class)
+internal fun Class<*>.factoryClass(): Class<*> {
+  val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
+
+  return classLoader.loadClass("${`package`.name}.$enclosingClassString${simpleName}_Factory")
+}
+
+@OptIn(ExperimentalStdlibApi::class)
+internal fun Class<*>.membersInjector(): Class<*> {
+  val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
+
+  return classLoader.loadClass("${`package`.name}." +
+      "$enclosingClassString${simpleName}_MembersInjector")
+}
 
 @OptIn(ExperimentalStdlibApi::class)
 private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*>>? {
