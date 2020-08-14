@@ -166,6 +166,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
               Provider::class.java, Provider::class.java
           )
 
+      @Suppress("RedundantLambdaArrow")
       val membersInjectorInstance = constructor
           .newInstance(
               Provider { "a" }, Provider<CharSequence> { "b" }, Provider { listOf("c") },
@@ -675,7 +676,6 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     }
   }
 
-  @OptIn(ExperimentalStdlibApi::class)
   private fun Class<*>.staticInjectMethod(memberName: String): Method {
     // We can't check the @InjectedFieldSignature annotation unfortunately, because it has class
     // retention.

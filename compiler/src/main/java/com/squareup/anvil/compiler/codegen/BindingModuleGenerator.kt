@@ -145,7 +145,6 @@ internal class BindingModuleGenerator(
         .toList()
   }
 
-  @OptIn(ExperimentalStdlibApi::class)
   override fun flush(
     codeGenDir: File,
     module: ModuleDescriptor
