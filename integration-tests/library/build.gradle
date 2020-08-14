@@ -15,5 +15,4 @@ if (rootProject.ext.generateDaggerFactoriesWithAnvil) {
 
 dependencies {
   api deps.dagger2.dagger
-  api deps.kotlin.stdlib
 }

@@ -8,7 +8,6 @@ dependencies {
   implementation project(':annotations')
   implementation deps.dagger2.dagger
   implementation deps.jsr250
-  implementation deps.kotlin.stdlib
   implementation deps.kotlinpoet
 
   compileOnly deps.auto.service.annotations
