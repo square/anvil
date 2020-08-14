@@ -59,7 +59,7 @@ import kotlin.reflect.KClass
  */
 @Target(CLASS)
 @Retention(RUNTIME)
-annotation class ContributesBinding(
+public annotation class ContributesBinding(
   val scope: KClass<*>,
   val boundType: KClass<*> = Unit::class,
   val replaces: Array<KClass<*>> = []

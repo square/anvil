@@ -47,7 +47,7 @@ import kotlin.reflect.KClass
 
 @Target(CLASS)
 @Retention(RUNTIME)
-annotation class MergeInterfaces(
+public annotation class MergeInterfaces(
   val scope: KClass<*>,
   val exclude: Array<KClass<*>> = []
 )

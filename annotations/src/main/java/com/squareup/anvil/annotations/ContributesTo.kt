@@ -38,7 +38,7 @@ import kotlin.reflect.KClass
  */
 @Target(CLASS)
 @Retention(RUNTIME)
-annotation class ContributesTo(
+public annotation class ContributesTo(
   val scope: KClass<*>,
   val replaces: Array<KClass<*>> = []
 )
