@@ -88,11 +88,12 @@ class ComponentDetectorCheckTest {
     }
   }
 
+  @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = com.squareup.anvil.compiler.compile(
-      sources = *sources,
+      sources = sources,
       generateDaggerFactories = true,
       block = block
   )

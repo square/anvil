@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.isStatic
 import com.squareup.anvil.compiler.membersInjector
+import com.squareup.anvil.compiler.newInstanceNoArgs
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.MembersInjector
@@ -175,10 +176,10 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           )
           as MembersInjector<Any>
 
-      val injectInstanceConstructor = injectClass.newInstance()
+      val injectInstanceConstructor = injectClass.newInstanceNoArgs()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
 
-      val injectInstanceStatic = injectClass.newInstance()
+      val injectInstanceStatic = injectClass.newInstanceNoArgs()
 
       membersInjector.staticInjectMethod("string")
           .invoke(null, injectInstanceStatic, "a")
@@ -309,10 +310,10 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           )
           as MembersInjector<Any>
 
-      val injectInstanceConstructor = injectClass.newInstance()
+      val injectInstanceConstructor = injectClass.newInstanceNoArgs()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
 
-      val injectInstanceStatic = injectClass.newInstance()
+      val injectInstanceStatic = injectClass.newInstanceNoArgs()
 
       membersInjector.staticInjectMethod("string")
           .invoke(null, injectInstanceStatic, "a")
@@ -421,10 +422,10 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           .newInstance(Provider { File("") }, Provider { File("").toPath() })
           as MembersInjector<Any>
 
-      val injectInstanceConstructor = injectClass.newInstance()
+      val injectInstanceConstructor = injectClass.newInstanceNoArgs()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
 
-      val injectInstanceStatic = injectClass.newInstance()
+      val injectInstanceStatic = injectClass.newInstanceNoArgs()
 
       membersInjector.staticInjectMethod("file")
           .invoke(null, injectInstanceStatic, File(""))
@@ -543,10 +544,10 @@ public final class OuterClass_InjectClass_MembersInjector implements MembersInje
           .newInstance(Provider { "a" }, Provider<CharSequence> { "b" }, Provider { listOf("c") })
           as MembersInjector<Any>
 
-      val injectInstanceConstructor = injectClass.newInstance()
+      val injectInstanceConstructor = injectClass.newInstanceNoArgs()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
 
-      val injectInstanceStatic = injectClass.newInstance()
+      val injectInstanceStatic = injectClass.newInstanceNoArgs()
 
       membersInjector.staticInjectMethod("string")
           .invoke(null, injectInstanceStatic, "a")
@@ -684,11 +685,12 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
         .single { it.name == "inject${memberName.capitalize(US)}" }
   }
 
+  @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = com.squareup.anvil.compiler.compile(
-      sources = *sources,
+      sources = sources,
       enableDaggerAnnotationProcessor = useDagger,
       generateDaggerFactories = !useDagger,
       block = block
