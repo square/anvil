@@ -61,7 +61,6 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
         }
   }
 
-  @OptIn(ExperimentalStdlibApi::class)
   private fun generateMembersInjectorClass(
     codeGenDir: File,
     module: ModuleDescriptor,

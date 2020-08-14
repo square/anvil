@@ -15,7 +15,7 @@ buildscript {
   }
 
   dependencies {
-    classpath deps.kotlin.gradle_plugin
+    classpath deps.kotlin_gradle.gradle_plugin
     classpath deps.maven_publishing_plugin
     classpath deps.gradle_publishing_plugin
     classpath deps.ktlint_plugin
@@ -76,9 +76,9 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
 }
 
 dependencies {
-  implementation deps.kotlin.gradle_plugin
-  implementation deps.kotlin.gradle_plugin_api
-  implementation deps.kotlin.stdlib
+  implementation deps.kotlin_gradle.gradle_plugin
+  implementation deps.kotlin_gradle.gradle_plugin_api
+  implementation deps.kotlin_gradle.stdlib
 
   // Compile only so that Java / Kotlin modules don't download it unnecessarily.
   compileOnly deps.android_gradle_plugin

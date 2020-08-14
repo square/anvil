@@ -30,13 +30,9 @@ if (rootProject.ext.kotlinIrSupported) {
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   kotlinOptions {
     jvmTarget = JavaVersion.VERSION_1_8
-    freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
 
-    // TODO: remove the if-check when upgrading to Kotlin 1.4.
-    if (rootProject.ext.kotlinVersion.startsWith('1.4')) {
-      // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin
-      // compiler requires this flag when doing so.
-      freeCompilerArgs += "-Xjvm-default=enable"
-    }
+    // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin
+    // compiler requires this flag when doing so.
+    freeCompilerArgs += "-Xjvm-default=enable"
   }
 }

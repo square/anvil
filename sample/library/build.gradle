@@ -18,10 +18,3 @@ dependencies {
   api deps.dagger2.dagger
   api deps.kotlin.stdlib
 }
-
-//noinspection UnnecessaryQualifiedReference
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-  kotlinOptions {
-    freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
-  }
-}
