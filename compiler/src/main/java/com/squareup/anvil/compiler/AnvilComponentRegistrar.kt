@@ -5,6 +5,7 @@ import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesBindingGenerator
 import com.squareup.anvil.compiler.codegen.ContributesToGenerator
+import com.squareup.anvil.compiler.codegen.dagger.ComponentDetectorCheck
 import com.squareup.anvil.compiler.codegen.dagger.InjectConstructorFactoryGenerator
 import com.squareup.anvil.compiler.codegen.dagger.MembersInjectorGenerator
 import com.squareup.anvil.compiler.codegen.dagger.ProvidesMethodFactoryGenerator
@@ -41,6 +42,7 @@ class AnvilComponentRegistrar : ComponentRegistrar {
       codeGenerators += ProvidesMethodFactoryGenerator()
       codeGenerators += InjectConstructorFactoryGenerator()
       codeGenerators += MembersInjectorGenerator()
+      codeGenerators += ComponentDetectorCheck()
     }
 
     val codeGenerationExtension = CodeGenerationExtension(
