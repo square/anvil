@@ -66,14 +66,6 @@ ext {
           compiler: "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion",
           gradle_plugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
           gradle_plugin_api: "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$kotlinVersion",
-          stdlib: "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion",
-      ],
-
-      // Required until Gradle uses Kotlin 1.4.
-      kotlin_gradle: [
-          gradle_plugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:1.3.72",
-          gradle_plugin_api: "org.jetbrains.kotlin:kotlin-gradle-plugin-api:1.3.72",
-          stdlib: "org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.3.72",
       ],
 
       kotlinpoet: "com.squareup:kotlinpoet:1.6.0",
