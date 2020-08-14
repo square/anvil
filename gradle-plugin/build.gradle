@@ -38,7 +38,6 @@ apply from: rootProject.file('copy_properties.gradle')
 
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'org.jetbrains.kotlin.kapt'
 apply plugin: 'com.vanniktech.maven.publish'
 apply plugin: 'com.gradle.plugin-publish'
 apply plugin: 'org.jlleitschuh.gradle.ktlint'
@@ -82,8 +81,4 @@ dependencies {
 
   // Compile only so that Java / Kotlin modules don't download it unnecessarily.
   compileOnly deps.android_gradle_plugin
-
-  compileOnly deps.auto.service.annotations
-
-  kapt deps.auto.service.processor
 }
