@@ -37,6 +37,7 @@ import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
+import org.jetbrains.kotlin.types.KotlinType
 import java.io.File
 import java.util.Locale.US
 
@@ -192,6 +193,7 @@ internal class BindingModuleGenerator(
             val boundType = annotation.boundType(module, contributedClass)
 
             checkExtendsBoundType(type = contributedClass, boundType = boundType)
+            checkNotGeneric(type = contributedClass, boundTypeDescriptor = boundType)
 
             val concreteType = contributedClass.fqNameSafe
             val methodName = concreteType
@@ -221,6 +223,33 @@ internal class BindingModuleGenerator(
             )
         )
       }
+    }
+  }
+
+  private fun checkNotGeneric(
+    type: ClassDescriptor,
+    boundTypeDescriptor: ClassDescriptor
+  ) {
+    if (boundTypeDescriptor.declaredTypeParameters.isNotEmpty()) {
+
+      fun KotlinType.describeTypeParameters(): String = arguments
+          .ifEmpty { return "" }
+          .joinToString(prefix = "<", postfix = ">") { typeArgument ->
+            typeArgument.type.classDescriptorForType().name.asString() +
+                typeArgument.type.describeTypeParameters()
+          }
+
+      val boundType = type.typeConstructor
+          .supertypes
+          .first { it.classDescriptorForType() == boundTypeDescriptor }
+
+      throw AnvilCompilationException(
+          classDescriptor = boundTypeDescriptor,
+          message = "Binding ${boundTypeDescriptor.fqNameSafe} contains type parameters(s)" +
+              " ${boundType.describeTypeParameters()}." +
+              " Type parameters in bindings are not supported. This binding needs" +
+              " to be contributed to a dagger module manually"
+      )
     }
   }
 
