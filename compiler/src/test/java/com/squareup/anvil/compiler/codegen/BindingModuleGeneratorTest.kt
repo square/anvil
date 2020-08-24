@@ -339,6 +339,36 @@ class BindingModuleGeneratorTest(
     }
   }
 
+  @Test fun `the contributed binding class must not have a generic type parameter`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBinding
+        $import
+
+        interface ParentInterface<T, S>
+        
+        class SomeOtherType
+        
+        @ContributesBinding(Any::class, ParentInterface::class)
+        interface ContributingInterface:
+                ParentInterface<Map<String, List<Pair<String, Int>>>, SomeOtherType>
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+    """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+
+      assertThat(messages).contains("Source.kt: (6, 11)")
+      assertThat(messages).contains(
+          "Binding com.squareup.test.ParentInterface contains type parameters(s)" +
+              " <Map<String, List<Pair<String, Int>>>, SomeOtherType>"
+      )
+    }
+  }
+
   private val Class<*>.anyDaggerComponent: AnyDaggerComponent
     get() = anyDaggerComponent(annotationClass)
 }

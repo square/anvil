@@ -34,9 +34,11 @@ import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
+import org.jetbrains.kotlin.types.KotlinType
 import java.io.File
 import java.util.Locale.US
 
@@ -192,6 +194,7 @@ internal class BindingModuleGenerator(
             val boundType = annotation.boundType(module, contributedClass)
 
             checkExtendsBoundType(type = contributedClass, boundType = boundType)
+            checkNotGeneric(type = contributedClass, boundTypeDescriptor = boundType)
 
             val concreteType = contributedClass.fqNameSafe
             val methodName = concreteType
@@ -221,6 +224,46 @@ internal class BindingModuleGenerator(
             )
         )
       }
+    }
+  }
+
+  private fun checkNotGeneric(
+    type: ClassDescriptor,
+    boundTypeDescriptor: ClassDescriptor
+  ) {
+    if (boundTypeDescriptor.declaredTypeParameters.isNotEmpty()) {
+
+      fun StringBuilder.describeTypeParameters(type: KotlinType): StringBuilder {
+        if (type.arguments.isNotEmpty()) {
+          append("<")
+
+          for ((count, typeArgument) in type.arguments.withIndex()) {
+            if (count > 0) {
+              append(", ")
+            }
+            append(DescriptorUtils.getClassDescriptorForType(typeArgument.type).name)
+            describeTypeParameters(typeArgument.type)
+          }
+
+          append(">")
+        }
+
+        return this
+      }
+
+      val actualBoundType = type.typeConstructor
+          .supertypes
+          .first { DescriptorUtils.getClassDescriptorForType(it) == boundTypeDescriptor }
+
+      val typeParametersString = StringBuilder().describeTypeParameters(actualBoundType).toString()
+
+      throw AnvilCompilationException(
+          classDescriptor = boundTypeDescriptor,
+          message = "Binding ${boundTypeDescriptor.fqNameSafe} contains type parameters(s)" +
+              " $typeParametersString." +
+              " Type parameters in bindings are not supported. This binding needs" +
+              " to be contributed to a dagger module manually"
+      )
     }
   }
 
