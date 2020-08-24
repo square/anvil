@@ -34,7 +34,6 @@ import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
-import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
@@ -233,34 +232,21 @@ internal class BindingModuleGenerator(
   ) {
     if (boundTypeDescriptor.declaredTypeParameters.isNotEmpty()) {
 
-      fun StringBuilder.describeTypeParameters(type: KotlinType): StringBuilder {
-        if (type.arguments.isNotEmpty()) {
-          append("<")
-
-          for ((count, typeArgument) in type.arguments.withIndex()) {
-            if (count > 0) {
-              append(", ")
-            }
-            append(DescriptorUtils.getClassDescriptorForType(typeArgument.type).name)
-            describeTypeParameters(typeArgument.type)
+      fun KotlinType.describeTypeParameters(): String = arguments
+          .ifEmpty { return "" }
+          .joinToString(prefix = "<", postfix = ">") { typeArgument ->
+            typeArgument.type.classDescriptorForType().name.asString() +
+                typeArgument.type.describeTypeParameters()
           }
 
-          append(">")
-        }
-
-        return this
-      }
-
-      val actualBoundType = type.typeConstructor
+      val boundType = type.typeConstructor
           .supertypes
-          .first { DescriptorUtils.getClassDescriptorForType(it) == boundTypeDescriptor }
-
-      val typeParametersString = StringBuilder().describeTypeParameters(actualBoundType).toString()
+          .first { it.classDescriptorForType() == boundTypeDescriptor }
 
       throw AnvilCompilationException(
           classDescriptor = boundTypeDescriptor,
           message = "Binding ${boundTypeDescriptor.fqNameSafe} contains type parameters(s)" +
-              " $typeParametersString." +
+              " ${boundType.describeTypeParameters()}." +
               " Type parameters in bindings are not supported. This binding needs" +
               " to be contributed to a dagger module manually"
       )

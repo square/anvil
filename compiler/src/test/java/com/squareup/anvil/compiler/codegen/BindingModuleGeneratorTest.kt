@@ -352,7 +352,7 @@ class BindingModuleGeneratorTest(
         class SomeOtherType
         
         @ContributesBinding(Any::class, ParentInterface::class)
-        interface ContributingInterface:
+        interface ContributingInterface :
                 ParentInterface<Map<String, List<Pair<String, Int>>>, SomeOtherType>
         
         $annotation(Any::class)
