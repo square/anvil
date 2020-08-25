@@ -38,13 +38,24 @@ class AnvilSubplugin : KotlinGradleSubplugin<AbstractCompile> {
     // Notice that we use the name of the Kotlin compile task as a directory name. Generated code
     // for this specific compile task will be included in the task output. The output of different
     // compile tasks shouldn't be mixed.
-    val srcGenDir = File(project.buildDir, "anvil/src-gen-${kotlinCompile.name}")
-
-    return listOf(
-        SubpluginOption(
-            key = "src-gen-dir",
-            value = srcGenDir.absolutePath
-        )
+    val srcGenDir = File(project.buildDir, "anvil${File.separator}src-gen-${kotlinCompile.name}")
+    val srcGenDirOption = SubpluginOption(
+        key = "src-gen-dir",
+        value = srcGenDir.absolutePath
     )
+
+    project.afterEvaluate {
+      // Notice that we pass the absolutePath to the Kotlin compiler plugin. That is necessary,
+      // because the plugin has no understanding of Gradle or what the working directory is. The
+      // Kotlin Gradle plugin adds all SubpluginOptions as input to the Gradle task. This is bad,
+      // because now the hash of inputs is different on every machine. We override this input with
+      // a relative path in order to preserve some safety and avoid the cache misses.
+      kotlinCompile.inputs.property(
+          "${getCompilerPluginId()}.${srcGenDirOption.key}",
+          srcGenDir.relativeTo(project.buildDir).path
+      )
+    }
+
+    return listOf(srcGenDirOption)
   }
 }
