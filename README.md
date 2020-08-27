@@ -236,6 +236,40 @@ for performance reasons. With Hilt we wouldn't be able to enforce this requireme
 component interfaces. The development of Anvil started long before Hilt was announced and the
 internal version is being used in production for a while.
 
+## Experimental Dagger Factory generation
+
+Anvil allows you to generate Factory classes that usually the Dagger annotation processor would 
+generate for `@Provides` methods, `@Inject` constructors and `@Inject` fields. The benefit of this 
+feature is that you don't need to enable the Dagger annotation processor in this module. That often 
+means you can skip KAPT and the stub generating task. In addition Anvil generates Kotlin instead 
+of Java code, which allows Gradle to skip the Java compilation task. The result is faster 
+builds.
+
+```groovy
+anvil {
+  generateDaggerFactories = true // default is false
+}
+```
+
+In our codebase we measured that modules using Dagger build 65% faster with this new Anvil feature
+compared to using the Dagger annotation processor:
+
+  | Stub generation | Kapt | Javac | Kotlinc | Sum
+:--- | ---: | ---: | ---: | ---: | ---:
+Dagger | 12.976 | 40.377 | 8.571 | 10.241 | 72.165
+Anvil | 0 | 0 | 6.965 | 17.748 | 24.713
+
+For full builds of applications we measured savings of 16% on average.
+
+![Benchmark Dagger Factories](images/benchmark_dagger_factories.png?raw=true "Benchmark Dagger Factories")
+
+This feature can only be enabled in Gradle modules that don't compile any Dagger component. Since 
+Anvil only processes Kotlin code, you shouldn't enable it in modules with mixed Kotlin / Java 
+sources either.
+
+When you enable this feature, don't forget to remove the Dagger annotation processor. You should
+keep all other dependencies.
+
 ## License
 
     Copyright 2020 Square, Inc.
