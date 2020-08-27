@@ -2,6 +2,10 @@
 
 ## Next Version
 
+* Throw a compilation error when a `@ContributesBinding` annotation binds a generic type.
+* Remove absolute paths in Kotlin compilation task inputs #65.
+* Add new experimental feature to generate Dagger factories for faster build times.
+
 ## 2.0.0 (2020-08-07)
 
 * Change the `replaces` attribute from a single class to an array. This gives the API more flexibility and avoids redundant classes. E.g. one Dagger module with several binding and provider methods may wish to replace multiple other Dagger modules.
