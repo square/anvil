@@ -47,8 +47,6 @@ ext {
       junit: "junit:junit:4.13",
 
       kotlin: [
-          // TODO: when upgrading run tests in CI with with Kotlin 1.4 again. The compile testing
-          //  library doesn't support Kotlin 1.4, yet.
           compile_testing: "com.github.tschuchortdev:kotlin-compile-testing:1.2.9",
           compiler: "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion",
           gradle_plugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
