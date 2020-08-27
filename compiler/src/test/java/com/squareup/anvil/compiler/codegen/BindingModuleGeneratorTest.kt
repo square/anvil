@@ -50,7 +50,7 @@ class BindingModuleGeneratorTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -75,7 +75,7 @@ class BindingModuleGeneratorTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -100,7 +100,7 @@ class BindingModuleGeneratorTest(
 
         $annotation(Unit::class)
         interface SubcomponentInterface
-    """
+        """
     ) {
       if (annotationClass == MergeModules::class) {
         assertThat(componentInterface.daggerModule.includes.toList())
@@ -128,7 +128,7 @@ class BindingModuleGeneratorTest(
           $annotation(Any::class)
           interface ComponentInterface
         }
-    """
+        """
     ) {
       val className =
         "$MODULE_PACKAGE_PREFIX.com.squareup.test.SomeClassComponentInterfaceAnvilModule"
@@ -153,7 +153,7 @@ class BindingModuleGeneratorTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -189,7 +189,7 @@ class BindingModuleGeneratorTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -225,7 +225,7 @@ class BindingModuleGeneratorTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
 
@@ -256,7 +256,7 @@ class BindingModuleGeneratorTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
 
@@ -285,7 +285,7 @@ class BindingModuleGeneratorTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
 
@@ -318,7 +318,7 @@ class BindingModuleGeneratorTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -357,7 +357,7 @@ class BindingModuleGeneratorTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
 

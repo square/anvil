@@ -69,7 +69,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         import javax.inject.Inject
         
         class InjectClass @Inject constructor()
-    """
+        """
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -142,7 +142,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
           val string: String, 
           val int: Int
         )
-    """
+        """
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -246,7 +246,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
                stringListProvider.get()[0] + lazyString.get()
           }
         }
-    """
+        """
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -332,7 +332,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
           val file: File, 
           val path: Path
         )
-    """
+        """
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -418,7 +418,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
           val pair: Pair<Pair<String, Int>, List<String>>, 
           val set: Set<String>
         )
-    """
+        """
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -489,7 +489,7 @@ public final class OuterClass_InjectClass_Factory implements Factory<OuterClass.
         class OuterClass {
           class InjectClass @Inject constructor()
         }
-    """
+        """
     ) {
       val injectClass = classLoader.loadClass("com.squareup.test.OuterClass\$InjectClass")
       val factoryClass = injectClass.factoryClass()
@@ -570,7 +570,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
           val string: String, 
           val set: @JvmSuppressWildcards Set<(StringList) -> StringList>
         )
-    """
+        """
     ) {
       val factoryClass = injectClass.factoryClass()
 
