@@ -16,7 +16,7 @@ class ComponentDetectorCheckTest {
         
         @Component
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
@@ -39,7 +39,7 @@ class ComponentDetectorCheckTest {
         
         @Subcomponent
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
@@ -64,7 +64,7 @@ class ComponentDetectorCheckTest {
           @Component
           interface ComponentInterface
         }
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
@@ -89,7 +89,7 @@ class ComponentDetectorCheckTest {
           @Subcomponent
           interface ComponentInterface
         }
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.

@@ -37,7 +37,7 @@ class ModuleMergerTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule()).isEmpty()
 
@@ -62,7 +62,7 @@ class ModuleMergerTest(
             ]
         )
         interface ComponentInterface
-    """
+        """
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModule()).containsExactly(Boolean::class, Int::class)
@@ -90,7 +90,7 @@ class ModuleMergerTest(
             ]
         )
         interface ComponentInterface
-    """
+        """
     ) {
       val component = componentInterface.daggerComponent
       assertThat(component.modules.withoutAnvilModule()).containsExactly(Boolean::class, Int::class)
@@ -115,7 +115,7 @@ class ModuleMergerTest(
         $annotation(Any::class)
         @${daggerComponentClass.java.canonicalName}
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
@@ -137,7 +137,7 @@ class ModuleMergerTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule1.kotlin)
@@ -158,7 +158,7 @@ class ModuleMergerTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule1.kotlin)
@@ -185,7 +185,7 @@ class ModuleMergerTest(
             ]
         )
         interface ComponentInterface
-    """
+        """
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModule())
@@ -206,7 +206,7 @@ class ModuleMergerTest(
 
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
@@ -235,7 +235,7 @@ class ModuleMergerTest(
 
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule2.kotlin)
@@ -265,7 +265,7 @@ class ModuleMergerTest(
 
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
           .containsExactly(daggerModule1.kotlin)
@@ -297,7 +297,7 @@ class ModuleMergerTest(
 
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule()).isEmpty()
       assertThat(componentInterfaceAnvilModule.declaredMethods).hasLength(1)
@@ -323,7 +323,7 @@ class ModuleMergerTest(
 
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
@@ -356,7 +356,7 @@ class ModuleMergerTest(
             ]
         )
         interface ComponentInterface
-    """
+        """
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModule())
@@ -387,7 +387,7 @@ class ModuleMergerTest(
             ]
         )
         interface ComponentInterface
-    """
+        """
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule2.kotlin)
@@ -414,7 +414,7 @@ class ModuleMergerTest(
             ]
         )
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
     }
@@ -441,7 +441,7 @@ class ModuleMergerTest(
 
         $annotation(Unit::class)
         interface SubcomponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
           .containsExactly(daggerModule1.kotlin)
@@ -474,7 +474,7 @@ class ModuleMergerTest(
 
         @MergeSubcomponent(Unit::class)
         interface SubcomponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface.daggerComponent.modules.withoutAnvilModule())
           .containsExactly(daggerModule1.kotlin)
@@ -490,7 +490,7 @@ class ModuleMergerTest(
 
     visibilities.forEach { visibility ->
       compile(
-          """
+        """
         package com.squareup.test
 
         import com.squareup.anvil.annotations.ContributesTo
@@ -502,7 +502,7 @@ class ModuleMergerTest(
 
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
       ) {
         assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
         // Position to the class.
@@ -527,7 +527,7 @@ class ModuleMergerTest(
         
         $annotation(Any::class)
         interface SubcomponentInterface
-    """
+        """
     ) {
       assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule())
           .containsExactly(innerModule.kotlin)
@@ -548,7 +548,7 @@ class ModuleMergerTest(
           @dagger.Module
           abstract class InnerModule
         }
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(INTERNAL_ERROR)
       assertThat(messages).contains("File being compiled: (10,18)")
@@ -572,7 +572,7 @@ class ModuleMergerTest(
           @dagger.Module
           abstract class InnerModule
         }
-    """
+        """
     ) {
       val innerModule = classLoader
           .loadClass("com.squareup.test.SubcomponentInterface\$InnerModule")
@@ -604,7 +604,7 @@ class ModuleMergerTest(
             ]
         )
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       assertThat(messages).contains("Source.kt: (19, 11)")

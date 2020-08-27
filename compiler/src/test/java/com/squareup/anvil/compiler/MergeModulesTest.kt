@@ -15,7 +15,7 @@ class MergeModulesTest {
         
         @MergeModules(Any::class)
         class DaggerModule1
-    """
+        """
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule()).isEmpty()
       assertThat(daggerModule1.daggerModule.subcomponents).isEmpty()
@@ -37,7 +37,7 @@ class MergeModulesTest {
             ]
         )
         class DaggerModule1
-    """
+        """
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(Boolean::class, Int::class)
@@ -63,7 +63,7 @@ class MergeModulesTest {
             ]
         )
         class DaggerModule1
-    """
+        """
     ) {
       val module = daggerModule1.daggerModule
       assertThat(module.includes.withoutAnvilModule()).containsExactly(Boolean::class, Int::class)
@@ -81,7 +81,7 @@ class MergeModulesTest {
         @MergeModules(Any::class)
         @dagger.Module
         class DaggerModule1
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
@@ -103,7 +103,7 @@ class MergeModulesTest {
 
         @MergeModules(Any::class)
         class DaggerModule1
-    """
+        """
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(daggerModule2.kotlin)
@@ -130,7 +130,7 @@ class MergeModulesTest {
             ]
         )
         class DaggerModule1
-    """
+        """
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(daggerModule2.kotlin, Int::class, Boolean::class)
@@ -150,7 +150,7 @@ class MergeModulesTest {
 
         @MergeModules(Any::class)
         class DaggerModule1
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
@@ -179,7 +179,7 @@ class MergeModulesTest {
 
         @MergeModules(Any::class)
         class DaggerModule1
-    """
+        """
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(daggerModule3.kotlin)
@@ -209,7 +209,7 @@ class MergeModulesTest {
 
         @MergeModules(Any::class)
         class DaggerModule1
-    """
+        """
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(daggerModule2.kotlin)
@@ -241,7 +241,7 @@ class MergeModulesTest {
 
         @MergeModules(Any::class)
         class DaggerModule1
-    """
+        """
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule()).isEmpty()
       assertThat(daggerModule1AnvilModule.declaredMethods).hasLength(1)
@@ -267,7 +267,7 @@ class MergeModulesTest {
 
         @MergeModules(Any::class)
         class DaggerModule1
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
@@ -300,7 +300,7 @@ class MergeModulesTest {
             ]
         )
         class DaggerModule1
-    """
+        """
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(daggerModule2.kotlin, daggerModule3.kotlin)
@@ -330,7 +330,7 @@ class MergeModulesTest {
             ]
         )
         class DaggerModule1
-    """
+        """
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(daggerModule3.kotlin)
@@ -357,7 +357,7 @@ class MergeModulesTest {
             ]
         )
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
     }
@@ -384,7 +384,7 @@ class MergeModulesTest {
 
         @MergeModules(Unit::class)
         class DaggerModule2
-    """
+        """
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
           .containsExactly(daggerModule3.kotlin)
@@ -400,7 +400,7 @@ class MergeModulesTest {
 
     visibilities.forEach { visibility ->
       compile(
-          """
+        """
         package com.squareup.test
 
         import com.squareup.anvil.annotations.compat.MergeModules
@@ -412,7 +412,7 @@ class MergeModulesTest {
 
         @MergeModules(Any::class)
         class DaggerModule1
-    """
+        """
       ) {
         assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
         // Position to the class.
@@ -435,7 +435,7 @@ class MergeModulesTest {
           @dagger.Module
           abstract class InnerModule
         }
-    """
+        """
     ) {
       val innerModule = classLoader.loadClass("com.squareup.test.DaggerModule1\$InnerModule")
 
@@ -466,7 +466,7 @@ class MergeModulesTest {
             ]
         )
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       assertThat(messages).contains("Source.kt: (19, 11)")

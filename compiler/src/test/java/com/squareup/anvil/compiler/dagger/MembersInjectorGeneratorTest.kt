@@ -155,7 +155,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
             return result
           }
         }
-    """
+        """
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -291,7 +291,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
                stringListProvider.get()[0] + lazyString.get()
           }
         }
-    """
+        """
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -408,7 +408,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
             return result
           }
         }
-    """
+        """
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -529,7 +529,7 @@ public final class OuterClass_InjectClass_MembersInjector implements MembersInje
             }
           }
         }
-    """
+        """
     ) {
       val injectClass = classLoader.loadClass("com.squareup.test.OuterClass\$InjectClass")
       val membersInjector = injectClass.membersInjector()

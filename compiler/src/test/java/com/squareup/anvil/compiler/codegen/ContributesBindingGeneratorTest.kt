@@ -21,7 +21,7 @@ class ContributesBindingGeneratorTest {
 
         @ContributesBinding(Any::class, ParentInterface::class)
         interface ContributingInterface : ParentInterface
-    """
+        """
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
@@ -39,7 +39,7 @@ class ContributesBindingGeneratorTest {
 
         @ContributesBinding(Any::class, ParentInterface::class)
         class ContributingInterface : ParentInterface
-    """
+        """
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
@@ -57,7 +57,7 @@ class ContributesBindingGeneratorTest {
 
         @ContributesBinding(boundType = ParentInterface::class, scope = Int::class)
         class ContributingInterface : ParentInterface
-    """
+        """
     ) {
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Int::class)
     }
@@ -76,7 +76,7 @@ class ContributesBindingGeneratorTest {
           @ContributesBinding(Any::class, ParentInterface::class)
           interface ContributingInterface : ParentInterface
         }
-    """
+        """
     ) {
       val contributingInterface =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingInterface")
@@ -98,7 +98,7 @@ class ContributesBindingGeneratorTest {
           @ContributesBinding(Any::class, ParentInterface::class)
           class ContributingClass : ParentInterface
         }
-    """
+        """
     ) {
       val contributingClass =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingClass")
@@ -114,8 +114,8 @@ class ContributesBindingGeneratorTest {
 
     visibilities.forEach { visibility ->
       compile(
-          """
-                package com.squareup.test
+        """
+        package com.squareup.test
 
         import com.squareup.anvil.annotations.ContributesBinding
 
@@ -123,7 +123,7 @@ class ContributesBindingGeneratorTest {
 
         @ContributesBinding(Any::class, ParentInterface::class)
         $visibility class ContributingInterface : ParentInterface
-    """
+        """
       ) {
         assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
         // Position to the class.

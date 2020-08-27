@@ -23,7 +23,7 @@ class ContributesToGeneratorTest {
         
         @MergeComponent(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface.hintContributes).isNull()
       assertThat(componentInterface.hintContributesScope).isNull()
@@ -37,7 +37,7 @@ class ContributesToGeneratorTest {
         
         @MergeSubcomponent(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface.hintContributes).isNull()
       assertThat(componentInterface.hintContributesScope).isNull()
@@ -54,7 +54,7 @@ class ContributesToGeneratorTest {
         @ContributesTo(Any::class)
         @dagger.Module
         abstract class DaggerModule1
-    """
+        """
     ) {
       assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
       assertThat(daggerModule1.hintContributesScope).isEqualTo(Any::class)
@@ -70,7 +70,7 @@ class ContributesToGeneratorTest {
 
         @ContributesTo(Any::class)
         interface ContributingInterface
-    """
+        """
     ) {
       assertThat(contributingInterface.hintContributes?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintContributesScope).isEqualTo(Any::class)
@@ -86,7 +86,7 @@ class ContributesToGeneratorTest {
 
         @ContributesTo(replaces = [Unit::class], scope = Int::class)
         interface ContributingInterface
-    """
+        """
     ) {
       assertThat(contributingInterface.hintContributesScope).isEqualTo(Int::class)
     }
@@ -104,7 +104,7 @@ class ContributesToGeneratorTest {
           @dagger.Module
           abstract class InnerModule
         }
-    """
+        """
     ) {
       assertThat(innerModule.hintContributes?.java).isEqualTo(innerModule)
       assertThat(innerModule.hintContributesScope).isEqualTo(Any::class)
@@ -122,7 +122,7 @@ class ContributesToGeneratorTest {
           @ContributesTo(Any::class)
           interface InnerInterface
         }
-    """
+        """
     ) {
       assertThat(innerInterface.hintContributes?.java).isEqualTo(innerInterface)
       assertThat(innerInterface.hintContributesScope).isEqualTo(Any::class)
@@ -138,7 +138,7 @@ class ContributesToGeneratorTest {
 
         @ContributesTo(Any::class)
         abstract class DaggerModule1
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
@@ -153,7 +153,7 @@ class ContributesToGeneratorTest {
 
     visibilities.forEach { visibility ->
       compile(
-          """
+        """
         package com.squareup.test
 
         import com.squareup.anvil.annotations.ContributesTo
@@ -161,7 +161,7 @@ class ContributesToGeneratorTest {
         @ContributesTo(Any::class)
         @dagger.Module
         $visibility abstract class DaggerModule1
-    """
+        """
       ) {
         assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
         // Position to the class.
@@ -177,14 +177,14 @@ class ContributesToGeneratorTest {
 
     visibilities.forEach { visibility ->
       compile(
-          """
+        """
         package com.squareup.test
 
         import com.squareup.anvil.annotations.ContributesTo
 
         @ContributesTo(Any::class)
         $visibility interface ContributingInterface
-    """
+        """
       ) {
         assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
         // Position to the class.

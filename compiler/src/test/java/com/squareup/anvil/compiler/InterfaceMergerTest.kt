@@ -43,7 +43,7 @@ class InterfaceMergerTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -65,7 +65,7 @@ class InterfaceMergerTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface extends parentInterface).isTrue()
     }
@@ -83,7 +83,7 @@ class InterfaceMergerTest(
         interface ContributingInterface
         
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
     }
@@ -101,7 +101,7 @@ class InterfaceMergerTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
     }
@@ -120,7 +120,7 @@ class InterfaceMergerTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(
           classLoader.loadClass("com.other.ComponentInterface") extends
@@ -138,7 +138,7 @@ class InterfaceMergerTest(
         
         $annotation(Any::class)
         abstract class MergingClass
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
@@ -165,7 +165,7 @@ class InterfaceMergerTest(
 
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -191,7 +191,7 @@ class InterfaceMergerTest(
 
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class. Unfortunately, a different error is reported that the class is
@@ -219,7 +219,7 @@ class InterfaceMergerTest(
 
         $annotation(Any::class)
         interface ComponentInterface : ContributingInterface
-    """
+        """
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -247,7 +247,7 @@ class InterfaceMergerTest(
             ]
         )
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -278,7 +278,7 @@ class InterfaceMergerTest(
             ]
         )
         interface ComponentInterface : ContributingInterface, OtherInterface
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
@@ -310,7 +310,7 @@ class InterfaceMergerTest(
         
         $annotation(Unit::class)
         interface SubcomponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isFalse()
@@ -342,7 +342,7 @@ class InterfaceMergerTest(
         
         @MergeSubcomponent(Unit::class)
         interface SubcomponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isFalse()
@@ -359,7 +359,7 @@ class InterfaceMergerTest(
 
     visibilities.forEach { visibility ->
       compile(
-          """
+        """
         package com.squareup.test
 
         import com.squareup.anvil.annotations.ContributesTo
@@ -370,7 +370,7 @@ class InterfaceMergerTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
       ) {
         assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
         // Position to the class.
@@ -394,7 +394,7 @@ class InterfaceMergerTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface extends innerInterface).isTrue()
     }
@@ -414,7 +414,7 @@ class InterfaceMergerTest(
           @ContributesTo(Any::class)
           interface InnerInterface
         }
-    """
+        """
     ) {
       assertThat(exitCode).isEqualTo(INTERNAL_ERROR)
       // Position to the class.
@@ -444,7 +444,7 @@ class InterfaceMergerTest(
           @ContributesTo(Unit::class)
           interface InnerInterface
         }
-    """
+        """
     ) {
       val innerInterface = classLoader
           .loadClass("com.squareup.test.SubcomponentInterface\$InnerInterface")
@@ -472,7 +472,7 @@ class InterfaceMergerTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-    """
+        """
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isFalse()
