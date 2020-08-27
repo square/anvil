@@ -5,6 +5,10 @@ import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesBindingGenerator
 import com.squareup.anvil.compiler.codegen.ContributesToGenerator
+import com.squareup.anvil.compiler.codegen.dagger.ComponentDetectorCheck
+import com.squareup.anvil.compiler.codegen.dagger.InjectConstructorFactoryGenerator
+import com.squareup.anvil.compiler.codegen.dagger.MembersInjectorGenerator
+import com.squareup.anvil.compiler.codegen.dagger.ProvidesMethodFactoryGenerator
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
@@ -28,13 +32,22 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     val sourceGenFolder = File(configuration.getNotNull(srcGenDirKey))
     val scanner = ClassScanner()
 
+    val codeGenerators = mutableListOf(
+        ContributesToGenerator(),
+        ContributesBindingGenerator(),
+        BindingModuleGenerator(scanner)
+    )
+
+    if (configuration.get(generateDaggerFactoriesKey, false)) {
+      codeGenerators += ProvidesMethodFactoryGenerator()
+      codeGenerators += InjectConstructorFactoryGenerator()
+      codeGenerators += MembersInjectorGenerator()
+      codeGenerators += ComponentDetectorCheck()
+    }
+
     val codeGenerationExtension = CodeGenerationExtension(
         codeGenDir = sourceGenFolder,
-        codeGenerators = listOf(
-            ContributesToGenerator(),
-            ContributesBindingGenerator(),
-            BindingModuleGenerator(scanner)
-        )
+        codeGenerators = codeGenerators
     )
 
     // It's important to register our extension at the first position. The compiler calls each

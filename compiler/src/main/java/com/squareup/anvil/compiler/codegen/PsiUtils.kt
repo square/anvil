@@ -1,20 +1,33 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.AnvilCompilationException
+import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation.FROM_BACKEND
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
+import org.jetbrains.kotlin.psi.KtNamedDeclaration
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtNullableType
+import org.jetbrains.kotlin.psi.KtTypeArgumentList
+import org.jetbrains.kotlin.psi.KtTypeReference
+import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.KtValueArgumentName
+import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+
+private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName)
 
 internal fun KtFile.classesAndInnerClasses(): Sequence<KtClassOrObject> {
   val children = findChildrenByClass(KtClassOrObject::class.java)
@@ -28,21 +41,32 @@ internal fun KtFile.classesAndInnerClasses(): Sequence<KtClassOrObject> {
   }.flatMap { it.asSequence() }
 }
 
-internal fun KtClassOrObject.requireFqName(): FqName = requireNotNull(fqName) {
+internal fun KtNamedDeclaration.requireFqName(): FqName = requireNotNull(fqName) {
   "fqName was null for $this, $nameAsSafeName"
 }
 
-internal fun KtClassOrObject.isInterface(): Boolean = this is KtClass && this.isInterface()
+internal fun KtAnnotated.isInterface(): Boolean = this is KtClass && this.isInterface()
 
-internal fun KtClassOrObject.hasAnnotation(fqName: FqName): Boolean {
+internal fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean {
   return findAnnotation(fqName) != null
 }
 
-internal fun KtClassOrObject.findAnnotation(fqName: FqName): KtAnnotationEntry? {
+internal fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
   val annotationEntries = annotationEntries
   if (annotationEntries.isEmpty()) return null
 
-  // Check first if the fully qualified name is used, e.g. `@dagger.Module`.
+  // Look first if it's a Kotlin annotation. These annotations are usually not imported and the
+  // remaining checks would fail.
+  annotationEntries.firstOrNull { annotation ->
+    kotlinAnnotations
+        .any { kotlinAnnotationFqName ->
+          val text = annotation.text
+          text.startsWith("@${kotlinAnnotationFqName.shortName()}") ||
+              text.startsWith("@$kotlinAnnotationFqName")
+        }
+  }?.let { return it }
+
+  // Check if the fully qualified name is used, e.g. `@dagger.Module`.
   val annotationEntry = annotationEntries.firstOrNull {
     it.text.startsWith("@${fqName.asString()}")
   }
@@ -55,21 +79,28 @@ internal fun KtClassOrObject.findAnnotation(fqName: FqName): KtAnnotationEntry? 
       }
       ?: return null
 
-  // If the simple name is used, check that the annotation is imported.
-  val hasImport = containingKtFile.importDirectives
-      .mapNotNull { it.importPath }
-      .any {
-        it.fqName == fqName
-      }
+  val importPaths = containingKtFile.importDirectives.mapNotNull { it.importPath }
 
-  return if (hasImport) annotationEntryShort else null
+  // If the simple name is used, check that the annotation is imported.
+  val hasImport = importPaths.any { it.fqName == fqName }
+  if (hasImport) return annotationEntryShort
+
+  // Look for star imports and make a guess.
+  val hasStarImport = importPaths
+      .filter { it.isAllUnder }
+      .any {
+        fqName.asString().startsWith(it.fqName.asString())
+      }
+  if (hasStarImport) return annotationEntryShort
+
+  return null
 }
 
 internal fun KtClassOrObject.scope(
   annotationFqName: FqName,
   module: ModuleDescriptor
 ): FqName {
-  val scopeElement = findScopeClassLiteralExpression(annotationFqName)
+  return findScopeClassLiteralExpression(annotationFqName)
       .let {
         val children = it.children
         children.singleOrNull() ?: throw AnvilCompilationException(
@@ -77,44 +108,7 @@ internal fun KtClassOrObject.scope(
             element = this
         )
       }
-
-  val scopeClassReference = when (scopeElement) {
-    // If a fully qualified name is used, then we're done and don't need to do anything further.
-    is KtDotQualifiedExpression -> return FqName(scopeElement.text)
-    is KtNameReferenceExpression -> scopeElement.getReferencedName()
-    else -> throw AnvilCompilationException(
-        "Don't know how to handle Psi element: ${scopeElement.text}",
-        element = this
-    )
-  }
-
-  // First look in the imports for the reference name. If the class is imported, then we know the
-  // fully qualified name.
-  containingKtFile.importDirectives
-      .mapNotNull { it.importPath }
-      .firstOrNull {
-        it.fqName.shortName()
-            .asString() == scopeClassReference
-      }
-      ?.let { return it.fqName }
-
-  // If there is no import, then try to resolve the class with the same package as this file.
-  module
-      .resolveClassByFqName(
-          FqName("${containingKtFile.packageFqName}.$scopeClassReference"),
-          FROM_BACKEND
-      )
-      ?.let { return it.fqNameSafe }
-
-  // If this doesn't work, then maybe a class from the Kotlin package is used.
-  module.resolveClassByFqName(FqName("kotlin.$scopeClassReference"), FROM_BACKEND)
-      ?.let { return it.fqNameSafe }
-
-  // Everything else isn't supported.
-  throw AnvilCompilationException(
-      "Couldn't resolve scope $scopeClassReference for Psi element: $text",
-      element = this
-  )
+      .requireFqName(module)
 }
 
 private fun KtClassOrObject.findScopeClassLiteralExpression(
@@ -158,4 +152,95 @@ private fun KtClassOrObject.findScopeClassLiteralExpression(
           "The first argument for $annotationFqName must be a class literal: $text",
           element = this
       )
+}
+
+internal fun PsiElement.fqNameOrNull(
+  module: ModuleDescriptor
+): FqName? {
+  // Usually it's the opposite way, the require*() method calls the nullable method. But in this
+  // case we'd like to preserve the better error messages in case something goes wrong.
+  return try {
+    requireFqName(module)
+  } catch (e: AnvilCompilationException) {
+    null
+  }
+}
+
+internal fun PsiElement.requireFqName(
+  module: ModuleDescriptor
+): FqName {
+  val containingKtFile = parentsWithSelf
+      .filterIsInstance<KtClassOrObject>()
+      .first()
+      .containingKtFile
+
+  fun failTypeHandling(): Nothing = throw AnvilCompilationException(
+      "Don't know how to handle Psi element: $text",
+      element = this
+  )
+
+  val classReference = when (this) {
+    // If a fully qualified name is used, then we're done and don't need to do anything further.
+    is KtDotQualifiedExpression -> return FqName(text)
+    is KtNameReferenceExpression -> getReferencedName()
+    is KtUserType -> referencedName ?: failTypeHandling()
+    is KtTypeReference -> text
+    is KtNullableType -> return innerType?.requireFqName(module) ?: failTypeHandling()
+    else -> failTypeHandling()
+  }
+
+  // First look in the imports for the reference name. If the class is imported, then we know the
+  // fully qualified name.
+  containingKtFile.importDirectives
+      .mapNotNull { it.importPath }
+      .firstOrNull {
+        it.fqName.shortName()
+            .asString() == classReference
+      }
+      ?.let { return it.fqName }
+
+  // If there is no import, then try to resolve the class with the same package as this file.
+  module
+      .resolveClassByFqName(
+          FqName("${containingKtFile.packageFqName}.$classReference"),
+          FROM_BACKEND
+      )
+      ?.let { return it.fqNameSafe }
+
+  // If this doesn't work, then maybe a class from the Kotlin package is used.
+  module.resolveClassByFqName(FqName("kotlin.$classReference"), FROM_BACKEND)
+      ?.let { return it.fqNameSafe }
+
+  // If this doesn't work, then maybe a class from the Kotlin package is used.
+  module.resolveClassByFqName(FqName("kotlin.collections.$classReference"), FROM_BACKEND)
+      ?.let { return it.fqNameSafe }
+
+  // Everything else isn't supported.
+  throw AnvilCompilationException(
+      "Couldn't resolve FqName $classReference for Psi element: $text",
+      element = this
+  )
+}
+
+internal fun KtClassOrObject.functions(
+  includeCompanionObjects: Boolean
+): List<KtNamedFunction> {
+  val elements = children.toMutableList()
+  if (includeCompanionObjects) {
+    elements += companionObjects.flatMap { it.children.toList() }
+  }
+
+  return elements
+      .filterIsInstance<KtClassBody>()
+      .flatMap { it.functions }
+}
+
+fun KtTypeReference.isNullable(): Boolean = typeElement is KtNullableType
+
+fun KtTypeReference.isGenericType(): Boolean {
+  val typeElement = typeElement ?: return false
+  val children = typeElement.children
+
+  if (children.size != 2) return false
+  return children[1] is KtTypeArgumentList
 }

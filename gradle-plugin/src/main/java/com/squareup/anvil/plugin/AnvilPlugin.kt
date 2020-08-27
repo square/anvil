@@ -23,6 +23,8 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 open class AnvilPlugin : Plugin<Project> {
   override fun apply(project: Project) {
+    project.extensions.create("anvil", AnvilExtension::class.java)
+
     val once = AtomicBoolean()
 
     fun PluginManager.withPluginOnce(

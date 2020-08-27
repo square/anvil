@@ -6,10 +6,14 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.compiler.codegen.requireFqName
 import dagger.Binds
 import dagger.Component
+import dagger.Lazy
 import dagger.Module
+import dagger.Provides
 import dagger.Subcomponent
+import dagger.internal.DoubleCheck
 import org.jetbrains.kotlin.codegen.asmType
 import org.jetbrains.kotlin.codegen.state.KotlinTypeMapper
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -19,6 +23,8 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.platform.has
 import org.jetbrains.kotlin.platform.jvm.JvmPlatform
+import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
@@ -29,6 +35,8 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.org.objectweb.asm.Type
+import javax.inject.Inject
+import javax.inject.Provider
 
 internal val mergeComponentFqName = FqName(MergeComponent::class.java.canonicalName)
 internal val mergeSubcomponentFqName = FqName(MergeSubcomponent::class.java.canonicalName)
@@ -40,6 +48,13 @@ internal val daggerComponentFqName = FqName(Component::class.java.canonicalName)
 internal val daggerSubcomponentFqName = FqName(Subcomponent::class.java.canonicalName)
 internal val daggerModuleFqName = FqName(Module::class.java.canonicalName)
 internal val daggerBindsFqName = FqName(Binds::class.java.canonicalName)
+internal val daggerProvidesFqName = FqName(Provides::class.java.canonicalName)
+internal val daggerLazyFqName = FqName(Lazy::class.java.canonicalName)
+internal val injectFqName = FqName(Inject::class.java.canonicalName)
+internal val providerFqName = FqName(Provider::class.java.canonicalName)
+internal val jvmSuppressWildcardsFqName = FqName(JvmSuppressWildcards::class.java.canonicalName)
+
+internal val daggerDoubleCheckFqNameString = DoubleCheck::class.java.canonicalName
 
 internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "anvil.hint.merge"
 internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
@@ -149,3 +164,16 @@ internal fun AnnotationDescriptor.boundType(
               "@${contributesBindingFqName.shortName()} annotation."
       )
 }
+
+internal fun KtClassOrObject.generateClassName(
+  separator: String = "_"
+): String =
+  parentsWithSelf
+      .filterIsInstance<KtClassOrObject>()
+      .toList()
+      .reversed()
+      .joinToString(separator = separator) {
+        it.requireFqName()
+            .shortName()
+            .asString()
+      }

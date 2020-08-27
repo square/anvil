@@ -7,12 +7,14 @@ dependencies {
   implementation deps.dagger2.dagger
   implementation deps.jsr250
   implementation deps.kotlin.stdlib
+  implementation deps.kotlinpoet
 
   compileOnly deps.auto.service.annotations
   compileOnly deps.kotlin.compiler
 
   kapt deps.auto.service.processor
 
+  testImplementation deps.dagger2.compiler
   testImplementation deps.kotlin.compile_testing
   testImplementation deps.kotlin.compiler
   testImplementation deps.truth

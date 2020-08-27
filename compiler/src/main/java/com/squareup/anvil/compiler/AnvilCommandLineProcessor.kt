@@ -10,6 +10,10 @@ import org.jetbrains.kotlin.config.CompilerConfigurationKey
 internal const val srcGenDirName = "src-gen-dir"
 internal val srcGenDirKey = CompilerConfigurationKey.create<String>("anvil $srcGenDirName")
 
+internal const val generateDaggerFactoriesName = "generate-dagger-factories"
+internal val generateDaggerFactoriesKey =
+  CompilerConfigurationKey.create<Boolean>("anvil $generateDaggerFactoriesName")
+
 /**
  * Parses arguments from the Gradle plugin for the compiler plugin.
  */
@@ -24,6 +28,15 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
           description = "Path to directory in which Anvil specific code should be generated",
           required = true,
           allowMultipleOccurrences = false
+      ),
+      CliOption(
+          optionName = generateDaggerFactoriesName,
+          valueDescription = "<true|false>",
+          description = "Whether Anvil should generate Factory classes that the Dagger " +
+              "annotation processor would generate for @Provides methods and @Inject " +
+              "constructors.",
+          required = false,
+          allowMultipleOccurrences = false
       )
   )
 
@@ -34,6 +47,8 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
   ) {
     when (option.optionName) {
       srcGenDirName -> configuration.put(srcGenDirKey, value)
+      generateDaggerFactoriesName ->
+        configuration.put(generateDaggerFactoriesKey, value.toBoolean())
     }
   }
 }
