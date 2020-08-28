@@ -2,6 +2,8 @@
 
 ## Next Version
 
+## 2.0.1 (2020-08-27)
+
 * Throw a compilation error when a `@ContributesBinding` annotation binds a generic type.
 * Remove absolute paths in Kotlin compilation task inputs #65.
 * Add new experimental feature to generate Dagger factories for faster build times.
