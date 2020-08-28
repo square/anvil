@@ -6,6 +6,7 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.Component
 import dagger.Subcomponent
 import org.junit.Test
+import javax.inject.Singleton
 
 class MergeComponentTest {
 
@@ -39,9 +40,11 @@ class MergeComponentTest {
   }
 
   @MergeComponent(AppScope::class)
+  @Singleton
   interface AppComponent {
     fun subComponent(): SubComponent
     fun parentType(): ParentType
+    fun function(): (String) -> Int
   }
 
   @MergeSubcomponent(SubScope::class)

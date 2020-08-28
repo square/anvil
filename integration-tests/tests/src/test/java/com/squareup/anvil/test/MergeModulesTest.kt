@@ -6,6 +6,7 @@ import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
 import org.junit.Test
+import javax.inject.Singleton
 
 class MergeModulesTest {
 
@@ -41,6 +42,7 @@ class MergeModulesTest {
   abstract class CompositeSubModule
 
   @Component(modules = [CompositeAppModule::class])
+  @Singleton
   interface AppComponent {
     fun subComponent(): SubComponent
     fun parentType(): ParentType

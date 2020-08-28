@@ -1874,6 +1874,78 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<Set<Str
     }
   }
 
+  @Test fun `a factory class is generated for a provided function`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import dagger.internal.Preconditions;
+import javax.annotation.Generated;
+import kotlin.jvm.functions.Function1;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class DaggerModule1_ProvideFunctionFactory implements Factory<Function1<String, Integer>> {
+  @Override
+  public Function1<String, Integer> get() {
+    return provideFunction();
+  }
+
+  public static DaggerModule1_ProvideFunctionFactory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static Function1<String, Integer> provideFunction() {
+    return Preconditions.checkNotNull(DaggerModule1.INSTANCE.provideFunction(), "Cannot return null from a non-@Nullable @Provides method");
+  }
+
+  private static final class InstanceHolder {
+    private static final DaggerModule1_ProvideFunctionFactory INSTANCE = new DaggerModule1_ProvideFunctionFactory();
+  }
+}
+     */
+
+    compile(
+        """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        
+        @Module
+        object DaggerModule1 {
+          @Provides fun provideFunction(): (String) -> Int {
+            return { string -> string.length }
+          }
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideFunction")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+          .invoke(null)
+          as Factory<(String) -> Int>
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedInt = staticMethods.single { it.name == "provideFunction" }
+          .invoke(null) as (String) -> Int
+
+      assertThat(providedInt.invoke("abc")).isEqualTo(3)
+      assertThat(factoryInstance.get().invoke("abcd")).isEqualTo(4)
+    }
+  }
+
   @Test fun `a factory class is generated for a multibindings provided function with a typealias`() { // ktlint-disable max-line-length
     /*
 package com.squareup.test;
