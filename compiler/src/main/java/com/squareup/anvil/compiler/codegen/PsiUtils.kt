@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
@@ -244,3 +245,5 @@ fun KtTypeReference.isGenericType(): Boolean {
   if (children.size != 2) return false
   return children[1] is KtTypeArgumentList
 }
+
+fun KtTypeReference.isFunctionType(): Boolean = typeElement is KtFunctionType

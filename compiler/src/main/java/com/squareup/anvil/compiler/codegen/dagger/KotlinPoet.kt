@@ -4,6 +4,7 @@ import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
 import com.squareup.anvil.compiler.codegen.fqNameOrNull
 import com.squareup.anvil.compiler.codegen.hasAnnotation
+import com.squareup.anvil.compiler.codegen.isFunctionType
 import com.squareup.anvil.compiler.codegen.isGenericType
 import com.squareup.anvil.compiler.codegen.isNullable
 import com.squareup.anvil.compiler.codegen.requireFqName
@@ -117,8 +118,23 @@ internal fun <T : KtCallableDeclaration> TypeName.withJvmSuppressWildcardsIfNeed
   // Set<String>. This avoids some edge cases where Dagger chokes.
   val isGenericType = callableDeclaration.typeReference?.isGenericType() ?: false
 
-  return if (hasJvmSuppressWildcards || isGenericType) this.jvmSuppressWildcards() else this
+  // Same for functions.
+  val isFunctionType = callableDeclaration.typeReference?.isFunctionType() ?: false
+
+  return when {
+    hasJvmSuppressWildcards || isGenericType -> this.jvmSuppressWildcards()
+    isFunctionType -> this.jvmSuppressWildcardsKt31734()
+    else -> this
+  }
 }
+
+// TODO: remove with Kotlin 1.4.
+// Notice the empty member. Instead of generating `@JvmSuppressWildcards Type` it generates
+// `@JvmSuppressWildcards() Type`. This is necessary to avoid KT-31734 where the type is a function.
+private fun TypeName.jvmSuppressWildcardsKt31734() =
+  copy(annotations = this.annotations + AnnotationSpec.builder(JvmSuppressWildcards::class)
+    .addMember("")
+    .build())
 
 internal fun List<Parameter>.asArgumentList(
   asProvider: Boolean,
