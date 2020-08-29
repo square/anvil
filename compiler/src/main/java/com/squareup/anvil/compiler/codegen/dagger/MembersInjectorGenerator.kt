@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler.codegen.dagger
 
 import com.squareup.anvil.compiler.codegen.CodeGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
-import com.squareup.anvil.compiler.codegen.addAnvilAnnotation
+import com.squareup.anvil.compiler.codegen.addGeneratedByComment
 import com.squareup.anvil.compiler.codegen.asTypeName
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.hasAnnotation
@@ -88,7 +88,6 @@ internal class MembersInjectorGenerator : CodeGenerator {
         .addType(
             TypeSpec
                 .classBuilder(memberInjectorClass)
-                .addAnvilAnnotation()
                 .addSuperinterface(MembersInjector::class.asClassName().parameterizedBy(classType))
                 .apply {
                   primaryConstructor(
@@ -179,6 +178,7 @@ internal class MembersInjectorGenerator : CodeGenerator {
         .build()
         .writeToString()
         .replaceImports(clazz)
+        .addGeneratedByComment()
 
     val directory = File(codeGenDir, packageName.replace('.', File.separatorChar))
     val file = File(directory, "$className.kt")
