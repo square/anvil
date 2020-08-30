@@ -596,6 +596,86 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
+  @Test fun `a factory class is generated for a class starting with a lowercase character`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import java.util.List;
+import java.util.Set;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+import kotlin.jvm.functions.Function1;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<String> stringProvider;
+
+  private final Provider<Set<Function1<List<String>, List<String>>>> setProvider;
+
+  public InjectClass_Factory(Provider<String> stringProvider,
+      Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
+    this.stringProvider = stringProvider;
+    this.setProvider = setProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(stringProvider.get(), setProvider.get());
+  }
+
+  public static InjectClass_Factory create(Provider<String> stringProvider,
+      Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
+    return new InjectClass_Factory(stringProvider, setProvider);
+  }
+
+  public static InjectClass newInstance(String string,
+      Set<Function1<List<String>, List<String>>> set) {
+    return new InjectClass(string, set);
+  }
+}
+     */
+
+    compile(
+        """
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        
+        data class injectClass @Inject constructor(val string: String)
+        """
+    ) {
+      val factoryClass = classLoader.loadClass("com.squareup.test.injectClass").factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+          .containsExactly(Provider::class.java)
+          .inOrder()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+          .invoke(null, Provider { "a" })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+          .invoke(null, "a")
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
+
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
+    }
+  }
+
   private fun compile(
     source: String,
     block: Result.() -> Unit = { }

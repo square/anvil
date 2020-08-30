@@ -33,8 +33,15 @@ import java.io.ByteArrayOutputStream
 import javax.annotation.Generated
 import javax.inject.Provider
 
-internal fun KtClassOrObject.asClassName(): ClassName =
-  ClassName.bestGuess(requireFqName().asString())
+internal fun KtClassOrObject.asClassName(): TypeName {
+  val classNameString = requireFqName().asString()
+  return try {
+    ClassName.bestGuess(classNameString)
+  } catch (e: IllegalArgumentException) {
+    // This happens when the class name starts with a lowercase character.
+    TypeVariableName(classNameString)
+  }
+}
 
 internal fun KtCallableDeclaration.requireTypeName(module: ModuleDescriptor): TypeName {
   fun fail(): Nothing = throw AnvilCompilationException(
