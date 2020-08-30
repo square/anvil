@@ -17,7 +17,9 @@ object AppModule2 {
 
 @Module
 @ContributesTo(SubScope::class)
-abstract class SubModule1
+class SubModule1(private val string: String) {
+  @Provides fun provideInput(): String = string
+}
 
 @Module
 @ContributesTo(SubScope::class)
