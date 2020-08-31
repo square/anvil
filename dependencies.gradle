@@ -5,6 +5,9 @@ ext {
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
       project.getProperty('square.kotlinVersion') : '1.3.72'
 
+  generateDaggerFactoriesWithAnvil = (project.hasProperty('square.generateDaggerFactoriesWithAnvil') ?
+      project.getProperty('square.generateDaggerFactoriesWithAnvil') : 'true').toBoolean()
+
   deps = [
       android_gradle_plugin: "com.android.tools.build:gradle:4.0.1",
       anvil_plugin: "com.squareup.anvil:gradle-plugin:${findProperty('VERSION_NAME')}",
