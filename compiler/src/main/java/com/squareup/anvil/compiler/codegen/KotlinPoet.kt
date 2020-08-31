@@ -1,13 +1,7 @@
-package com.squareup.anvil.compiler.codegen.dagger
+package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
-import com.squareup.anvil.compiler.codegen.fqNameOrNull
-import com.squareup.anvil.compiler.codegen.hasAnnotation
-import com.squareup.anvil.compiler.codegen.isFunctionType
-import com.squareup.anvil.compiler.codegen.isGenericType
-import com.squareup.anvil.compiler.codegen.isNullable
-import com.squareup.anvil.compiler.codegen.requireFqName
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
@@ -36,11 +30,11 @@ import java.io.ByteArrayOutputStream
 import javax.annotation.Generated
 import javax.inject.Provider
 
-internal fun KtClassOrObject.asClassName(): TypeName = requireFqName().asClassName()
+internal fun KtClassOrObject.asTypeName(): TypeName = requireFqName().asTypeName()
 
-internal fun ClassDescriptor.asClassName(): TypeName = fqNameSafe.asClassName()
+internal fun ClassDescriptor.asTypeName(): TypeName = fqNameSafe.asTypeName()
 
-internal fun FqName.asClassName(): TypeName {
+internal fun FqName.asTypeName(): TypeName {
   return try {
     ClassName.bestGuess(asString())
   } catch (e: IllegalArgumentException) {

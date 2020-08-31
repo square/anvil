@@ -15,8 +15,6 @@ import com.squareup.anvil.compiler.classDescriptorForType
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.codegen.GeneratedMethod.BindingMethod
 import com.squareup.anvil.compiler.codegen.GeneratedMethod.ProviderMethod
-import com.squareup.anvil.compiler.codegen.dagger.asClassName
-import com.squareup.anvil.compiler.codegen.dagger.writeToString
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
@@ -224,8 +222,8 @@ internal class BindingModuleGenerator(
                               }
                       )
                       .addAnnotation(Provides::class)
-                      .returns(boundType.asClassName())
-                      .addStatement("return %T", concreteType.asClassName())
+                      .returns(boundType.asTypeName())
+                      .addStatement("return %T", concreteType.asTypeName())
                       .build()
               )
             } else {
@@ -241,9 +239,9 @@ internal class BindingModuleGenerator(
                       .addModifiers(ABSTRACT)
                       .addParameter(
                           name = concreteType.shortName().asString().decapitalize(US),
-                          type = concreteType.asClassName()
+                          type = concreteType.asTypeName()
                       )
-                      .returns(boundType.asClassName())
+                      .returns(boundType.asTypeName())
                       .build()
               )
             }

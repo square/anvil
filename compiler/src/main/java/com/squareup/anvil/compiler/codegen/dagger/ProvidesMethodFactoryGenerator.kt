@@ -2,11 +2,19 @@ package com.squareup.anvil.compiler.codegen.dagger
 
 import com.squareup.anvil.compiler.codegen.CodeGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.squareup.anvil.compiler.codegen.addAnvilAnnotation
+import com.squareup.anvil.compiler.codegen.asArgumentList
+import com.squareup.anvil.compiler.codegen.asTypeName
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.functions
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.isNullable
+import com.squareup.anvil.compiler.codegen.mapToParameter
+import com.squareup.anvil.compiler.codegen.replaceImports
 import com.squareup.anvil.compiler.codegen.requireFqName
+import com.squareup.anvil.compiler.codegen.requireTypeName
+import com.squareup.anvil.compiler.codegen.withJvmSuppressWildcardsIfNeeded
+import com.squareup.anvil.compiler.codegen.writeToString
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.generateClassName
@@ -86,7 +94,7 @@ internal class ProvidesMethodFactoryGenerator : CodeGenerator {
     val returnTypeIsNullable = function.typeReference?.isNullable() ?: false
 
     val factoryClass = ClassName(packageName, className)
-    val moduleClass = clazz.asClassName()
+    val moduleClass = clazz.asTypeName()
 
     val content = FileSpec.builder(packageName, className)
         .addType(

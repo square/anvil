@@ -2,8 +2,14 @@ package com.squareup.anvil.compiler.codegen.dagger
 
 import com.squareup.anvil.compiler.codegen.CodeGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.squareup.anvil.compiler.codegen.addAnvilAnnotation
+import com.squareup.anvil.compiler.codegen.asArgumentList
+import com.squareup.anvil.compiler.codegen.asTypeName
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.hasAnnotation
+import com.squareup.anvil.compiler.codegen.mapToParameter
+import com.squareup.anvil.compiler.codegen.replaceImports
+import com.squareup.anvil.compiler.codegen.writeToString
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.kotlinpoet.ClassName
@@ -52,7 +58,7 @@ internal class InjectConstructorFactoryGenerator : CodeGenerator {
   ): GeneratedFile {
     val packageName = clazz.containingKtFile.packageFqName.asString()
     val className = "${clazz.generateClassName()}_Factory"
-    val classType = clazz.asClassName()
+    val classType = clazz.asTypeName()
 
     val parameters = constructor.getValueParameters().mapToParameter(module)
 
