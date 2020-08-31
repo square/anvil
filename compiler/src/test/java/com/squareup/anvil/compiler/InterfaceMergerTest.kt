@@ -425,6 +425,32 @@ class InterfaceMergerTest(
     }
   }
 
+  @Test fun `inner modules in merged component fail`() {
+    // They could cause errors while compiling code when adding our contributed super classes.
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesTo
+        $import
+        
+        $annotation(Any::class, modules = [ComponentInterface.InnerModule::class])
+        interface ComponentInterface {
+          
+          @dagger.Module
+          abstract class InnerModule
+        }
+        """
+    ) {
+      assertThat(exitCode).isEqualTo(INTERNAL_ERROR)
+      // Position to the class.
+      assertThat(messages).contains(
+          "org.jetbrains.kotlin.util.KotlinFrontEndException: " +
+              "Exception while analyzing expression at (6,4"
+      )
+    }
+  }
+
   @Test fun `inner interface in a merged component with different scope are merged`() {
     assumeMergeComponent(annotationClass)
 
