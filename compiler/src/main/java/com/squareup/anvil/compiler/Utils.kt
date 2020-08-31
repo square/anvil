@@ -159,9 +159,9 @@ internal fun AnnotationDescriptor.boundType(
       ?: throw AnvilCompilationException(
           classDescriptor = annotatedClass,
           message = "${annotatedClass.fqNameSafe} contributes a binding, but does not " +
-              "specify the bound type. This is only allowed with one direct super type. If " +
-              "there are multiple, then the bound type must be explicitly defined in the " +
-              "@${contributesBindingFqName.shortName()} annotation."
+              "specify the bound type. This is only allowed with exactly one direct super type. " +
+              "If there are multiple or none, then the bound type must be explicitly defined in " +
+              "the @${contributesBindingFqName.shortName()} annotation."
       )
 }
 

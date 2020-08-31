@@ -46,6 +46,24 @@ class ContributesBindingGeneratorTest {
     }
   }
 
+  @Test fun `there is a hint for a contributed binding for an object`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesBinding
+
+        interface ParentInterface
+
+        @ContributesBinding(Any::class, ParentInterface::class)
+        object ContributingInterface : ParentInterface
+        """
+    ) {
+      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
+    }
+  }
+
   @Test fun `the order of the scope can be changed with named parameters`() {
     compile(
         """

@@ -12,10 +12,13 @@ import com.squareup.anvil.compiler.argumentType
 import com.squareup.anvil.compiler.boundType
 import com.squareup.anvil.compiler.classDescriptorForType
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.squareup.anvil.compiler.codegen.GeneratedMethod.BindingMethod
+import com.squareup.anvil.compiler.codegen.GeneratedMethod.ProviderMethod
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerBindsFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
+import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.getAnnotationValue
 import com.squareup.anvil.compiler.mergeComponentFqName
@@ -34,6 +37,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
@@ -125,7 +129,7 @@ internal class BindingModuleGenerator(
           val content = daggerModuleContent(
               scope = scope.asString(),
               psiClass = psiClass,
-              bindingMethods = emptyList()
+              generatedMethods = emptyList()
           )
 
           mergedScopes[scope] = mergedScopes.getValue(scope)
@@ -166,12 +170,14 @@ internal class BindingModuleGenerator(
       // If a binding is replaced, then we must not generate the binding method.
       val bindingsReplacedInDaggerModules = contributedModuleAndInterfaceClasses.asSequence()
           .mapNotNull { module.resolveClassByFqName(it, NoLookupLocation.FROM_BACKEND) }
-          .plus(classScanner.findContributedClasses(
-              module,
-              packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
-              annotation = contributesToFqName,
-              scope = scope
-          ))
+          .plus(
+              classScanner.findContributedClasses(
+                  module,
+                  packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
+                  annotation = contributesToFqName,
+                  scope = scope
+              )
+          )
           .filter { it.annotationOrNull(daggerModuleFqName) != null }
           .flatMap {
             it.annotationOrNull(contributesToFqName, scope)
@@ -180,7 +186,7 @@ internal class BindingModuleGenerator(
                 ?: emptySequence()
           }
 
-      val bindingMethods = (contributedBindingsThisModule + contributedBindingsDependencies)
+      val generatedMethods = (contributedBindingsThisModule + contributedBindingsDependencies)
           .minus(replacedBindings)
           .minus(bindingsReplacedInDaggerModules)
           .minus(excludedTypesForScope[scope].orEmpty())
@@ -196,21 +202,38 @@ internal class BindingModuleGenerator(
             checkNotGeneric(type = contributedClass, boundTypeDescriptor = boundType)
 
             val concreteType = contributedClass.fqNameSafe
-            val methodName = concreteType
-                .asString()
-                .split(".")
-                .joinToString(separator = "", prefix = "bind") { it.capitalize(US) }
 
-            val paramName = concreteType.shortName()
-                .asString()
-                .decapitalize(US)
+            if (DescriptorUtils.isObject(contributedClass)) {
+              val methodName = concreteType
+                  .asString()
+                  .split(".")
+                  .joinToString(separator = "", prefix = "provide") { it.capitalize(US) }
 
-            """
-              |
-              |  @$daggerBindsFqName abstract fun $methodName(
-              |    $paramName: $concreteType
-              |  ): ${boundType.fqNameSafe}
-            """.trimMargin()
+              ProviderMethod(
+                  """
+                    |
+                    |  @$daggerProvidesFqName fun $methodName(): ${boundType.fqNameSafe} = $concreteType
+                  """.trimMargin()
+              )
+            } else {
+              val methodName = concreteType
+                  .asString()
+                  .split(".")
+                  .joinToString(separator = "", prefix = "bind") { it.capitalize(US) }
+
+              val paramName = concreteType.shortName()
+                  .asString()
+                  .decapitalize(US)
+
+              BindingMethod(
+                  """
+                    |
+                    |  @$daggerBindsFqName abstract fun $methodName(
+                    |    $paramName: $concreteType
+                    |  ): ${boundType.fqNameSafe}
+                  """.trimMargin()
+              )
+            }
           }
           .toList()
 
@@ -219,7 +242,7 @@ internal class BindingModuleGenerator(
             daggerModuleContent(
                 scope = scope.asString(),
                 psiClass = psiClass,
-                bindingMethods = bindingMethods
+                generatedMethods = generatedMethods
             )
         )
       }
@@ -303,19 +326,59 @@ internal class BindingModuleGenerator(
   private fun daggerModuleContent(
     scope: String,
     psiClass: KtClassOrObject,
-    bindingMethods: List<String>
+    generatedMethods: List<GeneratedMethod>
   ): String {
     val packageName = generatePackageName(psiClass)
     val className = psiClass.generateClassName()
 
-    return """
-      package $packageName
+    val bindingMethods = generatedMethods.filterIsInstance<BindingMethod>()
+    val providerMethods = generatedMethods.filterIsInstance<ProviderMethod>()
 
-      @$daggerModuleFqName
-      @$contributesToFqName($scope::class)
-      abstract class $className {
-      ${bindingMethods.joinToString(separator = "\n")}
-      }
-    """.trimIndent()
+    return when {
+      bindingMethods.isEmpty() ->
+        """
+          package $packageName
+    
+          @$daggerModuleFqName
+          @$contributesToFqName($scope::class)
+          object $className {
+          ${providerMethods.joinToString(separator = "\n")}
+          }
+        """.trimIndent()
+
+      providerMethods.isEmpty() ->
+        """
+          package $packageName
+    
+          @$daggerModuleFqName
+          @$contributesToFqName($scope::class)
+          abstract class $className {
+          ${bindingMethods.joinToString(separator = "\n")}
+          }
+        """.trimIndent()
+
+      else ->
+        """
+          package $packageName
+    
+          @$daggerModuleFqName
+          @$contributesToFqName($scope::class)
+          abstract class $className {
+          ${bindingMethods.joinToString(separator = "\n")}
+            companion object {
+              ${providerMethods.joinToString(separator = "\n")}
+            }
+          }
+        """.trimIndent()
+    }
   }
+}
+
+private sealed class GeneratedMethod {
+  abstract val content: String
+
+  override fun toString(): String = content
+
+  class ProviderMethod(override val content: String) : GeneratedMethod()
+  class BindingMethod(override val content: String) : GeneratedMethod()
 }

@@ -13,17 +13,18 @@ import com.squareup.anvil.compiler.componentInterfaceAnvilModule
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule
 import com.squareup.anvil.compiler.daggerModule1
+import com.squareup.anvil.compiler.isAbstract
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.squareup.anvil.compiler.subcomponentInterfaceAnvilModule
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import dagger.Binds
+import dagger.Provides
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
-import java.lang.reflect.Modifier.isAbstract
 import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
@@ -136,7 +137,7 @@ class BindingModuleGeneratorTest(
     }
   }
 
-  @Test fun `the Dagger binding method is generated`() {
+  @Test fun `the Dagger binding method is generated for non-objects`() {
     compile(
         """
         package com.squareup.test
@@ -168,8 +169,53 @@ class BindingModuleGeneratorTest(
       with(methods[0]) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
-        assertThat(isAbstract(modifiers)).isTrue()
+        assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      }
+    }
+  }
+
+  @Test fun `the Dagger provider method is generated for objects`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBinding
+        $import
+
+        interface ParentInterface
+        
+        interface Middle : ParentInterface
+
+        @ContributesBinding(Any::class, ParentInterface::class)
+        object ContributingInterface : Middle
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+        """
+    ) {
+      val modules = if (annotationClass == MergeModules::class) {
+        componentInterface.daggerModule.includes.toList()
+      } else {
+        componentInterface.anyDaggerComponent.modules
+      }
+      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+
+      val methods = modules.first().java.declaredMethods
+      assertThat(methods).hasLength(1)
+
+      with(methods[0]) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).isEmpty()
+        assertThat(isAbstract).isFalse()
+        assertThat(isAnnotationPresent(Provides::class.java)).isTrue()
+
+        val moduleInstance = modules.first().java.declaredFields
+            .first { it.name == "INSTANCE" }
+            .get(null)
+
+        assertThat(invoke(moduleInstance)::class.java.canonicalName)
+            .isEqualTo("com.squareup.test.ContributingInterface")
       }
     }
   }
@@ -204,13 +250,13 @@ class BindingModuleGeneratorTest(
       with(methods[0]) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
-        assertThat(isAbstract(modifiers)).isTrue()
+        assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
     }
   }
 
-  @Test fun `the bound type can only be implied with on super type (2 interfaces)`() {
+  @Test fun `the bound type can only be implied with one super type (2 interfaces)`() {
     compile(
         """
         package com.squareup.test
@@ -232,14 +278,14 @@ class BindingModuleGeneratorTest(
       assertThat(messages).contains("Source.kt: (9, 11)")
       assertThat(messages).contains(
           "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
-              "the bound type. This is only allowed with one direct super type. If there are " +
-              "multiple, then the bound type must be explicitly defined in the " +
+              "the bound type. This is only allowed with exactly one direct super type. If there " +
+              "are multiple or none, then the bound type must be explicitly defined in the " +
               "@ContributesBinding annotation."
       )
     }
   }
 
-  @Test fun `the bound type can only be implied with on super type (class and interface)`() {
+  @Test fun `the bound type can only be implied with one super type (class and interface)`() {
     compile(
         """
         package com.squareup.test
@@ -263,8 +309,35 @@ class BindingModuleGeneratorTest(
       assertThat(messages).contains("Source.kt: (11, 11)")
       assertThat(messages).contains(
           "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
-              "the bound type. This is only allowed with one direct super type. If there are " +
-              "multiple, then the bound type must be explicitly defined in the " +
+              "the bound type. This is only allowed with exactly one direct super type. If there " +
+              "are multiple or none, then the bound type must be explicitly defined in the " +
+              "@ContributesBinding annotation."
+      )
+    }
+  }
+
+  @Test fun `the bound type can only be implied with one super type (no super type)`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBinding
+        $import
+
+        @ContributesBinding(Any::class)
+        object ContributingInterface
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+        """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+
+      assertThat(messages).contains("Source.kt: (7, 1)")
+      assertThat(messages).contains(
+          "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
+              "the bound type. This is only allowed with exactly one direct super type. If there " +
+              "are multiple or none, then the bound type must be explicitly defined in the " +
               "@ContributesBinding annotation."
       )
     }
@@ -333,8 +406,50 @@ class BindingModuleGeneratorTest(
       with(methods[0]) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(secondContributingInterface)
-        assertThat(isAbstract(modifiers)).isTrue()
+        assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      }
+    }
+  }
+
+  @Test fun `contributed bindings for an object can replace other contributed bindings`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBinding
+        $import
+
+        interface ParentInterface
+
+        @ContributesBinding(Any::class)
+        interface ContributingInterface : ParentInterface
+        
+        @ContributesBinding(
+            Any::class,
+            replaces = [ContributingInterface::class]
+        )
+        object SecondContributingInterface : ParentInterface
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+        """
+    ) {
+      val modules = if (annotationClass == MergeModules::class) {
+        componentInterface.daggerModule.includes.toList()
+      } else {
+        componentInterface.anyDaggerComponent.modules
+      }
+      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+
+      val methods = modules.first().java.declaredMethods
+      assertThat(methods).hasLength(1)
+
+      with(methods[0]) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).isEmpty()
+        assertThat(isAbstract).isFalse()
+        assertThat(isAnnotationPresent(Provides::class.java)).isTrue()
       }
     }
   }

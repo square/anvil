@@ -49,6 +49,13 @@ import kotlin.reflect.KClass
  * )
  * class FakeAuthenticator @Inject constructor() : Authenticator
  * ```
+ * [ContributesBinding] supports Kotlin objects, e.g.
+ * ```
+ * @ContributesBinding(AppScope::class)
+ * object RealAuthenticator : Authenticator
+ * ```
+ * In this scenario instead of generating a `@Binds` method Anvil will generate a `@Provides`
+ * method returning [boundType].
  */
 @Target(CLASS)
 @Retention(RUNTIME)

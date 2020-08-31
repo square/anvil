@@ -6,10 +6,9 @@ import com.squareup.anvil.sample.God.HEPHAESTUS
 import com.squareup.anvil.sample.God.HERA
 import com.squareup.anvil.sample.God.ZEUS
 import com.squareup.scopes.AppScope
-import javax.inject.Inject
 
 @ContributesBinding(AppScope::class)
-class RealMotherProvider @Inject constructor() : MotherProvider {
+object RealMotherProvider : MotherProvider {
   override fun mother(god: God): String =
     when (god) {
       HERA, ZEUS -> "Rhea"

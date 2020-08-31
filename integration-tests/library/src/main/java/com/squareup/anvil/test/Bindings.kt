@@ -14,4 +14,4 @@ interface MiddleType : ParentType
 class AppBinding @Inject constructor() : MiddleType
 
 @ContributesBinding(SubScope::class)
-class SubcomponentBinding @Inject constructor() : MiddleType
+object SubcomponentBinding : MiddleType
