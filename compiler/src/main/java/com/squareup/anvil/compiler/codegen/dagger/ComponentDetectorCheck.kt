@@ -6,7 +6,6 @@ import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.daggerComponentFqName
-import com.squareup.anvil.compiler.daggerSubcomponentFqName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -20,11 +19,7 @@ internal class ComponentDetectorCheck : CodeGenerator {
     val component = projectFiles
         .asSequence()
         .flatMap { it.classesAndInnerClasses() }
-        .firstOrNull() { clazz ->
-          clazz.hasAnnotation(daggerComponentFqName) || clazz.hasAnnotation(
-              daggerSubcomponentFqName
-          )
-        }
+        .firstOrNull { it.hasAnnotation(daggerComponentFqName) }
 
     if (component != null) {
       throw AnvilCompilationException(
