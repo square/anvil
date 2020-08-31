@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.ANVIL_MODULE_SUFFIX
 import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.ClassScanner
@@ -12,9 +13,10 @@ import com.squareup.anvil.compiler.argumentType
 import com.squareup.anvil.compiler.boundType
 import com.squareup.anvil.compiler.classDescriptorForType
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.squareup.anvil.compiler.codegen.GeneratedMethod.BindingMethod
+import com.squareup.anvil.compiler.codegen.GeneratedMethod.ProviderMethod
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
-import com.squareup.anvil.compiler.daggerBindsFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.getAnnotationValue
@@ -23,6 +25,14 @@ import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
 import com.squareup.anvil.compiler.replaces
 import com.squareup.anvil.compiler.scope
+import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier.ABSTRACT
+import com.squareup.kotlinpoet.TypeSpec
+import dagger.Binds
+import dagger.Module
+import dagger.Provides
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
@@ -34,6 +44,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
@@ -125,7 +136,7 @@ internal class BindingModuleGenerator(
           val content = daggerModuleContent(
               scope = scope.asString(),
               psiClass = psiClass,
-              bindingMethods = emptyList()
+              generatedMethods = emptyList()
           )
 
           mergedScopes[scope] = mergedScopes.getValue(scope)
@@ -166,12 +177,14 @@ internal class BindingModuleGenerator(
       // If a binding is replaced, then we must not generate the binding method.
       val bindingsReplacedInDaggerModules = contributedModuleAndInterfaceClasses.asSequence()
           .mapNotNull { module.resolveClassByFqName(it, NoLookupLocation.FROM_BACKEND) }
-          .plus(classScanner.findContributedClasses(
-              module,
-              packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
-              annotation = contributesToFqName,
-              scope = scope
-          ))
+          .plus(
+              classScanner.findContributedClasses(
+                  module,
+                  packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
+                  annotation = contributesToFqName,
+                  scope = scope
+              )
+          )
           .filter { it.annotationOrNull(daggerModuleFqName) != null }
           .flatMap {
             it.annotationOrNull(contributesToFqName, scope)
@@ -180,7 +193,7 @@ internal class BindingModuleGenerator(
                 ?: emptySequence()
           }
 
-      val bindingMethods = (contributedBindingsThisModule + contributedBindingsDependencies)
+      val generatedMethods = (contributedBindingsThisModule + contributedBindingsDependencies)
           .minus(replacedBindings)
           .minus(bindingsReplacedInDaggerModules)
           .minus(excludedTypesForScope[scope].orEmpty())
@@ -196,21 +209,42 @@ internal class BindingModuleGenerator(
             checkNotGeneric(type = contributedClass, boundTypeDescriptor = boundType)
 
             val concreteType = contributedClass.fqNameSafe
-            val methodName = concreteType
-                .asString()
-                .split(".")
-                .joinToString(separator = "", prefix = "bind") { it.capitalize(US) }
 
-            val paramName = concreteType.shortName()
-                .asString()
-                .decapitalize(US)
-
-            """
-              |
-              |  @$daggerBindsFqName abstract fun $methodName(
-              |    $paramName: $concreteType
-              |  ): ${boundType.fqNameSafe}
-            """.trimMargin()
+            if (DescriptorUtils.isObject(contributedClass)) {
+              ProviderMethod(
+                  FunSpec
+                      .builder(
+                          name = concreteType
+                              .asString()
+                              .split(".")
+                              .joinToString(separator = "", prefix = "provide") {
+                                it.capitalize(US)
+                              }
+                      )
+                      .addAnnotation(Provides::class)
+                      .returns(boundType.asTypeName())
+                      .addStatement("return %T", concreteType.asTypeName())
+                      .build()
+              )
+            } else {
+              BindingMethod(
+                  FunSpec
+                      .builder(
+                          name = concreteType
+                              .asString()
+                              .split(".")
+                              .joinToString(separator = "", prefix = "bind") { it.capitalize(US) }
+                      )
+                      .addAnnotation(Binds::class)
+                      .addModifiers(ABSTRACT)
+                      .addParameter(
+                          name = concreteType.shortName().asString().decapitalize(US),
+                          type = concreteType.asTypeName()
+                      )
+                      .returns(boundType.asTypeName())
+                      .build()
+              )
+            }
           }
           .toList()
 
@@ -219,7 +253,7 @@ internal class BindingModuleGenerator(
             daggerModuleContent(
                 scope = scope.asString(),
                 psiClass = psiClass,
-                bindingMethods = bindingMethods
+                generatedMethods = generatedMethods
             )
         )
       }
@@ -303,19 +337,58 @@ internal class BindingModuleGenerator(
   private fun daggerModuleContent(
     scope: String,
     psiClass: KtClassOrObject,
-    bindingMethods: List<String>
+    generatedMethods: List<GeneratedMethod>
   ): String {
-    val packageName = generatePackageName(psiClass)
     val className = psiClass.generateClassName()
 
-    return """
-      package $packageName
+    val bindingMethods = generatedMethods.filterIsInstance<BindingMethod>()
+    val providerMethods = generatedMethods.filterIsInstance<ProviderMethod>()
 
-      @$daggerModuleFqName
-      @$contributesToFqName($scope::class)
-      abstract class $className {
-      ${bindingMethods.joinToString(separator = "\n")}
-      }
-    """.trimIndent()
+    return FileSpec.builder(generatePackageName(psiClass), className)
+        .apply {
+          val builder = if (bindingMethods.isEmpty()) {
+            TypeSpec.objectBuilder(className)
+                .addFunctions(providerMethods.specs)
+          } else {
+            TypeSpec.classBuilder(className)
+                .addModifiers(ABSTRACT)
+                .addFunctions(bindingMethods.specs)
+                .apply {
+                  if (providerMethods.isNotEmpty()) {
+                    addType(
+                        TypeSpec.companionObjectBuilder()
+                            .addFunctions(providerMethods.specs)
+                            .build()
+                    )
+                  }
+                }
+          }
+
+          addType(
+              builder
+                  .addAnnotation(Module::class)
+                  .addAnnotation(
+                      AnnotationSpec
+                          .builder(ContributesTo::class)
+                          .addMember("$scope::class")
+                          .build()
+                  )
+                  .build()
+          )
+        }
+        .build()
+        .writeToString()
+        .also {
+          println(it)
+        }
   }
 }
+
+private sealed class GeneratedMethod {
+  abstract val spec: FunSpec
+
+  class ProviderMethod(override val spec: FunSpec) : GeneratedMethod()
+  class BindingMethod(override val spec: FunSpec) : GeneratedMethod()
+}
+
+private val Collection<GeneratedMethod>.specs get() = map { it.spec }

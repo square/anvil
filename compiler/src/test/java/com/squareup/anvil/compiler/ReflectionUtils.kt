@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler
 
-import java.lang.reflect.Method
+import java.lang.reflect.Member
 import java.lang.reflect.Modifier
 
-val Method.isStatic: Boolean get() = Modifier.isStatic(modifiers)
+val Member.isStatic: Boolean get() = Modifier.isStatic(modifiers)
+val Member.isAbstract: Boolean get() = Modifier.isAbstract(modifiers)
