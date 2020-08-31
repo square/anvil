@@ -23,23 +23,29 @@ import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import dagger.Lazy
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeProjection
 import org.jetbrains.kotlin.psi.KtTypeReference
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import java.io.ByteArrayOutputStream
 import javax.annotation.Generated
 import javax.inject.Provider
 
-internal fun KtClassOrObject.asClassName(): TypeName {
-  val classNameString = requireFqName().asString()
+internal fun KtClassOrObject.asClassName(): TypeName = requireFqName().asClassName()
+
+internal fun ClassDescriptor.asClassName(): TypeName = fqNameSafe.asClassName()
+
+internal fun FqName.asClassName(): TypeName {
   return try {
-    ClassName.bestGuess(classNameString)
+    ClassName.bestGuess(asString())
   } catch (e: IllegalArgumentException) {
     // This happens when the class name starts with a lowercase character.
-    TypeVariableName(classNameString)
+    TypeVariableName(asString())
   }
 }
 
