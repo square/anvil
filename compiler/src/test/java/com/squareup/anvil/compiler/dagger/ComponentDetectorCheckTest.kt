@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test
 
@@ -30,7 +31,7 @@ class ComponentDetectorCheckTest {
     }
   }
 
-  @Test fun `a Dagger subcomponent causes an error`() {
+  @Test fun `a Dagger subcomponent is allowed`() {
     compile(
         """
         package com.squareup.test
@@ -41,15 +42,7 @@ class ComponentDetectorCheckTest {
         interface ComponentInterface
         """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-      // Position to the class.
-      assertThat(messages).contains("Source.kt: (5, 1")
-      assertThat(messages).contains(
-          "Anvil cannot generate the code for Dagger components or subcomponents. In these " +
-              "cases the Dagger annotation processor is required. Enabling the Dagger " +
-              "annotation processor and turning on Anvil to generate Dagger factories is " +
-              "redundant. Set 'generateDaggerFactories' to false."
-      )
+      assertThat(exitCode).isEqualTo(OK)
     }
   }
 
@@ -78,7 +71,7 @@ class ComponentDetectorCheckTest {
     }
   }
 
-  @Test fun `a Dagger subcomponent causes an error inner class`() {
+  @Test fun `a Dagger subcomponent in an inner class is allowed`() {
     compile(
         """
         package com.squareup.test
@@ -91,15 +84,7 @@ class ComponentDetectorCheckTest {
         }
         """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-      // Position to the class.
-      assertThat(messages).contains("Source.kt: (6, 3")
-      assertThat(messages).contains(
-          "Anvil cannot generate the code for Dagger components or subcomponents. In these " +
-              "cases the Dagger annotation processor is required. Enabling the Dagger " +
-              "annotation processor and turning on Anvil to generate Dagger factories is " +
-              "redundant. Set 'generateDaggerFactories' to false."
-      )
+      assertThat(exitCode).isEqualTo(OK)
     }
   }
 
