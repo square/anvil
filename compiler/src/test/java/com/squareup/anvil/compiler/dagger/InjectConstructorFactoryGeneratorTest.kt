@@ -676,6 +676,201 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
+  @Test fun `inner classes are imported correctly`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Dependencies_Factory implements Factory<InjectClass.Dependencies> {
+  @Override
+  public InjectClass.Dependencies get() {
+    return newInstance();
+  }
+
+  public static InjectClass_Dependencies_Factory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static InjectClass.Dependencies newInstance() {
+    return new InjectClass.Dependencies();
+  }
+
+  private static final class InstanceHolder {
+    private static final InjectClass_Dependencies_Factory INSTANCE = new InjectClass_Dependencies_Factory();
+  }
+}
+     */
+
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<InjectClass.Dependencies> dependenciesProvider;
+
+  public InjectClass_Factory(Provider<InjectClass.Dependencies> dependenciesProvider) {
+    this.dependenciesProvider = dependenciesProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(dependenciesProvider.get());
+  }
+
+  public static InjectClass_Factory create(
+      Provider<InjectClass.Dependencies> dependenciesProvider) {
+    return new InjectClass_Factory(dependenciesProvider);
+  }
+
+  public static InjectClass newInstance(InjectClass.Dependencies dependencies) {
+    return new InjectClass(dependencies);
+  }
+}
+     */
+
+    compile(
+        """
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        
+        class InjectClass @Inject constructor(dependencies: Dependencies) {
+          class Dependencies @Inject constructor()     
+        }
+        """
+    ) {
+      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+
+      val constructorDependencies = classLoader
+          .loadClass("com.squareup.test.InjectClass\$Dependencies")
+          .factoryClass()
+          .declaredConstructors
+          .single()
+      assertThat(constructorDependencies.parameterTypes.toList()).isEmpty()
+    }
+  }
+
+  @Test fun `inner classes are imported correctly from super type`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class ParentOne_Dependencies_Factory implements Factory<ParentOne.Dependencies> {
+  @Override
+  public ParentOne.Dependencies get() {
+    return newInstance();
+  }
+
+  public static ParentOne_Dependencies_Factory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static ParentOne.Dependencies newInstance() {
+    return new ParentOne.Dependencies();
+  }
+
+  private static final class InstanceHolder {
+    private static final ParentOne_Dependencies_Factory INSTANCE = new ParentOne_Dependencies_Factory();
+  }
+}
+     */
+
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<ParentOne.Dependencies> dProvider;
+
+  public InjectClass_Factory(Provider<ParentOne.Dependencies> dProvider) {
+    this.dProvider = dProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(dProvider.get());
+  }
+
+  public static InjectClass_Factory create(Provider<ParentOne.Dependencies> dProvider) {
+    return new InjectClass_Factory(dProvider);
+  }
+
+  public static InjectClass newInstance(ParentOne.Dependencies d) {
+    return new InjectClass(d);
+  }
+}
+     */
+
+    compile(
+        """
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        
+        open class ParentOne(d: Dependencies) {
+          class Dependencies @Inject constructor()
+        }
+        
+        open class ParentTwo(d: Dependencies) : ParentOne(d)
+        
+        class InjectClass @Inject constructor(d: Dependencies) : ParentTwo(d)
+        """
+    ) {
+      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+
+      val constructorDependencies = classLoader
+          .loadClass("com.squareup.test.ParentOne\$Dependencies")
+          .factoryClass()
+          .declaredConstructors
+          .single()
+      assertThat(constructorDependencies.parameterTypes.toList()).isEmpty()
+    }
+  }
+
   private fun compile(
     source: String,
     block: Result.() -> Unit = { }

@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.AnvilCompilationException
+import com.squareup.anvil.compiler.getAllSuperTypes
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -25,6 +26,7 @@ import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.KtValueArgumentName
+import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
@@ -184,8 +186,30 @@ internal fun PsiElement.requireFqName(
     // If a fully qualified name is used, then we're done and don't need to do anything further.
     is KtDotQualifiedExpression -> return FqName(text)
     is KtNameReferenceExpression -> getReferencedName()
-    is KtUserType -> referencedName ?: failTypeHandling()
-    is KtTypeReference -> text
+    is KtUserType -> {
+      val isGenericType = children.any { it is KtTypeArgumentList }
+      if (isGenericType) {
+        referencedName ?: failTypeHandling()
+      } else {
+        // We can't use referencedName here. For inner classes like "Outer.Inner" it would only
+        // return "Inner", whereas text returns "Outer.Inner", what we expect.
+        text
+      }
+    }
+    is KtTypeReference -> {
+      val children = children
+      if (children.size == 1) {
+        try {
+          // Could be a KtNullableType or KtUserType.
+          return children[0].requireFqName(module)
+        } catch (e: AnvilCompilationException) {
+          // Fallback to the text representation.
+          text
+        }
+      } else {
+        text
+      }
+    }
     is KtNullableType -> return innerType?.requireFqName(module) ?: failTypeHandling()
     else -> failTypeHandling()
   }
@@ -216,11 +240,39 @@ internal fun PsiElement.requireFqName(
   module.resolveClassByFqName(FqName("kotlin.collections.$classReference"), FROM_BACKEND)
       ?.let { return it.fqNameSafe }
 
+  findFqNameInSuperTypes(module, classReference)
+      ?.let { return it }
+
   // Everything else isn't supported.
   throw AnvilCompilationException(
       "Couldn't resolve FqName $classReference for Psi element: $text",
       element = this
   )
+}
+
+private fun PsiElement.findFqNameInSuperTypes(
+  module: ModuleDescriptor,
+  classReference: String
+): FqName? {
+  fun tryToResolveClassFqName(outerClass: FqName): FqName? =
+    module
+        .resolveClassByFqName(FqName("$outerClass.$classReference"), FROM_BACKEND)
+        ?.fqNameSafe
+
+  val clazz = parents.filterIsInstance<KtClassOrObject>().first()
+  tryToResolveClassFqName(clazz.requireFqName())?.let { return it }
+
+  // At this point we can't work with Psi APIs anymore. We need to resolve the super types and try
+  // to find inner class in them.
+  val descriptor = module.resolveClassByFqName(clazz.requireFqName(), FROM_BACKEND)
+      ?: throw AnvilCompilationException(
+          message = "Couldn't resolve class descriptor for ${clazz.requireFqName()}",
+          element = clazz
+      )
+
+  return listOf(descriptor.defaultType).getAllSuperTypes()
+      .mapNotNull { tryToResolveClassFqName(it) }
+      .firstOrNull()
 }
 
 internal fun KtClassOrObject.functions(
