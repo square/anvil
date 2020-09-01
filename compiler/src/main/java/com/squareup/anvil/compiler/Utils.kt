@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.typeUtil.supertypes
 import org.jetbrains.org.objectweb.asm.Type
 import javax.inject.Inject
 import javax.inject.Provider
@@ -177,3 +178,10 @@ internal fun KtClassOrObject.generateClassName(
             .shortName()
             .asString()
       }
+
+internal fun List<KotlinType>.getAllSuperTypes(): Sequence<FqName> =
+  generateSequence(this) { kotlinTypes ->
+    kotlinTypes.ifEmpty { null }?.flatMap { it.supertypes() }
+  }
+      .flatMap { it.asSequence() }
+      .map { DescriptorUtils.getFqNameSafe(it.classDescriptorForType()) }

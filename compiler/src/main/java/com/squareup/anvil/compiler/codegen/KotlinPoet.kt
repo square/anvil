@@ -41,7 +41,10 @@ internal fun FqName.asTypeName(): TypeName {
   }
 }
 
-internal fun KtCallableDeclaration.requireTypeName(module: ModuleDescriptor): TypeName {
+internal fun KtCallableDeclaration.requireTypeName(
+  module: ModuleDescriptor,
+  fqName: FqName? = null
+): TypeName {
   fun fail(): Nothing = throw AnvilCompilationException(
       message = "Couldn't resolve type of function: ${requireFqName()}",
       element = this
@@ -55,8 +58,12 @@ internal fun KtCallableDeclaration.requireTypeName(module: ModuleDescriptor): Ty
 
   if (typeReference.isGenericType()) return typeVariableName()
 
-  val fqName = typeReference.fqNameOrNull(module) ?: return typeVariableName()
-  return ClassName.bestGuess(fqName.asString())
+  val fqNameForGuess = fqName
+      ?: typeReference.fqNameOrNull(module)
+      ?: return typeVariableName()
+
+  return ClassName.bestGuess(fqNameForGuess.asString())
+      .let { if (typeReference.isNullable()) it.copy(nullable = true) else it }
 }
 
 internal data class Parameter(
@@ -83,8 +90,10 @@ internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor
     val isWrappedInLazy = typeFqName == daggerLazyFqName
 
     val typeName = when {
-      parameter.typeReference?.isNullable() ?: false -> parameter.requireTypeName(module)
-      isWrappedInProvider || isWrappedInLazy -> {
+      parameter.typeReference?.isNullable() ?: false ->
+        parameter.requireTypeName(module, typeFqName).copy(nullable = true)
+
+      isWrappedInProvider || isWrappedInLazy ->
         TypeVariableName(
             name = typeElement!!.children
                 .filterIsInstance<KtTypeArgumentList>()
@@ -97,8 +106,8 @@ internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor
                 .single()
                 .text
         )
-      }
-      else -> parameter.requireTypeName(module)
+
+      else -> parameter.requireTypeName(module, typeFqName)
     }.withJvmSuppressWildcardsIfNeeded(parameter)
 
     Parameter(
