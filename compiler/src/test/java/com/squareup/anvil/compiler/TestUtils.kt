@@ -10,6 +10,7 @@ import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
 import dagger.internal.codegen.ComponentProcessor
+import org.jetbrains.kotlin.config.JvmTarget
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Assume.assumeTrue
 import java.io.File
@@ -27,6 +28,7 @@ internal fun compile(
         compilerPlugins = listOf(AnvilComponentRegistrar())
         useIR = false
         inheritClassPath = true
+        jvmTarget = JvmTarget.JVM_1_8.description
 
         if (enableDaggerAnnotationProcessor) {
           annotationProcessors = listOf(ComponentProcessor())
