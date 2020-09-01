@@ -65,105 +65,107 @@ internal class InjectConstructorFactoryGenerator : CodeGenerator {
     val factoryClass = ClassName(packageName, className)
 
     val content = FileSpec.builder(packageName, className)
-        .addType(
-            TypeSpec
-                .classBuilder(factoryClass)
-                .addSuperinterface(Factory::class.asClassName().parameterizedBy(classType))
-                .apply {
-                  if (parameters.isNotEmpty()) {
-                    primaryConstructor(
-                        FunSpec.constructorBuilder()
-                            .apply {
-                              parameters.forEach { parameter ->
-                                addParameter(parameter.name, parameter.providerTypeName)
-                              }
+        .apply {
+          val canGenerateAnObject = parameters.isEmpty()
+          val classBuilder = if (canGenerateAnObject) {
+            TypeSpec.objectBuilder(factoryClass)
+          } else {
+            TypeSpec.classBuilder(factoryClass)
+          }
+
+          classBuilder
+              .addSuperinterface(Factory::class.asClassName().parameterizedBy(classType))
+              .apply {
+                if (parameters.isNotEmpty()) {
+                  primaryConstructor(
+                      FunSpec.constructorBuilder()
+                          .apply {
+                            parameters.forEach { parameter ->
+                              addParameter(parameter.name, parameter.providerTypeName)
                             }
+                          }
+                          .build()
+                  )
+
+                  parameters.forEach { parameter ->
+                    addProperty(
+                        PropertySpec.builder(parameter.name, parameter.providerTypeName)
+                            .initializer(parameter.name)
+                            .addModifiers(PRIVATE)
                             .build()
                     )
-
-                    parameters.forEach { parameter ->
-                      addProperty(
-                          PropertySpec.builder(parameter.name, parameter.providerTypeName)
-                              .initializer(parameter.name)
-                              .addModifiers(PRIVATE)
-                              .build()
-                      )
-                    }
                   }
                 }
-                .addFunction(
-                    FunSpec.builder("get")
-                        .addModifiers(OVERRIDE)
-                        .returns(classType)
-                        .apply {
-                          val argumentList = parameters.asArgumentList(
-                              asProvider = true,
-                              includeModule = false
-                          )
-
-                          addStatement("return newInstance($argumentList)")
-                        }
-                        .build()
-                )
-                .addType(
-                    TypeSpec
-                        .companionObjectBuilder()
-                        .apply {
-                          if (parameters.isEmpty()) {
-                            addProperty(
-                                PropertySpec.builder("instance", factoryClass)
-                                    .addModifiers(PRIVATE)
-                                    .initializer("%T()", factoryClass)
-                                    .build()
-                            )
-                          }
-                        }
-                        .addFunction(
-                            FunSpec.builder("create")
-                                .jvmStatic()
-                                .apply {
-                                  if (parameters.isEmpty()) {
-                                    addStatement("return instance")
-                                  } else {
-                                    parameters.forEach { parameter ->
-                                      addParameter(parameter.name, parameter.providerTypeName)
-                                    }
-
-                                    val argumentList = parameters.asArgumentList(
-                                        asProvider = false,
-                                        includeModule = false
-                                    )
-
-                                    addStatement(
-                                        "return %T($argumentList)",
-                                        factoryClass
-                                    )
-                                  }
-                                }
-                                .returns(factoryClass)
-                                .build()
+              }
+              .addFunction(
+                  FunSpec.builder("get")
+                      .addModifiers(OVERRIDE)
+                      .returns(classType)
+                      .apply {
+                        val argumentList = parameters.asArgumentList(
+                            asProvider = true,
+                            includeModule = false
                         )
-                        .addFunction(
-                            FunSpec.builder("newInstance")
-                                .jvmStatic()
-                                .apply {
-                                  parameters.forEach { parameter ->
-                                    addParameter(
-                                        name = parameter.name,
-                                        type = parameter.originalTypeName
-                                    )
-                                  }
-                                  val argumentsWithoutModule = parameters.joinToString { it.name }
 
-                                  addStatement("return %T($argumentsWithoutModule)", classType)
+                        addStatement("return newInstance($argumentList)")
+                      }
+                      .build()
+              )
+              .apply {
+                val builder = if (canGenerateAnObject) this else TypeSpec.companionObjectBuilder()
+                builder
+                    .addFunction(
+                        FunSpec.builder("create")
+                            .jvmStatic()
+                            .apply {
+                              if (canGenerateAnObject) {
+                                addStatement("return this")
+                              } else {
+                                parameters.forEach { parameter ->
+                                  addParameter(parameter.name, parameter.providerTypeName)
                                 }
-                                .returns(classType)
-                                .build()
-                        )
-                        .build()
-                )
-                .build()
-        )
+
+                                val argumentList = parameters.asArgumentList(
+                                    asProvider = false,
+                                    includeModule = false
+                                )
+
+                                addStatement(
+                                    "return %T($argumentList)",
+                                    factoryClass
+                                )
+                              }
+                            }
+                            .returns(factoryClass)
+                            .build()
+                    )
+                    .addFunction(
+                        FunSpec.builder("newInstance")
+                            .jvmStatic()
+                            .apply {
+                              parameters.forEach { parameter ->
+                                addParameter(
+                                    name = parameter.name,
+                                    type = parameter.originalTypeName
+                                )
+                              }
+                              val argumentsWithoutModule = parameters.joinToString { it.name }
+
+                              addStatement("return %T($argumentsWithoutModule)", classType)
+                            }
+                            .returns(classType)
+                            .build()
+                    )
+                    .build()
+                    .let {
+                      if (!canGenerateAnObject) {
+                        addType(it)
+                      }
+                    }
+              }
+              .build()
+              .let { addType(it) }
+        }
         .build()
         .writeToString()
         .replaceImports(clazz)
