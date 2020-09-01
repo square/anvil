@@ -559,6 +559,64 @@ public final class OuterClass_InjectClass_MembersInjector implements MembersInje
     }
   }
 
+  @Test fun `a factory class is generated for a field injection with a generic class`() {
+    /*
+package com.squareup.test;
+
+import dagger.MembersInjector;
+import dagger.internal.InjectedFieldSignature;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_MembersInjector<T> implements MembersInjector<InjectClass<T>> {
+  private final Provider<String> stringProvider;
+
+  public InjectClass_MembersInjector(Provider<String> stringProvider) {
+    this.stringProvider = stringProvider;
+  }
+
+  public static <T> MembersInjector<InjectClass<T>> create(Provider<String> stringProvider) {
+    return new InjectClass_MembersInjector<T>(stringProvider);}
+
+  @Override
+  public void injectMembers(InjectClass<T> instance) {
+    injectString(instance, stringProvider.get());
+  }
+
+  @InjectedFieldSignature("com.squareup.test.InjectClass.string")
+  public static <T> void injectString(InjectClass<T> instance, String string) {
+    instance.string = string;
+  }
+}
+     */
+
+    compile(
+        """
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        
+        abstract class InjectClass<T> {
+          @Inject lateinit var string: String
+        }
+        """
+    ) {
+      val membersInjector = injectClass.membersInjector()
+
+      val constructor = membersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+          .containsExactly(Provider::class.java)
+    }
+  }
+
   @OptIn(ExperimentalStdlibApi::class)
   private fun Class<*>.staticInjectMethod(memberName: String): Method {
     // We can't check the @InjectedFieldSignature annotation unfortunately, because it has class

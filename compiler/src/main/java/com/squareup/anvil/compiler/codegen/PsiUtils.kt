@@ -247,3 +247,5 @@ fun KtTypeReference.isGenericType(): Boolean {
 }
 
 fun KtTypeReference.isFunctionType(): Boolean = typeElement is KtFunctionType
+
+fun KtClassOrObject.isGenericClass(): Boolean = typeParameterList != null
