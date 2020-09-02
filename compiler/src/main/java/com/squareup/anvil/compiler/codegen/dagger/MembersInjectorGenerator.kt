@@ -74,7 +74,9 @@ internal class MembersInjectorGenerator : CodeGenerator {
     val classType = clazz.asTypeName()
         .let {
           if (it is ClassName && clazz.isGenericClass()) {
-            it.parameterizedBy(STAR)
+            val numberOfStars = clazz.typeParameterList!!.parameters.size
+            val stars = Array(numberOfStars) { STAR }
+            it.parameterizedBy(*stars)
           } else {
             it
           }
