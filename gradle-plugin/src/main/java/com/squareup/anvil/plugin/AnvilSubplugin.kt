@@ -57,12 +57,17 @@ class AnvilSubplugin : KotlinGradleSubplugin<AbstractCompile> {
     }
 
     val extension = project.extensions.findByType(AnvilExtension::class.java) ?: AnvilExtension()
+    val extensionOverrides = kotlinCompile.extensions.extraProperties.properties
+
+    val generateDaggerFactories: Boolean = extensionOverrides
+      .get(AnvilExtension::generateDaggerFactories.name)?.toString()?.toBoolean()
+      ?: extension.generateDaggerFactories
 
     return listOf(
         srcGenDirOption,
         SubpluginOption(
             key = "generate-dagger-factories",
-            value = extension.generateDaggerFactories.toString()
+            value = generateDaggerFactories.toString()
         )
     )
   }

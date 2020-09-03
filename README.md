@@ -251,6 +251,14 @@ anvil {
 }
 ```
 
+By default it applies to the whole module, but can be customized for individual compilations.
+
+```groovy
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile) {
+  ext.generateDaggerFactories = !name.contains("Test")
+}
+```
+
 In our codebase we measured that modules using Dagger build 65% faster with this new Anvil feature
 compared to using the Dagger annotation processor:
 
