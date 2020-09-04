@@ -25,6 +25,22 @@ internal fun compile(
   generateDaggerFactories: Boolean = false,
   block: Result.() -> Unit = { }
 ): Result {
+  return compile(
+    sourceFiles = listOf(source),
+    enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+    enableDaggerAndroidAnnotationProcessor = enableDaggerAndroidAnnotationProcessor,
+    generateDaggerFactories = generateDaggerFactories,
+    block = block
+  )
+}
+
+internal fun compile(
+  sourceFiles: List<String>,
+  enableDaggerAnnotationProcessor: Boolean = false,
+  enableDaggerAndroidAnnotationProcessor: Boolean = false,
+  generateDaggerFactories: Boolean = false,
+  block: Result.() -> Unit = { }
+): Result {
   return KotlinCompilation()
       .apply {
         compilerPlugins = listOf(AnvilComponentRegistrar())
@@ -56,10 +72,11 @@ internal fun compile(
             )
         )
 
-        val name = "${workingDir.absolutePath}/sources/src/main/java/com/squareup/test/Source.kt"
-        check(File(name).parentFile.mkdirs())
-
-        sources = listOf(SourceFile.kotlin(name, contents = source, trimIndent = true))
+        sources = sourceFiles.mapIndexed { index, content ->
+          val name = "${workingDir.absolutePath}/sources/src/main/java/com/squareup/test/Source$index.kt"
+          File(name).parentFile.mkdirs()
+          SourceFile.kotlin(name, contents = content, trimIndent = true)
+        }
       }
       .compile()
       .also(block)

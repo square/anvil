@@ -5,6 +5,8 @@ import com.squareup.anvil.compiler.codegen.addGeneratedByComment
 import com.squareup.anvil.compiler.codegen.asArgumentList
 import com.squareup.anvil.compiler.codegen.asTypeName
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
+import com.squareup.anvil.compiler.codegen.findAnnotation
+import com.squareup.anvil.compiler.codegen.fqNameOrNull
 import com.squareup.anvil.compiler.codegen.functions
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.isInterface
@@ -15,6 +17,7 @@ import com.squareup.anvil.compiler.codegen.requireFqName
 import com.squareup.anvil.compiler.codegen.requireTypeName
 import com.squareup.anvil.compiler.codegen.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.codegen.writeToString
+import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.daggerContributesAndroidInjector
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.generateClassName
@@ -42,12 +45,16 @@ import dagger.internal.Preconditions
 import dagger.multibindings.ClassKey
 import dagger.multibindings.IntoMap
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.KtStringTemplateExpression
+import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.resolve.calls.callUtil.getType
+import org.jetbrains.kotlin.util.isAnnotated
 import java.io.File
 import java.util.Locale
 
@@ -85,6 +92,15 @@ internal class ContributesAndroidInjectorGenerator : CodeGenerator {
     val bindingTargetName = (bindingTarget as ClassName).simpleName
     val className = "${clazz.generateClassName()}_Bind${bindingTargetName}"
     val factoryClass = ClassName(packageName, className)
+    val contributesAndroidInjector = function.findAnnotation(daggerContributesAndroidInjector)!!
+    val contributesAndroidInjectorParams = contributesAndroidInjector.valueArguments
+    val scopeAnnotations = function.annotationEntries
+      .asSequence()
+      .filterNot { it == contributesAndroidInjector }
+      .mapNotNull {
+        val element = it.children.singleOrNull()?.children?.singleOrNull()
+        element?.fqNameOrNull(module) ?: element?.text?.let(::FqName)
+      }
 
     val content = FileSpec.builder(packageName, className)
       .apply {
@@ -99,7 +115,21 @@ internal class ContributesAndroidInjectorGenerator : CodeGenerator {
         val subcomponentClassName = "${bindingTargetName}Subcomponent"
         val fullSubcomponentFactoryClassName = ClassName(packageName, "$subcomponentClassName.Factory")
         val subcomponent = TypeSpec.interfaceBuilder(ClassName(packageName, subcomponentClassName))
-          .addAnnotation(Subcomponent::class.java)
+          .addAnnotation(
+            AnnotationSpec.builder(Subcomponent::class.java).apply {
+              if (contributesAndroidInjectorParams.isNotEmpty()) {
+                addMember((contributesAndroidInjectorParams.first() as KtValueArgument).text)
+              }
+            }.build()
+          )
+          .apply {
+            scopeAnnotations.forEach { annotation ->
+              addAnnotation(ClassName(
+                annotation.parent().asString(),
+                annotation.shortName().asString()
+              ))
+            }
+          }
           .addSuperinterface(AndroidInjector::class.asClassName().parameterizedBy(bindingTarget))
           .addType(subcomponentFactory)
           .build()
