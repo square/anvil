@@ -62,7 +62,7 @@ internal fun KtCallableDeclaration.requireTypeName(
       ?: typeReference.fqNameOrNull(module)
       ?: return typeVariableName()
 
-  return ClassName.bestGuess(fqNameForGuess.asString())
+  return fqNameForGuess.asTypeName()
       .let { if (typeReference.isNullable()) it.copy(nullable = true) else it }
 }
 
