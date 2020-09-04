@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.isStatic
 import com.squareup.anvil.compiler.moduleFactoryClass
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.internal.Factory
@@ -2153,6 +2154,31 @@ public final class DaggerComponentInterface implements ComponentInterface {
           .invoke(null)
 
       assertThat(providedContributingObject).isSameInstanceAs(factoryInstance.get())
+    }
+  }
+
+  @Test fun `an error is thrown for overloaded provider methods`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        import dagger.multibindings.ElementsIntoSet
+        
+        typealias StringList = List<String>
+        
+        @Module
+        object DaggerModule1 {
+            @Provides fun provideString(): String = ""
+            @Provides fun provideString(s: String): Int = 1
+        }
+        """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains(
+          "Cannot have more than one binding method with the same name in a single module"
+      )
     }
   }
 
