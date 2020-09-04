@@ -1,7 +1,7 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
-import com.squareup.anvil.compiler.codegen.CodeGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.addGeneratedByComment
 import com.squareup.anvil.compiler.codegen.asArgumentList
 import com.squareup.anvil.compiler.codegen.asTypeName
@@ -39,26 +39,26 @@ import org.jetbrains.kotlin.psi.psiUtil.parents
 import java.io.File
 import java.util.Locale.US
 
-internal class ProvidesMethodFactoryGenerator : CodeGenerator {
-  override fun generateCode(
+internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
+
+  override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>
-  ): Collection<GeneratedFile> {
-    return projectFiles
+  ) {
+    projectFiles
         .asSequence()
         .flatMap { it.classesAndInnerClasses() }
         .filter { it.hasAnnotation(daggerModuleFqName) }
-        .flatMap { clazz ->
+        .forEach { clazz ->
           clazz
               .functions(includeCompanionObjects = true)
               .asSequence()
               .filter { it.hasAnnotation(daggerProvidesFqName) }
-              .map { function ->
+              .forEach { function ->
                 generateFactoryClass(codeGenDir, module, clazz, function)
               }
         }
-        .toList()
   }
 
   @OptIn(ExperimentalStdlibApi::class)

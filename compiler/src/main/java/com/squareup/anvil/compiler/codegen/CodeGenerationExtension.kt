@@ -63,26 +63,34 @@ internal class CodeGenerationExtension(
     while (newFiles.isNotEmpty()) {
       // Parse the KtFile for each generated file. Then feed the code generators with the new
       // parsed files until no new files are generated.
-      val newKtFiles = newFiles
-          .mapNotNull { (file, content) ->
-            val virtualFile = LightVirtualFile(
-                file.relativeTo(codeGenDir).path,
-                KotlinFileType.INSTANCE,
-                content
-            )
-
-            psiManager.findFile(virtualFile)
-          }
-          .filterIsInstance<KtFile>()
-
-      newFiles = generateCode(newKtFiles)
+      newFiles = generateCode(newFiles.parse(psiManager))
     }
 
-    codeGenerators.forEach { it.flush(codeGenDir, module) }
+    val flushedFiles = codeGenerators
+        .flatMap { codeGenerator -> codeGenerator.flush(codeGenDir, module) }
+        .parse(psiManager)
+
+    codeGenerators
+        .filterIsInstance<PrivateCodeGenerator>()
+        .forEach { codeGenerator ->
+          codeGenerator.generateCode(codeGenDir, module, flushedFiles)
+          codeGenerator.flush(codeGenDir, module)
+        }
 
     // This restarts the analysis phase and will include our files.
     return RetryWithAdditionalRoots(
         bindingTrace.bindingContext, module, emptyList(), listOf(codeGenDir), true
     )
   }
+
+  private fun Collection<GeneratedFile>.parse(psiManager: PsiManager): Collection<KtFile> =
+    mapNotNull { (file, content) ->
+      val virtualFile = LightVirtualFile(
+          file.relativeTo(codeGenDir).path,
+          KotlinFileType.INSTANCE,
+          content
+      )
+
+      psiManager.findFile(virtualFile)
+    }.filterIsInstance<KtFile>()
 }
