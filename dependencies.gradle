@@ -43,7 +43,9 @@ ext {
 
       dagger2: [
           dagger: "com.google.dagger:dagger:$daggerVersion",
-          compiler: "com.google.dagger:dagger-compiler:$daggerVersion"
+          android: "com.google.dagger:dagger-android:$daggerVersion",
+          compiler: "com.google.dagger:dagger-compiler:$daggerVersion",
+          compiler_android: "com.google.dagger:dagger-android-processor:$daggerVersion",
       ],
 
       jsr250: "javax.annotation:jsr250-api:1.0",

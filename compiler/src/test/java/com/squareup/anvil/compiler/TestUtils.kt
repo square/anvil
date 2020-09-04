@@ -9,6 +9,7 @@ import com.tschuchort.compiletesting.SourceFile
 import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
+import dagger.android.processor.AndroidProcessor
 import dagger.internal.codegen.ComponentProcessor
 import org.jetbrains.kotlin.config.JvmTarget
 import org.jetbrains.kotlin.name.FqName
@@ -20,6 +21,7 @@ import kotlin.reflect.KClass
 internal fun compile(
   source: String,
   enableDaggerAnnotationProcessor: Boolean = false,
+  enableDaggerAndroidAnnotationProcessor: Boolean = false,
   generateDaggerFactories: Boolean = false,
   block: Result.() -> Unit = { }
 ): Result {
@@ -32,6 +34,10 @@ internal fun compile(
 
         if (enableDaggerAnnotationProcessor) {
           annotationProcessors = listOf(ComponentProcessor())
+        }
+
+        if (enableDaggerAndroidAnnotationProcessor) {
+          annotationProcessors = listOf(ComponentProcessor(), AndroidProcessor())
         }
 
         val commandLineProcessor = AnvilCommandLineProcessor()
@@ -164,6 +170,11 @@ internal fun Class<*>.membersInjector(): Class<*> {
 
   return classLoader.loadClass("${`package`.name}." +
       "$enclosingClassString${simpleName}_MembersInjector")
+}
+
+@OptIn(ExperimentalStdlibApi::class)
+internal fun Class<*>.contributesAndroidInjector(target: String): Class<*> {
+  return classLoader.loadClass("${`package`.name}.DaggerModule1_Bind$target")
 }
 
 @OptIn(ExperimentalStdlibApi::class)

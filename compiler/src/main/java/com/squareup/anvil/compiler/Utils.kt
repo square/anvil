@@ -13,6 +13,7 @@ import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import dagger.Subcomponent
+import dagger.android.ContributesAndroidInjector
 import dagger.internal.DoubleCheck
 import org.jetbrains.kotlin.codegen.asmType
 import org.jetbrains.kotlin.codegen.state.KotlinTypeMapper
@@ -49,6 +50,7 @@ internal val daggerComponentFqName = FqName(Component::class.java.canonicalName)
 internal val daggerSubcomponentFqName = FqName(Subcomponent::class.java.canonicalName)
 internal val daggerModuleFqName = FqName(Module::class.java.canonicalName)
 internal val daggerBindsFqName = FqName(Binds::class.java.canonicalName)
+internal val daggerContributesAndroidInjector = FqName(ContributesAndroidInjector::class.java.canonicalName)
 internal val daggerProvidesFqName = FqName(Provides::class.java.canonicalName)
 internal val daggerLazyFqName = FqName(Lazy::class.java.canonicalName)
 internal val injectFqName = FqName(Inject::class.java.canonicalName)
