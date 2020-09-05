@@ -30,7 +30,10 @@ internal class InterfaceMerger(
       return
     }
 
-    val scope = mergeAnnotation.scope(thisDescriptor.module)
+    val module = thisDescriptor.module
+
+    val scope = mergeAnnotation.scope(module)
+    val scopeFqName = scope.fqNameSafe
 
     if (!DescriptorUtils.isInterface(thisDescriptor)) {
       throw AnvilCompilationException(thisDescriptor, "Dagger components must be interfaces.")
@@ -38,17 +41,17 @@ internal class InterfaceMerger(
 
     val classes = classScanner
         .findContributedClasses(
-            module = thisDescriptor.module,
+            module = module,
             packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
             annotation = contributesToFqName,
-            scope = scope.fqNameSafe
+            scope = scopeFqName
         )
         .filter {
           DescriptorUtils.isInterface(it) && it.annotationOrNull(daggerModuleFqName) == null
         }
         .mapNotNull {
           val contributeAnnotation =
-            it.annotationOrNull(contributesToFqName, scope = scope.fqNameSafe)
+            it.annotationOrNull(contributesToFqName, scope = scopeFqName)
                 ?: return@mapNotNull null
           it to contributeAnnotation
         }
@@ -77,6 +80,30 @@ internal class InterfaceMerger(
                           "replaced is not an interface."
                   )
                 }
+
+                val contributesBindingAnnotation = classDescriptorForReplacement
+                    .annotationOrNull(contributesBindingFqName)
+                val contributesToAnnotation = classDescriptorForReplacement
+                    .annotationOrNull(contributesToFqName)
+
+                // Verify that the the replaced classes use the same scope.
+                val scopeOfReplacement = contributesToAnnotation?.scope(module)
+                    ?: contributesBindingAnnotation?.scope(module)
+                    ?: throw AnvilCompilationException(
+                        classDescriptor,
+                        "Could not determine the scope of the replaced class " +
+                            "${classDescriptorForReplacement.fqNameSafe}."
+                    )
+
+                if (scopeOfReplacement.fqNameSafe != scopeFqName) {
+                  throw AnvilCompilationException(
+                      classDescriptor,
+                      "${classDescriptor.fqNameSafe} with scope $scopeFqName wants to replace " +
+                          "${classDescriptorForReplacement.fqNameSafe} with scope " +
+                          "${scopeOfReplacement.fqNameSafe}. The replacement must use the same " +
+                          "scope."
+                  )
+                }
               }
               .map { it.fqNameSafe }
         }
@@ -84,13 +111,34 @@ internal class InterfaceMerger(
 
     val excludedClasses = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)
         ?.value
-        ?.map {
-          it.getType(thisDescriptor.module)
-              .argumentType()
-              .classDescriptorForType()
-        }
+        ?.map { it.getType(module).argumentType().classDescriptorForType() }
         ?.filter { DescriptorUtils.isInterface(it) }
-        ?.map { it.fqNameSafe }
+        ?.map { classDescriptorForExclusion ->
+          val contributesBindingAnnotation = classDescriptorForExclusion
+              .annotationOrNull(contributesBindingFqName)
+          val contributesToAnnotation = classDescriptorForExclusion
+              .annotationOrNull(contributesToFqName)
+
+          // Verify that the the replaced classes use the same scope.
+          val scopeOfExclusion = contributesToAnnotation?.scope(module)
+              ?: contributesBindingAnnotation?.scope(module)
+              ?: throw AnvilCompilationException(
+                  thisDescriptor,
+                  "Could not determine the scope of the excluded class " +
+                      "${classDescriptorForExclusion.fqNameSafe}."
+              )
+
+          if (scopeOfExclusion.fqNameSafe != scopeFqName) {
+            throw AnvilCompilationException(
+                thisDescriptor,
+                "${thisDescriptor.fqNameSafe} with scope $scopeFqName wants to exclude " +
+                    "${classDescriptorForExclusion.fqNameSafe} with scope " +
+                    "${scopeOfExclusion.fqNameSafe}. The exclusion must use the same scope."
+            )
+          }
+
+          classDescriptorForExclusion.fqNameSafe
+        }
         ?: emptyList()
 
     if (excludedClasses.isNotEmpty()) {

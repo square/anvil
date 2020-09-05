@@ -218,6 +218,42 @@ class MergeModulesTest {
     }
   }
 
+  @Test fun `contributed binding can be replaced but must have the same scope`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.compat.MergeModules
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.anvil.annotations.ContributesTo
+
+        interface ParentInterface
+
+        @ContributesBinding(Unit::class)
+        interface ContributingInterface : ParentInterface
+
+        @ContributesTo(
+            Any::class,
+            replaces = [ContributingInterface::class]
+        )
+        @dagger.Module
+        abstract class DaggerModule2
+
+        @MergeModules(Any::class)
+        class DaggerModule1
+        """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      // Position to the class.
+      assertThat(messages).contains("Source.kt: (17, 16)")
+      assertThat(messages).contains(
+          "com.squareup.test.DaggerModule2 with scope kotlin.Any wants to replace " +
+              "com.squareup.test.ContributingInterface with scope kotlin.Unit. The replacement " +
+              "must use the same scope."
+      )
+    }
+  }
+
   @Test fun `module can be replaced by contributed binding`() {
     compile(
         """
@@ -248,6 +284,42 @@ class MergeModulesTest {
     }
   }
 
+  @Test fun `module replaced by contributed binding must use the same scope`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.compat.MergeModules
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.anvil.annotations.ContributesTo
+
+        interface ParentInterface
+
+        @ContributesTo(Unit::class)
+        @dagger.Module
+        abstract class DaggerModule2
+
+        @ContributesBinding(
+            Any::class,
+            replaces = [DaggerModule2::class]
+        )
+        interface ContributingInterface : ParentInterface
+
+        @MergeModules(Any::class)
+        class DaggerModule1
+        """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      // Position to the class.
+      assertThat(messages).contains("Source.kt: (17, 11)")
+      assertThat(messages).contains(
+          "com.squareup.test.ContributingInterface with scope kotlin.Any wants to replace " +
+              "com.squareup.test.DaggerModule2 with scope kotlin.Unit. The replacement must use " +
+              "the same scope."
+      )
+    }
+  }
+
   @Test fun `replaced modules must be Dagger modules`() {
     compile(
         """
@@ -275,6 +347,40 @@ class MergeModulesTest {
     }
   }
 
+  @Test fun `replaced modules must use the same scope`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.compat.MergeModules
+        import com.squareup.anvil.annotations.ContributesTo
+
+        @dagger.Module
+        @ContributesTo(Unit::class)
+        abstract class DaggerModule3
+
+        @ContributesTo(
+            Any::class,
+            replaces = [DaggerModule3::class]
+        )
+        @dagger.Module
+        abstract class DaggerModule2
+
+        @MergeModules(Any::class)
+        class DaggerModule1
+        """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      // Position to the class.
+      assertThat(messages).contains("Source.kt: (15, 16)")
+      assertThat(messages).contains(
+          "com.squareup.test.DaggerModule2 with scope kotlin.Any wants to replace " +
+              "com.squareup.test.DaggerModule3 with scope kotlin.Unit. The replacement must use " +
+              "the same scope."
+      )
+    }
+  }
+
   @Test fun `included modules are not replaced`() {
     compile(
         """
@@ -284,6 +390,7 @@ class MergeModulesTest {
         import com.squareup.anvil.annotations.ContributesTo
 
         @dagger.Module
+        @ContributesTo(Any::class)
         abstract class DaggerModule2
 
         @ContributesTo(
@@ -337,6 +444,38 @@ class MergeModulesTest {
     }
   }
 
+  @Test fun `excluded modules must use the same scope`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.compat.MergeModules
+        import com.squareup.anvil.annotations.ContributesTo
+
+        @ContributesTo(Unit::class)
+        @dagger.Module
+        abstract class DaggerModule2
+
+        @MergeModules(
+            scope = Any::class,
+            exclude = [
+              DaggerModule2::class
+            ]
+        )
+        class DaggerModule1
+        """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      // Position to the class.
+      assertThat(messages).contains("Source.kt: (16, 7)")
+      assertThat(messages).contains(
+          "com.squareup.test.DaggerModule1 with scope kotlin.Any wants to exclude " +
+              "com.squareup.test.DaggerModule2 with scope kotlin.Unit. The exclusion must " +
+              "use the same scope."
+      )
+    }
+  }
+
   @Test fun `contributed bindings can be excluded`() {
     compile(
         """
@@ -360,6 +499,39 @@ class MergeModulesTest {
         """
     ) {
       assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
+    }
+  }
+
+  @Test fun `contributed bindings can be excluded but must use the same scope`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.compat.MergeModules
+        import com.squareup.anvil.annotations.ContributesBinding
+
+        interface ParentInterface
+
+        @ContributesBinding(Unit::class)
+        interface ContributingInterface : ParentInterface
+
+        @MergeModules(
+            scope = Any::class,
+            exclude = [
+              ContributingInterface::class
+            ]
+        )
+        interface ComponentInterface
+        """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      // Position to the class.
+      assertThat(messages).contains("Source.kt: (17, 11)")
+      assertThat(messages).contains(
+          "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
+              "com.squareup.test.ContributingInterface with scope kotlin.Unit. The exclusion " +
+              "must use the same scope."
+      )
     }
   }
 
@@ -400,19 +572,19 @@ class MergeModulesTest {
 
     visibilities.forEach { visibility ->
       compile(
-        """
-        package com.squareup.test
-
-        import com.squareup.anvil.annotations.compat.MergeModules
-        import com.squareup.anvil.annotations.ContributesTo
-
-        @ContributesTo(Any::class)
-        @dagger.Module
-        $visibility abstract class DaggerModule2
-
-        @MergeModules(Any::class)
-        class DaggerModule1
-        """
+          """
+          package com.squareup.test
+  
+          import com.squareup.anvil.annotations.compat.MergeModules
+          import com.squareup.anvil.annotations.ContributesTo
+  
+          @ContributesTo(Any::class)
+          @dagger.Module
+          $visibility abstract class DaggerModule2
+  
+          @MergeModules(Any::class)
+          class DaggerModule1
+          """
       ) {
         assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
         // Position to the class.
