@@ -299,19 +299,21 @@ private fun PsiElement.findFqNameInSuperTypes(
         .resolveClassByFqName(FqName("$outerClass.$classReference"), FROM_BACKEND)
         ?.fqNameSafe
 
-  val clazz = parents.filterIsInstance<KtClassOrObject>().first()
-  tryToResolveClassFqName(clazz.requireFqName())?.let { return it }
+  return parents.filterIsInstance<KtClassOrObject>()
+      .flatMap { clazz ->
+        tryToResolveClassFqName(clazz.requireFqName())?.let { return@flatMap sequenceOf(it) }
 
-  // At this point we can't work with Psi APIs anymore. We need to resolve the super types and try
-  // to find inner class in them.
-  val descriptor = module.resolveClassByFqName(clazz.requireFqName(), FROM_BACKEND)
-      ?: throw AnvilCompilationException(
-          message = "Couldn't resolve class descriptor for ${clazz.requireFqName()}",
-          element = clazz
-      )
+        // At this point we can't work with Psi APIs anymore. We need to resolve the super types
+        // and try to find inner class in them.
+        val descriptor = module.resolveClassByFqName(clazz.requireFqName(), FROM_BACKEND)
+            ?: throw AnvilCompilationException(
+                message = "Couldn't resolve class descriptor for ${clazz.requireFqName()}",
+                element = clazz
+            )
 
-  return listOf(descriptor.defaultType).getAllSuperTypes()
-      .mapNotNull { tryToResolveClassFqName(it) }
+        listOf(descriptor.defaultType).getAllSuperTypes()
+            .mapNotNull { tryToResolveClassFqName(it) }
+      }
       .firstOrNull()
 }
 
