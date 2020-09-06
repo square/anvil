@@ -200,6 +200,39 @@ class InterfaceMergerTest(
     }
   }
 
+  @Test fun `replaced interfaces must use the same scope`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesTo
+        $import
+        
+        @ContributesTo(Unit::class)
+        interface ContributingInterface
+        
+        @ContributesTo(
+            Any::class,
+            replaces = [ContributingInterface::class]
+        )
+        interface SecondContributingInterface        
+
+        $annotation(Any::class)
+        interface ComponentInterface
+        """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      // Position to the class. Unfortunately, a different error is reported that the class is
+      // missing an @Module annotation.
+      assertThat(messages).contains("Source.kt: (13, 11)")
+      assertThat(messages).contains(
+          "com.squareup.test.SecondContributingInterface with scope kotlin.Any wants to replace " +
+              "com.squareup.test.ContributingInterface with scope kotlin.Unit. The replacement " +
+              "must use the same scope."
+      )
+    }
+  }
+
   @Test fun `predefined interfaces are not replaced`() {
     compile(
         """
@@ -226,7 +259,7 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `interface can be excluded excluded`() {
+  @Test fun `interface can be excluded`() {
     compile(
         """
         package com.squareup.test
@@ -251,6 +284,40 @@ class InterfaceMergerTest(
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
+    }
+  }
+
+  @Test fun `excluded interfaces must use the same scope`() {
+    compile(
+        """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesTo
+        $import
+
+        @ContributesTo(Unit::class)
+        interface ContributingInterface
+        
+        @ContributesTo(Any::class)
+        interface SecondContributingInterface
+
+        $annotation(
+            scope = Any::class,
+            exclude = [
+              ContributingInterface::class
+            ]
+        )
+        interface ComponentInterface
+        """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      // Position to the class.
+      assertThat(messages).contains("Source.kt: (18, 11)")
+      assertThat(messages).contains(
+          "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
+              "com.squareup.test.ContributingInterface with scope kotlin.Unit. The exclusion " +
+              "must use the same scope."
+      )
     }
   }
 
@@ -359,18 +426,18 @@ class InterfaceMergerTest(
 
     visibilities.forEach { visibility ->
       compile(
-        """
-        package com.squareup.test
-
-        import com.squareup.anvil.annotations.ContributesTo
-        $import
-
-        @ContributesTo(Any::class)
-        $visibility interface ContributingInterface
-        
-        $annotation(Any::class)
-        interface ComponentInterface
-        """
+          """
+          package com.squareup.test
+  
+          import com.squareup.anvil.annotations.ContributesTo
+          $import
+  
+          @ContributesTo(Any::class)
+          $visibility interface ContributingInterface
+          
+          $annotation(Any::class)
+          interface ComponentInterface
+          """
       ) {
         assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
         // Position to the class.

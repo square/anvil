@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.codegen.asmType
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.effectiveVisibility
 import org.jetbrains.kotlin.name.FqName
@@ -123,6 +124,8 @@ internal class ModuleMerger(
                   )
                 }
 
+                checkSameScope(classDescriptor, classDescriptorForReplacement, module, scopeFqName)
+
                 classDescriptorForReplacement.defaultType.asmType(codegen.typeMapper)
               }
         }
@@ -139,7 +142,12 @@ internal class ModuleMerger(
           if (scopeFqName == annotation.scope(module).fqNameSafe) {
             annotation.replaces(module)
                 .asSequence()
-                .map { it.defaultType.asmType(codegen.typeMapper) }
+                .map { classDescriptorForReplacement ->
+                  checkSameScope(
+                      contributedClass, classDescriptorForReplacement, module, scopeFqName
+                  )
+                  classDescriptorForReplacement.defaultType.asmType(codegen.typeMapper)
+                }
           } else {
             emptySequence()
           }
@@ -147,7 +155,35 @@ internal class ModuleMerger(
 
     val excludedModules = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)
         ?.value
-        ?.map { it.toType(codegen) }
+        ?.map {
+          val argumentType = it.getType(module).argumentType()
+          val classDescriptorForExclusion = argumentType.classDescriptorForType()
+
+          val contributesBindingAnnotation = classDescriptorForExclusion
+              .annotationOrNull(contributesBindingFqName)
+          val contributesToAnnotation = classDescriptorForExclusion
+              .annotationOrNull(contributesToFqName)
+
+          // Verify that the the replaced classes use the same scope.
+          val scopeOfExclusion = contributesToAnnotation?.scope(module)
+              ?: contributesBindingAnnotation?.scope(module)
+              ?: throw AnvilCompilationException(
+                  codegen.descriptor,
+                  "Could not determine the scope of the excluded class " +
+                      "${classDescriptorForExclusion.fqNameSafe}."
+              )
+
+          if (scopeOfExclusion.fqNameSafe != scopeFqName) {
+            throw AnvilCompilationException(
+                codegen.descriptor,
+                "${codegen.descriptor.fqNameSafe} with scope $scopeFqName wants to exclude " +
+                    "${classDescriptorForExclusion.fqNameSafe} with scope " +
+                    "${scopeOfExclusion.fqNameSafe}. The exclusion must use the same scope."
+            )
+          }
+
+          argumentType.asmType(codegen.typeMapper)
+        }
         ?: emptyList()
 
     if (predefinedModules != null) {
@@ -223,6 +259,36 @@ internal class ModuleMerger(
                   .asString()
             }
     return FqName(name)
+  }
+
+  private fun checkSameScope(
+    contributedClass: ClassDescriptor,
+    classDescriptorForReplacement: ClassDescriptor,
+    module: ModuleDescriptor,
+    scopeFqName: FqName
+  ) {
+    val contributesBindingAnnotation = classDescriptorForReplacement
+        .annotationOrNull(contributesBindingFqName)
+    val contributesToAnnotation = classDescriptorForReplacement
+        .annotationOrNull(contributesToFqName)
+
+    // Verify that the the replaced classes use the same scope.
+    val scopeOfReplacement = contributesToAnnotation?.scope(module)
+        ?: contributesBindingAnnotation?.scope(module)
+        ?: throw AnvilCompilationException(
+            contributedClass,
+            "Could not determine the scope of the replaced class " +
+                "${classDescriptorForReplacement.fqNameSafe}."
+        )
+
+    if (scopeOfReplacement.fqNameSafe != scopeFqName) {
+      throw AnvilCompilationException(
+          contributedClass,
+          "${contributedClass.fqNameSafe} with scope $scopeFqName wants to replace " +
+              "${classDescriptorForReplacement.fqNameSafe} with scope " +
+              "${scopeOfReplacement.fqNameSafe}. The replacement must use the same scope."
+      )
+    }
   }
 }
 
