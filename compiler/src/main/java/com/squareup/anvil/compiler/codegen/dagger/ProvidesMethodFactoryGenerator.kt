@@ -5,7 +5,7 @@ import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.addGeneratedByComment
 import com.squareup.anvil.compiler.codegen.asArgumentList
-import com.squareup.anvil.compiler.codegen.asTypeName
+import com.squareup.anvil.compiler.codegen.asClassName
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.functions
 import com.squareup.anvil.compiler.codegen.hasAnnotation
@@ -103,7 +103,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     val returnTypeIsNullable = function.typeReference?.isNullable() ?: false
 
     val factoryClass = ClassName(packageName, className)
-    val moduleClass = clazz.asTypeName()
+    val moduleClass = clazz.asClassName()
 
     val content = FileSpec.builder(packageName, className)
         .apply {

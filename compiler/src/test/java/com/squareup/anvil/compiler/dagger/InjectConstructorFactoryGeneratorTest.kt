@@ -677,6 +677,63 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   }
 
   @Test
+  fun `a factory class is generated for a class injecting a class starting with a lowercase character`() { // ktlint-disable max-line-length
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<otherClass.inner> innerProvider;
+
+  public InjectClass_Factory(Provider<otherClass.inner> innerProvider) {
+    this.innerProvider = innerProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(innerProvider.get());
+  }
+
+  public static InjectClass_Factory create(Provider<otherClass.inner> innerProvider) {
+    return new InjectClass_Factory(innerProvider);
+  }
+
+  public static InjectClass newInstance(otherClass.inner inner) {
+    return new InjectClass(inner);
+  }
+}
+     */
+
+    compile(
+        """
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        
+        class InjectClass @Inject constructor(inner: otherClass.inner)
+        
+        class otherClass {
+          class inner @Inject constructor()
+        }
+        """
+    ) {
+      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+    }
+  }
+
+  @Test
   fun `a factory class is generated for an inner class starting with a lowercase character`() {
     /*
 package com.squareup.test;

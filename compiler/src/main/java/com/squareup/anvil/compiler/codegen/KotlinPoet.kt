@@ -14,13 +14,13 @@ import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import dagger.Lazy
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -31,21 +31,57 @@ import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtTypeProjection
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
+import org.jetbrains.kotlin.resolve.descriptorUtil.parents
+import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
 import java.io.ByteArrayOutputStream
 import javax.inject.Provider
 
-internal fun KtClassOrObject.asTypeName(): TypeName = requireFqName().asTypeName()
+internal fun KtClassOrObject.asClassName(): ClassName =
+  ClassName(
+      packageName = containingKtFile.packageFqName.asString(),
+      simpleNames = parentsWithSelf
+          .filterIsInstance<KtClassOrObject>()
+          .map { it.nameAsSafeName.asString() }
+          .toList()
+          .reversed()
+  )
 
-internal fun ClassDescriptor.asTypeName(): TypeName = fqNameSafe.asTypeName()
+internal fun ClassDescriptor.asClassName(): ClassName =
+  ClassName(
+      packageName = parents.filterIsInstance<PackageFragmentDescriptor>().first().fqName.asString(),
+      simpleNames = parentsWithSelf.filterIsInstance<ClassDescriptor>()
+          .map { it.name.asString() }
+          .toList()
+          .reversed()
+  )
 
-private fun FqName.asTypeName(): TypeName {
-  return try {
-    ClassName.bestGuess(asString())
-  } catch (e: IllegalArgumentException) {
-    // This happens when the class name starts with a lowercase character.
-    TypeVariableName(asString())
+private fun FqName.asClassName(module: ModuleDescriptor): ClassName {
+  try {
+    return ClassName.bestGuess(asString())
+  } catch (ignored: IllegalArgumentException) {
+    // Probably lowercase class. Try to resolve the class below.
   }
+
+  val segments = pathSegments().map { it.asString() }
+  for (index in (segments.size - 1) downTo 1) {
+    val packageSegments = segments.subList(0, index)
+    val classSegments = segments.subList(index, segments.size)
+
+    val classifier = module.findClassOrTypeAlias(
+        packageName = FqName.fromSegments(packageSegments),
+        className = classSegments.joinToString(separator = ".")
+    )
+
+    if (classifier != null) {
+      return ClassName(
+          packageName = packageSegments.joinToString(separator = "."),
+          simpleNames = classSegments
+      )
+    }
+  }
+
+  throw AnvilCompilationException("Couldn't parse ClassName for $this.")
 }
 
 internal fun KtTypeReference.requireTypeName(
@@ -59,7 +95,7 @@ internal fun KtTypeReference.requireTypeName(
   fun KtTypeElement.requireTypeName(): TypeName {
     return when (this) {
       is KtUserType -> {
-        val className = ClassName.bestGuess(requireFqName(module).asString())
+        val className = requireFqName(module).asClassName(module)
         val typeArgumentList = typeArgumentList
         if (typeArgumentList != null) {
           className.parameterizedBy(

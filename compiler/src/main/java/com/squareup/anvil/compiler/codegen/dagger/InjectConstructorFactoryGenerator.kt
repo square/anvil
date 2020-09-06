@@ -4,7 +4,7 @@ import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.addGeneratedByComment
 import com.squareup.anvil.compiler.codegen.asArgumentList
-import com.squareup.anvil.compiler.codegen.asTypeName
+import com.squareup.anvil.compiler.codegen.asClassName
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.mapToParameter
@@ -57,7 +57,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
   ): GeneratedFile {
     val packageName = clazz.containingKtFile.packageFqName.asString()
     val className = "${clazz.generateClassName()}_Factory"
-    val classType = clazz.asTypeName()
+    val classType = clazz.asClassName()
 
     val parameters = constructor.getValueParameters().mapToParameter(module)
 

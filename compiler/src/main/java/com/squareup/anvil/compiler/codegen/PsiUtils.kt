@@ -4,6 +4,7 @@ import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.getAllSuperTypes
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
@@ -238,18 +239,7 @@ internal fun PsiElement.requireFqName(
       ?.let { return it.fqName }
 
   // If there is no import, then try to resolve the class with the same package as this file.
-  module
-      .resolveClassByFqName(
-          FqName("${containingKtFile.packageFqName}.$classReference"),
-          FROM_BACKEND
-      )
-      ?.let { return it.fqNameSafe }
-
-  // Maybe it's a type alias?
-  module
-      .findTypeAliasAcrossModuleDependencies(
-          ClassId(containingKtFile.packageFqName, Name.identifier(classReference))
-      )
+  module.findClassOrTypeAlias(containingKtFile.packageFqName, classReference)
       ?.let { return it.fqNameSafe }
 
   // If this doesn't work, then maybe a class from the Kotlin package is used.
@@ -272,15 +262,7 @@ internal fun PsiElement.requireFqName(
         it.importPath?.fqName
       }
       .forEach { importFqName ->
-        module
-            .resolveClassByFqName(FqName("$importFqName.$classReference"), FROM_BACKEND)
-            ?.let { return it.fqNameSafe }
-
-        module
-            .findTypeAliasAcrossModuleDependencies(
-                ClassId(importFqName, Name.identifier(classReference))
-            )
-            ?.let { return it.fqNameSafe }
+        module.findClassOrTypeAlias(importFqName, classReference)?.let { return it.fqNameSafe }
       }
 
   // Everything else isn't supported.
@@ -315,6 +297,19 @@ private fun PsiElement.findFqNameInSuperTypes(
             .mapNotNull { tryToResolveClassFqName(it) }
       }
       .firstOrNull()
+}
+
+internal fun ModuleDescriptor.findClassOrTypeAlias(
+  packageName: FqName,
+  className: String
+): ClassifierDescriptorWithTypeParameters? {
+  resolveClassByFqName(FqName("$packageName.$className"), FROM_BACKEND)
+      ?.let { return it }
+
+  findTypeAliasAcrossModuleDependencies(ClassId(packageName, Name.identifier(className)))
+      ?.let { return it }
+
+  return null
 }
 
 internal fun KtClassOrObject.functions(
