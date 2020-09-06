@@ -8,7 +8,6 @@ import com.squareup.anvil.compiler.codegen.asTypeName
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.mapToParameter
-import com.squareup.anvil.compiler.codegen.replaceImports
 import com.squareup.anvil.compiler.codegen.writeToString
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.injectFqName
@@ -168,7 +167,6 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
         }
         .build()
         .writeToString()
-        .replaceImports(clazz)
         .addGeneratedByComment()
 
     val directory = File(codeGenDir, packageName.replace('.', File.separatorChar))

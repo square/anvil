@@ -9,6 +9,8 @@ import com.squareup.anvil.compiler.providerFqName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
@@ -16,14 +18,19 @@ import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import dagger.Lazy
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtFunctionType
+import org.jetbrains.kotlin.psi.KtNullableType
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
+import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtTypeProjection
 import org.jetbrains.kotlin.psi.KtTypeReference
+import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import java.io.ByteArrayOutputStream
 import javax.inject.Provider
@@ -32,7 +39,7 @@ internal fun KtClassOrObject.asTypeName(): TypeName = requireFqName().asTypeName
 
 internal fun ClassDescriptor.asTypeName(): TypeName = fqNameSafe.asTypeName()
 
-internal fun FqName.asTypeName(): TypeName {
+private fun FqName.asTypeName(): TypeName {
   return try {
     ClassName.bestGuess(asString())
   } catch (e: IllegalArgumentException) {
@@ -41,29 +48,50 @@ internal fun FqName.asTypeName(): TypeName {
   }
 }
 
-internal fun KtCallableDeclaration.requireTypeName(
-  module: ModuleDescriptor,
-  fqName: FqName? = null
+internal fun KtTypeReference.requireTypeName(
+  module: ModuleDescriptor
 ): TypeName {
-  fun fail(): Nothing = throw AnvilCompilationException(
-      message = "Couldn't resolve type of function: ${requireFqName()}",
+  fun PsiElement.fail(): Nothing = throw AnvilCompilationException(
+      message = "Couldn't resolve type: $text",
       element = this
   )
 
-  val typeReference = typeReference ?: fail()
-
-  fun typeVariableName(): TypeVariableName {
-    return TypeVariableName(name = typeReference.typeElement?.text ?: fail())
+  fun KtTypeElement.requireTypeName(): TypeName {
+    return when (this) {
+      is KtUserType -> {
+        val className = ClassName.bestGuess(requireFqName(module).asString())
+        val typeArgumentList = typeArgumentList
+        if (typeArgumentList != null) {
+          className.parameterizedBy(
+              typeArgumentList.arguments.map {
+                (it.typeReference ?: it.fail()).requireTypeName(module)
+              }
+          )
+        } else {
+          className
+        }
+      }
+      is KtFunctionType ->
+        LambdaTypeName.get(
+            receiver = receiver?.typeReference?.requireTypeName(module),
+            parameters = parameterList
+                ?.parameters
+                ?.map { parameter ->
+                  val parameterReference = parameter.typeReference ?: parameter.fail()
+                  ParameterSpec.unnamed(parameterReference.requireTypeName(module))
+                }
+                ?: emptyList(),
+            returnType = (returnTypeReference ?: fail())
+                .requireTypeName(module)
+        )
+      is KtNullableType -> {
+        (innerType ?: fail()).requireTypeName().copy(nullable = true)
+      }
+      else -> fail()
+    }
   }
 
-  if (typeReference.isGenericType()) return typeVariableName()
-
-  val fqNameForGuess = fqName
-      ?: typeReference.fqNameOrNull(module)
-      ?: return typeVariableName()
-
-  return fqNameForGuess.asTypeName()
-      .let { if (typeReference.isNullable()) it.copy(nullable = true) else it }
+  return (typeElement ?: fail()).requireTypeName()
 }
 
 internal data class Parameter(
@@ -90,24 +118,22 @@ internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor
     val isWrappedInLazy = typeFqName == daggerLazyFqName
 
     val typeName = when {
-      parameter.typeReference?.isNullable() ?: false ->
-        parameter.requireTypeName(module, typeFqName).copy(nullable = true)
+      parameter.requireTypeReference().isNullable() ->
+        parameter.requireTypeReference().requireTypeName(module).copy(nullable = true)
 
       isWrappedInProvider || isWrappedInLazy ->
-        TypeVariableName(
-            name = typeElement!!.children
-                .filterIsInstance<KtTypeArgumentList>()
-                .single()
-                .children
-                .filterIsInstance<KtTypeProjection>()
-                .single()
-                .children
-                .filterIsInstance<KtTypeReference>()
-                .single()
-                .text
-        )
+        typeElement!!.children
+            .filterIsInstance<KtTypeArgumentList>()
+            .single()
+            .children
+            .filterIsInstance<KtTypeProjection>()
+            .single()
+            .children
+            .filterIsInstance<KtTypeReference>()
+            .single()
+            .requireTypeName(module)
 
-      else -> parameter.requireTypeName(module, typeFqName)
+      else -> parameter.requireTypeReference().requireTypeName(module)
     }.withJvmSuppressWildcardsIfNeeded(parameter)
 
     Parameter(
@@ -203,59 +229,4 @@ internal fun FileSpec.writeToString(): String {
     writeTo(it)
   }
   return stream.toString()
-}
-
-/**
- * Removes invalid imports that can be caused by [requireTypeName] and copies imports from the
- * source file. Copying imports is necessary for star imports.
- */
-internal fun String.replaceImports(clazz: KtClassOrObject): String {
-  val originalLines = lines()
-  val linesWithoutImports = originalLines
-      .filterNot { it.startsWith("import ") }
-      .toMutableList()
-
-  val copiedImports = clazz.containingKtFile
-      .importDirectives
-      .map { it.text.trim() }
-
-  val importDirectives = copiedImports
-      .plus(
-          originalLines
-              .filter {
-                it.startsWith("import ") && it.contains(".")
-              }
-              .map { it.trim() }
-      )
-      .distinct()
-      .toMutableList()
-
-  // Now that we copied the imports from the original file it could happen that we have ambiguous
-  // imports. Remove the import that is used with a fully qualified name elsewhere in the code or
-  // remove the copied import again if it's unused.
-  importDirectives
-      .filterNot { it.endsWith(".*") }
-      .groupBy { it.substringAfterLast(".") }
-      .filterValues { it.size > 1 }
-      .values
-      .forEach { ambiguousImports ->
-        val usedImport = ambiguousImports.firstOrNull { ambiguousImport ->
-          val fqName = ambiguousImport.substringAfter("import ")
-          linesWithoutImports.any { it.contains(fqName) }
-        }
-
-        if (usedImport != null) {
-          importDirectives.remove(usedImport)
-        } else {
-          // It's possible that the copied import was unused.
-          ambiguousImports.forEach {
-            if (it in copiedImports) {
-              importDirectives.remove(it)
-            }
-          }
-        }
-      }
-
-  linesWithoutImports.addAll(2, importDirectives.sorted())
-  return linesWithoutImports.joinToString(separator = "\n")
 }

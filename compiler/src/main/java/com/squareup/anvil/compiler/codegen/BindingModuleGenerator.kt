@@ -223,7 +223,7 @@ internal class BindingModuleGenerator(
                       )
                       .addAnnotation(Provides::class)
                       .returns(boundType.asTypeName())
-                      .addStatement("return %T", concreteType.asTypeName())
+                      .addStatement("return %T", contributedClass.asTypeName())
                       .build()
               )
             } else {
@@ -239,7 +239,7 @@ internal class BindingModuleGenerator(
                       .addModifiers(ABSTRACT)
                       .addParameter(
                           name = concreteType.shortName().asString().decapitalize(US),
-                          type = concreteType.asTypeName()
+                          type = contributedClass.asTypeName()
                       )
                       .returns(boundType.asTypeName())
                       .build()

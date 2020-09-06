@@ -976,6 +976,64 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
+  @Test fun `inner classes in generics are imported correctly`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import java.util.Set;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<Set<InjectClass.Interceptor>> interceptorsProvider;
+
+  public InjectClass_Factory(Provider<Set<InjectClass.Interceptor>> interceptorsProvider) {
+    this.interceptorsProvider = interceptorsProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(interceptorsProvider.get());
+  }
+
+  public static InjectClass_Factory create(
+      Provider<Set<InjectClass.Interceptor>> interceptorsProvider) {
+    return new InjectClass_Factory(interceptorsProvider);
+  }
+
+  public static InjectClass newInstance(Set<InjectClass.Interceptor> interceptors) {
+    return new InjectClass(interceptors);
+  }
+}
+     */
+
+    compile(
+        """
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        
+        class InjectClass @Inject constructor(
+          interceptors: Set<@JvmSuppressWildcards Interceptor>
+        ) {
+          interface Interceptor
+        }
+        """
+    ) {
+      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+    }
+  }
+
   private fun compile(
     source: String,
     block: Result.() -> Unit = { }

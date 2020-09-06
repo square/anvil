@@ -11,9 +11,9 @@ import com.squareup.anvil.compiler.codegen.functions
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.isNullable
 import com.squareup.anvil.compiler.codegen.mapToParameter
-import com.squareup.anvil.compiler.codegen.replaceImports
 import com.squareup.anvil.compiler.codegen.requireFqName
 import com.squareup.anvil.compiler.codegen.requireTypeName
+import com.squareup.anvil.compiler.codegen.requireTypeReference
 import com.squareup.anvil.compiler.codegen.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.codegen.writeToString
 import com.squareup.anvil.compiler.daggerModuleFqName
@@ -98,13 +98,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
     val parameters = function.valueParameters.mapToParameter(module)
 
-    // This is a little hacky. The typeElement could be "String", "Abc", etc., but also a generic
-    // type like "List<String>". We simply copy this literal as return type into our generated
-    // code. Kotlinpoet will add an import for this literal like "import String", which we later
-    // will remove again.
-    //
-    // This solution is a lot easier than trying to resolve all FqNames for each type.
-    val returnType = function.requireTypeName(module)
+    val returnType = function.requireTypeReference().requireTypeName(module)
         .withJvmSuppressWildcardsIfNeeded(function)
     val returnTypeIsNullable = function.typeReference?.isNullable() ?: false
 
@@ -254,7 +248,6 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
         }
         .build()
         .writeToString()
-        .replaceImports(clazz)
         .addGeneratedByComment()
 
     val directory = File(codeGenDir, packageName.replace('.', File.separatorChar))

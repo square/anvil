@@ -5,11 +5,15 @@ import com.squareup.anvil.compiler.getAllSuperTypes
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation.FROM_BACKEND
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
+import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
@@ -191,6 +195,15 @@ internal fun PsiElement.requireFqName(
       if (isGenericType) {
         referencedName ?: failTypeHandling()
       } else {
+        val text = text
+
+        // Sometimes a KtUserType is a fully qualified name. Give it a try and return early.
+        if (text.contains(".") && text[0].isLowerCase()) {
+          module
+              .resolveClassByFqName(FqName(text), FROM_BACKEND)
+              ?.let { return it.fqNameSafe }
+        }
+
         // We can't use referencedName here. For inner classes like "Outer.Inner" it would only
         // return "Inner", whereas text returns "Outer.Inner", what we expect.
         text
@@ -232,6 +245,13 @@ internal fun PsiElement.requireFqName(
       )
       ?.let { return it.fqNameSafe }
 
+  // Maybe it's a type alias?
+  module
+      .findTypeAliasAcrossModuleDependencies(
+          ClassId(containingKtFile.packageFqName, Name.identifier(classReference))
+      )
+      ?.let { return it.fqNameSafe }
+
   // If this doesn't work, then maybe a class from the Kotlin package is used.
   module.resolveClassByFqName(FqName("kotlin.$classReference"), FROM_BACKEND)
       ?.let { return it.fqNameSafe }
@@ -242,6 +262,26 @@ internal fun PsiElement.requireFqName(
 
   findFqNameInSuperTypes(module, classReference)
       ?.let { return it }
+
+  containingKtFile.importDirectives
+      .asSequence()
+      .filter { it.isAllUnder }
+      .mapNotNull {
+        // This fqName is the everything in front of the star, e.g. for "import java.io.*" it
+        // returns "java.io".
+        it.importPath?.fqName
+      }
+      .forEach { importFqName ->
+        module
+            .resolveClassByFqName(FqName("$importFqName.$classReference"), FROM_BACKEND)
+            ?.let { return it.fqNameSafe }
+
+        module
+            .findTypeAliasAcrossModuleDependencies(
+                ClassId(importFqName, Name.identifier(classReference))
+            )
+            ?.let { return it.fqNameSafe }
+      }
 
   // Everything else isn't supported.
   throw AnvilCompilationException(
@@ -301,3 +341,8 @@ fun KtTypeReference.isGenericType(): Boolean {
 fun KtTypeReference.isFunctionType(): Boolean = typeElement is KtFunctionType
 
 fun KtClassOrObject.isGenericClass(): Boolean = typeParameterList != null
+
+fun KtCallableDeclaration.requireTypeReference(): KtTypeReference =
+  typeReference ?: throw AnvilCompilationException(
+      "Couldn't obtain type reference.", element = this
+  )
