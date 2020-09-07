@@ -1659,6 +1659,28 @@ public final class ComponentInterface_InnerModule_ProvideStringFactory implement
     }
   }
 
+  @Test fun `a factory class is generated for a provider method returning an inner class`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        import com.squareup.anvil.compiler.dagger.OuterClass
+        
+        @Module
+        object DaggerModule1 {
+          @Provides fun provideInnerClass(): OuterClass.InnerClass = OuterClass.InnerClass()
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideInnerClass")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+    }
+  }
+
   @Test
   fun `a factory class is generated for a provider method in a companion object in an inner module`() { // ktlint-disable max-line-length
     /*

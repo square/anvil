@@ -228,15 +228,24 @@ internal fun PsiElement.requireFqName(
     else -> failTypeHandling()
   }
 
+  // E.g. OuterClass.InnerClass
+  val classReferenceOuter = classReference.substringBefore(".")
+
+  val importPaths = containingKtFile.importDirectives.mapNotNull { it.importPath }
+
   // First look in the imports for the reference name. If the class is imported, then we know the
   // fully qualified name.
-  containingKtFile.importDirectives
-      .mapNotNull { it.importPath }
+  importPaths
       .firstOrNull {
-        it.fqName.shortName()
-            .asString() == classReference
+        it.fqName.shortName().asString() == classReference
       }
       ?.let { return it.fqName }
+
+  importPaths
+      .firstOrNull {
+        it.fqName.shortName().asString() == classReferenceOuter
+      }
+      ?.let { return FqName("${it.fqName.parent()}.$classReference") }
 
   // If there is no import, then try to resolve the class with the same package as this file.
   module.findClassOrTypeAlias(containingKtFile.packageFqName, classReference)
