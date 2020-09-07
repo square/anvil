@@ -2204,6 +2204,28 @@ public final class DaggerComponentInterface implements ComponentInterface {
     }
   }
 
+  @Test
+  fun `a factory class is generated for a method returning a java class with a star import`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        
+        @Module
+        object DaggerModule1 {
+          @Provides fun provideClass(): Class<*> = java.lang.Runnable::class.java
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideClass")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+    }
+  }
+
   private fun compile(
     source: String,
     block: Result.() -> Unit = { }

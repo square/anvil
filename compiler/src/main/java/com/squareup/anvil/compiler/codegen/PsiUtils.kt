@@ -259,6 +259,10 @@ internal fun PsiElement.requireFqName(
   module.resolveClassByFqName(FqName("kotlin.collections.$classReference"), FROM_BACKEND)
       ?.let { return it.fqNameSafe }
 
+  // Or java.lang.
+  module.resolveClassByFqName(FqName("java.lang.$classReference"), FROM_BACKEND)
+      ?.let { return it.fqNameSafe }
+
   findFqNameInSuperTypes(module, classReference)
       ?.let { return it }
 

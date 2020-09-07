@@ -13,6 +13,7 @@ import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
@@ -26,6 +27,7 @@ import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNullableType
+import org.jetbrains.kotlin.psi.KtProjectionKind
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtTypeProjection
@@ -100,7 +102,11 @@ internal fun KtTypeReference.requireTypeName(
         if (typeArgumentList != null) {
           className.parameterizedBy(
               typeArgumentList.arguments.map {
-                (it.typeReference ?: it.fail()).requireTypeName(module)
+                if (it.projectionKind == KtProjectionKind.STAR) {
+                  STAR
+                } else {
+                  (it.typeReference ?: it.fail()).requireTypeName(module)
+                }
               }
           )
         } else {
