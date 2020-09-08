@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
+import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.addGeneratedByComment
@@ -55,6 +56,20 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
               .functions(includeCompanionObjects = true)
               .asSequence()
               .filter { it.hasAnnotation(daggerProvidesFqName) }
+              .also { functions ->
+                // Check for duplicate function names.
+                val duplicateFunctions = functions
+                    .groupBy { it.requireFqName() }
+                    .filterValues { it.size > 1 }
+
+                if (duplicateFunctions.isNotEmpty()) {
+                  throw AnvilCompilationException(
+                      element = clazz,
+                      message = "Cannot have more than one binding method with the same name in " +
+                          "a single module: ${duplicateFunctions.keys.joinToString()}"
+                  )
+                }
+              }
               .forEach { function ->
                 generateFactoryClass(codeGenDir, module, clazz, function)
               }
