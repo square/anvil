@@ -151,8 +151,8 @@ internal class BindingModuleGenerator(
   override fun flush(
     codeGenDir: File,
     module: ModuleDescriptor
-  ) {
-    mergedScopes.forEach { (scope, daggerModuleFiles) ->
+  ): Collection<GeneratedFile> {
+    return mergedScopes.flatMap { (scope, daggerModuleFiles) ->
       val contributedBindingsThisModule = contributedBindingClasses
           .asSequence()
           .mapNotNull { clazz ->
@@ -248,14 +248,16 @@ internal class BindingModuleGenerator(
           }
           .toList()
 
-      daggerModuleFiles.forEach { (file, psiClass) ->
-        file.writeText(
-            daggerModuleContent(
-                scope = scope.asString(),
-                psiClass = psiClass,
-                generatedMethods = generatedMethods
-            )
+      daggerModuleFiles.map { (file, psiClass) ->
+        val content = daggerModuleContent(
+            scope = scope.asString(),
+            psiClass = psiClass,
+            generatedMethods = generatedMethods
         )
+
+        file.writeText(content)
+
+        GeneratedFile(file, content)
       }
     }
   }
@@ -378,9 +380,6 @@ internal class BindingModuleGenerator(
         }
         .build()
         .writeToString()
-        .also {
-          println(it)
-        }
   }
 }
 

@@ -1,7 +1,7 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
-import com.squareup.anvil.compiler.codegen.CodeGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.addGeneratedByComment
 import com.squareup.anvil.compiler.codegen.asArgumentList
 import com.squareup.anvil.compiler.codegen.asTypeName
@@ -30,23 +30,23 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.allConstructors
 import java.io.File
 
-internal class InjectConstructorFactoryGenerator : CodeGenerator {
-  override fun generateCode(
+internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
+
+  override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>
-  ): Collection<GeneratedFile> {
-    return projectFiles
+  ) {
+    projectFiles
         .asSequence()
         .flatMap { it.classesAndInnerClasses() }
-        .mapNotNull { clazz ->
+        .forEach { clazz ->
           clazz.allConstructors
               .singleOrNull { it.hasAnnotation(injectFqName) }
               ?.let {
                 generateFactoryClass(codeGenDir, module, clazz, it)
               }
         }
-        .toList()
   }
 
   @OptIn(ExperimentalStdlibApi::class)

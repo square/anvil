@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.componentInterfaceAnvilModule
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.isStatic
@@ -241,7 +242,8 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     }
   }
 
-  @Test fun `a factory class is generated for a provider method with imports and fully qualified return type`() { // ktlint-disable max-line-length
+  @Test
+  fun `a factory class is generated for a provider method with imports and fully qualified return type`() { // ktlint-disable max-line-length
     /*
 package com.squareup.test;
 
@@ -1176,7 +1178,8 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     }
   }
 
-  @Test fun `a factory class is generated for a provider method with parameters in a companion object`() { // ktlint-disable max-line-length
+  @Test
+  fun `a factory class is generated for a provider method with parameters in a companion object`() {
     /*
 package com.squareup.test;
 
@@ -1408,7 +1411,8 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     }
   }
 
-  @Test fun `a factory class is generated for a nullable provider method with nullable parameters`() { // ktlint-disable max-line-length
+  @Test
+  fun `a factory class is generated for a nullable provider method with nullable parameters`() {
     /*
 package com.squareup.test;
 
@@ -1946,7 +1950,8 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Funct
     }
   }
 
-  @Test fun `a factory class is generated for a multibindings provided function with a typealias`() { // ktlint-disable max-line-length
+  @Test
+  fun `a factory class is generated for a multibindings provided function with a typealias`() {
     /*
 package com.squareup.test;
 
@@ -2025,6 +2030,129 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<F
 
       assertThat(providedStringSet.single().invoke(emptyList())).containsExactly("abc")
       assertThat(factoryInstance.get().single().invoke(emptyList())).containsExactly("abc")
+    }
+  }
+
+  @Test fun `a factory class is generated when Anvil generates the provider method`() {
+    /*
+package anvil.module.com.squareup.test;
+
+import com.squareup.test.ParentInterface;
+import dagger.internal.Factory;
+import dagger.internal.Preconditions;
+import javax.annotation.Generated;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class ComponentInterfaceAnvilModule_ProvideComSquareupTestContributingObjectFactory implements Factory<ParentInterface> {
+  @Override
+  public ParentInterface get() {
+    return provideComSquareupTestContributingObject();
+  }
+
+  public static ComponentInterfaceAnvilModule_ProvideComSquareupTestContributingObjectFactory create(
+      ) {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static ParentInterface provideComSquareupTestContributingObject() {
+    return Preconditions.checkNotNull(ComponentInterfaceAnvilModule.INSTANCE.provideComSquareupTestContributingObject(), "Cannot return null from a non-@Nullable @Provides method");
+  }
+
+  private static final class InstanceHolder {
+    private static final ComponentInterfaceAnvilModule_ProvideComSquareupTestContributingObjectFactory INSTANCE = new ComponentInterfaceAnvilModule_ProvideComSquareupTestContributingObjectFactory();
+  }
+}
+     */
+
+    /*
+package com.squareup.test;
+
+import anvil.module.com.squareup.test.ComponentInterfaceAnvilModule;
+import dagger.internal.Preconditions;
+import javax.annotation.Generated;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class DaggerComponentInterface implements ComponentInterface {
+  private DaggerComponentInterface() {
+
+  }
+
+  public static Builder builder() {
+    return new Builder();
+  }
+
+  public static ComponentInterface create() {
+    return new Builder().build();
+  }
+
+  public static final class Builder {
+    private Builder() {
+    }
+
+    /**
+     * @deprecated This module is declared, but an instance is not used in the component. This method is a no-op. For more, see https://dagger.dev/unused-modules.
+     */
+    @Deprecated
+    public Builder componentInterfaceAnvilModule(
+        ComponentInterfaceAnvilModule componentInterfaceAnvilModule) {
+      Preconditions.checkNotNull(componentInterfaceAnvilModule);
+      return this;
+    }
+
+    public ComponentInterface build() {
+      return new DaggerComponentInterface();
+    }
+  }
+}
+     */
+
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.anvil.annotations.MergeComponent
+        
+        interface ParentInterface
+        
+        @ContributesBinding(Any::class)
+        object ContributingObject : ParentInterface
+        
+        @MergeComponent(Any::class)
+        interface ComponentInterface
+        """
+    ) {
+      val factoryClass = componentInterfaceAnvilModule
+          .moduleFactoryClass("provideComSquareupTestContributingObject")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+          .invoke(null) as Factory<Any>
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedContributingObject = staticMethods
+          .single { it.name == "provideComSquareupTestContributingObject" }
+          .invoke(null)
+
+      assertThat(providedContributingObject).isSameInstanceAs(factoryInstance.get())
     }
   }
 

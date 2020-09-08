@@ -5,6 +5,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
 internal interface CodeGenerator {
+
   /**
    * Called multiple times in order to create new code. Note that instances should not rely on
    * being able to resolve [projectFiles] to descriptors. They should rather use the Psi APIs to
@@ -22,12 +23,14 @@ internal interface CodeGenerator {
 
   /**
    * Called after the last round of [generateCode] when no new files were produced by any code
-   * generator anymore.
+   * generator anymore. The returned result should contain files that were added or changed one
+   * last time. Code generates that do not impact other code generators get a last chance to
+   * evaluate these results.
    */
   fun flush(
     codeGenDir: File,
     module: ModuleDescriptor
-  ) = Unit
+  ): Collection<GeneratedFile> = emptyList()
 
   data class GeneratedFile(
     val file: File,
