@@ -4,12 +4,17 @@ import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.getAllSuperTypes
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation.FROM_BACKEND
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
+import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
@@ -191,6 +196,15 @@ internal fun PsiElement.requireFqName(
       if (isGenericType) {
         referencedName ?: failTypeHandling()
       } else {
+        val text = text
+
+        // Sometimes a KtUserType is a fully qualified name. Give it a try and return early.
+        if (text.contains(".") && text[0].isLowerCase()) {
+          module
+              .resolveClassByFqName(FqName(text), FROM_BACKEND)
+              ?.let { return it.fqNameSafe }
+        }
+
         // We can't use referencedName here. For inner classes like "Outer.Inner" it would only
         // return "Inner", whereas text returns "Outer.Inner", what we expect.
         text
@@ -214,22 +228,27 @@ internal fun PsiElement.requireFqName(
     else -> failTypeHandling()
   }
 
+  // E.g. OuterClass.InnerClass
+  val classReferenceOuter = classReference.substringBefore(".")
+
+  val importPaths = containingKtFile.importDirectives.mapNotNull { it.importPath }
+
   // First look in the imports for the reference name. If the class is imported, then we know the
   // fully qualified name.
-  containingKtFile.importDirectives
-      .mapNotNull { it.importPath }
+  importPaths
       .firstOrNull {
-        it.fqName.shortName()
-            .asString() == classReference
+        it.fqName.shortName().asString() == classReference
       }
       ?.let { return it.fqName }
 
+  importPaths
+      .firstOrNull {
+        it.fqName.shortName().asString() == classReferenceOuter
+      }
+      ?.let { return FqName("${it.fqName.parent()}.$classReference") }
+
   // If there is no import, then try to resolve the class with the same package as this file.
-  module
-      .resolveClassByFqName(
-          FqName("${containingKtFile.packageFqName}.$classReference"),
-          FROM_BACKEND
-      )
+  module.findClassOrTypeAlias(containingKtFile.packageFqName, classReference)
       ?.let { return it.fqNameSafe }
 
   // If this doesn't work, then maybe a class from the Kotlin package is used.
@@ -240,8 +259,24 @@ internal fun PsiElement.requireFqName(
   module.resolveClassByFqName(FqName("kotlin.collections.$classReference"), FROM_BACKEND)
       ?.let { return it.fqNameSafe }
 
+  // Or java.lang.
+  module.resolveClassByFqName(FqName("java.lang.$classReference"), FROM_BACKEND)
+      ?.let { return it.fqNameSafe }
+
   findFqNameInSuperTypes(module, classReference)
       ?.let { return it }
+
+  containingKtFile.importDirectives
+      .asSequence()
+      .filter { it.isAllUnder }
+      .mapNotNull {
+        // This fqName is the everything in front of the star, e.g. for "import java.io.*" it
+        // returns "java.io".
+        it.importPath?.fqName
+      }
+      .forEach { importFqName ->
+        module.findClassOrTypeAlias(importFqName, classReference)?.let { return it.fqNameSafe }
+      }
 
   // Everything else isn't supported.
   throw AnvilCompilationException(
@@ -259,20 +294,35 @@ private fun PsiElement.findFqNameInSuperTypes(
         .resolveClassByFqName(FqName("$outerClass.$classReference"), FROM_BACKEND)
         ?.fqNameSafe
 
-  val clazz = parents.filterIsInstance<KtClassOrObject>().first()
-  tryToResolveClassFqName(clazz.requireFqName())?.let { return it }
+  return parents.filterIsInstance<KtClassOrObject>()
+      .flatMap { clazz ->
+        tryToResolveClassFqName(clazz.requireFqName())?.let { return@flatMap sequenceOf(it) }
 
-  // At this point we can't work with Psi APIs anymore. We need to resolve the super types and try
-  // to find inner class in them.
-  val descriptor = module.resolveClassByFqName(clazz.requireFqName(), FROM_BACKEND)
-      ?: throw AnvilCompilationException(
-          message = "Couldn't resolve class descriptor for ${clazz.requireFqName()}",
-          element = clazz
-      )
+        // At this point we can't work with Psi APIs anymore. We need to resolve the super types
+        // and try to find inner class in them.
+        val descriptor = module.resolveClassByFqName(clazz.requireFqName(), FROM_BACKEND)
+            ?: throw AnvilCompilationException(
+                message = "Couldn't resolve class descriptor for ${clazz.requireFqName()}",
+                element = clazz
+            )
 
-  return listOf(descriptor.defaultType).getAllSuperTypes()
-      .mapNotNull { tryToResolveClassFqName(it) }
+        listOf(descriptor.defaultType).getAllSuperTypes()
+            .mapNotNull { tryToResolveClassFqName(it) }
+      }
       .firstOrNull()
+}
+
+internal fun ModuleDescriptor.findClassOrTypeAlias(
+  packageName: FqName,
+  className: String
+): ClassifierDescriptorWithTypeParameters? {
+  resolveClassByFqName(FqName("$packageName.$className"), FROM_BACKEND)
+      ?.let { return it }
+
+  findTypeAliasAcrossModuleDependencies(ClassId(packageName, Name.identifier(className)))
+      ?.let { return it }
+
+  return null
 }
 
 internal fun KtClassOrObject.functions(
@@ -301,3 +351,8 @@ fun KtTypeReference.isGenericType(): Boolean {
 fun KtTypeReference.isFunctionType(): Boolean = typeElement is KtFunctionType
 
 fun KtClassOrObject.isGenericClass(): Boolean = typeParameterList != null
+
+fun KtCallableDeclaration.requireTypeReference(): KtTypeReference =
+  typeReference ?: throw AnvilCompilationException(
+      "Couldn't obtain type reference.", element = this
+  )

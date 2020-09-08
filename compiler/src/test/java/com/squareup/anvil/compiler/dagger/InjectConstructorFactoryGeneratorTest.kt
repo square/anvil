@@ -677,6 +677,63 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   }
 
   @Test
+  fun `a factory class is generated for a class injecting a class starting with a lowercase character`() { // ktlint-disable max-line-length
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<otherClass.inner> innerProvider;
+
+  public InjectClass_Factory(Provider<otherClass.inner> innerProvider) {
+    this.innerProvider = innerProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(innerProvider.get());
+  }
+
+  public static InjectClass_Factory create(Provider<otherClass.inner> innerProvider) {
+    return new InjectClass_Factory(innerProvider);
+  }
+
+  public static InjectClass newInstance(otherClass.inner inner) {
+    return new InjectClass(inner);
+  }
+}
+     */
+
+    compile(
+        """
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        
+        class InjectClass @Inject constructor(inner: otherClass.inner)
+        
+        class otherClass {
+          class inner @Inject constructor()
+        }
+        """
+    ) {
+      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+    }
+  }
+
+  @Test
   fun `a factory class is generated for an inner class starting with a lowercase character`() {
     /*
 package com.squareup.test;
@@ -973,6 +1030,122 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
           .declaredConstructors
           .single()
       assertThat(constructorDependencies.parameterTypes.toList()).isEmpty()
+    }
+  }
+
+  @Test fun `inner classes in generics are imported correctly`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import java.util.Set;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<Set<InjectClass.Interceptor>> interceptorsProvider;
+
+  public InjectClass_Factory(Provider<Set<InjectClass.Interceptor>> interceptorsProvider) {
+    this.interceptorsProvider = interceptorsProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(interceptorsProvider.get());
+  }
+
+  public static InjectClass_Factory create(
+      Provider<Set<InjectClass.Interceptor>> interceptorsProvider) {
+    return new InjectClass_Factory(interceptorsProvider);
+  }
+
+  public static InjectClass newInstance(Set<InjectClass.Interceptor> interceptors) {
+    return new InjectClass(interceptors);
+  }
+}
+     */
+
+    compile(
+        """
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        
+        class InjectClass @Inject constructor(
+          interceptors: Set<@JvmSuppressWildcards Interceptor>
+        ) {
+          interface Interceptor
+        }
+        """
+    ) {
+      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+    }
+  }
+
+  @Test fun `inner classes from outer type are imported correctly`() {
+    /*
+package com.squareup.test;
+
+import com.squareup.anvil.compiler.dagger.OuterClass;
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Inner_Factory implements Factory<InjectClass.Inner> {
+  private final Provider<OuterClass.InnerClass> innerClassProvider;
+
+  public InjectClass_Inner_Factory(Provider<OuterClass.InnerClass> innerClassProvider) {
+    this.innerClassProvider = innerClassProvider;
+  }
+
+  @Override
+  public InjectClass.Inner get() {
+    return newInstance(innerClassProvider.get());
+  }
+
+  public static InjectClass_Inner_Factory create(
+      Provider<OuterClass.InnerClass> innerClassProvider) {
+    return new InjectClass_Inner_Factory(innerClassProvider);
+  }
+
+  public static InjectClass.Inner newInstance(OuterClass.InnerClass innerClass) {
+    return new InjectClass.Inner(innerClass);
+  }
+}
+     */
+
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.compiler.dagger.OuterClass
+        import javax.inject.Inject
+        
+        class InjectClass(innerClass: InnerClass): OuterClass(innerClass) {
+          class Inner @Inject constructor(innerClass: InnerClass)
+        }
+        """
+    ) {
+      val constructor = classLoader.loadClass("com.squareup.test.InjectClass\$Inner")
+          .factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
 

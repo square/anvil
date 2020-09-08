@@ -3,12 +3,11 @@ package com.squareup.anvil.compiler.codegen.dagger
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.addGeneratedByComment
-import com.squareup.anvil.compiler.codegen.asTypeName
+import com.squareup.anvil.compiler.codegen.asClassName
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.isGenericClass
 import com.squareup.anvil.compiler.codegen.mapToParameter
-import com.squareup.anvil.compiler.codegen.replaceImports
 import com.squareup.anvil.compiler.codegen.requireFqName
 import com.squareup.anvil.compiler.codegen.writeToString
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
@@ -71,12 +70,10 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
   ): GeneratedFile {
     val packageName = clazz.containingKtFile.packageFqName.asString()
     val className = "${clazz.generateClassName()}_MembersInjector"
-    val classType = clazz.asTypeName()
+    val classType = clazz.asClassName()
         .let {
-          if (it is ClassName && clazz.isGenericClass()) {
-            val numberOfStars = clazz.typeParameterList!!.parameters.size
-            val stars = Array(numberOfStars) { STAR }
-            it.parameterizedBy(*stars)
+          if (clazz.isGenericClass()) {
+            it.parameterizedBy(List(size = clazz.typeParameters.size) { STAR })
           } else {
             it
           }
@@ -188,7 +185,6 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
         )
         .build()
         .writeToString()
-        .replaceImports(clazz)
         .addGeneratedByComment()
 
     val directory = File(codeGenDir, packageName.replace('.', File.separatorChar))
