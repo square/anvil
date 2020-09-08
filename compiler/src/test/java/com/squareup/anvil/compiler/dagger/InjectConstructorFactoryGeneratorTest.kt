@@ -676,6 +676,111 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
+  @Test
+  fun `a factory class is generated for an inner class starting with a lowercase character`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class MyClass_innerClass_Factory implements Factory<MyClass.innerClass> {
+  @Override
+  public MyClass.innerClass get() {
+    return newInstance();
+  }
+
+  public static MyClass_innerClass_Factory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static MyClass.innerClass newInstance() {
+    return new MyClass.innerClass();
+  }
+
+  private static final class InstanceHolder {
+    private static final MyClass_innerClass_Factory INSTANCE = new MyClass_innerClass_Factory();
+  }
+}
+     */
+
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class MyClass_Factory implements Factory<MyClass> {
+  private final Provider<MyClass.innerClass> argProvider;
+
+  public MyClass_Factory(Provider<MyClass.innerClass> argProvider) {
+    this.argProvider = argProvider;
+  }
+
+  @Override
+  public MyClass get() {
+    return newInstance(argProvider.get());
+  }
+
+  public static MyClass_Factory create(Provider<MyClass.innerClass> argProvider) {
+    return new MyClass_Factory(argProvider);
+  }
+
+  public static MyClass newInstance(MyClass.innerClass arg) {
+    return new MyClass(arg);
+  }
+}
+     */
+
+    compile(
+        """
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        
+        class MyClass @Inject constructor(arg: innerClass) {
+          class innerClass @Inject constructor()
+        }
+        """
+    ) {
+      val factoryClass =
+        classLoader.loadClass("com.squareup.test.MyClass\$innerClass").factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }.invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }.invoke(null)
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
+
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
+    }
+  }
+
   @Test fun `inner classes are imported correctly`() {
     /*
 package com.squareup.test;
