@@ -1149,6 +1149,56 @@ public final class InjectClass_Inner_Factory implements Factory<InjectClass.Inne
     }
   }
 
+  @Test fun `a factory class is generated for a class with a type parameter`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
+  private final Provider<T> creatorProvider;
+  public InjectClass_Factory(Provider<T> creatorProvider) {
+    this.creatorProvider = creatorProvider;
+  }
+  @Override
+  public BaseViewModelFactory<T> get() {
+    return newInstance(creatorProvider);
+  }
+  public static <T> InjectClass_Factory<T> create(Provider<T> creatorProvider) {
+    return new InjectClass_Factory<T>(creatorProvider);
+  }
+  public static <T> InjectClass<T> newInstance(Provider<T> creator) {
+    return new InjectClass<T>(creator);
+  }
+}
+     */
+
+    compile(
+      """
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        import javax.inject.Provider;
+        
+        class InjectClass<T> @Inject constructor(private val prov: Provider<T>)
+        """
+    ) {
+      val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
+        .factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+    }
+  }
+
   private fun compile(
     source: String,
     block: Result.() -> Unit = { }

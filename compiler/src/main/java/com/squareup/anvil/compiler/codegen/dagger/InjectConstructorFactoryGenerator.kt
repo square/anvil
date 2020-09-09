@@ -19,6 +19,7 @@ import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.internal.Factory
@@ -57,12 +58,28 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
   ): GeneratedFile {
     val packageName = clazz.containingKtFile.packageFqName.asString()
     val className = "${clazz.generateClassName()}_Factory"
-    val classType = clazz.asClassName()
 
     val parameters = constructor.getValueParameters().mapToParameter(module)
-
+    val typeParameters = clazz.typeParameterList
+      ?.parameters
+      ?.mapNotNull {
+        val fq = it.fqName
+        if (fq == null) {
+          TypeVariableName(it.name!!)
+        } else {
+          null
+        }
+      }
+      ?: emptyList()
     val factoryClass = ClassName(packageName, className)
-
+    val factoryClassParameterized = if (typeParameters.isEmpty())
+      factoryClass
+    else
+      factoryClass.parameterizedBy(typeParameters)
+    val classType = if (typeParameters.isEmpty())
+      clazz.asClassName()
+    else
+      clazz.asClassName().parameterizedBy(typeParameters)
     val content = FileSpec.builder(packageName, className)
         .apply {
           val canGenerateAnObject = parameters.isEmpty()
@@ -71,6 +88,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
           } else {
             TypeSpec.classBuilder(factoryClass)
           }
+          typeParameters.forEach { classBuilder.addTypeVariable(it) }
 
           classBuilder
               .addSuperinterface(Factory::class.asClassName().parameterizedBy(classType))
@@ -117,6 +135,9 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                         FunSpec.builder("create")
                             .jvmStatic()
                             .apply {
+                              if (typeParameters.isNotEmpty()) {
+                                addTypeVariables(typeParameters)
+                              }
                               if (canGenerateAnObject) {
                                 addStatement("return this")
                               } else {
@@ -131,17 +152,20 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
 
                                 addStatement(
                                     "return %T($argumentList)",
-                                    factoryClass
+                                    factoryClassParameterized
                                 )
                               }
                             }
-                            .returns(factoryClass)
+                            .returns(factoryClassParameterized)
                             .build()
                     )
                     .addFunction(
                         FunSpec.builder("newInstance")
                             .jvmStatic()
                             .apply {
+                              if (typeParameters.isNotEmpty()) {
+                                addTypeVariables(typeParameters)
+                              }
                               parameters.forEach { parameter ->
                                 addParameter(
                                     name = parameter.name,
