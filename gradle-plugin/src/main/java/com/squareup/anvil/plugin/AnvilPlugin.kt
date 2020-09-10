@@ -10,14 +10,19 @@ import com.android.build.gradle.api.BaseVariant
 import org.gradle.api.GradleException
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.AppliedPlugin
+import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.plugins.PluginManager
+import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
+import org.jetbrains.kotlin.gradle.internal.Kapt3GradleSubplugin
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.File
 import java.util.Locale.US
 import java.util.concurrent.atomic.AtomicBoolean
 
@@ -79,12 +84,22 @@ open class AnvilPlugin : Plugin<Project> {
     project.tasks
         .withType(KotlinCompile::class.java)
         .configureEach { compileTask ->
+          val androidSourceDirs = compileTask.project.getAndroidSourceDirs(compileTask)
+          val javaSources = compileTask.project.sourceFilesJava
+          val isKaptApplied = compileTask.project.isKaptApplied()
+
           compileTask.doFirst {
             // Disable precise java tracking if needed. Note that the doFirst() action only runs
             // if the task is not up to date. That's ideal, because if nothing needs to be
             // compiled, then we don't need to disable the flag.
-            CheckMixedSourceSet(compileTask.project, compileTask)
-                .disablePreciseJavaTrackingIfNeeded()
+            // We also use the doFirst block to walk through the file system
+            // at execution time and minimize the IO at configuration time.
+            val sourceFiles = getAllSourceFiles(androidSourceDirs, javaSources)
+            val hasJavaFile = sourceFiles.any { it.extension == "java" }
+
+            if (hasJavaFile || isKaptApplied.get()) {
+              compileTask.usePreciseJavaTracking = false
+            }
 
             compileTask.logger.info(
                 "Anvil: Use precise java tracking: ${compileTask.usePreciseJavaTracking}"
@@ -92,6 +107,52 @@ open class AnvilPlugin : Plugin<Project> {
           }
         }
   }
+
+  private fun getAllSourceFiles(
+    androidSourceDirs: FileCollection,
+    javaSources: FileCollection
+  ): Sequence<File> {
+    return if (!androidSourceDirs.isEmpty) {
+      androidSourceDirs
+          .asSequence()
+          .flatMap { it.walk() }
+          .filter { it.isFile }
+    } else {
+      javaSources.asSequence()
+    }
+  }
+
+  private fun Project.getAndroidSourceDirs(
+    compileTask: KotlinCompile
+  ): FileCollection {
+    return files(if (isAndroidProject) {
+        androidVariants()
+          .findVariantForCompileTask(compileTask)
+          .sourceSets
+          .flatMap { it.javaDirectories }
+    } else {
+      emptyList()
+    })
+  }
+
+  @OptIn(ExperimentalStdlibApi::class)
+  private val Project.sourceFilesJava: FileCollection
+    get() {
+      return if (isKotlinJvmProject) {
+        convention.getPlugin(JavaPluginConvention::class.java)
+            .sourceSets
+            // Ignore "test", similar to androidVariants() we ignore unit tests.
+            .single { it.name == "main" }
+            .allJava
+      } else { files(emptyList<File>()) }
+  }
+
+  private fun Project.isKaptApplied(): Property<Boolean> =
+      objects
+        .property(Boolean::class.java)
+        .also {
+          it.set(plugins.hasPlugin(Kapt3GradleSubplugin::class.java))
+        }
 
   @OptIn(ExperimentalStdlibApi::class)
   private fun disableIncrementalKotlinCompilation(
