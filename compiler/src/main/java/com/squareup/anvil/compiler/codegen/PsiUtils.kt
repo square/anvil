@@ -278,6 +278,13 @@ internal fun PsiElement.requireFqName(
         module.findClassOrTypeAlias(importFqName, classReference)?.let { return it.fqNameSafe }
       }
 
+  // Check if it's a named import
+  containingKtFile.importDirectives
+    .firstOrNull { classReference == it.importPath?.importedName?.asString() }?.importedFqName
+    ?.let {
+      module.resolveClassByFqName(it, FROM_BACKEND)?.let { return it.fqNameSafe }
+    }
+
   // Everything else isn't supported.
   throw AnvilCompilationException(
       "Couldn't resolve FqName $classReference for Psi element: $text",

@@ -2226,6 +2226,29 @@ public final class DaggerComponentInterface implements ComponentInterface {
     }
   }
 
+  @Test
+  fun `a factory class is generated for a method returning a class with a named import`() {
+    compile(
+      """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        import java.lang.Runnable as NamedRunnable
+        
+        @Module
+        object DaggerModule1 {
+          @Provides fun provideRunner(): NamedRunnable = NamedRunnable {}
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideRunner")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+    }
+  }
+
   private fun compile(
     source: String,
     block: Result.() -> Unit = { }
