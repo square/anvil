@@ -15,6 +15,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import dagger.Lazy
@@ -97,7 +98,13 @@ internal fun KtTypeReference.requireTypeName(
   fun KtTypeElement.requireTypeName(): TypeName {
     return when (this) {
       is KtUserType -> {
-        val className = requireFqName(module).asClassName(module)
+        val className = fqNameOrNull(module)?.asClassName(module)
+            ?: if (isTypeParameter()) {
+              return TypeVariableName(text)
+            } else {
+              throw AnvilCompilationException("Couldn't resolve fqName.", element = this)
+            }
+
         val typeArgumentList = typeArgumentList
         if (typeArgumentList != null) {
           className.parameterizedBy(
