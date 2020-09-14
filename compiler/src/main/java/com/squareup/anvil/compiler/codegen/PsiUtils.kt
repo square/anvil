@@ -282,9 +282,7 @@ internal fun PsiElement.requireFqName(
   containingKtFile.importDirectives
     .firstOrNull { classReference == it.importPath?.importedName?.asString() }
     ?.importedFqName
-    ?.let {
-      module.resolveClassByFqName(it, FROM_BACKEND)?.let { return it.fqNameSafe }
-    }
+    ?.let { return it }
 
   // Everything else isn't supported.
   throw AnvilCompilationException(
