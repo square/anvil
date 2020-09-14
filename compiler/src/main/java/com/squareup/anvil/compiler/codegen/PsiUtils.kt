@@ -356,3 +356,9 @@ fun KtCallableDeclaration.requireTypeReference(): KtTypeReference =
   typeReference ?: throw AnvilCompilationException(
       "Couldn't obtain type reference.", element = this
   )
+
+fun KtUserType.isTypeParameter(): Boolean {
+  return parents.filterIsInstance<KtClassOrObject>().first().typeParameters.any {
+    it.textMatches(this)
+  }
+}

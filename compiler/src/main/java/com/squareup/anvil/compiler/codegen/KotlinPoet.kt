@@ -98,9 +98,13 @@ internal fun KtTypeReference.requireTypeName(
   fun KtTypeElement.requireTypeName(): TypeName {
     return when (this) {
       is KtUserType -> {
-        // Assume it's a type parameter if FqName is null
-        val fqName = fqNameOrNull(module) ?: return TypeVariableName(text)
-        val className = fqName.asClassName(module)
+        val className = fqNameOrNull(module)?.asClassName(module)
+            ?: if (isTypeParameter()) {
+              return TypeVariableName(text)
+            } else {
+              throw AnvilCompilationException("Couldn't resolve fqName.", element = this)
+            }
+
         val typeArgumentList = typeArgumentList
         if (typeArgumentList != null) {
           className.parameterizedBy(

@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.codegen.addGeneratedByComment
 import com.squareup.anvil.compiler.codegen.asArgumentList
 import com.squareup.anvil.compiler.codegen.asClassName
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
+import com.squareup.anvil.compiler.codegen.fqNameOrNull
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.mapToParameter
 import com.squareup.anvil.compiler.codegen.writeToString
@@ -60,26 +61,23 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     val className = "${clazz.generateClassName()}_Factory"
 
     val parameters = constructor.getValueParameters().mapToParameter(module)
+
     val typeParameters = clazz.typeParameterList
       ?.parameters
       ?.mapNotNull {
-        val fq = it.fqName
-        if (fq == null) {
-          TypeVariableName(it.name!!)
-        } else {
-          null
-        }
+        val fqName = it.fqNameOrNull(module)
+        if (fqName == null) TypeVariableName(it.nameAsSafeName.asString()) else null
       }
       ?: emptyList()
+
     val factoryClass = ClassName(packageName, className)
-    val factoryClassParameterized = if (typeParameters.isEmpty())
-      factoryClass
-    else
-      factoryClass.parameterizedBy(typeParameters)
-    val classType = if (typeParameters.isEmpty())
-      clazz.asClassName()
-    else
-      clazz.asClassName().parameterizedBy(typeParameters)
+    val factoryClassParameterized =
+      if (typeParameters.isEmpty()) factoryClass else factoryClass.parameterizedBy(typeParameters)
+
+    val classType = clazz.asClassName().let {
+      if (typeParameters.isEmpty()) it else it.parameterizedBy(typeParameters)
+    }
+
     val content = FileSpec.builder(packageName, className)
         .apply {
           val canGenerateAnObject = parameters.isEmpty()
