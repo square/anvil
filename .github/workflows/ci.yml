@@ -10,7 +10,7 @@ jobs:
   build:
     runs-on: ${{ matrix.os }}
     timeout-minutes: 15
-    continue-on-error: ${{ startsWith(matrix.kotlin-version, '1.4') }}
+    continue-on-error: ${{ startsWith(matrix.kotlin-version, '1.4.2') }}
 
     strategy:
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
@@ -19,7 +19,7 @@ jobs:
       fail-fast: false
       matrix:
         gradle-task: [assemble, test, lint, ktlintCheck]
-        kotlin-version: [1.3.72, 1.4.0-rc, 1.4.20-dev-2803]
+        kotlin-version: [1.3.72, 1.4.10, 1.4.20-dev-3947]
         os: [ubuntu-latest, windows-latest]
 
     steps:
@@ -67,7 +67,7 @@ jobs:
         working-directory: gradle-plugin
 
     timeout-minutes: 15
-    continue-on-error: ${{ startsWith(matrix.kotlin-version, '1.4') }}
+    continue-on-error: ${{ startsWith(matrix.kotlin-version, '1.4.2') }}
 
     strategy:
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
@@ -76,7 +76,7 @@ jobs:
       fail-fast: false
       matrix:
         gradle-task: [test, ktlintCheck]
-        kotlin-version: [1.3.72, 1.4.0-rc, 1.4.20-dev-2803]
+        kotlin-version: [1.3.72, 1.4.10, 1.4.20-dev-3947]
 
     steps:
       - uses: actions/checkout@v2
