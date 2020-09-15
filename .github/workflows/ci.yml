@@ -20,6 +20,7 @@ jobs:
       matrix:
         gradle-task: [assemble, test, lint, ktlintCheck]
         kotlin-version: [1.3.72, 1.4.10, 1.4.20-dev-3947]
+        use-ir: [true, false]
         os: [ubuntu-latest, windows-latest]
 
     steps:
@@ -37,12 +38,12 @@ jobs:
       # Expressions in Github actions are limited. If there would be an if expression, then we
       # wouldn't need to duplicate the next step and depending on the OS enable / disable them.
       - name: ${{ matrix.gradle-task }} with Gradle Ubuntu
-        run: ./gradlew ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
-        if: ${{ startsWith(matrix.os, 'ubuntu') }}
+        run: ./gradlew ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }} -Psquare.useIR=${{ matrix.use-ir }}
+        if: ${{ startsWith(matrix.os, 'ubuntu') && (startsWith(matrix.kotlin-version, '1.4.2') || matrix.use-ir == 'false') }}
 
       - name: ${{ matrix.gradle-task }} with Gradle Windows
-        run: ./gradlew.bat ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace "-Psquare.kotlinVersion=${{ matrix.kotlin-version }}"
-        if: ${{ startsWith(matrix.os, 'windows') }}
+        run: ./gradlew.bat ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace "-Psquare.kotlinVersion=${{ matrix.kotlin-version }}" "-Psquare.useIR=${{ matrix.use-ir }}"
+        if: ${{ startsWith(matrix.os, 'windows') && (startsWith(matrix.kotlin-version, '1.4.2') || matrix.use-ir == 'false') }}
 
       - name: Upload Lint Results
         uses: actions/upload-artifact@v2

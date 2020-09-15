@@ -1,0 +1,26 @@
+def generatedDirPath = 'generated/sources/build-properties/kotlin/main'
+
+sourceSets {
+  test.java.srcDirs += "$buildDir/$generatedDirPath"
+}
+
+def generateBuildProperties = project.tasks.register('generateBuildProperties') {
+  File buildPropertiesFile = new File(new File(project.buildDir, generatedDirPath), 'BuildProperties.kt')
+
+  inputs.property 'useIR', rootProject.ext.kotlinUseIR
+
+  outputs.file buildPropertiesFile
+
+  doLast {
+    buildPropertiesFile.parentFile.mkdirs()
+    buildPropertiesFile.write """\
+      package com.squareup.anvil.compiler
+      
+      internal const val USE_IR = ${rootProject.ext.kotlinUseIR}
+    """.stripIndent()
+  }
+}
+
+tasks.named("compileTestKotlin").configure {
+  it.dependsOn generateBuildProperties
+}
