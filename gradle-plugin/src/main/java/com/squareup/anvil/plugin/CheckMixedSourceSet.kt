@@ -1,11 +1,11 @@
 package com.squareup.anvil.plugin
 
-import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.file.FileCollection
 import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.provider.Property
 import org.jetbrains.kotlin.gradle.internal.Kapt3GradleSubplugin
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.io.File
 
 /**
  * In a mixed Kotlin / Java source set the Kotlin compiler might crash with an error like this:
@@ -17,49 +17,72 @@ import java.io.File
  * The workaround for now is to set the kotlin.incremental.usePreciseJavaTracking flag to false for
  * these module using this task.
  */
-open class CheckMixedSourceSet(
-  private val project: Project,
-  private val compileTask: KotlinCompile
-) {
+object CheckMixedSourceSet {
 
-  fun disablePreciseJavaTrackingIfNeeded() {
-    val sourceFiles = when {
-      project.isAndroidProject -> getSourceFilesAndroidProject()
-      project.isKotlinJvmProject -> getSourceFilesJavaProject()
-      // Consider Kotlin only project in the future.
-      else -> throw GradleException("Only Android and JVM modules are supported for now.")
-    }
+  fun preparePreciseJavaTrackingCheck(compileTask: KotlinCompile): Input {
+    return Input(
+        sources = getAndroidSourceDirs(compileTask)
+            ?: getJvmSourceDirs(compileTask.project)
+            ?: compileTask.project.files(),
+        isKaptApplied = compileTask.project.isKaptApplied()
+    )
+  }
 
-    // If there is Java file, then disable precise Java tracking.
+  fun disablePreciseJavaTrackingIfNeeded(
+    compileTask: KotlinCompile,
+    input: Input
+  ) {
+    val sourceFiles = input.sources
+        .asSequence()
+        .flatMap { it.walk() }
+        .filter { it.isFile }
     val hasJavaFile = sourceFiles.any { it.extension == "java" }
 
+    // If there is Java file, then disable precise Java tracking.
+    //
     // If Kapt is enabled then it usually generates Java code making Kotlin compilation use a
     // mixed source set.
-    val isKaptApplied = project.plugins.hasPlugin(Kapt3GradleSubplugin::class.java)
-
-    if (hasJavaFile || isKaptApplied) {
+    if (hasJavaFile || input.isKaptApplied.get()) {
       compileTask.usePreciseJavaTracking = false
     }
   }
 
-  @OptIn(ExperimentalStdlibApi::class)
-  private fun getSourceFilesAndroidProject(): Sequence<File> {
-    return project.androidVariants()
-        .findVariantForCompileTask(compileTask)
-        .sourceSets
-        .asSequence()
-        .flatMap { it.javaDirectories.asSequence() }
-        .flatMap { it.walk() }
-        .filter { it.isFile }
+  private fun getAndroidSourceDirs(
+    compileTask: KotlinCompile
+  ): FileCollection? {
+    val project = compileTask.project
+    return if (project.isAndroidProject) {
+      project.androidVariants()
+          .findVariantForCompileTask(compileTask)
+          .sourceSets
+          .flatMap { it.javaDirectories }
+          .let { project.files(it) }
+    } else {
+      null
+    }
   }
 
-  private fun getSourceFilesJavaProject(): Sequence<File> {
-    return project.convention.getPlugin(JavaPluginConvention::class.java)
-        .sourceSets
-        // Ignore "test", similar to androidVariants() we ignore unit tests.
-        .single { it.name == "main" }
-        .allJava
-        .asSequence()
-        .filter { it.isFile }
+  private fun getJvmSourceDirs(project: Project): FileCollection? {
+    return if (project.isKotlinJvmProject) {
+      project.convention.getPlugin(JavaPluginConvention::class.java)
+          .sourceSets
+          // Ignore "test", similar to androidVariants() we ignore unit tests.
+          .single { it.name == "main" }
+          .allJava
+    } else {
+      null
+    }
   }
+
+  private fun Project.isKaptApplied(): Property<Boolean> =
+    objects
+        .property(Boolean::class.java)
+        .also {
+          it.set(plugins.hasPlugin(Kapt3GradleSubplugin::class.java))
+        }
+
+  class Input(
+    val sources: FileCollection,
+    val isKaptApplied: Property<Boolean>
+  )
 }

@@ -79,12 +79,16 @@ open class AnvilPlugin : Plugin<Project> {
     project.tasks
         .withType(KotlinCompile::class.java)
         .configureEach { compileTask ->
+          val result = CheckMixedSourceSet.preparePreciseJavaTrackingCheck(compileTask)
+
           compileTask.doFirst {
             // Disable precise java tracking if needed. Note that the doFirst() action only runs
             // if the task is not up to date. That's ideal, because if nothing needs to be
             // compiled, then we don't need to disable the flag.
-            CheckMixedSourceSet(compileTask.project, compileTask)
-                .disablePreciseJavaTrackingIfNeeded()
+            //
+            // We also use the doFirst block to walk through the file system at execution time
+            // and minimize the IO at configuration time.
+            CheckMixedSourceSet.disablePreciseJavaTrackingIfNeeded(compileTask, result)
 
             compileTask.logger.info(
                 "Anvil: Use precise java tracking: ${compileTask.usePreciseJavaTracking}"
@@ -131,7 +135,7 @@ open class AnvilPlugin : Plugin<Project> {
     }
   }
 
-  fun disableIncrementalCompilationAction(
+  private fun disableIncrementalCompilationAction(
     project: Project,
     incrementalSignal: Provider<IncrementalSignal>,
     compileTaskName: String
