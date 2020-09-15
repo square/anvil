@@ -25,7 +25,9 @@ buildscript {
 
 println "Versions: " + [
     "Kotlin": ext.kotlinVersion,
-    "Gradle": gradle.gradleVersion
+    "Gradle": gradle.gradleVersion,
+    "Kotlin use IR": ext.kotlinUseIR,
+    "Kotlin IR supported": ext.kotlinIrSupported,
 ]
 
 allprojects {
@@ -64,6 +66,7 @@ subprojects {
   //noinspection UnnecessaryQualifiedReference
   tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     kotlinOptions.jvmTarget = JavaVersion.VERSION_1_8
+    kotlinOptions.useIR = rootProject.ext.kotlinUseIR
   }
 
   // TODO: fix obscure dependency substitution error
