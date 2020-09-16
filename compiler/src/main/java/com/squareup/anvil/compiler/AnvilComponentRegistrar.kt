@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.codegen.dagger.ComponentDetectorCheck
 import com.squareup.anvil.compiler.codegen.dagger.InjectConstructorFactoryGenerator
 import com.squareup.anvil.compiler.codegen.dagger.MembersInjectorGenerator
 import com.squareup.anvil.compiler.codegen.dagger.ProvidesMethodFactoryGenerator
+import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
@@ -67,6 +68,10 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     )
     ExpressionCodegenExtension.registerExtension(
         project, ModuleMerger(scanner)
+    )
+
+    IrGenerationExtension.registerExtension(
+        project, ModuleMergerIr(scanner)
     )
   }
 
