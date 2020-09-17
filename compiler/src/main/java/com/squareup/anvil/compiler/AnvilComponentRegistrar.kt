@@ -70,9 +70,21 @@ class AnvilComponentRegistrar : ComponentRegistrar {
         project, ModuleMerger(scanner)
     )
 
-    IrGenerationExtension.registerExtension(
-        project, ModuleMergerIr(scanner)
-    )
+    try {
+      // This extension depends on Kotlin 1.4.20 and the code fails to compile with older compiler
+      // versions. Anvil will only support the new IR backend with 1.4.20. To avoid compilation
+      // errors we only add the source code to this module when IR is enabled. So try to
+      // dynamically look up the class name and add the extension when it exists.
+      val moduleMergerIr = Class.forName("com.squareup.anvil.compiler.ModuleMergerIr")
+          .declaredConstructors
+          .single()
+          .newInstance(scanner) as IrGenerationExtension
+
+      IrGenerationExtension.registerExtension(
+          project, moduleMergerIr
+      )
+    } catch (ignored: Exception) {
+    }
   }
 
   private fun AnalysisHandlerExtension.Companion.registerExtensionFirst(
