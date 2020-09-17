@@ -9,15 +9,14 @@ import com.squareup.anvil.compiler.providerFqName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
+import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import dagger.Lazy
@@ -25,6 +24,7 @@ import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -134,6 +134,17 @@ internal fun KtTypeReference.requireTypeName(
                           )
                         } else {
                           typeName
+                        }
+                      }
+                      .let { typeName ->
+                        val modifierList = typeProjection.modifierList
+                        when {
+                          modifierList == null -> typeName
+                          modifierList.hasModifier(KtTokens.OUT_KEYWORD) ->
+                            WildcardTypeName.producerOf(typeName)
+                          modifierList.hasModifier(KtTokens.IN_KEYWORD) ->
+                            WildcardTypeName.consumerOf(typeName)
+                          else -> typeName
                         }
                       }
                 }
