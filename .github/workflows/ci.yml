@@ -23,10 +23,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
-      - name: Set up JDK 1.8
+      - name: Set up JDK 11.0.7
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: 11.0.7
 
       - name: Test on Ubuntu
         run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
@@ -47,10 +47,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
-      - name: Set up JDK 1.8
+      - name: Set up JDK 11.0.7
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: 11.0.7
 
       - name: Test on Ubuntu IR
         run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=1.4.20-dev-3947 -Psquare.useIR=true
@@ -70,10 +70,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
-      - name: Set up JDK 1.8
+      - name: Set up JDK 11.0.7
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: 11.0.7
 
       # On Windows the command looks a little bit different. Notice that we use the .bat file and
       # quotes for the Kotlin version, because dots "." in the Kotlin version and parameter name
@@ -98,10 +98,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
-      - name: Set up JDK 1.8
+      - name: Set up JDK 11.0.7
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: 11.0.7
 
       - name: KtLint
         run: ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace
@@ -113,10 +113,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
-      - name: Set up JDK 1.8
+      - name: Set up JDK 11.0.7
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: 11.0.7
 
       - name: Android Lint
         run: ./gradlew lint --no-build-cache --no-daemon --stacktrace
@@ -147,10 +147,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
-      - name: Set up JDK 1.8
+      - name: Set up JDK 11.0.7
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: 11.0.7
 
       - name: Test Gradle Plugin
         run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
@@ -174,10 +174,10 @@ jobs:
     steps:
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
-      - name: Set up JDK 1.8
+      - name: Set up JDK 11.0.7
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: 11.0.7
 
       - name: KtLint Gradle Plugin
         run: ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace
@@ -196,10 +196,10 @@ jobs:
           - 29
     steps:
       - uses: actions/checkout@v2
-      - name: Set up JDK 1.8
+      - name: Set up JDK 11.0.7
         uses: actions/setup-java@v1
         with:
-          java-version: 1.8
+          java-version: 11.0.7
 
       - name: Instrumentation Tests
         uses: reactivecircus/android-emulator-runner@v2
