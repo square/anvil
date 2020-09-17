@@ -225,6 +225,7 @@ internal fun PsiElement.requireFqName(
       }
     }
     is KtNullableType -> return innerType?.requireFqName(module) ?: failTypeHandling()
+    is KtAnnotationEntry -> return typeReference?.requireFqName(module) ?: failTypeHandling()
     else -> failTypeHandling()
   }
 
@@ -255,8 +256,12 @@ internal fun PsiElement.requireFqName(
   module.resolveClassByFqName(FqName("kotlin.$classReference"), FROM_BACKEND)
       ?.let { return it.fqNameSafe }
 
-  // If this doesn't work, then maybe a class from the Kotlin package is used.
+  // If this doesn't work, then maybe a class from the Kotlin collection package is used.
   module.resolveClassByFqName(FqName("kotlin.collections.$classReference"), FROM_BACKEND)
+      ?.let { return it.fqNameSafe }
+
+  // If this doesn't work, then maybe a class from the Kotlin jvm package is used.
+  module.resolveClassByFqName(FqName("kotlin.jvm.$classReference"), FROM_BACKEND)
       ?.let { return it.fqNameSafe }
 
   // Or java.lang.

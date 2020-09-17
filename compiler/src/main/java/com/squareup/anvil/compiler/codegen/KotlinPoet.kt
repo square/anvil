@@ -9,12 +9,14 @@ import com.squareup.anvil.compiler.providerFqName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
@@ -108,11 +110,32 @@ internal fun KtTypeReference.requireTypeName(
         val typeArgumentList = typeArgumentList
         if (typeArgumentList != null) {
           className.parameterizedBy(
-              typeArgumentList.arguments.map {
-                if (it.projectionKind == KtProjectionKind.STAR) {
+              typeArgumentList.arguments.map { typeProjection ->
+                if (typeProjection.projectionKind == KtProjectionKind.STAR) {
                   STAR
                 } else {
-                  (it.typeReference ?: it.fail()).requireTypeName(module)
+                  val typeReference = typeProjection.typeReference ?: typeProjection.fail()
+                  typeReference
+                      .requireTypeName(module)
+                      .let { typeName ->
+                        // Preserve annotations, e.g. List<@JvmSuppressWildcards Abc>.
+                        if (typeReference.annotationEntries.isNotEmpty()) {
+                          typeName.copy(
+                              annotations = typeName.annotations + typeReference.annotationEntries
+                                  .map { annotationEntry ->
+                                    AnnotationSpec
+                                        .builder(
+                                            annotationEntry
+                                                .requireFqName(module)
+                                                .asClassName(module)
+                                        )
+                                        .build()
+                                  }
+                          )
+                        } else {
+                          typeName
+                        }
+                      }
                 }
               }
           )
