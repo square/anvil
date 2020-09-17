@@ -7,8 +7,8 @@ on:
   pull_request:
 
 jobs:
-  build:
-    runs-on: ${{ matrix.os }}
+  test-ubuntu:
+    runs-on: ubuntu-latest
     timeout-minutes: 15
     continue-on-error: ${{ startsWith(matrix.kotlin-version, '1.4.2') }}
 
@@ -18,10 +18,54 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        gradle-task: [assemble, test, lint, ktlintCheck]
         kotlin-version: [1.3.72, 1.4.10, 1.4.20-dev-3947]
-        use-ir: [true, false]
-        os: [ubuntu-latest, windows-latest]
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: gradle/wrapper-validation-action@v1
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Test on Ubuntu
+        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() }}
+        with:
+          # Use the Kotlin version to prevent overrides.
+          name: test-results-${{ matrix.kotlin-version }}
+          path: ./**/build/reports/tests/
+
+  test-ubuntu-ir:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    continue-on-error: true
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: gradle/wrapper-validation-action@v1
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Test on Ubuntu IR
+        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=1.4.20-dev-3947 -Psquare.useIR=true
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() }}
+        with:
+          name: test-results
+          path: ./**/build/reports/tests/
+
+
+  test-windows:
+    runs-on: windows-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v2
@@ -37,47 +81,19 @@ jobs:
       #
       # Expressions in Github actions are limited. If there would be an if expression, then we
       # wouldn't need to duplicate the next step and depending on the OS enable / disable them.
-      - name: ${{ matrix.gradle-task }} with Gradle Ubuntu
-        run: ./gradlew ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }} -Psquare.useIR=${{ matrix.use-ir }}
-        if: ${{ startsWith(matrix.os, 'ubuntu') && (startsWith(matrix.kotlin-version, '1.4.2') || matrix.use-ir == 'false') }}
-
-      - name: ${{ matrix.gradle-task }} with Gradle Windows
-        run: ./gradlew.bat ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace "-Psquare.kotlinVersion=${{ matrix.kotlin-version }}" "-Psquare.useIR=${{ matrix.use-ir }}"
-        if: ${{ startsWith(matrix.os, 'windows') && (startsWith(matrix.kotlin-version, '1.4.2') || matrix.use-ir == 'false') }}
-
-      - name: Upload Lint Results
-        uses: actions/upload-artifact@v2
-        if: ${{ startsWith(matrix.gradle-task, 'lint') && failure() }}
-        with:
-          # Use the Kotlin version to prevent overrides.
-          name: lint-results-${{ matrix.kotlin-version }}
-          path: ./**/build/reports/lint-results.html
+      - name: Test on Windows
+        run: ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v2
-        if: ${{ startsWith(matrix.gradle-task, 'test') && failure() }}
+        if: ${{ failure() }}
         with:
-          # Use the Kotlin version to prevent overrides.
-          name: test-results-${{ matrix.kotlin-version }}
+          name: test-results
           path: ./**/build/reports/tests/
 
-  build-gradle-plugin:
+  ktlint:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: gradle-plugin
-
     timeout-minutes: 15
-    continue-on-error: ${{ startsWith(matrix.kotlin-version, '1.4.2') }}
-
-    strategy:
-      # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
-      # which is expected. If they need to share their outputs, then we need a proper caching
-      # solution.
-      fail-fast: false
-      matrix:
-        gradle-task: [test, ktlintCheck]
-        kotlin-version: [1.3.72, 1.4.10, 1.4.20-dev-3947]
 
     steps:
       - uses: actions/checkout@v2
@@ -87,16 +103,84 @@ jobs:
         with:
           java-version: 1.8
 
-      - name: ${{ matrix.gradle-task }} with Gradle Ubuntu
-        run: ./gradlew ${{ matrix.gradle-task }} --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+      - name: KtLint
+        run: ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace
+
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: gradle/wrapper-validation-action@v1
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Android Lint
+        run: ./gradlew lint --no-build-cache --no-daemon --stacktrace
+
+      - name: Upload Lint Results
+        uses: actions/upload-artifact@v2
+        if: ${{ failure() }}
+        with:
+          name: lint-results
+          path: ./**/build/reports/lint-results.html
+
+  build-gradle-plugin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gradle-plugin
+
+    timeout-minutes: 15
+
+    strategy:
+      # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
+      # which is expected. If they need to share their outputs, then we need a proper caching
+      # solution.
+      fail-fast: false
+      matrix:
+        kotlin-version: [1.3.72, 1.4.10]
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: gradle/wrapper-validation-action@v1
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: Test Gradle Plugin
+        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v2
-        if: ${{ startsWith(matrix.gradle-task, 'test') && failure() }}
+        if: ${{ failure() }}
         with:
           # Use the Kotlin version to prevent overrides.
           name: test-results-${{ matrix.kotlin-version }}
           path: ./**/build/reports/tests/
+
+  ktlint-gradle-plugin:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: gradle-plugin
+
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: gradle/wrapper-validation-action@v1
+      - name: Set up JDK 1.8
+        uses: actions/setup-java@v1
+        with:
+          java-version: 1.8
+
+      - name: KtLint Gradle Plugin
+        run: ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace
 
   instrumentation-tests:
     name: Instrumentation tests
