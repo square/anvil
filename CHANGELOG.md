@@ -2,6 +2,15 @@
 
 ## Next Version
 
+## 2.0.4 (2020-09-18)
+
+* Support type parameters for @Inject constructors, see #111.
+* Handle named imports properly, see #115.
+* Fix a bug for Gradle's experimental configuration caching feature, see #113. 
+* Implement an extension for the new Kotlin IR backend. This extension will ship with Kotlin 1.4.20, see #11.
+* Build the project and run tests in CI with JDK 11.
+* Preserve variance keywords when generating factory classes, see #120.
+
 ## 2.0.3 (2020-09-08)
 
 * Support classes with multiple generic parameters for field injection, see #91.
