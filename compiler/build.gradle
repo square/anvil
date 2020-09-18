@@ -2,6 +2,8 @@ apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'org.jetbrains.kotlin.kapt'
 apply plugin: 'com.vanniktech.maven.publish'
 
+apply from: project.file('generate_build_properties.gradle')
+
 dependencies {
   implementation project(':annotations')
   implementation deps.dagger2.dagger
@@ -18,6 +20,10 @@ dependencies {
   testImplementation deps.kotlin.compile_testing
   testImplementation deps.kotlin.compiler
   testImplementation deps.truth
+}
+
+if (rootProject.ext.kotlinIrSupported) {
+  sourceSets.main.java.srcDirs += ['src/main/ir']
 }
 
 //noinspection UnnecessaryQualifiedReference

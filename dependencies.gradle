@@ -1,9 +1,20 @@
+import org.gradle.util.VersionNumber
+
 ext {
   autoServiceVersion = '1.0-rc7'
   daggerVersion = '2.28'
   espressoVersion = '3.2.0'
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
       project.getProperty('square.kotlinVersion') : '1.3.72'
+
+  kotlinUseIR = (project.hasProperty('square.useIR') ?
+      project.getProperty('square.useIR') : 'false').toBoolean()
+
+  kotlinIrSupported = VersionNumber.parse(kotlinVersion).baseVersion >= VersionNumber.parse("1.4.20")
+
+  if (kotlinUseIR && !kotlinIrSupported) {
+    throw new GradleException("The new IR backend is only testable with Kotlin 1.4.20 or newer.")
+  }
 
   generateDaggerFactoriesWithAnvil = (project.hasProperty('square.generateDaggerFactoriesWithAnvil') ?
       project.getProperty('square.generateDaggerFactoriesWithAnvil') : 'true').toBoolean()

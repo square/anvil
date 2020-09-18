@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.codegen.dagger.ComponentDetectorCheck
 import com.squareup.anvil.compiler.codegen.dagger.InjectConstructorFactoryGenerator
 import com.squareup.anvil.compiler.codegen.dagger.MembersInjectorGenerator
 import com.squareup.anvil.compiler.codegen.dagger.ProvidesMethodFactoryGenerator
+import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.Extensions
@@ -68,6 +69,22 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     ExpressionCodegenExtension.registerExtension(
         project, ModuleMerger(scanner)
     )
+
+    try {
+      // This extension depends on Kotlin 1.4.20 and the code fails to compile with older compiler
+      // versions. Anvil will only support the new IR backend with 1.4.20. To avoid compilation
+      // errors we only add the source code to this module when IR is enabled. So try to
+      // dynamically look up the class name and add the extension when it exists.
+      val moduleMergerIr = Class.forName("com.squareup.anvil.compiler.ModuleMergerIr")
+          .declaredConstructors
+          .single()
+          .newInstance(scanner) as IrGenerationExtension
+
+      IrGenerationExtension.registerExtension(
+          project, moduleMergerIr
+      )
+    } catch (ignored: Exception) {
+    }
   }
 
   private fun AnalysisHandlerExtension.Companion.registerExtensionFirst(

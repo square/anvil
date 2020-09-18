@@ -26,7 +26,7 @@ internal fun compile(
   return KotlinCompilation()
       .apply {
         compilerPlugins = listOf(AnvilComponentRegistrar())
-        useIR = false
+        useIR = USE_IR
         inheritClassPath = true
         jvmTarget = JvmTarget.JVM_1_8.description
 
