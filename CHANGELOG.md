@@ -2,7 +2,7 @@
 
 ## Next Version
 
-## 2.0.4 (2020-09-18)
+## 2.0.5 (2020-09-18)
 
 * Support type parameters for @Inject constructors, see #111.
 * Handle named imports properly, see #115.
@@ -10,6 +10,10 @@
 * Implement an extension for the new Kotlin IR backend. This extension will ship with Kotlin 1.4.20, see #11.
 * Build the project and run tests in CI with JDK 11.
 * Preserve variance keywords when generating factory classes, see #120.
+
+## 2.0.4 (2020-09-18)
+
+* Ignore, this release was built with Kotlin 1.4.20 accidentally.
 
 ## 2.0.3 (2020-09-08)
 
