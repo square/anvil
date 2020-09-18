@@ -16,6 +16,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
+import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import dagger.Lazy
@@ -23,6 +24,7 @@ import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -108,11 +110,43 @@ internal fun KtTypeReference.requireTypeName(
         val typeArgumentList = typeArgumentList
         if (typeArgumentList != null) {
           className.parameterizedBy(
-              typeArgumentList.arguments.map {
-                if (it.projectionKind == KtProjectionKind.STAR) {
+              typeArgumentList.arguments.map { typeProjection ->
+                if (typeProjection.projectionKind == KtProjectionKind.STAR) {
                   STAR
                 } else {
-                  (it.typeReference ?: it.fail()).requireTypeName(module)
+                  val typeReference = typeProjection.typeReference ?: typeProjection.fail()
+                  typeReference
+                      .requireTypeName(module)
+                      .let { typeName ->
+                        // Preserve annotations, e.g. List<@JvmSuppressWildcards Abc>.
+                        if (typeReference.annotationEntries.isNotEmpty()) {
+                          typeName.copy(
+                              annotations = typeName.annotations + typeReference.annotationEntries
+                                  .map { annotationEntry ->
+                                    AnnotationSpec
+                                        .builder(
+                                            annotationEntry
+                                                .requireFqName(module)
+                                                .asClassName(module)
+                                        )
+                                        .build()
+                                  }
+                          )
+                        } else {
+                          typeName
+                        }
+                      }
+                      .let { typeName ->
+                        val modifierList = typeProjection.modifierList
+                        when {
+                          modifierList == null -> typeName
+                          modifierList.hasModifier(KtTokens.OUT_KEYWORD) ->
+                            WildcardTypeName.producerOf(typeName)
+                          modifierList.hasModifier(KtTokens.IN_KEYWORD) ->
+                            WildcardTypeName.consumerOf(typeName)
+                          else -> typeName
+                        }
+                      }
                 }
               }
           )
