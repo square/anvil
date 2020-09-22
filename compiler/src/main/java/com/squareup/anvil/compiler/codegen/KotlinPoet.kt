@@ -247,20 +247,10 @@ internal fun <T : KtCallableDeclaration> TypeName.withJvmSuppressWildcardsIfNeed
 
   return when {
     hasJvmSuppressWildcards || isGenericType -> this.jvmSuppressWildcards()
-    isFunctionType -> this.jvmSuppressWildcardsKt31734()
+    isFunctionType -> this.jvmSuppressWildcards()
     else -> this
   }
 }
-
-// TODO: remove with Kotlin 1.4.
-// Notice the empty member. Instead of generating `@JvmSuppressWildcards Type` it generates
-// `@JvmSuppressWildcards() Type`. This is necessary to avoid KT-31734 where the type is a function.
-private fun TypeName.jvmSuppressWildcardsKt31734() =
-  copy(
-      annotations = this.annotations + AnnotationSpec.builder(JvmSuppressWildcards::class)
-          .addMember("")
-          .build()
-  )
 
 internal fun List<Parameter>.asArgumentList(
   asProvider: Boolean,
