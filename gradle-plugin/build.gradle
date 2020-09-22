@@ -71,12 +71,14 @@ tasks.withType(JavaCompile).configureEach {
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   kotlinOptions {
     jvmTarget = JavaVersion.VERSION_1_8
+    freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
   }
 }
 
 dependencies {
   implementation deps.kotlin.gradle_plugin
   implementation deps.kotlin.gradle_plugin_api
+  implementation deps.kotlin.stdlib
 
   // Compile only so that Java / Kotlin modules don't download it unnecessarily.
   compileOnly deps.android_gradle_plugin
