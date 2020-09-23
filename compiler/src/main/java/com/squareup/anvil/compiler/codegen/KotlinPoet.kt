@@ -102,7 +102,8 @@ internal fun KtTypeReference.requireTypeName(
       is KtUserType -> {
         val className = fqNameOrNull(module)?.asClassName(module)
             ?: if (isTypeParameter()) {
-              return TypeVariableName(text)
+              val bounds = findExtendsBound().map { it.asClassName(module) }
+              return TypeVariableName(text, bounds)
             } else {
               throw AnvilCompilationException("Couldn't resolve fqName.", element = this)
             }

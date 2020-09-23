@@ -1259,6 +1259,50 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
+  @Test fun `a factory class is generated for type parameter which extends class`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.inject.Provider;
+
+public final class InjectClass_Factory<T extends CharSequence> implements Factory<InjectClass<T>> {
+    private final Provider<T> elementProvider;
+
+    public InjectClass_Factory(Provider<T> var1) {
+        this.elementProvider = var1;
+    }
+
+    public InjectClass<T> get() {
+        return newInstance((CharSequence)this.elementProvider.get());
+    }
+
+    public static <T extends CharSequence> InjectClass_Factory<T> create(Provider<T> var0) {
+        return new InjectClass_Factory(var0);
+    }
+
+    public static <T extends CharSequence> InjectClass<T> newInstance(T var0) {
+        return new InjectClass(var0);
+    }
+}
+     */
+
+    compile(
+      """
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        import javax.inject.Provider;
+        
+        class InjectClass<T: CharSequence> @Inject constructor(val element: Provider<T>)
+        """
+    ) {
+      val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
+        .factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+    }
+  }
+
   private fun compile(
     source: String,
     block: Result.() -> Unit = { }
