@@ -61,7 +61,7 @@ internal fun ClassDescriptor.asClassName(): ClassName =
           .reversed()
   )
 
-private fun FqName.asClassName(module: ModuleDescriptor): ClassName {
+internal fun FqName.asClassName(module: ModuleDescriptor): ClassName {
   try {
     return ClassName.bestGuess(asString())
   } catch (ignored: IllegalArgumentException) {

@@ -65,9 +65,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     val typeParameters = clazz.typeParameterList
       ?.parameters
       ?.mapNotNull { parameter ->
-        val extendsBound = parameter.extendsBound
-          ?.fqNameOrNull(module)
-          ?.let { ClassName(it.parent().asString(), it.shortName().asString()) }
+        val extendsBound = parameter.extendsBound?.fqNameOrNull(module)?.asClassName(module)
         if (parameter.fqNameOrNull(module) == null) {
           TypeVariableName(parameter.nameAsSafeName.asString(), listOfNotNull(extendsBound))
         } else {

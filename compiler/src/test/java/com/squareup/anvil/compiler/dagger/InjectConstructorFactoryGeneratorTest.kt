@@ -1292,9 +1292,9 @@ public final class InjectClass_Factory<T extends CharSequence> implements Factor
         package com.squareup.test
         
         import javax.inject.Inject
-        import javax.inject.Provider;
+        import javax.inject.Provider
         
-        class InjectClass<T: CharSequence> @Inject constructor(val element: Provider<T>)
+        class InjectClass<T : CharSequence> @Inject constructor(element: Provider<T>)
         """
     ) {
       val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
