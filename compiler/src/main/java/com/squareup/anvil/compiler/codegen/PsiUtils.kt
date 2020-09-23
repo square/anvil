@@ -370,6 +370,14 @@ fun KtCallableDeclaration.requireTypeReference(): KtTypeReference =
 
 fun KtUserType.isTypeParameter(): Boolean {
   return parents.filterIsInstance<KtClassOrObject>().first().typeParameters.any {
-    it.textMatches(this)
+    val typeParameter = it.text.split(":").first().trim()
+    typeParameter == text
   }
+}
+
+fun KtUserType.findExtendsBound(): List<FqName> {
+  return parents.filterIsInstance<KtClassOrObject>()
+    .first()
+    .typeParameters
+    .mapNotNull { it.fqName }
 }
