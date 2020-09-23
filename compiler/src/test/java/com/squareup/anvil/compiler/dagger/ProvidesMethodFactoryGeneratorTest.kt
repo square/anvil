@@ -10,6 +10,7 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERRO
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.internal.Factory
+import org.junit.Assume.assumeFalse
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -2246,6 +2247,28 @@ public final class DaggerComponentInterface implements ComponentInterface {
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
+    }
+  }
+
+  @Test fun `a return type for a provider method is required`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        @dagger.Module
+        class DaggerModule1 {
+          @dagger.Provides fun provideString() = "abc"
+        }
+        """
+    ) {
+      assumeFalse(useDagger)
+
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains("Source.kt: (5, 3)")
+      assertThat(messages).contains(
+          "Dagger provider methods must specify the return type explicitly when using Anvil. " +
+              "The return type cannot be inferred implicitly."
+      )
     }
   }
 
