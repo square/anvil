@@ -1,3 +1,5 @@
+import org.gradle.util.VersionNumber
+
 apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'org.jetbrains.kotlin.kapt'
 apply plugin: 'com.squareup.anvil'
@@ -10,4 +12,32 @@ dependencies {
   testImplementation deps.truth
 
   kaptTest deps.dagger2.compiler
+}
+
+// Okay, this check is sketchy here. But this module serves as integration test so it's not too
+// terrible. What would be worse is setting up integration tests in the Gradle plugin itself,
+// because it requires so much code and might not represent the real world usage.
+//
+// Kotlin 1.3 is broken. The hacky workarounds don't always work. The issue seems to be gone with
+// Kotlin 1.4, so enable this check only for the newer version.
+
+// TODO: remove this check when upgrading to Kotlin 1.4.
+def enableCheck = VersionNumber.parse(rootProject.ext.kotlinVersion).baseVersion >= VersionNumber.parse("1.4.10")
+if (enableCheck) {
+  gradle.taskGraph.afterTask { Task task ->
+    if (task.project != project) return
+
+    task.inputs.properties.each { key, value ->
+      if (key.contains('com.squareup.anvil.compiler.src-gen-dir')) {
+        boolean isAbsolute = new File(value.toString()).isAbsolute()
+        if (isAbsolute) {
+          throw new GradleException(
+              "The workaround for absolute paths in the Anvil Gradle plugin is broken. Key: $key, " +
+                  "value: $value, task: $task. For more context see " +
+                  "https://github.com/square/anvil/issues/65"
+          )
+        }
+      }
+    }
+  }
 }
