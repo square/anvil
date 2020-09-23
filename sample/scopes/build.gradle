@@ -2,5 +2,5 @@ apply plugin: 'org.jetbrains.kotlin.jvm'
 
 dependencies {
   api deps.kotlin.stdlib
-  implementation "javax.inject:javax.inject:1"
+  api "javax.inject:javax.inject:1"
 }
