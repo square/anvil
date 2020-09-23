@@ -57,6 +57,7 @@ ext {
           compiler: "com.google.dagger:dagger-compiler:$daggerVersion"
       ],
 
+      inject: "javax.inject:javax.inject:1",
       jsr250: "javax.annotation:jsr250-api:1.0",
       junit: "junit:junit:4.13",
 
