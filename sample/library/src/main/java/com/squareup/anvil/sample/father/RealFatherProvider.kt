@@ -1,12 +1,14 @@
 package com.squareup.anvil.sample.father
 
+import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.sample.God
 import com.squareup.anvil.sample.God.HEPHAESTUS
 import com.squareup.anvil.sample.God.HERA
 import com.squareup.anvil.sample.God.ZEUS
-import javax.inject.Inject
+import com.squareup.scopes.AppScope
 
-class RealFatherProvider @Inject constructor() : FatherProvider {
+@ContributesBinding(AppScope::class)
+object RealFatherProvider : FatherProvider {
   override fun father(god: God): String =
     when (god) {
       ZEUS, HERA -> "Cronus"
