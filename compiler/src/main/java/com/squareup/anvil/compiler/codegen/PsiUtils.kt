@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.AnvilCompilationException
+import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.getAllSuperTypes
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
@@ -21,6 +22,7 @@ import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
@@ -363,10 +365,19 @@ fun KtTypeReference.isFunctionType(): Boolean = typeElement is KtFunctionType
 
 fun KtClassOrObject.isGenericClass(): Boolean = typeParameterList != null
 
-fun KtCallableDeclaration.requireTypeReference(): KtTypeReference =
-  typeReference ?: throw AnvilCompilationException(
-      "Couldn't obtain type reference.", element = this
-  )
+fun KtCallableDeclaration.requireTypeReference(): KtTypeReference {
+  typeReference?.let { return it }
+
+  if (this is KtFunction && findAnnotation(daggerProvidesFqName) != null) {
+    throw AnvilCompilationException(
+        message = "Dagger provider methods must specify the return type explicitly when using " +
+            "Anvil. The return type cannot be inferred implicitly.",
+        element = this
+    )
+  }
+
+  throw AnvilCompilationException("Couldn't obtain type reference.", element = this)
+}
 
 fun KtUserType.isTypeParameter(): Boolean {
   return parents.filterIsInstance<KtClassOrObject>().first().typeParameters.any {
