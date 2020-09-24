@@ -66,10 +66,10 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       val key = "${getCompilerPluginId()}.${srcGenDirOption.key}"
       val relativePath = srcGenDir.relativeTo(project.buildDir).path
 
-      project.tasks.withType(KotlinCompile::class.java) { task ->
+      project.tasks.withType(KotlinCompile::class.java).configureEach { task ->
         task.inputs.property(key, relativePath)
       }
-      project.tasks.withType(KaptTask::class.java) { task ->
+      project.tasks.withType(KaptTask::class.java).configureEach { task ->
         // We don't apply the compiler plugin for KaptTasks. But for some reason the Kotlin Gradle
         // plugin copies the inputs with the "kotlinCompile" prefix.
         task.inputs.property("kotlinCompile.$key", relativePath)
