@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
+import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.internal.KaptTask
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
@@ -56,13 +57,18 @@ class AnvilSubplugin : KotlinGradleSubplugin<AbstractCompile> {
       val key = "${getCompilerPluginId()}.${srcGenDirOption.key}"
       val relativePath = srcGenDir.relativeTo(project.buildDir).path
 
-      project.tasks.withType(KotlinCompile::class.java) { task ->
-        task.inputs.property(key, relativePath)
+      project.tasks.withType(KotlinCompile::class.java).configureEach { task ->
+          task.inputs.property(key, relativePath)
       }
-      project.tasks.withType(KaptTask::class.java) { task ->
-        // We don't apply the compiler plugin for KaptTasks. But for some reason the Kotlin Gradle
-        // plugin copies the inputs with the "kotlinCompile" prefix.
-        task.inputs.property("kotlinCompile.$key", relativePath)
+      project.tasks.withType(KaptTask::class.java).configureEach { task ->
+          // We don't apply the compiler plugin for KaptTasks. But for some reason the Kotlin Gradle
+          // plugin copies the inputs with the "kotlinCompile" prefix.
+          task.inputs.property("kotlinCompile.$key", relativePath)
+      }
+      project.tasks.withType(KaptGenerateStubsTask::class.java).configureEach { task ->
+          // We don't apply the compiler plugin for KaptTasks. But for some reason the Kotlin Gradle
+          // plugin copies the inputs with the "kotlinCompile" prefix.
+          task.inputs.property("kotlinCompile.$key", relativePath)
       }
     }
 
