@@ -4,13 +4,11 @@ import com.google.auto.service.AutoService
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.AbstractCompile
 import org.jetbrains.kotlin.gradle.dsl.KotlinCommonOptions
-import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
-import org.jetbrains.kotlin.gradle.internal.KaptTask
+import org.jetbrains.kotlin.gradle.plugin.FilesSubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinGradleSubplugin
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
 
 @AutoService(KotlinGradleSubplugin::class)
@@ -42,40 +40,13 @@ class AnvilSubplugin : KotlinGradleSubplugin<AbstractCompile> {
     // for this specific compile task will be included in the task output. The output of different
     // compile tasks shouldn't be mixed.
     val srcGenDir = File(project.buildDir, "anvil${File.separator}src-gen-${kotlinCompile.name}")
-    val srcGenDirPath = srcGenDir.absolutePath
-    val srcGenDirOption = SubpluginOption(
-        key = "src-gen-dir",
-        value = srcGenDirPath
-    )
-
-    project.afterEvaluate {
-      // Notice that we pass the absolutePath to the Kotlin compiler plugin. That is necessary,
-      // because the plugin has no understanding of Gradle or what the working directory is. The
-      // Kotlin Gradle plugin adds all SubpluginOptions as input to the Gradle task. This is bad,
-      // because now the hash of inputs is different on every machine. We override this input with
-      // a relative path in order to preserve some safety and avoid the cache misses.
-      val key = "${getCompilerPluginId()}.${srcGenDirOption.key}"
-      val relativePath = srcGenDir.relativeTo(project.buildDir).path
-
-      project.tasks.withType(KotlinCompile::class.java).configureEach { task ->
-          task.inputs.property(key, relativePath)
-      }
-      project.tasks.withType(KaptTask::class.java).configureEach { task ->
-          // We don't apply the compiler plugin for KaptTasks. But for some reason the Kotlin Gradle
-          // plugin copies the inputs with the "kotlinCompile" prefix.
-          task.inputs.property("kotlinCompile.$key", relativePath)
-      }
-      project.tasks.withType(KaptGenerateStubsTask::class.java).configureEach { task ->
-          // We don't apply the compiler plugin for KaptTasks. But for some reason the Kotlin Gradle
-          // plugin copies the inputs with the "kotlinCompile" prefix.
-          task.inputs.property("kotlinCompile.$key", relativePath)
-      }
-    }
-
     val extension = project.extensions.findByType(AnvilExtension::class.java) ?: AnvilExtension()
 
     return listOf(
-        srcGenDirOption,
+        FilesSubpluginOption(
+            key = "src-gen-dir",
+            files = listOf(srcGenDir)
+        ),
         SubpluginOption(
             key = "generate-dagger-factories",
             value = extension.generateDaggerFactories.toString()
