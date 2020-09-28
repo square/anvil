@@ -239,12 +239,14 @@ internal fun PsiElement.requireFqName(
   // First look in the imports for the reference name. If the class is imported, then we know the
   // fully qualified name.
   importPaths
+      .filter { it.alias == null }
       .firstOrNull {
         it.fqName.shortName().asString() == classReference
       }
       ?.let { return it.fqName }
 
   importPaths
+      .filter { it.alias == null }
       .firstOrNull {
         it.fqName.shortName().asString() == classReferenceOuter
       }
