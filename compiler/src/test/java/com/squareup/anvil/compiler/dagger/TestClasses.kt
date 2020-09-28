@@ -6,6 +6,8 @@ package com.squareup.anvil.compiler.dagger
 
 object Factory
 
+object Date
+
 abstract class OuterClass constructor(innerClass: InnerClass) {
   class InnerClass
 }

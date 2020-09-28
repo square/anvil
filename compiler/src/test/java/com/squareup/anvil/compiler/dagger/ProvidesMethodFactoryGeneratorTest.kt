@@ -16,6 +16,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import java.io.File
+import java.util.Date
 import javax.inject.Provider
 
 @Suppress("UNCHECKED_CAST")
@@ -2247,6 +2248,42 @@ public final class DaggerComponentInterface implements ComponentInterface {
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
+    }
+  }
+
+  @Test
+  fun `a factory class is generated ignoring the named import original path`() {
+    compile(
+      """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        import java.util.*
+        import com.squareup.anvil.compiler.dagger.Date as AnotherDate
+
+        @Module
+        object DaggerModule1 {
+          @Provides fun provideDate(): Date = Date(1000)
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideDate")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null) as Factory<Any>
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedContributingObject = staticMethods
+        .single { it.name == "provideDate" }
+        .invoke(null)
+
+      assertThat(providedContributingObject).isInstanceOf(Date::class.java)
     }
   }
 
