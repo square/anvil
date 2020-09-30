@@ -17,6 +17,7 @@ dependencies {
   kapt deps.auto.service.processor
 
   testImplementation deps.dagger2.compiler
+  testImplementation deps.kotlin.annotation_processing_embeddable
   testImplementation deps.kotlin.compile_testing
   testImplementation deps.kotlin.compiler
   testImplementation deps.truth

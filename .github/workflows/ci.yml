@@ -18,7 +18,7 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version: [1.3.72, 1.4.10, 1.4.20-dev-3947]
+        kotlin-version: [1.3.72, 1.4.10, 1.4.20-M1]
 
     steps:
       - uses: actions/checkout@v2
@@ -53,7 +53,7 @@ jobs:
           java-version: 11.0.7
 
       - name: Test on Ubuntu IR
-        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=1.4.20-dev-3947 -Psquare.useIR=true
+        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=1.4.20-M1 -Psquare.useIR=true
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v2

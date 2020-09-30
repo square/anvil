@@ -5,7 +5,7 @@ import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.parentsWithSelf
-import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -100,7 +100,7 @@ internal class ModuleMergerIr(
           moduleAnnotation != null
         }
         .onEach { (classSymbol, _) ->
-          if (classSymbol.owner.visibility != Visibilities.PUBLIC) {
+          if (classSymbol.owner.visibility != DescriptorVisibilities.PUBLIC) {
             throw AnvilCompilationIrException(
                 message = "${classSymbol.fqName} is contributed to the Dagger graph, but the " +
                     "module is not public. Only public modules are supported.",
