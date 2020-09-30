@@ -111,7 +111,7 @@ internal class InterfaceMerger(
 
     val excludedClasses = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)
         ?.value
-        ?.map { it.getType(module).argumentType().classDescriptorForType() }
+        ?.map { it.argumentType(module).classDescriptorForType() }
         ?.filter { DescriptorUtils.isInterface(it) }
         ?.map { classDescriptorForExclusion ->
           val contributesBindingAnnotation = classDescriptorForExclusion

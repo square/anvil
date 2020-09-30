@@ -112,9 +112,7 @@ internal class BindingModuleGenerator(
           // a binding method for these types.
           (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)?.value
               ?.map {
-                it.getType(module)
-                    .argumentType()
-                    .classDescriptorForType()
+                it.argumentType(module).classDescriptorForType()
               }
               ?.let { excludedTypesForScope[scope] = it }
 
