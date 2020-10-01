@@ -156,7 +156,7 @@ internal class ModuleMerger(
     val excludedModules = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)
         ?.value
         ?.map {
-          val argumentType = it.getType(module).argumentType()
+          val argumentType = it.argumentType(module)
           val classDescriptorForExclusion = argumentType.classDescriptorForType()
 
           val contributesBindingAnnotation = classDescriptorForExclusion
