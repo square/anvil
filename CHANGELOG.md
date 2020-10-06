@@ -2,6 +2,14 @@
 
 ## Next Version
 
+## 2.0.6 (2020-10-06)
+
+* Support constructor injection for classes with bounded types, see #126.
+* Print a better error message for Dagger provider methods with implicit return types, see #124.
+* Fix another instance of absolute paths as task inputs, see #65.
+* Use lazy APIs in the Gradle plugin for task configuration avoidance.
+* Handle named imports correctly, see #137.
+
 ## 2.0.5 (2020-09-18)
 
 * Support type parameters for @Inject constructors, see #111.
