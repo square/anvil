@@ -12,6 +12,7 @@ import com.squareup.anvil.compiler.codegen.dagger.ProvidesMethodFactoryGenerator
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
+import org.jetbrains.kotlin.com.intellij.openapi.extensions.ExtensionPoint
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.impl.ExtensionPointImpl
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
@@ -105,10 +106,22 @@ class AnvilComponentRegistrar : ComponentRegistrar {
           )
         }
 
-    ExtensionPointImpl::class.java.declaredMethods
-        .first { it.name == "doRegisterExtension" }
-        .use {
-          it.invoke(analysisHandlerExtensionPoint, extension, LoadingOrder.FIRST, project)
-        }
+    if (USE_IR) {
+      // TODO: Remove this reflection call when upgrading to Kotlin 1.4.20.
+      // project.extensionArea
+      //     .getExtensionPoint(AnalysisHandlerExtension.extensionPointName)
+      //     .registerExtension(extension, LoadingOrder.FIRST, project)
+      ExtensionPoint::class.java.declaredMethods
+          .first { it.name == "registerExtension" && it.parameterCount == 3 }
+          .use {
+            it.invoke(analysisHandlerExtensionPoint, extension, LoadingOrder.FIRST, project)
+          }
+    } else {
+      ExtensionPointImpl::class.java.declaredMethods
+          .first { it.name == "doRegisterExtension" }
+          .use {
+            it.invoke(analysisHandlerExtensionPoint, extension, LoadingOrder.FIRST, project)
+          }
+    }
   }
 }

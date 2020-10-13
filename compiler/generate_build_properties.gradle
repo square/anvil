@@ -1,7 +1,7 @@
 def generatedDirPath = 'generated/sources/build-properties/kotlin/main'
 
 sourceSets {
-  test.java.srcDirs += "$buildDir/$generatedDirPath"
+  main.java.srcDirs += "$buildDir/$generatedDirPath"
 }
 
 def generateBuildProperties = project.tasks.register('generateBuildProperties') {
@@ -21,6 +21,6 @@ def generateBuildProperties = project.tasks.register('generateBuildProperties') 
   }
 }
 
-tasks.named("compileTestKotlin").configure {
+tasks.named("compileKotlin").configure {
   it.dependsOn generateBuildProperties
 }
