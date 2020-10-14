@@ -64,8 +64,8 @@ internal class ContributesToGenerator : CodeGenerator {
           val content = """
               package $generatedPackage
               
-              val ${className.replace('.', '_')}$REFERENCE_SUFFIX = $className::class
-              val ${className.replace('.', '_')}$SCOPE_SUFFIX = $scope::class
+              public val ${className.replace('.', '_')}$REFERENCE_SUFFIX: kotlin.reflect.KClass<$className> = $className::class
+              public val ${className.replace('.', '_')}$SCOPE_SUFFIX: kotlin.reflect.KClass<$scope> = $scope::class
           """.trimIndent()
           file.writeText(content)
 

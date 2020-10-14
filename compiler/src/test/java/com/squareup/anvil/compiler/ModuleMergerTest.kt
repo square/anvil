@@ -4,7 +4,6 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import dagger.Component
 import dagger.Subcomponent
 import org.junit.Test
@@ -726,7 +725,7 @@ class ModuleMergerTest(
         }
         """
     ) {
-      assertThat(exitCode).isEqualTo(INTERNAL_ERROR)
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       assertThat(messages).contains("File being compiled: (10,18)")
     }
   }
