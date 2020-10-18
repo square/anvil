@@ -70,7 +70,7 @@ ext {
           stdlib: "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion",
       ],
 
-      kotlinpoet: "com.squareup:kotlinpoet:1.6.0",
+      kotlinpoet: "com.squareup:kotlinpoet:1.7.2",
 
       truth: "com.google.truth:truth:1.0.1",
   ]
