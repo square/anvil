@@ -1,5 +1,5 @@
 package com.squareup.anvil.test
 
-abstract class AppScope private constructor()
+public abstract class AppScope private constructor()
 
-abstract class SubScope private constructor()
+public abstract class SubScope private constructor()
