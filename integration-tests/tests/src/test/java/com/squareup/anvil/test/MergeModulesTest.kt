@@ -8,7 +8,7 @@ import dagger.Subcomponent
 import org.junit.Test
 import javax.inject.Singleton
 
-class MergeModulesTest {
+internal class MergeModulesTest {
 
   @Test fun `contributed modules are merged app scope`() {
     val annotation = CompositeAppModule::class.java.getAnnotation(Module::class.java)!!

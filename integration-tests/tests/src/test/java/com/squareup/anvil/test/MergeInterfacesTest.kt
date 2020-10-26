@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import org.junit.Test
 
-class MergeInterfacesTest {
+internal class MergeInterfacesTest {
 
   @Test fun `contributed interfaces are merged`() {
     assertThat(CompositeAppComponent::class extends AppComponentInterface::class).isTrue()

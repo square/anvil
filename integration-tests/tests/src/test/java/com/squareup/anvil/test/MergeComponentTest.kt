@@ -8,7 +8,7 @@ import dagger.Subcomponent
 import org.junit.Test
 import javax.inject.Singleton
 
-class MergeComponentTest {
+internal class MergeComponentTest {
 
   @Test fun `component merges modules and interfaces`() {
     val annotation = AppComponent::class.java.getAnnotation(Component::class.java)!!

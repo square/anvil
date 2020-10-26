@@ -14,6 +14,15 @@ dependencies {
   kaptTest deps.dagger2.compiler
 }
 
+//noinspection UnnecessaryQualifiedReference
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+  kotlinOptions {
+    freeCompilerArgs += [
+            "-Xexplicit-api=strict",
+    ]
+  }
+}
+
 // Okay, this check is sketchy here. But this module serves as integration test so it's not too
 // terrible. What would be worse is setting up integration tests in the Gradle plugin itself,
 // because it requires so much code and might not represent the real world usage.
