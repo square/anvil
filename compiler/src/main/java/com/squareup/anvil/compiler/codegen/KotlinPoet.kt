@@ -62,13 +62,15 @@ internal fun ClassDescriptor.asClassName(): ClassName =
   )
 
 internal fun FqName.asClassName(module: ModuleDescriptor): ClassName {
-  try {
+  val segments = pathSegments().map { it.asString() }
+
+  // If the first sentence case is not the last segment of the path it becomes ambiguous,
+  // for example, com.Foo.Bar could be a inner class Bar or an unconventional package com.Foo.
+  val canGuessClassName = segments.indexOfFirst { it[0].isUpperCase() } == segments.size - 1
+  if (canGuessClassName) {
     return ClassName.bestGuess(asString())
-  } catch (ignored: IllegalArgumentException) {
-    // Probably lowercase class. Try to resolve the class below.
   }
 
-  val segments = pathSegments().map { it.asString() }
   for (index in (segments.size - 1) downTo 1) {
     val packageSegments = segments.subList(0, index)
     val classSegments = segments.subList(index, segments.size)
