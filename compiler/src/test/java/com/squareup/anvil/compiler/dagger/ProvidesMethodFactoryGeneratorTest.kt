@@ -2,6 +2,9 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.componentInterfaceAnvilModule
+import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
+import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
+import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.isStatic
@@ -2231,7 +2234,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
   @Test
   fun `a factory class is generated for a method returning a class with a named import`() {
     compile(
-      """
+        """
         package com.squareup.test
         
         import dagger.Module
@@ -2254,7 +2257,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
   @Test
   fun `a factory class is generated ignoring the named import original path`() {
     compile(
-      """
+        """
         package com.squareup.test
         
         import dagger.Module
@@ -2306,6 +2309,93 @@ public final class DaggerComponentInterface implements ComponentInterface {
           "Dagger provider methods must specify the return type explicitly when using Anvil. " +
               "The return type cannot be inferred implicitly."
       )
+    }
+  }
+
+  @Test
+  fun `a factory class is generated for a capital case package name`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
+        
+        @Module
+        object DaggerModule1 {
+          @Provides fun provideThing(): TestClassInUppercasePackage = TestClassInUppercasePackage()
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideThing")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val thingProvider = staticMethods.single { it.name == "provideThing" }
+      assertThat(thingProvider.invoke(null)).isInstanceOf(TestClassInUppercasePackage::class.java)
+    }
+  }
+
+  @Test
+  fun `a factory class is generated for a capital case package name and lower class name`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
+        
+        @Module
+        object DaggerModule1 {
+          @Provides fun provideThing(): lowerCaseClassInUppercasePackage {
+            return lowerCaseClassInUppercasePackage()
+          }
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideThing")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val thingProvider = staticMethods.single { it.name == "provideThing" }
+      assertThat(thingProvider.invoke(null))
+          .isInstanceOf(lowerCaseClassInUppercasePackage::class.java)
+    }
+  }
+
+  @Test
+  fun `a factory class is generated for a capital case package name and inner class`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
+        
+        @Module
+        object DaggerModule1 {
+          @Provides fun provideThing(): InnerClass = InnerClass()
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideThing")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val thingProvider = staticMethods.single { it.name == "provideThing" }
+      assertThat(thingProvider.invoke(null)).isInstanceOf(InnerClass::class.java)
     }
   }
 
