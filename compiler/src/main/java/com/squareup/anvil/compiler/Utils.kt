@@ -1,9 +1,6 @@
 package com.squareup.anvil.compiler
 
-import com.squareup.anvil.annotations.ContributesBinding
-import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.annotations.MergeComponent
-import com.squareup.anvil.annotations.MergeSubcomponent
+import com.squareup.anvil.annotations.*
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.codegen.requireFqName
@@ -49,6 +46,8 @@ internal val mergeInterfacesFqName = FqName(MergeInterfaces::class.java.canonica
 internal val mergeModulesFqName = FqName(MergeModules::class.java.canonicalName)
 internal val contributesToFqName = FqName(ContributesTo::class.java.canonicalName)
 internal val contributesBindingFqName = FqName(ContributesBinding::class.java.canonicalName)
+internal val contributesBindingToSetFqName = FqName(ContributesBindingToSet::class.java.canonicalName)
+internal val contributesBindingToMapFqName = FqName(ContributesBindingToMap::class.java.canonicalName)
 internal val daggerComponentFqName = FqName(Component::class.java.canonicalName)
 internal val daggerSubcomponentFqName = FqName(Subcomponent::class.java.canonicalName)
 internal val daggerModuleFqName = FqName(Module::class.java.canonicalName)

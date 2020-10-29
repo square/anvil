@@ -21,10 +21,13 @@ import com.squareup.anvil.compiler.subcomponentInterfaceAnvilModule
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import dagger.Binds
 import dagger.Provides
+import dagger.multibindings.IntoMap
+import dagger.multibindings.IntoSet
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
+import javax.inject.Named
 import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
@@ -171,6 +174,85 @@ class BindingModuleGeneratorTest(
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      }
+    }
+  }
+
+  @Test fun `set multibinding is used`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBindingToSet
+        $import
+
+        interface ParentInterface
+        
+        interface Middle : ParentInterface
+
+        @ContributesBindingToSet(Any::class, ParentInterface::class)
+        interface ContributingInterface : Middle
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+        """
+    ) {
+      val modules = if (annotationClass == MergeModules::class) {
+        componentInterface.daggerModule.includes.toList()
+      } else {
+        componentInterface.anyDaggerComponent.modules
+      }
+      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+
+      val methods = modules.first().java.declaredMethods
+      assertThat(methods).hasLength(1)
+
+      with(methods[0]) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+        assertThat(isAnnotationPresent(IntoSet::class.java)).isTrue()
+      }
+    }
+  }
+
+  @Test fun `map multibinding is used`() {
+    compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBindingToMap
+        $import
+
+        interface ParentInterface
+        
+        interface Middle : ParentInterface
+
+        @ContributesBindingToMap(Any::class, ContributingInterface::class, ParentInterface::class)
+        interface ContributingInterface : Middle
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+        """
+    ) {
+      val modules = if (annotationClass == MergeModules::class) {
+        componentInterface.daggerModule.includes.toList()
+      } else {
+        componentInterface.anyDaggerComponent.modules
+      }
+      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+
+      val methods = modules.first().java.declaredMethods
+      assertThat(methods).hasLength(1)
+
+      with(methods[0]) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+        assertThat(isAnnotationPresent(IntoMap::class.java)).isTrue()
+        assertThat(annotations.filterIsInstance<Named>().first().value).isEqualTo("com.squareup.test.ContributingInterface")
       }
     }
   }

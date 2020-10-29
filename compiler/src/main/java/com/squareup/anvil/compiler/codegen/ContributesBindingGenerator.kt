@@ -1,10 +1,11 @@
 package com.squareup.anvil.compiler.codegen
 
-import com.squareup.anvil.compiler.AnvilCompilationException
+import com.squareup.anvil.compiler.*
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.squareup.anvil.compiler.codegen.scope
 import com.squareup.anvil.compiler.contributesBindingFqName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
@@ -25,7 +26,7 @@ internal class ContributesBindingGenerator : CodeGenerator {
   ): Collection<GeneratedFile> {
     return projectFiles.asSequence()
         .flatMap { it.classesAndInnerClasses() }
-        .filter { it.hasAnnotation(contributesBindingFqName) }
+        .filter { it.hasAnnotation(contributesBindingFqName) || it.hasAnnotation(contributesBindingToSetFqName) || it.hasAnnotation(contributesBindingToMapFqName) }
         .onEach { clazz ->
           if (clazz.visibilityModifierTypeOrDefault().value != KtTokens.PUBLIC_KEYWORD.value) {
             throw AnvilCompilationException(
@@ -47,7 +48,15 @@ internal class ContributesBindingGenerator : CodeGenerator {
             "Could not generate package directory: ${file.parentFile}"
           }
 
-          val scope = clazz.scope(contributesBindingFqName, module)
+          val scope = when {
+            clazz.hasAnnotation(contributesBindingFqName) ->
+              clazz.scope(contributesBindingFqName, module)
+            clazz.hasAnnotation(contributesBindingToSetFqName) ->
+              clazz.scope(contributesBindingToSetFqName, module)
+            clazz.hasAnnotation(contributesBindingToMapFqName) ->
+              clazz.scope(contributesBindingToMapFqName, module)
+            else -> throw IllegalStateException("Unexpected annotations: ${clazz.annotationEntries}")
+          }
 
           val content = """
             package $generatedPackage
