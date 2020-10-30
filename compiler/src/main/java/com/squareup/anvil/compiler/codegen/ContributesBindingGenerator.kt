@@ -1,12 +1,13 @@
 package com.squareup.anvil.compiler.codegen
 
-import com.squareup.anvil.compiler.*
+import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
-import com.squareup.anvil.compiler.codegen.scope
 import com.squareup.anvil.compiler.contributesBindingFqName
+import com.squareup.anvil.compiler.contributesBindingToSetFqName
+import com.squareup.anvil.compiler.contributesBindingToMapFqName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtFile
@@ -26,7 +27,7 @@ internal class ContributesBindingGenerator : CodeGenerator {
   ): Collection<GeneratedFile> {
     return projectFiles.asSequence()
         .flatMap { it.classesAndInnerClasses() }
-        .filter { it.hasAnnotation(contributesBindingFqName) || it.hasAnnotation(contributesBindingToSetFqName) || it.hasAnnotation(contributesBindingToMapFqName) }
+        .filter { it.hasContributesBindingAnnotation }
         .onEach { clazz ->
           if (clazz.visibilityModifierTypeOrDefault().value != KtTokens.PUBLIC_KEYWORD.value) {
             throw AnvilCompilationException(
@@ -55,7 +56,7 @@ internal class ContributesBindingGenerator : CodeGenerator {
               clazz.scope(contributesBindingToSetFqName, module)
             clazz.hasAnnotation(contributesBindingToMapFqName) ->
               clazz.scope(contributesBindingToMapFqName, module)
-            else -> throw IllegalStateException("Unexpected annotations: ${clazz.annotationEntries}")
+            else -> throw IllegalStateException("Unexpected annotations ${clazz.annotationEntries}")
           }
 
           val content = """

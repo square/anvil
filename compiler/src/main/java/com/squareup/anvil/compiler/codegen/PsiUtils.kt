@@ -1,5 +1,8 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.squareup.anvil.compiler.contributesBindingFqName
+import com.squareup.anvil.compiler.contributesBindingToSetFqName
+import com.squareup.anvil.compiler.contributesBindingToMapFqName
 import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.getAllSuperTypes
@@ -105,6 +108,13 @@ internal fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 
   return null
 }
+
+internal val KtClassOrObject.hasContributesBindingAnnotation: Boolean
+  get() {
+    return hasAnnotation(contributesBindingFqName) ||
+        hasAnnotation(contributesBindingToSetFqName) ||
+        hasAnnotation(contributesBindingToMapFqName)
+  }
 
 internal fun KtClassOrObject.scope(
   annotationFqName: FqName,

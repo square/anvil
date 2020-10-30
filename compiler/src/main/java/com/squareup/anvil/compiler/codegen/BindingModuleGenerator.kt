@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.compiler.*
 import com.squareup.anvil.compiler.ANVIL_MODULE_SUFFIX
 import com.squareup.anvil.compiler.ClassScanner
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
@@ -16,6 +15,10 @@ import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.codegen.GeneratedMethod.BindingMethod
 import com.squareup.anvil.compiler.codegen.GeneratedMethod.ProviderMethod
 import com.squareup.anvil.compiler.contributesBindingFqName
+import com.squareup.anvil.compiler.contributesBindingToMapFqName
+import com.squareup.anvil.compiler.contributesBindingToSetFqName
+import com.squareup.anvil.compiler.hasAnnotation
+import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.generateClassName
@@ -55,7 +58,6 @@ import org.jetbrains.kotlin.types.KotlinType
 import java.io.File
 import java.util.Locale.US
 import javax.inject.Named
-import kotlin.reflect.KClass
 
 private val supportedFqNames = listOf(
     mergeComponentFqName,
@@ -182,21 +184,26 @@ internal class BindingModuleGenerator(
           scope = scope
       )
 
-      val replacedBindings = (contributedBindingsThisModule + contributedBindingsDependencies + contributedBindingsToSetDependencies)
+      val replacedBindings = contributedBindingsThisModule
+          .plus(contributedBindingsDependencies)
           .flatMap {
-            (it.annotationOrNull(contributesBindingFqName, scope = scope)
+            it.annotationOrNull(contributesBindingFqName, scope = scope)
                 ?.replaces(module)
                 ?.asSequence()
-                ?: emptySequence()) +
-              (it.annotationOrNull(contributesBindingToSetFqName, scope = scope)
-                    ?.replaces(module)
-                    ?.asSequence()
-                ?: emptySequence()) +
-                (it.annotationOrNull(contributesBindingToMapFqName, scope = scope)
-                    ?.replaces(module)
-                    ?.asSequence()
-                    ?: emptySequence())
+                ?: emptySequence()
           }
+          .plus(contributedBindingsToSetDependencies.flatMap {
+            it.annotationOrNull(contributesBindingToSetFqName, scope = scope)
+                ?.replaces(module)
+                ?.asSequence()
+                ?: emptySequence()
+          })
+          .plus(contributedBindingsToMapDependencies.flatMap {
+            it.annotationOrNull(contributesBindingToMapFqName, scope = scope)
+                ?.replaces(module)
+                ?.asSequence()
+                ?: emptySequence()
+          })
 
       // Contributed Dagger modules can replace other Dagger modules but also contributed bindings.
       // If a binding is replaced, then we must not generate the binding method.
@@ -223,16 +230,16 @@ internal class BindingModuleGenerator(
           .minus(bindingsReplacedInDaggerModules)
           .minus(excludedTypesForScope[scope].orEmpty())
           .filter {
-            val annotation = it.annotationOrNull(contributesBindingFqName) ?:
-                it.annotationOrNull(contributesBindingToSetFqName) ?:
-                it.annotationOrNull(contributesBindingToMapFqName)
+            val annotation = it.annotationOrNull(contributesBindingFqName)
+                ?: it.annotationOrNull(contributesBindingToSetFqName)
+                ?: it.annotationOrNull(contributesBindingToMapFqName)
 
             annotation != null && scope == annotation.scope(module).fqNameSafe
           }
           .map { contributedClass ->
-            val annotation = contributedClass.annotationOrNull(contributesBindingFqName) ?:
-                contributedClass.annotationOrNull(contributesBindingToSetFqName) ?:
-                contributedClass.annotation(contributesBindingToMapFqName)
+            val annotation = contributedClass.annotationOrNull(contributesBindingFqName)
+                ?: contributedClass.annotationOrNull(contributesBindingToSetFqName)
+                ?: contributedClass.annotation(contributesBindingToMapFqName)
 
             val boundType = annotation.boundType(module, contributedClass)
 
@@ -274,12 +281,15 @@ internal class BindingModuleGenerator(
                       )
                       .returns(boundType.asClassName())
                       .apply {
-                        if (contributedClass.annotationOrNull(contributesBindingToSetFqName) != null) {
+                        if (contributedClass.hasAnnotation(contributesBindingToSetFqName)) {
                           addAnnotation(IntoSet::class)
                         }
 
-                        if (contributedClass.annotationOrNull(contributesBindingToMapFqName) != null) {
-                          val clazz = annotation.getAnnotationValue("key")!!.value as KClassValue.Value.NormalClass
+                        if (contributedClass.hasAnnotation(contributesBindingToMapFqName)) {
+                          val annotationValue =
+                              checkNotNull(annotation.getAnnotationValue("key")).value
+
+                          val clazz = annotationValue as KClassValue.Value.NormalClass
                           addAnnotation(IntoMap::class)
                           addAnnotation(AnnotationSpec.builder(Named::class)
                               .addMember("\"${clazz.classId.asSingleFqName()}\"")

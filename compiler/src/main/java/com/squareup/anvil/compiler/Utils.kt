@@ -1,6 +1,11 @@
 package com.squareup.anvil.compiler
 
-import com.squareup.anvil.annotations.*
+import com.squareup.anvil.annotations.MergeComponent
+import com.squareup.anvil.annotations.MergeSubcomponent
+import com.squareup.anvil.annotations.ContributesTo
+import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.annotations.ContributesBindingToSet
+import com.squareup.anvil.annotations.ContributesBindingToMap
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.codegen.requireFqName
@@ -44,10 +49,14 @@ internal val mergeComponentFqName = FqName(MergeComponent::class.java.canonicalN
 internal val mergeSubcomponentFqName = FqName(MergeSubcomponent::class.java.canonicalName)
 internal val mergeInterfacesFqName = FqName(MergeInterfaces::class.java.canonicalName)
 internal val mergeModulesFqName = FqName(MergeModules::class.java.canonicalName)
+
 internal val contributesToFqName = FqName(ContributesTo::class.java.canonicalName)
 internal val contributesBindingFqName = FqName(ContributesBinding::class.java.canonicalName)
-internal val contributesBindingToSetFqName = FqName(ContributesBindingToSet::class.java.canonicalName)
-internal val contributesBindingToMapFqName = FqName(ContributesBindingToMap::class.java.canonicalName)
+internal val contributesBindingToSetFqName =
+    FqName(ContributesBindingToSet::class.java.canonicalName)
+internal val contributesBindingToMapFqName =
+    FqName(ContributesBindingToMap::class.java.canonicalName)
+
 internal val daggerComponentFqName = FqName(Component::class.java.canonicalName)
 internal val daggerSubcomponentFqName = FqName(Subcomponent::class.java.canonicalName)
 internal val daggerModuleFqName = FqName(Module::class.java.canonicalName)
@@ -101,6 +110,10 @@ internal fun ClassDescriptor.annotation(
   scope: FqName? = null
 ): AnnotationDescriptor = requireNotNull(annotationOrNull(annotationFqName, scope)) {
   "Couldn't find $annotationFqName with scope $scope for $fqNameSafe."
+}
+
+internal fun ClassDescriptor.hasAnnotation(annotationFqName: FqName): Boolean {
+  return annotationOrNull(annotationFqName) != null
 }
 
 internal fun ConstantValue<*>.toType(

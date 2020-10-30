@@ -7,7 +7,7 @@ import kotlin.reflect.KClass
 @Target(CLASS)
 @Retention(RUNTIME)
 annotation class ContributesBindingToSet(
-    val scope: KClass<*>,
-    val boundType: KClass<*> = Unit::class,
-    val replaces: Array<KClass<*>> = []
+  val scope: KClass<*>,
+  val boundType: KClass<*> = Unit::class,
+  val replaces: Array<KClass<*>> = []
 )

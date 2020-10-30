@@ -218,9 +218,11 @@ class BindingModuleGeneratorTest(
   }
 
   @Test fun `map multibinding is used`() {
+    val packageName = "com.squareup.test"
+    val interfaceName = "ContributingInterface"
     compile(
         """
-        package com.squareup.test
+        package $packageName
         
         import com.squareup.anvil.annotations.ContributesBindingToMap
         $import
@@ -230,7 +232,7 @@ class BindingModuleGeneratorTest(
         interface Middle : ParentInterface
 
         @ContributesBindingToMap(Any::class, ContributingInterface::class, ParentInterface::class)
-        interface ContributingInterface : Middle
+        interface $interfaceName : Middle
         
         $annotation(Any::class)
         interface ComponentInterface
@@ -247,12 +249,14 @@ class BindingModuleGeneratorTest(
       assertThat(methods).hasLength(1)
 
       with(methods[0]) {
+        val namedAnnotation = annotations.filterIsInstance<Named>().first()
+
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
         assertThat(isAnnotationPresent(IntoMap::class.java)).isTrue()
-        assertThat(annotations.filterIsInstance<Named>().first().value).isEqualTo("com.squareup.test.ContributingInterface")
+        assertThat(namedAnnotation.value).isEqualTo("$packageName.$interfaceName")
       }
     }
   }
