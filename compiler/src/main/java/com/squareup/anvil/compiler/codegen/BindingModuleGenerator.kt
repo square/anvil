@@ -36,6 +36,7 @@ import com.squareup.kotlinpoet.TypeSpec
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
+import dagger.multibindings.ClassKey
 import dagger.multibindings.IntoMap
 import dagger.multibindings.IntoSet
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -57,7 +58,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
 import org.jetbrains.kotlin.types.KotlinType
 import java.io.File
 import java.util.Locale.US
-import javax.inject.Named
 
 private val supportedFqNames = listOf(
     mergeComponentFqName,
@@ -291,8 +291,8 @@ internal class BindingModuleGenerator(
 
                           val clazz = annotationValue as KClassValue.Value.NormalClass
                           addAnnotation(IntoMap::class)
-                          addAnnotation(AnnotationSpec.builder(Named::class)
-                              .addMember("\"${clazz.classId.asSingleFqName()}\"")
+                          addAnnotation(AnnotationSpec.builder(ClassKey::class)
+                              .addMember("${clazz.classId.relativeClassName}::class")
                               .build()
                           )
                         }

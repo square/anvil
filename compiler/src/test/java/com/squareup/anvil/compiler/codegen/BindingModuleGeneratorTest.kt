@@ -21,13 +21,13 @@ import com.squareup.anvil.compiler.subcomponentInterfaceAnvilModule
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import dagger.Binds
 import dagger.Provides
+import dagger.multibindings.ClassKey
 import dagger.multibindings.IntoMap
 import dagger.multibindings.IntoSet
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
-import javax.inject.Named
 import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
@@ -249,14 +249,14 @@ class BindingModuleGeneratorTest(
       assertThat(methods).hasLength(1)
 
       with(methods[0]) {
-        val namedAnnotation = annotations.filterIsInstance<Named>().first()
+        val key = annotations.filterIsInstance<ClassKey>().first()
 
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
         assertThat(isAnnotationPresent(IntoMap::class.java)).isTrue()
-        assertThat(namedAnnotation.value).isEqualTo("$packageName.$interfaceName")
+        assertThat(key.value.qualifiedName).isEqualTo("$packageName.$interfaceName")
       }
     }
   }
