@@ -18,7 +18,7 @@ import java.util.Locale.US
 import kotlin.reflect.KClass
 
 internal fun compile(
-  source: String,
+  vararg sources: String,
   enableDaggerAnnotationProcessor: Boolean = false,
   generateDaggerFactories: Boolean = false,
   block: Result.() -> Unit = { }
@@ -50,10 +50,19 @@ internal fun compile(
             )
         )
 
-        val name = "${workingDir.absolutePath}/sources/src/main/java/com/squareup/test/Source.kt"
-        check(File(name).parentFile.mkdirs())
+        this.sources = sources.map { content ->
+          val packageDir = content.lines()
+              .first { it.trim().startsWith("package ") }
+              .substringAfter("package ")
+              .replace('.', '/')
 
-        sources = listOf(SourceFile.kotlin(name, contents = source, trimIndent = true))
+          val name = "${workingDir.absolutePath}/sources/src/main/java/$packageDir/Source.kt"
+          with(File(name).parentFile) {
+            check(exists() || mkdirs())
+          }
+
+          SourceFile.kotlin(name, contents = content, trimIndent = true)
+        }
       }
       .compile()
       .also(block)

@@ -1304,10 +1304,10 @@ public final class InjectClass_Factory<T extends CharSequence> implements Factor
   }
 
   private fun compile(
-    source: String,
+    vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = com.squareup.anvil.compiler.compile(
-      source = source,
+      sources = *sources,
       enableDaggerAnnotationProcessor = useDagger,
       generateDaggerFactories = !useDagger,
       block = block

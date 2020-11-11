@@ -2399,11 +2399,52 @@ public final class DaggerComponentInterface implements ComponentInterface {
     }
   }
 
+  @Test
+  fun `a factory class is generated for an uppercase factory function`() {
+    compile(
+        """
+        package com.squareup.test.a
+        
+        import com.squareup.test.b.User
+        
+        fun User(): User = User(42)
+        """,
+        """
+        package com.squareup.test.b
+        
+        data class User(val age: Int)          
+        """,
+        """
+        package com.squareup.test
+        
+        import com.squareup.test.a.User
+        import com.squareup.test.b.User
+        import dagger.Module
+        import dagger.Provides
+        
+        @Module
+        object DaggerModule1 {
+          @Provides fun user(): User = User()
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("user")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val userProvider = staticMethods.single { it.name == "user" }
+      assertThat(userProvider.invoke(null)).isNotNull()
+    }
+  }
+
   private fun compile(
-    source: String,
+    vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = com.squareup.anvil.compiler.compile(
-      source,
+      sources = *sources,
       enableDaggerAnnotationProcessor = useDagger,
       generateDaggerFactories = !useDagger,
       block = block

@@ -685,10 +685,10 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
   }
 
   private fun compile(
-    source: String,
+    vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = com.squareup.anvil.compiler.compile(
-      source = source,
+      sources = *sources,
       enableDaggerAnnotationProcessor = useDagger,
       generateDaggerFactories = !useDagger,
       block = block
