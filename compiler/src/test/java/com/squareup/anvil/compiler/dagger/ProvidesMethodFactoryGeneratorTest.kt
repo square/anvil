@@ -2440,6 +2440,358 @@ public final class DaggerComponentInterface implements ComponentInterface {
     }
   }
 
+  @Test fun `a factory class is generated for provided properties`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import dagger.internal.Preconditions;
+import javax.annotation.processing.Generated;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class DaggerModule1_GetStringFactory implements Factory<String> {
+  private final DaggerModule1 module;
+
+  public DaggerModule1_GetStringFactory(DaggerModule1 module) {
+    this.module = module;
+  }
+
+  @Override
+  public String get() {
+    return getString(module);
+  }
+
+  public static DaggerModule1_GetStringFactory create(DaggerModule1 module) {
+    return new DaggerModule1_GetStringFactory(module);
+  }
+
+  public static String getString(DaggerModule1 instance) {
+    return Preconditions.checkNotNull(instance.getString(), "Cannot return null from a non-@Nullable @Provides method");
+  }
+}
+     */
+    compile(
+        """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        
+        @Module
+        class DaggerModule1 {
+          @get:Provides val string: String = "abc"
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("getString")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val module = daggerModule1.newInstance()
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+          .invoke(null, module)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedString = staticMethods.single { it.name == "getString" }
+          .invoke(null, module) as String
+
+      assertThat(providedString).isEqualTo("abc")
+      assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
+    }
+  }
+
+  @Test fun `a factory class is generated for provided properties in an object module`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import dagger.internal.Preconditions;
+import javax.annotation.processing.Generated;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class DaggerModule1_GetStringFactory implements Factory<String> {
+  @Override
+  public String get() {
+    return getString();
+  }
+
+  public static DaggerModule1_GetStringFactory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static String getString() {
+    return Preconditions.checkNotNull(DaggerModule1.INSTANCE.getString(), "Cannot return null from a non-@Nullable @Provides method");
+  }
+
+  private static final class InstanceHolder {
+    private static final DaggerModule1_GetStringFactory INSTANCE = new DaggerModule1_GetStringFactory();
+  }
+}
+     */
+    compile(
+        """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        
+        @Module
+        object DaggerModule1 {
+          @get:Provides val string: String = "abc"
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("getString")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+          .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedString = staticMethods.single { it.name == "getString" }
+          .invoke(null) as String
+
+      assertThat(providedString).isEqualTo("abc")
+      assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
+    }
+  }
+
+  @Test fun `a factory class is generated for provided properties in a companion object module`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import dagger.internal.Preconditions;
+import javax.annotation.processing.Generated;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class DaggerModule1_GetStringFactory implements Factory<String> {
+  @Override
+  public String get() {
+    return getString();
+  }
+
+  public static DaggerModule1_GetStringFactory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static String getString() {
+    return Preconditions.checkNotNull(DaggerModule1.INSTANCE.getString(), "Cannot return null from a non-@Nullable @Provides method");
+  }
+
+  private static final class InstanceHolder {
+    private static final DaggerModule1_GetStringFactory INSTANCE = new DaggerModule1_GetStringFactory();
+  }
+}
+     */
+    compile(
+        """
+        package com.squareup.test
+        
+        import dagger.Binds
+        import dagger.Module
+        import dagger.Provides
+        
+        @Module
+        abstract class DaggerModule1 {
+          @Binds abstract fun bindString(string: String): CharSequence
+          
+          companion object {
+            @get:Provides val string: String = "abc"
+          }
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("getString", companion = true)
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+          .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedString = staticMethods.single { it.name == "getString" }
+          .invoke(null) as String
+
+      assertThat(providedString).isEqualTo("abc")
+      assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
+    }
+  }
+
+  @Test fun `a factory class is generated for provided nullable properties`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.processing.Generated;
+import org.jetbrains.annotations.Nullable;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class DaggerModule1_GetStringFactory implements Factory<String> {
+  private final DaggerModule1 module;
+
+  public DaggerModule1_GetStringFactory(DaggerModule1 module) {
+    this.module = module;
+  }
+
+  @Override
+  @Nullable
+  public String get() {
+    return getString(module);
+  }
+
+  public static DaggerModule1_GetStringFactory create(DaggerModule1 module) {
+    return new DaggerModule1_GetStringFactory(module);
+  }
+
+  @Nullable
+  public static String getString(DaggerModule1 instance) {
+    return instance.getString();
+  }
+}
+     */
+    compile(
+        """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        
+        @Module
+        class DaggerModule1 {
+          @get:Provides val string: String? = null
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("getString")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val module = daggerModule1.newInstance()
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+          .invoke(null, module)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedString = staticMethods.single { it.name == "getString" }
+          .invoke(null, module) as String?
+
+      assertThat(providedString).isNull()
+      assertThat((factoryInstance as Factory<String?>).get()).isNull()
+    }
+  }
+
+  @Test fun `a factory class is generated for provided nullable properties in an object module`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.processing.Generated;
+import org.jetbrains.annotations.Nullable;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class DaggerModule1_GetStringFactory implements Factory<String> {
+  @Override
+  @Nullable
+  public String get() {
+    return getString();
+  }
+
+  public static DaggerModule1_GetStringFactory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  @Nullable
+  public static String getString() {
+    return DaggerModule1.INSTANCE.getString();
+  }
+
+  private static final class InstanceHolder {
+    private static final DaggerModule1_GetStringFactory INSTANCE = new DaggerModule1_GetStringFactory();
+  }
+}
+     */
+    compile(
+        """
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        
+        @Module
+        object DaggerModule1 {
+          @get:Provides val string: String? = null
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("getString")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+          .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedString = staticMethods.single { it.name == "getString" }
+          .invoke(null) as String?
+
+      assertThat(providedString).isNull()
+      assertThat((factoryInstance as Factory<String?>).get()).isNull()
+    }
+  }
+
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }

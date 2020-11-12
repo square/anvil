@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtNullableType
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
@@ -355,15 +356,18 @@ internal fun ModuleDescriptor.findClassOrTypeAlias(
 
 internal fun KtClassOrObject.functions(
   includeCompanionObjects: Boolean
-): List<KtNamedFunction> {
+): List<KtNamedFunction> = classBodies(includeCompanionObjects).flatMap { it.functions }
+
+internal fun KtClassOrObject.properties(
+  includeCompanionObjects: Boolean
+): List<KtProperty> = classBodies(includeCompanionObjects).flatMap { it.properties }
+
+private fun KtClassOrObject.classBodies(includeCompanionObjects: Boolean): List<KtClassBody> {
   val elements = children.toMutableList()
   if (includeCompanionObjects) {
     elements += companionObjects.flatMap { it.children.toList() }
   }
-
-  return elements
-      .filterIsInstance<KtClassBody>()
-      .flatMap { it.functions }
+  return elements.filterIsInstance<KtClassBody>()
 }
 
 fun KtTypeReference.isNullable(): Boolean = typeElement is KtNullableType
