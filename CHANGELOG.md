@@ -2,12 +2,16 @@
 
 ## Next Version
 
-## 2.0.7 (2020-11-12)
+## 2.0.8 (2020-11-12)
 
 * Support Kotlin's explicit API mode in generated code, see #144.
 * Handle packages starting with an uppercase letter properly, see #150.
 * Use the correct import if an uppercase function is imported with the same name as the type, see #154.
 * Support properties as providers in Dagger modules, see #149.
+
+## 2.0.7 (2020-11-12)
+
+* **DO NOT USE!** This version was compiled with the wrong Kotlin version. 
 
 ## 2.0.6 (2020-10-06)
 
