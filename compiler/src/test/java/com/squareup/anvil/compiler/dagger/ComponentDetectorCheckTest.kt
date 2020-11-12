@@ -89,10 +89,10 @@ class ComponentDetectorCheckTest {
   }
 
   private fun compile(
-    source: String,
+    vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = com.squareup.anvil.compiler.compile(
-      source = source,
+      sources = *sources,
       generateDaggerFactories = true,
       block = block
   )
