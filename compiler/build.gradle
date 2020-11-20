@@ -22,8 +22,6 @@ dependencies {
   testImplementation deps.truth
 }
 
-sourceSets.main.java.srcDirs += ['src/main/ir']
-
 //noinspection UnnecessaryQualifiedReference
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   kotlinOptions {
