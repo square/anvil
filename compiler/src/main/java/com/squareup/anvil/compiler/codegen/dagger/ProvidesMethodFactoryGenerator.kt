@@ -90,7 +90,6 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
         }
   }
 
-  @OptIn(ExperimentalStdlibApi::class)
   private fun generateFactoryClass(
     codeGenDir: File,
     module: ModuleDescriptor,

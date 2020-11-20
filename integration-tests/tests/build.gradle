@@ -8,7 +8,6 @@ dependencies {
   testImplementation project(':integration-tests:library')
   testImplementation deps.dagger2.dagger
   testImplementation deps.junit
-  testImplementation deps.kotlin.stdlib
   testImplementation deps.truth
 
   kaptTest deps.dagger2.compiler

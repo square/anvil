@@ -50,7 +50,6 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
         }
   }
 
-  @OptIn(ExperimentalStdlibApi::class)
   private fun generateFactoryClass(
     codeGenDir: File,
     module: ModuleDescriptor,
@@ -60,7 +59,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     val packageName = clazz.containingKtFile.packageFqName.asString()
     val className = "${clazz.generateClassName()}_Factory"
 
-    val parameters = constructor.getValueParameters().mapToParameter(module)
+    val parameters = constructor.valueParameters.mapToParameter(module)
 
     val typeParameters = clazz.typeParameterList
       ?.parameters

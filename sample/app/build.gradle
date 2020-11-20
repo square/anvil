@@ -39,7 +39,6 @@ dependencies {
   implementation project(':sample:library')
   implementation project(':sample:scopes')
 
-  implementation deps.kotlin.stdlib
   implementation deps.androidx.appcompat
   implementation deps.androidx.core
   implementation deps.androidx.material
