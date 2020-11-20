@@ -26,8 +26,7 @@ buildscript {
 println "Versions: " + [
     "Kotlin": ext.kotlinVersion,
     "Gradle": gradle.gradleVersion,
-    "Kotlin use IR": ext.kotlinUseIR,
-    "Kotlin IR supported": ext.kotlinIrSupported,
+    "Kotlin use IR": ext.kotlinUseIR
 ]
 
 allprojects {

@@ -22,9 +22,7 @@ dependencies {
   testImplementation deps.truth
 }
 
-if (rootProject.ext.kotlinIrSupported) {
-  sourceSets.main.java.srcDirs += ['src/main/ir']
-}
+sourceSets.main.java.srcDirs += ['src/main/ir']
 
 //noinspection UnnecessaryQualifiedReference
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {

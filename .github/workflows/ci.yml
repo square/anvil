@@ -10,7 +10,7 @@ jobs:
   test-ubuntu:
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    continue-on-error: ${{ startsWith(matrix.kotlin-version, '1.4.2') }}
+    continue-on-error: ${{ startsWith(matrix.kotlin-version, '1.4.3') }}
 
     strategy:
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
@@ -18,7 +18,7 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version: [1.4.10, 1.4.20-RC]
+        kotlin-version: [1.4.20]
 
     steps:
       - uses: actions/checkout@v2
@@ -53,7 +53,7 @@ jobs:
           java-version: 11.0.7
 
       - name: Test on Ubuntu IR
-        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=1.4.20-RC -Psquare.useIR=true
+        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.useIR=true
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v2
@@ -142,7 +142,7 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version: [1.4.10]
+        kotlin-version: [1.4.20]
 
     steps:
       - uses: actions/checkout@v2
