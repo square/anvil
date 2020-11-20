@@ -8,22 +8,67 @@ import com.android.build.gradle.TestExtension
 import com.android.build.gradle.TestedExtension
 import com.android.build.gradle.api.BaseVariant
 import org.gradle.api.GradleException
-import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.plugins.AppliedPlugin
 import org.gradle.api.plugins.PluginManager
 import org.gradle.api.provider.Provider
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
+import org.jetbrains.kotlin.gradle.plugin.FilesSubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
+import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
+import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
+import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
+import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.File
 import java.util.Locale.US
 import java.util.concurrent.atomic.AtomicBoolean
 
-open class AnvilPlugin : Plugin<Project> {
-  override fun apply(project: Project) {
-    project.extensions.create("anvil", AnvilExtension::class.java)
+open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
+
+  override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean {
+    return kotlinCompilation.target.project.plugins.hasPlugin(AnvilPlugin::class.java)
+  }
+
+  override fun getCompilerPluginId(): String = "com.squareup.anvil.compiler"
+
+  override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
+      groupId = GROUP,
+      artifactId = "compiler",
+      version = VERSION
+  )
+
+  override fun applyToCompilation(
+    kotlinCompilation: KotlinCompilation<*>
+  ): Provider<List<SubpluginOption>> {
+    val project = kotlinCompilation.target.project
+
+    // Notice that we use the name of the Kotlin compilation as a directory name. Generated code
+    // for this specific compile task will be included in the task output. The output of different
+    // compile tasks shouldn't be mixed.
+    val srcGenDir = File(
+        project.buildDir, "anvil${File.separator}src-gen-${kotlinCompilation.name}"
+    )
+    val extension = project.extensions.findByType(AnvilExtension::class.java) ?: AnvilExtension()
+
+    return project.provider {
+      listOf(
+          FilesSubpluginOption(
+              key = "src-gen-dir",
+              files = listOf(srcGenDir)
+          ),
+          SubpluginOption(
+              key = "generate-dagger-factories",
+              value = extension.generateDaggerFactories.toString()
+          )
+      )
+    }
+  }
+
+  override fun apply(target: Project) {
+    target.extensions.create("anvil", AnvilExtension::class.java)
 
     val once = AtomicBoolean()
 
@@ -41,18 +86,18 @@ open class AnvilPlugin : Plugin<Project> {
     // Apply the Anvil plugin after the Kotlin plugin was applied. There could be a timing
     // issue. Also make sure to apply it only once. A module could accidentally apply the JVM and
     // Android Kotlin plugin.
-    project.pluginManager.withPluginOnce("org.jetbrains.kotlin.android") {
-      realApply(project, true)
+    target.pluginManager.withPluginOnce("org.jetbrains.kotlin.android") {
+      realApply(target, true)
     }
-    project.pluginManager.withPluginOnce("org.jetbrains.kotlin.jvm") {
-      realApply(project, false)
+    target.pluginManager.withPluginOnce("org.jetbrains.kotlin.jvm") {
+      realApply(target, false)
     }
 
-    project.afterEvaluate {
+    target.afterEvaluate {
       if (!once.get()) {
         throw GradleException(
             "No supported plugins for Anvil found on project " +
-                "'${project.path}'. Only Android and Java modules are supported for now."
+                "'${target.path}'. Only Android and Java modules are supported for now."
         )
       }
     }
