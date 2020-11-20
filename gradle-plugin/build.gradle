@@ -70,6 +70,10 @@ tasks.withType(JavaCompile).configureEach {
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   kotlinOptions {
     jvmTarget = JavaVersion.VERSION_1_8
+
+    // TODO: enable when this module is migrated to Kotlin 1.4.
+    // allWarningsAsErrors = true
+
     freeCompilerArgs += "-Xopt-in=kotlin.RequiresOptIn"
   }
 }

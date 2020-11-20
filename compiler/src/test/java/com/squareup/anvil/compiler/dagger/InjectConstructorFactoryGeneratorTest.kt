@@ -1303,11 +1303,12 @@ public final class InjectClass_Factory<T extends CharSequence> implements Factor
     }
   }
 
+  @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = com.squareup.anvil.compiler.compile(
-      sources = *sources,
+      sources = sources,
       enableDaggerAnnotationProcessor = useDagger,
       generateDaggerFactories = !useDagger,
       block = block

@@ -51,7 +51,7 @@ import kotlin.reflect.KClass
 
 @Target(CLASS)
 @Retention(RUNTIME)
-annotation class MergeModules(
+public annotation class MergeModules(
   val scope: KClass<*>,
   val includes: Array<KClass<*>> = [],
   val subcomponents: Array<KClass<*>> = [],

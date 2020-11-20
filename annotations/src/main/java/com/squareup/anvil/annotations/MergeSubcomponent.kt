@@ -32,7 +32,7 @@ import kotlin.reflect.KClass
 
 @Target(CLASS)
 @Retention(RUNTIME)
-annotation class MergeSubcomponent(
+public annotation class MergeSubcomponent(
   val scope: KClass<*>,
   val modules: Array<KClass<*>> = [],
   val exclude: Array<KClass<*>> = []
