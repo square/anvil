@@ -2,6 +2,12 @@
 
 ## Next Version
 
+## 2.0.9 (2020-11-20)
+
+* Upgrade Kotlin to `1.4.10`. Note that this release is not compatible with Kotlin `1.4.20`.
+* Remove the usage of the now deprecated `KotlinGradleSubplugin` class, see #30.
+* Enable Kotlin's explicit API mode in the `:annotations` artifact.
+
 ## 2.0.8 (2020-11-12)
 
 * Support Kotlin's explicit API mode in generated code, see #144.
