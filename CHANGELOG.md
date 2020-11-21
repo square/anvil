@@ -2,6 +2,10 @@
 
 ## Next Version
 
+## 2.0.10 (2020-11-20)
+
+* Upgrade Kotlin to `1.4.20`. Note that this version **no longer works** with Kotlin `1.4.10` or older, see #159.
+
 ## 2.0.9 (2020-11-20)
 
 * Upgrade Kotlin to `1.4.10`. Note that this release is not compatible with Kotlin `1.4.20`.
