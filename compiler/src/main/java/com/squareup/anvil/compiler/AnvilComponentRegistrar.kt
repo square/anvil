@@ -12,9 +12,7 @@ import com.squareup.anvil.compiler.codegen.dagger.ProvidesMethodFactoryGenerator
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.ExtensionPoint
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
-import org.jetbrains.kotlin.com.intellij.openapi.extensions.impl.ExtensionPointImpl
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
@@ -47,11 +45,6 @@ class AnvilComponentRegistrar : ComponentRegistrar {
       codeGenerators += ComponentDetectorCheck()
     }
 
-    val codeGenerationExtension = CodeGenerationExtension(
-        codeGenDir = sourceGenFolder,
-        codeGenerators = codeGenerators
-    )
-
     // It's important to register our extension at the first position. The compiler calls each
     // extension one by one. If an extension returns a result, then the compiler won't call any
     // other extension. That usually happens with Kapt in the stub generating task.
@@ -61,7 +54,11 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     // take over. If we wouldn't do this and any other extension won't let our's run, then we
     // couldn't generate any code.
     AnalysisHandlerExtension.registerExtensionFirst(
-        project, codeGenerationExtension
+        project,
+        CodeGenerationExtension(
+            codeGenDir = sourceGenFolder,
+            codeGenerators = codeGenerators
+        )
     )
 
     SyntheticResolveExtension.registerExtension(
@@ -71,20 +68,10 @@ class AnvilComponentRegistrar : ComponentRegistrar {
         project, ModuleMerger(scanner)
     )
 
-    try {
-      // This extension depends on Kotlin 1.4.20 and the code fails to compile with older compiler
-      // versions. Anvil will only support the new IR backend with 1.4.20. To avoid compilation
-      // errors we only add the source code to this module when IR is enabled. So try to
-      // dynamically look up the class name and add the extension when it exists.
-      val moduleMergerIr = Class.forName("com.squareup.anvil.compiler.ModuleMergerIr")
-          .declaredConstructors
-          .single()
-          .newInstance(scanner) as IrGenerationExtension
-
+    if (USE_IR) {
       IrGenerationExtension.registerExtension(
-          project, moduleMergerIr
+          project, ModuleMergerIr(scanner)
       )
-    } catch (ignored: Exception) {
     }
   }
 
@@ -92,36 +79,8 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     project: MockProject,
     extension: AnalysisHandlerExtension
   ) {
-    // This workaround is little concerning, because there is supposed to be a public API for
-    // that, but it's not exposed yet. This API is actually part of the IntelliJ platform. The
-    // Kotlin compiler repackages and bundles the code. But this one API is missing either because
-    // it's an older version or the method is stripped. JetBrains actually suggested in the ticket
-    // to use the non-existent API https://youtrack.jetbrains.com/issue/KT-42103
-    val analysisHandlerExtensionPoint = project.extensionArea
+    project.extensionArea
         .getExtensionPoint(AnalysisHandlerExtension.extensionPointName)
-        .let {
-          it as? ExtensionPointImpl ?: throw AnvilCompilationException(
-              "Expected AnalysisHandlerExtension to be an instance of ExtensionPointImpl. The " +
-                  "class is ${it::class.java}"
-          )
-        }
-
-    if (USE_IR) {
-      // TODO: Remove this reflection call when upgrading to Kotlin 1.4.20.
-      // project.extensionArea
-      //     .getExtensionPoint(AnalysisHandlerExtension.extensionPointName)
-      //     .registerExtension(extension, LoadingOrder.FIRST, project)
-      ExtensionPoint::class.java.declaredMethods
-          .first { it.name == "registerExtension" && it.parameterCount == 3 }
-          .use {
-            it.invoke(analysisHandlerExtensionPoint, extension, LoadingOrder.FIRST, project)
-          }
-    } else {
-      ExtensionPointImpl::class.java.declaredMethods
-          .first { it.name == "doRegisterExtension" }
-          .use {
-            it.invoke(analysisHandlerExtensionPoint, extension, LoadingOrder.FIRST, project)
-          }
-    }
+        .registerExtension(extension, LoadingOrder.FIRST, project)
   }
 }
