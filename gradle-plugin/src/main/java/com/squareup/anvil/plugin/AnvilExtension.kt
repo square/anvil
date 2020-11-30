@@ -2,9 +2,8 @@ package com.squareup.anvil.plugin
 
 open class AnvilExtension {
   /**
-   * Highly experimental feature that allows you to use Anvil to generate Factory classes that
-   * usually the Dagger annotation processor would generate for @Provides methods, @Inject
-   * constructors and @Inject fields.
+   * Allows you to use Anvil to generate Factory classes that usually the Dagger annotation
+   * processor would generate for @Provides methods, @Inject constructors and @Inject fields.
    *
    * The benefit of this feature is that you don't need to enable the Dagger annotation processor
    * in this module. That often means you can skip KAPT and the stub generating task. In addition
