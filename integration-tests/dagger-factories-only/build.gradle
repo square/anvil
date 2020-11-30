@@ -1,0 +1,23 @@
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'com.squareup.anvil'
+
+if (rootProject.ext.generateDaggerFactoriesWithAnvil) {
+  anvil {
+    generateDaggerFactories = true
+    generateDaggerFactoriesOnly = true
+  }
+} else {
+  apply plugin: 'org.jetbrains.kotlin.kapt'
+
+  dependencies {
+    kapt deps.dagger2.compiler
+    kaptTest deps.dagger2.compiler
+  }
+}
+
+dependencies {
+  implementation deps.dagger2.dagger
+  testImplementation deps.junit
+  testImplementation deps.kotlin.test
+  testImplementation deps.truth
+}
