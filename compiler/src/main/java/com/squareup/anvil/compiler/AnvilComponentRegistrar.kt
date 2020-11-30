@@ -3,8 +3,10 @@ package com.squareup.anvil.compiler
 import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
+import com.squareup.anvil.compiler.codegen.CodeGenerator
 import com.squareup.anvil.compiler.codegen.ContributesBindingGenerator
 import com.squareup.anvil.compiler.codegen.ContributesToGenerator
+import com.squareup.anvil.compiler.codegen.dagger.AnvilAnnotationDetectorCheck
 import com.squareup.anvil.compiler.codegen.dagger.ComponentDetectorCheck
 import com.squareup.anvil.compiler.codegen.dagger.InjectConstructorFactoryGenerator
 import com.squareup.anvil.compiler.codegen.dagger.MembersInjectorGenerator
@@ -32,11 +34,16 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     val sourceGenFolder = File(configuration.getNotNull(srcGenDirKey))
     val scanner = ClassScanner()
 
-    val codeGenerators = mutableListOf(
-        ContributesToGenerator(),
-        ContributesBindingGenerator(),
-        BindingModuleGenerator(scanner)
-    )
+    val codeGenerators = mutableListOf<CodeGenerator>()
+    val generateDaggerFactoriesOnly = configuration.get(generateDaggerFactoriesOnlyKey, false)
+
+    if (!generateDaggerFactoriesOnly) {
+      codeGenerators += ContributesToGenerator()
+      codeGenerators += ContributesBindingGenerator()
+      codeGenerators += BindingModuleGenerator(scanner)
+    } else {
+      codeGenerators += AnvilAnnotationDetectorCheck()
+    }
 
     if (configuration.get(generateDaggerFactoriesKey, false)) {
       codeGenerators += ProvidesMethodFactoryGenerator()
@@ -61,17 +68,19 @@ class AnvilComponentRegistrar : ComponentRegistrar {
         )
     )
 
-    SyntheticResolveExtension.registerExtension(
-        project, InterfaceMerger(scanner)
-    )
-    ExpressionCodegenExtension.registerExtension(
-        project, ModuleMerger(scanner)
-    )
-
-    if (USE_IR) {
-      IrGenerationExtension.registerExtension(
-          project, ModuleMergerIr(scanner)
+    if (!generateDaggerFactoriesOnly) {
+      SyntheticResolveExtension.registerExtension(
+          project, InterfaceMerger(scanner)
       )
+      ExpressionCodegenExtension.registerExtension(
+          project, ModuleMerger(scanner)
+      )
+
+      if (USE_IR) {
+        IrGenerationExtension.registerExtension(
+            project, ModuleMergerIr(scanner)
+        )
+      }
     }
   }
 

@@ -21,6 +21,7 @@ internal fun compile(
   vararg sources: String,
   enableDaggerAnnotationProcessor: Boolean = false,
   generateDaggerFactories: Boolean = false,
+  generateDaggerFactoriesOnly: Boolean = false,
   block: Result.() -> Unit = { }
 ): Result {
   return KotlinCompilation()
@@ -47,6 +48,11 @@ internal fun compile(
                 pluginId = commandLineProcessor.pluginId,
                 optionName = generateDaggerFactoriesName,
                 optionValue = generateDaggerFactories.toString()
+            ),
+            PluginOption(
+                pluginId = commandLineProcessor.pluginId,
+                optionName = generateDaggerFactoriesOnlyName,
+                optionValue = generateDaggerFactoriesOnly.toString()
             )
         )
 

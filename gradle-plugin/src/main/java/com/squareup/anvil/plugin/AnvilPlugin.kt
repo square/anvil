@@ -62,6 +62,10 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
           SubpluginOption(
               key = "generate-dagger-factories",
               value = extension.generateDaggerFactories.toString()
+          ),
+          SubpluginOption(
+              key = "generate-dagger-factories-only",
+              value = extension.generateDaggerFactoriesOnly.toString()
           )
       )
     }

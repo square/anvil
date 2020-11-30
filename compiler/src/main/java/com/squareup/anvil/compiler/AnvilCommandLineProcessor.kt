@@ -14,6 +14,10 @@ internal const val generateDaggerFactoriesName = "generate-dagger-factories"
 internal val generateDaggerFactoriesKey =
   CompilerConfigurationKey.create<Boolean>("anvil $generateDaggerFactoriesName")
 
+internal const val generateDaggerFactoriesOnlyName = "generate-dagger-factories-only"
+internal val generateDaggerFactoriesOnlyKey =
+  CompilerConfigurationKey.create<Boolean>("anvil $generateDaggerFactoriesOnlyName")
+
 /**
  * Parses arguments from the Gradle plugin for the compiler plugin.
  */
@@ -37,6 +41,14 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
               "constructors.",
           required = false,
           allowMultipleOccurrences = false
+      ),
+      CliOption(
+          optionName = generateDaggerFactoriesOnlyName,
+          valueDescription = "<true|false>",
+          description = "Whether Anvil should generate Factory classes only and no code for " +
+              "contributed code.",
+          required = false,
+          allowMultipleOccurrences = false
       )
   )
 
@@ -49,6 +61,8 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
       srcGenDirName -> configuration.put(srcGenDirKey, value)
       generateDaggerFactoriesName ->
         configuration.put(generateDaggerFactoriesKey, value.toBoolean())
+      generateDaggerFactoriesOnlyName ->
+        configuration.put(generateDaggerFactoriesOnlyKey, value.toBoolean())
     }
   }
 }
