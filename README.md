@@ -236,7 +236,7 @@ for performance reasons. With Hilt we wouldn't be able to enforce this requireme
 component interfaces. The development of Anvil started long before Hilt was announced and the
 internal version is being used in production for a while.
 
-## Experimental Dagger Factory generation
+## Dagger Factory generation
 
 Anvil allows you to generate Factory classes that usually the Dagger annotation processor would 
 generate for `@Provides` methods, `@Inject` constructors and `@Inject` fields. The benefit of this 
