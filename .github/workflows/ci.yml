@@ -18,7 +18,7 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version: [1.4.20]
+        kotlin-version: [1.4.20, 1.4.30-RC]
 
     steps:
       - uses: actions/checkout@v2
@@ -142,7 +142,7 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version: [1.4.20]
+        kotlin-version: [1.4.20, 1.4.30-RC]
 
     steps:
       - uses: actions/checkout@v2

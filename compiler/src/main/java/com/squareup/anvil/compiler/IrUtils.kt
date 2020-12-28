@@ -59,7 +59,9 @@ internal fun IrConstructorCall.scope(): FqName {
       element = this
     )
 
-  val signature = expression.kclassUnwrapped.signature.asPublic()
+  @Suppress("UNNECESSARY_SAFE_CALL")
+  // TODO: Remove suppression when upgrading to Kotlin 1.4.30.
+  val signature = expression.kclassUnwrapped.signature?.asPublic()
     ?: throw AnvilCompilationIrException(
       message = "Couldn't resolve scope signature.",
       element = this

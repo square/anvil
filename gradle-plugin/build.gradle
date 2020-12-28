@@ -70,7 +70,9 @@ tasks.withType(JavaCompile).configureEach {
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   kotlinOptions {
     jvmTarget = JavaVersion.VERSION_1_8
-    allWarningsAsErrors = true
+
+    // Hm, since Kotlin 1.4.30 there are nullable receivers in Gradle's APIs.
+    allWarningsAsErrors = false
   }
 }
 
