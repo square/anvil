@@ -2037,7 +2037,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<F
           @Provides @ElementsIntoSet fun provideFunction(
             string: String
           ): @JvmSuppressWildcards Set<(StringList) -> StringList> {
-            return setOf { list -> listOf(string) }
+            return setOf { listOf(string) }
           }
         }
         """

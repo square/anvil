@@ -22,6 +22,7 @@ internal fun compile(
   enableDaggerAnnotationProcessor: Boolean = false,
   generateDaggerFactories: Boolean = false,
   generateDaggerFactoriesOnly: Boolean = false,
+  allWarningsAsErrors: Boolean = true,
   block: Result.() -> Unit = { }
 ): Result {
   return KotlinCompilation()
@@ -30,6 +31,7 @@ internal fun compile(
         useIR = USE_IR
         inheritClassPath = true
         jvmTarget = JvmTarget.JVM_1_8.description
+        this.allWarningsAsErrors = allWarningsAsErrors
 
         if (enableDaggerAnnotationProcessor) {
           annotationProcessors = listOf(ComponentProcessor())
@@ -170,8 +172,10 @@ internal fun Class<*>.factoryClass(): Class<*> {
 internal fun Class<*>.membersInjector(): Class<*> {
   val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
 
-  return classLoader.loadClass("${`package`.name}." +
-      "$enclosingClassString${simpleName}_MembersInjector")
+  return classLoader.loadClass(
+      "${`package`.name}." +
+          "$enclosingClassString${simpleName}_MembersInjector"
+  )
 }
 
 private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*>>? {
