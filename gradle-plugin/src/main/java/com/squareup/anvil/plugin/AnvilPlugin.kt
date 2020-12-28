@@ -62,13 +62,17 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
           SubpluginOption(
               key = "generate-dagger-factories",
               value = extension.generateDaggerFactories.toString()
+          ),
+          SubpluginOption(
+              key = "generate-dagger-factories-only",
+              value = extension.generateDaggerFactoriesOnly.toString()
           )
       )
     }
   }
 
   override fun apply(target: Project) {
-    target.extensions.create("anvil", AnvilExtension::class.java)
+    val extension = target.extensions.create("anvil", AnvilExtension::class.java)
 
     val once = AtomicBoolean()
 
@@ -87,10 +91,10 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     // issue. Also make sure to apply it only once. A module could accidentally apply the JVM and
     // Android Kotlin plugin.
     target.pluginManager.withPluginOnce("org.jetbrains.kotlin.android") {
-      realApply(target, true)
+      realApply(target, true, extension)
     }
     target.pluginManager.withPluginOnce("org.jetbrains.kotlin.jvm") {
-      realApply(target, false)
+      realApply(target, false, extension)
     }
 
     target.afterEvaluate {
@@ -100,22 +104,34 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
                 "'${target.path}'. Only Android and Java modules are supported for now."
         )
       }
+
+      if (!extension.generateDaggerFactories && extension.generateDaggerFactoriesOnly) {
+        throw GradleException(
+            "You cannot set generateDaggerFactories to false and generateDaggerFactoriesOnly " +
+                "to true at the same time."
+        )
+      }
     }
   }
 
   private fun realApply(
     project: Project,
-    isAndroidProject: Boolean
+    isAndroidProject: Boolean,
+    extension: AnvilExtension
   ) {
-    disableIncrementalKotlinCompilation(project, isAndroidProject)
+    disableIncrementalKotlinCompilation(project, isAndroidProject, extension)
     disablePreciseJavaTracking(project)
 
-    project.pluginManager.withPlugin("org.jetbrains.kotlin.kapt") {
-      // This needs to be disabled, otherwise compiler plugins fail in weird ways when generating stubs.
-      project.extensions.findByType(KaptExtension::class.java)?.correctErrorTypes = false
-    }
+    project.afterEvaluate {
+      if (!extension.generateDaggerFactoriesOnly) {
+        project.pluginManager.withPlugin("org.jetbrains.kotlin.kapt") {
+          // This needs to be disabled, otherwise compiler plugins fail in weird ways when generating stubs.
+          project.extensions.findByType(KaptExtension::class.java)?.correctErrorTypes = false
+        }
 
-    project.dependencies.add("implementation", "$GROUP:annotations:$VERSION")
+        project.dependencies.add("implementation", "$GROUP:annotations:$VERSION")
+      }
+    }
   }
 
   private fun disablePreciseJavaTracking(
@@ -145,29 +161,47 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   @OptIn(ExperimentalStdlibApi::class)
   private fun disableIncrementalKotlinCompilation(
     project: Project,
-    isAndroidProject: Boolean
+    isAndroidProject: Boolean,
+    extension: AnvilExtension
   ) {
-    project.tasks
-        .withType(KaptGenerateStubsTask::class.java)
-        .configureEach { stubsTask ->
-          // Disable incremental compilation for the stub generating task. Trigger the compiler
-          // plugin if any dependencies in the compile classpath have changed. This will make sure
-          // that we pick up any change from a dependency when merging all the classes. Without
-          // this workaround we could make changes in any library, but these changes wouldn't be
-          // contributed to the Dagger graph, because incremental compilation tricked us.
-          stubsTask.doFirst {
-            stubsTask.incremental = false
-            stubsTask.logger.info(
-                "Anvil: Incremental compilation enabled: ${stubsTask.incremental} (stub)"
-            )
-          }
-        }
-
     // Use this signal to share state between DisableIncrementalCompilationTask and the Kotlin
     // compile task. If the plugin classpath changed, then DisableIncrementalCompilationTask sets
     // the signal to false.
     @Suppress("UnstableApiUsage")
     val incrementalSignal = IncrementalSignal.registerIfAbsent(project)
+
+    if (extension.generateDaggerFactoriesOnly) {
+      // We don't need to disable the incremental compilation for the stub generating task, when we
+      // only generate Dagger factories. That's only needed for merging Dagger modules.
+      if (isAndroidProject) {
+        project.androidVariantsConfigure { variant ->
+          val compileTaskName = "kaptGenerateStubs${variant.name.capitalize(US)}Kotlin"
+          disableIncrementalCompilationAction(project, incrementalSignal, compileTaskName)
+        }
+      } else {
+        disableIncrementalCompilationAction(project, incrementalSignal, "kaptGenerateStubsKotlin")
+        disableIncrementalCompilationAction(
+            project, incrementalSignal, "kaptGenerateStubsTestKotlin"
+        )
+      }
+    } else {
+      project.tasks
+          .withType(KaptGenerateStubsTask::class.java)
+          .configureEach { stubsTask ->
+            // Disable incremental compilation for the stub generating task. Trigger the compiler
+            // plugin if any dependencies in the compile classpath have changed. This will make sure
+            // that we pick up any change from a dependency when merging all the classes. Without
+            // this workaround we could make changes in any library, but these changes wouldn't be
+            // contributed to the Dagger graph, because incremental compilation tricked us.
+            stubsTask.doFirst {
+              stubsTask.incremental = false
+              stubsTask.logger.info(
+                  "Anvil: Incremental compilation enabled: ${stubsTask.incremental} (stub)"
+              )
+            }
+          }
+    }
+
     if (isAndroidProject) {
       project.androidVariantsConfigure { variant ->
         val compileTaskName = "compile${variant.name.capitalize(US)}Kotlin"

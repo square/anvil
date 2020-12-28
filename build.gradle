@@ -82,6 +82,7 @@ subprojects {
   }
   // This is an ugly workaround.
   def brokenProjects = [
+      project(':integration-tests:dagger-factories-only'),
       project(':integration-tests:library'),
       project(':integration-tests:tests'),
       project(':sample:library'),
@@ -90,7 +91,10 @@ subprojects {
   brokenProjects.each { brokenProject ->
     brokenProject.configurations.whenObjectAdded {
       if (it.name == 'api') {
-        brokenProject.dependencies.add('api', project(':annotations'))
+        if (brokenProject.path != ':integration-tests:dagger-factories-only' ||
+            !rootProject.ext.generateDaggerFactoriesWithAnvil) {
+          brokenProject.dependencies.add('api', project(':annotations'))
+        }
       }
       if (it.name == 'kotlinCompilerPluginClasspath') {
         brokenProject.dependencies.add('kotlinCompilerPluginClasspath', project(':compiler'))

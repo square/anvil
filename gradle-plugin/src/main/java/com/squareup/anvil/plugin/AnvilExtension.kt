@@ -17,4 +17,12 @@ open class AnvilExtension {
    * By default this feature is disabled.
    */
   var generateDaggerFactories = false
+
+  /**
+   * There are occasions where consumers of Anvil are only interested in generating Dagger
+   * factories to speed up build times and don't want to make use of the other features. With this
+   * flag Anvil will only generate Dagger factories and skip all other steps. If this flag is set
+   * to `true`, then also [generateDaggerFactories] must be set to `true`.
+   */
+  var generateDaggerFactoriesOnly = false
 }

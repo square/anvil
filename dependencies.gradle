@@ -62,6 +62,7 @@ ext {
           gradle_plugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
           gradle_plugin_api: "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$kotlinVersion",
           stdlib: "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion",
+          test: "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion",
       ],
 
       kotlinpoet: "com.squareup:kotlinpoet:1.7.2",
