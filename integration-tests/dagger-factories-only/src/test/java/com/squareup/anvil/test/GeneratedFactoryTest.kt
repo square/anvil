@@ -9,10 +9,10 @@ class GeneratedFactoryTest {
 
   @Test fun `a dagger factory is generated for a provider method`() {
     val string = Class.forName("com.squareup.anvil.test.DaggerModule_ProvideStringFactory")
-        .declaredMethods
-        .filter { Modifier.isStatic(it.modifiers) }
-        .single { it.name == "provideString" }
-        .invoke(null)
+      .declaredMethods
+      .filter { Modifier.isStatic(it.modifiers) }
+      .single { it.name == "provideString" }
+      .invoke(null)
 
     assertThat(string).isEqualTo("Hello Anvil")
   }

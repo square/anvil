@@ -22,23 +22,23 @@ internal class AnvilAnnotationDetectorCheck : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     val clazz = projectFiles
-        .asSequence()
-        .flatMap { it.classesAndInnerClasses() }
-        .firstOrNull {
-          it.hasAnnotation(mergeComponentFqName) ||
-              it.hasAnnotation(mergeSubcomponentFqName) ||
-              it.hasAnnotation(mergeInterfacesFqName) ||
-              it.hasAnnotation(mergeModulesFqName) ||
-              it.hasAnnotation(contributesToFqName) ||
-              it.hasAnnotation(contributesBindingFqName)
-        }
+      .asSequence()
+      .flatMap { it.classesAndInnerClasses() }
+      .firstOrNull {
+        it.hasAnnotation(mergeComponentFqName) ||
+          it.hasAnnotation(mergeSubcomponentFqName) ||
+          it.hasAnnotation(mergeInterfacesFqName) ||
+          it.hasAnnotation(mergeModulesFqName) ||
+          it.hasAnnotation(contributesToFqName) ||
+          it.hasAnnotation(contributesBindingFqName)
+      }
 
     if (clazz != null) {
       throw AnvilCompilationException(
-          message = "This Gradle module is configured to ONLY generate Dagger factories with " +
-              "the `generateDaggerFactoriesOnly` flag. However, this module contains code that " +
-              "uses other Anvil annotations. That's not supported.",
-          element = clazz
+        message = "This Gradle module is configured to ONLY generate Dagger factories with " +
+          "the `generateDaggerFactoriesOnly` flag. However, this module contains code that " +
+          "uses other Anvil annotations. That's not supported.",
+        element = clazz
       )
     }
   }

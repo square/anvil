@@ -38,15 +38,15 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     projectFiles
-        .asSequence()
-        .flatMap { it.classesAndInnerClasses() }
-        .forEach { clazz ->
-          clazz.allConstructors
-              .singleOrNull { it.hasAnnotation(injectFqName) }
-              ?.let {
-                generateFactoryClass(codeGenDir, module, clazz, it)
-              }
-        }
+      .asSequence()
+      .flatMap { it.classesAndInnerClasses() }
+      .forEach { clazz ->
+        clazz.allConstructors
+          .singleOrNull { it.hasAnnotation(injectFqName) }
+          ?.let {
+            generateFactoryClass(codeGenDir, module, clazz, it)
+          }
+      }
   }
 
   private fun generateFactoryClass(
@@ -90,103 +90,103 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
       typeParameters.forEach { classBuilder.addTypeVariable(it) }
 
       classBuilder
-          .addSuperinterface(Factory::class.asClassName().parameterizedBy(classType))
-          .apply {
-            if (parameters.isNotEmpty()) {
-              primaryConstructor(
-                  FunSpec.constructorBuilder()
-                      .apply {
-                        parameters.forEach { parameter ->
-                          addParameter(parameter.name, parameter.providerTypeName)
-                        }
-                      }
-                      .build()
-              )
-
-              parameters.forEach { parameter ->
-                addProperty(
-                    PropertySpec.builder(parameter.name, parameter.providerTypeName)
-                        .initializer(parameter.name)
-                        .addModifiers(PRIVATE)
-                        .build()
-                )
-              }
-            }
-          }
-          .addFunction(
-              FunSpec.builder("get")
-                  .addModifiers(OVERRIDE)
-                  .returns(classType)
-                  .apply {
-                    val argumentList = parameters.asArgumentList(
-                        asProvider = true,
-                        includeModule = false
-                    )
-
-                    addStatement("return newInstance($argumentList)")
-                  }
-                  .build()
-          )
-          .apply {
-            val builder = if (canGenerateAnObject) this else TypeSpec.companionObjectBuilder()
-            builder
-                .addFunction(
-                    FunSpec.builder("create")
-                        .jvmStatic()
-                        .apply {
-                          if (typeParameters.isNotEmpty()) {
-                            addTypeVariables(typeParameters)
-                          }
-                          if (canGenerateAnObject) {
-                            addStatement("return this")
-                          } else {
-                            parameters.forEach { parameter ->
-                              addParameter(parameter.name, parameter.providerTypeName)
-                            }
-
-                            val argumentList = parameters.asArgumentList(
-                                asProvider = false,
-                                includeModule = false
-                            )
-
-                            addStatement(
-                                "return %T($argumentList)",
-                                factoryClassParameterized
-                            )
-                          }
-                        }
-                        .returns(factoryClassParameterized)
-                        .build()
-                )
-                .addFunction(
-                    FunSpec.builder("newInstance")
-                        .jvmStatic()
-                        .apply {
-                          if (typeParameters.isNotEmpty()) {
-                            addTypeVariables(typeParameters)
-                          }
-                          parameters.forEach { parameter ->
-                            addParameter(
-                                name = parameter.name,
-                                type = parameter.originalTypeName
-                            )
-                          }
-                          val argumentsWithoutModule = parameters.joinToString { it.name }
-
-                          addStatement("return %T($argumentsWithoutModule)", classType)
-                        }
-                        .returns(classType)
-                        .build()
-                )
-                .build()
-                .let {
-                  if (!canGenerateAnObject) {
-                    addType(it)
+        .addSuperinterface(Factory::class.asClassName().parameterizedBy(classType))
+        .apply {
+          if (parameters.isNotEmpty()) {
+            primaryConstructor(
+              FunSpec.constructorBuilder()
+                .apply {
+                  parameters.forEach { parameter ->
+                    addParameter(parameter.name, parameter.providerTypeName)
                   }
                 }
+                .build()
+            )
+
+            parameters.forEach { parameter ->
+              addProperty(
+                PropertySpec.builder(parameter.name, parameter.providerTypeName)
+                  .initializer(parameter.name)
+                  .addModifiers(PRIVATE)
+                  .build()
+              )
+            }
           }
-          .build()
-          .let { addType(it) }
+        }
+        .addFunction(
+          FunSpec.builder("get")
+            .addModifiers(OVERRIDE)
+            .returns(classType)
+            .apply {
+              val argumentList = parameters.asArgumentList(
+                asProvider = true,
+                includeModule = false
+              )
+
+              addStatement("return newInstance($argumentList)")
+            }
+            .build()
+        )
+        .apply {
+          val builder = if (canGenerateAnObject) this else TypeSpec.companionObjectBuilder()
+          builder
+            .addFunction(
+              FunSpec.builder("create")
+                .jvmStatic()
+                .apply {
+                  if (typeParameters.isNotEmpty()) {
+                    addTypeVariables(typeParameters)
+                  }
+                  if (canGenerateAnObject) {
+                    addStatement("return this")
+                  } else {
+                    parameters.forEach { parameter ->
+                      addParameter(parameter.name, parameter.providerTypeName)
+                    }
+
+                    val argumentList = parameters.asArgumentList(
+                      asProvider = false,
+                      includeModule = false
+                    )
+
+                    addStatement(
+                      "return %T($argumentList)",
+                      factoryClassParameterized
+                    )
+                  }
+                }
+                .returns(factoryClassParameterized)
+                .build()
+            )
+            .addFunction(
+              FunSpec.builder("newInstance")
+                .jvmStatic()
+                .apply {
+                  if (typeParameters.isNotEmpty()) {
+                    addTypeVariables(typeParameters)
+                  }
+                  parameters.forEach { parameter ->
+                    addParameter(
+                      name = parameter.name,
+                      type = parameter.originalTypeName
+                    )
+                  }
+                  val argumentsWithoutModule = parameters.joinToString { it.name }
+
+                  addStatement("return %T($argumentsWithoutModule)", classType)
+                }
+                .returns(classType)
+                .build()
+            )
+            .build()
+            .let {
+              if (!canGenerateAnObject) {
+                addType(it)
+              }
+            }
+        }
+        .build()
+        .let { addType(it) }
     }
 
     val directory = File(codeGenDir, packageName.replace('.', File.separatorChar))

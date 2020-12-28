@@ -12,16 +12,16 @@ class ContributesBindingGeneratorTest {
 
   @Test fun `there is a hint for a contributed binding for interfaces`() {
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
 
-        import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.ContributesBinding
 
-        interface ParentInterface
+      interface ParentInterface
 
-        @ContributesBinding(Any::class, ParentInterface::class)
-        interface ContributingInterface : ParentInterface
-        """
+      @ContributesBinding(Any::class, ParentInterface::class)
+      interface ContributingInterface : ParentInterface
+      """
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
@@ -30,16 +30,16 @@ class ContributesBindingGeneratorTest {
 
   @Test fun `there is a hint for a contributed binding for classes`() {
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
 
-        import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.ContributesBinding
 
-        interface ParentInterface
+      interface ParentInterface
 
-        @ContributesBinding(Any::class, ParentInterface::class)
-        class ContributingInterface : ParentInterface
-        """
+      @ContributesBinding(Any::class, ParentInterface::class)
+      class ContributingInterface : ParentInterface
+      """
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
@@ -48,16 +48,16 @@ class ContributesBindingGeneratorTest {
 
   @Test fun `there is a hint for a contributed binding for an object`() {
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
 
-        import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.ContributesBinding
 
-        interface ParentInterface
+      interface ParentInterface
 
-        @ContributesBinding(Any::class, ParentInterface::class)
-        object ContributingInterface : ParentInterface
-        """
+      @ContributesBinding(Any::class, ParentInterface::class)
+      object ContributingInterface : ParentInterface
+      """
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
@@ -66,16 +66,16 @@ class ContributesBindingGeneratorTest {
 
   @Test fun `the order of the scope can be changed with named parameters`() {
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
 
-        import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.ContributesBinding
 
-        interface ParentInterface
+      interface ParentInterface
 
-        @ContributesBinding(boundType = ParentInterface::class, scope = Int::class)
-        class ContributingInterface : ParentInterface
-        """
+      @ContributesBinding(boundType = ParentInterface::class, scope = Int::class)
+      class ContributingInterface : ParentInterface
+      """
     ) {
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Int::class)
     }
@@ -83,18 +83,18 @@ class ContributesBindingGeneratorTest {
 
   @Test fun `there is a hint for a contributed binding for inner interfaces`() {
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
 
-        import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.ContributesBinding
 
-        interface ParentInterface
+      interface ParentInterface
 
-        class Abc {
-          @ContributesBinding(Any::class, ParentInterface::class)
-          interface ContributingInterface : ParentInterface
-        }
-        """
+      class Abc {
+        @ContributesBinding(Any::class, ParentInterface::class)
+        interface ContributingInterface : ParentInterface
+      }
+      """
     ) {
       val contributingInterface =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingInterface")
@@ -105,18 +105,18 @@ class ContributesBindingGeneratorTest {
 
   @Test fun `there is a hint for a contributed binding for inner classes`() {
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
 
-        import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.ContributesBinding
 
-        interface ParentInterface
-        
-        class Abc {
-          @ContributesBinding(Any::class, ParentInterface::class)
-          class ContributingClass : ParentInterface
-        }
-        """
+      interface ParentInterface
+      
+      class Abc {
+        @ContributesBinding(Any::class, ParentInterface::class)
+        class ContributingClass : ParentInterface
+      }
+      """
     ) {
       val contributingClass =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingClass")
@@ -127,7 +127,9 @@ class ContributesBindingGeneratorTest {
 
   @Test fun `contributed binding class must be public`() {
     val visibilities = setOf(
-        "internal", "private", "protected"
+      "internal",
+      "private",
+      "protected"
     )
 
     visibilities.forEach { visibility ->
@@ -147,8 +149,8 @@ class ContributesBindingGeneratorTest {
         // Position to the class.
         assertThat(messages).contains("Source.kt: (8, ")
         assertThat(messages).contains(
-            "com.squareup.test.ContributingInterface is binding a type, but the class is not " +
-                "public. Only public types are supported."
+          "com.squareup.test.ContributingInterface is binding a type, but the class is not " +
+            "public. Only public types are supported."
         )
       }
     }

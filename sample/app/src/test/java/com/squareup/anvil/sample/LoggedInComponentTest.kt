@@ -7,7 +7,7 @@ class LoggedInComponentTest {
 
   @Test fun `LoggedInComponent can be created`() {
     val loggedInComponent = DaggerAppComponent.create()
-        .loggedInComponent()
+      .loggedInComponent()
 
     assertThat(loggedInComponent).isNotNull()
   }

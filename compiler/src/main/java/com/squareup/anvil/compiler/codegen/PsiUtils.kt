@@ -45,10 +45,10 @@ internal fun KtFile.classesAndInnerClasses(): Sequence<KtClassOrObject> {
 
   return generateSequence(children.toList()) { list ->
     list
-        .flatMap {
-          it.declarations.filterIsInstance<KtClassOrObject>()
-        }
-        .ifEmpty { null }
+      .flatMap {
+        it.declarations.filterIsInstance<KtClassOrObject>()
+      }
+      .ifEmpty { null }
   }.flatMap { it.asSequence() }
 }
 
@@ -70,11 +70,11 @@ internal fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
   // remaining checks would fail.
   annotationEntries.firstOrNull { annotation ->
     kotlinAnnotations
-        .any { kotlinAnnotationFqName ->
-          val text = annotation.text
-          text.startsWith("@${kotlinAnnotationFqName.shortName()}") ||
-              text.startsWith("@$kotlinAnnotationFqName")
-        }
+      .any { kotlinAnnotationFqName ->
+        val text = annotation.text
+        text.startsWith("@${kotlinAnnotationFqName.shortName()}") ||
+          text.startsWith("@$kotlinAnnotationFqName")
+      }
   }?.let { return it }
 
   // Check if the fully qualified name is used, e.g. `@dagger.Module`.
@@ -85,10 +85,10 @@ internal fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 
   // Check if the simple name is used, e.g. `@Module`.
   val annotationEntryShort = annotationEntries
-      .firstOrNull {
-        it.shortName == fqName.shortName()
-      }
-      ?: return null
+    .firstOrNull {
+      it.shortName == fqName.shortName()
+    }
+    ?: return null
 
   val importPaths = containingKtFile.importDirectives.mapNotNull { it.importPath }
 
@@ -98,10 +98,10 @@ internal fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 
   // Look for star imports and make a guess.
   val hasStarImport = importPaths
-      .filter { it.isAllUnder }
-      .any {
-        fqName.asString().startsWith(it.fqName.asString())
-      }
+    .filter { it.isAllUnder }
+    .any {
+      fqName.asString().startsWith(it.fqName.asString())
+    }
   if (hasStarImport) return annotationEntryShort
 
   return null
@@ -112,57 +112,57 @@ internal fun KtClassOrObject.scope(
   module: ModuleDescriptor
 ): FqName {
   return findScopeClassLiteralExpression(annotationFqName)
-      .let {
-        val children = it.children
-        children.singleOrNull() ?: throw AnvilCompilationException(
-            "Expected a single child, but had ${children.size} instead: ${it.text}",
-            element = this
-        )
-      }
-      .requireFqName(module)
+    .let {
+      val children = it.children
+      children.singleOrNull() ?: throw AnvilCompilationException(
+        "Expected a single child, but had ${children.size} instead: ${it.text}",
+        element = this
+      )
+    }
+    .requireFqName(module)
 }
 
 private fun KtClassOrObject.findScopeClassLiteralExpression(
   annotationFqName: FqName
 ): KtClassLiteralExpression {
   val annotationEntry = findAnnotation(annotationFqName)
-      ?: throw AnvilCompilationException(
-          "Couldn't find $annotationFqName for Psi element: $text",
-          element = this
-      )
+    ?: throw AnvilCompilationException(
+      "Couldn't find $annotationFqName for Psi element: $text",
+      element = this
+    )
 
   val annotationValues = annotationEntry.valueArguments
-      .asSequence()
-      .filterIsInstance<KtValueArgument>()
+    .asSequence()
+    .filterIsInstance<KtValueArgument>()
 
   // First check if the is any named parameter. Named parameters allow a different order of
   // arguments.
   annotationValues
-      .mapNotNull { valueArgument ->
-        val children = valueArgument.children
-        if (children.size == 2 && children[0] is KtValueArgumentName &&
-            (children[0] as KtValueArgumentName).asName.asString() == "scope" &&
-            children[1] is KtClassLiteralExpression
-        ) {
-          children[1] as KtClassLiteralExpression
-        } else {
-          null
-        }
+    .mapNotNull { valueArgument ->
+      val children = valueArgument.children
+      if (children.size == 2 && children[0] is KtValueArgumentName &&
+        (children[0] as KtValueArgumentName).asName.asString() == "scope" &&
+        children[1] is KtClassLiteralExpression
+      ) {
+        children[1] as KtClassLiteralExpression
+      } else {
+        null
       }
-      .firstOrNull()
-      ?.let { return it }
+    }
+    .firstOrNull()
+    ?.let { return it }
 
   // If there is no named argument, then take the first argument, which must be a class literal
   // expression, e.g. @ContributesTo(Unit::class)
   return annotationValues
-      .firstOrNull()
-      ?.let { valueArgument ->
-        valueArgument.children.firstOrNull() as? KtClassLiteralExpression
-      }
-      ?: throw AnvilCompilationException(
-          "The first argument for $annotationFqName must be a class literal: $text",
-          element = this
-      )
+    .firstOrNull()
+    ?.let { valueArgument ->
+      valueArgument.children.firstOrNull() as? KtClassLiteralExpression
+    }
+    ?: throw AnvilCompilationException(
+      "The first argument for $annotationFqName must be a class literal: $text",
+      element = this
+    )
 }
 
 internal fun PsiElement.fqNameOrNull(
@@ -181,13 +181,13 @@ internal fun PsiElement.requireFqName(
   module: ModuleDescriptor
 ): FqName {
   val containingKtFile = parentsWithSelf
-      .filterIsInstance<KtClassOrObject>()
-      .first()
-      .containingKtFile
+    .filterIsInstance<KtClassOrObject>()
+    .first()
+    .containingKtFile
 
   fun failTypeHandling(): Nothing = throw AnvilCompilationException(
-      "Don't know how to handle Psi element: $text",
-      element = this
+    "Don't know how to handle Psi element: $text",
+    element = this
   )
 
   val classReference = when (this) {
@@ -204,8 +204,8 @@ internal fun PsiElement.requireFqName(
         // Sometimes a KtUserType is a fully qualified name. Give it a try and return early.
         if (text.contains(".") && text[0].isLowerCase()) {
           module
-              .resolveClassByFqName(FqName(text), FROM_BACKEND)
-              ?.let { return it.fqNameSafe }
+            .resolveClassByFqName(FqName(text), FROM_BACKEND)
+            ?.let { return it.fqNameSafe }
         }
 
         // We can't use referencedName here. For inner classes like "Outer.Inner" it would only
@@ -240,77 +240,77 @@ internal fun PsiElement.requireFqName(
   // First look in the imports for the reference name. If the class is imported, then we know the
   // fully qualified name.
   importPaths
-      .filter { it.alias == null && it.fqName.shortName().asString() == classReference }
-      .also { matchingImportPaths ->
-        when {
-          matchingImportPaths.size == 1 ->
-            return matchingImportPaths[0].fqName
-          matchingImportPaths.size > 1 ->
-            return matchingImportPaths.first { importPath ->
-              module.resolveClassByFqName(importPath.fqName, FROM_BACKEND) != null
-            }.fqName
-        }
+    .filter { it.alias == null && it.fqName.shortName().asString() == classReference }
+    .also { matchingImportPaths ->
+      when {
+        matchingImportPaths.size == 1 ->
+          return matchingImportPaths[0].fqName
+        matchingImportPaths.size > 1 ->
+          return matchingImportPaths.first { importPath ->
+            module.resolveClassByFqName(importPath.fqName, FROM_BACKEND) != null
+          }.fqName
       }
+    }
 
   importPaths
-      .filter { it.alias == null && it.fqName.shortName().asString() == classReferenceOuter }
-      .also { matchingImportPaths ->
-        when {
-          matchingImportPaths.size == 1 ->
-            return FqName("${matchingImportPaths[0].fqName.parent()}.$classReference")
-          matchingImportPaths.size > 1 ->
-            return matchingImportPaths.first { importPath ->
-              val fqName = FqName("${importPath.fqName.parent()}.$classReference")
-              module.resolveClassByFqName(fqName, FROM_BACKEND) != null
-            }.fqName
-        }
+    .filter { it.alias == null && it.fqName.shortName().asString() == classReferenceOuter }
+    .also { matchingImportPaths ->
+      when {
+        matchingImportPaths.size == 1 ->
+          return FqName("${matchingImportPaths[0].fqName.parent()}.$classReference")
+        matchingImportPaths.size > 1 ->
+          return matchingImportPaths.first { importPath ->
+            val fqName = FqName("${importPath.fqName.parent()}.$classReference")
+            module.resolveClassByFqName(fqName, FROM_BACKEND) != null
+          }.fqName
       }
+    }
 
   // If there is no import, then try to resolve the class with the same package as this file.
   module.findClassOrTypeAlias(containingKtFile.packageFqName, classReference)
-      ?.let { return it.fqNameSafe }
+    ?.let { return it.fqNameSafe }
 
   // If this doesn't work, then maybe a class from the Kotlin package is used.
   module.resolveClassByFqName(FqName("kotlin.$classReference"), FROM_BACKEND)
-      ?.let { return it.fqNameSafe }
+    ?.let { return it.fqNameSafe }
 
   // If this doesn't work, then maybe a class from the Kotlin collection package is used.
   module.resolveClassByFqName(FqName("kotlin.collections.$classReference"), FROM_BACKEND)
-      ?.let { return it.fqNameSafe }
+    ?.let { return it.fqNameSafe }
 
   // If this doesn't work, then maybe a class from the Kotlin jvm package is used.
   module.resolveClassByFqName(FqName("kotlin.jvm.$classReference"), FROM_BACKEND)
-      ?.let { return it.fqNameSafe }
+    ?.let { return it.fqNameSafe }
 
   // Or java.lang.
   module.resolveClassByFqName(FqName("java.lang.$classReference"), FROM_BACKEND)
-      ?.let { return it.fqNameSafe }
+    ?.let { return it.fqNameSafe }
 
   findFqNameInSuperTypes(module, classReference)
-      ?.let { return it }
+    ?.let { return it }
 
   containingKtFile.importDirectives
-      .asSequence()
-      .filter { it.isAllUnder }
-      .mapNotNull {
-        // This fqName is the everything in front of the star, e.g. for "import java.io.*" it
-        // returns "java.io".
-        it.importPath?.fqName
-      }
-      .forEach { importFqName ->
-        module.findClassOrTypeAlias(importFqName, classReference)?.let { return it.fqNameSafe }
-      }
+    .asSequence()
+    .filter { it.isAllUnder }
+    .mapNotNull {
+      // This fqName is the everything in front of the star, e.g. for "import java.io.*" it
+      // returns "java.io".
+      it.importPath?.fqName
+    }
+    .forEach { importFqName ->
+      module.findClassOrTypeAlias(importFqName, classReference)?.let { return it.fqNameSafe }
+    }
 
   // Check if it's a named import.
   containingKtFile.importDirectives
-      .firstOrNull { classReference == it.importPath?.importedName?.asString() }
-      ?.importedFqName
-      ?.let { return it }
+    .firstOrNull { classReference == it.importPath?.importedName?.asString() }
+    ?.importedFqName
+    ?.let { return it }
 
   // Everything else isn't supported.
   throw AnvilCompilationException(
-      "Couldn't resolve FqName $classReference for Psi element: $text",
-      element = this
+    "Couldn't resolve FqName $classReference for Psi element: $text",
+    element = this
   )
 }
 
@@ -320,25 +320,25 @@ private fun PsiElement.findFqNameInSuperTypes(
 ): FqName? {
   fun tryToResolveClassFqName(outerClass: FqName): FqName? =
     module
-        .resolveClassByFqName(FqName("$outerClass.$classReference"), FROM_BACKEND)
-        ?.fqNameSafe
+      .resolveClassByFqName(FqName("$outerClass.$classReference"), FROM_BACKEND)
+      ?.fqNameSafe
 
   return parents.filterIsInstance<KtClassOrObject>()
-      .flatMap { clazz ->
-        tryToResolveClassFqName(clazz.requireFqName())?.let { return@flatMap sequenceOf(it) }
+    .flatMap { clazz ->
+      tryToResolveClassFqName(clazz.requireFqName())?.let { return@flatMap sequenceOf(it) }
 
-        // At this point we can't work with Psi APIs anymore. We need to resolve the super types
-        // and try to find inner class in them.
-        val descriptor = module.resolveClassByFqName(clazz.requireFqName(), FROM_BACKEND)
-            ?: throw AnvilCompilationException(
-                message = "Couldn't resolve class descriptor for ${clazz.requireFqName()}",
-                element = clazz
-            )
+      // At this point we can't work with Psi APIs anymore. We need to resolve the super types
+      // and try to find inner class in them.
+      val descriptor = module.resolveClassByFqName(clazz.requireFqName(), FROM_BACKEND)
+        ?: throw AnvilCompilationException(
+          message = "Couldn't resolve class descriptor for ${clazz.requireFqName()}",
+          element = clazz
+        )
 
-        listOf(descriptor.defaultType).getAllSuperTypes()
-            .mapNotNull { tryToResolveClassFqName(it) }
-      }
-      .firstOrNull()
+      listOf(descriptor.defaultType).getAllSuperTypes()
+        .mapNotNull { tryToResolveClassFqName(it) }
+    }
+    .firstOrNull()
 }
 
 internal fun ModuleDescriptor.findClassOrTypeAlias(
@@ -346,10 +346,10 @@ internal fun ModuleDescriptor.findClassOrTypeAlias(
   className: String
 ): ClassifierDescriptorWithTypeParameters? {
   resolveClassByFqName(FqName("$packageName.$className"), FROM_BACKEND)
-      ?.let { return it }
+    ?.let { return it }
 
   findTypeAliasAcrossModuleDependencies(ClassId(packageName, Name.identifier(className)))
-      ?.let { return it }
+    ?.let { return it }
 
   return null
 }
@@ -389,9 +389,9 @@ fun KtCallableDeclaration.requireTypeReference(): KtTypeReference {
 
   if (this is KtFunction && findAnnotation(daggerProvidesFqName) != null) {
     throw AnvilCompilationException(
-        message = "Dagger provider methods must specify the return type explicitly when using " +
-            "Anvil. The return type cannot be inferred implicitly.",
-        element = this
+      message = "Dagger provider methods must specify the return type explicitly when using " +
+        "Anvil. The return type cannot be inferred implicitly.",
+      element = this
     )
   }
 
@@ -407,7 +407,7 @@ fun KtUserType.isTypeParameter(): Boolean {
 
 fun KtUserType.findExtendsBound(): List<FqName> {
   return parents.filterIsInstance<KtClassOrObject>()
-      .first()
-      .typeParameters
-      .mapNotNull { it.fqName }
+    .first()
+    .typeParameters
+    .mapNotNull { it.fqName }
 }

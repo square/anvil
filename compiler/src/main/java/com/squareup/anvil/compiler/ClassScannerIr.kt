@@ -18,7 +18,7 @@ internal fun ClassScanner.findContributedClasses(
   scope: FqName
 ): Sequence<IrClassSymbol> {
   return findContributedClasses(moduleFragment.descriptor, packageName, annotation, scope)
-      .map {
-        pluginContext.requireReferenceClass(it.fqNameSafe)
-      }
+    .map {
+      pluginContext.requireReferenceClass(it.fqNameSafe)
+    }
 }

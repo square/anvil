@@ -45,17 +45,17 @@ internal class CodeGenerationExtension(
     didRecompile = true
 
     codeGenDir.listFiles()
-        ?.forEach {
-          check(it.deleteRecursively()) {
-            "Could not clean file: $it"
-          }
+      ?.forEach {
+        check(it.deleteRecursively()) {
+          "Could not clean file: $it"
         }
+      }
 
     fun generateCode(files: Collection<KtFile>): Collection<GeneratedFile> =
       codeGenerators
-          .flatMap {
-            it.generateCode(codeGenDir, module, files)
-          }
+        .flatMap {
+          it.generateCode(codeGenDir, module, files)
+        }
 
     val psiManager = PsiManager.getInstance(project)
 
@@ -67,28 +67,32 @@ internal class CodeGenerationExtension(
     }
 
     val flushedFiles = codeGenerators
-        .flatMap { codeGenerator -> codeGenerator.flush(codeGenDir, module) }
-        .parse(psiManager)
+      .flatMap { codeGenerator -> codeGenerator.flush(codeGenDir, module) }
+      .parse(psiManager)
 
     codeGenerators
-        .filterIsInstance<PrivateCodeGenerator>()
-        .forEach { codeGenerator ->
-          codeGenerator.generateCode(codeGenDir, module, flushedFiles)
-          codeGenerator.flush(codeGenDir, module)
-        }
+      .filterIsInstance<PrivateCodeGenerator>()
+      .forEach { codeGenerator ->
+        codeGenerator.generateCode(codeGenDir, module, flushedFiles)
+        codeGenerator.flush(codeGenDir, module)
+      }
 
     // This restarts the analysis phase and will include our files.
     return RetryWithAdditionalRoots(
-        bindingTrace.bindingContext, module, emptyList(), listOf(codeGenDir), true
+      bindingTrace.bindingContext,
+      module,
+      emptyList(),
+      listOf(codeGenDir),
+      true
     )
   }
 
   private fun Collection<GeneratedFile>.parse(psiManager: PsiManager): Collection<KtFile> =
     mapNotNull { (file, content) ->
       val virtualFile = LightVirtualFile(
-          file.relativeTo(codeGenDir).path,
-          KotlinFileType.INSTANCE,
-          content
+        file.relativeTo(codeGenDir).path,
+        KotlinFileType.INSTANCE,
+        content
       )
 
       psiManager.findFile(virtualFile)

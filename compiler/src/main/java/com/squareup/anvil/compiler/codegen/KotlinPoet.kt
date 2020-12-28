@@ -44,21 +44,21 @@ import javax.inject.Provider
 
 internal fun KtClassOrObject.asClassName(): ClassName =
   ClassName(
-      packageName = containingKtFile.packageFqName.asString(),
-      simpleNames = parentsWithSelf
-          .filterIsInstance<KtClassOrObject>()
-          .map { it.nameAsSafeName.asString() }
-          .toList()
-          .reversed()
+    packageName = containingKtFile.packageFqName.asString(),
+    simpleNames = parentsWithSelf
+      .filterIsInstance<KtClassOrObject>()
+      .map { it.nameAsSafeName.asString() }
+      .toList()
+      .reversed()
   )
 
 internal fun ClassDescriptor.asClassName(): ClassName =
   ClassName(
-      packageName = parents.filterIsInstance<PackageFragmentDescriptor>().first().fqName.asString(),
-      simpleNames = parentsWithSelf.filterIsInstance<ClassDescriptor>()
-          .map { it.name.asString() }
-          .toList()
-          .reversed()
+    packageName = parents.filterIsInstance<PackageFragmentDescriptor>().first().fqName.asString(),
+    simpleNames = parentsWithSelf.filterIsInstance<ClassDescriptor>()
+      .map { it.name.asString() }
+      .toList()
+      .reversed()
   )
 
 internal fun FqName.asClassName(module: ModuleDescriptor): ClassName {
@@ -76,14 +76,14 @@ internal fun FqName.asClassName(module: ModuleDescriptor): ClassName {
     val classSegments = segments.subList(index, segments.size)
 
     val classifier = module.findClassOrTypeAlias(
-        packageName = FqName.fromSegments(packageSegments),
-        className = classSegments.joinToString(separator = ".")
+      packageName = FqName.fromSegments(packageSegments),
+      className = classSegments.joinToString(separator = ".")
     )
 
     if (classifier != null) {
       return ClassName(
-          packageName = packageSegments.joinToString(separator = "."),
-          simpleNames = classSegments
+        packageName = packageSegments.joinToString(separator = "."),
+        simpleNames = classSegments
       )
     }
   }
@@ -95,63 +95,63 @@ internal fun KtTypeReference.requireTypeName(
   module: ModuleDescriptor
 ): TypeName {
   fun PsiElement.fail(): Nothing = throw AnvilCompilationException(
-      message = "Couldn't resolve type: $text",
-      element = this
+    message = "Couldn't resolve type: $text",
+    element = this
   )
 
   fun KtTypeElement.requireTypeName(): TypeName {
     return when (this) {
       is KtUserType -> {
         val className = fqNameOrNull(module)?.asClassName(module)
-            ?: if (isTypeParameter()) {
-              val bounds = findExtendsBound().map { it.asClassName(module) }
-              return TypeVariableName(text, bounds)
-            } else {
-              throw AnvilCompilationException("Couldn't resolve fqName.", element = this)
-            }
+          ?: if (isTypeParameter()) {
+            val bounds = findExtendsBound().map { it.asClassName(module) }
+            return TypeVariableName(text, bounds)
+          } else {
+            throw AnvilCompilationException("Couldn't resolve fqName.", element = this)
+          }
 
         val typeArgumentList = typeArgumentList
         if (typeArgumentList != null) {
           className.parameterizedBy(
-              typeArgumentList.arguments.map { typeProjection ->
-                if (typeProjection.projectionKind == KtProjectionKind.STAR) {
-                  STAR
-                } else {
-                  val typeReference = typeProjection.typeReference ?: typeProjection.fail()
-                  typeReference
-                      .requireTypeName(module)
-                      .let { typeName ->
-                        // Preserve annotations, e.g. List<@JvmSuppressWildcards Abc>.
-                        if (typeReference.annotationEntries.isNotEmpty()) {
-                          typeName.copy(
-                              annotations = typeName.annotations + typeReference.annotationEntries
-                                  .map { annotationEntry ->
-                                    AnnotationSpec
-                                        .builder(
-                                            annotationEntry
-                                                .requireFqName(module)
-                                                .asClassName(module)
-                                        )
-                                        .build()
-                                  }
-                          )
-                        } else {
-                          typeName
-                        }
-                      }
-                      .let { typeName ->
-                        val modifierList = typeProjection.modifierList
-                        when {
-                          modifierList == null -> typeName
-                          modifierList.hasModifier(KtTokens.OUT_KEYWORD) ->
-                            WildcardTypeName.producerOf(typeName)
-                          modifierList.hasModifier(KtTokens.IN_KEYWORD) ->
-                            WildcardTypeName.consumerOf(typeName)
-                          else -> typeName
-                        }
-                      }
-                }
+            typeArgumentList.arguments.map { typeProjection ->
+              if (typeProjection.projectionKind == KtProjectionKind.STAR) {
+                STAR
+              } else {
+                val typeReference = typeProjection.typeReference ?: typeProjection.fail()
+                typeReference
+                  .requireTypeName(module)
+                  .let { typeName ->
+                    // Preserve annotations, e.g. List<@JvmSuppressWildcards Abc>.
+                    if (typeReference.annotationEntries.isNotEmpty()) {
+                      typeName.copy(
+                        annotations = typeName.annotations + typeReference.annotationEntries
+                          .map { annotationEntry ->
+                            AnnotationSpec
+                              .builder(
+                                annotationEntry
+                                  .requireFqName(module)
+                                  .asClassName(module)
+                              )
+                              .build()
+                          }
+                      )
+                    } else {
+                      typeName
+                    }
+                  }
+                  .let { typeName ->
+                    val modifierList = typeProjection.modifierList
+                    when {
+                      modifierList == null -> typeName
+                      modifierList.hasModifier(KtTokens.OUT_KEYWORD) ->
+                        WildcardTypeName.producerOf(typeName)
+                      modifierList.hasModifier(KtTokens.IN_KEYWORD) ->
+                        WildcardTypeName.consumerOf(typeName)
+                      else -> typeName
+                    }
+                  }
               }
+            }
           )
         } else {
           className
@@ -159,16 +159,16 @@ internal fun KtTypeReference.requireTypeName(
       }
       is KtFunctionType ->
         LambdaTypeName.get(
-            receiver = receiver?.typeReference?.requireTypeName(module),
-            parameters = parameterList
-                ?.parameters
-                ?.map { parameter ->
-                  val parameterReference = parameter.typeReference ?: parameter.fail()
-                  ParameterSpec.unnamed(parameterReference.requireTypeName(module))
-                }
-                ?: emptyList(),
-            returnType = (returnTypeReference ?: fail())
-                .requireTypeName(module)
+          receiver = receiver?.typeReference?.requireTypeName(module),
+          parameters = parameterList
+            ?.parameters
+            ?.map { parameter ->
+              val parameterReference = parameter.typeReference ?: parameter.fail()
+              ParameterSpec.unnamed(parameterReference.requireTypeName(module))
+            }
+            ?: emptyList(),
+          returnType = (returnTypeReference ?: fail())
+            .requireTypeName(module)
         )
       is KtNullableType -> {
         (innerType ?: fail()).requireTypeName().copy(nullable = true)
@@ -209,26 +209,26 @@ internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor
 
       isWrappedInProvider || isWrappedInLazy ->
         typeElement!!.children
-            .filterIsInstance<KtTypeArgumentList>()
-            .single()
-            .children
-            .filterIsInstance<KtTypeProjection>()
-            .single()
-            .children
-            .filterIsInstance<KtTypeReference>()
-            .single()
-            .requireTypeName(module)
+          .filterIsInstance<KtTypeArgumentList>()
+          .single()
+          .children
+          .filterIsInstance<KtTypeProjection>()
+          .single()
+          .children
+          .filterIsInstance<KtTypeReference>()
+          .single()
+          .requireTypeName(module)
 
       else -> parameter.requireTypeReference().requireTypeName(module)
     }.withJvmSuppressWildcardsIfNeeded(parameter)
 
     Parameter(
-        name = "param$index",
-        typeName = typeName,
-        providerTypeName = typeName.wrapInProvider(),
-        lazyTypeName = typeName.wrapInLazy(),
-        isWrappedInProvider = isWrappedInProvider,
-        isWrappedInLazy = isWrappedInLazy
+      name = "param$index",
+      typeName = typeName,
+      providerTypeName = typeName.wrapInProvider(),
+      lazyTypeName = typeName.wrapInLazy(),
+      isWrappedInProvider = isWrappedInProvider,
+      isWrappedInLazy = isWrappedInLazy
     )
   }
 
@@ -259,28 +259,28 @@ internal fun List<Parameter>.asArgumentList(
   includeModule: Boolean
 ): String {
   return this
-      .let { list ->
-        if (asProvider) {
-          list.map { parameter ->
-            when {
-              parameter.isWrappedInProvider -> parameter.name
-              parameter.isWrappedInLazy ->
-                "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
-              else -> "${parameter.name}.get()"
-            }
+    .let { list ->
+      if (asProvider) {
+        list.map { parameter ->
+          when {
+            parameter.isWrappedInProvider -> parameter.name
+            parameter.isWrappedInLazy ->
+              "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
+            else -> "${parameter.name}.get()"
           }
-        } else list.map { it.name }
-      }
-      .let {
-        if (includeModule) {
-          val result = it.toMutableList()
-          result.add(0, "module")
-          result.toList()
-        } else {
-          it
         }
+      } else list.map { it.name }
+    }
+    .let {
+      if (includeModule) {
+        val result = it.toMutableList()
+        result.add(0, "module")
+        result.toList()
+      } else {
+        it
       }
-      .joinToString()
+    }
+    .joinToString()
 }
 
 private fun TypeName.wrapInProvider(): ParameterizedTypeName {
@@ -317,12 +317,12 @@ fun FileSpec.Companion.buildFile(
   block: FileSpec.Builder.() -> Unit
 ): String =
   builder(packageName, fileName)
-      .apply {
-        // Suppress any deprecation warnings.
-        suppressWarnings()
+    .apply {
+      // Suppress any deprecation warnings.
+      suppressWarnings()
 
-        block()
-      }
-      .build()
-      .writeToString()
-      .addGeneratedByComment()
+      block()
+    }
+    .build()
+    .writeToString()
+    .addGeneratedByComment()

@@ -61,24 +61,27 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     // take over. If we wouldn't do this and any other extension won't let our's run, then we
     // couldn't generate any code.
     AnalysisHandlerExtension.registerExtensionFirst(
-        project,
-        CodeGenerationExtension(
-            codeGenDir = sourceGenFolder,
-            codeGenerators = codeGenerators
-        )
+      project,
+      CodeGenerationExtension(
+        codeGenDir = sourceGenFolder,
+        codeGenerators = codeGenerators
+      )
     )
 
     if (!generateDaggerFactoriesOnly) {
       SyntheticResolveExtension.registerExtension(
-          project, InterfaceMerger(scanner)
+        project,
+        InterfaceMerger(scanner)
       )
       ExpressionCodegenExtension.registerExtension(
-          project, ModuleMerger(scanner)
+        project,
+        ModuleMerger(scanner)
       )
 
       if (USE_IR) {
         IrGenerationExtension.registerExtension(
-            project, ModuleMergerIr(scanner)
+          project,
+          ModuleMergerIr(scanner)
         )
       }
     }
@@ -89,7 +92,7 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     extension: AnalysisHandlerExtension
   ) {
     project.extensionArea
-        .getExtensionPoint(AnalysisHandlerExtension.extensionPointName)
-        .registerExtension(extension, LoadingOrder.FIRST, project)
+      .getExtensionPoint(AnalysisHandlerExtension.extensionPointName)
+      .registerExtension(extension, LoadingOrder.FIRST, project)
   }
 }

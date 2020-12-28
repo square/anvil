@@ -35,9 +35,9 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   override fun getCompilerPluginId(): String = "com.squareup.anvil.compiler"
 
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
-      groupId = GROUP,
-      artifactId = "compiler",
-      version = VERSION
+    groupId = GROUP,
+    artifactId = "compiler",
+    version = VERSION
   )
 
   override fun applyToCompilation(
@@ -49,24 +49,25 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     // for this specific compile task will be included in the task output. The output of different
     // compile tasks shouldn't be mixed.
     val srcGenDir = File(
-        project.buildDir, "anvil${File.separator}src-gen-${kotlinCompilation.name}"
+      project.buildDir,
+      "anvil${File.separator}src-gen-${kotlinCompilation.name}"
     )
     val extension = project.extensions.findByType(AnvilExtension::class.java) ?: AnvilExtension()
 
     return project.provider {
       listOf(
-          FilesSubpluginOption(
-              key = "src-gen-dir",
-              files = listOf(srcGenDir)
-          ),
-          SubpluginOption(
-              key = "generate-dagger-factories",
-              value = extension.generateDaggerFactories.toString()
-          ),
-          SubpluginOption(
-              key = "generate-dagger-factories-only",
-              value = extension.generateDaggerFactoriesOnly.toString()
-          )
+        FilesSubpluginOption(
+          key = "src-gen-dir",
+          files = listOf(srcGenDir)
+        ),
+        SubpluginOption(
+          key = "generate-dagger-factories",
+          value = extension.generateDaggerFactories.toString()
+        ),
+        SubpluginOption(
+          key = "generate-dagger-factories-only",
+          value = extension.generateDaggerFactoriesOnly.toString()
+        )
       )
     }
   }
@@ -100,15 +101,15 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     target.afterEvaluate {
       if (!once.get()) {
         throw GradleException(
-            "No supported plugins for Anvil found on project " +
-                "'${target.path}'. Only Android and Java modules are supported for now."
+          "No supported plugins for Anvil found on project " +
+            "'${target.path}'. Only Android and Java modules are supported for now."
         )
       }
 
       if (!extension.generateDaggerFactories && extension.generateDaggerFactoriesOnly) {
         throw GradleException(
-            "You cannot set generateDaggerFactories to false and generateDaggerFactoriesOnly " +
-                "to true at the same time."
+          "You cannot set generateDaggerFactories to false and generateDaggerFactoriesOnly " +
+            "to true at the same time."
         )
       }
     }
@@ -138,24 +139,24 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     project: Project
   ) {
     project.tasks
-        .withType(KotlinCompile::class.java)
-        .configureEach { compileTask ->
-          val result = CheckMixedSourceSet.preparePreciseJavaTrackingCheck(compileTask)
+      .withType(KotlinCompile::class.java)
+      .configureEach { compileTask ->
+        val result = CheckMixedSourceSet.preparePreciseJavaTrackingCheck(compileTask)
 
-          compileTask.doFirst {
-            // Disable precise java tracking if needed. Note that the doFirst() action only runs
-            // if the task is not up to date. That's ideal, because if nothing needs to be
-            // compiled, then we don't need to disable the flag.
-            //
-            // We also use the doFirst block to walk through the file system at execution time
-            // and minimize the IO at configuration time.
-            CheckMixedSourceSet.disablePreciseJavaTrackingIfNeeded(compileTask, result)
+        compileTask.doFirst {
+          // Disable precise java tracking if needed. Note that the doFirst() action only runs
+          // if the task is not up to date. That's ideal, because if nothing needs to be
+          // compiled, then we don't need to disable the flag.
+          //
+          // We also use the doFirst block to walk through the file system at execution time
+          // and minimize the IO at configuration time.
+          CheckMixedSourceSet.disablePreciseJavaTrackingIfNeeded(compileTask, result)
 
-            compileTask.logger.info(
-                "Anvil: Use precise java tracking: ${compileTask.usePreciseJavaTracking}"
-            )
-          }
+          compileTask.logger.info(
+            "Anvil: Use precise java tracking: ${compileTask.usePreciseJavaTracking}"
+          )
         }
+      }
   }
 
   @OptIn(ExperimentalStdlibApi::class)
@@ -181,25 +182,27 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       } else {
         disableIncrementalCompilationAction(project, incrementalSignal, "kaptGenerateStubsKotlin")
         disableIncrementalCompilationAction(
-            project, incrementalSignal, "kaptGenerateStubsTestKotlin"
+          project,
+          incrementalSignal,
+          "kaptGenerateStubsTestKotlin"
         )
       }
     } else {
       project.tasks
-          .withType(KaptGenerateStubsTask::class.java)
-          .configureEach { stubsTask ->
-            // Disable incremental compilation for the stub generating task. Trigger the compiler
-            // plugin if any dependencies in the compile classpath have changed. This will make sure
-            // that we pick up any change from a dependency when merging all the classes. Without
-            // this workaround we could make changes in any library, but these changes wouldn't be
-            // contributed to the Dagger graph, because incremental compilation tricked us.
-            stubsTask.doFirst {
-              stubsTask.incremental = false
-              stubsTask.logger.info(
-                  "Anvil: Incremental compilation enabled: ${stubsTask.incremental} (stub)"
-              )
-            }
+        .withType(KaptGenerateStubsTask::class.java)
+        .configureEach { stubsTask ->
+          // Disable incremental compilation for the stub generating task. Trigger the compiler
+          // plugin if any dependencies in the compile classpath have changed. This will make sure
+          // that we pick up any change from a dependency when merging all the classes. Without
+          // this workaround we could make changes in any library, but these changes wouldn't be
+          // contributed to the Dagger graph, because incremental compilation tricked us.
+          stubsTask.doFirst {
+            stubsTask.incremental = false
+            stubsTask.logger.info(
+              "Anvil: Incremental compilation enabled: ${stubsTask.incremental} (stub)"
+            )
           }
+        }
     }
 
     if (isAndroidProject) {
@@ -224,11 +227,11 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     // source files might not have changed. This workaround is necessary, otherwise
     // incremental builds are broken. See https://youtrack.jetbrains.com/issue/KT-38570
     val disableIncrementalCompilationTaskProvider = project.tasks.register(
-        compileTaskName + "CheckIncrementalCompilationAnvil",
-        DisableIncrementalCompilationTask::class.java
+      compileTaskName + "CheckIncrementalCompilationAnvil",
+      DisableIncrementalCompilationTask::class.java
     ) { task ->
       task.pluginClasspath.from(
-          project.configurations.getByName(PLUGIN_CLASSPATH_CONFIGURATION_NAME)
+        project.configurations.getByName(PLUGIN_CLASSPATH_CONFIGURATION_NAME)
       )
       task.incrementalSignal.set(incrementalSignal)
     }
@@ -254,7 +257,7 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         }
 
         compileTask.logger.info(
-            "Anvil: Incremental compilation enabled: ${compileTask.incremental} (compile)"
+          "Anvil: Incremental compilation enabled: ${compileTask.incremental} (compile)"
         )
       }
     }
@@ -266,9 +269,11 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
  */
 fun Project.androidVariants(): Set<BaseVariant> {
   return when (val androidExtension = project.extensions.findByName("android")) {
-    is AppExtension -> androidExtension.applicationVariants + androidExtension.testVariants +
+    is AppExtension ->
+      androidExtension.applicationVariants + androidExtension.testVariants +
         androidExtension.unitTestVariants
-    is LibraryExtension -> androidExtension.libraryVariants + androidExtension.testVariants +
+    is LibraryExtension ->
+      androidExtension.libraryVariants + androidExtension.testVariants +
         androidExtension.unitTestVariants
     else -> throw GradleException("Unknown Android module type for project ${project.path}")
   }
@@ -299,23 +304,23 @@ fun Project.androidVariantsConfigure(action: (BaseVariant) -> Unit) {
 fun Collection<BaseVariant>.findVariantForCompileTask(
   compileTask: KotlinCompile
 ): BaseVariant = this
-    .filter { variant ->
-      compileTask.name.contains(variant.name.capitalize(US))
-    }
-    .maxBy {
-      // The filter above still returns multiple variants, e.g. for the
-      // "compileDebugUnitTestKotlin" task it returns the variants "debug" and "debugUnitTest".
-      // In this case prefer the variant with the longest matching name, because that's the more
-      // explicit variant that we want.
-      it.name.length
-    }!!
+  .filter { variant ->
+    compileTask.name.contains(variant.name.capitalize(US))
+  }
+  .maxBy {
+    // The filter above still returns multiple variants, e.g. for the
+    // "compileDebugUnitTestKotlin" task it returns the variants "debug" and "debugUnitTest".
+    // In this case prefer the variant with the longest matching name, because that's the more
+    // explicit variant that we want.
+    it.name.length
+  }!!
 
 val Project.isKotlinJvmProject: Boolean
   get() = plugins.hasPlugin(KotlinPluginWrapper::class.java)
 
 val Project.isAndroidProject: Boolean
   get() = AGP_ON_CLASSPATH &&
-      (plugins.hasPlugin(AppPlugin::class.java) || plugins.hasPlugin(LibraryPlugin::class.java))
+    (plugins.hasPlugin(AppPlugin::class.java) || plugins.hasPlugin(LibraryPlugin::class.java))
 
 @Suppress("SENSELESS_COMPARISON")
 private val AGP_ON_CLASSPATH = try {

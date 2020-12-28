@@ -26,54 +26,54 @@ internal fun compile(
   block: Result.() -> Unit = { }
 ): Result {
   return KotlinCompilation()
-      .apply {
-        compilerPlugins = listOf(AnvilComponentRegistrar())
-        useIR = USE_IR
-        inheritClassPath = true
-        jvmTarget = JvmTarget.JVM_1_8.description
-        this.allWarningsAsErrors = allWarningsAsErrors
+    .apply {
+      compilerPlugins = listOf(AnvilComponentRegistrar())
+      useIR = USE_IR
+      inheritClassPath = true
+      jvmTarget = JvmTarget.JVM_1_8.description
+      this.allWarningsAsErrors = allWarningsAsErrors
 
-        if (enableDaggerAnnotationProcessor) {
-          annotationProcessors = listOf(ComponentProcessor())
-        }
-
-        val commandLineProcessor = AnvilCommandLineProcessor()
-        commandLineProcessors = listOf(commandLineProcessor)
-
-        pluginOptions = listOf(
-            PluginOption(
-                pluginId = commandLineProcessor.pluginId,
-                optionName = srcGenDirName,
-                optionValue = File(workingDir, "build/anvil").absolutePath
-            ),
-            PluginOption(
-                pluginId = commandLineProcessor.pluginId,
-                optionName = generateDaggerFactoriesName,
-                optionValue = generateDaggerFactories.toString()
-            ),
-            PluginOption(
-                pluginId = commandLineProcessor.pluginId,
-                optionName = generateDaggerFactoriesOnlyName,
-                optionValue = generateDaggerFactoriesOnly.toString()
-            )
-        )
-
-        this.sources = sources.map { content ->
-          val packageDir = content.lines()
-              .first { it.trim().startsWith("package ") }
-              .substringAfter("package ")
-              .replace('.', '/')
-
-          val name = "${workingDir.absolutePath}/sources/src/main/java/$packageDir/Source.kt"
-          with(File(name).parentFile) {
-            check(exists() || mkdirs())
-          }
-
-          SourceFile.kotlin(name, contents = content, trimIndent = true)
-        }
+      if (enableDaggerAnnotationProcessor) {
+        annotationProcessors = listOf(ComponentProcessor())
       }
-      .compile()
-      .also(block)
+
+      val commandLineProcessor = AnvilCommandLineProcessor()
+      commandLineProcessors = listOf(commandLineProcessor)
+
+      pluginOptions = listOf(
+        PluginOption(
+          pluginId = commandLineProcessor.pluginId,
+          optionName = srcGenDirName,
+          optionValue = File(workingDir, "build/anvil").absolutePath
+        ),
+        PluginOption(
+          pluginId = commandLineProcessor.pluginId,
+          optionName = generateDaggerFactoriesName,
+          optionValue = generateDaggerFactories.toString()
+        ),
+        PluginOption(
+          pluginId = commandLineProcessor.pluginId,
+          optionName = generateDaggerFactoriesOnlyName,
+          optionValue = generateDaggerFactoriesOnly.toString()
+        )
+      )
+
+      this.sources = sources.map { content ->
+        val packageDir = content.lines()
+          .first { it.trim().startsWith("package ") }
+          .substringAfter("package ")
+          .replace('.', '/')
+
+        val name = "${workingDir.absolutePath}/sources/src/main/java/$packageDir/Source.kt"
+        with(File(name).parentFile) {
+          check(exists() || mkdirs())
+        }
+
+        SourceFile.kotlin(name, contents = content, trimIndent = true)
+      }
+    }
+    .compile()
+    .also(block)
 }
 
 internal val Result.contributingInterface: Class<*>
@@ -93,21 +93,21 @@ internal val Result.componentInterface: Class<*>
 
 internal val Result.componentInterfaceAnvilModule: Class<*>
   get() = classLoader
-      .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.ComponentInterfaceAnvilModule")
+    .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.ComponentInterfaceAnvilModule")
 
 internal val Result.subcomponentInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface")
 
 internal val Result.subcomponentInterfaceAnvilModule: Class<*>
   get() = classLoader
-      .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.SubcomponentInterfaceAnvilModule")
+    .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.SubcomponentInterfaceAnvilModule")
 
 internal val Result.daggerModule1: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule1")
 
 internal val Result.daggerModule1AnvilModule: Class<*>
   get() = classLoader
-      .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.DaggerModule1AnvilModule")
+    .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.DaggerModule1AnvilModule")
 
 internal val Result.daggerModule2: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule2")
@@ -126,29 +126,29 @@ internal val Result.injectClass: Class<*>
 
 internal val Class<*>.hintContributes: KClass<*>?
   get() = contributedProperties(HINT_CONTRIBUTES_PACKAGE_PREFIX)
-      ?.filter { it.java == this }
-      ?.also { assertThat(it.size).isEqualTo(1) }
-      ?.first()
+    ?.filter { it.java == this }
+    ?.also { assertThat(it.size).isEqualTo(1) }
+    ?.first()
 
 internal val Class<*>.hintContributesScope: KClass<*>?
   get() = contributedProperties(HINT_CONTRIBUTES_PACKAGE_PREFIX)
-      ?.also { assertThat(it.size).isEqualTo(2) }
-      ?.filter { it.java != this }
-      ?.also { assertThat(it.size).isEqualTo(1) }
-      ?.first()
+    ?.also { assertThat(it.size).isEqualTo(2) }
+    ?.filter { it.java != this }
+    ?.also { assertThat(it.size).isEqualTo(1) }
+    ?.first()
 
 internal val Class<*>.hintBinding: KClass<*>?
   get() = contributedProperties(HINT_BINDING_PACKAGE_PREFIX)
-      ?.filter { it.java == this }
-      ?.also { assertThat(it.size).isEqualTo(1) }
-      ?.first()
+    ?.filter { it.java == this }
+    ?.also { assertThat(it.size).isEqualTo(1) }
+    ?.first()
 
 internal val Class<*>.hintBindingScope: KClass<*>?
   get() = contributedProperties(HINT_BINDING_PACKAGE_PREFIX)
-      ?.also { assertThat(it.size).isEqualTo(2) }
-      ?.filter { it.java != this }
-      ?.also { assertThat(it.size).isEqualTo(1) }
-      ?.first()
+    ?.also { assertThat(it.size).isEqualTo(2) }
+    ?.filter { it.java != this }
+    ?.also { assertThat(it.size).isEqualTo(1) }
+    ?.first()
 
 internal fun Class<*>.moduleFactoryClass(
   providerMethodName: String,
@@ -158,8 +158,8 @@ internal fun Class<*>.moduleFactoryClass(
   val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
 
   return classLoader.loadClass(
-      "${`package`.name}.$enclosingClassString$simpleName$companionString" +
-          "_${providerMethodName.capitalize(US)}Factory"
+    "${`package`.name}.$enclosingClassString$simpleName$companionString" +
+      "_${providerMethodName.capitalize(US)}Factory"
   )
 }
 
@@ -173,8 +173,8 @@ internal fun Class<*>.membersInjector(): Class<*> {
   val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
 
   return classLoader.loadClass(
-      "${`package`.name}." +
-          "$enclosingClassString${simpleName}_MembersInjector"
+    "${`package`.name}." +
+      "$enclosingClassString${simpleName}_MembersInjector"
   )
 }
 
@@ -182,7 +182,7 @@ private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*
   // The capitalize() doesn't make sense, I don't know where this is coming from. Maybe it's a
   // bug in the compile testing library?
   val className = canonicalName.replace('.', '_')
-      .capitalize(US) + "Kt"
+    .capitalize(US) + "Kt"
 
   val clazz = try {
     classLoader.loadClass("$packagePrefix.${`package`.name}.$className")
@@ -191,27 +191,27 @@ private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*
   }
 
   return clazz.declaredFields
-      .map {
-        it.isAccessible = true
-        it.get(null)
-      }
-      .filterIsInstance<KClass<*>>()
+    .map {
+      it.isAccessible = true
+      it.get(null)
+    }
+    .filterIsInstance<KClass<*>>()
 }
 
 internal val Class<*>.daggerComponent: Component
   get() = annotations.filterIsInstance<Component>()
-      .also { assertThat(it).hasSize(1) }
-      .first()
+    .also { assertThat(it).hasSize(1) }
+    .first()
 
 internal val Class<*>.daggerSubcomponent: Subcomponent
   get() = annotations.filterIsInstance<Subcomponent>()
-      .also { assertThat(it).hasSize(1) }
-      .first()
+    .also { assertThat(it).hasSize(1) }
+    .first()
 
 internal val Class<*>.daggerModule: Module
   get() = annotations.filterIsInstance<Module>()
-      .also { assertThat(it).hasSize(1) }
-      .first()
+    .also { assertThat(it).hasSize(1) }
+    .first()
 
 internal infix fun Class<*>.extends(other: Class<*>): Boolean = other.isAssignableFrom(this)
 

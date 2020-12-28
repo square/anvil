@@ -23,7 +23,7 @@ import org.jetbrains.kotlin.name.FqName
 
 internal fun IrPluginContext.requireReferenceClass(fqName: FqName): IrClassSymbol {
   return referenceClass(fqName) ?: throw AnvilCompilationException(
-      message = "Couldn't resolve reference for $fqName"
+    message = "Couldn't resolve reference for $fqName"
   )
 }
 
@@ -40,38 +40,38 @@ internal fun IrAnnotationContainer.annotation(
   annotationFqName: FqName,
   scope: FqName? = null
 ): IrConstructorCall = annotationOrNull(annotationFqName, scope)
-    ?: throw AnvilCompilationIrException(
-        message = "Couldn't find $annotationFqName with scope $scope.",
-        element = (this as? IrType)?.getClass()
-    )
+  ?: throw AnvilCompilationIrException(
+    message = "Couldn't find $annotationFqName with scope $scope.",
+    element = (this as? IrType)?.getClass()
+  )
 
 internal val IrExpression.kclassUnwrapped: IrClassifierSymbol
   get() = (type as? IrSimpleType)?.arguments?.get(0)?.typeOrNull?.classifierOrNull
-      ?: throw AnvilCompilationIrException(
-          message = "Couldn't resolve wrapped class.",
-          element = this
-      )
+    ?: throw AnvilCompilationIrException(
+      message = "Couldn't resolve wrapped class.",
+      element = this
+    )
 
 internal fun IrConstructorCall.scope(): FqName {
   val expression = argument("scope")?.second
-      ?: throw AnvilCompilationIrException(
-          message = "Couldn't find scope annotation.",
-          element = this
-      )
+    ?: throw AnvilCompilationIrException(
+      message = "Couldn't find scope annotation.",
+      element = this
+    )
 
   val signature = expression.kclassUnwrapped.signature.asPublic()
-      ?: throw AnvilCompilationIrException(
-          message = "Couldn't resolve scope signature.",
-          element = this
-      )
+    ?: throw AnvilCompilationIrException(
+      message = "Couldn't resolve scope signature.",
+      element = this
+    )
 
   return FqName("${signature.packageFqName}.${signature.shortName}")
 }
 
 internal val IrDeclarationWithName.fqName: FqName
   get() = fqNameWhenAvailable ?: throw AnvilCompilationIrException(
-      message = "Couldn't find FqName for $name",
-      element = this
+    message = "Couldn't find FqName for $name",
+    element = this
   )
 
 internal val IrClassSymbol.fqName: FqName get() = owner.fqName
@@ -80,9 +80,9 @@ internal fun IrMemberAccessExpression<*>.argument(
   name: String
 ): Pair<IrValueParameter, IrExpression>? {
   return getArgumentsWithIr()
-      .singleOrNull {
-        it.first.name.asString() == name
-      }
+    .singleOrNull {
+      it.first.name.asString() == name
+    }
 }
 
 internal fun IrConstructorCall.argumentClassArray(
@@ -91,8 +91,8 @@ internal fun IrConstructorCall.argumentClassArray(
   val vararg = argument(name)?.second as? IrVararg ?: return emptyList()
 
   return vararg.elements
-      .filterIsInstance<IrExpression>()
-      .map { it.kclassUnwrapped.owner as IrClass }
+    .filterIsInstance<IrExpression>()
+    .map { it.kclassUnwrapped.owner as IrClass }
 }
 
 internal fun IrConstructorCall.replaces(): List<IrClass> = argumentClassArray("replaces")

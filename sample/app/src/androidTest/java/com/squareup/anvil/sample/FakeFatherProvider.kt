@@ -6,8 +6,8 @@ import com.squareup.anvil.sample.father.RealFatherProvider
 import com.squareup.scopes.AppScope
 
 @ContributesBinding(
-    scope = AppScope::class,
-    replaces = [RealFatherProvider::class]
+  scope = AppScope::class,
+  replaces = [RealFatherProvider::class]
 )
 object FakeFatherProvider : FatherProvider {
   override fun father(god: God): String = "(No Father)"

@@ -84,10 +84,10 @@ internal fun ClassDescriptor.annotationOrNull(
     // Caused by: java.lang.IllegalStateException: Should not be called!
     // at org.jetbrains.kotlin.types.ErrorUtils$1.getPackage(ErrorUtils.java:95)
     throw AnvilCompilationException(
-        this,
-        message = "It seems like you tried to contribute an inner class to its outer class. This " +
-            "is not supported and results in a compiler error.",
-        cause = e
+      this,
+      message = "It seems like you tried to contribute an inner class to its outer class. This " +
+        "is not supported and results in a compiler error.",
+      cause = e
     )
   }
   return if (scope == null || annotationDescriptor == null) {
@@ -132,11 +132,11 @@ internal fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescript
 
 internal fun AnnotationDescriptor.replaces(module: ModuleDescriptor): List<ClassDescriptor> {
   return (getAnnotationValue("replaces") as? ArrayValue)
-      ?.value
-      ?.map {
-        it.argumentType(module).classDescriptorForType()
-      }
-      ?: emptyList()
+    ?.value
+    ?.map {
+      it.argumentType(module).classDescriptorForType()
+    }
+    ?: emptyList()
 }
 
 internal fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType {
@@ -152,17 +152,17 @@ internal fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType
   val classId = normalClass.value.classId
 
   return module
-      .findClassAcrossModuleDependencies(
-          classId = ClassId(
-              classId.packageFqName,
-              FqName(classId.relativeClassName.asString().replace('$', '.')),
-              false
-          )
+    .findClassAcrossModuleDependencies(
+      classId = ClassId(
+        classId.packageFqName,
+        FqName(classId.relativeClassName.asString().replace('$', '.')),
+        false
       )
-      ?.defaultType
-      ?: throw AnvilCompilationException(
-          "Couldn't resolve class across module dependencies for class ID: $classId"
-      )
+    )
+    ?.defaultType
+    ?: throw AnvilCompilationException(
+      "Couldn't resolve class across module dependencies for class ID: $classId"
+    )
 }
 
 internal fun AnnotationDescriptor.boundType(
@@ -170,41 +170,43 @@ internal fun AnnotationDescriptor.boundType(
   annotatedClass: ClassDescriptor
 ): ClassDescriptor {
   (getAnnotationValue("boundType") as? KClassValue)
-      ?.argumentType(module)
-      ?.classDescriptorForType()
-      ?.let { return it }
+    ?.argumentType(module)
+    ?.classDescriptorForType()
+    ?.let { return it }
 
   val directSuperTypes = annotatedClass.getSuperInterfaces() +
-      (annotatedClass.getSuperClassNotAny()
-          ?.let { listOf(it) }
-          ?: emptyList())
+    (
+      annotatedClass.getSuperClassNotAny()
+        ?.let { listOf(it) }
+        ?: emptyList()
+      )
 
   return directSuperTypes.singleOrNull()
-      ?: throw AnvilCompilationException(
-          classDescriptor = annotatedClass,
-          message = "${annotatedClass.fqNameSafe} contributes a binding, but does not " +
-              "specify the bound type. This is only allowed with exactly one direct super type. " +
-              "If there are multiple or none, then the bound type must be explicitly defined in " +
-              "the @${contributesBindingFqName.shortName()} annotation."
-      )
+    ?: throw AnvilCompilationException(
+      classDescriptor = annotatedClass,
+      message = "${annotatedClass.fqNameSafe} contributes a binding, but does not " +
+        "specify the bound type. This is only allowed with exactly one direct super type. " +
+        "If there are multiple or none, then the bound type must be explicitly defined in " +
+        "the @${contributesBindingFqName.shortName()} annotation."
+    )
 }
 
 internal fun KtClassOrObject.generateClassName(
   separator: String = "_"
 ): String =
   parentsWithSelf
-      .filterIsInstance<KtClassOrObject>()
-      .toList()
-      .reversed()
-      .joinToString(separator = separator) {
-        it.requireFqName()
-            .shortName()
-            .asString()
-      }
+    .filterIsInstance<KtClassOrObject>()
+    .toList()
+    .reversed()
+    .joinToString(separator = separator) {
+      it.requireFqName()
+        .shortName()
+        .asString()
+    }
 
 internal fun List<KotlinType>.getAllSuperTypes(): Sequence<FqName> =
   generateSequence(this) { kotlinTypes ->
     kotlinTypes.ifEmpty { null }?.flatMap { it.supertypes() }
   }
-      .flatMap { it.asSequence() }
-      .map { DescriptorUtils.getFqNameSafe(it.classDescriptorForType()) }
+    .flatMap { it.asSequence() }
+    .map { DescriptorUtils.getFqNameSafe(it.classDescriptorForType()) }
