@@ -2793,6 +2793,47 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
     }
   }
 
+  @Test fun `warnings are suppressed`() {
+    compile(
+        """
+        @file:Suppress("DEPRECATION")  
+          
+        package com.squareup.test
+        
+        import dagger.Module
+        import dagger.Provides
+        
+        @Deprecated("deprecated")
+        object Type
+        
+        @Module
+        class DaggerModule1 {
+          @Provides fun provideType(): Type = Type
+        }
+        """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideType")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(2)
+
+      val module = daggerModule1.newInstanceNoArgs()
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+          .invoke(null, module)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedType = staticMethods.single { it.name == "provideType" }
+          .invoke(null, module)
+
+      assertThat(providedType).isNotNull()
+      assertThat((factoryInstance as Factory<*>).get()).isNotNull()
+    }
+  }
+
   @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
     vararg sources: String,
