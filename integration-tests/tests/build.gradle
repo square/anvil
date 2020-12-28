@@ -1,5 +1,3 @@
-import org.gradle.util.VersionNumber
-
 apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'org.jetbrains.kotlin.kapt'
 apply plugin: 'com.squareup.anvil'
