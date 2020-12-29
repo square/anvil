@@ -2,14 +2,13 @@ package com.squareup.anvil.compiler.codegen.dagger
 
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
-import com.squareup.anvil.compiler.codegen.addGeneratedByComment
 import com.squareup.anvil.compiler.codegen.asClassName
+import com.squareup.anvil.compiler.codegen.buildFile
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.isGenericClass
 import com.squareup.anvil.compiler.codegen.mapToParameter
 import com.squareup.anvil.compiler.codegen.requireFqName
-import com.squareup.anvil.compiler.codegen.writeToString
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.injectFqName
@@ -91,100 +90,98 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
 
     val memberInjectorClass = ClassName(packageName, className)
 
-    val content = FileSpec.builder(packageName, className)
-        .addType(
-            TypeSpec
-                .classBuilder(memberInjectorClass)
-                .addSuperinterface(MembersInjector::class.asClassName().parameterizedBy(classType))
-                .apply {
-                  primaryConstructor(
-                      FunSpec.constructorBuilder()
-                          .apply {
-                            parameters.forEach { parameter ->
-                              addParameter(parameter.name, parameter.providerTypeName)
-                            }
+    val content = FileSpec.buildFile(packageName, className) {
+      addType(
+          TypeSpec
+              .classBuilder(memberInjectorClass)
+              .addSuperinterface(MembersInjector::class.asClassName().parameterizedBy(classType))
+              .apply {
+                primaryConstructor(
+                    FunSpec.constructorBuilder()
+                        .apply {
+                          parameters.forEach { parameter ->
+                            addParameter(parameter.name, parameter.providerTypeName)
                           }
+                        }
+                        .build()
+                )
+
+                parameters.forEach { parameter ->
+                  addProperty(
+                      PropertySpec.builder(parameter.name, parameter.providerTypeName)
+                          .initializer(parameter.name)
+                          .addModifiers(PRIVATE)
                           .build()
                   )
-
-                  parameters.forEach { parameter ->
-                    addProperty(
-                        PropertySpec.builder(parameter.name, parameter.providerTypeName)
-                            .initializer(parameter.name)
-                            .addModifiers(PRIVATE)
-                            .build()
-                    )
-                  }
                 }
-                .addFunction(
-                    FunSpec.builder("injectMembers")
-                        .addModifiers(OVERRIDE)
-                        .addParameter("instance", classType)
-                        .apply {
-                          parameters.forEachIndexed { index, parameter ->
-                            val property = injectProperties[index]
-                            val propertyName = property.nameAsSafeName.asString()
+              }
+              .addFunction(
+                  FunSpec.builder("injectMembers")
+                      .addModifiers(OVERRIDE)
+                      .addParameter("instance", classType)
+                      .apply {
+                        parameters.forEachIndexed { index, parameter ->
+                          val property = injectProperties[index]
+                          val propertyName = property.nameAsSafeName.asString()
 
-                            addStatement(
-                                "inject${propertyName.capitalize(US)}(instance, ${
-                                  when {
-                                    parameter.isWrappedInProvider -> parameter.name
-                                    parameter.isWrappedInLazy ->
-                                      "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
-                                    else -> parameter.name + ".get()"
-                                  }
-                                })"
-                            )
-                          }
-                        }
-                        .build()
-                )
-                .addType(
-                    TypeSpec
-                        .companionObjectBuilder()
-                        .addFunction(
-                            FunSpec.builder("create")
-                                .jvmStatic()
-                                .apply {
-                                  parameters.forEach { parameter ->
-                                    addParameter(parameter.name, parameter.providerTypeName)
-                                  }
-
-                                  addStatement(
-                                      "return %T(${createArgumentList(false)})",
-                                      memberInjectorClass
-                                  )
+                          addStatement(
+                              "inject${propertyName.capitalize(US)}(instance, ${
+                                when {
+                                  parameter.isWrappedInProvider -> parameter.name
+                                  parameter.isWrappedInLazy ->
+                                    "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
+                                  else -> parameter.name + ".get()"
                                 }
-                                .returns(memberInjectorClass)
-                                .build()
-                        )
-                        .apply {
-                          parameters.forEachIndexed { index, parameter ->
-                            val property = injectProperties[index]
-                            val propertyName = property.nameAsSafeName.asString()
-
-                            addFunction(
-                                FunSpec.builder("inject${propertyName.capitalize(US)}")
-                                    .jvmStatic()
-                                    .addAnnotation(
-                                        AnnotationSpec.builder(InjectedFieldSignature::class)
-                                            .addMember("%S", property.requireFqName())
-                                            .build()
-                                    )
-                                    .addParameter("instance", classType)
-                                    .addParameter(propertyName, parameter.originalTypeName)
-                                    .addStatement("instance.$propertyName = $propertyName")
-                                    .build()
-                            )
-                          }
+                              })"
+                          )
                         }
-                        .build()
-                )
-                .build()
-        )
-        .build()
-        .writeToString()
-        .addGeneratedByComment()
+                      }
+                      .build()
+              )
+              .addType(
+                  TypeSpec
+                      .companionObjectBuilder()
+                      .addFunction(
+                          FunSpec.builder("create")
+                              .jvmStatic()
+                              .apply {
+                                parameters.forEach { parameter ->
+                                  addParameter(parameter.name, parameter.providerTypeName)
+                                }
+
+                                addStatement(
+                                    "return %T(${createArgumentList(false)})",
+                                    memberInjectorClass
+                                )
+                              }
+                              .returns(memberInjectorClass)
+                              .build()
+                      )
+                      .apply {
+                        parameters.forEachIndexed { index, parameter ->
+                          val property = injectProperties[index]
+                          val propertyName = property.nameAsSafeName.asString()
+
+                          addFunction(
+                              FunSpec.builder("inject${propertyName.capitalize(US)}")
+                                  .jvmStatic()
+                                  .addAnnotation(
+                                      AnnotationSpec.builder(InjectedFieldSignature::class)
+                                          .addMember("%S", property.requireFqName())
+                                          .build()
+                                  )
+                                  .addParameter("instance", classType)
+                                  .addParameter(propertyName, parameter.originalTypeName)
+                                  .addStatement("instance.$propertyName = $propertyName")
+                                  .build()
+                          )
+                        }
+                      }
+                      .build()
+              )
+              .build()
+      )
+    }
 
     val directory = File(codeGenDir, packageName.replace('.', File.separatorChar))
     val file = File(directory, "$className.kt")

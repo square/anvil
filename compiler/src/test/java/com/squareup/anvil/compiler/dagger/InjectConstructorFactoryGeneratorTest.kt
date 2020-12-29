@@ -582,7 +582,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { "a" }, Provider { setOf { _: List<String> -> listOf("b") } })
+          .invoke(null, Provider { "a" }, Provider { setOf { listOf("b") } })
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val newInstance = staticMethods.single { it.name == "newInstance" }
@@ -1199,7 +1199,7 @@ public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
     }
   }
 
-  @Test fun `a factory class is generated for generics with out modifier`() {
+  @Test fun `a factory class is generated for generics without modifier`() {
     /*
 package com.squareup.test;
 
@@ -1311,6 +1311,8 @@ public final class InjectClass_Factory<T extends CharSequence> implements Factor
       sources = sources,
       enableDaggerAnnotationProcessor = useDagger,
       generateDaggerFactories = !useDagger,
+      // Many constructor parameters are unused.
+      allWarningsAsErrors = false,
       block = block
   )
 }

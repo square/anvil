@@ -343,40 +343,37 @@ internal class BindingModuleGenerator(
     val bindingMethods = generatedMethods.filterIsInstance<BindingMethod>()
     val providerMethods = generatedMethods.filterIsInstance<ProviderMethod>()
 
-    return FileSpec.builder(generatePackageName(psiClass), className)
-        .apply {
-          val builder = if (bindingMethods.isEmpty()) {
-            TypeSpec.objectBuilder(className)
-                .addFunctions(providerMethods.specs)
-          } else {
-            TypeSpec.classBuilder(className)
-                .addModifiers(ABSTRACT)
-                .addFunctions(bindingMethods.specs)
-                .apply {
-                  if (providerMethods.isNotEmpty()) {
-                    addType(
-                        TypeSpec.companionObjectBuilder()
-                            .addFunctions(providerMethods.specs)
-                            .build()
-                    )
-                  }
-                }
-          }
+    return FileSpec.buildFile(generatePackageName(psiClass), className) {
+      val builder = if (bindingMethods.isEmpty()) {
+        TypeSpec.objectBuilder(className)
+            .addFunctions(providerMethods.specs)
+      } else {
+        TypeSpec.classBuilder(className)
+            .addModifiers(ABSTRACT)
+            .addFunctions(bindingMethods.specs)
+            .apply {
+              if (providerMethods.isNotEmpty()) {
+                addType(
+                    TypeSpec.companionObjectBuilder()
+                        .addFunctions(providerMethods.specs)
+                        .build()
+                )
+              }
+            }
+      }
 
-          addType(
-              builder
-                  .addAnnotation(Module::class)
-                  .addAnnotation(
-                      AnnotationSpec
-                          .builder(ContributesTo::class)
-                          .addMember("$scope::class")
-                          .build()
-                  )
-                  .build()
-          )
-        }
-        .build()
-        .writeToString()
+      addType(
+          builder
+              .addAnnotation(Module::class)
+              .addAnnotation(
+                  AnnotationSpec
+                      .builder(ContributesTo::class)
+                      .addMember("$scope::class")
+                      .build()
+              )
+              .build()
+      )
+    }
   }
 }
 
