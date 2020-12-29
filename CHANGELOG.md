@@ -2,6 +2,12 @@
 
 ## Next Version
 
+## 2.0.11 (2020-12-28)
+
+* Declare the Dagger Factory generation option as stable.
+* Support a mode that only generates Dagger Factories through the `generateDaggerFactoriesOnly` flag, see #164.
+* Suppress any deprecation warnings in generated code, see #169.
+
 ## 2.0.10 (2020-11-20)
 
 * Upgrade Kotlin to `1.4.20`. Note that this version **no longer works** with Kotlin `1.4.10` or older, see #159.
