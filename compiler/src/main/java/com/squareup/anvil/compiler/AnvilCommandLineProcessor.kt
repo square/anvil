@@ -26,30 +26,30 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
   override val pluginId: String = "com.squareup.anvil.compiler"
 
   override val pluginOptions: Collection<AbstractCliOption> = listOf(
-      CliOption(
-          optionName = srcGenDirName,
-          valueDescription = "<file-path>",
-          description = "Path to directory in which Anvil specific code should be generated",
-          required = true,
-          allowMultipleOccurrences = false
-      ),
-      CliOption(
-          optionName = generateDaggerFactoriesName,
-          valueDescription = "<true|false>",
-          description = "Whether Anvil should generate Factory classes that the Dagger " +
-              "annotation processor would generate for @Provides methods and @Inject " +
-              "constructors.",
-          required = false,
-          allowMultipleOccurrences = false
-      ),
-      CliOption(
-          optionName = generateDaggerFactoriesOnlyName,
-          valueDescription = "<true|false>",
-          description = "Whether Anvil should generate Factory classes only and no code for " +
-              "contributed code.",
-          required = false,
-          allowMultipleOccurrences = false
-      )
+    CliOption(
+      optionName = srcGenDirName,
+      valueDescription = "<file-path>",
+      description = "Path to directory in which Anvil specific code should be generated",
+      required = true,
+      allowMultipleOccurrences = false
+    ),
+    CliOption(
+      optionName = generateDaggerFactoriesName,
+      valueDescription = "<true|false>",
+      description = "Whether Anvil should generate Factory classes that the Dagger " +
+        "annotation processor would generate for @Provides methods and @Inject " +
+        "constructors.",
+      required = false,
+      allowMultipleOccurrences = false
+    ),
+    CliOption(
+      optionName = generateDaggerFactoriesOnlyName,
+      valueDescription = "<true|false>",
+      description = "Whether Anvil should generate Factory classes only and no code for " +
+        "contributed code.",
+      required = false,
+      allowMultipleOccurrences = false
+    )
   )
 
   override fun processOption(

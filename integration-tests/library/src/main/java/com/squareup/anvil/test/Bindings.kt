@@ -8,8 +8,8 @@ public interface ParentType
 public interface MiddleType : ParentType
 
 @ContributesBinding(
-    scope = AppScope::class,
-    boundType = ParentType::class
+  scope = AppScope::class,
+  boundType = ParentType::class
 )
 public class AppBinding @Inject constructor() : MiddleType
 

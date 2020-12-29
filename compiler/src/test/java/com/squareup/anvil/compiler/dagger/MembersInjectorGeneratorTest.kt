@@ -118,63 +118,68 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
      */
 
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      
+      typealias StringList = List<String>
+      
+      class InjectClass {
+        @Inject lateinit var string: String
+        @Inject lateinit var charSequence: CharSequence
+        @Inject lateinit var list: List<String>
+        @Inject lateinit var pair: Pair<Pair<String, Int>, Set<String>>
+        @Inject lateinit var set: @JvmSuppressWildcards Set<(StringList) -> StringList>
         
-        import javax.inject.Inject
-        
-        typealias StringList = List<String>
-        
-        class InjectClass {
-          @Inject lateinit var string: String
-          @Inject lateinit var charSequence: CharSequence
-          @Inject lateinit var list: List<String>
-          @Inject lateinit var pair: Pair<Pair<String, Int>, Set<String>>
-          @Inject lateinit var set: @JvmSuppressWildcards Set<(StringList) -> StringList>
-          
-          override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-        
-            other as InjectClass
-        
-            if (string != other.string) return false
-            if (charSequence != other.charSequence) return false
-            if (list != other.list) return false
-            if (pair != other.pair) return false
-            if (set.single().invoke(emptyList())[0] != other.set.single().invoke(emptyList())[0]) return false
-        
-            return true
-          }
-        
-          override fun hashCode(): Int {
-            var result = string.hashCode()
-            result = 31 * result + charSequence.hashCode()
-            result = 31 * result + list.hashCode()
-            result = 31 * result + pair.hashCode()
-            result = 31 * result + set.single().invoke(emptyList())[0].hashCode()
-            return result
-          }
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+      
+          other as InjectClass
+      
+          if (string != other.string) return false
+          if (charSequence != other.charSequence) return false
+          if (list != other.list) return false
+          if (pair != other.pair) return false
+          if (set.single().invoke(emptyList())[0] != other.set.single().invoke(emptyList())[0]) return false
+      
+          return true
         }
-        """
+      
+        override fun hashCode(): Int {
+          var result = string.hashCode()
+          result = 31 * result + charSequence.hashCode()
+          result = 31 * result + list.hashCode()
+          result = 31 * result + pair.hashCode()
+          result = 31 * result + set.single().invoke(emptyList())[0].hashCode()
+          return result
+        }
+      }
+      """
     ) {
       val membersInjector = injectClass.membersInjector()
 
       val constructor = membersInjector.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-          .containsExactly(
-              Provider::class.java, Provider::class.java, Provider::class.java,
-              Provider::class.java, Provider::class.java
-          )
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
 
       @Suppress("RedundantLambdaArrow")
       val membersInjectorInstance = constructor
-          .newInstance(
-              Provider { "a" }, Provider<CharSequence> { "b" }, Provider { listOf("c") },
-              Provider { Pair(Pair("a", 1), setOf("b")) },
-              Provider { setOf { _: List<String> -> listOf("d") } }
-          )
-          as MembersInjector<Any>
+        .newInstance(
+          Provider { "a" },
+          Provider<CharSequence> { "b" },
+          Provider { listOf("c") },
+          Provider { Pair(Pair("a", 1), setOf("b")) },
+          Provider { setOf { _: List<String> -> listOf("d") } }
+        )
+        as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.newInstanceNoArgs()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
@@ -182,15 +187,15 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       val injectInstanceStatic = injectClass.newInstanceNoArgs()
 
       membersInjector.staticInjectMethod("string")
-          .invoke(null, injectInstanceStatic, "a")
+        .invoke(null, injectInstanceStatic, "a")
       membersInjector.staticInjectMethod("charSequence")
-          .invoke(null, injectInstanceStatic, "b" as CharSequence)
+        .invoke(null, injectInstanceStatic, "b" as CharSequence)
       membersInjector.staticInjectMethod("list")
-          .invoke(null, injectInstanceStatic, listOf("c"))
+        .invoke(null, injectInstanceStatic, listOf("c"))
       membersInjector.staticInjectMethod("pair")
-          .invoke(null, injectInstanceStatic, Pair(Pair("a", 1), setOf("b")))
+        .invoke(null, injectInstanceStatic, Pair(Pair("a", 1), setOf("b")))
       membersInjector.staticInjectMethod("set")
-          .invoke(null, injectInstanceStatic, setOf { _: List<String> -> listOf("d") })
+        .invoke(null, injectInstanceStatic, setOf { _: List<String> -> listOf("d") })
 
       assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
       assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
@@ -272,43 +277,48 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
      */
 
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
+      
+      import dagger.Lazy
+      import javax.inject.Inject
+      import javax.inject.Provider
+      
+      class InjectClass {
+        @Inject lateinit var string: String
+        @Inject lateinit var stringProvider: Provider<String>
+        @Inject lateinit var stringListProvider: Provider<List<String>>
+        @Inject lateinit var lazyString: Lazy<String>
         
-        import dagger.Lazy
-        import javax.inject.Inject
-        import javax.inject.Provider
-        
-        class InjectClass {
-          @Inject lateinit var string: String
-          @Inject lateinit var stringProvider: Provider<String>
-          @Inject lateinit var stringListProvider: Provider<List<String>>
-          @Inject lateinit var lazyString: Lazy<String>
-          
-          override fun equals(other: Any?): Boolean {
-            return toString() == other.toString()
-          }
-          override fun toString(): String {
-           return string + stringProvider.get() + 
-               stringListProvider.get()[0] + lazyString.get()
-          }
+        override fun equals(other: Any?): Boolean {
+          return toString() == other.toString()
         }
-        """
+        override fun toString(): String {
+         return string + stringProvider.get() + 
+             stringListProvider.get()[0] + lazyString.get()
+        }
+      }
+      """
     ) {
       val membersInjector = injectClass.membersInjector()
 
       val constructor = membersInjector.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-          .containsExactly(
-              Provider::class.java, Provider::class.java, Provider::class.java, Provider::class.java
-          )
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
 
       val membersInjectorInstance = constructor
-          .newInstance(
-              Provider { "a" }, Provider { "b" }, Provider { listOf("c") },
-              Provider { "d" }
-          )
-          as MembersInjector<Any>
+        .newInstance(
+          Provider { "a" },
+          Provider { "b" },
+          Provider { listOf("c") },
+          Provider { "d" }
+        )
+        as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.newInstanceNoArgs()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
@@ -316,13 +326,13 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       val injectInstanceStatic = injectClass.newInstanceNoArgs()
 
       membersInjector.staticInjectMethod("string")
-          .invoke(null, injectInstanceStatic, "a")
+        .invoke(null, injectInstanceStatic, "a")
       membersInjector.staticInjectMethod("stringProvider")
-          .invoke(null, injectInstanceStatic, Provider { "b" })
+        .invoke(null, injectInstanceStatic, Provider { "b" })
       membersInjector.staticInjectMethod("stringListProvider")
-          .invoke(null, injectInstanceStatic, Provider { listOf("c") })
+        .invoke(null, injectInstanceStatic, Provider { listOf("c") })
       membersInjector.staticInjectMethod("lazyString")
-          .invoke(null, injectInstanceStatic, Lazy { "d" })
+        .invoke(null, injectInstanceStatic, Lazy { "d" })
 
       assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
       assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
@@ -381,46 +391,46 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
      */
 
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
+      
+      import java.io.*
+      import java.nio.file.*
+      import javax.inject.*
+      
+      class InjectClass {
+        @Inject lateinit var file: File
+        @Inject lateinit var path: Path
         
-        import java.io.*
-        import java.nio.file.*
-        import javax.inject.*
-        
-        class InjectClass {
-          @Inject lateinit var file: File
-          @Inject lateinit var path: Path
-          
-          override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-        
-            other as InjectClass
-        
-            if (file != other.file) return false
-            if (path != other.path) return false
-        
-            return true
-          }
-        
-          override fun hashCode(): Int {
-            var result = file.hashCode()
-            result = 31 * result + path.hashCode()
-            return result
-          }
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+      
+          other as InjectClass
+      
+          if (file != other.file) return false
+          if (path != other.path) return false
+      
+          return true
         }
-        """
+      
+        override fun hashCode(): Int {
+          var result = file.hashCode()
+          result = 31 * result + path.hashCode()
+          return result
+        }
+      }
+      """
     ) {
       val membersInjector = injectClass.membersInjector()
 
       val constructor = membersInjector.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java, Provider::class.java)
+        .containsExactly(Provider::class.java, Provider::class.java)
 
       val membersInjectorInstance = constructor
-          .newInstance(Provider { File("") }, Provider { File("").toPath() })
-          as MembersInjector<Any>
+        .newInstance(Provider { File("") }, Provider { File("").toPath() })
+        as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.newInstanceNoArgs()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
@@ -428,9 +438,9 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       val injectInstanceStatic = injectClass.newInstanceNoArgs()
 
       membersInjector.staticInjectMethod("file")
-          .invoke(null, injectInstanceStatic, File(""))
+        .invoke(null, injectInstanceStatic, File(""))
       membersInjector.staticInjectMethod("path")
-          .invoke(null, injectInstanceStatic, File("").toPath())
+        .invoke(null, injectInstanceStatic, File("").toPath())
 
       assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
       assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
@@ -499,50 +509,50 @@ public final class OuterClass_InjectClass_MembersInjector implements MembersInje
      */
 
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      
+      class OuterClass {
+        class InjectClass {
+          @Inject lateinit var string: String
+          @Inject lateinit var charSequence: CharSequence
+          @Inject lateinit var list: List<String>
+          
+          override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
         
-        import javax.inject.Inject
+            other as InjectClass
         
-        class OuterClass {
-          class InjectClass {
-            @Inject lateinit var string: String
-            @Inject lateinit var charSequence: CharSequence
-            @Inject lateinit var list: List<String>
-            
-            override fun equals(other: Any?): Boolean {
-              if (this === other) return true
-              if (javaClass != other?.javaClass) return false
-          
-              other as InjectClass
-          
-              if (string != other.string) return false
-              if (charSequence != other.charSequence) return false
-              if (list != other.list) return false
-          
-              return true
-            }
-          
-            override fun hashCode(): Int {
-              var result = string.hashCode()
-              result = 31 * result + charSequence.hashCode()
-              result = 31 * result + list.hashCode()
-              return result
-            }
+            if (string != other.string) return false
+            if (charSequence != other.charSequence) return false
+            if (list != other.list) return false
+        
+            return true
+          }
+        
+          override fun hashCode(): Int {
+            var result = string.hashCode()
+            result = 31 * result + charSequence.hashCode()
+            result = 31 * result + list.hashCode()
+            return result
           }
         }
-        """
+      }
+      """
     ) {
       val injectClass = classLoader.loadClass("com.squareup.test.OuterClass\$InjectClass")
       val membersInjector = injectClass.membersInjector()
 
       val constructor = membersInjector.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java, Provider::class.java, Provider::class.java)
+        .containsExactly(Provider::class.java, Provider::class.java, Provider::class.java)
 
       val membersInjectorInstance = constructor
-          .newInstance(Provider { "a" }, Provider<CharSequence> { "b" }, Provider { listOf("c") })
-          as MembersInjector<Any>
+        .newInstance(Provider { "a" }, Provider<CharSequence> { "b" }, Provider { listOf("c") })
+        as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.newInstanceNoArgs()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
@@ -550,11 +560,11 @@ public final class OuterClass_InjectClass_MembersInjector implements MembersInje
       val injectInstanceStatic = injectClass.newInstanceNoArgs()
 
       membersInjector.staticInjectMethod("string")
-          .invoke(null, injectInstanceStatic, "a")
+        .invoke(null, injectInstanceStatic, "a")
       membersInjector.staticInjectMethod("charSequence")
-          .invoke(null, injectInstanceStatic, "b" as CharSequence)
+        .invoke(null, injectInstanceStatic, "b" as CharSequence)
       membersInjector.staticInjectMethod("list")
-          .invoke(null, injectInstanceStatic, listOf("c"))
+        .invoke(null, injectInstanceStatic, listOf("c"))
 
       assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
       assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
@@ -601,21 +611,21 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import javax.inject.Inject
-        
-        abstract class InjectClass<T> {
-          @Inject lateinit var string: String
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      
+      abstract class InjectClass<T> {
+        @Inject lateinit var string: String
+      }
+      """
     ) {
       val membersInjector = injectClass.membersInjector()
 
       val constructor = membersInjector.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java)
+        .containsExactly(Provider::class.java)
     }
   }
 
@@ -660,14 +670,14 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
     compile(
       """
-        package com.squareup.test
-        
-        import javax.inject.Inject
-        
-        abstract class InjectClass<T, U, V> {
-          @Inject lateinit var string: String
-        }
-        """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      
+      abstract class InjectClass<T, U, V> {
+        @Inject lateinit var string: String
+      }
+      """
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -681,8 +691,8 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     // We can't check the @InjectedFieldSignature annotation unfortunately, because it has class
     // retention.
     return declaredMethods
-        .filter { it.isStatic }
-        .single { it.name == "inject${memberName.capitalize(US)}" }
+      .filter { it.isStatic }
+      .single { it.name == "inject${memberName.capitalize(US)}" }
   }
 
   @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
@@ -690,9 +700,9 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = com.squareup.anvil.compiler.compile(
-      sources = sources,
-      enableDaggerAnnotationProcessor = useDagger,
-      generateDaggerFactories = !useDagger,
-      block = block
+    sources = sources,
+    enableDaggerAnnotationProcessor = useDagger,
+    generateDaggerFactories = !useDagger,
+    block = block
   )
 }

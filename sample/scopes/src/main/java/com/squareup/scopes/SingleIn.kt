@@ -1,7 +1,7 @@
 package com.squareup.scopes
 
-import kotlin.reflect.KClass
 import javax.inject.Scope
+import kotlin.reflect.KClass
 
 @Scope
 @Retention(AnnotationRetention.RUNTIME)

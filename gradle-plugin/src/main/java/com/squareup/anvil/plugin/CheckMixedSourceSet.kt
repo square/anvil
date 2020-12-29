@@ -21,10 +21,10 @@ object CheckMixedSourceSet {
 
   fun preparePreciseJavaTrackingCheck(compileTask: KotlinCompile): Input {
     return Input(
-        sources = getAndroidSourceDirs(compileTask)
-            ?: getJvmSourceDirs(compileTask.project)
-            ?: compileTask.project.files(),
-        isKaptApplied = compileTask.project.isKaptApplied()
+      sources = getAndroidSourceDirs(compileTask)
+        ?: getJvmSourceDirs(compileTask.project)
+        ?: compileTask.project.files(),
+      isKaptApplied = compileTask.project.isKaptApplied()
     )
   }
 
@@ -33,9 +33,9 @@ object CheckMixedSourceSet {
     input: Input
   ) {
     val sourceFiles = input.sources
-        .asSequence()
-        .flatMap { it.walk() }
-        .filter { it.isFile }
+      .asSequence()
+      .flatMap { it.walk() }
+      .filter { it.isFile }
     val hasJavaFile = sourceFiles.any { it.extension == "java" }
 
     // If there is Java file, then disable precise Java tracking.
@@ -53,10 +53,10 @@ object CheckMixedSourceSet {
     val project = compileTask.project
     return if (project.isAndroidProject) {
       project.androidVariants()
-          .findVariantForCompileTask(compileTask)
-          .sourceSets
-          .flatMap { it.javaDirectories }
-          .let { project.files(it) }
+        .findVariantForCompileTask(compileTask)
+        .sourceSets
+        .flatMap { it.javaDirectories }
+        .let { project.files(it) }
     } else {
       null
     }
@@ -65,10 +65,10 @@ object CheckMixedSourceSet {
   private fun getJvmSourceDirs(project: Project): FileCollection? {
     return if (project.isKotlinJvmProject) {
       project.convention.getPlugin(JavaPluginConvention::class.java)
-          .sourceSets
-          // Ignore "test", similar to androidVariants() we ignore unit tests.
-          .single { it.name == "main" }
-          .allJava
+        .sourceSets
+        // Ignore "test", similar to androidVariants() we ignore unit tests.
+        .single { it.name == "main" }
+        .allJava
     } else {
       null
     }
@@ -76,10 +76,10 @@ object CheckMixedSourceSet {
 
   private fun Project.isKaptApplied(): Property<Boolean> =
     objects
-        .property(Boolean::class.java)
-        .also {
-          it.set(plugins.hasPlugin(Kapt3GradleSubplugin::class.java))
-        }
+      .property(Boolean::class.java)
+      .also {
+        it.set(plugins.hasPlugin(Kapt3GradleSubplugin::class.java))
+      }
 
   class Input(
     val sources: FileCollection,

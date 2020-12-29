@@ -10,12 +10,12 @@ class AnvilAnnotationDetectorCheckTest {
 
   @Test fun `a Dagger subcomponent is allowed`() {
     compile(
-        """
-        package com.squareup.test
-        
-        @dagger.Subcomponent
-        interface ComponentInterface
-        """
+      """
+      package com.squareup.test
+      
+      @dagger.Subcomponent
+      interface ComponentInterface
+      """
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -23,14 +23,14 @@ class AnvilAnnotationDetectorCheckTest {
 
   @Test fun `@ContributesTo is not allowed`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Subcomponent
-        
-        @com.squareup.anvil.annotations.ContributesTo(Any::class)
-        class AnyClass
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Subcomponent
+      
+      @com.squareup.anvil.annotations.ContributesTo(Any::class)
+      class AnyClass
+      """
     ) {
       assertError()
     }
@@ -38,14 +38,14 @@ class AnvilAnnotationDetectorCheckTest {
 
   @Test fun `@ContributesBinding is not allowed`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Subcomponent
-        
-        @com.squareup.anvil.annotations.ContributesBinding(Any::class)
-        class AnyClass
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Subcomponent
+      
+      @com.squareup.anvil.annotations.ContributesBinding(Any::class)
+      class AnyClass
+      """
     ) {
       assertError()
     }
@@ -53,14 +53,14 @@ class AnvilAnnotationDetectorCheckTest {
 
   @Test fun `@MergeComponent is not allowed`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Subcomponent
-        
-        @com.squareup.anvil.annotations.MergeComponent(Any::class)
-        class AnyClass
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Subcomponent
+      
+      @com.squareup.anvil.annotations.MergeComponent(Any::class)
+      class AnyClass
+      """
     ) {
       assertError()
     }
@@ -68,14 +68,14 @@ class AnvilAnnotationDetectorCheckTest {
 
   @Test fun `@MergeSubcomponent is not allowed`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Subcomponent
-        
-        @com.squareup.anvil.annotations.MergeSubcomponent(Any::class)
-        class AnyClass
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Subcomponent
+      
+      @com.squareup.anvil.annotations.MergeSubcomponent(Any::class)
+      class AnyClass
+      """
     ) {
       assertError()
     }
@@ -83,14 +83,14 @@ class AnvilAnnotationDetectorCheckTest {
 
   @Test fun `@MergeModules is not allowed`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Subcomponent
-        
-        @com.squareup.anvil.annotations.compat.MergeModules(Any::class)
-        class AnyClass
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Subcomponent
+      
+      @com.squareup.anvil.annotations.compat.MergeModules(Any::class)
+      class AnyClass
+      """
     ) {
       assertError()
     }
@@ -98,14 +98,14 @@ class AnvilAnnotationDetectorCheckTest {
 
   @Test fun `@MergeInterfaces is not allowed`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Subcomponent
-        
-        @com.squareup.anvil.annotations.compat.MergeInterfaces(Any::class)
-        class AnyClass
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Subcomponent
+      
+      @com.squareup.anvil.annotations.compat.MergeInterfaces(Any::class)
+      class AnyClass
+      """
     ) {
       assertError()
     }
@@ -115,9 +115,9 @@ class AnvilAnnotationDetectorCheckTest {
     assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
     assertThat(messages).contains("Source.kt: (5, 1")
     assertThat(messages).contains(
-        "This Gradle module is configured to ONLY generate Dagger factories with the " +
-            "`generateDaggerFactoriesOnly` flag. However, this module contains code that uses " +
-            "other Anvil annotations. That's not supported."
+      "This Gradle module is configured to ONLY generate Dagger factories with the " +
+        "`generateDaggerFactoriesOnly` flag. However, this module contains code that uses " +
+        "other Anvil annotations. That's not supported."
     )
   }
 
@@ -126,9 +126,9 @@ class AnvilAnnotationDetectorCheckTest {
     vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = com.squareup.anvil.compiler.compile(
-      sources = sources,
-      generateDaggerFactories = true,
-      generateDaggerFactoriesOnly = true,
-      block = block
+    sources = sources,
+    generateDaggerFactories = true,
+    generateDaggerFactoriesOnly = true,
+    block = block
   )
 }

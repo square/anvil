@@ -13,7 +13,7 @@ internal class MergeComponentTest {
   @Test fun `component merges modules and interfaces`() {
     val annotation = AppComponent::class.java.getAnnotation(Component::class.java)!!
     assertThat(annotation.modules.withoutAnvilModule())
-        .containsExactly(AppModule1::class, AppModule2::class)
+      .containsExactly(AppModule1::class, AppModule2::class)
 
     assertThat(AppComponent::class extends AppComponentInterface::class).isTrue()
     assertThat(AppComponent::class extends AppModule2::class).isFalse()
@@ -23,7 +23,7 @@ internal class MergeComponentTest {
   @Test fun `subcomponent merges modules and interfaces`() {
     val annotation = SubComponent::class.java.getAnnotation(Subcomponent::class.java)!!
     assertThat(annotation.modules.withoutAnvilModule())
-        .containsExactly(SubModule1::class, SubModule2::class)
+      .containsExactly(SubModule1::class, SubModule2::class)
 
     assertThat(SubComponent::class extends SubComponentInterface::class).isTrue()
     assertThat(AppComponent::class extends AppModule2::class).isFalse()

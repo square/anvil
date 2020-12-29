@@ -15,14 +15,14 @@ class AnvilCompilationIrException(
   cause: Throwable? = null,
   element: IrElement? = null
 ) : CompilationException(
-    getExceptionMessage(
-        subsystemName = "Anvil",
-        message = message,
-        cause = cause,
-        location = element?.render()
-    ),
-    cause,
-    element?.getPsi()
+  getExceptionMessage(
+    subsystemName = "Anvil",
+    message = message,
+    cause = cause,
+    location = element?.render()
+  ),
+  cause,
+  element?.getPsi()
 ) {
   constructor(
     message: String,

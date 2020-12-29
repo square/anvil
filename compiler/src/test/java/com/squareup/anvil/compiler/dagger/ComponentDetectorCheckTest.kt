@@ -10,37 +10,37 @@ class ComponentDetectorCheckTest {
 
   @Test fun `a Dagger component causes an error`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Component
-        
-        @Component
-        interface ComponentInterface
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Component
+      
+      @Component
+      interface ComponentInterface
+      """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
       assertThat(messages).contains("Source.kt: (5, 1")
       assertThat(messages).contains(
-          "Anvil cannot generate the code for Dagger components or subcomponents. In these " +
-              "cases the Dagger annotation processor is required. Enabling the Dagger " +
-              "annotation processor and turning on Anvil to generate Dagger factories is " +
-              "redundant. Set 'generateDaggerFactories' to false."
+        "Anvil cannot generate the code for Dagger components or subcomponents. In these " +
+          "cases the Dagger annotation processor is required. Enabling the Dagger " +
+          "annotation processor and turning on Anvil to generate Dagger factories is " +
+          "redundant. Set 'generateDaggerFactories' to false."
       )
     }
   }
 
   @Test fun `a Dagger subcomponent is allowed`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Subcomponent
-        
-        @Subcomponent
-        interface ComponentInterface
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Subcomponent
+      
+      @Subcomponent
+      interface ComponentInterface
+      """
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -48,7 +48,7 @@ class ComponentDetectorCheckTest {
 
   @Test fun `a Dagger component causes an error inner class`() {
     compile(
-        """
+      """
         package com.squareup.test
         
         import dagger.Component
@@ -63,26 +63,26 @@ class ComponentDetectorCheckTest {
       // Position to the class.
       assertThat(messages).contains("Source.kt: (6, 3")
       assertThat(messages).contains(
-          "Anvil cannot generate the code for Dagger components or subcomponents. In these " +
-              "cases the Dagger annotation processor is required. Enabling the Dagger " +
-              "annotation processor and turning on Anvil to generate Dagger factories is " +
-              "redundant. Set 'generateDaggerFactories' to false."
+        "Anvil cannot generate the code for Dagger components or subcomponents. In these " +
+          "cases the Dagger annotation processor is required. Enabling the Dagger " +
+          "annotation processor and turning on Anvil to generate Dagger factories is " +
+          "redundant. Set 'generateDaggerFactories' to false."
       )
     }
   }
 
   @Test fun `a Dagger subcomponent in an inner class is allowed`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Subcomponent
-        
-        class OuterClass {
-          @Subcomponent
-          interface ComponentInterface
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Subcomponent
+      
+      class OuterClass {
+        @Subcomponent
+        interface ComponentInterface
+      }
+      """
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -93,8 +93,8 @@ class ComponentDetectorCheckTest {
     vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = com.squareup.anvil.compiler.compile(
-      sources = sources,
-      generateDaggerFactories = true,
-      block = block
+    sources = sources,
+    generateDaggerFactories = true,
+    block = block
   )
 }

@@ -75,14 +75,14 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        @dagger.Module
-        class DaggerModule1 {
-          @dagger.Provides fun provideString(): String = "abc"
-        }
-        """
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      class DaggerModule1 {
+        @dagger.Provides fun provideString(): String = "abc"
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -95,11 +95,11 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module)
+        .invoke(null, module)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null, module) as String
+        .invoke(null, module) as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
@@ -144,16 +144,16 @@ public final class DaggerModule1_ProvideFactoryFactory implements Factory<com.sq
 }
      */
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
 
-        import com.squareup.anvil.compiler.dagger.Factory
-        
-        @dagger.Module
-        class DaggerModule1 {
-          @dagger.Provides fun provideFactory(): Factory = Factory
-        }
-        """
+      import com.squareup.anvil.compiler.dagger.Factory
+      
+      @dagger.Module
+      class DaggerModule1 {
+        @dagger.Provides fun provideFactory(): Factory = Factory
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFactory")
 
@@ -166,11 +166,11 @@ public final class DaggerModule1_ProvideFactoryFactory implements Factory<com.sq
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module)
+        .invoke(null, module)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedFactory = staticMethods.single { it.name == "provideFactory" }
-          .invoke(null, module) as Any
+        .invoke(null, module) as Any
 
       assertThat((factoryInstance as Factory<*>).get()).isSameInstanceAs(providedFactory)
     }
@@ -215,17 +215,17 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        
-        @Module
-        class DaggerModule1 {
-          @Provides fun provideString(): String = "abc"
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      class DaggerModule1 {
+        @Provides fun provideString(): String = "abc"
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -238,11 +238,11 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module)
+        .invoke(null, module)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null, module) as String
+        .invoke(null, module) as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
@@ -290,17 +290,17 @@ public final class DaggerModule1_ProvideFileFactory implements Factory<File> {
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        
-        @Module
-        class DaggerModule1 {
-          @Provides fun provideFile(): java.io.File = java.io.File("")
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      class DaggerModule1 {
+        @Provides fun provideFile(): java.io.File = java.io.File("")
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFile")
 
@@ -313,11 +313,11 @@ public final class DaggerModule1_ProvideFileFactory implements Factory<File> {
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module)
+        .invoke(null, module)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedFile = staticMethods.single { it.name == "provideFile" }
-          .invoke(null, module) as File
+        .invoke(null, module) as File
 
       assertThat(providedFile).isEqualTo(File(""))
       assertThat((factoryInstance as Factory<File>).get()).isEqualTo(File(""))
@@ -364,17 +364,17 @@ public final class DaggerModule1_ProvideFileFactory implements Factory<File> {
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.*
-        import java.io.File
-        
-        @Module
-        class DaggerModule1 {
-          @Provides fun provideFile(): File = File("")
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.*
+      import java.io.File
+      
+      @Module
+      class DaggerModule1 {
+        @Provides fun provideFile(): File = File("")
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFile")
 
@@ -387,11 +387,11 @@ public final class DaggerModule1_ProvideFileFactory implements Factory<File> {
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module)
+        .invoke(null, module)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedFile = staticMethods.single { it.name == "provideFile" }
-          .invoke(null, module) as File
+        .invoke(null, module) as File
 
       assertThat(providedFile).isEqualTo(File(""))
       assertThat((factoryInstance as Factory<File>).get()).isEqualTo(File(""))
@@ -438,14 +438,14 @@ public final class DaggerModule1_ProvideStringListFactory implements Factory<Lis
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        @dagger.Module
-        class DaggerModule1 {
-          @dagger.Provides fun provideStringList(): List<String> = listOf("abc")
-        }
-        """
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      class DaggerModule1 {
+        @dagger.Provides fun provideStringList(): List<String> = listOf("abc")
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideStringList")
 
@@ -458,11 +458,11 @@ public final class DaggerModule1_ProvideStringListFactory implements Factory<Lis
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module)
+        .invoke(null, module)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideStringList" }
-          .invoke(null, module) as List<String>
+        .invoke(null, module) as List<String>
 
       assertThat(providedString).containsExactly("abc")
       assertThat((factoryInstance as Factory<List<String>>).get()).containsExactly("abc")
@@ -510,16 +510,16 @@ public final class DaggerModule1_ProvidePairFactory implements Factory<Pair<Pair
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.*
-        
-        @Module
-        class DaggerModule1 {
-          @Provides fun providePair(): Pair<Pair<String, Int>, List<String>> = Pair(Pair("", 1), listOf(""))
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.*
+      
+      @Module
+      class DaggerModule1 {
+        @Provides fun providePair(): Pair<Pair<String, Int>, List<String>> = Pair(Pair("", 1), listOf(""))
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("providePair")
 
@@ -531,16 +531,16 @@ public final class DaggerModule1_ProvidePairFactory implements Factory<Pair<Pair
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module)
+        .invoke(null, module)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "providePair" }
-          .invoke(null, module) as Pair<Pair<String, Int>, List<String>>
+        .invoke(null, module) as Pair<Pair<String, Int>, List<String>>
 
       val expected = Pair(Pair("", 1), listOf(""))
       assertThat(providedString).isEqualTo(expected)
       assertThat((factoryInstance as Factory<Pair<Pair<String, Int>, List<String>>>).get())
-          .isEqualTo(expected)
+        .isEqualTo(expected)
     }
   }
 
@@ -618,15 +618,15 @@ public final class DaggerModule1_ProvideIntFactory implements Factory<Integer> {
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        @dagger.Module
-        class DaggerModule1 {
-          @dagger.Provides fun provideString(): String = "abc"
-          @dagger.Provides fun provideInt(): Int = 5
-        }
-        """
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      class DaggerModule1 {
+        @dagger.Provides fun provideString(): String = "abc"
+        @dagger.Provides fun provideInt(): Int = 5
+      }
+      """
     ) {
       fun <T> verifyClassGenerated(
         providerMethodName: String,
@@ -643,11 +643,11 @@ public final class DaggerModule1_ProvideIntFactory implements Factory<Integer> {
         val module = daggerModule1.newInstanceNoArgs()
 
         val factoryInstance = staticMethods.single { it.name == "create" }
-            .invoke(null, module)
+          .invoke(null, module)
         assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
         val providedString = staticMethods.single { it.name == providerMethodName }
-            .invoke(null, module) as T
+          .invoke(null, module) as T
 
         assertThat(providedString).isEqualTo(expectedResult)
         assertThat((factoryInstance as Factory<T>).get()).isEqualTo(expectedResult)
@@ -695,14 +695,14 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        @dagger.Module
-        object DaggerModule1 {
-          @dagger.Provides fun provideString(): String = "abc"
-        }
-        """
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      object DaggerModule1 {
+        @dagger.Provides fun provideString(): String = "abc"
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -712,11 +712,11 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
+        .invoke(null)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null) as String
+        .invoke(null) as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
@@ -771,39 +771,39 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import javax.inject.Named
-        
-        @Module
-        class DaggerModule1 {
-          @Provides fun provideString(
-            @Named("abc") param1: String, 
-            param2: CharSequence 
-          ): String = param1 + param2
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Named
+      
+      @Module
+      class DaggerModule1 {
+        @Provides fun provideString(
+          @Named("abc") param1: String, 
+          param2: CharSequence 
+        ): String = param1 + param2
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-          .containsExactly(daggerModule1, Provider::class.java, Provider::class.java)
-          .inOrder()
+        .containsExactly(daggerModule1, Provider::class.java, Provider::class.java)
+        .inOrder()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module, Provider { "a" }, Provider<CharSequence> { "b" })
+        .invoke(null, module, Provider { "a" }, Provider<CharSequence> { "b" })
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null, module, "a", "b" as CharSequence) as String
+        .invoke(null, module, "a", "b" as CharSequence) as String
 
       assertThat(providedString).isEqualTo("ab")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("ab")
@@ -864,44 +864,47 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import javax.inject.Named
-        import javax.inject.Provider
-        
-        @Module
-        class DaggerModule1 {
-          @Provides fun provideString(
-            @Named("abc") param1: String, 
-            param2: Provider<CharSequence>, 
-            param3: Provider<List<String>> 
-          ): String = param1 + param2.get() + param3.get()[0]
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Named
+      import javax.inject.Provider
+      
+      @Module
+      class DaggerModule1 {
+        @Provides fun provideString(
+          @Named("abc") param1: String, 
+          param2: Provider<CharSequence>, 
+          param3: Provider<List<String>> 
+        ): String = param1 + param2.get() + param3.get()[0]
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-          .containsExactly(
-              daggerModule1, Provider::class.java, Provider::class.java, Provider::class.java
-          )
-          .inOrder()
+        .containsExactly(
+          daggerModule1,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
+        .inOrder()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module, Provider { "a" }, Provider { "b" }, Provider { listOf("c") })
+        .invoke(null, module, Provider { "a" }, Provider { "b" }, Provider { listOf("c") })
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null, module, "a", Provider<CharSequence> { "b" }, Provider { listOf("c") })
-          as String
+        .invoke(null, module, "a", Provider<CharSequence> { "b" }, Provider { listOf("c") })
+        as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
@@ -964,45 +967,48 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Lazy
-        import dagger.Module
-        import dagger.Provides
-        import javax.inject.Named
-        
-        @Module
-        class DaggerModule1 {
-          @Provides fun provideString(
-            @Named("abc") param1: String, 
-            param2: Lazy<CharSequence>, 
-            param3: Lazy<List<String>> 
-          ): String = param1 + param2.get() + param3.get()[0]
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Lazy
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Named
+      
+      @Module
+      class DaggerModule1 {
+        @Provides fun provideString(
+          @Named("abc") param1: String, 
+          param2: Lazy<CharSequence>, 
+          param3: Lazy<List<String>> 
+        ): String = param1 + param2.get() + param3.get()[0]
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-          .containsExactly(
-              daggerModule1, Provider::class.java, Provider::class.java, Provider::class.java
-          )
-          .inOrder()
+        .containsExactly(
+          daggerModule1,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
+        .inOrder()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module, Provider { "a" }, Provider { "b" }, Provider { listOf("c") })
-          as Factory<String>
+        .invoke(null, module, Provider { "a" }, Provider { "b" }, Provider { listOf("c") })
+        as Factory<String>
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null, module, "a", Lazy<CharSequence> { "b" }, Lazy { listOf("c") })
-          as String
+        .invoke(null, module, "a", Lazy<CharSequence> { "b" }, Lazy { listOf("c") })
+        as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat(factoryInstance.get()).isEqualTo("abc")
@@ -1062,41 +1068,44 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import javax.inject.Named
-        
-        @Module
-        class DaggerModule1 {
-          @Provides fun provideString(
-            @Named("abc") param1: List<String>, 
-            param2: Pair<Pair<String, Int>, List<String>> 
-          ): String = param1[0] + param2.first.first + param2.second[0]
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Named
+      
+      @Module
+      class DaggerModule1 {
+        @Provides fun provideString(
+          @Named("abc") param1: List<String>, 
+          param2: Pair<Pair<String, Int>, List<String>> 
+        ): String = param1[0] + param2.first.first + param2.second[0]
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-          .containsExactly(daggerModule1, Provider::class.java, Provider::class.java)
-          .inOrder()
+        .containsExactly(daggerModule1, Provider::class.java, Provider::class.java)
+        .inOrder()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module, Provider { listOf("a") },
-              Provider { Pair(Pair("b", 1), listOf("c")) }
-          )
+        .invoke(
+          null,
+          module,
+          Provider { listOf("a") },
+          Provider { Pair(Pair("b", 1), listOf("c")) }
+        )
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null, module, listOf("a"), Pair(Pair("b", 1), listOf("c"))) as String
+        .invoke(null, module, listOf("a"), Pair(Pair("b", 1), listOf("c"))) as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
@@ -1148,37 +1157,37 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import javax.inject.Named
-        
-        @Module
-        object DaggerModule1 {
-          @Provides fun provideString(
-            @Named("abc") param1: String, 
-            param2: CharSequence 
-          ): String = param1 + param2
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Named
+      
+      @Module
+      object DaggerModule1 {
+        @Provides fun provideString(
+          @Named("abc") param1: String, 
+          param2: CharSequence 
+        ): String = param1 + param2
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java, Provider::class.java)
-          .inOrder()
+        .containsExactly(Provider::class.java, Provider::class.java)
+        .inOrder()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { "a" }, Provider<CharSequence> { "b" })
+        .invoke(null, Provider { "a" }, Provider<CharSequence> { "b" })
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null, "a", "b" as CharSequence) as String
+        .invoke(null, "a", "b" as CharSequence) as String
 
       assertThat(providedString).isEqualTo("ab")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("ab")
@@ -1231,41 +1240,41 @@ public final class DaggerModule1_Companion_ProvideStringFactory implements Facto
      */
 
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Named
+      
+      @Module
+      abstract class DaggerModule1 {
+        @dagger.Binds abstract fun bindString(string: String): CharSequence
         
-        import dagger.Module
-        import dagger.Provides
-        import javax.inject.Named
-        
-        @Module
-        abstract class DaggerModule1 {
-          @dagger.Binds abstract fun bindString(string: String): CharSequence
-          
-          companion object {
-            @Provides fun provideString(
-              @Named("abc") param1: String, 
-              param2: CharSequence 
-            ): String = param1 + param2
-          }
+        companion object {
+          @Provides fun provideString(
+            @Named("abc") param1: String, 
+            param2: CharSequence 
+          ): String = param1 + param2
         }
-        """
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString", companion = true)
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java, Provider::class.java)
-          .inOrder()
+        .containsExactly(Provider::class.java, Provider::class.java)
+        .inOrder()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { "a" }, Provider<CharSequence> { "b" })
+        .invoke(null, Provider { "a" }, Provider<CharSequence> { "b" })
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null, "a", "b" as CharSequence) as String
+        .invoke(null, "a", "b" as CharSequence) as String
 
       assertThat(providedString).isEqualTo("ab")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("ab")
@@ -1313,18 +1322,18 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import javax.inject.Named
-        
-        @Module
-        class DaggerModule1 {
-          @Provides fun provideString(): String? = null
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Named
+      
+      @Module
+      class DaggerModule1 {
+        @Provides fun provideString(): String? = null
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1336,11 +1345,11 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module)
+        .invoke(null, module)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null, module) as? String
+        .invoke(null, module) as? String
 
       assertThat(providedString).isNull()
       assertThat((factoryInstance as Factory<String>).get()).isNull()
@@ -1386,18 +1395,18 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import javax.inject.Named
-        
-        @Module
-        object DaggerModule1 {
-          @Provides fun provideString(): String? = null
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Named
+      
+      @Module
+      object DaggerModule1 {
+        @Provides fun provideString(): String? = null
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1407,11 +1416,11 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
+        .invoke(null)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null) as? String
+        .invoke(null) as? String
 
       assertThat(providedString).isNull()
       assertThat((factoryInstance as Factory<String>).get()).isNull()
@@ -1469,43 +1478,43 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import javax.inject.Named
-        
-        @Module
-        class DaggerModule1 {
-          @Provides fun provideString(
-            @Named("abc") param1: String?, 
-            param2: CharSequence? 
-          ): String? {
-            check(param1 == null)
-            check(param2 == null)
-            return null
-          }
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Named
+      
+      @Module
+      class DaggerModule1 {
+        @Provides fun provideString(
+          @Named("abc") param1: String?, 
+          param2: CharSequence? 
+        ): String? {
+          check(param1 == null)
+          check(param2 == null)
+          return null
         }
-        """
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-          .containsExactly(daggerModule1, Provider::class.java, Provider::class.java)
-          .inOrder()
+        .containsExactly(daggerModule1, Provider::class.java, Provider::class.java)
+        .inOrder()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module, Provider { null }, Provider { null })
+        .invoke(null, module, Provider { null }, Provider { null })
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null, module, null, null) as? String
+        .invoke(null, module, null, null) as? String
 
       assertThat(providedString).isNull()
       assertThat((factoryInstance as Factory<String>).get()).isNull()
@@ -1514,14 +1523,14 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
   @Test fun `no factory class is generated for a binding method in an abstract class`() {
     compile(
-        """
-        package com.squareup.test
-        
-        @dagger.Module
-        abstract class DaggerModule1 {
-          @dagger.Binds abstract fun bindString(string: String): CharSequence
-        }
-        """
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      abstract class DaggerModule1 {
+        @dagger.Binds abstract fun bindString(string: String): CharSequence
+      }
+      """
     ) {
       if (useDagger) {
         assertThat(sourcesGeneratedByAnnotationProcessor).isEmpty()
@@ -1566,18 +1575,18 @@ public final class DaggerModule1_Companion_ProvideStringFactory implements Facto
      */
 
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      abstract class DaggerModule1 {
+        @dagger.Binds abstract fun bindString(string: String): CharSequence
         
-        @dagger.Module
-        abstract class DaggerModule1 {
-          @dagger.Binds abstract fun bindString(string: String): CharSequence
-          
-          companion object {
-            @dagger.Provides fun provideString(): String = "abc"          
-          }
+        companion object {
+          @dagger.Provides fun provideString(): String = "abc"
         }
-        """
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString", companion = true)
 
@@ -1587,11 +1596,11 @@ public final class DaggerModule1_Companion_ProvideStringFactory implements Facto
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
+        .invoke(null)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null) as String
+        .invoke(null) as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
@@ -1635,16 +1644,16 @@ public final class ComponentInterface_InnerModule_ProvideStringFactory implement
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        interface ComponentInterface {
-          @dagger.Module
-          object InnerModule {
-            @dagger.Provides fun provideString(): String = "abc"          
-          }
+      """
+      package com.squareup.test
+      
+      interface ComponentInterface {
+        @dagger.Module
+        object InnerModule {
+          @dagger.Provides fun provideString(): String = "abc"
         }
-        """
+      }
+      """
     ) {
       val factoryClass = innerModule.moduleFactoryClass("provideString")
 
@@ -1654,11 +1663,11 @@ public final class ComponentInterface_InnerModule_ProvideStringFactory implement
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
+        .invoke(null)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null) as String
+        .invoke(null) as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
@@ -1667,18 +1676,18 @@ public final class ComponentInterface_InnerModule_ProvideStringFactory implement
 
   @Test fun `a factory class is generated for a provider method returning an inner class`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import com.squareup.anvil.compiler.dagger.OuterClass
-        
-        @Module
-        object DaggerModule1 {
-          @Provides fun provideInnerClass(): OuterClass.InnerClass = OuterClass.InnerClass()
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import com.squareup.anvil.compiler.dagger.OuterClass
+      
+      @Module
+      object DaggerModule1 {
+        @Provides fun provideInnerClass(): OuterClass.InnerClass = OuterClass.InnerClass()
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideInnerClass")
 
@@ -1725,20 +1734,20 @@ public final class ComponentInterface_InnerModule_Companion_ProvideStringFactory
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        interface ComponentInterface {
-          @dagger.Module
-          abstract class InnerModule {
-            @dagger.Binds abstract fun bindString(string: String): CharSequence
-            
-            companion object {
-              @dagger.Provides fun provideString(): String = "abc"          
-            }
+      """
+      package com.squareup.test
+      
+      interface ComponentInterface {
+        @dagger.Module
+        abstract class InnerModule {
+          @dagger.Binds abstract fun bindString(string: String): CharSequence
+          
+          companion object {
+            @dagger.Provides fun provideString(): String = "abc"
           }
         }
-        """
+      }
+      """
     ) {
       val factoryClass = innerModule.moduleFactoryClass("provideString", companion = true)
 
@@ -1748,11 +1757,11 @@ public final class ComponentInterface_InnerModule_Companion_ProvideStringFactory
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
+        .invoke(null)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null) as String
+        .invoke(null) as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
@@ -1761,14 +1770,14 @@ public final class ComponentInterface_InnerModule_Companion_ProvideStringFactory
 
   @Test fun `no factory class is generated for multibindings`() {
     compile(
-        """
-        package com.squareup.test
-        
-        @dagger.Module
-        abstract class DaggerModule1 {
-          @dagger.Binds @dagger.multibindings.IntoSet abstract fun bindString(string: String): CharSequence
-        }
-        """
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      abstract class DaggerModule1 {
+        @dagger.Binds @dagger.multibindings.IntoSet abstract fun bindString(string: String): CharSequence
+      }
+      """
     ) {
       if (useDagger) {
         assertThat(sourcesGeneratedByAnnotationProcessor).isEmpty()
@@ -1813,14 +1822,14 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        @dagger.Module
-        object DaggerModule1 {
-          @dagger.Provides @dagger.multibindings.IntoSet fun provideString(): String = "abc"
-        }
-        """
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      object DaggerModule1 {
+        @dagger.Provides @dagger.multibindings.IntoSet fun provideString(): String = "abc"
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1830,11 +1839,11 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
+        .invoke(null)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "provideString" }
-          .invoke(null) as String
+        .invoke(null) as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
@@ -1879,14 +1888,14 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<Set<Str
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        @dagger.Module
-        object DaggerModule1 {
-          @dagger.Provides @dagger.multibindings.ElementsIntoSet fun provideString(): Set<String> = setOf("abc")
-        }
-        """
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      object DaggerModule1 {
+        @dagger.Provides @dagger.multibindings.ElementsIntoSet fun provideString(): Set<String> = setOf("abc")
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1896,11 +1905,11 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<Set<Str
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
+        .invoke(null)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedStringSet = staticMethods.single { it.name == "provideString" }
-          .invoke(null) as Set<String>
+        .invoke(null) as Set<String>
 
       assertThat(providedStringSet).containsExactly("abc")
       assertThat((factoryInstance as Factory<Set<String>>).get()).containsExactly("abc")
@@ -1945,19 +1954,19 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Funct
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        
-        @Module
-        object DaggerModule1 {
-          @Provides fun provideFunction(): (String) -> Int {
-            return { string -> string.length }
-          }
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      object DaggerModule1 {
+        @Provides fun provideFunction(): (String) -> Int {
+          return { string -> string.length }
         }
-        """
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFunction")
 
@@ -1967,12 +1976,12 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Funct
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
-          as Factory<(String) -> Int>
+        .invoke(null)
+        as Factory<(String) -> Int>
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedInt = staticMethods.single { it.name == "provideFunction" }
-          .invoke(null) as (String) -> Int
+        .invoke(null) as (String) -> Int
 
       assertThat(providedInt.invoke("abc")).isEqualTo(3)
       assertThat(factoryInstance.get().invoke("abcd")).isEqualTo(4)
@@ -2023,24 +2032,24 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<F
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import dagger.multibindings.ElementsIntoSet
-        
-        typealias StringList = List<String>
-        
-        @Module
-        object DaggerModule1 {
-          @Provides @ElementsIntoSet fun provideFunction(
-            string: String
-          ): @JvmSuppressWildcards Set<(StringList) -> StringList> {
-            return setOf { listOf(string) }
-          }
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import dagger.multibindings.ElementsIntoSet
+      
+      typealias StringList = List<String>
+      
+      @Module
+      object DaggerModule1 {
+        @Provides @ElementsIntoSet fun provideFunction(
+          string: String
+        ): @JvmSuppressWildcards Set<(StringList) -> StringList> {
+          return setOf { listOf(string) }
         }
-        """
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFunction")
 
@@ -2050,12 +2059,12 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<F
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { "abc" })
-          as Factory<Set<(List<String>) -> List<String>>>
+        .invoke(null, Provider { "abc" })
+        as Factory<Set<(List<String>) -> List<String>>>
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedStringSet = staticMethods.single { it.name == "provideFunction" }
-          .invoke(null, "abc") as Set<(List<String>) -> List<String>>
+        .invoke(null, "abc") as Set<(List<String>) -> List<String>>
 
       assertThat(providedStringSet.single().invoke(emptyList())).containsExactly("abc")
       assertThat(factoryInstance.get().single().invoke(emptyList())).containsExactly("abc")
@@ -2150,23 +2159,23 @@ public final class DaggerComponentInterface implements ComponentInterface {
      */
 
     compile(
-        """
-        package com.squareup.test
-        
-        import com.squareup.anvil.annotations.ContributesBinding
-        import com.squareup.anvil.annotations.MergeComponent
-        
-        interface ParentInterface
-        
-        @ContributesBinding(Any::class)
-        object ContributingObject : ParentInterface
-        
-        @MergeComponent(Any::class)
-        interface ComponentInterface
-        """
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.MergeComponent
+      
+      interface ParentInterface
+      
+      @ContributesBinding(Any::class)
+      object ContributingObject : ParentInterface
+      
+      @MergeComponent(Any::class)
+      interface ComponentInterface
+      """
     ) {
       val factoryClass = componentInterfaceAnvilModule
-          .moduleFactoryClass("provideComSquareupTestContributingObject")
+        .moduleFactoryClass("provideComSquareupTestContributingObject")
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
@@ -2174,12 +2183,12 @@ public final class DaggerComponentInterface implements ComponentInterface {
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null) as Factory<Any>
+        .invoke(null) as Factory<Any>
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedContributingObject = staticMethods
-          .single { it.name == "provideComSquareupTestContributingObject" }
-          .invoke(null)
+        .single { it.name == "provideComSquareupTestContributingObject" }
+        .invoke(null)
 
       assertThat(providedContributingObject).isSameInstanceAs(factoryInstance.get())
     }
@@ -2187,25 +2196,25 @@ public final class DaggerComponentInterface implements ComponentInterface {
 
   @Test fun `an error is thrown for overloaded provider methods`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import dagger.multibindings.ElementsIntoSet
-        
-        typealias StringList = List<String>
-        
-        @Module
-        object DaggerModule1 {
-            @Provides fun provideString(): String = ""
-            @Provides fun provideString(s: String): Int = 1
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import dagger.multibindings.ElementsIntoSet
+      
+      typealias StringList = List<String>
+      
+      @Module
+      object DaggerModule1 {
+          @Provides fun provideString(): String = ""
+          @Provides fun provideString(s: String): Int = 1
+      }
+      """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       assertThat(messages).contains(
-          "Cannot have more than one binding method with the same name in a single module"
+        "Cannot have more than one binding method with the same name in a single module"
       )
     }
   }
@@ -2213,17 +2222,17 @@ public final class DaggerComponentInterface implements ComponentInterface {
   @Test
   fun `a factory class is generated for a method returning a java class with a star import`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        
-        @Module
-        object DaggerModule1 {
-          @Provides fun provideClass(): Class<*> = java.lang.Runnable::class.java
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      object DaggerModule1 {
+        @Provides fun provideClass(): Class<*> = java.lang.Runnable::class.java
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideClass")
 
@@ -2235,18 +2244,18 @@ public final class DaggerComponentInterface implements ComponentInterface {
   @Test
   fun `a factory class is generated for a method returning a class with a named import`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import java.lang.Runnable as NamedRunnable
-        
-        @Module
-        object DaggerModule1 {
-          @Provides fun provideRunner(): NamedRunnable = NamedRunnable {}
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import java.lang.Runnable as NamedRunnable
+      
+      @Module
+      object DaggerModule1 {
+        @Provides fun provideRunner(): NamedRunnable = NamedRunnable {}
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideRunner")
 
@@ -2258,19 +2267,19 @@ public final class DaggerComponentInterface implements ComponentInterface {
   @Test
   fun `a factory class is generated ignoring the named import original path`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import java.util.*
-        import com.squareup.anvil.compiler.dagger.Date as AnotherDate
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import java.util.*
+      import com.squareup.anvil.compiler.dagger.Date as AnotherDate
 
-        @Module
-        object DaggerModule1 {
-          @Provides fun provideDate(): Date = Date(1000)
-        }
-        """
+      @Module
+      object DaggerModule1 {
+        @Provides fun provideDate(): Date = Date(1000)
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideDate")
 
@@ -2293,22 +2302,22 @@ public final class DaggerComponentInterface implements ComponentInterface {
 
   @Test fun `a return type for a provider method is required`() {
     compile(
-        """
-        package com.squareup.test
-        
-        @dagger.Module
-        class DaggerModule1 {
-          @dagger.Provides fun provideString() = "abc"
-        }
-        """
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      class DaggerModule1 {
+        @dagger.Provides fun provideString() = "abc"
+      }
+      """
     ) {
       assumeFalse(useDagger)
 
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       assertThat(messages).contains("Source.kt: (5, 3)")
       assertThat(messages).contains(
-          "Dagger provider methods must specify the return type explicitly when using Anvil. " +
-              "The return type cannot be inferred implicitly."
+        "Dagger provider methods must specify the return type explicitly when using Anvil. " +
+          "The return type cannot be inferred implicitly."
       )
     }
   }
@@ -2316,18 +2325,18 @@ public final class DaggerComponentInterface implements ComponentInterface {
   @Test
   fun `a factory class is generated for a capital case package name`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
-        
-        @Module
-        object DaggerModule1 {
-          @Provides fun provideThing(): TestClassInUppercasePackage = TestClassInUppercasePackage()
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
+      
+      @Module
+      object DaggerModule1 {
+        @Provides fun provideThing(): TestClassInUppercasePackage = TestClassInUppercasePackage()
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideThing")
 
@@ -2344,20 +2353,20 @@ public final class DaggerComponentInterface implements ComponentInterface {
   @Test
   fun `a factory class is generated for a capital case package name and lower class name`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
-        
-        @Module
-        object DaggerModule1 {
-          @Provides fun provideThing(): lowerCaseClassInUppercasePackage {
-            return lowerCaseClassInUppercasePackage()
-          }
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
+      
+      @Module
+      object DaggerModule1 {
+        @Provides fun provideThing(): lowerCaseClassInUppercasePackage {
+          return lowerCaseClassInUppercasePackage()
         }
-        """
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideThing")
 
@@ -2368,25 +2377,25 @@ public final class DaggerComponentInterface implements ComponentInterface {
 
       val thingProvider = staticMethods.single { it.name == "provideThing" }
       assertThat(thingProvider.invoke(null))
-          .isInstanceOf(lowerCaseClassInUppercasePackage::class.java)
+        .isInstanceOf(lowerCaseClassInUppercasePackage::class.java)
     }
   }
 
   @Test
   fun `a factory class is generated for a capital case package name and inner class`() {
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
-        
-        @Module
-        object DaggerModule1 {
-          @Provides fun provideThing(): InnerClass = InnerClass()
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
+      
+      @Module
+      object DaggerModule1 {
+        @Provides fun provideThing(): InnerClass = InnerClass()
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideThing")
 
@@ -2403,31 +2412,31 @@ public final class DaggerComponentInterface implements ComponentInterface {
   @Test
   fun `a factory class is generated for an uppercase factory function`() {
     compile(
-        """
-        package com.squareup.test.a
-        
-        import com.squareup.test.b.User
-        
-        fun User(): User = User(42)
-        """,
-        """
-        package com.squareup.test.b
-        
-        data class User(val age: Int)          
-        """,
-        """
-        package com.squareup.test
-        
-        import com.squareup.test.a.User
-        import com.squareup.test.b.User
-        import dagger.Module
-        import dagger.Provides
-        
-        @Module
-        object DaggerModule1 {
-          @Provides fun user(): User = User()
-        }
-        """
+      """
+      package com.squareup.test.a
+      
+      import com.squareup.test.b.User
+      
+      fun User(): User = User(42)
+      """,
+      """
+      package com.squareup.test.b
+      
+      data class User(val age: Int)
+      """,
+      """
+      package com.squareup.test
+      
+      import com.squareup.test.a.User
+      import com.squareup.test.b.User
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      object DaggerModule1 {
+        @Provides fun user(): User = User()
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("user")
 
@@ -2479,17 +2488,17 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
 }
      */
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        
-        @Module
-        class DaggerModule1 {
-          @get:Provides val string: String = "abc"
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      class DaggerModule1 {
+        @get:Provides val string: String = "abc"
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString")
 
@@ -2501,11 +2510,11 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module)
+        .invoke(null, module)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "getString" }
-          .invoke(null, module) as String
+        .invoke(null, module) as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
@@ -2548,17 +2557,17 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
 }
      */
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        
-        @Module
-        object DaggerModule1 {
-          @get:Provides val string: String = "abc"
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      object DaggerModule1 {
+        @get:Provides val string: String = "abc"
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString")
 
@@ -2568,11 +2577,11 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
+        .invoke(null)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "getString" }
-          .invoke(null) as String
+        .invoke(null) as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
@@ -2615,22 +2624,22 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
 }
      */
     compile(
-        """
-        package com.squareup.test
+      """
+      package com.squareup.test
+      
+      import dagger.Binds
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      abstract class DaggerModule1 {
+        @Binds abstract fun bindString(string: String): CharSequence
         
-        import dagger.Binds
-        import dagger.Module
-        import dagger.Provides
-        
-        @Module
-        abstract class DaggerModule1 {
-          @Binds abstract fun bindString(string: String): CharSequence
-          
-          companion object {
-            @get:Provides val string: String = "abc"
-          }
+        companion object {
+          @get:Provides val string: String = "abc"
         }
-        """
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString", companion = true)
 
@@ -2640,11 +2649,11 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
+        .invoke(null)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "getString" }
-          .invoke(null) as String
+        .invoke(null) as String
 
       assertThat(providedString).isEqualTo("abc")
       assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
@@ -2691,17 +2700,17 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
 }
      */
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        
-        @Module
-        class DaggerModule1 {
-          @get:Provides val string: String? = null
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      class DaggerModule1 {
+        @get:Provides val string: String? = null
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString")
 
@@ -2713,11 +2722,11 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module)
+        .invoke(null, module)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "getString" }
-          .invoke(null, module) as String?
+        .invoke(null, module) as String?
 
       assertThat(providedString).isNull()
       assertThat((factoryInstance as Factory<String?>).get()).isNull()
@@ -2762,17 +2771,17 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
 }
      */
     compile(
-        """
-        package com.squareup.test
-        
-        import dagger.Module
-        import dagger.Provides
-        
-        @Module
-        object DaggerModule1 {
-          @get:Provides val string: String? = null
-        }
-        """
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      object DaggerModule1 {
+        @get:Provides val string: String? = null
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString")
 
@@ -2782,11 +2791,11 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
+        .invoke(null)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedString = staticMethods.single { it.name == "getString" }
-          .invoke(null) as String?
+        .invoke(null) as String?
 
       assertThat(providedString).isNull()
       assertThat((factoryInstance as Factory<String?>).get()).isNull()
@@ -2795,22 +2804,22 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
 
   @Test fun `warnings are suppressed`() {
     compile(
-        """
-        @file:Suppress("DEPRECATION")  
-          
-        package com.squareup.test
+      """
+      @file:Suppress("DEPRECATION")  
         
-        import dagger.Module
-        import dagger.Provides
-        
-        @Deprecated("deprecated")
-        object Type
-        
-        @Module
-        class DaggerModule1 {
-          @Provides fun provideType(): Type = Type
-        }
-        """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      
+      @Deprecated("deprecated")
+      object Type
+      
+      @Module
+      class DaggerModule1 {
+        @Provides fun provideType(): Type = Type
+      }
+      """
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideType")
 
@@ -2823,11 +2832,11 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       val module = daggerModule1.newInstanceNoArgs()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, module)
+        .invoke(null, module)
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedType = staticMethods.single { it.name == "provideType" }
-          .invoke(null, module)
+        .invoke(null, module)
 
       assertThat(providedType).isNotNull()
       assertThat((factoryInstance as Factory<*>).get()).isNotNull()
@@ -2839,9 +2848,9 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
     vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = com.squareup.anvil.compiler.compile(
-      sources = sources,
-      enableDaggerAnnotationProcessor = useDagger,
-      generateDaggerFactories = !useDagger,
-      block = block
+    sources = sources,
+    enableDaggerAnnotationProcessor = useDagger,
+    generateDaggerFactories = !useDagger,
+    block = block
   )
 }
