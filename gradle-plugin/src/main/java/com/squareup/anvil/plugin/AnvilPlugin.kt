@@ -159,7 +159,6 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       }
   }
 
-  @OptIn(ExperimentalStdlibApi::class)
   private fun disableIncrementalKotlinCompilation(
     project: Project,
     isAndroidProject: Boolean,
@@ -300,14 +299,13 @@ fun Project.androidVariantsConfigure(action: (BaseVariant) -> Unit) {
   }
 }
 
-@OptIn(ExperimentalStdlibApi::class)
 fun Collection<BaseVariant>.findVariantForCompileTask(
   compileTask: KotlinCompile
 ): BaseVariant = this
   .filter { variant ->
     compileTask.name.contains(variant.name.capitalize(US))
   }
-  .maxBy {
+  .maxByOrNull {
     // The filter above still returns multiple variants, e.g. for the
     // "compileDebugUnitTestKotlin" task it returns the variants "debug" and "debugUnitTest".
     // In this case prefer the variant with the longest matching name, because that's the more

@@ -12,7 +12,7 @@ ext {
       project.getProperty('square.generateDaggerFactoriesWithAnvil') : 'true').toBoolean()
 
   deps = [
-      android_gradle_plugin: "com.android.tools.build:gradle:4.0.1",
+      android_gradle_plugin: "com.android.tools.build:gradle:4.1.0",
       anvil_plugin: "com.squareup.anvil:gradle-plugin:${findProperty('VERSION_NAME')}",
       maven_publishing_plugin: "com.vanniktech:gradle-maven-publish-plugin:0.11.1",
       gradle_publishing_plugin: "com.gradle.publish:plugin-publish-plugin:0.12.0",
@@ -59,7 +59,7 @@ ext {
           compiler: "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion",
           gradle_plugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
           gradle_plugin_api: "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$kotlinVersion",
-          stdlib: "org.jetbrains.kotlin:kotlin-stdlib-jdk8:$kotlinVersion",
+          reflect: "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion",
           test: "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion",
       ],
 
