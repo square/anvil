@@ -79,11 +79,11 @@ internal class CodeGenerationExtension(
 
     // This restarts the analysis phase and will include our files.
     return RetryWithAdditionalRoots(
-      bindingTrace.bindingContext,
-      module,
-      emptyList(),
-      listOf(codeGenDir),
-      true
+      bindingContext = bindingTrace.bindingContext,
+      moduleDescriptor = module,
+      additionalJavaRoots = emptyList(),
+      additionalKotlinRoots = listOf(codeGenDir),
+      addToEnvironment = true
     )
   }
 
