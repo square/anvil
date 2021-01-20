@@ -7,7 +7,7 @@ import java.io.File
 
 /**
  * Generates code that doesn't impact any other [CodeGenerator], meaning no other code generator
- * will process the generated code produced by this instance. A [PrivateCodeGenerator] in called
+ * will process the generated code produced by this instance. A [PrivateCodeGenerator] is called
  * one last time after [flush] has been called to get a chance to evaluate written results.
  */
 internal abstract class PrivateCodeGenerator : CodeGenerator {

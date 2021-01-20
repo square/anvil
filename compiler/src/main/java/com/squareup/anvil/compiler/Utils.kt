@@ -13,6 +13,8 @@ import dagger.Lazy
 import dagger.Module
 import dagger.Provides
 import dagger.Subcomponent
+import dagger.assisted.Assisted
+import dagger.assisted.AssistedInject
 import dagger.internal.DoubleCheck
 import org.jetbrains.kotlin.codegen.asmType
 import org.jetbrains.kotlin.codegen.state.KotlinTypeMapper
@@ -56,6 +58,8 @@ internal val daggerBindsFqName = FqName(Binds::class.java.canonicalName)
 internal val daggerProvidesFqName = FqName(Provides::class.java.canonicalName)
 internal val daggerLazyFqName = FqName(Lazy::class.java.canonicalName)
 internal val injectFqName = FqName(Inject::class.java.canonicalName)
+internal val assistedFqName = FqName(Assisted::class.java.canonicalName)
+internal val assistedInjectFqName = FqName(AssistedInject::class.java.canonicalName)
 internal val providerFqName = FqName(Provider::class.java.canonicalName)
 internal val jvmSuppressWildcardsFqName = FqName(JvmSuppressWildcards::class.java.canonicalName)
 

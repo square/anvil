@@ -105,6 +105,9 @@ internal val Result.subcomponentInterfaceAnvilModule: Class<*>
 internal val Result.daggerModule1: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule1")
 
+internal val Result.assistedService: Class<*>
+  get() = classLoader.loadClass("com.squareup.test.AssistedService")
+
 internal val Result.daggerModule1AnvilModule: Class<*>
   get() = classLoader
     .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.DaggerModule1AnvilModule")
@@ -222,3 +225,8 @@ internal fun assumeMergeComponent(annotationClass: KClass<*>) {
 internal fun Array<KClass<*>>.withoutAnvilModule(): List<KClass<*>> = toList().withoutAnvilModule()
 internal fun Collection<KClass<*>>.withoutAnvilModule(): List<KClass<*>> =
   filterNot { FqName(it.qualifiedName!!).isAnvilModule() }
+
+internal fun Any.invokeGet(vararg args: Any): Any {
+  val method = this::class.java.declaredMethods.single { it.name == "get" }
+  return method.invoke(this, *args)
+}

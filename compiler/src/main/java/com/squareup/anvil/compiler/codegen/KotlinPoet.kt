@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
+import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
@@ -186,7 +187,8 @@ internal data class Parameter(
   val providerTypeName: ParameterizedTypeName,
   val lazyTypeName: ParameterizedTypeName,
   val isWrappedInProvider: Boolean,
-  val isWrappedInLazy: Boolean
+  val isWrappedInLazy: Boolean,
+  val isAssisted: Boolean
 ) {
   val originalTypeName: TypeName = when {
     isWrappedInProvider -> providerTypeName
@@ -228,7 +230,8 @@ internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor
       providerTypeName = typeName.wrapInProvider(),
       lazyTypeName = typeName.wrapInLazy(),
       isWrappedInProvider = isWrappedInProvider,
-      isWrappedInLazy = isWrappedInLazy
+      isWrappedInLazy = isWrappedInLazy,
+      isAssisted = parameter.hasAnnotation(assistedFqName)
     )
   }
 
@@ -266,6 +269,7 @@ internal fun List<Parameter>.asArgumentList(
             parameter.isWrappedInProvider -> parameter.name
             parameter.isWrappedInLazy ->
               "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
+            parameter.isAssisted -> parameter.name
             else -> "${parameter.name}.get()"
           }
         }
