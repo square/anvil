@@ -59,7 +59,7 @@ internal fun IrConstructorCall.scope(): FqName {
       element = this
     )
 
-  val signature = expression.kclassUnwrapped.signature.asPublic()
+  val signature = expression.kclassUnwrapped.signature!!.asPublic()
     ?: throw AnvilCompilationIrException(
       message = "Couldn't resolve scope signature.",
       element = this

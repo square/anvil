@@ -82,8 +82,7 @@ internal class CodeGenerationExtension(
       bindingTrace.bindingContext,
       module,
       emptyList(),
-      listOf(codeGenDir),
-      true
+      listOf(codeGenDir)
     )
   }
 
