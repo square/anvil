@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler.codegen
 import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
 import com.squareup.anvil.compiler.assistedFqName
+import com.squareup.anvil.compiler.classDescriptorForType
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
@@ -40,6 +41,8 @@ import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import java.io.ByteArrayOutputStream
 import javax.inject.Provider
 
@@ -179,6 +182,23 @@ internal fun KtTypeReference.requireTypeName(
   }
 
   return (typeElement ?: fail()).requireTypeName()
+}
+
+fun KotlinType.asTypeName(): TypeName {
+  if (isTypeParameter()) return TypeVariableName(toString())
+
+  val className = classDescriptorForType().asClassName()
+  if (arguments.isEmpty()) return className
+
+  val argumentTypeNames = arguments.map { typeProjection ->
+    if (typeProjection.isStarProjection) {
+      STAR
+    } else {
+      typeProjection.type.asTypeName()
+    }
+  }
+
+  return className.parameterizedBy(argumentTypeNames)
 }
 
 internal data class Parameter(

@@ -108,6 +108,9 @@ internal val Result.daggerModule1: Class<*>
 internal val Result.assistedService: Class<*>
   get() = classLoader.loadClass("com.squareup.test.AssistedService")
 
+internal val Result.assistedServiceFactory: Class<*>
+  get() = classLoader.loadClass("com.squareup.test.AssistedServiceFactory")
+
 internal val Result.daggerModule1AnvilModule: Class<*>
   get() = classLoader
     .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.DaggerModule1AnvilModule")
@@ -170,6 +173,12 @@ internal fun Class<*>.factoryClass(): Class<*> {
   val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
 
   return classLoader.loadClass("${`package`.name}.$enclosingClassString${simpleName}_Factory")
+}
+
+internal fun Class<*>.implClass(): Class<*> {
+  val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
+
+  return classLoader.loadClass("${`package`.name}.$enclosingClassString${simpleName}_Impl")
 }
 
 internal fun Class<*>.membersInjector(): Class<*> {
