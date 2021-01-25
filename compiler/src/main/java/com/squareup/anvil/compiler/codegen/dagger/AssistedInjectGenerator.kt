@@ -185,13 +185,6 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
         .let { addType(it) }
     }
 
-    val directory = File(codeGenDir, packageName.replace('.', File.separatorChar))
-    val file = File(directory, "$className.kt")
-    check(file.parentFile.exists() || file.parentFile.mkdirs()) {
-      "Could not generate package directory: ${file.parentFile}"
-    }
-    file.writeText(content)
-
-    return GeneratedFile(file, content)
+    return createGeneratedFile(codeGenDir, packageName, className, content)
   }
 }

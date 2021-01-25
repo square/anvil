@@ -25,4 +25,23 @@ internal abstract class PrivateCodeGenerator : CodeGenerator {
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>
   )
+
+  /**
+   * Write [content] into a new file for the given [packageName] and [className].
+   */
+  protected fun createGeneratedFile(
+    codeGenDir: File,
+    packageName: String,
+    className: String,
+    content: String
+  ): GeneratedFile {
+    val directory = File(codeGenDir, packageName.replace('.', File.separatorChar))
+    val file = File(directory, "$className.kt")
+    check(file.parentFile.exists() || file.parentFile.mkdirs()) {
+      "Could not generate package directory: ${file.parentFile}"
+    }
+    file.writeText(content)
+
+    return GeneratedFile(file, content)
+  }
 }
