@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
+import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.asArgumentList
@@ -10,19 +11,15 @@ import com.squareup.anvil.compiler.codegen.fqNameOrNull
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.mapToParameter
 import com.squareup.anvil.compiler.generateClassName
-import com.squareup.anvil.compiler.injectFqName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
-import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
-import dagger.internal.Factory
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
@@ -30,7 +27,17 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.allConstructors
 import java.io.File
 
-internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
+/**
+ * Generates the `_Factory` class for a type with an `@AssistedInject` constructor, e.g. for
+ * ```
+ * class AssistedService @AssistedInject constructor()
+ * ```
+ * this generator would create
+ * ```
+ * class AssistedService_Factory { .. }
+ * ```
+ */
+internal class AssistedInjectGenerator : PrivateCodeGenerator() {
 
   override fun generateCodePrivate(
     codeGenDir: File,
@@ -42,7 +49,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
       .flatMap { it.classesAndInnerClasses() }
       .forEach { clazz ->
         clazz.allConstructors
-          .singleOrNull { it.hasAnnotation(injectFqName) }
+          .singleOrNull { it.hasAnnotation(assistedInjectFqName) }
           ?.let {
             generateFactoryClass(codeGenDir, module, clazz, it)
           }
@@ -59,6 +66,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     val className = "${clazz.generateClassName()}_Factory"
 
     val parameters = constructor.valueParameters.mapToParameter(module)
+    val parametersNotAssisted = parameters.filterNot { it.isAssisted }
 
     val typeParameters = clazz.typeParameterList
       ?.parameters
@@ -81,43 +89,38 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     }
 
     val content = FileSpec.buildFile(packageName, className) {
-      val canGenerateAnObject = parameters.isEmpty()
-      val classBuilder = if (canGenerateAnObject) {
-        TypeSpec.objectBuilder(factoryClass)
-      } else {
-        TypeSpec.classBuilder(factoryClass)
-      }
-      typeParameters.forEach { classBuilder.addTypeVariable(it) }
 
-      classBuilder
-        .addSuperinterface(Factory::class.asClassName().parameterizedBy(classType))
+      TypeSpec.classBuilder(factoryClass)
         .apply {
-          if (parameters.isNotEmpty()) {
-            primaryConstructor(
-              FunSpec.constructorBuilder()
-                .apply {
-                  parameters.forEach { parameter ->
-                    addParameter(parameter.name, parameter.providerTypeName)
-                  }
+          typeParameters.forEach { addTypeVariable(it) }
+
+          primaryConstructor(
+            FunSpec.constructorBuilder()
+              .apply {
+                parametersNotAssisted.forEach { parameter ->
+                  addParameter(parameter.name, parameter.providerTypeName)
                 }
+              }
+              .build()
+          )
+
+          parametersNotAssisted.forEach { parameter ->
+            addProperty(
+              PropertySpec.builder(parameter.name, parameter.providerTypeName)
+                .initializer(parameter.name)
+                .addModifiers(PRIVATE)
                 .build()
             )
-
-            parameters.forEach { parameter ->
-              addProperty(
-                PropertySpec.builder(parameter.name, parameter.providerTypeName)
-                  .initializer(parameter.name)
-                  .addModifiers(PRIVATE)
-                  .build()
-              )
-            }
           }
         }
         .addFunction(
           FunSpec.builder("get")
-            .addModifiers(OVERRIDE)
             .returns(classType)
             .apply {
+              parameters.filter { it.isAssisted }.forEach { parameter ->
+                addParameter(parameter.name, parameter.originalTypeName)
+              }
+
               val argumentList = parameters.asArgumentList(
                 asProvider = true,
                 includeModule = false
@@ -128,8 +131,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
             .build()
         )
         .apply {
-          val builder = if (canGenerateAnObject) this else TypeSpec.companionObjectBuilder()
-          builder
+          TypeSpec.companionObjectBuilder()
             .addFunction(
               FunSpec.builder("create")
                 .jvmStatic()
@@ -137,23 +139,19 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                   if (typeParameters.isNotEmpty()) {
                     addTypeVariables(typeParameters)
                   }
-                  if (canGenerateAnObject) {
-                    addStatement("return this")
-                  } else {
-                    parameters.forEach { parameter ->
-                      addParameter(parameter.name, parameter.providerTypeName)
-                    }
-
-                    val argumentList = parameters.asArgumentList(
-                      asProvider = false,
-                      includeModule = false
-                    )
-
-                    addStatement(
-                      "return %T($argumentList)",
-                      factoryClassParameterized
-                    )
+                  parametersNotAssisted.forEach { parameter ->
+                    addParameter(parameter.name, parameter.providerTypeName)
                   }
+
+                  val argumentList = parametersNotAssisted.asArgumentList(
+                    asProvider = false,
+                    includeModule = false
+                  )
+
+                  addStatement(
+                    "return %T($argumentList)",
+                    factoryClassParameterized
+                  )
                 }
                 .returns(factoryClassParameterized)
                 .build()
@@ -180,9 +178,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
             )
             .build()
             .let {
-              if (!canGenerateAnObject) {
-                addType(it)
-              }
+              addType(it)
             }
         }
         .build()

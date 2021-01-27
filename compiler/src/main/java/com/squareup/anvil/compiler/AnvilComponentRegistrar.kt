@@ -7,6 +7,8 @@ import com.squareup.anvil.compiler.codegen.CodeGenerator
 import com.squareup.anvil.compiler.codegen.ContributesBindingGenerator
 import com.squareup.anvil.compiler.codegen.ContributesToGenerator
 import com.squareup.anvil.compiler.codegen.dagger.AnvilAnnotationDetectorCheck
+import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator
+import com.squareup.anvil.compiler.codegen.dagger.AssistedInjectGenerator
 import com.squareup.anvil.compiler.codegen.dagger.ComponentDetectorCheck
 import com.squareup.anvil.compiler.codegen.dagger.InjectConstructorFactoryGenerator
 import com.squareup.anvil.compiler.codegen.dagger.MembersInjectorGenerator
@@ -50,6 +52,8 @@ class AnvilComponentRegistrar : ComponentRegistrar {
       codeGenerators += InjectConstructorFactoryGenerator()
       codeGenerators += MembersInjectorGenerator()
       codeGenerators += ComponentDetectorCheck()
+      codeGenerators += AssistedInjectGenerator()
+      codeGenerators += AssistedFactoryGenerator()
     }
 
     // It's important to register our extension at the first position. The compiler calls each
