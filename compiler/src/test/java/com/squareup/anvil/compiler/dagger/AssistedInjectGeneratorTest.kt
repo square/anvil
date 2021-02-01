@@ -5,6 +5,7 @@ import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.factoryClass
 import com.squareup.anvil.compiler.invokeGet
 import com.squareup.anvil.compiler.isStatic
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -456,6 +457,49 @@ public final class AssistedService_Factory {
         .invoke(null, 5, "Hello")
 
       assertThat(factoryInstance.invokeGet("Hello")).isEqualTo(newInstance)
+    }
+  }
+
+  @Test fun `two assisted inject constructors aren't supported`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedInject
+      
+      class AssistedService @AssistedInject constructor(
+        int: Int,
+        @Assisted string: String
+      ) {
+        @AssistedInject constructor(@Assisted string: String)
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains("Types may only contain one injected constructor")
+    }
+  }
+
+  @Test fun `one inject and one assisted inject constructor aren't supported`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedInject
+      import javax.inject.Inject
+      
+      class AssistedService @AssistedInject constructor(
+        int: Int,
+        @Assisted string: String
+      ) {
+        @Inject constructor(@Assisted string: String)
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains("Types may only contain one injected constructor")
     }
   }
 
