@@ -1,8 +1,10 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.AnvilCompilationException
+import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.getAllSuperTypes
+import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
@@ -20,6 +22,7 @@ import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
@@ -34,6 +37,7 @@ import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.KtValueArgumentName
+import org.jetbrains.kotlin.psi.allConstructors
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -410,4 +414,32 @@ fun KtUserType.findExtendsBound(): List<FqName> {
     .first()
     .typeParameters
     .mapNotNull { it.fqName }
+}
+
+/**
+ * Returns the with [injectAnnotationFqName] annotated constructor for this class.
+ * [injectAnnotationFqName] must be either `@Inject` or `@AssistedInject`. If the class contains
+ * multiple constructors annotated with either of these annotations, then this method throws
+ * an error as multiple injected constructors aren't allowed.
+ */
+fun KtClassOrObject.injectConstructor(injectAnnotationFqName: FqName): KtConstructor<*>? {
+  if (injectAnnotationFqName != injectFqName && injectAnnotationFqName != assistedInjectFqName) {
+    throw IllegalArgumentException(
+      "injectAnnotationFqName must be either $injectFqName or $assistedInjectFqName. " +
+        "It was $injectAnnotationFqName."
+    )
+  }
+
+  val constructors = allConstructors.filter {
+    it.hasAnnotation(injectFqName) || it.hasAnnotation(assistedInjectFqName)
+  }
+
+  return when (constructors.size) {
+    0 -> null
+    1 -> if (constructors[0].hasAnnotation(injectAnnotationFqName)) constructors[0] else null
+    else -> throw AnvilCompilationException(
+      "Types may only contain one injected constructor.",
+      element = this
+    )
+  }
 }

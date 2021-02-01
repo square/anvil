@@ -7,7 +7,7 @@ import com.squareup.anvil.compiler.codegen.asClassName
 import com.squareup.anvil.compiler.codegen.buildFile
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.fqNameOrNull
-import com.squareup.anvil.compiler.codegen.hasAnnotation
+import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.codegen.mapToParameter
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.injectFqName
@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.allConstructors
 import java.io.File
 
 internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
@@ -41,8 +40,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
       .asSequence()
       .flatMap { it.classesAndInnerClasses() }
       .forEach { clazz ->
-        clazz.allConstructors
-          .singleOrNull { it.hasAnnotation(injectFqName) }
+        clazz.injectConstructor(injectFqName)
           ?.let {
             generateFactoryClass(codeGenDir, module, clazz, it)
           }

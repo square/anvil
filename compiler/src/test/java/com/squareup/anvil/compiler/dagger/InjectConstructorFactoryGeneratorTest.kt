@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.factoryClass
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.isStatic
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.internal.Factory
@@ -1308,6 +1309,23 @@ public final class InjectClass_Factory<T extends CharSequence> implements Factor
       val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
         .factoryClass().declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+    }
+  }
+
+  @Test fun `two inject constructors aren't supported`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      
+      class InjectClass @Inject constructor() {
+        @Inject constructor(string: String)
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains("Types may only contain one injected constructor")
     }
   }
 

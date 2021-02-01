@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.isStatic
 import com.squareup.anvil.compiler.moduleFactoryClass
 import com.squareup.anvil.compiler.newInstanceNoArgs
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.internal.Factory
@@ -2840,6 +2841,45 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
 
       assertThat(providedType).isNotNull()
       assertThat((factoryInstance as Factory<*>).get()).isNotNull()
+    }
+  }
+
+  @Test fun `a provider method cannot be abstract`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      abstract class DaggerModule1 {
+        @Provides abstract fun provideString(): String
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains("@Provides methods cannot be abstract")
+    }
+  }
+
+  @Test fun `an interface is not allowed to contain a provider method`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      interface DaggerModule1 {
+        @Provides fun provideString(): String = ""
+      }
+      """
+    ) {
+      // For some reason with Dagger this test throws an internal error.
+      assertThat(exitCode).isIn(setOf(COMPILATION_ERROR, INTERNAL_ERROR))
+      assertThat(messages).contains("@Provides methods cannot be abstract")
     }
   }
 
