@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.findAnnotation
 import com.squareup.anvil.compiler.codegen.functions
 import com.squareup.anvil.compiler.codegen.hasAnnotation
+import com.squareup.anvil.compiler.codegen.isInterface
 import com.squareup.anvil.compiler.codegen.isNullable
 import com.squareup.anvil.compiler.codegen.mapToParameter
 import com.squareup.anvil.compiler.codegen.properties
@@ -33,6 +34,7 @@ import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.internal.Factory
 import dagger.internal.Preconditions
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
@@ -58,6 +60,14 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
           .functions(includeCompanionObjects = true)
           .asSequence()
           .filter { it.hasAnnotation(daggerProvidesFqName) }
+          .onEach { function ->
+            if (clazz.isInterface() || function.hasModifier(ABSTRACT_KEYWORD)) {
+              throw AnvilCompilationException(
+                "@Provides methods cannot be abstract",
+                element = function
+              )
+            }
+          }
           .also { functions ->
             // Check for duplicate function names.
             val duplicateFunctions = functions
