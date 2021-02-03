@@ -2,6 +2,11 @@
 
 ## Next Version
 
+## 2.0.12 (2021-02-02)
+
+* Support Dagger's assisted injection feature and generate necessary code, see #165.
+* Throw an error if a provider method is abstract, see #183.
+
 ## 2.0.11 (2020-12-28)
 
 * Declare the Dagger Factory generation option as stable.
