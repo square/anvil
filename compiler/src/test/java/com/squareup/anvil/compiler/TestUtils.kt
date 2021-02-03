@@ -235,7 +235,7 @@ internal fun Array<KClass<*>>.withoutAnvilModule(): List<KClass<*>> = toList().w
 internal fun Collection<KClass<*>>.withoutAnvilModule(): List<KClass<*>> =
   filterNot { FqName(it.qualifiedName!!).isAnvilModule() }
 
-internal fun Any.invokeGet(vararg args: Any): Any {
+internal fun Any.invokeGet(vararg args: Any?): Any {
   val method = this::class.java.declaredMethods.single { it.name == "get" }
   return method.invoke(this, *args)
 }

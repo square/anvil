@@ -488,6 +488,118 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
     }
   }
 
+  @Test fun `an implementation for a factory class with nullable parameters is generated`() {
+    /*
+package com.squareup.test;
+
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class AssistedService_Factory {
+  private final Provider<Integer> p0_52215Provider;
+
+  public AssistedService_Factory(Provider<Integer> p0_52215Provider) {
+    this.p0_52215Provider = p0_52215Provider;
+  }
+
+  public AssistedService get(String string) {
+    return newInstance(p0_52215Provider.get(), string);
+  }
+
+  public static AssistedService_Factory create(Provider<Integer> p0_52215Provider) {
+    return new AssistedService_Factory(p0_52215Provider);
+  }
+
+  public static AssistedService newInstance(int p0_52215, String string) {
+    return new AssistedService(p0_52215, string);
+  }
+}
+     */
+    /*
+package com.squareup.test;
+
+import dagger.internal.InstanceFactory;
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class AssistedServiceFactory_Impl implements AssistedServiceFactory {
+  private final AssistedService_Factory delegateFactory;
+
+  AssistedServiceFactory_Impl(AssistedService_Factory delegateFactory) {
+    this.delegateFactory = delegateFactory;
+  }
+
+  @Override
+  public AssistedService create(String string) {
+    return delegateFactory.get(string);
+  }
+
+  public static Provider<AssistedServiceFactory> create(AssistedService_Factory delegateFactory) {
+    return InstanceFactory.create(new AssistedServiceFactory_Impl(delegateFactory));
+  }
+}
+     */
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      class AssistedService @AssistedInject constructor(
+        val int: Int,
+        @Assisted val string: String?
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory {
+        fun create(string: String?): AssistedService
+      }
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass()
+        .declaredConstructors.single().newInstance(Provider { 5 })
+
+      val constructor = factoryImplClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(assistedService.factoryClass())
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, null)
+
+      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+    }
+  }
+
   @Test fun `an assisted inject type must be returned`() {
     compile(
       """
