@@ -188,7 +188,7 @@ fun KotlinType.asTypeName(): TypeName {
   if (isTypeParameter()) return TypeVariableName(toString())
 
   val className = classDescriptorForType().asClassName()
-  if (arguments.isEmpty()) return className
+  if (arguments.isEmpty()) return className.copy(nullable = isMarkedNullable)
 
   val argumentTypeNames = arguments.map { typeProjection ->
     if (typeProjection.isStarProjection) {
@@ -198,7 +198,7 @@ fun KotlinType.asTypeName(): TypeName {
     }
   }
 
-  return className.parameterizedBy(argumentTypeNames)
+  return className.parameterizedBy(argumentTypeNames).copy(nullable = isMarkedNullable)
 }
 
 internal data class Parameter(

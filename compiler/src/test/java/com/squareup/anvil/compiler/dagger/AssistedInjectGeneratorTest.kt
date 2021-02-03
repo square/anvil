@@ -460,6 +460,85 @@ public final class AssistedService_Factory {
     }
   }
 
+  @Test fun `a factory class is generated for nullable parameters`() {
+    /*
+package com.squareup.test;
+
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class AssistedService_Factory {
+  private final Provider<Integer> p0_52215Provider;
+
+  public AssistedService_Factory(Provider<Integer> p0_52215Provider) {
+    this.p0_52215Provider = p0_52215Provider;
+  }
+
+  public AssistedService get(String string) {
+    return newInstance(p0_52215Provider.get(), string);
+  }
+
+  public static AssistedService_Factory create(Provider<Integer> p0_52215Provider) {
+    return new AssistedService_Factory(p0_52215Provider);
+  }
+
+  public static AssistedService newInstance(Integer p0_52215, String string) {
+    return new AssistedService(p0_52215, string);
+  }
+}
+     */
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedInject
+      
+      class AssistedService @AssistedInject constructor(
+        val int: Int?,
+        @Assisted val string: String?
+      ) {
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+      
+          other as AssistedService
+      
+          if (int != other.int) return false
+          if (string != other.string) return false
+      
+          return true
+        } 
+      }
+      """
+    ) {
+      val factoryClass = assistedService.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(2)
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { null })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, null, null)
+
+      assertThat(factoryInstance.invokeGet(null)).isEqualTo(newInstance)
+    }
+  }
+
   @Test fun `two assisted inject constructors aren't supported`() {
     compile(
       """
