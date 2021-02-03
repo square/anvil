@@ -2883,6 +2883,27 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
     }
   }
 
+  @Test fun `an interface with a companion object is allowed to contain a provider method`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      
+      @Module
+      interface DaggerModule1 {
+        companion object {
+          @Provides fun provideString(): String = ""
+        }      
+      }
+      """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideString", companion = true)
+      assertThat(factoryClass).isNotNull()
+    }
+  }
+
   @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
     vararg sources: String,
