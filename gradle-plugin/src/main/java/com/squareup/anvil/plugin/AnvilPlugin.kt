@@ -26,6 +26,7 @@ import java.io.File
 import java.util.Locale.US
 import java.util.concurrent.atomic.AtomicBoolean
 
+@Suppress("unused")
 open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean {

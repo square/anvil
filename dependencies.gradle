@@ -5,7 +5,7 @@ ext {
   daggerVersion = '2.31.2'
   espressoVersion = '3.2.0'
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
-      project.getProperty('square.kotlinVersion') : '1.4.20'
+      project.getProperty('square.kotlinVersion') : '1.4.30'
 
   kotlinUseIR = (project.hasProperty('square.useIR') ?
       project.getProperty('square.useIR') : 'false').toBoolean()

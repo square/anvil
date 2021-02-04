@@ -71,9 +71,7 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   kotlinOptions {
     jvmTarget = JavaVersion.VERSION_1_8
 
-    // Hm, since Kotlin 1.4.30 there are nullable receivers in Gradle's APIs.
-    // TODO: check with Kotlin 1.4.30 stable.
-    allWarningsAsErrors = false
+    allWarningsAsErrors = true
   }
 }
 
