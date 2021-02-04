@@ -2,6 +2,11 @@
 
 ## Next Version
 
+## 2.0.13 (2021-02-04)
+
+* Anvil falsely detected provider methods inside of companion objects of interfaces as abstracted, see #187.
+* Support nullable parameters for assisted injection properly, see #189.
+
 ## 2.0.12 (2021-02-02)
 
 * Support Dagger's assisted injection feature and generate necessary code, see #165.
