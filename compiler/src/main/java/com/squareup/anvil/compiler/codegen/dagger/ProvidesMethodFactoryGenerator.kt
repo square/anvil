@@ -38,6 +38,7 @@ import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.parents
@@ -61,12 +62,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
           .asSequence()
           .filter { it.hasAnnotation(daggerProvidesFqName) }
           .onEach { function ->
-            if (clazz.isInterface() || function.hasModifier(ABSTRACT_KEYWORD)) {
-              throw AnvilCompilationException(
-                "@Provides methods cannot be abstract",
-                element = function
-              )
-            }
+            checkFunctionIsNotAbstract(clazz, function)
           }
           .also { functions ->
             // Check for duplicate function names.
@@ -292,5 +288,29 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     }
 
     return createGeneratedFile(codeGenDir, packageName, className, content)
+  }
+
+  private fun checkFunctionIsNotAbstract(
+    clazz: KtClassOrObject,
+    function: KtFunction
+  ) {
+    fun fail(): Nothing = throw AnvilCompilationException(
+      "@Provides methods cannot be abstract",
+      element = function
+    )
+
+    // If the function is abstract, then it's an error.
+    if (function.hasModifier(ABSTRACT_KEYWORD)) fail()
+
+    // If the class is not an interface and doesn't use the abstract keyword, then there is
+    // no issue.
+    if (!clazz.isInterface()) return
+
+    // If the parent of the function is a companion object, then the function inside of the
+    // interface is not abstract.
+    val parentClass = function.parents.filterIsInstance<KtClassOrObject>().firstOrNull() ?: return
+    if (parentClass is KtObjectDeclaration && parentClass.isCompanion()) return
+
+    fail()
   }
 }
