@@ -82,12 +82,10 @@ class AnvilComponentRegistrar : ComponentRegistrar {
         ModuleMerger(scanner)
       )
 
-      if (USE_IR) {
-        IrGenerationExtension.registerExtension(
-          project,
-          ModuleMergerIr(scanner)
-        )
-      }
+      IrGenerationExtension.registerExtension(
+        project,
+        ModuleMergerIr(scanner)
+      )
     }
   }
 
