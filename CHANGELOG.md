@@ -2,6 +2,11 @@
 
 ## Next Version
 
+## 2.1.0 (2021-02-05)
+
+* This release upgrades Anvil to Kotlin `1.4.30`. Older Kotlin version are no longer supported moving forward.
+* The IR extension is enabled by default. Anvil is compatible with the new IR and old compiler backend. 
+
 ## 2.0.14 (2021-02-04)
 
 * Anvil falsely detected provider methods inside of companion objects of interfaces as abstracted, see #187.
