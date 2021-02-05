@@ -9,7 +9,7 @@ on:
 jobs:
   test-ubuntu:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     continue-on-error: ${{ startsWith(matrix.kotlin-version, '1.5') }}
 
     strategy:
@@ -41,7 +41,7 @@ jobs:
 
   test-ubuntu-ir:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
     continue-on-error: true
 
     steps:
@@ -65,7 +65,7 @@ jobs:
 
   test-windows:
     runs-on: windows-latest
-    timeout-minutes: 15
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@v2
