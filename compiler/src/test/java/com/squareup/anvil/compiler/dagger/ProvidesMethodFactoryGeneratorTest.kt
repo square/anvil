@@ -1016,6 +1016,48 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     }
   }
 
+  @Test fun `a factory class is generated for a provider method with a lazy parameter using a fully qualified name`() { // ktlint-disable max-line-length
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Named
+      
+      @Module
+      class DaggerModule1 {
+        @Provides fun provideString(
+          param: dagger.Lazy<String> 
+        ): String = param.get()
+      }
+      """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideString")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(daggerModule1, Provider::class.java)
+        .inOrder()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val module = daggerModule1.newInstanceNoArgs()
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, module, Provider { "a" })
+        as Factory<String>
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedString = staticMethods.single { it.name == "provideString" }
+        .invoke(null, module, Lazy<CharSequence> { "a" })
+        as String
+
+      assertThat(providedString).isEqualTo("a")
+      assertThat(factoryInstance.get()).isEqualTo("a")
+    }
+  }
+
   @Test fun `a factory class is generated for a provider method with generic parameters`() {
     /*
 package com.squareup.test;

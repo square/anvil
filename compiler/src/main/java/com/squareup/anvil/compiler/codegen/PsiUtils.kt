@@ -201,7 +201,18 @@ internal fun PsiElement.requireFqName(
     is KtUserType -> {
       val isGenericType = children.any { it is KtTypeArgumentList }
       if (isGenericType) {
-        referencedName ?: failTypeHandling()
+        // For an expression like Lazy<Abc> the qualifier will be null. If the qualifier exists,
+        // then it refers to package and the referencedName refers to the class name, e.g.
+        // a KtUserType "abc.def.GenericType<String>" has three children: a qualifier "abc.def",
+        // the referencedName "GenericType" and the KtTypeArgumentList.
+        val packageName = qualifier?.text
+        val className = referencedName
+
+        if (packageName != null) {
+          return FqName("$packageName.$className")
+        }
+
+        className ?: failTypeHandling()
       } else {
         val text = text
 
