@@ -6,8 +6,12 @@ import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.contributesBindingFqName
+import com.squareup.anvil.compiler.isQualifier
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.resolveClassByFqName
+import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import java.io.File
@@ -34,6 +38,8 @@ internal class ContributesBindingGenerator : CodeGenerator {
             element = clazz.identifyingElement
           )
         }
+
+        checkNotMoreThanOneQualifier(module, clazz)
       }
       .map { clazz ->
         val packageName = clazz.containingKtFile.packageFqName.asString()
@@ -67,5 +73,27 @@ internal class ContributesBindingGenerator : CodeGenerator {
         GeneratedFile(file, content)
       }
       .toList()
+  }
+
+  private fun checkNotMoreThanOneQualifier(
+    module: ModuleDescriptor,
+    clazz: KtClassOrObject
+  ) {
+    // The class is annotated with @ContributesBinding. If there is less than 2 further
+    // annotations, then there can't be more than two qualifiers.
+    if (clazz.annotationEntries.size <= 2) return
+
+    val classDescriptor = module
+      .resolveClassByFqName(clazz.requireFqName(), KotlinLookupLocation(clazz))
+      ?: return
+
+    val qualifiers = classDescriptor.annotations.filter { it.isQualifier() }
+
+    if (qualifiers.size > 1) {
+      throw AnvilCompilationException(
+        "Classes annotated with @ContributesBinding may not use more than one @Qualifier.",
+        element = clazz
+      )
+    }
   }
 }
