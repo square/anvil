@@ -118,6 +118,18 @@ interface Authenticator
 class RealAuthenticator @Inject constructor() : Authenticator
 ```
 
+`@ContributesBinding` also supports qualifiers. You can annotate the class with any qualifier 
+and the generated binding method will preserve the qualifier, e.g.
+```kotlin
+@ContributesBinding(AppScope::class)
+@Named("Prod")
+class RealAuthenticator @Inject constructor() : Authenticator
+
+// Will generate:
+@Binds @Named("Prod") 
+abstract fun bindRealAuthenticator(authenticator: RealAuthenticator): Authenticator
+```
+
 ## Exclusions
 
 Dagger modules and component interfaces can be excluded in two different levels.

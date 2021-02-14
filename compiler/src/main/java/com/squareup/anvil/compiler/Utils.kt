@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue.Value.NormalClass
+import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
@@ -45,6 +46,7 @@ import org.jetbrains.kotlin.types.typeUtil.supertypes
 import org.jetbrains.org.objectweb.asm.Type
 import javax.inject.Inject
 import javax.inject.Provider
+import javax.inject.Qualifier
 
 internal val mergeComponentFqName = FqName(MergeComponent::class.java.canonicalName)
 internal val mergeSubcomponentFqName = FqName(MergeSubcomponent::class.java.canonicalName)
@@ -59,6 +61,7 @@ internal val daggerBindsFqName = FqName(Binds::class.java.canonicalName)
 internal val daggerProvidesFqName = FqName(Provides::class.java.canonicalName)
 internal val daggerLazyFqName = FqName(Lazy::class.java.canonicalName)
 internal val injectFqName = FqName(Inject::class.java.canonicalName)
+internal val qualifierFqName = FqName(Qualifier::class.java.canonicalName)
 internal val assistedFqName = FqName(Assisted::class.java.canonicalName)
 internal val assistedFactoryFqName = FqName(AssistedFactory::class.java.canonicalName)
 internal val assistedInjectFqName = FqName(AssistedInject::class.java.canonicalName)
@@ -216,3 +219,13 @@ internal fun List<KotlinType>.getAllSuperTypes(): Sequence<FqName> =
   }
     .flatMap { it.asSequence() }
     .map { DescriptorUtils.getFqNameSafe(it.classDescriptorForType()) }
+
+internal fun AnnotationDescriptor.isQualifier(): Boolean {
+  return annotationClass?.annotations?.hasAnnotation(qualifierFqName) ?: false
+}
+
+internal fun AnnotationDescriptor.requireClass(): ClassDescriptor {
+  return annotationClass ?: throw AnvilCompilationException(
+    message = "Couldn't find the annotation class for $fqName",
+  )
+}

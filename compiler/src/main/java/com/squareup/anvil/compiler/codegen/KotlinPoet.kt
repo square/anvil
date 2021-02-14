@@ -2,16 +2,19 @@ package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
+import com.squareup.anvil.compiler.argumentType
 import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.classDescriptorForType
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import com.squareup.anvil.compiler.providerFqName
+import com.squareup.anvil.compiler.requireClass
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -26,6 +29,7 @@ import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
@@ -39,6 +43,8 @@ import org.jetbrains.kotlin.psi.KtTypeProjection
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
+import org.jetbrains.kotlin.resolve.constants.EnumValue
+import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
 import org.jetbrains.kotlin.types.KotlinType
@@ -350,3 +356,30 @@ fun FileSpec.Companion.buildFile(
     .build()
     .writeToString()
     .addGeneratedByComment()
+
+internal fun AnnotationDescriptor.toAnnotationSpec(module: ModuleDescriptor): AnnotationSpec {
+  return AnnotationSpec
+    .builder(requireClass().asClassName())
+    .apply {
+      allValueArguments.forEach { (name, value) ->
+        when (value) {
+          is KClassValue -> {
+            val className = value.argumentType(module).classDescriptorForType()
+              .asClassName()
+            addMember("${name.asString()} = %T::class", className)
+          }
+          is EnumValue -> {
+            val enumMember = MemberName(
+              enclosingClassName = value.enumClassId.asSingleFqName()
+                .asClassName(module),
+              simpleName = value.enumEntryName.asString()
+            )
+            addMember("${name.asString()} = %M", enumMember)
+          }
+          // String, int, long, ... other primitives.
+          else -> addMember("${name.asString()} = $value")
+        }
+      }
+    }
+    .build()
+}

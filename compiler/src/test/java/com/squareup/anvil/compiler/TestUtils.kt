@@ -130,6 +130,9 @@ internal val Result.innerModule: Class<*>
 internal val Result.injectClass: Class<*>
   get() = classLoader.loadClass("com.squareup.test.InjectClass")
 
+internal val Result.anyQualifier: Class<*>
+  get() = classLoader.loadClass("com.squareup.test.AnyQualifier")
+
 internal val Class<*>.hintContributes: KClass<*>?
   get() = contributedProperties(HINT_CONTRIBUTES_PACKAGE_PREFIX)
     ?.filter { it.java == this }
