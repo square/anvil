@@ -1,7 +1,9 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
+import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.squareup.anvil.compiler.codegen.Parameter
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.asArgumentList
 import com.squareup.anvil.compiler.codegen.asClassName
@@ -64,7 +66,10 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
     val className = "${clazz.generateClassName()}_Factory"
 
     val parameters = constructor.valueParameters.mapToParameter(module)
+    val parametersAssisted = parameters.filter { it.isAssisted }
     val parametersNotAssisted = parameters.filterNot { it.isAssisted }
+
+    checkAssistedParametersAreDistinct(clazz, parametersAssisted)
 
     val typeParameters = clazz.typeParameterList
       ?.parameters
@@ -87,7 +92,6 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
     }
 
     val content = FileSpec.buildFile(packageName, className) {
-
       TypeSpec.classBuilder(factoryClass)
         .apply {
           typeParameters.forEach { addTypeVariable(it) }
@@ -115,7 +119,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
           FunSpec.builder("get")
             .returns(classType)
             .apply {
-              parameters.filter { it.isAssisted }.forEach { parameter ->
+              parametersAssisted.forEach { parameter ->
                 addParameter(parameter.name, parameter.originalTypeName)
               }
 
@@ -184,5 +188,38 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
     }
 
     return createGeneratedFile(codeGenDir, packageName, className, content)
+  }
+
+  private fun checkAssistedParametersAreDistinct(
+    clazz: KtClassOrObject,
+    parameters: List<Parameter>
+  ) {
+    // Parameters are identical, if there types and identifier match.
+    val duplicateAssistedParameters = parameters
+      .groupBy { it.assistedParameterKey }
+      .filterValues { parameterList ->
+        parameterList.size > 1
+      }
+
+    if (duplicateAssistedParameters.isEmpty()) return
+
+    // Pick the first value in the map and report it as error. Dagger only reports the first
+    // error as well. The first value is a list of parameters. Since all parameters in this list
+    // are identical, we can simply use the first to construct the error message.
+    val parameter = duplicateAssistedParameters.values.first().first()
+    val assistedIdentifier = parameter.assistedIdentifier
+
+    val errorMessage = buildString {
+      append("@AssistedInject constructor has duplicate @Assisted type: @Assisted")
+      if (assistedIdentifier.isNotEmpty()) {
+        append("(\"")
+        append(assistedIdentifier)
+        append("\")")
+      }
+      append(' ')
+      append(parameter.typeName)
+    }
+
+    throw AnvilCompilationException(errorMessage, element = clazz)
   }
 }

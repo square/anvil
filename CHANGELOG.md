@@ -3,6 +3,7 @@
 ## Next Version
 
 * `@ContributesBinding` supports qualifiers now, see the README and documentation for examples.  
+* Upgrade Dagger to `2.32`. Generating factories for assisted injection is no longer compatible with older Dagger versions due to the behavior change in Dagger itself. Make sure to use Dagger version `2.32` or newer in your project, too.  
 
 ## 2.1.0 (2021-02-05)
 

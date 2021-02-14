@@ -37,11 +37,13 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNullableType
 import org.jetbrains.kotlin.psi.KtProjectionKind
+import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtTypeProjection
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
+import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
@@ -214,13 +216,25 @@ internal data class Parameter(
   val lazyTypeName: ParameterizedTypeName,
   val isWrappedInProvider: Boolean,
   val isWrappedInLazy: Boolean,
-  val isAssisted: Boolean
+  val isAssisted: Boolean,
+  val assistedIdentifier: String,
+  val assistedParameterKey: AssistedParameterKey = AssistedParameterKey(
+    typeName,
+    assistedIdentifier
+  )
 ) {
   val originalTypeName: TypeName = when {
     isWrappedInProvider -> providerTypeName
     isWrappedInLazy -> lazyTypeName
     else -> typeName
   }
+
+  // @Assisted parameters are equal, if the type and the identifier match. This subclass makes
+  // diffing the parameters easier.
+  data class AssistedParameterKey(
+    private val typeName: TypeName,
+    private val assistedIdentifier: String
+  )
 }
 
 internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor): List<Parameter> =
@@ -250,6 +264,17 @@ internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor
       else -> parameter.requireTypeReference().requireTypeName(module)
     }.withJvmSuppressWildcardsIfNeeded(parameter)
 
+    val assistedAnnotation = parameter.findAnnotation(assistedFqName)
+    val assistedIdentifier =
+      (assistedAnnotation?.valueArguments?.firstOrNull() as? KtValueArgument)
+        ?.children
+        ?.filterIsInstance<KtStringTemplateExpression>()
+        ?.single()
+        ?.children
+        ?.first()
+        ?.text
+        ?: ""
+
     Parameter(
       name = "param$index",
       typeName = typeName,
@@ -257,7 +282,8 @@ internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor
       lazyTypeName = typeName.wrapInLazy(),
       isWrappedInProvider = isWrappedInProvider,
       isWrappedInLazy = isWrappedInLazy,
-      isAssisted = parameter.hasAnnotation(assistedFqName)
+      isAssisted = assistedAnnotation != null,
+      assistedIdentifier = assistedIdentifier
     )
   }
 
