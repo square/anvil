@@ -6,6 +6,7 @@ import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
 import org.junit.Test
+import javax.inject.Named
 import javax.inject.Singleton
 
 internal class MergeModulesTest {
@@ -50,7 +51,7 @@ internal class MergeModulesTest {
 
   @Subcomponent(modules = [CompositeSubModule::class])
   interface SubComponent {
-    fun middleType(): MiddleType
+    @Named("middle") fun middleType(): MiddleType
     fun parentType(): ParentType
   }
 }
