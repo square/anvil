@@ -103,7 +103,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -136,7 +136,10 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .single { it.name == "create" }
         .invoke(factoryImplInstance, "Hello")
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.declaredConstructors.single()
+          .newInstance(5, "Hello")
+      )
     }
   }
 
@@ -149,7 +152,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -184,7 +187,10 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .single { it.name == "create" }
         .invoke(factoryImplInstance, "Hello")
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.declaredConstructors.single()
+          .newInstance(5, "Hello")
+      )
     }
   }
 
@@ -197,7 +203,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -230,7 +236,10 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .single { it.name == "create" }
         .invoke(factoryImplInstance, "Hello")
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.declaredConstructors.single()
+          .newInstance(5, "Hello")
+      )
     }
   }
 
@@ -243,7 +252,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -278,7 +287,10 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
           it.invoke(factoryImplInstance, "Hello")
         }
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.declaredConstructors.single()
+          .newInstance(5, "Hello")
+      )
     }
   }
 
@@ -291,7 +303,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val strings: List<String>
       )
@@ -324,7 +336,10 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .single { it.name == "create" }
         .invoke(factoryImplInstance, listOf("Hello"))
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.declaredConstructors.single()
+          .newInstance(5, listOf("Hello"))
+      )
     }
   }
 
@@ -405,7 +420,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService<T : CharSequence> @AssistedInject constructor(
+      data class AssistedService<T : CharSequence> @AssistedInject constructor(
         val int: Int,
         @Assisted val string: T
       )
@@ -438,7 +453,10 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
         .single { it.name == "create" }
         .invoke(factoryImplInstance, "Hello")
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.declaredConstructors.single()
+          .newInstance(5, "Hello")
+      )
     }
   }
 
@@ -451,7 +469,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       ) {
@@ -485,7 +503,10 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
         .single { it.name == "create" }
         .invoke(factoryImplInstance, "Hello")
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.declaredConstructors.single()
+          .newInstance(5, "Hello")
+      )
     }
   }
 
@@ -564,7 +585,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String?
       )
@@ -597,7 +618,10 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .single { it.name == "create" }
         .invoke(factoryImplInstance, null)
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.declaredConstructors.single()
+          .newInstance(5, null)
+      )
     }
   }
 
@@ -608,7 +632,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       
       import dagger.assisted.AssistedFactory
       
-      class AssistedService(
+      data class AssistedService(
         val int: Int,
         val string: String
       )
@@ -751,7 +775,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String,
         @Assisted val long: Long
@@ -783,9 +807,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
-        .invoke(factoryImplInstance, 5L, "Hello")
+        .invoke(factoryImplInstance, 4L, "Hello")
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.declaredConstructors.single()
+          .newInstance(5, "Hello", 4L)
+      )
     }
   }
 
@@ -1038,7 +1065,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -1067,7 +1094,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -1099,7 +1126,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -1125,7 +1152,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
