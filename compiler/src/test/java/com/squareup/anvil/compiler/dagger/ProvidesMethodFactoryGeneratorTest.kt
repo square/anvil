@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.componentInterfaceAnvilModule
+import com.squareup.anvil.compiler.createInstance
 import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
 import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
 import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
@@ -9,7 +10,6 @@ import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.isStatic
 import com.squareup.anvil.compiler.moduleFactoryClass
-import com.squareup.anvil.compiler.newInstanceNoArgs
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
@@ -93,7 +93,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(2)
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module)
@@ -164,7 +164,7 @@ public final class DaggerModule1_ProvideFactoryFactory implements Factory<com.sq
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(2)
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module)
@@ -236,7 +236,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(2)
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module)
@@ -311,7 +311,7 @@ public final class DaggerModule1_ProvideFileFactory implements Factory<File> {
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(2)
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module)
@@ -385,7 +385,7 @@ public final class DaggerModule1_ProvideFileFactory implements Factory<File> {
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(2)
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module)
@@ -456,7 +456,7 @@ public final class DaggerModule1_ProvideStringListFactory implements Factory<Lis
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(2)
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module)
@@ -529,7 +529,7 @@ public final class DaggerModule1_ProvidePairFactory implements Factory<Pair<Pair
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module)
@@ -641,7 +641,7 @@ public final class DaggerModule1_ProvideIntFactory implements Factory<Integer> {
         val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
         assertThat(staticMethods).hasSize(2)
 
-        val module = daggerModule1.newInstanceNoArgs()
+        val module = daggerModule1.createInstance()
 
         val factoryInstance = staticMethods.single { it.name == "create" }
           .invoke(null, module)
@@ -797,7 +797,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module, Provider { "a" }, Provider<CharSequence> { "b" })
@@ -897,7 +897,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module, Provider { "a" }, Provider { "b" }, Provider { listOf("c") })
@@ -1000,7 +1000,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module, Provider { "a" }, Provider { "b" }, Provider { listOf("c") })
@@ -1042,7 +1042,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module, Provider { "a" })
@@ -1136,7 +1136,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(
@@ -1385,7 +1385,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module)
@@ -1550,7 +1550,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module, Provider { null }, Provider { null })
@@ -2550,7 +2550,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module)
@@ -2762,7 +2762,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module)
@@ -2872,7 +2872,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(2)
 
-      val module = daggerModule1.newInstanceNoArgs()
+      val module = daggerModule1.createInstance()
 
       val factoryInstance = staticMethods.single { it.name == "create" }
         .invoke(null, module)
