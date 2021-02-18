@@ -6,6 +6,7 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import dagger.Component
 import dagger.Subcomponent
 import org.junit.Test
+import javax.inject.Named
 import javax.inject.Singleton
 
 internal class MergeComponentTest {
@@ -49,7 +50,7 @@ internal class MergeComponentTest {
 
   @MergeSubcomponent(SubScope::class)
   interface SubComponent {
-    fun middleType(): MiddleType
+    @Named("middle") fun middleType(): MiddleType
     fun parentType(): ParentType
   }
 }

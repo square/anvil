@@ -155,4 +155,32 @@ class ContributesBindingGeneratorTest {
       }
     }
   }
+
+  @Test fun `contributed bindings aren't allowed to have more than one qualifier`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Qualifier
+      
+      @Qualifier
+      annotation class AnyQualifier1
+      
+      @Qualifier
+      annotation class AnyQualifier2
+
+      interface ParentInterface
+
+      @com.squareup.anvil.annotations.ContributesBinding(Any::class)
+      @AnyQualifier1 
+      @AnyQualifier2
+      interface ContributingInterface : ParentInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains(
+        "Classes annotated with @ContributesBinding may not use more than one @Qualifier."
+      )
+    }
+  }
 }

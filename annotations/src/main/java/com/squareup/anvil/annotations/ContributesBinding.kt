@@ -36,9 +36,22 @@ import kotlin.reflect.KClass
  * )
  * class RealAuthenticator @Inject constructor() : AbstractTokenProvider(), Authenticator
  * ```
+ *
+ * [ContributesBinding] supports qualifiers. If you annotate the class additionally with a
+ * qualifier, then the generated binding method will be annotated with the same qualifier, e.g.
+ * ```
+ * @ContributesBinding(AppScope::class)
+ * @Named("Prod")
+ * class RealAuthenticator @Inject constructor() : Authenticator
+ *
+ * // Will generated this binding method.
+ * @Binds @Named("Prod")
+ * abstract fun bindRealAuthenticator(authenticator: RealAuthenticator): Authenticator
+ * ```
+ *
  * [ContributesBinding] is a convenience for a very simple but the most common scenario. Multiple
- * bound types, generic types, multibindings or qualifiers are not supported. In these cases it's
- * still required to write a Dagger module.
+ * bound types, generic types or multibindings are not supported. In these cases it's still
+ * required to write a Dagger module.
  *
  * Contributed bindings can replace other contributed modules and bindings with the [replaces]
  * parameter. This is especially helpful for different bindings in instrumentation tests.

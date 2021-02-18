@@ -2,6 +2,8 @@
 
 ## Next Version
 
+* `@ContributesBinding` supports qualifiers now, see the README and documentation for examples.  
+
 ## 2.1.0 (2021-02-05)
 
 * This release upgrades Anvil to Kotlin `1.4.30`. Older Kotlin version are no longer supported moving forward.

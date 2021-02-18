@@ -20,6 +20,7 @@ import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.getAnnotationValue
+import com.squareup.anvil.compiler.isQualifier
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
@@ -208,6 +209,10 @@ internal class BindingModuleGenerator(
 
           val concreteType = contributedClass.fqNameSafe
 
+          val qualifiers = contributedClass.annotations
+            .filter { it.isQualifier() }
+            .map { it.toAnnotationSpec(module) }
+
           if (DescriptorUtils.isObject(contributedClass)) {
             ProviderMethod(
               FunSpec
@@ -220,6 +225,7 @@ internal class BindingModuleGenerator(
                     }
                 )
                 .addAnnotation(Provides::class)
+                .addAnnotations(qualifiers)
                 .returns(boundType.asClassName())
                 .addStatement("return %T", contributedClass.asClassName())
                 .build()
@@ -234,6 +240,7 @@ internal class BindingModuleGenerator(
                     .joinToString(separator = "", prefix = "bind") { it.capitalize(US) }
                 )
                 .addAnnotation(Binds::class)
+                .addAnnotations(qualifiers)
                 .addModifiers(ABSTRACT)
                 .addParameter(
                   name = concreteType.shortName().asString().decapitalize(US),
