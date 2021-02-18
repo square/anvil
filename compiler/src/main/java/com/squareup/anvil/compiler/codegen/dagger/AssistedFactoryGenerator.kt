@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.codegen.asClassName
 import com.squareup.anvil.compiler.codegen.asTypeName
 import com.squareup.anvil.compiler.codegen.buildFile
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
+import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.AssistedParameterKey.Companion.toKeysList
 import com.squareup.anvil.compiler.codegen.fqNameOrNull
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.requireFqName
@@ -33,6 +34,7 @@ import org.jetbrains.kotlin.descriptors.DescriptorVisibilities.PUBLIC
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
@@ -40,8 +42,10 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter.Companion.FUNCTIONS
+import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import java.io.File
 import javax.inject.Provider
@@ -118,25 +122,53 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     // Check that the parameters of the function match the @Assisted parameters of the constructor.
     if (assistedParameters.size != functionParameters.size) {
       throw AnvilCompilationException(
-        "The parameters of the factory method must be assignable to the list of @Assisted " +
-          "parameters in ${returnType.fqNameSafe}.",
+        "The parameters in the factory method must match the @Assisted parameters in " +
+          "${returnType.fqNameSafe}.",
         element = clazz
       )
     }
 
-    functionParameters.forEachIndexed { index, parameter ->
-      val assistedType = assistedParameters[index].type
-      if (parameter.type != assistedType) {
-        if (parameter.type.isTypeParameter() && assistedType.isTypeParameter()) {
-          return@forEachIndexed
-        }
+    // Compute for each parameter its key.
+    val functionParameterKeys = functionParameters.toKeysList()
+    val assistedParameterKeys = assistedParameters.toKeysList()
 
-        throw AnvilCompilationException(
-          "The parameters of the factory method must be assignable to the list of @Assisted " +
-            "parameters in ${returnType.fqNameSafe}.",
-          element = clazz
-        )
-      }
+    // The factory function may not have two or more parameters with the same key.
+    val duplicateKeys = functionParameterKeys
+      .groupBy { it.key }
+      .filter { it.value.size > 1 }
+      .values
+      .flatten()
+
+    if (duplicateKeys.isNotEmpty()) {
+      // Complain about the first duplicate key that occurs, similar to Dagger.
+      val key = functionParameterKeys.first { it in duplicateKeys }
+
+      throw AnvilCompilationException(
+        message = buildString {
+          append("@AssistedFactory method has duplicate @Assisted types: ")
+          if (key.identifier.isNotEmpty()) {
+            append("@Assisted(\"${key.identifier}\") ")
+          }
+          append(key.kotlinType.classDescriptorForType().fqNameSafe)
+        },
+        element = clazz
+      )
+    }
+
+    // Check that for each parameter of the factory function there is a parameter with the same
+    // key in the @AssistedInject constructor.
+    val notMatchingKeys = (functionParameterKeys + assistedParameterKeys)
+      .groupBy { it.key }
+      .filter { it.value.size == 1 }
+      .values
+      .flatten()
+
+    if (notMatchingKeys.isNotEmpty()) {
+      throw AnvilCompilationException(
+        "The parameters in the factory method must match the @Assisted parameters in " +
+          "${returnType.fqNameSafe}.",
+        element = clazz
+      )
     }
 
     val packageName = clazz.containingKtFile.packageFqName.asString()
@@ -198,7 +230,20 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
                 addParameter(parameter.name.asString(), parameter.type.asTypeName())
               }
 
-              val argumentList = functionParameters.joinToString { it.name.asString() }
+              // We call the @AssistedInject constructor. Therefore, find for each assisted
+              // parameter the function parameter where the keys match.
+              val argumentList = assistedParameterKeys.joinToString { assistedParameterKey ->
+                val functionIndex = functionParameterKeys.indexOfFirst {
+                  it.key == assistedParameterKey.key
+                }
+                check(functionIndex >= 0) {
+                  // Sanity check, this should not happen with the noMatchingKeys list check above.
+                  "Unexpected assistedIndex."
+                }
+
+                functionParameters[functionIndex].name.asString()
+              }
+
               addStatement("return $delegateFactoryName.get($argumentList)")
             }
             .build()
@@ -228,5 +273,35 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     }
 
     return createGeneratedFile(codeGenDir, packageName, className, content)
+  }
+
+  // Dagger matches parameters of the factory function with the parameters of the @AssistedInject
+  // constructor through a key. Initially, they used the order of parameters, but that has changed.
+  // The key is a combination of the type and identifier (value parameter) of the
+  // @Assisted("...") annotation. For each parameter the key must be unique.
+  private data class AssistedParameterKey(
+    val kotlinType: KotlinType,
+    val identifier: String
+  ) {
+
+    // That's how we compute the key value. It's similar to a hash function, but with the only
+    // condition that the kotlinType cannot be a type parameter. For type parameters
+    // (class Abc<TypeParameter>) we use the string representation as key, which must be unique.
+    val key: Int = identifier.hashCode() * 31 +
+      if (kotlinType.isTypeParameter()) kotlinType.toString().hashCode() else kotlinType.hashCode()
+
+    companion object {
+      fun Collection<ValueParameterDescriptor>.toKeysList(): List<AssistedParameterKey> =
+        map { descriptor ->
+          AssistedParameterKey(
+            kotlinType = descriptor.type,
+            identifier = descriptor.annotations.findAnnotation(assistedFqName)
+              ?.argumentValue("value")
+              ?.value
+              ?.toString()
+              ?: ""
+          )
+        }
+    }
   }
 }

@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.factoryClass
 import com.squareup.anvil.compiler.invokeGet
 import com.squareup.anvil.compiler.isStatic
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -151,8 +152,8 @@ public final class AssistedService_Factory {
       
       class AssistedService @AssistedInject constructor(
         val int: Int,
-        @Assisted val string1: String,
-        @Assisted val string2: String
+        @Assisted("one") val string1: String,
+        @Assisted("two") val string2: String
       ) {
         override fun equals(other: Any?): Boolean {
           if (this === other) return true
@@ -197,8 +198,8 @@ public final class AssistedService_Factory {
       import dagger.assisted.AssistedInject
       
       class AssistedService @AssistedInject constructor(
-        @Assisted val string1: String,
-        @Assisted val string2: String
+        @Assisted("one") val string1: String,
+        @Assisted("two") val string2: String
       ) {
         override fun equals(other: Any?): Boolean {
           if (this === other) return true
@@ -229,6 +230,78 @@ public final class AssistedService_Factory {
         .invoke(null, "Hello", "World")
 
       assertThat(factoryInstance.invokeGet("Hello", "World")).isEqualTo(newInstance)
+    }
+  }
+
+  @Test fun `two identical assisted types must use an identifier`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedInject
+      
+      data class SomeType(val int: Int)
+      
+      class AssistedService @AssistedInject constructor(
+        @Assisted val type1: SomeType,
+        @Assisted val type2: SomeType
+      ) {
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+      
+          other as AssistedService
+      
+          if (type1 != other.type1) return false
+          if (type2 != other.type2) return false
+      
+          return true
+        } 
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains(
+        "@AssistedInject constructor has duplicate @Assisted type: " +
+          "@Assisted com.squareup.test.SomeType"
+      )
+    }
+  }
+
+  @Test fun `two identical assisted types must use a different identifier`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedInject
+      
+      data class SomeType(val int: Int)
+      
+      class AssistedService @AssistedInject constructor(
+        @Assisted("one") val type1: SomeType,
+        @Assisted(value = "one") val type2: SomeType
+      ) {
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+      
+          other as AssistedService
+      
+          if (type1 != other.type1) return false
+          if (type2 != other.type2) return false
+      
+          return true
+        } 
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains(
+        "@AssistedInject constructor has duplicate @Assisted type: " +
+          "@Assisted(\"one\") com.squareup.test.SomeType"
+      )
     }
   }
 
@@ -317,6 +390,53 @@ public final class AssistedService_Factory {
         .invoke(null, 5, listOf("Hello"))
 
       assertThat(factoryInstance.invokeGet(listOf("Hello"))).isEqualTo(newInstance)
+    }
+  }
+
+  @Test fun `a factory class is generated with two generic parameters`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedInject
+      
+      class AssistedService<T : CharSequence> @AssistedInject constructor(
+        val int: Int,
+        @Assisted val strings: List<String>,
+        @Assisted val ints: List<Int>
+      ) {
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+      
+          other as AssistedService<*>
+      
+          if (int != other.int) return false
+          if (strings != other.strings) return false
+          if (ints != other.ints) return false
+      
+          return true
+        } 
+      }
+      """
+    ) {
+      val factoryClass = assistedService.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(2)
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { 5 })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, 5, listOf("Hello"), listOf(1, 2))
+
+      assertThat(factoryInstance.invokeGet(listOf("Hello"), listOf(1, 2))).isEqualTo(newInstance)
     }
   }
 
@@ -555,7 +675,8 @@ public final class AssistedService_Factory {
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      // For some reason with Dagger this test throws an internal error.
+      assertThat(exitCode).isIn(listOf(COMPILATION_ERROR, INTERNAL_ERROR))
       assertThat(messages).contains("Types may only contain one injected constructor")
     }
   }

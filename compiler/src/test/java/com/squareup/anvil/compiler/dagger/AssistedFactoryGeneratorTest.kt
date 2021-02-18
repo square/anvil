@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.assistedServiceFactory
 import com.squareup.anvil.compiler.factoryClass
 import com.squareup.anvil.compiler.implClass
 import com.squareup.anvil.compiler.isStatic
+import com.squareup.anvil.compiler.newInstanceNoArgs
 import com.squareup.anvil.compiler.use
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
@@ -653,7 +654,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
-  @Test fun `the parameters of the factory function must match`() {
+  @Test fun `the parameters of the factory function must match - different count`() {
     compile(
       """
       package com.squareup.test
@@ -669,19 +670,79 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       
       @AssistedFactory
       interface AssistedServiceFactory {
-        fun create(string: String, other: String): AssistedService
+        fun create(charSequence: CharSequence, other: String): AssistedService
       }
       """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       assertThat(messages).contains(
-        "The parameters of the factory method must be assignable to the list of @Assisted " +
-          "parameters in com.squareup.test.AssistedService."
+        "The parameters in the factory method must match the @Assisted parameters " +
+          "in com.squareup.test.AssistedService."
       )
     }
   }
 
-  @Test fun `the parameters of the factory function must match - different order`() {
+  @Test fun `the parameters of the factory function must match - different type`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      class AssistedService @AssistedInject constructor(
+        @Assisted val int: Int,
+        @Assisted val string: String
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory {
+        fun create(charSequence: CharSequence, other: String): AssistedService
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains(
+        "The parameters in the factory method must match the @Assisted parameters " +
+          "in com.squareup.test.AssistedService."
+      )
+    }
+  }
+
+  @Test fun `a different order for the parameters of the factory function is allowed`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.InstanceFactory;
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class AssistedServiceFactory_Impl implements AssistedServiceFactory {
+  private final AssistedService_Factory delegateFactory;
+
+  AssistedServiceFactory_Impl(AssistedService_Factory delegateFactory) {
+    this.delegateFactory = delegateFactory;
+  }
+
+  @Override
+  public AssistedService create(long p0_1663806, String other) {
+    return delegateFactory.get(other, p0_1663806);
+  }
+
+  public static Provider<AssistedServiceFactory> create(AssistedService_Factory delegateFactory) {
+    return InstanceFactory.create(new AssistedServiceFactory_Impl(delegateFactory));
+  }
+}
+     */
     compile(
       """
       package com.squareup.test
@@ -693,19 +754,277 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String,
-        @Assisted val string2: CharSequence
+        @Assisted val long: Long
       )
       
       @AssistedFactory
       interface AssistedServiceFactory {
-        fun create(string: CharSequence, other: String): AssistedService
+        fun create(long: Long, other: String): AssistedService
+      }
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass()
+        .declaredConstructors.single().newInstance(Provider { 5 })
+
+      val constructor = factoryImplClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(assistedService.factoryClass())
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, 5L, "Hello")
+
+      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+    }
+  }
+
+  @Test fun `a different order for the parameters of the factory function is allowed for parameters`() { // ktlint-disable max-line-length
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService @AssistedInject constructor(
+        @Assisted val string: String,
+        @Assisted val long1: Long,
+        @Assisted("two") val long2: Long,
+        @Assisted("three") val long3: Long,
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory {
+        fun create(
+          long11: Long, 
+          other: String, 
+          @Assisted("three") long33: Long,
+          @Assisted("two") long22: Long
+        ): AssistedService
+      }
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass()
+        .declaredConstructors.single().newInstance()
+
+      val constructor = factoryImplClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(assistedService.factoryClass())
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, 1L, "Hello", 3L, 2L)
+
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.declaredConstructors.single()
+          .newInstance("Hello", 1L, 2L, 3L)
+      )
+    }
+  }
+
+  @Test
+  fun `a different order for the parameters of the factory function is allowed for generic types`() { // ktlint-disable max-line-length
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService @AssistedInject constructor(
+        @Assisted val strings: List<String>,
+        @Assisted val ints: List<Int>
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory {
+        fun create(ints: List<Int>, strings: List<String>): AssistedService
+      }
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass()
+        .declaredConstructors.single().newInstance()
+
+      val constructor = factoryImplClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(assistedService.factoryClass())
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, listOf(1, 2), listOf("Hello"))
+
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.declaredConstructors.single()
+          .newInstance(listOf("Hello"), listOf(1, 2))
+      )
+    }
+  }
+
+  @Test fun `a different order for the parameters of the factory function is allowed for type parameters`() { // ktlint-disable max-line-length
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService<T : CharSequence, S : Number> @AssistedInject constructor(
+        @Assisted val string: T,
+        @Assisted val number: S
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory<T : CharSequence, S : Number> {
+        fun create(number: S, string: T): AssistedService<T, S>
+      }
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass().newInstanceNoArgs()
+
+      val constructor = factoryImplClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(assistedService.factoryClass())
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, 1, "Hello")
+
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.declaredConstructors.single()
+          .newInstance("Hello", 1)
+      )
+    }
+  }
+
+  @Test fun `equal types must use an identifier`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService @AssistedInject constructor(
+        @Assisted("one") val string1: String,
+        @Assisted("two") val string2: String
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory {
+        fun create(
+          @Assisted("two") string2: String, 
+          @Assisted("one") string1: String
+        ): AssistedService
+      }
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass()
+        .declaredConstructors.single().newInstance()
+
+      val constructor = factoryImplClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(assistedService.factoryClass())
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, "Hello", "World")
+
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService
+          .getDeclaredConstructor(String::class.java, String::class.java)
+          .newInstance("World", "Hello")
+      )
+    }
+  }
+
+  @Test fun `equal types with equal identifiers aren't supported`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      class Type
+      
+      data class AssistedService @AssistedInject constructor(
+        @Assisted("one") val type1: Type,
+        @Assisted("two") val type2: Type
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory {
+        fun create(
+          @Assisted("one") type1: Type, 
+          @Assisted("one") type2: Type
+        ): AssistedService
       }
       """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       assertThat(messages).contains(
-        "The parameters of the factory method must be assignable to the list of @Assisted " +
-          "parameters in com.squareup.test.AssistedService."
+        "@AssistedFactory method has duplicate @Assisted types: " +
+          "@Assisted(\"one\") com.squareup.test.Type"
       )
     }
   }
