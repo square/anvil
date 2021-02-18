@@ -68,22 +68,10 @@ public final class AssistedService_Factory {
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
-      ) {
-        override fun equals(other: Any?): Boolean {
-          if (this === other) return true
-          if (javaClass != other?.javaClass) return false
-      
-          other as AssistedService
-      
-          if (int != other.int) return false
-          if (string != other.string) return false
-      
-          return true
-        } 
-      }
+      )
       """
     ) {
       val factoryClass = assistedService.factoryClass()
@@ -150,24 +138,11 @@ public final class AssistedService_Factory {
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted("one") val string1: String,
         @Assisted("two") val string2: String
-      ) {
-        override fun equals(other: Any?): Boolean {
-          if (this === other) return true
-          if (javaClass != other?.javaClass) return false
-      
-          other as AssistedService
-      
-          if (int != other.int) return false
-          if (string1 != other.string1) return false
-          if (string2 != other.string2) return false
-      
-          return true
-        } 
-      }
+      )
       """
     ) {
       val factoryClass = assistedService.factoryClass()
@@ -197,22 +172,10 @@ public final class AssistedService_Factory {
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         @Assisted("one") val string1: String,
         @Assisted("two") val string2: String
-      ) {
-        override fun equals(other: Any?): Boolean {
-          if (this === other) return true
-          if (javaClass != other?.javaClass) return false
-      
-          other as AssistedService
-      
-          if (string1 != other.string1) return false
-          if (string2 != other.string2) return false
-      
-          return true
-        } 
-      }
+      )
       """
     ) {
       val factoryClass = assistedService.factoryClass()
@@ -243,22 +206,10 @@ public final class AssistedService_Factory {
       
       data class SomeType(val int: Int)
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         @Assisted val type1: SomeType,
         @Assisted val type2: SomeType
-      ) {
-        override fun equals(other: Any?): Boolean {
-          if (this === other) return true
-          if (javaClass != other?.javaClass) return false
-      
-          other as AssistedService
-      
-          if (type1 != other.type1) return false
-          if (type2 != other.type2) return false
-      
-          return true
-        } 
-      }
+      )
       """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
@@ -279,22 +230,10 @@ public final class AssistedService_Factory {
       
       data class SomeType(val int: Int)
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         @Assisted("one") val type1: SomeType,
         @Assisted(value = "one") val type2: SomeType
-      ) {
-        override fun equals(other: Any?): Boolean {
-          if (this === other) return true
-          if (javaClass != other?.javaClass) return false
-      
-          other as AssistedService
-      
-          if (type1 != other.type1) return false
-          if (type2 != other.type2) return false
-      
-          return true
-        } 
-      }
+      )
       """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
@@ -313,20 +252,9 @@ public final class AssistedService_Factory {
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int
-      ) {
-        override fun equals(other: Any?): Boolean {
-          if (this === other) return true
-          if (javaClass != other?.javaClass) return false
-      
-          other as AssistedService
-      
-          if (int != other.int) return false
-      
-          return true
-        } 
-      }
+      )
       """
     ) {
       val factoryClass = assistedService.factoryClass()
@@ -356,22 +284,10 @@ public final class AssistedService_Factory {
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedInject
       
-      class AssistedService<T : CharSequence> @AssistedInject constructor(
+      data class AssistedService<T : CharSequence> @AssistedInject constructor(
         val int: Int,
         @Assisted val strings: List<String>
-      ) {
-        override fun equals(other: Any?): Boolean {
-          if (this === other) return true
-          if (javaClass != other?.javaClass) return false
-      
-          other as AssistedService<*>
-      
-          if (int != other.int) return false
-          if (strings != other.strings) return false
-      
-          return true
-        } 
-      }
+      )
       """
     ) {
       val factoryClass = assistedService.factoryClass()
@@ -401,24 +317,11 @@ public final class AssistedService_Factory {
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedInject
       
-      class AssistedService<T : CharSequence> @AssistedInject constructor(
+      data class AssistedService<T : CharSequence> @AssistedInject constructor(
         val int: Int,
         @Assisted val strings: List<String>,
         @Assisted val ints: List<Int>
-      ) {
-        override fun equals(other: Any?): Boolean {
-          if (this === other) return true
-          if (javaClass != other?.javaClass) return false
-      
-          other as AssistedService<*>
-      
-          if (int != other.int) return false
-          if (strings != other.strings) return false
-          if (ints != other.ints) return false
-      
-          return true
-        } 
-      }
+      )
       """
     ) {
       val factoryClass = assistedService.factoryClass()
@@ -448,22 +351,10 @@ public final class AssistedService_Factory {
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedInject
       
-      class AssistedService<T : CharSequence> @AssistedInject constructor(
+      data class AssistedService<T : CharSequence> @AssistedInject constructor(
         val int: Int,
         @Assisted val string: T
-      ) {
-        override fun equals(other: Any?): Boolean {
-          if (this === other) return true
-          if (javaClass != other?.javaClass) return false
-      
-          other as AssistedService<*>
-      
-          if (int != other.int) return false
-          if (string != other.string) return false
-      
-          return true
-        } 
-      }
+      )
       """
     ) {
       val factoryClass = assistedService.factoryClass()
@@ -493,22 +384,10 @@ public final class AssistedService_Factory {
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedInject
       
-      class AssistedService<S : Any, T : CharSequence> @AssistedInject constructor(
+      data class AssistedService<S : Any, T : CharSequence> @AssistedInject constructor(
         val int: S,
         @Assisted val string: T
-      ) {
-        override fun equals(other: Any?): Boolean {
-          if (this === other) return true
-          if (javaClass != other?.javaClass) return false
-      
-          other as AssistedService<*, *>
-      
-          if (int != other.int) return false
-          if (string != other.string) return false
-      
-          return true
-        } 
-      }
+      )
       """
     ) {
       val factoryClass = assistedService.factoryClass()
@@ -539,22 +418,10 @@ public final class AssistedService_Factory {
       import dagger.assisted.AssistedInject
       
       class Outer {
-        class AssistedService @AssistedInject constructor(
+        data class AssistedService @AssistedInject constructor(
           val int: Int,
           @Assisted val string: String
-        ) {
-          override fun equals(other: Any?): Boolean {
-            if (this === other) return true
-            if (javaClass != other?.javaClass) return false
-        
-            other as AssistedService
-        
-            if (int != other.int) return false
-            if (string != other.string) return false
-        
-            return true
-          } 
-        }
+        )
       }
       
       """
@@ -622,22 +489,10 @@ public final class AssistedService_Factory {
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int?,
         @Assisted val string: String?
-      ) {
-        override fun equals(other: Any?): Boolean {
-          if (this === other) return true
-          if (javaClass != other?.javaClass) return false
-      
-          other as AssistedService
-      
-          if (int != other.int) return false
-          if (string != other.string) return false
-      
-          return true
-        } 
-      }
+      )
       """
     ) {
       val factoryClass = assistedService.factoryClass()

@@ -3,10 +3,10 @@ package com.squareup.anvil.compiler.dagger
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.assistedServiceFactory
+import com.squareup.anvil.compiler.createInstance
 import com.squareup.anvil.compiler.factoryClass
 import com.squareup.anvil.compiler.implClass
 import com.squareup.anvil.compiler.isStatic
-import com.squareup.anvil.compiler.newInstanceNoArgs
 import com.squareup.anvil.compiler.use
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
@@ -103,7 +103,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -115,12 +115,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass()
-        .declaredConstructors.single().newInstance(Provider { 5 })
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -129,14 +125,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
         .invoke(factoryImplInstance, "Hello")
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(assistedService.createInstance(5, "Hello"))
     }
   }
 
@@ -149,7 +143,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -163,12 +157,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass()
-        .declaredConstructors.single().newInstance(Provider { 5 })
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -177,14 +167,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
         .invoke(factoryImplInstance, "Hello")
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(assistedService.createInstance(5, "Hello"))
     }
   }
 
@@ -197,7 +185,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -209,12 +197,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass()
-        .declaredConstructors.single().newInstance(Provider { 5 })
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -223,14 +207,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
         .invoke(factoryImplInstance, "Hello")
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(assistedService.createInstance(5, "Hello"))
     }
   }
 
@@ -243,7 +225,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -255,12 +237,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass()
-        .declaredConstructors.single().newInstance(Provider { 5 })
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -269,8 +247,6 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
@@ -278,7 +254,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
           it.invoke(factoryImplInstance, "Hello")
         }
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(assistedService.createInstance(5, "Hello"))
     }
   }
 
@@ -291,7 +267,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val strings: List<String>
       )
@@ -303,12 +279,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass()
-        .declaredConstructors.single().newInstance(Provider { 5 })
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -317,14 +289,13 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
         .invoke(factoryImplInstance, listOf("Hello"))
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance)
+        .isEqualTo(assistedService.createInstance(5, listOf("Hello")))
     }
   }
 
@@ -405,7 +376,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService<T : CharSequence> @AssistedInject constructor(
+      data class AssistedService<T : CharSequence> @AssistedInject constructor(
         val int: Int,
         @Assisted val string: T
       )
@@ -417,12 +388,8 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass()
-        .declaredConstructors.single().newInstance(Provider { 5 })
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -431,14 +398,12 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
         .invoke(factoryImplInstance, "Hello")
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(assistedService.createInstance(5, "Hello"))
     }
   }
 
@@ -451,7 +416,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       ) {
@@ -464,12 +429,8 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
     ) {
       val factoryImplClass = classLoader
         .loadClass("com.squareup.test.AssistedService\$Factory").implClass()
-      val generatedFactoryInstance = assistedService.factoryClass()
-        .declaredConstructors.single().newInstance(Provider { 5 })
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -478,14 +439,12 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
         .invoke(factoryImplInstance, "Hello")
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(assistedService.createInstance(5, "Hello"))
     }
   }
 
@@ -564,7 +523,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String?
       )
@@ -576,12 +535,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass()
-        .declaredConstructors.single().newInstance(Provider { 5 })
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -590,14 +545,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
         .invoke(factoryImplInstance, null)
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance).isEqualTo(assistedService.createInstance(5, null))
     }
   }
 
@@ -608,7 +561,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       
       import dagger.assisted.AssistedFactory
       
-      class AssistedService(
+      data class AssistedService(
         val int: Int,
         val string: String
       )
@@ -751,7 +704,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String,
         @Assisted val long: Long
@@ -764,12 +717,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass()
-        .declaredConstructors.single().newInstance(Provider { 5 })
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -778,14 +727,13 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
-        .invoke(factoryImplInstance, 5L, "Hello")
+        .invoke(factoryImplInstance, 4L, "Hello")
 
-      assertThat(assistedServiceInstance::class.java).isEqualTo(assistedService)
+      assertThat(assistedServiceInstance)
+        .isEqualTo(assistedService.createInstance(5, "Hello", 4L))
     }
   }
 
@@ -817,12 +765,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass()
-        .declaredConstructors.single().newInstance()
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance()
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -831,17 +775,13 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
         .invoke(factoryImplInstance, 1L, "Hello", 3L, 2L)
 
-      assertThat(assistedServiceInstance).isEqualTo(
-        assistedService.declaredConstructors.single()
-          .newInstance("Hello", 1L, 2L, 3L)
-      )
+      assertThat(assistedServiceInstance)
+        .isEqualTo(assistedService.createInstance("Hello", 1L, 2L, 3L))
     }
   }
 
@@ -867,12 +807,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass()
-        .declaredConstructors.single().newInstance()
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance()
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -881,17 +817,13 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
         .invoke(factoryImplInstance, listOf(1, 2), listOf("Hello"))
 
-      assertThat(assistedServiceInstance).isEqualTo(
-        assistedService.declaredConstructors.single()
-          .newInstance(listOf("Hello"), listOf(1, 2))
-      )
+      assertThat(assistedServiceInstance)
+        .isEqualTo(assistedService.createInstance(listOf("Hello"), listOf(1, 2)))
     }
   }
 
@@ -916,11 +848,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass().newInstanceNoArgs()
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance()
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -929,16 +858,13 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
         .invoke(factoryImplInstance, 1, "Hello")
 
       assertThat(assistedServiceInstance).isEqualTo(
-        assistedService.declaredConstructors.single()
-          .newInstance("Hello", 1)
+        assistedService.createInstance("Hello", 1)
       )
     }
   }
@@ -967,12 +893,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass()
-        .declaredConstructors.single().newInstance()
-
-      val constructor = factoryImplClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(assistedService.factoryClass())
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance()
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
       assertThat(staticMethods).hasSize(1)
@@ -981,18 +903,13 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val factoryImplInstance = constructor.use { it.newInstance(generatedFactoryInstance) }
-
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
         .single { it.name == "create" }
         .invoke(factoryImplInstance, "Hello", "World")
 
-      assertThat(assistedServiceInstance).isEqualTo(
-        assistedService
-          .getDeclaredConstructor(String::class.java, String::class.java)
-          .newInstance("World", "Hello")
-      )
+      assertThat(assistedServiceInstance)
+        .isEqualTo(assistedService.createInstance("World", "Hello"))
     }
   }
 
@@ -1038,7 +955,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -1067,7 +984,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -1099,7 +1016,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
@@ -1125,7 +1042,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
-      class AssistedService @AssistedInject constructor(
+      data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )

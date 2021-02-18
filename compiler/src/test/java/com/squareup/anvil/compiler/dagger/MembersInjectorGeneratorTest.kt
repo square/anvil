@@ -1,10 +1,10 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.createInstance
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.isStatic
 import com.squareup.anvil.compiler.membersInjector
-import com.squareup.anvil.compiler.newInstanceNoArgs
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.MembersInjector
@@ -181,10 +181,10 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
         )
         as MembersInjector<Any>
 
-      val injectInstanceConstructor = injectClass.newInstanceNoArgs()
+      val injectInstanceConstructor = injectClass.createInstance()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
 
-      val injectInstanceStatic = injectClass.newInstanceNoArgs()
+      val injectInstanceStatic = injectClass.createInstance()
 
       membersInjector.staticInjectMethod("string")
         .invoke(null, injectInstanceStatic, "a")
@@ -320,10 +320,10 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
         )
         as MembersInjector<Any>
 
-      val injectInstanceConstructor = injectClass.newInstanceNoArgs()
+      val injectInstanceConstructor = injectClass.createInstance()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
 
-      val injectInstanceStatic = injectClass.newInstanceNoArgs()
+      val injectInstanceStatic = injectClass.createInstance()
 
       membersInjector.staticInjectMethod("string")
         .invoke(null, injectInstanceStatic, "a")
@@ -432,10 +432,10 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
         .newInstance(Provider { File("") }, Provider { File("").toPath() })
         as MembersInjector<Any>
 
-      val injectInstanceConstructor = injectClass.newInstanceNoArgs()
+      val injectInstanceConstructor = injectClass.createInstance()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
 
-      val injectInstanceStatic = injectClass.newInstanceNoArgs()
+      val injectInstanceStatic = injectClass.createInstance()
 
       membersInjector.staticInjectMethod("file")
         .invoke(null, injectInstanceStatic, File(""))
@@ -554,10 +554,10 @@ public final class OuterClass_InjectClass_MembersInjector implements MembersInje
         .newInstance(Provider { "a" }, Provider<CharSequence> { "b" }, Provider { listOf("c") })
         as MembersInjector<Any>
 
-      val injectInstanceConstructor = injectClass.newInstanceNoArgs()
+      val injectInstanceConstructor = injectClass.createInstance()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
 
-      val injectInstanceStatic = injectClass.newInstanceNoArgs()
+      val injectInstanceStatic = injectClass.createInstance()
 
       membersInjector.staticInjectMethod("string")
         .invoke(null, injectInstanceStatic, "a")
