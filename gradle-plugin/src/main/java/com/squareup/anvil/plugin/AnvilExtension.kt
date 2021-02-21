@@ -43,6 +43,14 @@ abstract class AnvilExtension @Inject constructor(objects: ObjectFactory) {
   val disableComponentMerging: Property<Boolean> = objects.property(Boolean::class.java)
     .convention(false)
 
+  /**
+   * Add Anvil generated source directories to sourceSets in Gradle for indexing visibility. This
+   * can be useful in debugging and is enabled by default but can be disabled if you don't
+   * need/want this.
+   */
+  val addGeneratedDirToSourceSets: Property<Boolean> = objects.property(Boolean::class.java)
+    .convention(true)
+
   /*
    * The below properties are legacy former properties. We do a bit of Kotlin sugar to preserve
    * binary compatibility but not Kotlin source compatibility.

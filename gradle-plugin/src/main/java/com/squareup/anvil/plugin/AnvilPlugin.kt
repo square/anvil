@@ -64,6 +64,12 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     val extension = project.extensions.findByType(AnvilExtension::class.java)
       ?: project.objects.newInstance(AnvilExtension::class.java)
 
+    if (extension.addGeneratedDirToSourceSets.get()) {
+      kotlinCompilation.defaultSourceSet {
+        kotlin.srcDir(srcGenDir)
+      }
+    }
+
     return project.provider {
       listOf(
         FilesSubpluginOption(
