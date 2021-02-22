@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.getAllSuperTypes
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
+import com.squareup.anvil.compiler.publishedApiFqName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -42,7 +43,7 @@ import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName)
+private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName, publishedApiFqName)
 
 internal fun KtFile.classesAndInnerClasses(): Sequence<KtClassOrObject> {
   val children = findChildrenByClass(KtClassOrObject::class.java)

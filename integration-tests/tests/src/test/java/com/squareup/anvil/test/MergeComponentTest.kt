@@ -42,10 +42,12 @@ internal class MergeComponentTest {
 
   @MergeComponent(AppScope::class)
   @Singleton
+  @Suppress("unused")
   interface AppComponent {
     fun subComponent(): SubComponent
     fun parentType(): ParentType
     fun function(): (String) -> Int
+    fun charSequence(): CharSequence
   }
 
   @MergeSubcomponent(SubScope::class)
