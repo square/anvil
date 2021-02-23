@@ -21,6 +21,7 @@ import com.squareup.anvil.compiler.codegen.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.generateClassName
+import com.squareup.anvil.compiler.publishedApiFqName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -35,6 +36,7 @@ import dagger.internal.Factory
 import dagger.internal.Preconditions
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
+import org.jetbrains.kotlin.lexer.KtTokens.INTERNAL_KEYWORD
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
@@ -42,6 +44,7 @@ import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.parents
+import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import java.io.File
 import java.util.Locale.US
 
@@ -110,6 +113,10 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
     val isProperty = declaration is KtProperty
 
+    val isMangled = !isProperty &&
+      declaration.visibilityModifierTypeOrDefault() == INTERNAL_KEYWORD &&
+      !declaration.hasAnnotation(publishedApiFqName)
+
     val packageName = clazz.containingKtFile.packageFqName.asString()
     val className = buildString {
       append(clazz.generateClassName())
@@ -121,6 +128,9 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
         append("Get")
       }
       append(declaration.requireFqName().shortName().asString().capitalize(US))
+      if (isMangled) {
+        append("\$${module.mangledNameSuffix()}")
+      }
       append("Factory")
     }
 
@@ -135,10 +145,10 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     val factoryClass = ClassName(packageName, className)
     val moduleClass = clazz.asClassName()
 
-    val byteCodeFunctionName = if (isProperty) {
-      "get" + callableName.capitalize(US)
-    } else {
-      callableName
+    val byteCodeFunctionName = when {
+      isProperty -> "get" + callableName.capitalize(US)
+      isMangled -> "$callableName\$${module.mangledNameSuffix()}"
+      else -> callableName
     }
 
     val content = FileSpec.buildFile(packageName, className) {
@@ -193,7 +203,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
                 asProvider = true,
                 includeModule = !isObject
               )
-              addStatement("return $byteCodeFunctionName($argumentList)")
+              addStatement("return %N($argumentList)", byteCodeFunctionName)
             }
             .build()
         )
@@ -312,5 +322,14 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     if (parentClass is KtObjectDeclaration && parentClass.isCompanion()) return
 
     fail()
+  }
+
+  private fun ModuleDescriptor.mangledNameSuffix(): String {
+    val name = name.asString()
+    return if (name.startsWith('<') && name.endsWith('>')) {
+      name.substring(1, name.length - 1)
+    } else {
+      name
+    }
   }
 }

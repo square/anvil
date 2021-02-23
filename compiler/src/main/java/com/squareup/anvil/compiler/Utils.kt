@@ -67,6 +67,7 @@ internal val assistedFactoryFqName = FqName(AssistedFactory::class.java.canonica
 internal val assistedInjectFqName = FqName(AssistedInject::class.java.canonicalName)
 internal val providerFqName = FqName(Provider::class.java.canonicalName)
 internal val jvmSuppressWildcardsFqName = FqName(JvmSuppressWildcards::class.java.canonicalName)
+internal val publishedApiFqName = FqName(PublishedApi::class.java.canonicalName)
 
 internal val daggerDoubleCheckFqNameString = DoubleCheck::class.java.canonicalName
 

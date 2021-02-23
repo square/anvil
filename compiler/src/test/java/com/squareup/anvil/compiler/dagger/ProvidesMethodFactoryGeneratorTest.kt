@@ -724,6 +724,166 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     }
   }
 
+  @Test fun `a factory class is generated for an internal provider method with a mangled name`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      class DaggerModule1 {
+        @dagger.Provides internal fun provideString(): String = "abc"
+      }
+      """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideString\$main")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(2)
+
+      val module = daggerModule1.createInstance()
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, module)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedString = staticMethods.single { it.name == "provideString\$main" }
+        .invoke(null, module) as String
+
+      assertThat(providedString).isEqualTo("abc")
+      assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
+    }
+  }
+
+  @Test fun `a factory class is generated for an internal provider method with a mangled name in an object`() { // ktlint-disable max-line-length
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import dagger.internal.Preconditions;
+import javax.annotation.processing.Generated;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class DaggerModule1_ProvideString$mainFactory implements Factory<String> {
+  @Override
+  public String get() {
+    return provideString$main();
+  }
+
+  public static DaggerModule1_ProvideString$mainFactory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static String provideString$main() {
+    return Preconditions.checkNotNullFromProvides(DaggerModule1.INSTANCE.provideString$main());
+  }
+
+  private static final class InstanceHolder {
+    private static final DaggerModule1_ProvideString$mainFactory INSTANCE = new DaggerModule1_ProvideString$mainFactory();
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      object DaggerModule1 {
+        @dagger.Provides internal fun provideString(): String = "abc"
+      }
+      """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideString\$main")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedString = staticMethods.single { it.name == "provideString\$main" }
+        .invoke(null) as String
+
+      assertThat(providedString).isEqualTo("abc")
+      assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
+    }
+  }
+
+  @Test fun `a factory class is generated for an internal provider method with a mangled name in a companion object`() { // ktlint-disable max-line-length
+    compile(
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      abstract class DaggerModule1 {
+        companion object {
+          @dagger.Provides internal fun provideString(): String = "abc"
+        }
+      }
+      """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideString\$main", companion = true)
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedString = staticMethods.single { it.name == "provideString\$main" }
+        .invoke(null) as String
+
+      assertThat(providedString).isEqualTo("abc")
+      assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
+    }
+  }
+
+  @Test fun `the factory does not contain the mangled name if the function is internal and uses @PublishedApi`() { // ktlint-disable max-line-length
+    compile(
+      """
+      package com.squareup.test
+      
+      @dagger.Module
+      object DaggerModule1 {
+        @dagger.Provides @PublishedApi internal fun provideString(): String = "abc"
+      }
+      """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideString")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedString = staticMethods.single { it.name == "provideString" }
+        .invoke(null) as String
+
+      assertThat(providedString).isEqualTo("abc")
+      assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
+    }
+  }
+
   @Test fun `a factory class is generated for a provider method with parameters`() {
     /*
 package com.squareup.test;
