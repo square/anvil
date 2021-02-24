@@ -219,7 +219,7 @@ internal fun List<KotlinType>.getAllSuperTypes(): Sequence<FqName> =
     kotlinTypes.ifEmpty { null }?.flatMap { it.supertypes() }
   }
     .flatMap { it.asSequence() }
-    .map { DescriptorUtils.getFqNameSafe(it.classDescriptorForType()) }
+    .map { it.classDescriptorForType().fqNameSafe }
 
 internal fun AnnotationDescriptor.isQualifier(): Boolean {
   return annotationClass?.annotations?.hasAnnotation(qualifierFqName) ?: false
