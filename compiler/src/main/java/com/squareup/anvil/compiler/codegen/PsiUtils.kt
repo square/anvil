@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtNullableType
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtPureElement
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
@@ -186,7 +187,7 @@ internal fun PsiElement.requireFqName(
   module: ModuleDescriptor
 ): FqName {
   val containingKtFile = parentsWithSelf
-    .filterIsInstance<KtClassOrObject>()
+    .filterIsInstance<KtPureElement>()
     .first()
     .containingKtFile
 

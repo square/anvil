@@ -42,7 +42,6 @@ import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.DescriptorUtils
@@ -82,7 +81,7 @@ internal class BindingModuleGenerator(
     // It's possible that we use the @ContributesBinding annotation in the module in which we
     // merge components. Remember for which classes a hint was generated and generate a @Binds
     // method for them later.
-    findContributedBindingClasses(projectFiles)
+    findContributedBindingClasses(module, projectFiles)
 
     val classes = projectFiles.flatMap {
       it.classesAndInnerClasses()
@@ -294,23 +293,21 @@ internal class BindingModuleGenerator(
     }
   }
 
-  private fun findContributedBindingClasses(projectFiles: Collection<KtFile>) {
+  private fun findContributedBindingClasses(
+    module: ModuleDescriptor,
+    projectFiles: Collection<KtFile>
+  ) {
     contributedBindingClasses += projectFiles
       .filter {
-        it.packageFqName.asString()
-          .startsWith(HINT_BINDING_PACKAGE_PREFIX)
+        it.packageFqName.asString().startsWith(HINT_BINDING_PACKAGE_PREFIX)
       }
       .flatMap {
-        it.findChildrenByClass(KtProperty::class.java)
-          .toList()
+        it.findChildrenByClass(KtProperty::class.java).toList()
       }
       .mapNotNull { ktProperty ->
-        (
-          (ktProperty.initializer as? KtClassLiteralExpression)
-            ?.firstChild as? KtDotQualifiedExpression
-          )
-          ?.text
-          ?.let { FqName(it) }
+        (ktProperty.initializer as? KtClassLiteralExpression)
+          ?.firstChild
+          ?.requireFqName(module)
       }
   }
 

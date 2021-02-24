@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.codegen.asArgumentList
 import com.squareup.anvil.compiler.codegen.asClassName
 import com.squareup.anvil.compiler.codegen.buildFile
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
+import com.squareup.anvil.compiler.codegen.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.fqNameOrNull
 import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.codegen.mapToParameter

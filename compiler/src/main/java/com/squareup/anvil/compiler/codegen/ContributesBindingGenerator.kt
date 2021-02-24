@@ -7,6 +7,11 @@ import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.isQualifier
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.KModifier.PUBLIC
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.asClassName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
@@ -15,6 +20,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import java.io.File
+import kotlin.reflect.KClass
 
 /**
  * Generates a hint for each contributed class in the `anvil.hint.bindings` package. This allows
@@ -42,35 +48,44 @@ internal class ContributesBindingGenerator : CodeGenerator {
         checkNotMoreThanOneQualifier(module, clazz)
       }
       .map { clazz ->
-        val packageName = clazz.containingKtFile.packageFqName.asString()
-        val generatedPackage = "$HINT_BINDING_PACKAGE_PREFIX.$packageName"
-        val className = clazz.requireFqName()
-          .asString()
-
-        val directory = File(codeGenDir, generatedPackage.replace('.', File.separatorChar))
-        val file = File(directory, "${className.replace('.', '_')}.kt")
-        check(file.parentFile.exists() || file.parentFile.mkdirs()) {
-          "Could not generate package directory: ${file.parentFile}"
-        }
-
-        val scope = clazz.scope(contributesBindingFqName, module)
+        val generatedPackage =
+          "$HINT_BINDING_PACKAGE_PREFIX.${clazz.containingKtFile.packageFqName}"
+        val className = clazz.asClassName()
+        val classFqName = clazz.requireFqName().toString()
+        val propertyName = classFqName.replace('.', '_')
+        val scope = clazz.scope(contributesBindingFqName, module).asClassName(module)
 
         val content =
-          """
-            package $generatedPackage
-            
-            public val ${className.replace(
-            '.',
-            '_'
-          )}$REFERENCE_SUFFIX: kotlin.reflect.KClass<$className> = $className::class
-            public val ${className.replace(
-            '.',
-            '_'
-          )}$SCOPE_SUFFIX: kotlin.reflect.KClass<$scope> = $scope::class
-          """.trimIndent()
-        file.writeText(content)
+          FileSpec.buildFile(generatedPackage, propertyName) {
+            addProperty(
+              PropertySpec
+                .builder(
+                  name = propertyName + REFERENCE_SUFFIX,
+                  type = KClass::class.asClassName().parameterizedBy(className)
+                )
+                .initializer("%T::class", className)
+                .addModifiers(PUBLIC)
+                .build()
+            )
 
-        GeneratedFile(file, content)
+            addProperty(
+              PropertySpec
+                .builder(
+                  name = propertyName + SCOPE_SUFFIX,
+                  type = KClass::class.asClassName().parameterizedBy(scope)
+                )
+                .initializer("%T::class", scope)
+                .addModifiers(PUBLIC)
+                .build()
+            )
+          }
+
+        createGeneratedFile(
+          codeGenDir = codeGenDir,
+          packageName = generatedPackage,
+          fileName = propertyName,
+          content = content
+        )
       }
       .toList()
   }
