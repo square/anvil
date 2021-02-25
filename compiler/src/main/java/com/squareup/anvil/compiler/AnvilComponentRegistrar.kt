@@ -5,6 +5,7 @@ import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.CodeGenerator
 import com.squareup.anvil.compiler.codegen.ContributesBindingGenerator
+import com.squareup.anvil.compiler.codegen.ContributesMultibindingGenerator
 import com.squareup.anvil.compiler.codegen.ContributesToGenerator
 import com.squareup.anvil.compiler.codegen.dagger.AnvilAnnotationDetectorCheck
 import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator
@@ -42,6 +43,7 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     if (!generateDaggerFactoriesOnly) {
       codeGenerators += ContributesToGenerator()
       codeGenerators += ContributesBindingGenerator()
+      codeGenerators += ContributesMultibindingGenerator()
       codeGenerators += BindingModuleGenerator(scanner)
     } else {
       codeGenerators += AnvilAnnotationDetectorCheck()

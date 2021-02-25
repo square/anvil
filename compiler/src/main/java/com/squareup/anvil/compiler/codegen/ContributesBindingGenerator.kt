@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
@@ -37,15 +38,8 @@ internal class ContributesBindingGenerator : CodeGenerator {
       .flatMap { it.classesAndInnerClasses() }
       .filter { it.hasAnnotation(contributesBindingFqName) }
       .onEach { clazz ->
-        if (clazz.visibilityModifierTypeOrDefault().value != KtTokens.PUBLIC_KEYWORD.value) {
-          throw AnvilCompilationException(
-            "${clazz.requireFqName()} is binding a type, but the class is not public. Only " +
-              "public types are supported.",
-            element = clazz.identifyingElement
-          )
-        }
-
-        checkNotMoreThanOneQualifier(module, clazz)
+        clazz.checkClassIsPublic()
+        clazz.checkNotMoreThanOneQualifier(module, contributesBindingFqName)
       }
       .map { clazz ->
         val generatedPackage =
@@ -89,26 +83,37 @@ internal class ContributesBindingGenerator : CodeGenerator {
       }
       .toList()
   }
+}
 
-  private fun checkNotMoreThanOneQualifier(
-    module: ModuleDescriptor,
-    clazz: KtClassOrObject
-  ) {
-    // The class is annotated with @ContributesBinding. If there is less than 2 further
-    // annotations, then there can't be more than two qualifiers.
-    if (clazz.annotationEntries.size <= 2) return
+internal fun KtClassOrObject.checkNotMoreThanOneQualifier(
+  module: ModuleDescriptor,
+  annotationFqName: FqName
+) {
+  // The class is annotated with @ContributesBinding. If there is less than 2 further
+  // annotations, then there can't be more than two qualifiers.
+  if (annotationEntries.size <= 2) return
 
-    val classDescriptor = module
-      .resolveClassByFqName(clazz.requireFqName(), KotlinLookupLocation(clazz))
-      ?: return
+  val classDescriptor = module
+    .resolveClassByFqName(requireFqName(), KotlinLookupLocation(this))
+    ?: return
 
-    val qualifiers = classDescriptor.annotations.filter { it.isQualifier() }
+  val qualifiers = classDescriptor.annotations.filter { it.isQualifier() }
 
-    if (qualifiers.size > 1) {
-      throw AnvilCompilationException(
-        "Classes annotated with @ContributesBinding may not use more than one @Qualifier.",
-        element = clazz
-      )
-    }
+  if (qualifiers.size > 1) {
+    throw AnvilCompilationException(
+      message = "Classes annotated with @${annotationFqName.shortName()} may not use more " +
+        "than one @Qualifier.",
+      element = this
+    )
+  }
+}
+
+internal fun KtClassOrObject.checkClassIsPublic() {
+  if (visibilityModifierTypeOrDefault().value != KtTokens.PUBLIC_KEYWORD.value) {
+    throw AnvilCompilationException(
+      "${requireFqName()} is binding a type, but the class is not public. Only " +
+        "public types are supported.",
+      element = identifyingElement
+    )
   }
 }

@@ -44,14 +44,15 @@ import kotlin.reflect.KClass
  * @Named("Prod")
  * class RealAuthenticator @Inject constructor() : Authenticator
  *
- * // Will generated this binding method.
+ * // Will generate this binding method.
  * @Binds @Named("Prod")
  * abstract fun bindRealAuthenticator(authenticator: RealAuthenticator): Authenticator
  * ```
  *
  * [ContributesBinding] is a convenience for a very simple but the most common scenario. Multiple
- * bound types, generic types or multibindings are not supported. In these cases it's still
- * required to write a Dagger module.
+ * bound types or generic types are not supported. In these cases it's still required to write
+ * a Dagger module. [ContributesMultibinding] allows you to generate multibinding methods. Both
+ * annotations can be used in conjunction.
  *
  * Contributed bindings can replace other contributed modules and bindings with the [replaces]
  * parameter. This is especially helpful for different bindings in instrumentation tests.
