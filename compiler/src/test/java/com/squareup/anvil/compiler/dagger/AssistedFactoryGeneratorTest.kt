@@ -4,9 +4,11 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.assistedServiceFactory
 import com.squareup.anvil.compiler.createInstance
+import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.factoryClass
 import com.squareup.anvil.compiler.implClass
 import com.squareup.anvil.compiler.isStatic
+import com.squareup.anvil.compiler.moduleFactoryClass
 import com.squareup.anvil.compiler.use
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
@@ -1058,6 +1060,54 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         "The @AssistedFactory-annotated type is missing an abstract, non-default method " +
           "whose return type matches the assisted injection type."
       )
+    }
+  }
+
+  @Test fun `assisted injections can be provided with a qualifier`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Named
+      
+      data class AssistedService @AssistedInject constructor(
+        val int: Int,
+        @Assisted val string: String
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory {
+        fun create(string: String): AssistedService
+      }
+      
+      @Module
+      object DaggerModule1 {
+        @Provides @Named("") fun provideService(): AssistedService = AssistedService(5, "Hello")
+      }
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, "Hello")
+
+      val providedService = daggerModule1
+        .moduleFactoryClass("provideService")
+        .declaredMethods
+        .filter { it.isStatic }
+        .single { it.name == "provideService" }
+        .invoke(null)
+
+      assertThat(assistedServiceInstance).isEqualTo(providedService)
     }
   }
 
