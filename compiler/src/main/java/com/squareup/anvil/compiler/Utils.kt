@@ -136,7 +136,9 @@ internal fun AnnotationDescriptor.getAnnotationValue(key: String): ConstantValue
   allValueArguments[Name.identifier(key)]
 
 internal fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescriptor {
-  val kClassValue = requireNotNull(getAnnotationValue("scope")) as KClassValue
+  val annotationValue = getAnnotationValue("scope")
+    ?: throw AnvilCompilationException(message = "Couldn't find scope for $fqName")
+  val kClassValue = annotationValue as KClassValue
   return kClassValue.argumentType(module).classDescriptorForType()
 }
 

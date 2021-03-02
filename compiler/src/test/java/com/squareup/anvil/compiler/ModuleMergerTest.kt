@@ -788,6 +788,25 @@ class ModuleMergerTest(
     }
   }
 
+  @Test fun `error message if annotation is missing scope`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      $import
+      
+      $annotation()
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      val annotationFqName = annotation.substring(1)
+      assertThat(messages).contains(
+        "Couldn't find scope for com.squareup.anvil.annotations.$annotationFqName"
+      )
+    }
+  }
+
   private val Class<*>.anyDaggerComponent: AnyDaggerComponent
     get() = anyDaggerComponent(annotationClass)
 }
