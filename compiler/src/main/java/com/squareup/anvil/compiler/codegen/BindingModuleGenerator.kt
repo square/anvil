@@ -23,6 +23,7 @@ import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.getAnnotationValue
 import com.squareup.anvil.compiler.ignoreQualifier
+import com.squareup.anvil.compiler.isAnvilModule
 import com.squareup.anvil.compiler.isQualifier
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
@@ -40,9 +41,6 @@ import dagger.Provides
 import dagger.multibindings.IntoSet
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.resolveClassByFqName
-import org.jetbrains.kotlin.incremental.KotlinLookupLocation
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -109,12 +107,7 @@ internal class BindingModuleGenerator(
     return classes
       .filter { psiClass -> supportedFqNames.any { psiClass.hasAnnotation(it) } }
       .map { psiClass ->
-        val classDescriptor =
-          module.resolveClassByFqName(psiClass.requireFqName(), KotlinLookupLocation(psiClass))
-            ?: throw AnvilCompilationException(
-              "Couldn't resolve class for PSI element.",
-              element = psiClass
-            )
+        val classDescriptor = psiClass.requireClassDescriptor(module)
 
         // The annotation must be present due to the filter above.
         val mergeAnnotation = supportedFqNames
@@ -172,7 +165,15 @@ internal class BindingModuleGenerator(
       // and types can be an expensive operation, so avoid doing it twice.
       val bindingsReplacedInDaggerModules = contributedModuleAndInterfaceClasses
         .asSequence()
-        .mapNotNull { module.resolveClassByFqName(it, NoLookupLocation.FROM_BACKEND) }
+        .mapNotNull {
+          if (it.isAnvilModule()) {
+            // The generated Anvil Dagger module cannot replace bindings. Exclude it, because the
+            // descriptor can't be resolved since it's a generated class.
+            null
+          } else {
+            it.requireClassDescriptor(module)
+          }
+        }
         .plus(
           classScanner.findContributedClasses(
             module,
@@ -202,9 +203,8 @@ internal class BindingModuleGenerator(
       ): List<GeneratedMethod> {
         val contributedBindingsThisModule = collectedClasses
           .asSequence()
-          .mapNotNull { clazz ->
-            module.resolveClassByFqName(clazz, NoLookupLocation.FROM_BACKEND)
-          }
+          .map { it.requireClassDescriptor(module) }
+
         val contributedBindingsDependencies = classScanner.findContributedClasses(
           module,
           packageName = hintPackagePrefix,

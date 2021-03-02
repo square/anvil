@@ -15,8 +15,6 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.resolveClassByFqName
-import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -99,11 +97,7 @@ internal fun KtClassOrObject.checkNotMoreThanOneQualifier(
   // annotations, then there can't be more than two qualifiers.
   if (annotationEntries.size <= 2) return
 
-  val classDescriptor = module
-    .resolveClassByFqName(requireFqName(), KotlinLookupLocation(this))
-    ?: return
-
-  val qualifiers = classDescriptor.annotations.filter { it.isQualifier() }
+  val qualifiers = requireClassDescriptor(module).annotations.filter { it.isQualifier() }
 
   if (qualifiers.size > 1) {
     throw AnvilCompilationException(
@@ -143,12 +137,7 @@ internal fun KtClassOrObject.checkClassExtendsBoundType(
   module: ModuleDescriptor,
   annotationFqName: FqName
 ) {
-  val descriptor = module.resolveClassByFqName(requireFqName(), KotlinLookupLocation(this))
-    ?: throw AnvilCompilationException(
-      "Couldn't resolve class for PSI element.",
-      element = this
-    )
-
+  val descriptor = requireClassDescriptor(module)
   val annotation = descriptor.annotation(annotationFqName)
   val boundType = annotation.boundType(module, descriptor, annotationFqName).fqNameSafe
 

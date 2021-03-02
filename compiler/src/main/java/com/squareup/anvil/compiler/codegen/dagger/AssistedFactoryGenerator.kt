@@ -15,7 +15,7 @@ import com.squareup.anvil.compiler.codegen.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.AssistedParameterKey.Companion.toKeysList
 import com.squareup.anvil.compiler.codegen.fqNameOrNull
 import com.squareup.anvil.compiler.codegen.hasAnnotation
-import com.squareup.anvil.compiler.codegen.requireFqName
+import com.squareup.anvil.compiler.codegen.requireClassDescriptor
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -36,8 +36,6 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.descriptors.resolveClassByFqName
-import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -73,10 +71,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     clazz: KtClassOrObject
   ): GeneratedFile {
     // It's necessary to resolve the class in order to check super types.
-    val classDescriptor = module
-      .resolveClassByFqName(clazz.requireFqName(), KotlinLookupLocation(clazz))
-      ?: throw AnvilCompilationException("Couldn't resolve class for PSI element", element = clazz)
-
+    val classDescriptor = clazz.requireClassDescriptor(module)
     val functions = classDescriptor.unsubstitutedMemberScope
       .getContributedDescriptors(FUNCTIONS)
       .asSequence()
