@@ -22,6 +22,7 @@ import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.getAnnotationValue
+import com.squareup.anvil.compiler.ignoreQualifier
 import com.squareup.anvil.compiler.isQualifier
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
@@ -236,9 +237,13 @@ internal class BindingModuleGenerator(
 
             val concreteType = contributedClass.fqNameSafe
 
-            val qualifiers = contributedClass.annotations
-              .filter { it.isQualifier() }
-              .map { it.toAnnotationSpec(module) }
+            val qualifiers = if (annotation.ignoreQualifier()) {
+              emptyList()
+            } else {
+              contributedClass.annotations
+                .filter { it.isQualifier() }
+                .map { it.toAnnotationSpec(module) }
+            }
 
             if (DescriptorUtils.isObject(contributedClass)) {
               ProviderMethod(

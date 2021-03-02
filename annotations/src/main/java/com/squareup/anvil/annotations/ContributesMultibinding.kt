@@ -51,7 +51,7 @@ import kotlin.reflect.KClass
  * ```
  *
  * Contributed multibindings can replace other contributed modules and contributed multibindings
- * with the [replaces] parameter. This is especially helpful for different bindings in
+ * with the [replaces] parameter. This is especially helpful for different multibindings in
  * tests.
  * ```
  * @ContributesMultibinding(
@@ -69,10 +69,14 @@ import kotlin.reflect.KClass
  * `@Provides @IntoSet` method returning [boundType].
  *
  * [ContributesMultibinding] can be used in conjunction with [ContributesBinding]. Each annotation
- * will generate the respective binding or multibindings method.
+ * will generate the respective binding or multibindings method. If a qualifier is only meant for
+ * one of the annotations, then you can set [ignoreQualifier] to `true` and the qualifier won't
+ * be added to the generated multibinding method.
  * ```
  * @ContributesBinding(AppScope::class)
- * @ContributesMultibinding(AppScope::class)
+ * @ContributesMultibinding(AppScope::class, ignoreQualifier = true)
+ * @Named("Prod")
+ * object MainListener : Listener
  * object MainListener : Listener
  * ```
  */
@@ -81,5 +85,6 @@ import kotlin.reflect.KClass
 public annotation class ContributesMultibinding(
   val scope: KClass<*>,
   val boundType: KClass<*> = Unit::class,
-  val replaces: Array<KClass<*>> = []
+  val replaces: Array<KClass<*>> = [],
+  val ignoreQualifier: Boolean = false
 )

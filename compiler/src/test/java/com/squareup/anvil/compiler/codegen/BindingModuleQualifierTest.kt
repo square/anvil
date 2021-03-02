@@ -372,4 +372,64 @@ class BindingModuleQualifierTest(
       }
     }
   }
+
+  @Test fun `the Dagger binding method has no qualifier when disabled`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      import javax.inject.Qualifier
+      $import
+      
+      @Qualifier
+      annotation class AnyQualifier
+
+      interface ParentInterface
+      
+      @ContributesBinding(Any::class, ignoreQualifier = true)
+      @AnyQualifier
+      interface ContributingInterface : ParentInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val annotations = bindingMethod.annotations.map { it.annotationClass }
+
+      assertThat(annotations).doesNotContain(anyQualifier.kotlin)
+      assertThat(annotations).contains(Binds::class)
+    }
+  }
+
+  @Test fun `the Dagger multibinding method has no qualifier when disabled`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      import javax.inject.Qualifier
+      $import
+      
+      @Qualifier
+      annotation class AnyQualifier
+
+      interface ParentInterface
+      
+      @ContributesMultibinding(Any::class, ignoreQualifier = true)
+      @AnyQualifier
+      interface ContributingInterface : ParentInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val annotations = bindingMethod.annotations.map { it.annotationClass }
+
+      assertThat(annotations).doesNotContain(anyQualifier.kotlin)
+      assertThat(annotations).containsAtLeast(Binds::class, IntoSet::class)
+    }
+  }
 }

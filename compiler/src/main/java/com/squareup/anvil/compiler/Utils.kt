@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
+import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue.Value.NormalClass
@@ -209,6 +210,10 @@ internal fun AnnotationDescriptor.boundType(
       "If there are multiple or none, then the bound type must be explicitly defined in " +
       "the @${annotationFqName.shortName()} annotation."
   )
+}
+
+internal fun AnnotationDescriptor.ignoreQualifier(): Boolean {
+  return (getAnnotationValue("ignoreQualifier") as? BooleanValue)?.value ?: false
 }
 
 internal fun KtClassOrObject.generateClassName(
