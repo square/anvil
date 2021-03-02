@@ -183,7 +183,7 @@ internal fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType
 internal fun AnnotationDescriptor.boundType(
   module: ModuleDescriptor,
   annotatedClass: ClassDescriptor,
-  isMultibinding: Boolean
+  annotationFqName: FqName
 ): ClassDescriptor {
   (getAnnotationValue("boundType") as? KClassValue)
     ?.argumentType(module)
@@ -199,9 +199,6 @@ internal fun AnnotationDescriptor.boundType(
 
   val boundType = directSuperTypes.singleOrNull()
   if (boundType != null) return boundType
-
-  val annotationFqName =
-    if (isMultibinding) contributesMultibindingFqName else contributesBindingFqName
 
   throw AnvilCompilationException(
     classDescriptor = annotatedClass,

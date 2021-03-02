@@ -32,6 +32,8 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
       .onEach { clazz ->
         clazz.checkClassIsPublic()
         clazz.checkNotMoreThanOneQualifier(module, contributesMultibindingFqName)
+        clazz.checkSingleSuperType(contributesMultibindingFqName)
+        clazz.checkClassExtendsBoundType(module, contributesMultibindingFqName)
       }
       .map { clazz ->
         val generatedPackage =

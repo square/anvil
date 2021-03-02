@@ -123,7 +123,6 @@ class BindingModuleMultibindingSetTest(
     }
   }
 
-  // TODO: move this test?
   @Test fun `the bound type is implied when there is only one super type`() {
     compile(
       """
@@ -157,124 +156,6 @@ class BindingModuleMultibindingSetTest(
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
         assertThat(isAnnotationPresent(IntoSet::class.java)).isTrue()
       }
-    }
-  }
-
-  // TODO: move this test
-  @Test fun `the bound type can only be implied with one super type (2 interfaces)`() {
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesMultibinding
-      $import
-
-      interface ParentInterface
-
-      @ContributesMultibinding(Any::class)
-      interface ContributingInterface : ParentInterface, CharSequence
-
-      $annotation(Any::class)
-      interface ComponentInterface
-      """
-    ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-
-      assertThat(messages).contains("Source.kt: (9, 11)")
-      assertThat(messages).contains(
-        "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
-          "the bound type. This is only allowed with exactly one direct super type. If there " +
-          "are multiple or none, then the bound type must be explicitly defined in the " +
-          "@ContributesMultibinding annotation."
-      )
-    }
-  }
-
-  // TODO: move this test
-  @Test fun `the bound type can only be implied with one super type (class and interface)`() {
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesMultibinding
-      $import
-
-      interface ParentInterface
-
-      open class Abc
-
-      @ContributesMultibinding(Any::class)
-      interface ContributingInterface : Abc(), ParentInterface
-
-      $annotation(Any::class)
-      interface ComponentInterface
-      """
-    ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-
-      assertThat(messages).contains("Source.kt: (11, 11)")
-      assertThat(messages).contains(
-        "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
-          "the bound type. This is only allowed with exactly one direct super type. If there " +
-          "are multiple or none, then the bound type must be explicitly defined in the " +
-          "@ContributesMultibinding annotation."
-      )
-    }
-  }
-
-  // TODO: move this test
-  @Test fun `the bound type can only be implied with one super type (no super type)`() {
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesMultibinding
-      $import
-
-      @ContributesMultibinding(Any::class)
-      object ContributingInterface
-
-      $annotation(Any::class)
-      interface ComponentInterface
-      """
-    ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-
-      assertThat(messages).contains("Source.kt: (7, 1)")
-      assertThat(messages).contains(
-        "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
-          "the bound type. This is only allowed with exactly one direct super type. If there " +
-          "are multiple or none, then the bound type must be explicitly defined in the " +
-          "@ContributesMultibinding annotation."
-      )
-    }
-  }
-
-  // TODO: move this test
-  @Test fun `the contributed multibinding class must extend the bound type`() {
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesMultibinding
-      $import
-
-      interface ParentInterface
-
-      @ContributesMultibinding(Any::class, ParentInterface::class)
-      interface ContributingInterface
-
-      $annotation(Any::class)
-      interface ComponentInterface
-      """
-    ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-
-      assertThat(messages).contains("Source.kt: (9, 11)")
-      assertThat(messages).contains(
-        "com.squareup.test.ContributingInterface contributes a binding for " +
-          "com.squareup.test.ParentInterface, but doesn't extend this type."
-      )
     }
   }
 

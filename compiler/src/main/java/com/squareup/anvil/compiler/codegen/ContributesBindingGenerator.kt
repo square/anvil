@@ -4,6 +4,8 @@ import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
+import com.squareup.anvil.compiler.annotation
+import com.squareup.anvil.compiler.boundType
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.isQualifier
@@ -20,6 +22,8 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
 import java.io.File
 import kotlin.reflect.KClass
 
@@ -40,6 +44,8 @@ internal class ContributesBindingGenerator : CodeGenerator {
       .onEach { clazz ->
         clazz.checkClassIsPublic()
         clazz.checkNotMoreThanOneQualifier(module, contributesBindingFqName)
+        clazz.checkSingleSuperType(contributesBindingFqName)
+        clazz.checkClassExtendsBoundType(module, contributesBindingFqName)
       }
       .map { clazz ->
         val generatedPackage =
@@ -114,6 +120,46 @@ internal fun KtClassOrObject.checkClassIsPublic() {
       "${requireFqName()} is binding a type, but the class is not public. Only " +
         "public types are supported.",
       element = identifyingElement
+    )
+  }
+}
+
+internal fun KtClassOrObject.checkSingleSuperType(
+  annotationFqName: FqName
+) {
+  val superTypes = superTypeListEntries
+  if (superTypes.size != 1) {
+    throw AnvilCompilationException(
+      element = this,
+      message = "${requireFqName()} contributes a binding, but does not " +
+        "specify the bound type. This is only allowed with exactly one direct super type. " +
+        "If there are multiple or none, then the bound type must be explicitly defined in " +
+        "the @${annotationFqName.shortName()} annotation."
+    )
+  }
+}
+
+internal fun KtClassOrObject.checkClassExtendsBoundType(
+  module: ModuleDescriptor,
+  annotationFqName: FqName
+) {
+  val descriptor = module.resolveClassByFqName(requireFqName(), KotlinLookupLocation(this))
+    ?: throw AnvilCompilationException(
+      "Couldn't resolve class for PSI element.",
+      element = this
+    )
+
+  val annotation = descriptor.annotation(annotationFqName)
+  val boundType = annotation.boundType(module, descriptor, annotationFqName).fqNameSafe
+
+  val hasSuperType = descriptor.getAllSuperClassifiers()
+    .any { it.fqNameSafe == boundType }
+
+  if (!hasSuperType) {
+    throw AnvilCompilationException(
+      classDescriptor = descriptor,
+      message = "${descriptor.fqNameSafe} contributes a binding for $boundType, but doesn't " +
+        "extend this type."
     )
   }
 }
