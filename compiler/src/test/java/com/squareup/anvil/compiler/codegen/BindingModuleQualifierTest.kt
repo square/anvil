@@ -12,6 +12,7 @@ import com.squareup.anvil.compiler.isAbstract
 import com.squareup.anvil.compiler.parentInterface
 import dagger.Binds
 import dagger.Provides
+import dagger.multibindings.IntoSet
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -69,6 +70,41 @@ class BindingModuleQualifierTest(
     }
   }
 
+  @Test fun `the Dagger multibinding method has a qualifier without parameter`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      import javax.inject.Qualifier
+      $import
+      
+      @Qualifier
+      annotation class AnyQualifier
+
+      interface ParentInterface
+      
+      @ContributesMultibinding(Any::class)
+      @AnyQualifier
+      interface ContributingInterface : ParentInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+
+      with(bindingMethod) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+
+        assertThat(annotations.map { it.annotationClass })
+          .containsExactly(Binds::class, IntoSet::class, anyQualifier.kotlin)
+      }
+    }
+  }
+
   @Test fun `the Dagger provider method for an object has a qualifier`() {
     compile(
       """
@@ -100,6 +136,41 @@ class BindingModuleQualifierTest(
 
         assertThat(annotations.map { it.annotationClass })
           .containsExactly(Provides::class, anyQualifier.kotlin)
+      }
+    }
+  }
+
+  @Test fun `the Dagger multibind provider method for an object has a qualifier`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      import javax.inject.Qualifier
+      $import
+      
+      @Qualifier
+      annotation class AnyQualifier
+
+      interface ParentInterface
+      
+      @ContributesMultibinding(Any::class)
+      @AnyQualifier
+      object ContributingInterface : ParentInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+
+      with(bindingMethod) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).isEmpty()
+        assertThat(isAbstract).isFalse()
+
+        assertThat(annotations.map { it.annotationClass })
+          .containsExactly(Provides::class, IntoSet::class, anyQualifier.kotlin)
       }
     }
   }
@@ -180,7 +251,7 @@ class BindingModuleQualifierTest(
     }
   }
 
-  @Test fun `the Dagger binding method has a qualifier with an value`() {
+  @Test fun `the Dagger binding method has a qualifier with a value`() {
     compile(
       """
       package com.squareup.test

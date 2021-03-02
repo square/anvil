@@ -120,7 +120,8 @@ internal class ModuleMergerIr(
             // Verify has @Module annotation. It doesn't make sense for a Dagger module to
             // replace a non-Dagger module.
             if (irClassForReplacement.annotationOrNull(daggerModuleFqName) == null &&
-              irClassForReplacement.annotationOrNull(contributesBindingFqName) == null
+              irClassForReplacement.annotationOrNull(contributesBindingFqName) == null &&
+              irClassForReplacement.annotationOrNull(contributesMultibindingFqName) == null
             ) {
               throw AnvilCompilationIrException(
                 message = "${classSymbol.fqName} wants to replace " +
@@ -134,37 +135,55 @@ internal class ModuleMergerIr(
           }
       }
 
-    val replacedModulesByContributedBindings = classScanner
-      .findContributedClasses(
-        pluginContext = pluginContext,
-        moduleFragment = moduleFragment,
-        packageName = HINT_BINDING_PACKAGE_PREFIX,
-        annotation = contributesBindingFqName,
-        scope = scope
-      )
-      .flatMap { classSymbol ->
-        val annotation = classSymbol.owner.annotation(contributesBindingFqName)
-        if (scope == annotation.scope()) {
-          annotation.replaces()
-            .asSequence()
-            .onEach { classDescriptorForReplacement ->
-              checkSameScope(classSymbol, classDescriptorForReplacement, scope)
-            }
-        } else {
-          emptySequence()
+    fun replacedModulesByContributedBinding(
+      annotationFqName: FqName,
+      hintPackagePrefix: String
+    ): Sequence<IrClass> {
+      return classScanner
+        .findContributedClasses(
+          pluginContext = pluginContext,
+          moduleFragment = moduleFragment,
+          packageName = hintPackagePrefix,
+          annotation = annotationFqName,
+          scope = scope
+        )
+        .flatMap { classSymbol ->
+          val annotation = classSymbol.owner.annotation(annotationFqName)
+          if (scope == annotation.scope()) {
+            annotation.replaces()
+              .asSequence()
+              .onEach { classDescriptorForReplacement ->
+                checkSameScope(classSymbol, classDescriptorForReplacement, scope)
+              }
+          } else {
+            emptySequence()
+          }
         }
-      }
+    }
+
+    val replacedModulesByContributedBindings = replacedModulesByContributedBinding(
+      annotationFqName = contributesBindingFqName,
+      hintPackagePrefix = HINT_BINDING_PACKAGE_PREFIX
+    )
+
+    val replacedModulesByContributedMultibindings = replacedModulesByContributedBinding(
+      annotationFqName = contributesMultibindingFqName,
+      hintPackagePrefix = HINT_MULTIBINDING_PACKAGE_PREFIX
+    )
 
     val excludedModules = annotationConstructorCall.exclude()
       .onEach { excludedClass ->
-        val contributesBindingAnnotation = excludedClass
-          .annotationOrNull(contributesBindingFqName)
         val contributesToAnnotation = excludedClass
           .annotationOrNull(contributesToFqName)
+        val contributesBindingAnnotation = excludedClass
+          .annotationOrNull(contributesBindingFqName)
+        val contributesMultibindingAnnotation = excludedClass
+          .annotationOrNull(contributesMultibindingFqName)
 
         // Verify that the the replaced classes use the same scope.
         val scopeOfExclusion = contributesToAnnotation?.scope()
           ?: contributesBindingAnnotation?.scope()
+          ?: contributesMultibindingAnnotation?.scope()
           ?: throw AnvilCompilationIrException(
             message = "Could not determine the scope of the excluded class " +
               "${excludedClass.fqName}.",
@@ -197,6 +216,7 @@ internal class ModuleMergerIr(
       .filterIsInstance<IrClass>()
       .minus(replacedModules)
       .minus(replacedModulesByContributedBindings)
+      .minus(replacedModulesByContributedMultibindings)
       .minus(excludedModules)
       .plus(predefinedModules)
       .distinct()
@@ -273,14 +293,17 @@ internal class ModuleMergerIr(
     classDescriptorForReplacement: IrClass,
     scopeFqName: FqName
   ) {
-    val contributesBindingAnnotation = classDescriptorForReplacement
-      .annotationOrNull(contributesBindingFqName)
     val contributesToAnnotation = classDescriptorForReplacement
       .annotationOrNull(contributesToFqName)
+    val contributesBindingAnnotation = classDescriptorForReplacement
+      .annotationOrNull(contributesBindingFqName)
+    val contributesMultibindingAnnotation = classDescriptorForReplacement
+      .annotationOrNull(contributesMultibindingFqName)
 
     // Verify that the the replaced classes use the same scope.
     val scopeOfReplacement = contributesToAnnotation?.scope()
       ?: contributesBindingAnnotation?.scope()
+      ?: contributesMultibindingAnnotation?.scope()
       ?: throw AnvilCompilationIrException(
         message = "Could not determine the scope of the replaced class " +
           "${classDescriptorForReplacement.fqName}.",

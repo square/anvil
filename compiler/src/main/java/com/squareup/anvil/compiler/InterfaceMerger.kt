@@ -81,14 +81,17 @@ internal class InterfaceMerger(
               )
             }
 
-            val contributesBindingAnnotation = classDescriptorForReplacement
-              .annotationOrNull(contributesBindingFqName)
             val contributesToAnnotation = classDescriptorForReplacement
               .annotationOrNull(contributesToFqName)
+            val contributesBindingAnnotation = classDescriptorForReplacement
+              .annotationOrNull(contributesBindingFqName)
+            val contributesMultibindingAnnotation = classDescriptorForReplacement
+              .annotationOrNull(contributesMultibindingFqName)
 
             // Verify that the the replaced classes use the same scope.
             val scopeOfReplacement = contributesToAnnotation?.scope(module)
               ?: contributesBindingAnnotation?.scope(module)
+              ?: contributesMultibindingAnnotation?.scope(module)
               ?: throw AnvilCompilationException(
                 classDescriptor,
                 "Could not determine the scope of the replaced class " +
@@ -114,14 +117,17 @@ internal class InterfaceMerger(
       ?.map { it.argumentType(module).classDescriptorForType() }
       ?.filter { DescriptorUtils.isInterface(it) }
       ?.map { classDescriptorForExclusion ->
-        val contributesBindingAnnotation = classDescriptorForExclusion
-          .annotationOrNull(contributesBindingFqName)
         val contributesToAnnotation = classDescriptorForExclusion
           .annotationOrNull(contributesToFqName)
+        val contributesBindingAnnotation = classDescriptorForExclusion
+          .annotationOrNull(contributesBindingFqName)
+        val contributesMultibindingAnnotation = classDescriptorForExclusion
+          .annotationOrNull(contributesMultibindingFqName)
 
         // Verify that the the replaced classes use the same scope.
         val scopeOfExclusion = contributesToAnnotation?.scope(module)
           ?: contributesBindingAnnotation?.scope(module)
+          ?: contributesMultibindingAnnotation?.scope(module)
           ?: throw AnvilCompilationException(
             thisDescriptor,
             "Could not determine the scope of the excluded class " +

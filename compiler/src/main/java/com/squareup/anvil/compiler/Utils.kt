@@ -181,28 +181,34 @@ internal fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType
 
 internal fun AnnotationDescriptor.boundType(
   module: ModuleDescriptor,
-  annotatedClass: ClassDescriptor
+  annotatedClass: ClassDescriptor,
+  isMultibinding: Boolean
 ): ClassDescriptor {
   (getAnnotationValue("boundType") as? KClassValue)
     ?.argumentType(module)
     ?.classDescriptorForType()
     ?.let { return it }
 
-  val directSuperTypes = annotatedClass.getSuperInterfaces() +
-    (
+  val directSuperTypes = annotatedClass.getSuperInterfaces()
+    .plus(
       annotatedClass.getSuperClassNotAny()
         ?.let { listOf(it) }
         ?: emptyList()
-      )
-
-  return directSuperTypes.singleOrNull()
-    ?: throw AnvilCompilationException(
-      classDescriptor = annotatedClass,
-      message = "${annotatedClass.fqNameSafe} contributes a binding, but does not " +
-        "specify the bound type. This is only allowed with exactly one direct super type. " +
-        "If there are multiple or none, then the bound type must be explicitly defined in " +
-        "the @${contributesBindingFqName.shortName()} annotation."
     )
+
+  val boundType = directSuperTypes.singleOrNull()
+  if (boundType != null) return boundType
+
+  val annotationFqName =
+    if (isMultibinding) contributesMultibindingFqName else contributesBindingFqName
+
+  throw AnvilCompilationException(
+    classDescriptor = annotatedClass,
+    message = "${annotatedClass.fqNameSafe} contributes a binding, but does not " +
+      "specify the bound type. This is only allowed with exactly one direct super type. " +
+      "If there are multiple or none, then the bound type must be explicitly defined in " +
+      "the @${annotationFqName.shortName()} annotation."
+  )
 }
 
 internal fun KtClassOrObject.generateClassName(
