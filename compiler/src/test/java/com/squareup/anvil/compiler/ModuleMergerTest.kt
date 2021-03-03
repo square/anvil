@@ -788,21 +788,20 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `error message if annotation is missing scope`() {
+  @Test fun `an error is thrown when the scope parameter is missing`() {
     compile(
       """
       package com.squareup.test
       
       $import
       
-      $annotation()
+      $annotation
       interface ComponentInterface
       """
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-      val annotationFqName = annotation.substring(1)
       assertThat(messages).contains(
-        "Couldn't find scope for com.squareup.anvil.annotations.$annotationFqName"
+        "Couldn't find scope for ${annotationClass.java.canonicalName}"
       )
     }
   }
