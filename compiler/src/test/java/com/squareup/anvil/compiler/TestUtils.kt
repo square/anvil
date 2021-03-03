@@ -133,6 +133,10 @@ internal val Result.injectClass: Class<*>
 internal val Result.anyQualifier: Class<*>
   get() = classLoader.loadClass("com.squareup.test.AnyQualifier")
 
+@Suppress("UNCHECKED_CAST")
+internal val Result.bindingKey: Class<out Annotation>
+  get() = classLoader.loadClass("com.squareup.test.BindingKey") as Class<out Annotation>
+
 internal val Class<*>.hintContributes: KClass<*>?
   get() = getHint(HINT_CONTRIBUTES_PACKAGE_PREFIX)
 
@@ -246,3 +250,7 @@ internal fun Any.invokeGet(vararg args: Any?): Any {
   val method = this::class.java.declaredMethods.single { it.name == "get" }
   return method.invoke(this, *args)
 }
+
+@Suppress("UNCHECKED_CAST")
+internal fun <T> Annotation.getValue(): T =
+  this::class.java.declaredMethods.single { it.name == "value" }.invoke(this) as T

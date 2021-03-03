@@ -50,6 +50,13 @@ internal class MergeComponentTest {
     assertThat(subComponent.middleTypesNamed()).containsExactly(SubcomponentBinding2)
   }
 
+  @Test fun `contributed map multibindings are provided`() {
+    val appComponent = DaggerMergeComponentTest_AppComponent.create()
+
+    assertThat(appComponent.mapBindings()).containsExactly("1", MapBinding1, "3", MapBinding3)
+    assertThat(appComponent.mapBindingsNamed()).containsExactly("2", MapBinding2)
+  }
+
   @MergeComponent(AppScope::class)
   @Singleton
   @Suppress("unused")
@@ -59,6 +66,8 @@ internal class MergeComponentTest {
     fun function(): (String) -> Int
     fun charSequence(): CharSequence
     fun parentTypes(): Set<ParentType>
+    fun mapBindings(): Map<String, ParentType>
+    @Named("abc") fun mapBindingsNamed(): Map<String, ParentType>
   }
 
   @MergeSubcomponent(SubScope::class)

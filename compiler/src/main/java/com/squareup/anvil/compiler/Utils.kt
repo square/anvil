@@ -8,9 +8,9 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.codegen.requireFqName
-import dagger.Binds
 import dagger.Component
 import dagger.Lazy
+import dagger.MapKey
 import dagger.Module
 import dagger.Provides
 import dagger.Subcomponent
@@ -61,11 +61,11 @@ internal val contributesMultibindingFqName =
 internal val daggerComponentFqName = FqName(Component::class.java.canonicalName)
 internal val daggerSubcomponentFqName = FqName(Subcomponent::class.java.canonicalName)
 internal val daggerModuleFqName = FqName(Module::class.java.canonicalName)
-internal val daggerBindsFqName = FqName(Binds::class.java.canonicalName)
 internal val daggerProvidesFqName = FqName(Provides::class.java.canonicalName)
 internal val daggerLazyFqName = FqName(Lazy::class.java.canonicalName)
 internal val injectFqName = FqName(Inject::class.java.canonicalName)
 internal val qualifierFqName = FqName(Qualifier::class.java.canonicalName)
+internal val mapKeyFqName = FqName(MapKey::class.java.canonicalName)
 internal val assistedFqName = FqName(Assisted::class.java.canonicalName)
 internal val assistedFactoryFqName = FqName(AssistedFactory::class.java.canonicalName)
 internal val assistedInjectFqName = FqName(AssistedInject::class.java.canonicalName)
@@ -240,6 +240,10 @@ internal fun List<KotlinType>.getAllSuperTypes(): Sequence<FqName> =
 
 internal fun AnnotationDescriptor.isQualifier(): Boolean {
   return annotationClass?.annotations?.hasAnnotation(qualifierFqName) ?: false
+}
+
+internal fun AnnotationDescriptor.isMapKey(): Boolean {
+  return annotationClass?.annotations?.hasAnnotation(mapKeyFqName) ?: false
 }
 
 internal fun AnnotationDescriptor.requireClass(): ClassDescriptor {

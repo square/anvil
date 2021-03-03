@@ -24,6 +24,7 @@ import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.getAnnotationValue
 import com.squareup.anvil.compiler.ignoreQualifier
 import com.squareup.anvil.compiler.isAnvilModule
+import com.squareup.anvil.compiler.isMapKey
 import com.squareup.anvil.compiler.isQualifier
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
@@ -38,6 +39,7 @@ import com.squareup.kotlinpoet.TypeSpec
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
+import dagger.multibindings.IntoMap
 import dagger.multibindings.IntoSet
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -245,6 +247,15 @@ internal class BindingModuleGenerator(
                 .map { it.toAnnotationSpec(module) }
             }
 
+            val mapKeys = if (isMultibinding) {
+              contributedClass.annotations
+                .filter { it.isMapKey() }
+                .map { it.toAnnotationSpec(module) }
+            } else {
+              emptyList()
+            }
+            val isMapMultibinding = mapKeys.isNotEmpty()
+
             if (DescriptorUtils.isObject(contributedClass)) {
               ProviderMethod(
                 FunSpec
@@ -262,11 +273,13 @@ internal class BindingModuleGenerator(
                   )
                   .addAnnotation(Provides::class)
                   .apply {
-                    if (isMultibinding) {
-                      addAnnotation(IntoSet::class)
+                    when {
+                      isMapMultibinding -> addAnnotation(IntoMap::class)
+                      isMultibinding -> addAnnotation(IntoSet::class)
                     }
                   }
                   .addAnnotations(qualifiers)
+                  .addAnnotations(mapKeys)
                   .returns(boundType.asClassName())
                   .addStatement("return %T", contributedClass.asClassName())
                   .build()
@@ -288,11 +301,13 @@ internal class BindingModuleGenerator(
                   )
                   .addAnnotation(Binds::class)
                   .apply {
-                    if (isMultibinding) {
-                      addAnnotation(IntoSet::class)
+                    when {
+                      isMapMultibinding -> addAnnotation(IntoMap::class)
+                      isMultibinding -> addAnnotation(IntoSet::class)
                     }
                   }
                   .addAnnotations(qualifiers)
+                  .addAnnotations(mapKeys)
                   .addModifiers(ABSTRACT)
                   .addParameter(
                     name = concreteType.shortName().asString().decapitalize(US),
