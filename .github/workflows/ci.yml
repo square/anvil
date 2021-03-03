@@ -18,7 +18,7 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version: [1.4.30]
+        kotlin-version : [ 1.4.30, 1.5.0-M1 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -44,6 +44,11 @@ jobs:
     timeout-minutes: 25
     continue-on-error: true
 
+    strategy :
+      fail-fast : false
+      matrix :
+        kotlin-version : [ 1.4.30, 1.5.0-M1 ]
+
     steps:
       - uses: actions/checkout@v2
       - uses: gradle/wrapper-validation-action@v1
@@ -53,13 +58,13 @@ jobs:
           java-version: 11.0.7
 
       - name: Test on Ubuntu IR
-        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.useIR=true
+        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.useIR=true -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v2
         if: ${{ failure() }}
         with:
-          name: test-results
+          name: test-results-ir-${{ matrix.kotlin-version }}
           path: ./**/build/reports/tests/
 
 
@@ -142,7 +147,7 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version: [1.4.30]
+        kotlin-version: [1.4.30, 1.5.0-M1]
 
     steps:
       - uses: actions/checkout@v2
