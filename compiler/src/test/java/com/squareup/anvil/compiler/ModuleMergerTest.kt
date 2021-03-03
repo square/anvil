@@ -788,6 +788,24 @@ class ModuleMergerTest(
     }
   }
 
+  @Test fun `an error is thrown when the scope parameter is missing`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      $import
+      
+      $annotation
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains(
+        "Couldn't find scope for ${annotationClass.java.canonicalName}"
+      )
+    }
+  }
+
   private val Class<*>.anyDaggerComponent: AnyDaggerComponent
     get() = anyDaggerComponent(annotationClass)
 }
