@@ -1,3 +1,5 @@
+import org.gradle.util.VersionNumber
+
 buildscript {
   apply from: rootProject.file('../dependencies.gradle')
 
@@ -71,7 +73,9 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   kotlinOptions {
     jvmTarget = JavaVersion.VERSION_1_8
 
-    allWarningsAsErrors = true
+    // Because Gradle hardcodes Kotlin versions we have warnings during compilation.
+    allWarningsAsErrors = rootProject.ext.ci &&
+        VersionNumber.parse(rootProject.ext.kotlinVersion).baseVersion < VersionNumber.parse("1.5.0").baseVersion
   }
 }
 
