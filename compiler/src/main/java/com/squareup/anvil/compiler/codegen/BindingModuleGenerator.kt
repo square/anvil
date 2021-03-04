@@ -230,7 +230,7 @@ internal class BindingModuleGenerator(
           }
           .map { contributedClass ->
             val annotation = contributedClass.annotation(annotationFqName)
-            val boundType = annotation.boundType(module, contributedClass, isMultibinding)
+            val boundType = annotation.boundType(module, contributedClass, annotationFqName)
 
             checkExtendsBoundType(type = contributedClass, boundType = boundType)
             checkNotGeneric(type = contributedClass, boundTypeDescriptor = boundType)

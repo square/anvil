@@ -184,4 +184,94 @@ class ContributesMultibindingGeneratorTest {
       )
     }
   }
+
+  @Test fun `the bound type can only be implied with one super type (2 interfaces)`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+
+      interface ParentInterface
+
+      @ContributesMultibinding(Any::class)
+      interface ContributingInterface : ParentInterface, CharSequence
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains(
+        "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
+          "the bound type. This is only allowed with exactly one direct super type. If there " +
+          "are multiple or none, then the bound type must be explicitly defined in the " +
+          "@ContributesMultibinding annotation."
+      )
+    }
+  }
+
+  @Test fun `the bound type can only be implied with one super type (class and interface)`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+
+      interface ParentInterface
+
+      open class Abc
+
+      @ContributesMultibinding(Any::class)
+      interface ContributingInterface : Abc(), ParentInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains(
+        "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
+          "the bound type. This is only allowed with exactly one direct super type. If there " +
+          "are multiple or none, then the bound type must be explicitly defined in the " +
+          "@ContributesMultibinding annotation."
+      )
+    }
+  }
+
+  @Test fun `the bound type can only be implied with one super type (no super type)`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+
+      @ContributesMultibinding(Any::class)
+      object ContributingInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains(
+        "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
+          "the bound type. This is only allowed with exactly one direct super type. If there " +
+          "are multiple or none, then the bound type must be explicitly defined in the " +
+          "@ContributesMultibinding annotation."
+      )
+    }
+  }
+
+  @Test fun `the contributed multibinding class must extend the bound type`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+
+      interface ParentInterface
+
+      @ContributesMultibinding(Any::class, ParentInterface::class)
+      interface ContributingInterface : CharSequence
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains(
+        "com.squareup.test.ContributingInterface contributes a binding for " +
+          "com.squareup.test.ParentInterface, but doesn't extend this type."
+      )
+    }
+  }
 }
