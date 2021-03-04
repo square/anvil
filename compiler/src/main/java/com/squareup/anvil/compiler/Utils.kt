@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler
 
 import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
@@ -32,6 +33,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
+import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue.Value.NormalClass
@@ -54,6 +56,8 @@ internal val mergeInterfacesFqName = FqName(MergeInterfaces::class.java.canonica
 internal val mergeModulesFqName = FqName(MergeModules::class.java.canonicalName)
 internal val contributesToFqName = FqName(ContributesTo::class.java.canonicalName)
 internal val contributesBindingFqName = FqName(ContributesBinding::class.java.canonicalName)
+internal val contributesMultibindingFqName =
+  FqName(ContributesMultibinding::class.java.canonicalName)
 internal val daggerComponentFqName = FqName(Component::class.java.canonicalName)
 internal val daggerSubcomponentFqName = FqName(Subcomponent::class.java.canonicalName)
 internal val daggerModuleFqName = FqName(Module::class.java.canonicalName)
@@ -73,6 +77,7 @@ internal val daggerDoubleCheckFqNameString = DoubleCheck::class.java.canonicalNa
 
 internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "anvil.hint.merge"
 internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
+internal const val HINT_MULTIBINDING_PACKAGE_PREFIX = "anvil.hint.multibinding"
 internal const val MODULE_PACKAGE_PREFIX = "anvil.module"
 
 internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
@@ -182,28 +187,38 @@ internal fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType
 
 internal fun AnnotationDescriptor.boundType(
   module: ModuleDescriptor,
-  annotatedClass: ClassDescriptor
+  annotatedClass: ClassDescriptor,
+  isMultibinding: Boolean
 ): ClassDescriptor {
   (getAnnotationValue("boundType") as? KClassValue)
     ?.argumentType(module)
     ?.classDescriptorForType()
     ?.let { return it }
 
-  val directSuperTypes = annotatedClass.getSuperInterfaces() +
-    (
+  val directSuperTypes = annotatedClass.getSuperInterfaces()
+    .plus(
       annotatedClass.getSuperClassNotAny()
         ?.let { listOf(it) }
         ?: emptyList()
-      )
-
-  return directSuperTypes.singleOrNull()
-    ?: throw AnvilCompilationException(
-      classDescriptor = annotatedClass,
-      message = "${annotatedClass.fqNameSafe} contributes a binding, but does not " +
-        "specify the bound type. This is only allowed with exactly one direct super type. " +
-        "If there are multiple or none, then the bound type must be explicitly defined in " +
-        "the @${contributesBindingFqName.shortName()} annotation."
     )
+
+  val boundType = directSuperTypes.singleOrNull()
+  if (boundType != null) return boundType
+
+  val annotationFqName =
+    if (isMultibinding) contributesMultibindingFqName else contributesBindingFqName
+
+  throw AnvilCompilationException(
+    classDescriptor = annotatedClass,
+    message = "${annotatedClass.fqNameSafe} contributes a binding, but does not " +
+      "specify the bound type. This is only allowed with exactly one direct super type. " +
+      "If there are multiple or none, then the bound type must be explicitly defined in " +
+      "the @${annotationFqName.shortName()} annotation."
+  )
+}
+
+internal fun AnnotationDescriptor.ignoreQualifier(): Boolean {
+  return (getAnnotationValue("ignoreQualifier") as? BooleanValue)?.value ?: false
 }
 
 internal fun KtClassOrObject.generateClassName(

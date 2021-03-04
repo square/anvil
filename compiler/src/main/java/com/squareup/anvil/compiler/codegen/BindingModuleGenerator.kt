@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.ClassScanner
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.HINT_CONTRIBUTES_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.HINT_MULTIBINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.annotation
 import com.squareup.anvil.compiler.annotationOrNull
@@ -16,10 +17,12 @@ import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.codegen.GeneratedMethod.BindingMethod
 import com.squareup.anvil.compiler.codegen.GeneratedMethod.ProviderMethod
 import com.squareup.anvil.compiler.contributesBindingFqName
+import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.getAnnotationValue
+import com.squareup.anvil.compiler.ignoreQualifier
 import com.squareup.anvil.compiler.isQualifier
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
@@ -34,6 +37,7 @@ import com.squareup.kotlinpoet.TypeSpec
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
+import dagger.multibindings.IntoSet
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
@@ -70,6 +74,7 @@ internal class BindingModuleGenerator(
   private val excludedTypesForScope = mutableMapOf<FqName, List<ClassDescriptor>>()
 
   private val contributedBindingClasses = mutableListOf<FqName>()
+  private val contributedMultibindingClasses = mutableListOf<FqName>()
   private val contributedModuleAndInterfaceClasses = mutableListOf<FqName>()
 
   override fun generateCode(
@@ -81,7 +86,16 @@ internal class BindingModuleGenerator(
     // It's possible that we use the @ContributesBinding annotation in the module in which we
     // merge components. Remember for which classes a hint was generated and generate a @Binds
     // method for them later.
-    findContributedBindingClasses(module, projectFiles)
+    contributedBindingClasses += findContributedBindingClasses(
+      module = module,
+      projectFiles = projectFiles,
+      hintPackagePrefix = HINT_BINDING_PACKAGE_PREFIX
+    )
+    contributedMultibindingClasses += findContributedBindingClasses(
+      module = module,
+      projectFiles = projectFiles,
+      hintPackagePrefix = HINT_MULTIBINDING_PACKAGE_PREFIX
+    )
 
     val classes = projectFiles.flatMap {
       it.classesAndInnerClasses()
@@ -151,29 +165,13 @@ internal class BindingModuleGenerator(
     module: ModuleDescriptor
   ): Collection<GeneratedFile> {
     return mergedScopes.flatMap { (scope, daggerModuleFiles) ->
-      val contributedBindingsThisModule = contributedBindingClasses
-        .asSequence()
-        .mapNotNull { clazz ->
-          module.resolveClassByFqName(clazz, NoLookupLocation.FROM_BACKEND)
-        }
-      val contributedBindingsDependencies = classScanner.findContributedClasses(
-        module,
-        packageName = HINT_BINDING_PACKAGE_PREFIX,
-        annotation = contributesBindingFqName,
-        scope = scope
-      )
-
-      val replacedBindings = (contributedBindingsThisModule + contributedBindingsDependencies)
-        .flatMap {
-          it.annotationOrNull(contributesBindingFqName, scope = scope)
-            ?.replaces(module)
-            ?.asSequence()
-            ?: emptySequence()
-        }
-
       // Contributed Dagger modules can replace other Dagger modules but also contributed bindings.
       // If a binding is replaced, then we must not generate the binding method.
-      val bindingsReplacedInDaggerModules = contributedModuleAndInterfaceClasses.asSequence()
+      //
+      // We precompute this list here and share the result in the methods below. Resolving classes
+      // and types can be an expensive operation, so avoid doing it twice.
+      val bindingsReplacedInDaggerModules = contributedModuleAndInterfaceClasses
+        .asSequence()
         .mapNotNull { module.resolveClassByFqName(it, NoLookupLocation.FROM_BACKEND) }
         .plus(
           classScanner.findContributedClasses(
@@ -190,67 +188,135 @@ internal class BindingModuleGenerator(
             ?.asSequence()
             ?: emptySequence()
         }
-
-      val generatedMethods = (contributedBindingsThisModule + contributedBindingsDependencies)
-        .minus(replacedBindings)
-        .minus(bindingsReplacedInDaggerModules)
-        .minus(excludedTypesForScope[scope].orEmpty())
-        .filter {
-          val annotation = it.annotationOrNull(contributesBindingFqName)
-          annotation != null && scope == annotation.scope(module).fqNameSafe
-        }
-        .map { contributedClass ->
-          val annotation = contributedClass.annotation(contributesBindingFqName)
-          val boundType = annotation.boundType(module, contributedClass)
-
-          checkExtendsBoundType(type = contributedClass, boundType = boundType)
-          checkNotGeneric(type = contributedClass, boundTypeDescriptor = boundType)
-
-          val concreteType = contributedClass.fqNameSafe
-
-          val qualifiers = contributedClass.annotations
-            .filter { it.isQualifier() }
-            .map { it.toAnnotationSpec(module) }
-
-          if (DescriptorUtils.isObject(contributedClass)) {
-            ProviderMethod(
-              FunSpec
-                .builder(
-                  name = concreteType
-                    .asString()
-                    .split(".")
-                    .joinToString(separator = "", prefix = "provide") {
-                      it.capitalize(US)
-                    }
-                )
-                .addAnnotation(Provides::class)
-                .addAnnotations(qualifiers)
-                .returns(boundType.asClassName())
-                .addStatement("return %T", contributedClass.asClassName())
-                .build()
-            )
-          } else {
-            BindingMethod(
-              FunSpec
-                .builder(
-                  name = concreteType
-                    .asString()
-                    .split(".")
-                    .joinToString(separator = "", prefix = "bind") { it.capitalize(US) }
-                )
-                .addAnnotation(Binds::class)
-                .addAnnotations(qualifiers)
-                .addModifiers(ABSTRACT)
-                .addParameter(
-                  name = concreteType.shortName().asString().decapitalize(US),
-                  type = contributedClass.asClassName()
-                )
-                .returns(boundType.asClassName())
-                .build()
-            )
-          }
-        }
         .toList()
+
+      // Note that this is an inner function to share some of the parameters. It computes all
+      // generated functions for contributed bindings and multibindings. The generated functions
+      // are so similar that it makes sense to share the code between normal binding and
+      // multibinding methods.
+      fun getContributedBindingClasses(
+        collectedClasses: List<FqName>,
+        hintPackagePrefix: String,
+        annotationFqName: FqName,
+        isMultibinding: Boolean
+      ): List<GeneratedMethod> {
+        val contributedBindingsThisModule = collectedClasses
+          .asSequence()
+          .mapNotNull { clazz ->
+            module.resolveClassByFqName(clazz, NoLookupLocation.FROM_BACKEND)
+          }
+        val contributedBindingsDependencies = classScanner.findContributedClasses(
+          module,
+          packageName = hintPackagePrefix,
+          annotation = annotationFqName,
+          scope = scope
+        )
+
+        val replacedBindings = (contributedBindingsThisModule + contributedBindingsDependencies)
+          .flatMap {
+            it.annotationOrNull(annotationFqName, scope = scope)
+              ?.replaces(module)
+              ?.asSequence()
+              ?: emptySequence()
+          }
+
+        return (contributedBindingsThisModule + contributedBindingsDependencies)
+          .minus(replacedBindings)
+          .minus(bindingsReplacedInDaggerModules)
+          .minus(excludedTypesForScope[scope].orEmpty())
+          .filter {
+            val annotation = it.annotationOrNull(annotationFqName)
+            annotation != null && scope == annotation.scope(module).fqNameSafe
+          }
+          .map { contributedClass ->
+            val annotation = contributedClass.annotation(annotationFqName)
+            val boundType = annotation.boundType(module, contributedClass, isMultibinding)
+
+            checkExtendsBoundType(type = contributedClass, boundType = boundType)
+            checkNotGeneric(type = contributedClass, boundTypeDescriptor = boundType)
+
+            val concreteType = contributedClass.fqNameSafe
+
+            val qualifiers = if (annotation.ignoreQualifier()) {
+              emptyList()
+            } else {
+              contributedClass.annotations
+                .filter { it.isQualifier() }
+                .map { it.toAnnotationSpec(module) }
+            }
+
+            if (DescriptorUtils.isObject(contributedClass)) {
+              ProviderMethod(
+                FunSpec
+                  .builder(
+                    name = concreteType
+                      .asString()
+                      .split(".")
+                      .joinToString(
+                        separator = "",
+                        prefix = "provide",
+                        postfix = if (isMultibinding) "Multi" else ""
+                      ) {
+                        it.capitalize(US)
+                      }
+                  )
+                  .addAnnotation(Provides::class)
+                  .apply {
+                    if (isMultibinding) {
+                      addAnnotation(IntoSet::class)
+                    }
+                  }
+                  .addAnnotations(qualifiers)
+                  .returns(boundType.asClassName())
+                  .addStatement("return %T", contributedClass.asClassName())
+                  .build()
+              )
+            } else {
+              BindingMethod(
+                FunSpec
+                  .builder(
+                    name = concreteType
+                      .asString()
+                      .split(".")
+                      .joinToString(
+                        separator = "",
+                        prefix = "bind",
+                        postfix = if (isMultibinding) "Multi" else ""
+                      ) {
+                        it.capitalize(US)
+                      }
+                  )
+                  .addAnnotation(Binds::class)
+                  .apply {
+                    if (isMultibinding) {
+                      addAnnotation(IntoSet::class)
+                    }
+                  }
+                  .addAnnotations(qualifiers)
+                  .addModifiers(ABSTRACT)
+                  .addParameter(
+                    name = concreteType.shortName().asString().decapitalize(US),
+                    type = contributedClass.asClassName()
+                  )
+                  .returns(boundType.asClassName())
+                  .build()
+              )
+            }
+          }
+          .toList()
+      }
+
+      val generatedMethods = getContributedBindingClasses(
+        collectedClasses = contributedBindingClasses,
+        hintPackagePrefix = HINT_BINDING_PACKAGE_PREFIX,
+        annotationFqName = contributesBindingFqName,
+        isMultibinding = false
+      ) + getContributedBindingClasses(
+        collectedClasses = contributedMultibindingClasses,
+        hintPackagePrefix = HINT_MULTIBINDING_PACKAGE_PREFIX,
+        annotationFqName = contributesMultibindingFqName,
+        isMultibinding = true
+      )
 
       daggerModuleFiles.map { (file, psiClass) ->
         val content = daggerModuleContent(
@@ -295,11 +361,12 @@ internal class BindingModuleGenerator(
 
   private fun findContributedBindingClasses(
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
-  ) {
-    contributedBindingClasses += projectFiles
+    projectFiles: Collection<KtFile>,
+    hintPackagePrefix: String
+  ): List<FqName> {
+    return projectFiles
       .filter {
-        it.packageFqName.asString().startsWith(HINT_BINDING_PACKAGE_PREFIX)
+        it.packageFqName.asString().startsWith(hintPackagePrefix)
       }
       .flatMap {
         it.findChildrenByClass(KtProperty::class.java).toList()

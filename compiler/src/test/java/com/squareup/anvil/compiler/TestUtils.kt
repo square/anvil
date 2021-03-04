@@ -134,26 +134,30 @@ internal val Result.anyQualifier: Class<*>
   get() = classLoader.loadClass("com.squareup.test.AnyQualifier")
 
 internal val Class<*>.hintContributes: KClass<*>?
-  get() = contributedProperties(HINT_CONTRIBUTES_PACKAGE_PREFIX)
-    ?.filter { it.java == this }
-    ?.also { assertThat(it.size).isEqualTo(1) }
-    ?.first()
+  get() = getHint(HINT_CONTRIBUTES_PACKAGE_PREFIX)
 
 internal val Class<*>.hintContributesScope: KClass<*>?
-  get() = contributedProperties(HINT_CONTRIBUTES_PACKAGE_PREFIX)
-    ?.also { assertThat(it.size).isEqualTo(2) }
-    ?.filter { it.java != this }
-    ?.also { assertThat(it.size).isEqualTo(1) }
-    ?.first()
+  get() = getHintScope(HINT_CONTRIBUTES_PACKAGE_PREFIX)
 
 internal val Class<*>.hintBinding: KClass<*>?
-  get() = contributedProperties(HINT_BINDING_PACKAGE_PREFIX)
-    ?.filter { it.java == this }
-    ?.also { assertThat(it.size).isEqualTo(1) }
-    ?.first()
+  get() = getHint(HINT_BINDING_PACKAGE_PREFIX)
 
 internal val Class<*>.hintBindingScope: KClass<*>?
-  get() = contributedProperties(HINT_BINDING_PACKAGE_PREFIX)
+  get() = getHintScope(HINT_BINDING_PACKAGE_PREFIX)
+
+internal val Class<*>.hintMultibinding: KClass<*>?
+  get() = getHint(HINT_MULTIBINDING_PACKAGE_PREFIX)
+
+internal val Class<*>.hintMultibindingScope: KClass<*>?
+  get() = getHintScope(HINT_MULTIBINDING_PACKAGE_PREFIX)
+
+private fun Class<*>.getHint(prefix: String): KClass<*>? = contributedProperties(prefix)
+  ?.filter { it.java == this }
+  ?.also { assertThat(it.size).isEqualTo(1) }
+  ?.first()
+
+private fun Class<*>.getHintScope(prefix: String): KClass<*>? =
+  contributedProperties(prefix)
     ?.also { assertThat(it.size).isEqualTo(2) }
     ?.filter { it.java != this }
     ?.also { assertThat(it.size).isEqualTo(1) }

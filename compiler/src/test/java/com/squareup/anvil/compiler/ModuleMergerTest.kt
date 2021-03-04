@@ -273,6 +273,38 @@ class ModuleMergerTest(
     }
   }
 
+  @Test fun `contributed multibinding can be replaced`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+
+      interface ParentInterface
+
+      @ContributesMultibinding(Any::class)
+      interface ContributingInterface : ParentInterface
+
+      @ContributesTo(
+          Any::class,
+          replaces = [ContributingInterface::class]
+      )
+      @dagger.Module
+      abstract class DaggerModule1
+
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+        .containsExactly(daggerModule1.kotlin)
+
+      assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
+    }
+  }
+
   @Test fun `contributed binding can be replaced but must have the same scope`() {
     compile(
       """
@@ -285,6 +317,42 @@ class ModuleMergerTest(
       interface ParentInterface
 
       @ContributesBinding(Unit::class)
+      interface ContributingInterface : ParentInterface
+
+      @ContributesTo(
+          Any::class,
+          replaces = [ContributingInterface::class]
+      )
+      @dagger.Module
+      abstract class DaggerModule1
+
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      // Position to the class.
+      assertThat(messages).contains("Source.kt: (17, 16)")
+      assertThat(messages).contains(
+        "com.squareup.test.DaggerModule1 with scope kotlin.Any wants to replace " +
+          "com.squareup.test.ContributingInterface with scope kotlin.Unit. The replacement " +
+          "must use the same scope."
+      )
+    }
+  }
+
+  @Test fun `contributed multibinding can be replaced but must have the same scope`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+
+      interface ParentInterface
+
+      @ContributesMultibinding(Unit::class)
       interface ContributingInterface : ParentInterface
 
       @ContributesTo(
@@ -339,6 +407,36 @@ class ModuleMergerTest(
     }
   }
 
+  @Test fun `module can be replaced by contributed multibinding`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+
+      interface ParentInterface
+
+      @ContributesTo(Any::class)
+      @dagger.Module
+      abstract class DaggerModule1
+
+      @ContributesMultibinding(
+          Any::class,
+          replaces = [DaggerModule1::class]
+      )
+      interface ContributingInterface : ParentInterface
+
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule()).isEmpty()
+      assertThat(componentInterfaceAnvilModule.declaredMethods).hasLength(1)
+    }
+  }
+
   @Test fun `module replaced by contributed binding must use the same scope`() {
     compile(
       """
@@ -355,6 +453,42 @@ class ModuleMergerTest(
       abstract class DaggerModule1
 
       @ContributesBinding(
+          Any::class,
+          replaces = [DaggerModule1::class]
+      )
+      interface ContributingInterface : ParentInterface
+
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      // Position to the class.
+      assertThat(messages).contains("Source.kt: (17, 11)")
+      assertThat(messages).contains(
+        "com.squareup.test.ContributingInterface with scope kotlin.Any wants to replace " +
+          "com.squareup.test.DaggerModule1 with scope kotlin.Unit. The replacement must use " +
+          "the same scope."
+      )
+    }
+  }
+
+  @Test fun `module replaced by contributed multibinding must use the same scope`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+
+      interface ParentInterface
+
+      @ContributesTo(Unit::class)
+      @dagger.Module
+      abstract class DaggerModule1
+
+      @ContributesMultibinding(
           Any::class,
           replaces = [DaggerModule1::class]
       )
@@ -562,6 +696,32 @@ class ModuleMergerTest(
     }
   }
 
+  @Test fun `contributed multibindings can be excluded`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      $import
+
+      interface ParentInterface
+
+      @ContributesMultibinding(Any::class)
+      interface ContributingInterface : ParentInterface
+
+      $annotation(
+          scope = Any::class,
+          exclude = [
+            ContributingInterface::class
+          ]
+      )
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
+    }
+  }
+
   @Test fun `contributed bindings can be excluded but must use the same scope`() {
     compile(
       """
@@ -573,6 +733,39 @@ class ModuleMergerTest(
       interface ParentInterface
 
       @ContributesBinding(Unit::class)
+      interface ContributingInterface : ParentInterface
+
+      $annotation(
+          scope = Any::class,
+          exclude = [
+            ContributingInterface::class
+          ]
+      )
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      // Position to the class.
+      assertThat(messages).contains("Source.kt: (17, 11)")
+      assertThat(messages).contains(
+        "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
+          "com.squareup.test.ContributingInterface with scope kotlin.Unit. The exclusion " +
+          "must use the same scope."
+      )
+    }
+  }
+
+  @Test fun `contributed multibindings can be excluded but must use the same scope`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      $import
+
+      interface ParentInterface
+
+      @ContributesMultibinding(Unit::class)
       interface ContributingInterface : ParentInterface
 
       $annotation(

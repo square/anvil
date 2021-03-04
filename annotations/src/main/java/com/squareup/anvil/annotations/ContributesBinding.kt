@@ -44,14 +44,24 @@ import kotlin.reflect.KClass
  * @Named("Prod")
  * class RealAuthenticator @Inject constructor() : Authenticator
  *
- * // Will generated this binding method.
+ * // Will generate this binding method.
  * @Binds @Named("Prod")
  * abstract fun bindRealAuthenticator(authenticator: RealAuthenticator): Authenticator
  * ```
  *
+ * [ContributesMultibinding] allows you to generate multibinding methods. Both annotations can be
+ * used in conjunction. If a qualifier is only meant for one of the annotations, then you can set
+ * [ignoreQualifier] to `true` and the qualifier won't be added to the generated binding method.
+ * ```
+ * @ContributesBinding(AppScope::class, ignoreQualifier = true)
+ * @ContributesMultibinding(AppScope::class)
+ * @Named("Prod")
+ * object MainListener : Listener
+ * ```
+ *
  * [ContributesBinding] is a convenience for a very simple but the most common scenario. Multiple
- * bound types, generic types or multibindings are not supported. In these cases it's still
- * required to write a Dagger module.
+ * bound types or generic types are not supported. In these cases it's still required to write
+ * a Dagger module.
  *
  * Contributed bindings can replace other contributed modules and bindings with the [replaces]
  * parameter. This is especially helpful for different bindings in instrumentation tests.
@@ -75,5 +85,6 @@ import kotlin.reflect.KClass
 public annotation class ContributesBinding(
   val scope: KClass<*>,
   val boundType: KClass<*> = Unit::class,
-  val replaces: Array<KClass<*>> = []
+  val replaces: Array<KClass<*>> = [],
+  val ignoreQualifier: Boolean = false
 )

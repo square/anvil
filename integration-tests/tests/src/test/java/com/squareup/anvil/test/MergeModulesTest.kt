@@ -33,7 +33,13 @@ internal class MergeModulesTest {
 
     assertThat(appComponent.parentType()).isInstanceOf(AppBinding::class.java)
     assertThat(subComponent.parentType()).isInstanceOf(AppBinding::class.java)
-    assertThat(subComponent.middleType()).isInstanceOf(SubcomponentBinding::class.java)
+    assertThat(subComponent.middleType()).isInstanceOf(SubcomponentBinding1::class.java)
+  }
+
+  @Test fun `contributed multibindings contain the right elements`() {
+    val subComponent = DaggerMergeModulesTest_AppComponent.create().subComponent()
+    assertThat(subComponent.middleTypes())
+      .containsExactly(SubcomponentBinding1, SubcomponentBinding3)
   }
 
   @MergeModules(AppScope::class)
@@ -53,5 +59,6 @@ internal class MergeModulesTest {
   interface SubComponent {
     @Named("middle") fun middleType(): MiddleType
     fun parentType(): ParentType
+    fun middleTypes(): Set<MiddleType>
   }
 }
