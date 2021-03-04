@@ -8,10 +8,12 @@ import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import com.squareup.anvil.compiler.publishedApiFqName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
+import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation.FROM_BACKEND
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -346,12 +348,7 @@ private fun PsiElement.findFqNameInSuperTypes(
 
       // At this point we can't work with Psi APIs anymore. We need to resolve the super types
       // and try to find inner class in them.
-      val descriptor = module.resolveClassByFqName(clazz.requireFqName(), FROM_BACKEND)
-        ?: throw AnvilCompilationException(
-          message = "Couldn't resolve class descriptor for ${clazz.requireFqName()}",
-          element = clazz
-        )
-
+      val descriptor = clazz.requireClassDescriptor(module)
       listOf(descriptor.defaultType).getAllSuperTypes()
         .mapNotNull { tryToResolveClassFqName(it) }
     }
@@ -455,4 +452,17 @@ fun KtClassOrObject.injectConstructor(injectAnnotationFqName: FqName): KtConstru
       element = this
     )
   }
+}
+
+fun KtClassOrObject.requireClassDescriptor(module: ModuleDescriptor): ClassDescriptor {
+  return module.resolveClassByFqName(requireFqName(), KotlinLookupLocation(this))
+    ?: throw AnvilCompilationException(
+      "Couldn't resolve class for ${requireFqName()}.",
+      element = this
+    )
+}
+
+fun FqName.requireClassDescriptor(module: ModuleDescriptor): ClassDescriptor {
+  return module.resolveClassByFqName(this, FROM_BACKEND)
+    ?: throw AnvilCompilationException("Couldn't resolve class for $this.")
 }
