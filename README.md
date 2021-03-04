@@ -130,6 +130,34 @@ class RealAuthenticator @Inject constructor() : Authenticator
 abstract fun bindRealAuthenticator(authenticator: RealAuthenticator): Authenticator
 ```
 
+## Contributed multibindings
+
+Similar to contributed bindings, `@ContributesMultibinding` will generate a multibindings method 
+for (all/an) annotated class(es). Qualifiers are supported the same way as normal bindings.
+```kotlin
+@ContributesMultibinding(AppScope::class)
+@Named("Prod")
+class MainListener @Inject constructor() : Listener
+
+// Will generate this binding method.
+@Binds @IntoSet @Named("Prod")
+abstract fun bindMainListener(listener: MainListener): Listener
+```
+If the class is annotated with a map key annotation, then Anvil will generate a maps multibindings 
+method instead of adding the element to a set:
+```kotlin
+@MapKey
+annotation class BindingKey(val value: String)
+
+@ContributesMultibinding(AppScope::class)
+@BindingKey("abc")
+class MainListener @Inject constructor() : Listener
+
+// Will generate this binding method.
+@Binds @IntoMap @BindingKey("abc")
+abstract fun bindMainListener(listener: MainListener): Listener
+```
+
 ## Exclusions
 
 Dagger modules and component interfaces can be excluded in two different levels.
