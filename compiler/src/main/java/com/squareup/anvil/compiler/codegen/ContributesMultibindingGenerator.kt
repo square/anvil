@@ -1,16 +1,19 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.HINT_MULTIBINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.contributesMultibindingFqName
+import com.squareup.anvil.compiler.isMapKey
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 import kotlin.reflect.KClass
@@ -32,6 +35,7 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
       .onEach { clazz ->
         clazz.checkClassIsPublic()
         clazz.checkNotMoreThanOneQualifier(module, contributesMultibindingFqName)
+        clazz.checkNotMoreThanOneMapKey(module)
         clazz.checkSingleSuperType(contributesMultibindingFqName)
         clazz.checkClassExtendsBoundType(module, contributesMultibindingFqName)
       }
@@ -76,5 +80,23 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
         )
       }
       .toList()
+  }
+}
+
+private fun KtClassOrObject.checkNotMoreThanOneMapKey(
+  module: ModuleDescriptor
+) {
+  // The class is annotated with @ContributesMultibinding. If there is less than 2 further
+  // annotations, then there can't be more than two map keys.
+  if (annotationEntries.size <= 2) return
+
+  val mapKeys = requireClassDescriptor(module).annotations.filter { it.isMapKey() }
+
+  if (mapKeys.size > 1) {
+    throw AnvilCompilationException(
+      message = "Classes annotated with @${contributesMultibindingFqName.shortName()} may not " +
+        "use more than one @MapKey.",
+      element = this
+    )
   }
 }
