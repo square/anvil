@@ -52,8 +52,24 @@ import kotlin.reflect.KClass
 @Target(CLASS)
 @Retention(RUNTIME)
 public annotation class MergeModules(
+  /**
+   * The scope used to find all contributed bindings, multibindings and modules, which should
+   * be included in this merged module.
+   */
   val scope: KClass<*>,
+  /**
+   * List of Dagger modules that should be manually included in the merged module and aren't
+   * automatically contributed.
+   */
   val includes: Array<KClass<*>> = [],
+  /**
+   * List of subcomponent annotated classes which should be children of the component in which
+   * this module is installed.
+   */
   val subcomponents: Array<KClass<*>> = [],
+  /**
+   * List of bindings, multibindings and modules that are contributed to the same scope, but
+   * should be excluded from the merged module.
+   */
   val exclude: Array<KClass<*>> = []
 )
