@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler
 
 import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.annotations.ContributesBinding.Priority.NORMAL
 import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeComponent
@@ -35,6 +36,7 @@ import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
+import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue.Value.NormalClass
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
@@ -212,6 +214,11 @@ internal fun AnnotationDescriptor.boundType(
       "If there are multiple or none, then the bound type must be explicitly defined in " +
       "the @${annotationFqName.shortName()} annotation."
   )
+}
+
+internal fun AnnotationDescriptor.priority(): ContributesBinding.Priority {
+  val enumValue = getAnnotationValue("priority") as? EnumValue ?: return NORMAL
+  return ContributesBinding.Priority.valueOf(enumValue.enumEntryName.asString())
 }
 
 internal fun AnnotationDescriptor.ignoreQualifier(): Boolean {

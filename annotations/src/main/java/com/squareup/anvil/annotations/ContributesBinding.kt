@@ -1,5 +1,6 @@
 package com.squareup.anvil.annotations
 
+import com.squareup.anvil.annotations.ContributesBinding.Priority.NORMAL
 import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.annotation.AnnotationTarget.CLASS
 import kotlin.reflect.KClass
@@ -72,6 +73,10 @@ import kotlin.reflect.KClass
  * )
  * class FakeAuthenticator @Inject constructor() : Authenticator
  * ```
+ * If you don't have access to the class of another contributed binding that you want to replace,
+ * then you can change the [priority] of the bindings to avoid duplicate bindings. The contributed
+ * binding with the higher priority will be used.
+ *
  * [ContributesBinding] supports Kotlin objects, e.g.
  * ```
  * @ContributesBinding(AppScope::class)
@@ -99,10 +104,35 @@ public annotation class ContributesBinding(
    */
   val replaces: Array<KClass<*>> = [],
   /**
+   * The priority of this contributed binding. The priority should be changed only if you don't
+   * have access to the contributed binding class that you want to replace at compile time. If
+   * you have access and can reference the other class, then it's highly suggested to
+   * use [replaces] instead.
+   *
+   * In case of a duplicate binding for multiple contributed bindings the binding with the highest
+   * priority will be used and replace other contributed bindings for the same type with a lower
+   * priority. If duplicate contributed bindings use the same priority, then there will be an
+   * error for duplicate bindings.
+   *
+   * Note that [replaces] takes precedence. If you explicitly replace a binding it won't be
+   * considered no matter what its priority is.
+   *
+   * All contributed bindings have a [NORMAL] priority by default.
+   */
+  val priority: Priority = NORMAL,
+  /**
    * Whether the qualifier for this class should be included in the generated binding method. This
    * parameter is only necessary to use when [ContributesBinding] and [ContributesMultibinding]
    * are used together for the same class. If not, simply remove the qualifier from the class
    * and don't use this parameter.
    */
   val ignoreQualifier: Boolean = false
-)
+) {
+  /**
+   * The priority of a contributed binding.
+   */
+  @Suppress("unused")
+  public enum class Priority {
+    NORMAL, HIGH, HIGHEST
+  }
+}

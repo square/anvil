@@ -29,6 +29,7 @@ import com.squareup.anvil.compiler.isQualifier
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
+import com.squareup.anvil.compiler.priority
 import com.squareup.anvil.compiler.replaces
 import com.squareup.anvil.compiler.scope
 import com.squareup.kotlinpoet.AnnotationSpec
@@ -43,6 +44,7 @@ import dagger.multibindings.IntoMap
 import dagger.multibindings.IntoSet
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -237,6 +239,25 @@ internal class BindingModuleGenerator(
             checkExtendsBoundType(type = contributedClass, boundType = boundType)
             checkNotGeneric(type = contributedClass, boundTypeDescriptor = boundType)
 
+            Binding(contributedClass, annotation, boundType)
+          }
+          .let { bindings ->
+            if (isMultibinding) {
+              bindings
+            } else {
+              bindings
+                .groupBy {
+                  // It's safe to use the FqName here, because we don't allow generic super types.
+                  // If we wouldn't have this limitation, we'd need to use the Kotlin type.
+                  it.boundType.fqNameSafe
+                }
+                .map {
+                  it.value.findHighestPriorityBinding()
+                }
+                .asSequence()
+            }
+          }
+          .map { (contributedClass, annotation, boundType) ->
             val concreteType = contributedClass.fqNameSafe
 
             val qualifiers = if (annotation.ignoreQualifier()) {
@@ -471,6 +492,33 @@ private sealed class GeneratedMethod {
 
   class ProviderMethod(override val spec: FunSpec) : GeneratedMethod()
   class BindingMethod(override val spec: FunSpec) : GeneratedMethod()
+}
+
+private data class Binding(
+  val contributedClass: ClassDescriptor,
+  val annotation: AnnotationDescriptor,
+  val boundType: ClassDescriptor
+)
+
+private fun List<Binding>.findHighestPriorityBinding(): Binding {
+  if (size == 1) return this[0]
+
+  val bindings = groupBy { it.annotation.priority() }
+    .toSortedMap()
+    .let { it.getValue(it.lastKey()) }
+
+  if (bindings.size > 1) {
+    throw AnvilCompilationException(
+      "There are multiple contributed bindings with the same bound type. The bound type is " +
+        "${bindings[0].boundType.fqNameSafe}. The contributed binding classes are: " +
+        bindings.joinToString(
+          prefix = "[",
+          postfix = "]"
+        ) { it.contributedClass.fqNameSafe.asString() }
+    )
+  }
+
+  return bindings[0]
 }
 
 private val Collection<GeneratedMethod>.specs get() = map { it.spec }
