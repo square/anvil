@@ -57,6 +57,11 @@ internal class MergeComponentTest {
     assertThat(appComponent.mapBindingsNamed()).containsExactly("2", MapBinding2)
   }
 
+  @Test fun `the binding with the highest priority is bound`() {
+    val appComponent = DaggerMergeComponentTest_AppComponent.create()
+    assertThat(appComponent.priorityBinding()).isEqualTo(PriorityBindingHigh)
+  }
+
   @MergeComponent(AppScope::class)
   @Singleton
   @Suppress("unused")
@@ -68,6 +73,7 @@ internal class MergeComponentTest {
     fun parentTypes(): Set<ParentType>
     fun mapBindings(): Map<String, ParentType>
     @Named("abc") fun mapBindingsNamed(): Map<String, ParentType>
+    fun priorityBinding(): PriorityBinding
   }
 
   @MergeSubcomponent(SubScope::class)
