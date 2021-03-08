@@ -33,7 +33,19 @@ import kotlin.reflect.KClass
 @Target(CLASS)
 @Retention(RUNTIME)
 public annotation class MergeSubcomponent(
+  /**
+   * The scope used to find all contributed bindings, multibindings, modules and component
+   * interfaces, which should be included in this subcomponent.
+   */
   val scope: KClass<*>,
+  /**
+   * List of Dagger modules that should be manually included in the subcomponent and aren't
+   * automatically contributed.
+   */
   val modules: Array<KClass<*>> = [],
+  /**
+   * List of bindings, multibindings, modules and component interfaces that are contributed to the
+   * same scope, but should be excluded from the subcomponent.
+   */
   val exclude: Array<KClass<*>> = []
 )

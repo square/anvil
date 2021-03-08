@@ -48,6 +48,14 @@ import kotlin.reflect.KClass
 @Target(CLASS)
 @Retention(RUNTIME)
 public annotation class MergeInterfaces(
+  /**
+   * The scope used to find all contributed component interfaces, which should be included in this
+   * merged interface.
+   */
   val scope: KClass<*>,
+  /**
+   * List of component interfaces that are contributed to the same scope, but should be excluded
+   * from the merged interface.
+   */
   val exclude: Array<KClass<*>> = []
 )

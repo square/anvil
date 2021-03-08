@@ -104,8 +104,26 @@ import kotlin.reflect.KClass
 @Target(CLASS)
 @Retention(RUNTIME)
 public annotation class ContributesMultibinding(
+  /**
+   * The scope in which to include this contributed multibinding.
+   */
   val scope: KClass<*>,
+  /**
+   * The type that this class is bound to. This class will be included in the collection for
+   * [boundType].
+   */
   val boundType: KClass<*> = Unit::class,
+  /**
+   * This contributed multibinding will replace these contributed classes. The array is allowed to
+   * include other contributed multibindings or contributed Dagger modules. All replaced classes
+   * must use the same scope.
+   */
   val replaces: Array<KClass<*>> = [],
+  /**
+   * Whether the qualifier for this class should be included in the generated multibinding method.
+   * This parameter is only necessary to use when [ContributesBinding] and [ContributesMultibinding]
+   * are used together for the same class. If not, simply remove the qualifier from the class and
+   * don't use this parameter.
+   */
   val ignoreQualifier: Boolean = false
 )

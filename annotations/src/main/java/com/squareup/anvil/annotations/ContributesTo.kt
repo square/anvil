@@ -39,6 +39,14 @@ import kotlin.reflect.KClass
 @Target(CLASS)
 @Retention(RUNTIME)
 public annotation class ContributesTo(
+  /**
+   * The scope in which to include this module.
+   */
   val scope: KClass<*>,
+  /**
+   * This contributed module will replace these contributed classes. The array is allowed to
+   * include other contributed bindings, multibindings and Dagger modules. All replaced classes
+   * must use the same scope.
+   */
   val replaces: Array<KClass<*>> = []
 )
