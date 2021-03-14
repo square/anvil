@@ -258,3 +258,21 @@ internal fun AnnotationDescriptor.requireClass(): ClassDescriptor {
     message = "Couldn't find the annotation class for $fqName",
   )
 }
+
+/**
+ * This function should only be used for package names. If the FqName is the root (no package at
+ * all), then this function returns an empty string whereas `toString()` would return "<root>". For
+ * a more convenient string concatenation the returned result can be prefixed and suffixed with an
+ * additional dot. The root package never will use a prefix or suffix.
+ */
+internal fun FqName.safePackageString(
+  dotPrefix: Boolean = false,
+  dotSuffix: Boolean = true
+): String =
+  if (isRoot) {
+    ""
+  } else {
+    val prefix = if (dotPrefix) "." else ""
+    val suffix = if (dotSuffix) "." else ""
+    "$prefix$this$suffix"
+  }

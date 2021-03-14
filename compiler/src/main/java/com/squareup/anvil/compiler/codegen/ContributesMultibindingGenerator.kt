@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.isMapKey
+import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -40,8 +41,8 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
         clazz.checkClassExtendsBoundType(module, contributesMultibindingFqName)
       }
       .map { clazz ->
-        val generatedPackage =
-          "$HINT_MULTIBINDING_PACKAGE_PREFIX.${clazz.containingKtFile.packageFqName}"
+        val generatedPackage = HINT_MULTIBINDING_PACKAGE_PREFIX +
+          clazz.containingKtFile.packageFqName.safePackageString(dotPrefix = true)
         val className = clazz.asClassName()
         val classFqName = clazz.requireFqName().toString()
         val propertyName = classFqName.replace('.', '_')

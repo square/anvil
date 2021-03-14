@@ -13,6 +13,7 @@ import com.squareup.anvil.compiler.codegen.requireFqName
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.injectFqName
+import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -67,7 +68,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
     clazz: KtClassOrObject,
     injectProperties: List<KtProperty>
   ): GeneratedFile {
-    val packageName = clazz.containingKtFile.packageFqName.asString()
+    val packageName = clazz.containingKtFile.packageFqName.safePackageString()
     val className = "${clazz.generateClassName()}_MembersInjector"
     val classType = clazz.asClassName()
       .let {

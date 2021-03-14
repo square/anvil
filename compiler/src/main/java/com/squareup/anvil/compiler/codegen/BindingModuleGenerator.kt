@@ -31,6 +31,7 @@ import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
 import com.squareup.anvil.compiler.priority
 import com.squareup.anvil.compiler.replaces
+import com.squareup.anvil.compiler.safePackageString
 import com.squareup.anvil.compiler.scope
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.FileSpec
@@ -440,8 +441,8 @@ internal class BindingModuleGenerator(
   private fun KtClassOrObject.generateClassName(): String =
     generateClassName(separator = "") + ANVIL_MODULE_SUFFIX
 
-  private fun generatePackageName(psiClass: KtClassOrObject): String =
-    "$MODULE_PACKAGE_PREFIX.${psiClass.containingKtFile.packageFqName}"
+  private fun generatePackageName(psiClass: KtClassOrObject): String = MODULE_PACKAGE_PREFIX +
+    psiClass.containingKtFile.packageFqName.safePackageString(dotPrefix = true)
 
   private fun daggerModuleContent(
     scope: String,

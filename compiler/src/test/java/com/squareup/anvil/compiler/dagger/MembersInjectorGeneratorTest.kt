@@ -687,6 +687,55 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     }
   }
 
+  @Test fun `a factory class is generated for a field injection without a package`() {
+    compile(
+      """
+      import javax.inject.Inject
+      
+      class InjectClass {
+        @Inject lateinit var string: String
+        
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+      
+          other as InjectClass
+      
+          if (string != other.string) return false
+      
+          return true
+        }
+      
+        override fun hashCode(): Int {
+          return string.hashCode()
+        }
+      }
+      """
+    ) {
+      val injectClass = classLoader.loadClass("InjectClass")
+      val membersInjector = injectClass.membersInjector()
+
+      val constructor = membersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
+
+      @Suppress("RedundantLambdaArrow")
+      val membersInjectorInstance = constructor
+        .newInstance(Provider { "a" }) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      membersInjector.staticInjectMethod("string")
+        .invoke(null, injectInstanceStatic, "a")
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
   private fun Class<*>.staticInjectMethod(memberName: String): Method {
     // We can't check the @InjectedFieldSignature annotation unfortunately, because it has class
     // retention.

@@ -22,7 +22,7 @@ internal class ClassScanner {
     scope: FqName
   ): Sequence<ClassDescriptor> {
     val packageDescriptor = module.getPackage(FqName(packageName))
-    return generateSequence(packageDescriptor.subPackages()) { subPackages ->
+    return generateSequence(listOf(packageDescriptor)) { subPackages ->
       subPackages
         .flatMap { it.subPackages() }
         .ifEmpty { null }

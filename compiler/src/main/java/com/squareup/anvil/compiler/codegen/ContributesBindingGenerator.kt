@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.boundType
 import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.isQualifier
+import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -46,8 +47,8 @@ internal class ContributesBindingGenerator : CodeGenerator {
         clazz.checkClassExtendsBoundType(module, contributesBindingFqName)
       }
       .map { clazz ->
-        val generatedPackage =
-          "$HINT_BINDING_PACKAGE_PREFIX.${clazz.containingKtFile.packageFqName}"
+        val generatedPackage = HINT_BINDING_PACKAGE_PREFIX +
+          clazz.containingKtFile.packageFqName.safePackageString(dotPrefix = true)
         val className = clazz.asClassName()
         val classFqName = clazz.requireFqName().toString()
         val propertyName = classFqName.replace('.', '_')

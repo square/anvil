@@ -915,6 +915,46 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
+  @Test fun `an implementation for a factory class is generated without a package`() {
+    compile(
+      """
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService @AssistedInject constructor(
+        val int: Int,
+        @Assisted val string: String
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory {
+        fun create(string: String): AssistedService
+      }
+      """
+    ) {
+      val factoryImplClass = classLoader.loadClass("AssistedServiceFactory").implClass()
+      val generatedFactoryInstance = classLoader.loadClass("AssistedService")
+        .factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, "Hello")
+
+      assertThat(assistedServiceInstance)
+        .isEqualTo(classLoader.loadClass("AssistedService").createInstance(5, "Hello"))
+    }
+  }
+
   @Test fun `equal types with equal identifiers aren't supported`() {
     compile(
       """

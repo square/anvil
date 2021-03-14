@@ -1312,6 +1312,33 @@ public final class InjectClass_Factory<T extends CharSequence> implements Factor
     }
   }
 
+  @Test fun `a factory class is generated for an inject constructor without a package`() {
+    compile(
+      """
+      import javax.inject.Inject
+      
+      class InjectClass @Inject constructor()
+      """
+    ) {
+      val factoryClass = classLoader.loadClass("InjectClass").factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val instance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null)
+
+      assertThat(instance).isNotNull()
+      assertThat((factoryInstance as Factory<*>).get()).isNotNull()
+    }
+  }
+
   @Test fun `two inject constructors aren't supported`() {
     compile(
       """

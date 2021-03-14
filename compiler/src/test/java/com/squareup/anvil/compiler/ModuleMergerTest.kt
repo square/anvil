@@ -952,6 +952,26 @@ class ModuleMergerTest(
     }
   }
 
+  @Test fun `modules are merged without a package`() {
+    compile(
+      """
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Any::class)
+      @dagger.Module
+      abstract class DaggerModule1
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val component = classLoader.loadClass("ComponentInterface").anyDaggerComponent
+      assertThat(component.modules.withoutAnvilModule())
+        .containsExactly(classLoader.loadClass("DaggerModule1").kotlin)
+    }
+  }
+
   @Test fun `a module is not allowed to be included and excluded`() {
     compile(
       """

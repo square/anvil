@@ -17,6 +17,7 @@ import com.squareup.anvil.compiler.codegen.fqNameOrNull
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.requireClassDescriptor
 import com.squareup.anvil.compiler.generateClassName
+import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -167,7 +168,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
       )
     }
 
-    val packageName = clazz.containingKtFile.packageFqName.asString()
+    val packageName = clazz.containingKtFile.packageFqName.safePackageString()
     val className = "${clazz.generateClassName()}_Impl"
     val implClass = ClassName(packageName, className)
 

@@ -549,6 +549,25 @@ class InterfaceMergerTest(
     }
   }
 
+  @Test fun `interfaces are merged without a package`() {
+    compile(
+      """
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Any::class)
+      interface ContributingInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val componentInterface = classLoader.loadClass("ComponentInterface")
+      val contributingInterface = classLoader.loadClass("ContributingInterface")
+      assertThat(componentInterface extends contributingInterface).isTrue()
+    }
+  }
+
   @Test fun `module interfaces are not merged`() {
     // They could cause errors while compiling code when adding our contributed super classes.
     compile(
