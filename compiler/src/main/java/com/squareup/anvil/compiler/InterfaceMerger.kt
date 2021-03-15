@@ -64,11 +64,13 @@ internal class InterfaceMerger(
           )
         }
       }
+      // Convert the sequence to a list to avoid iterating it twice. We use the result twice
+      // for replaced classes and the final result.
+      .toList()
 
     val replacedClasses = classes
       .flatMap { (classDescriptor, contributeAnnotation) ->
         contributeAnnotation.replaces(classDescriptor.module)
-          .asSequence()
           .onEach { classDescriptorForReplacement ->
             // Verify the other class is an interface. It doesn't make sense for a contributed
             // interface to replace a class that is not an interface.
