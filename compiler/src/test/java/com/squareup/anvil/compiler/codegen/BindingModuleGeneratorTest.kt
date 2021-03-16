@@ -340,6 +340,28 @@ class BindingModuleGeneratorTest(
     }
   }
 
+  @Test fun `a Dagger module is generated for a merged class and added to the component without a package`() { // ktlint-disable max-line-length
+    compile(
+      """
+      $import
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val modules = if (annotationClass == MergeModules::class) {
+        classLoader.loadClass("ComponentInterface").daggerModule.includes.toList()
+      } else {
+        classLoader.loadClass("ComponentInterface").anyDaggerComponent.modules
+      }
+      assertThat(modules).containsExactly(
+        classLoader
+          .loadClass("$MODULE_PACKAGE_PREFIX.ComponentInterfaceAnvilModule")
+          .kotlin
+      )
+    }
+  }
+
   @Test fun `the contributed binding class must not have a generic type parameter`() {
     compile(
       """

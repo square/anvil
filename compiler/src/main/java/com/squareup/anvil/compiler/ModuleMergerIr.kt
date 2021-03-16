@@ -18,8 +18,8 @@ import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrDynamicTypeImpl
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.getPackageFragment
 import org.jetbrains.kotlin.ir.util.isInterface
+import org.jetbrains.kotlin.ir.util.packageFqName
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.Variance.INVARIANT
@@ -274,10 +274,9 @@ internal class ModuleMergerIr(
   }
 
   private fun createAnvilModuleName(declaration: IrClass): FqName {
-    val packageFqName = declaration.getPackageFragment()?.fqName
-    val packageSection = if (packageFqName != null) "$packageFqName." else ""
+    val packageName = declaration.packageFqName?.safePackageString() ?: ""
 
-    val name = "$MODULE_PACKAGE_PREFIX.$packageSection" +
+    val name = "$MODULE_PACKAGE_PREFIX.$packageName" +
       declaration.parentsWithSelf
         .filterIsInstance<IrClass>()
         .toList()

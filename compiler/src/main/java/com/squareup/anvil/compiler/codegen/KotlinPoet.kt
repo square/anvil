@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import com.squareup.anvil.compiler.providerFqName
 import com.squareup.anvil.compiler.requireClass
+import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -56,7 +57,7 @@ import javax.inject.Provider
 
 internal fun KtClassOrObject.asClassName(): ClassName =
   ClassName(
-    packageName = containingKtFile.packageFqName.asString(),
+    packageName = containingKtFile.packageFqName.safePackageString(),
     simpleNames = parentsWithSelf
       .filterIsInstance<KtClassOrObject>()
       .map { it.nameAsSafeName.asString() }
@@ -66,7 +67,8 @@ internal fun KtClassOrObject.asClassName(): ClassName =
 
 internal fun ClassDescriptor.asClassName(): ClassName =
   ClassName(
-    packageName = parents.filterIsInstance<PackageFragmentDescriptor>().first().fqName.asString(),
+    packageName = parents.filterIsInstance<PackageFragmentDescriptor>().first()
+      .fqName.safePackageString(),
     simpleNames = parentsWithSelf.filterIsInstance<ClassDescriptor>()
       .map { it.name.asString() }
       .toList()

@@ -23,6 +23,7 @@ import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.publishedApiFqName
+import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -118,7 +119,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
       declaration.visibilityModifierTypeOrDefault() == INTERNAL_KEYWORD &&
       !declaration.hasAnnotation(publishedApiFqName)
 
-    val packageName = clazz.containingKtFile.packageFqName.asString()
+    val packageName = clazz.containingKtFile.packageFqName.safePackageString()
     val className = buildString {
       append(clazz.generateClassName())
       append('_')

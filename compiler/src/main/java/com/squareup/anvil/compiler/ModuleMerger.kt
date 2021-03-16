@@ -272,7 +272,8 @@ internal class ModuleMerger(
   }
 
   private fun createAnvilModuleName(classDescriptor: ClassDescriptor): FqName {
-    val name = "$MODULE_PACKAGE_PREFIX.${classDescriptor.findPackage().fqName}." +
+    val name = "$MODULE_PACKAGE_PREFIX." +
+      classDescriptor.findPackage().fqName.safePackageString() +
       classDescriptor.parentsWithSelf
         .filterIsInstance<ClassDescriptor>()
         .toList()

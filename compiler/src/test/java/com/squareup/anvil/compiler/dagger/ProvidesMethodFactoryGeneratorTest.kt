@@ -3046,6 +3046,38 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
     }
   }
 
+  @Test fun `a factory class is generated for a provider method without a package`() {
+    compile(
+      """
+      @dagger.Module
+      class DaggerModule1 {
+        @dagger.Provides fun provideString(): String = "abc"
+      }
+      """
+    ) {
+      val daggerModule1 = classLoader.loadClass("DaggerModule1")
+      val factoryClass = daggerModule1.moduleFactoryClass("provideString")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(2)
+
+      val module = daggerModule1.createInstance()
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, module)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedString = staticMethods.single { it.name == "provideString" }
+        .invoke(null, module) as String
+
+      assertThat(providedString).isEqualTo("abc")
+      assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
+    }
+  }
+
   @Test fun `a provider method cannot be abstract`() {
     compile(
       """

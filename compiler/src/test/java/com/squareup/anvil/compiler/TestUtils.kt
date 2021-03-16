@@ -60,9 +60,11 @@ internal fun compile(
 
       this.sources = sources.map { content ->
         val packageDir = content.lines()
-          .first { it.trim().startsWith("package ") }
-          .substringAfter("package ")
-          .replace('.', '/')
+          .firstOrNull { it.trim().startsWith("package ") }
+          ?.substringAfter("package ")
+          ?.replace('.', '/')
+          ?.let { "$it/" }
+          ?: ""
 
         val name = "${workingDir.absolutePath}/sources/src/main/java/$packageDir/Source.kt"
         with(File(name).parentFile) {
@@ -175,7 +177,7 @@ internal fun Class<*>.moduleFactoryClass(
   val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
 
   return classLoader.loadClass(
-    "${`package`.name}.$enclosingClassString$simpleName$companionString" +
+    "${packageName()}$enclosingClassString$simpleName$companionString" +
       "_${providerMethodName.capitalize(US)}Factory"
   )
 }
@@ -183,22 +185,24 @@ internal fun Class<*>.moduleFactoryClass(
 internal fun Class<*>.factoryClass(): Class<*> {
   val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
 
-  return classLoader.loadClass("${`package`.name}.$enclosingClassString${simpleName}_Factory")
+  return classLoader.loadClass("${packageName()}$enclosingClassString${simpleName}_Factory")
 }
 
 internal fun Class<*>.implClass(): Class<*> {
   val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
-
-  return classLoader.loadClass("${`package`.name}.$enclosingClassString${simpleName}_Impl")
+  return classLoader.loadClass("${packageName()}$enclosingClassString${simpleName}_Impl")
 }
 
 internal fun Class<*>.membersInjector(): Class<*> {
   val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
 
   return classLoader.loadClass(
-    "${`package`.name}." +
-      "$enclosingClassString${simpleName}_MembersInjector"
+    "${packageName()}$enclosingClassString${simpleName}_MembersInjector"
   )
+}
+
+private fun Class<*>.packageName(): String = `package`.name.let {
+  if (it.isBlank()) "" else "$it."
 }
 
 private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*>>? {
@@ -208,7 +212,7 @@ private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*
     .capitalize(US) + "Kt"
 
   val clazz = try {
-    classLoader.loadClass("$packagePrefix.${`package`.name}.$className")
+    classLoader.loadClass("$packagePrefix.${packageName()}$className")
   } catch (e: ClassNotFoundException) {
     return null
   }

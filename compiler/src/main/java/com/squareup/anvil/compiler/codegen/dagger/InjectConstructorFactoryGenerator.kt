@@ -12,6 +12,7 @@ import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.codegen.mapToParameter
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.injectFqName
+import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -54,7 +55,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     clazz: KtClassOrObject,
     constructor: KtConstructor<*>
   ): GeneratedFile {
-    val packageName = clazz.containingKtFile.packageFqName.asString()
+    val packageName = clazz.containingKtFile.packageFqName.safePackageString()
     val className = "${clazz.generateClassName()}_Factory"
 
     val parameters = constructor.valueParameters.mapToParameter(module)

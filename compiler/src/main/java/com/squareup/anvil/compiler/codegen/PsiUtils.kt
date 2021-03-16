@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.getAllSuperTypes
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import com.squareup.anvil.compiler.publishedApiFqName
+import com.squareup.anvil.compiler.safePackageString
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
@@ -359,7 +360,7 @@ internal fun ModuleDescriptor.findClassOrTypeAlias(
   packageName: FqName,
   className: String
 ): ClassifierDescriptorWithTypeParameters? {
-  resolveClassByFqName(FqName("$packageName.$className"), FROM_BACKEND)
+  resolveClassByFqName(FqName("${packageName.safePackageString()}$className"), FROM_BACKEND)
     ?.let { return it }
 
   findTypeAliasAcrossModuleDependencies(ClassId(packageName, Name.identifier(className)))
