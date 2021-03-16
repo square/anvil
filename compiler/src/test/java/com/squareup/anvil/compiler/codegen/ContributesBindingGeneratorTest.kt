@@ -253,6 +253,24 @@ class ContributesBindingGeneratorTest {
     }
   }
 
+  @Test fun `the bound type is not implied when explicitly defined`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+
+      interface ParentInterface
+
+      @ContributesBinding(Int::class, ParentInterface::class)
+      interface ContributingInterface : ParentInterface, CharSequence
+      """
+    ) {
+      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintBindingScope).isEqualTo(Int::class)
+    }
+  }
+
   @Test fun `the contributed binding class must extend the bound type`() {
     compile(
       """

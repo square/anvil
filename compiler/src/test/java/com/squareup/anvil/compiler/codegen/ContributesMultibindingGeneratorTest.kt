@@ -254,6 +254,28 @@ class ContributesMultibindingGeneratorTest {
     }
   }
 
+  @Test fun `the bound type is not implied when explicitly defined`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+
+      interface ParentInterface
+
+      @ContributesMultibinding(
+        scope = Int::class, 
+        ignoreQualifier = true, 
+        boundType = ParentInterface::class
+      )
+      interface ContributingInterface : ParentInterface, CharSequence
+      """
+    ) {
+      assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintMultibindingScope).isEqualTo(Int::class)
+    }
+  }
+
   @Test fun `the contributed multibinding class must extend the bound type`() {
     compile(
       """
