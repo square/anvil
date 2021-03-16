@@ -191,8 +191,7 @@ internal class BindingModuleGenerator(
         .flatMap {
           it.annotationOrNull(contributesToFqName, scope)
             ?.replaces(module)
-            ?.asSequence()
-            ?: emptySequence()
+            ?: emptyList()
         }
         .toList()
 
@@ -221,8 +220,7 @@ internal class BindingModuleGenerator(
           .flatMap {
             it.annotationOrNull(annotationFqName, scope = scope)
               ?.replaces(module)
-              ?.asSequence()
-              ?: emptySequence()
+              ?: emptyList()
           }
 
         return (contributedBindingsThisModule + contributedBindingsDependencies)

@@ -105,11 +105,13 @@ internal class ModuleMerger(
           )
         }
       }
+      // Convert the sequence to a list to avoid iterating it twice. We use the result twice
+      // for replaced classes and the final result.
+      .toList()
 
     val replacedModules = modules
       .flatMap { (classDescriptor, contributeAnnotation) ->
         contributeAnnotation.replaces(module)
-          .asSequence()
           .map { classDescriptorForReplacement ->
             // Verify has @Module annotation. It doesn't make sense for a Dagger module to
             // replace a non-Dagger module.
@@ -146,7 +148,6 @@ internal class ModuleMerger(
           val annotation = contributedClass.annotation(annotationFqName)
           if (scopeFqName == annotation.scope(module).fqNameSafe) {
             annotation.replaces(module)
-              .asSequence()
               .map { classDescriptorForReplacement ->
                 checkSameScope(
                   contributedClass,
@@ -157,7 +158,7 @@ internal class ModuleMerger(
                 classDescriptorForReplacement.defaultType.asmType(codegen.typeMapper)
               }
           } else {
-            emptySequence()
+            emptyList()
           }
         }
     }
@@ -220,8 +221,8 @@ internal class ModuleMerger(
     }
 
     val contributedModules = modules
-      .map { it.first }
-      .map { codegen.typeMapper.mapType(it) }
+      .asSequence()
+      .map { codegen.typeMapper.mapType(it.first) }
       .minus(replacedModules)
       .minus(replacedModulesByContributedBindings)
       .minus(replacedModulesByContributedMultibindings)

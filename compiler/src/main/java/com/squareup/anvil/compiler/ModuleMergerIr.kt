@@ -111,11 +111,13 @@ internal class ModuleMergerIr(
           )
         }
       }
+      // Convert the sequence to a list to avoid iterating it twice. We use the result twice
+      // for replaced classes and the final result.
+      .toList()
 
     val replacedModules = modules
       .flatMap { (classSymbol, contributesAnnotation) ->
         contributesAnnotation.replaces()
-          .asSequence()
           .onEach { irClassForReplacement ->
             // Verify has @Module annotation. It doesn't make sense for a Dagger module to
             // replace a non-Dagger module.
@@ -151,12 +153,11 @@ internal class ModuleMergerIr(
           val annotation = classSymbol.owner.annotation(annotationFqName)
           if (scope == annotation.scope()) {
             annotation.replaces()
-              .asSequence()
               .onEach { classDescriptorForReplacement ->
                 checkSameScope(classSymbol, classDescriptorForReplacement, scope)
               }
           } else {
-            emptySequence()
+            emptyList()
           }
         }
     }
@@ -212,6 +213,7 @@ internal class ModuleMergerIr(
     }
 
     val contributedModules = modules
+      .asSequence()
       .map { it.first.owner }
       .filterIsInstance<IrClass>()
       .minus(replacedModules)
