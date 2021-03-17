@@ -131,6 +131,64 @@ class BindingModulePriorityTest(
     }
   }
 
+  @Test fun `bindings with the same priority can be replaced and aren't duplicate bindings`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      $import
+      
+      interface ParentInterface
+      
+      @ContributesBinding(Any::class)
+      interface ContributingInterface : ParentInterface
+      
+      @ContributesBinding(Any::class, replaces = [ContributingInterface::class])
+      interface SecondContributingInterface : ParentInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+
+      with(bindingMethod) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(secondContributingInterface)
+      }
+    }
+  }
+
+  @Test fun `bindings with the same priority can be excluded and aren't duplicate bindings`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      $import
+      
+      interface ParentInterface
+      
+      @ContributesBinding(Any::class)
+      interface ContributingInterface : ParentInterface
+      
+      @ContributesBinding(Any::class)
+      interface SecondContributingInterface : ParentInterface
+      
+      $annotation(Any::class, exclude = [ContributingInterface::class])
+      interface ComponentInterface
+      """
+    ) {
+      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+
+      with(bindingMethod) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(secondContributingInterface)
+      }
+    }
+  }
+
   @Test fun `multiple multibindings with the same type are allowed`() {
     compile(
       """
