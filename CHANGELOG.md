@@ -1,6 +1,6 @@
 # Changelog
 
-## Next Version
+## 2.2.0 (2021-03-17)
 
 * `@ContributesBinding` supports qualifiers now, see the README and documentation for examples.
 * You can generate multibindings with `@ContributesMultibinding` now, see the README and documentation for examples, see #152.
