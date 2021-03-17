@@ -43,7 +43,7 @@ internal class ContributesBindingGenerator : CodeGenerator {
       .onEach { clazz ->
         clazz.checkClassIsPublic()
         clazz.checkNotMoreThanOneQualifier(module, contributesBindingFqName)
-        clazz.checkSingleSuperType(contributesBindingFqName)
+        clazz.checkSingleSuperType(module, contributesBindingFqName)
         clazz.checkClassExtendsBoundType(module, contributesBindingFqName)
       }
       .map { clazz ->
@@ -120,8 +120,13 @@ internal fun KtClassOrObject.checkClassIsPublic() {
 }
 
 internal fun KtClassOrObject.checkSingleSuperType(
+  module: ModuleDescriptor,
   annotationFqName: FqName
 ) {
+  // If the bound type exists, then you're allowed to have multiple super types. Without the bound
+  // type there must be exactly one super type.
+  if (boundType(annotationFqName, module) != null) return
+
   val superTypes = superTypeListEntries
   if (superTypes.size != 1) {
     throw AnvilCompilationException(

@@ -120,20 +120,51 @@ internal fun KtClassOrObject.scope(
   annotationFqName: FqName,
   module: ModuleDescriptor
 ): FqName {
-  return findScopeClassLiteralExpression(annotationFqName)
-    .let {
-      val children = it.children
+  return findClassLiteralExpression(annotationFqName, name = "scope", index = 0)
+    .let { classLiteralExpression ->
+      if (classLiteralExpression == null) {
+        throw AnvilCompilationException(
+          "The first argument for $annotationFqName must be a class literal: $text",
+          element = this
+        )
+      }
+
+      val children = classLiteralExpression.children
       children.singleOrNull() ?: throw AnvilCompilationException(
-        "Expected a single child, but had ${children.size} instead: ${it.text}",
+        "Expected a single child, but there were ${children.size} instead: " +
+          classLiteralExpression.text,
         element = this
       )
     }
     .requireFqName(module)
 }
 
-private fun KtClassOrObject.findScopeClassLiteralExpression(
-  annotationFqName: FqName
-): KtClassLiteralExpression {
+internal fun KtClassOrObject.boundType(
+  annotationFqName: FqName,
+  module: ModuleDescriptor
+): FqName? {
+  return findClassLiteralExpression(annotationFqName, name = "boundType", index = 1)
+    ?.let {
+      val children = it.children
+      children.singleOrNull() ?: throw AnvilCompilationException(
+        "Expected a single child, but there were ${children.size} instead: ${it.text}",
+        element = this
+      )
+    }
+    ?.requireFqName(module)
+}
+
+/**
+ * Finds the class literal expression in the given annotation. [name] refers to the parameter name
+ * in the annotation and [index] to the position of the argument, e.g. if you look for the scope in
+ * `@ContributesBinding(Int::class, boundType = Unit::class)`, then [name] would be "scope" and the
+ * index 0. If you look for the bound type, then [name] would be "boundType" and the index 1.
+ */
+private fun KtClassOrObject.findClassLiteralExpression(
+  annotationFqName: FqName,
+  name: String,
+  index: Int
+): KtClassLiteralExpression? {
   val annotationEntry = findAnnotation(annotationFqName)
     ?: throw AnvilCompilationException(
       "Couldn't find $annotationFqName for Psi element: $text",
@@ -150,7 +181,7 @@ private fun KtClassOrObject.findScopeClassLiteralExpression(
     .mapNotNull { valueArgument ->
       val children = valueArgument.children
       if (children.size == 2 && children[0] is KtValueArgumentName &&
-        (children[0] as KtValueArgumentName).asName.asString() == "scope" &&
+        (children[0] as KtValueArgumentName).asName.asString() == name &&
         children[1] is KtClassLiteralExpression
       ) {
         children[1] as KtClassLiteralExpression
@@ -164,14 +195,10 @@ private fun KtClassOrObject.findScopeClassLiteralExpression(
   // If there is no named argument, then take the first argument, which must be a class literal
   // expression, e.g. @ContributesTo(Unit::class)
   return annotationValues
-    .firstOrNull()
+    .elementAtOrNull(index)
     ?.let { valueArgument ->
       valueArgument.children.firstOrNull() as? KtClassLiteralExpression
     }
-    ?: throw AnvilCompilationException(
-      "The first argument for $annotationFqName must be a class literal: $text",
-      element = this
-    )
 }
 
 internal fun PsiElement.fqNameOrNull(

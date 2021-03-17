@@ -37,7 +37,7 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
         clazz.checkClassIsPublic()
         clazz.checkNotMoreThanOneQualifier(module, contributesMultibindingFqName)
         clazz.checkNotMoreThanOneMapKey(module)
-        clazz.checkSingleSuperType(contributesMultibindingFqName)
+        clazz.checkSingleSuperType(module, contributesMultibindingFqName)
         clazz.checkClassExtendsBoundType(module, contributesMultibindingFqName)
       }
       .map { clazz ->
