@@ -77,14 +77,12 @@ internal fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
 
   // Look first if it's a Kotlin annotation. These annotations are usually not imported and the
   // remaining checks would fail.
-  annotationEntries.firstOrNull { annotation ->
-    kotlinAnnotations
-      .any { kotlinAnnotationFqName ->
-        val text = annotation.text
-        text.startsWith("@${kotlinAnnotationFqName.shortName()}") ||
-          text.startsWith("@$kotlinAnnotationFqName")
-      }
-  }?.let { return it }
+  if (fqName in kotlinAnnotations) {
+    annotationEntries.firstOrNull { annotation ->
+      val text = annotation.text
+      text.startsWith("@${fqName.shortName()}") || text.startsWith("@$fqName")
+    }?.let { return it }
+  }
 
   // Check if the fully qualified name is used, e.g. `@dagger.Module`.
   val annotationEntry = annotationEntries.firstOrNull {

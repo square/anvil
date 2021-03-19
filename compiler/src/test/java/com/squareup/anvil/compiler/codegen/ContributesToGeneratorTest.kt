@@ -61,6 +61,28 @@ class ContributesToGeneratorTest {
     }
   }
 
+  @Test fun `a file can contain an internal class`() {
+    // There was a bug that triggered a failure. Make sure that it doesn't happen again.
+    // https://github.com/square/anvil/issues/232
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesTo
+
+      @ContributesTo(Any::class)
+      @dagger.Module
+      abstract class DaggerModule1
+      
+      @PublishedApi
+      internal class FailAnvil
+      """
+    ) {
+      assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
+      assertThat(daggerModule1.hintContributesScope).isEqualTo(Any::class)
+    }
+  }
+
   @Test fun `there is a hint for contributed interfaces`() {
     compile(
       """
