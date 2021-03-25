@@ -340,7 +340,7 @@ class BindingModuleGeneratorTest(
     }
   }
 
-  @Test fun `a Dagger module is generated for a merged class and added to the component without a package`() { // ktlint-disable max-line-length
+  @Test fun `a Dagger module is generated for a merged class and added to the component without a package`() {
     compile(
       """
       $import
