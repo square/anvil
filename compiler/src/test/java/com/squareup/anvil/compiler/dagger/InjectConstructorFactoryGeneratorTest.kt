@@ -686,7 +686,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   }
 
   @Test
-  fun `a factory class is generated for a class injecting a class starting with a lowercase character`() { // ktlint-disable max-line-length
+  fun `a factory class is generated for a class injecting a class starting with a lowercase character`() {
     /*
 package com.squareup.test;
 

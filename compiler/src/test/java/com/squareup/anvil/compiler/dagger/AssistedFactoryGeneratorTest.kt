@@ -739,7 +739,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
-  @Test fun `a different order for the parameters of the factory function is allowed for parameters`() { // ktlint-disable max-line-length
+  @Test fun `a different order for the parameters of the factory function is allowed for parameters`() {
     compile(
       """
       package com.squareup.test
@@ -788,7 +788,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   }
 
   @Test
-  fun `a different order for the parameters of the factory function is allowed for generic types`() { // ktlint-disable max-line-length
+  fun `a different order for the parameters of the factory function is allowed for generic types`() {
     compile(
       """
       package com.squareup.test
@@ -829,7 +829,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
-  @Test fun `a different order for the parameters of the factory function is allowed for type parameters`() { // ktlint-disable max-line-length
+  @Test fun `a different order for the parameters of the factory function is allowed for type parameters`() {
     compile(
       """
       package com.squareup.test

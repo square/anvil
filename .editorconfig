@@ -9,7 +9,7 @@
 #
 # Some keys were manually changed:
 #   * insert_final_newline (is false, changed to true, expected by KtLint)
-#   * kotlin_imports_layout (see comment below, needed for KtLint)
+#   * ktlint_ignore_back_ticked_identifier (enabled, see comment below)
 #   * root (see comment below)
 
 # Tells tools to stop searching upwards.
@@ -30,10 +30,9 @@ ij_formatter_tags_enabled = false
 ij_smart_tabs = false
 ij_wrap_on_typing = false
 
-# This config is needed for KtLint. It configures the import rule order to use IntelliJ IDEA's
-# default style, see also:
-# https://github.com/pinterest/ktlint#custom-ktlint-specific-editorconfig-properties
-kotlin_imports_layout=idea
+# Back-ticked method names are allowed to exceed the line length. That's especially helpful for
+# test methods with descriptive names.
+ktlint_ignore_back_ticked_identifier=true
 
 [*.java]
 ij_java_align_consecutive_assignments = false

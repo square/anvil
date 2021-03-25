@@ -79,6 +79,10 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   }
 }
 
+ktlint {
+  version = rootProject.ext.ktlintVersion
+}
+
 dependencies {
   implementation deps.kotlin.gradle_plugin
   implementation deps.kotlin.gradle_plugin_api

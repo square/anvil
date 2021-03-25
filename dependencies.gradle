@@ -13,12 +13,14 @@ ext {
   generateDaggerFactoriesWithAnvil = (project.hasProperty('square.generateDaggerFactoriesWithAnvil') ?
       project.getProperty('square.generateDaggerFactoriesWithAnvil') : 'true').toBoolean()
 
+  ktlintVersion = "0.41.0"
+
   deps = [
-      android_gradle_plugin: "com.android.tools.build:gradle:4.0.1",
+      android_gradle_plugin: "com.android.tools.build:gradle:4.1.0",
       anvil_plugin: "com.squareup.anvil:gradle-plugin:${findProperty('VERSION_NAME')}",
       maven_publishing_plugin: "com.vanniktech:gradle-maven-publish-plugin:0.11.1",
       gradle_publishing_plugin: "com.gradle.publish:plugin-publish-plugin:0.12.0",
-      ktlint_plugin: "org.jlleitschuh.gradle:ktlint-gradle:9.4.1",
+      ktlint_plugin: "org.jlleitschuh.gradle:ktlint-gradle:10.0.0",
 
       androidx: [
           appcompat: "androidx.appcompat:appcompat:1.1.0",
