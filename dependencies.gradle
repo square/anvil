@@ -2,7 +2,7 @@ ext {
   ci = (System.getenv('CI') ?: 'false').toBoolean()
 
   autoServiceVersion = '1.0-rc7'
-  daggerVersion = '2.33'
+  daggerVersion = '2.34'
   espressoVersion = '3.2.0'
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
       project.getProperty('square.kotlinVersion') : '1.4.31'
