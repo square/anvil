@@ -7,13 +7,6 @@ buildscript {
     google()
     gradlePluginPortal()
     mavenCentral()
-    jcenter()
-    maven {
-      url "https://dl.bintray.com/kotlin/kotlin-eap"
-    }
-    maven {
-      url "http://dl.bintray.com/kotlin/kotlin-dev"
-    }
   }
 
   dependencies {
@@ -27,13 +20,6 @@ buildscript {
 repositories {
   google()
   mavenCentral()
-  jcenter()
-  maven {
-    url "https://dl.bintray.com/kotlin/kotlin-eap"
-  }
-  maven {
-    url "http://dl.bintray.com/kotlin/kotlin-dev"
-  }
 }
 
 apply from: rootProject.file('copy_properties.gradle')
