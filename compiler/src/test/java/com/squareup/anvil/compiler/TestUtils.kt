@@ -201,7 +201,7 @@ internal fun Class<*>.membersInjector(): Class<*> {
   )
 }
 
-private fun Class<*>.packageName(): String = `package`.name.let {
+private fun Class<*>.packageName(): String = (`package`?.name ?: "").let {
   if (it.isBlank()) "" else "$it."
 }
 
@@ -258,3 +258,11 @@ internal fun Any.invokeGet(vararg args: Any?): Any {
 @Suppress("UNCHECKED_CAST")
 internal fun <T> Annotation.getValue(): T =
   this::class.java.declaredMethods.single { it.name == "value" }.invoke(this) as T
+
+// Standardizes the string representation of an Annotation, accounting for differences
+// in JDK implementations.
+internal fun Annotation.toCanonicalString(): String {
+  return toString()
+    .replace("""(=int)(?!.class)\b""".toRegex(), "=int.class")
+    .replace("""(=class java.lang.String)\b""".toRegex(), "=java.lang.String.class")
+}

@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.componentInterfaceAnvilModule
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.isAbstract
 import com.squareup.anvil.compiler.parentInterface
+import com.squareup.anvil.compiler.toCanonicalString
 import dagger.Binds
 import dagger.Provides
 import dagger.multibindings.IntoSet
@@ -245,7 +246,7 @@ class BindingModuleQualifierTest(
           .containsExactly(Binds::class, anyQualifier.kotlin)
 
         val qualifierAnnotation = annotations.single { it.annotationClass == anyQualifier.kotlin }
-        assertThat(qualifierAnnotation.toString())
+        assertThat(qualifierAnnotation.toCanonicalString())
           .isEqualTo("@com.squareup.test.AnyQualifier(abc=int.class)")
       }
     }
@@ -335,7 +336,7 @@ class BindingModuleQualifierTest(
           .containsExactly(Binds::class, anyQualifier.kotlin)
 
         val qualifierAnnotation = annotations.single { it.annotationClass == anyQualifier.kotlin }
-        assertThat(qualifierAnnotation.toString())
+        assertThat(qualifierAnnotation.toCanonicalString())
           .isEqualTo("@com.squareup.test.AnyQualifier(abc=java.lang.String.class, def=1)")
       }
     }
