@@ -1,7 +1,7 @@
 ext {
   ci = (System.getenv('CI') ?: 'false').toBoolean()
 
-  autoServiceVersion = '1.0-rc7'
+  autoServiceVersion = '1.0'
   daggerVersion = '2.34'
   espressoVersion = '3.2.0'
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
@@ -67,8 +67,8 @@ ext {
           test: "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion",
       ],
 
-      kotlinpoet: "com.squareup:kotlinpoet:1.7.2",
+      kotlinpoet: "com.squareup:kotlinpoet:1.8.0",
 
-      truth: "com.google.truth:truth:1.0.1",
+      truth: "com.google.truth:truth:1.1.2",
   ]
 }
