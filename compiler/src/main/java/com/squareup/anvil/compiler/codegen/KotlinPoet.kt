@@ -311,6 +311,20 @@ internal fun <T : KtCallableDeclaration> TypeName.withJvmSuppressWildcardsIfNeed
   }
 }
 
+/**
+ * Converts the parameter list to comma separated argument list that can be used to call other
+ * functions, e.g.
+ * ```
+ * [param0: String, param1: Int] -> "param0, param1"
+ * ```
+ * [asProvider] allows you to decide if each parameter is wrapped in a `Provider` interface. If
+ * true, then the `get()` function will be called for the provider parameter. If false, then
+ * then always only the parameter name will used in the argument list:
+ * ```
+ * "param0.get()" vs "param0"
+ * ```
+ * Set [includeModule] to true if a Dagger module instance is part of the argument list.
+ */
 internal fun List<Parameter>.asArgumentList(
   asProvider: Boolean,
   includeModule: Boolean
@@ -321,8 +335,12 @@ internal fun List<Parameter>.asArgumentList(
         list.map { parameter ->
           when {
             parameter.isWrappedInProvider -> parameter.name
-            parameter.isWrappedInLazy ->
-              "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
+            // Normally Dagger changes Lazy<Type> parameters to a Provider<Type> (usually the
+            // container is a joined type), therefore we use `.lazy(..)` to convert the Provider
+            // to a Lazy. Assisted parameters behave differently and the Lazy type is not changed
+            // to a Provider and we can simply use the parameter name in the argument list.
+            parameter.isWrappedInLazy && parameter.isAssisted -> parameter.name
+            parameter.isWrappedInLazy -> "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
             parameter.isAssisted -> parameter.name
             else -> "${parameter.name}.get()"
           }
