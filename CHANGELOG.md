@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.1 (2021-04-09)
+
+* Fix problematic check for Kotlin annotations, see #232.
+* Handle Lazy assisted parameters properly in generated assisted factories.  
+* Build and test Anvil with Kotlin 1.5.0-M2 in CI.
+
 ## 2.2.0 (2021-03-17)
 
 * `@ContributesBinding` supports qualifiers now, see the README and documentation for examples.
