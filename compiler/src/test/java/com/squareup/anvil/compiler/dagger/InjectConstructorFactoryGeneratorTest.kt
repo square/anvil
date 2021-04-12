@@ -863,7 +863,8 @@ public class InjectClass_Factory(
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-        .invoke(null,
+        .invoke(
+          null,
           Provider { "a" },
           Provider { 1 },
           Provider { "stringLazy" },
