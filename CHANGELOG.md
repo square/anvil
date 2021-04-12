@@ -1,5 +1,10 @@
 # Changelog
 
+## 2.2.2 (next)
+
+* Handle inner generic classes in factories for constructor injection properly, see #244.
+* Generate a correct factory when a class has both constructor and member injection, see #246.
+
 ## 2.2.1 (2021-04-09)
 
 * Fix problematic check for Kotlin annotations, see #232.
