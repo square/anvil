@@ -12,7 +12,8 @@ def generateBuildProperties = project.tasks.register('generateBuildProperties') 
   def version = project.findProperty('VERSION_NAME')
   def group = project.findProperty('GROUP')
 
-  File buildPropertiesFile = new File(new File(project.buildDir, generatedDirPath), 'BuildProperties.kt')
+  File buildPropertiesFile =
+      new File(new File(project.buildDir, generatedDirPath), 'BuildProperties.kt')
 
   inputs.property 'version', version
   inputs.property 'group', group
@@ -32,4 +33,15 @@ def generateBuildProperties = project.tasks.register('generateBuildProperties') 
 
 compileKotlin {
   dependsOn generateBuildProperties
+}
+
+// Add the task dependencies to enforce correct ordering when depending out outputs. Requires a
+// afterEvaluate block, because sourcesJar seems to be registered in a later lifecycle.
+afterEvaluate {
+  tasks.named('sourcesJar').configure {
+    it.dependsOn(generateBuildProperties)
+  }
+  tasks.named('dokkaHtml').configure {
+    it.dependsOn(generateBuildProperties)
+  }
 }
