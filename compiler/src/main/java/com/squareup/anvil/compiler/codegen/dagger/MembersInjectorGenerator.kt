@@ -9,13 +9,12 @@ import com.squareup.anvil.compiler.codegen.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.isGenericClass
 import com.squareup.anvil.compiler.codegen.mapToParameter
+import com.squareup.anvil.compiler.codegen.memberInjectFunctionName
+import com.squareup.anvil.compiler.codegen.memberInjectorClassName
 import com.squareup.anvil.compiler.codegen.requireFqName
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
-import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.injectFqName
-import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
@@ -68,8 +67,9 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
     clazz: KtClassOrObject,
     injectProperties: List<KtProperty>
   ): GeneratedFile {
-    val packageName = clazz.containingKtFile.packageFqName.safePackageString()
-    val className = "${clazz.generateClassName()}_MembersInjector"
+    val memberInjectorClass = clazz.memberInjectorClassName()
+    val packageName = memberInjectorClass.packageName
+    val className = memberInjectorClass.simpleName
     val classType = clazz.asClassName()
       .let {
         if (clazz.isGenericClass()) {
@@ -89,8 +89,6 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
         }
         .joinToString()
     }
-
-    val memberInjectorClass = ClassName(packageName, className)
 
     val content = FileSpec.buildFile(packageName, className) {
       addType(
@@ -124,18 +122,16 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
               .apply {
                 parameters.forEachIndexed { index, parameter ->
                   val property = injectProperties[index]
-                  val propertyName = property.nameAsSafeName.asString()
+                  val functionName = property.memberInjectFunctionName()
 
-                  addStatement(
-                    "inject${propertyName.capitalize(US)}(instance, ${
-                    when {
-                      parameter.isWrappedInProvider -> parameter.name
-                      parameter.isWrappedInLazy ->
-                        "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
-                      else -> parameter.name + ".get()"
-                    }
-                    })"
-                  )
+                  val param = when {
+                    parameter.isWrappedInProvider -> parameter.name
+                    parameter.isWrappedInLazy ->
+                      "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
+                    else -> parameter.name + ".get()"
+                  }
+
+                  addStatement("$functionName(instance, $param)")
                 }
               }
               .build()

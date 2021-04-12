@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.classDescriptorForType
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
+import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import com.squareup.anvil.compiler.providerFqName
 import com.squareup.anvil.compiler.requireClass
@@ -38,6 +39,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNullableType
 import org.jetbrains.kotlin.psi.KtProjectionKind
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeElement
@@ -53,6 +55,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import java.io.ByteArrayOutputStream
+import java.util.*
 import javax.inject.Provider
 
 internal fun KtClassOrObject.asClassName(): ClassName =
@@ -357,6 +360,17 @@ internal fun List<Parameter>.asArgumentList(
       }
     }
     .joinToString()
+}
+
+internal fun KtClassOrObject.memberInjectorClassName(): ClassName {
+  val packageName = containingKtFile.packageFqName.safePackageString()
+  val className = "${generateClassName()}_MembersInjector"
+  return ClassName(packageName, className)
+}
+
+internal fun KtProperty.memberInjectFunctionName(): String {
+  val propertyName = nameAsSafeName.asString()
+  return "inject${propertyName.capitalize(Locale.US)}"
 }
 
 private fun TypeName.wrapInProvider(): ParameterizedTypeName {

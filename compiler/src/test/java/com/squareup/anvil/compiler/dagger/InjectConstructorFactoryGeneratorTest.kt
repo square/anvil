@@ -686,6 +686,203 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   }
 
   @Test
+  fun `a factory class is generated for a class with constructor and member injection`() {
+    /*
+import dagger.`internal`.Factory
+import javax.inject.Provider
+import kotlin.String
+import kotlin.Suppress
+import kotlin.jvm.JvmStatic
+import kotlin.jvm.JvmSuppressWildcards
+
+public class InjectClass_Factory(
+  private val param0: Provider<String>,
+  private val param1: Provider<@JvmSuppressWildcards Int>
+) : Factory<InjectClass> {
+  public override fun `get`(): InjectClass {
+    val instance = newInstance(param0.get())
+    InjectClass_MembersInjector.injectIntProvider(instance, param1)
+    return instance
+  }
+
+  public companion object {
+    @JvmStatic
+    public fun create(param0: Provider<String>, param1: Provider<@JvmSuppressWildcards Int>):
+        InjectClass_Factory = InjectClass_Factory(param0, param1)
+
+    @JvmStatic
+    public fun newInstance(param0: String): InjectClass = InjectClass(param0)
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      import javax.inject.Provider
+
+      class InjectClass @Inject constructor(
+        val string: String
+      ) {
+      
+        @Inject lateinit var intProvider: Provider<Int>
+        
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (other !is InjectClass) return false
+      
+          if (string != other.string) return false
+          if (intProvider.get() != other.intProvider.get()) return false
+      
+          return true
+        }
+      
+        override fun hashCode(): Int {
+          var result = string.hashCode()
+          result = 31 * result + intProvider.get().hashCode()
+          return result
+        }
+      }
+      """
+    ) {
+
+      val factoryClass = injectClass.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java, Provider::class.java)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { "a" }, Provider { 1 })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, "a")
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
+
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
+    }
+  }
+
+  @Test
+  fun `a factory class is generated which injects members when calling get`() {
+    /*
+import dagger.`internal`.Factory
+import javax.inject.Provider
+import kotlin.Int
+import kotlin.String
+import kotlin.Suppress
+import kotlin.jvm.JvmStatic
+import kotlin.jvm.JvmSuppressWildcards
+
+public class InjectClass_Factory(
+  private val param0: Provider<String>,
+  private val param1: Provider<@JvmSuppressWildcards Int>,
+  private val param2: Provider<String>,
+  private val param3: Provider<String>
+) : Factory<InjectClass> {
+  public override fun `get`(): InjectClass {
+    val instance = newInstance(param0.get())
+    InjectClass_MembersInjector.injectIntProvider(instance, param1)
+    InjectClass_MembersInjector.injectStringLazy(instance, dagger.internal.DoubleCheck.lazy(param2))
+    InjectClass_MembersInjector.injectOtherString(instance, param3.get())
+    return instance
+  }
+
+  public companion object {
+    @JvmStatic
+    public fun create(
+      param0: Provider<String>,
+      param1: Provider<@JvmSuppressWildcards Int>,
+      param2: Provider<String>,
+      param3: Provider<String>
+    ): InjectClass_Factory = InjectClass_Factory(param0, param1, param2, param3)
+
+    @JvmStatic
+    public fun newInstance(param0: String): InjectClass = InjectClass(param0)
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      import javax.inject.Provider
+      
+      class InjectClass @Inject constructor(
+        val string: String
+      ) {
+      
+        @Inject lateinit var intProvider: Provider<Int>
+        @Inject lateinit var stringLazy: dagger.Lazy<String>
+        @Inject lateinit var otherString: String
+        
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (other !is InjectClass) return false
+      
+          if (string != other.string) return false
+          if (intProvider.get() != other.intProvider.get()) return false
+          if (stringLazy.get() != other.stringLazy.get()) return false
+          if (otherString != other.otherString) return false
+      
+          return true
+        }
+      
+        override fun hashCode(): Int {
+          var result = string.hashCode()
+          result = 31 * result + intProvider.get().hashCode()
+          result = 31 * result + stringLazy.get().hashCode()
+          result = 31 * result + otherString.hashCode()
+          return result
+        }
+      }
+      """
+    ) {
+
+      val factoryClass = injectClass.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null,
+          Provider { "a" },
+          Provider { 1 },
+          Provider { "stringLazy" },
+          Provider { "otherString" }
+        )
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, "a")
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
+
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
+    }
+  }
+
+  @Test
   fun `a factory class is generated for a class injecting a class starting with a lowercase character`() {
     /*
 package com.squareup.test;
