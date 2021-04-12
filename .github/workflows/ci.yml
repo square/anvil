@@ -133,6 +133,21 @@ jobs:
           name: lint-results
           path: ./**/build/reports/lint-results.html
 
+  publish:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: gradle/wrapper-validation-action@v1
+      - name: Set up JDK 11.0.10
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11.0.10
+
+      - name: Publish to Maven Local
+        run: ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd gradle-plugin && ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd ..
+
   build-gradle-plugin:
     runs-on: ubuntu-latest
     defaults:
