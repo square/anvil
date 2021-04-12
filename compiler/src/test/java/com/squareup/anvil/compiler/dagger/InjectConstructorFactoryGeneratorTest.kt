@@ -743,6 +743,104 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   }
 
   @Test
+  fun `a factory class is generated for a class injecting an inner class with a generic type parameter`() {
+    /*
+package com.squareup.test
+
+import com.squareup.test.Other.Inner
+import dagger.`internal`.Factory
+import javax.inject.Provider
+import kotlin.String
+import kotlin.Suppress
+import kotlin.jvm.JvmStatic
+
+public class InjectClass_Factory(
+  private val param0: Provider<Inner<String>>
+) : Factory<InjectClass> {
+  public override fun `get`(): InjectClass = newInstance(param0.get())
+
+  public companion object {
+    @JvmStatic
+    public fun create(param0: Provider<Inner<String>>): InjectClass_Factory =
+        InjectClass_Factory(param0)
+
+    @JvmStatic
+    public fun newInstance(param0: Inner<String>): InjectClass = InjectClass(param0)
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      
+      class Other {
+        class Inner<T>
+      }
+      
+      class InjectClass @Inject constructor(
+        val inner: Other.Inner<String>
+      )
+      """
+    ) {
+      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+    }
+  }
+
+  @Test
+  fun `a factory class is generated for a class injecting a deeply nested inner class with a generic type parameter`() {
+    /*
+package com.squareup.test
+
+import com.squareup.test.Other.Middle.Inner
+import dagger.`internal`.Factory
+import javax.inject.Provider
+import kotlin.String
+import kotlin.Suppress
+import kotlin.jvm.JvmStatic
+
+public class InjectClass_Factory(
+  private val param0: Provider<Inner<String>>
+) : Factory<InjectClass> {
+  public override fun `get`(): InjectClass = newInstance(param0.get())
+
+  public companion object {
+    @JvmStatic
+    public fun create(param0: Provider<Inner<String>>): InjectClass_Factory =
+        InjectClass_Factory(param0)
+
+    @JvmStatic
+    public fun newInstance(param0: Inner<String>): InjectClass = InjectClass(param0)
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      
+      class Other {
+        class Middle {
+          class Inner<T>
+        }
+      }
+      
+      class InjectClass @Inject constructor(
+        val inner: Other.Middle.Inner<String>
+      )
+      """
+    ) {
+      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+    }
+  }
+
+  @Test
   fun `a factory class is generated for an inner class starting with a lowercase character`() {
     /*
 package com.squareup.test;
