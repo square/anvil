@@ -1,3 +1,5 @@
+import org.gradle.util.VersionNumber
+
 ext {
   ci = (System.getenv('CI') ?: 'false').toBoolean()
 
@@ -12,6 +14,8 @@ ext {
 
   generateDaggerFactoriesWithAnvil = (project.hasProperty('square.generateDaggerFactoriesWithAnvil') ?
       project.getProperty('square.generateDaggerFactoriesWithAnvil') : 'true').toBoolean()
+  allWarningsAsErrors = ci &&
+      VersionNumber.parse(kotlinVersion).baseVersion < VersionNumber.parse("1.5.0").baseVersion
 
   ktlintVersion = "0.41.0"
 
