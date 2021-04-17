@@ -219,7 +219,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
           )
         }
         .addFunction(
-          FunSpec.builder("create")
+          FunSpec.builder(function.name.asString())
             .addModifiers(OVERRIDE)
             .returns(returnType.asClassName().parameterized())
             .apply {
