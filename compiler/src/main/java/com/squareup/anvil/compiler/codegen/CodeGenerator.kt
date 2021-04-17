@@ -55,10 +55,7 @@ internal fun CodeGenerator.createGeneratedFile(
   check(file.parentFile.exists() || file.parentFile.mkdirs()) {
     "Could not generate package directory: ${file.parentFile}"
   }
-  file.writeText(
-    content
-      .also(::println)
-  )
+  file.writeText(content)
 
   return GeneratedFile(file, content)
 }
