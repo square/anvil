@@ -16,6 +16,7 @@ import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.Assis
 import com.squareup.anvil.compiler.codegen.fqNameOrNull
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.requireClassDescriptor
+import com.squareup.anvil.compiler.codegen.typeVariableNames
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.ClassName
@@ -172,17 +173,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     val className = "${clazz.generateClassName()}_Impl"
     val implClass = ClassName(packageName, className)
 
-    val typeParameters = clazz.typeParameterList
-      ?.parameters
-      ?.mapNotNull { parameter ->
-        val extendsBound = parameter.extendsBound?.fqNameOrNull(module)?.asClassName(module)
-        if (parameter.fqNameOrNull(module) == null) {
-          TypeVariableName(parameter.nameAsSafeName.asString(), listOfNotNull(extendsBound))
-        } else {
-          null
-        }
-      }
-      ?: emptyList()
+    val typeParameters = clazz.typeVariableNames(module)
 
     fun ClassName.parameterized(): TypeName {
       return if (typeParameters.isEmpty()) this else parameterizedBy(typeParameters)
