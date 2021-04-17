@@ -309,6 +309,70 @@ public final class AssistedService_Factory {
     }
   }
 
+  @Test fun `a factory class is generated with one generic parameter bound by a generic`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService<T : List<String>> @AssistedInject constructor(
+        val int: Int,
+        @Assisted val strings: T
+      )
+      """
+    ) {
+      val factoryClass = assistedService.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(2)
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { 5 })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, 5, listOf("Hello"))
+
+      assertThat(factoryInstance.invokeGet(listOf("Hello"))).isEqualTo(newInstance)
+    }
+  }
+
+  @Test fun `a factory class is generated with one generic parameter bound with a where clause`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService<T> @AssistedInject constructor(
+        val int: Int,
+        @Assisted val stringBuilder : T
+      ) where T : Appendable, T : CharSequence
+      """
+    ) {
+      val factoryClass = assistedService.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(2)
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { 5 })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, 5, StringBuilder())
+    }
+  }
+
   @Test fun `a factory class is generated with two generic parameters`() {
     compile(
       """
