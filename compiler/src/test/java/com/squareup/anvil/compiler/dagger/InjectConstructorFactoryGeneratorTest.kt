@@ -1761,7 +1761,7 @@ public class InjectClass_Factory<T, R : Set<String>>(
     }
   }
 
-  @Test fun `a factory class is generated for a generic class with a where clause and abstract class bound`() {
+  @Test fun `a factory class is generated for a generic class with a where clause with a class bound`() {
     /*
 package com.squareup.test
 
@@ -1789,6 +1789,10 @@ public class InjectClass_Factory<T>(
 }
      */
 
+    // KotlinPoet will automatically add a bound of `Any?` if creating a `TypeVariableName` with an
+    // empty list.  So, improperly handling `TypeVariableName` can result in a constraint like:
+    // `where T : Any?, T : Appendable, T : Other`
+    // This won't compile since a type can only have one bound which is a class.
     compile(
       """
       package com.squareup.test
