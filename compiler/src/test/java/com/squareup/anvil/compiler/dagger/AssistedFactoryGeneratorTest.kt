@@ -178,6 +178,48 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
+  @Test fun `the implementation function name matches the factory name`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService @AssistedInject constructor(
+        val int: Int,
+        @Assisted val string: String
+      )
+      
+      interface AssistedServiceFactorySuper {
+        fun hephaestus(string: String): AssistedService
+      }
+      
+      @AssistedFactory
+      interface AssistedServiceFactory : AssistedServiceFactorySuper
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "hephaestus" }
+        .invoke(factoryImplInstance, "Hello")
+
+      assertThat(assistedServiceInstance).isEqualTo(assistedService.createInstance(5, "Hello"))
+    }
+  }
+
   @Test fun `an abstract class is supported`() {
     compile(
       """
