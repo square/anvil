@@ -451,6 +451,106 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
     }
   }
 
+  @Test fun `an implementation for a factory class with a type parameter bound by a generic`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService<T : List<String>> @AssistedInject constructor(
+        val int: Int,
+        @Assisted val strings: T
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory<T : List<String>> {
+        fun create(strings: T): AssistedService<T>
+      }
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, listOf("Hello"))
+
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.createInstance(
+          5,
+          listOf("Hello")
+        )
+      )
+    }
+  }
+
+  @Test fun `an implementation for a factory class with a type parameter bound by a where clause`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService<T> @AssistedInject constructor(
+        val int: Int,
+        @Assisted val stringBuilder: T
+      ) where T : Appendable, T : CharSequence {
+        override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (other !is AssistedService<*>) return false
+    
+            if (int != other.int) return false
+            if (stringBuilder.toString() != other.stringBuilder.toString()) return false
+    
+            return true
+        }
+      }
+      
+      @AssistedFactory
+      interface AssistedServiceFactory<T> where T : Appendable, T : CharSequence {
+        fun create(stringBuilder: T): AssistedService<T>
+      }
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, StringBuilder("Hello"))
+
+      assertThat(assistedServiceInstance).isEqualTo(
+        assistedService.createInstance(
+          5,
+          StringBuilder("Hello")
+        )
+      )
+    }
+  }
+
   @Test fun `an implementation for an inner factory class is generated`() {
     compile(
       """

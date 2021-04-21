@@ -10,9 +10,9 @@ import com.squareup.anvil.compiler.codegen.asClassName
 import com.squareup.anvil.compiler.codegen.buildFile
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.createGeneratedFile
-import com.squareup.anvil.compiler.codegen.fqNameOrNull
 import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.codegen.mapToParameter
+import com.squareup.anvil.compiler.codegen.typeVariableNames
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.ClassName
@@ -22,7 +22,6 @@ import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -73,17 +72,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
 
     checkAssistedParametersAreDistinct(clazz, parametersAssisted)
 
-    val typeParameters = clazz.typeParameterList
-      ?.parameters
-      ?.mapNotNull { parameter ->
-        val extendsBound = parameter.extendsBound?.fqNameOrNull(module)?.asClassName(module)
-        if (parameter.fqNameOrNull(module) == null) {
-          TypeVariableName(parameter.nameAsSafeName.asString(), listOfNotNull(extendsBound))
-        } else {
-          null
-        }
-      }
-      ?: emptyList()
+    val typeParameters = clazz.typeVariableNames(module)
 
     val factoryClass = ClassName(packageName, className)
     val factoryClassParameterized =

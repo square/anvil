@@ -7,10 +7,10 @@ import com.squareup.anvil.compiler.codegen.asClassName
 import com.squareup.anvil.compiler.codegen.buildFile
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.createGeneratedFile
-import com.squareup.anvil.compiler.codegen.fqNameOrNull
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.codegen.mapToParameter
+import com.squareup.anvil.compiler.codegen.typeVariableNames
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.injectFqName
@@ -23,7 +23,6 @@ import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.internal.Factory
@@ -81,17 +80,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     val constructorInjectParameters = parameters.take(constructorSize)
     val memberInjectParameters = parameters.drop(constructorSize)
 
-    val typeParameters = clazz.typeParameterList
-      ?.parameters
-      ?.mapNotNull { parameter ->
-        val extendsBound = parameter.extendsBound?.fqNameOrNull(module)?.asClassName(module)
-        if (parameter.fqNameOrNull(module) == null) {
-          TypeVariableName(parameter.nameAsSafeName.asString(), listOfNotNull(extendsBound))
-        } else {
-          null
-        }
-      }
-      ?: emptyList()
+    val typeParameters = clazz.typeVariableNames(module)
 
     val factoryClass = ClassName(packageName, className)
     val factoryClassParameterized =

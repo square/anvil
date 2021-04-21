@@ -1608,6 +1608,290 @@ public final class InjectClass_Factory<T extends CharSequence> implements Factor
     }
   }
 
+  @Test fun `a factory class is generated for a generic class with a where clause`() {
+    /*
+package com.squareup.test
+
+import dagger.`internal`.Factory
+import java.lang.Appendable
+import javax.inject.Provider
+import kotlin.CharSequence
+import kotlin.Suppress
+import kotlin.jvm.JvmStatic
+
+public class InjectClass_Factory<T>(
+  private val param0: Provider<T>
+) : Factory<InjectClass<T>> where T : Appendable, T : CharSequence {
+  public override fun `get`(): InjectClass<T> = newInstance(param0.get())
+
+  public companion object {
+    @JvmStatic
+    public fun <T> create(param0: Provider<T>): InjectClass_Factory<T> where T : Appendable, T :
+        CharSequence = InjectClass_Factory<T>(param0)
+
+    @JvmStatic
+    public fun <T> newInstance(param0: T): InjectClass<T> where T : Appendable, T : CharSequence =
+        InjectClass<T>(param0)
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      import javax.inject.Provider
+      
+      class InjectClass<T> @Inject constructor(
+        private val t: T
+      ) where T : Appendable, T : CharSequence
+      """
+    ) {
+
+      val factoryClass = injectClass.factoryClass()
+
+      val typeParams = factoryClass.typeParameters
+        .associate { param ->
+          param.name to param.bounds.map { it.typeName }
+        }
+
+      assertThat(typeParams)
+        .containsExactly("T", listOf("java.lang.Appendable", "java.lang.CharSequence"))
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { StringBuilder() })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val instance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, StringBuilder())
+
+      assertThat(instance).isNotNull()
+      assertThat((factoryInstance as Factory<*>).get()).isNotNull()
+    }
+  }
+
+  @Test fun `a factory class is generated for a generic class with two type parameters and a where clause`() {
+    /*
+package com.squareup.test
+
+import dagger.Lazy
+import dagger.`internal`.Factory
+import java.lang.Appendable
+import javax.inject.Provider
+import kotlin.CharSequence
+import kotlin.String
+import kotlin.Suppress
+import kotlin.collections.Set
+import kotlin.jvm.JvmStatic
+import kotlin.jvm.JvmSuppressWildcards
+
+public class InjectClass_Factory<T, R : Set<String>>(
+  private val param0: Provider<T>,
+  private val param1: Provider<@JvmSuppressWildcards R>
+) : Factory<InjectClass<T, R>> where T : Appendable, T : CharSequence {
+  public override fun `get`(): InjectClass<T, R> = newInstance(param0.get(),
+      dagger.internal.DoubleCheck.lazy(param1))
+
+  public companion object {
+    @JvmStatic
+    public fun <T, R : Set<String>> create(param0: Provider<T>,
+        param1: Provider<@JvmSuppressWildcards R>): InjectClass_Factory<T, R> where T : Appendable,
+        T : CharSequence = InjectClass_Factory<T, R>(param0, param1)
+
+    @JvmStatic
+    public fun <T, R : Set<String>> newInstance(param0: T, param1: Lazy<@JvmSuppressWildcards R>):
+        InjectClass<T, R> where T : Appendable, T : CharSequence = InjectClass<T, R>(param0, param1)
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Lazy
+      import javax.inject.Inject
+      import javax.inject.Provider
+      
+      class InjectClass<T, R : Set<String>> @Inject constructor(
+        private val t: T,
+        private val r: Lazy<R>
+      ) where T : Appendable, T : CharSequence
+      """
+    ) {
+
+      val factoryClass = injectClass.factoryClass()
+
+      val typeParams = factoryClass.typeParameters
+        .associate { param ->
+          param.name to param.bounds.map { it.typeName }
+        }
+
+      assertThat(typeParams)
+        .containsExactly(
+          "T", listOf("java.lang.Appendable", "java.lang.CharSequence"),
+          "R", listOf("java.util.Set<? extends java.lang.String>")
+        )
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { StringBuilder() }, Provider { mutableSetOf<String>() })
+
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val instance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, StringBuilder(), Lazy { mutableSetOf<String>() })
+
+      assertThat(instance).isNotNull()
+      assertThat((factoryInstance as Factory<*>).get()).isNotNull()
+    }
+  }
+
+  @Test fun `a factory class is generated for a generic class with a where clause with a class bound`() {
+    /*
+package com.squareup.test
+
+import com.squareup.test.Other
+import dagger.`internal`.Factory
+import java.lang.Appendable
+import javax.inject.Provider
+import kotlin.Suppress
+import kotlin.jvm.JvmStatic
+
+public class InjectClass_Factory<T>(
+  private val param0: Provider<T>
+) : Factory<InjectClass<T>> where T : Appendable, T : Other {
+  public override fun `get`(): InjectClass<T> = newInstance(param0.get())
+
+  public companion object {
+    @JvmStatic
+    public fun <T> create(param0: Provider<T>): InjectClass_Factory<T> where T : Appendable, T :
+        Other = InjectClass_Factory<T>(param0)
+
+    @JvmStatic
+    public fun <T> newInstance(param0: T): InjectClass<T> where T : Appendable, T : Other =
+        InjectClass<T>(param0)
+  }
+}
+     */
+
+    // KotlinPoet will automatically add a bound of `Any?` if creating a `TypeVariableName` with an
+    // empty list.  So, improperly handling `TypeVariableName` can result in a constraint like:
+    // `where T : Any?, T : Appendable, T : Other`
+    // This won't compile since a type can only have one bound which is a class.
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      import javax.inject.Provider
+      
+      abstract class Other
+      
+      class InjectClass<T> @Inject constructor(
+        private val t: T
+      ) where T : Appendable, T : Other
+      """
+    ) {
+
+      val factoryClass = injectClass.factoryClass()
+
+      val typeParams = factoryClass.typeParameters
+        .associate { param ->
+          param.name to param.bounds.map { it.typeName }
+        }
+
+      assertThat(typeParams)
+        .containsExactly("T", listOf("com.squareup.test.Other", "java.lang.Appendable"))
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+    }
+  }
+
+  @Test fun `a factory class is generated for a type parameter which extends a generic`() {
+    /*
+package com.squareup.test
+
+import dagger.`internal`.Factory
+import javax.inject.Provider
+import kotlin.String
+import kotlin.Suppress
+import kotlin.collections.List
+import kotlin.jvm.JvmStatic
+
+public class InjectClass_Factory<T : List<String>>(
+  private val param0: Provider<T>
+) : Factory<InjectClass<T>> {
+  public override fun `get`(): InjectClass<T> = newInstance(param0.get())
+
+  public companion object {
+    @JvmStatic
+    public fun <T : List<String>> create(param0: Provider<T>): InjectClass_Factory<T> =
+        InjectClass_Factory<T>(param0)
+
+    @JvmStatic
+    public fun <T : List<String>> newInstance(param0: T): InjectClass<T> = InjectClass<T>(param0)
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      import javax.inject.Provider
+ 
+      class InjectClass<T : List<String>> @Inject constructor(
+        private val t: T
+      )
+      """
+    ) {
+
+      val factoryClass = injectClass.factoryClass()
+
+      val typeParams = factoryClass.typeParameters
+        .associate { param ->
+          param.name to param.bounds.map { it.typeName }
+        }
+
+      assertThat(typeParams)
+        .containsExactly("T", listOf("java.util.List<? extends java.lang.String>"))
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { listOf<String>() })
+
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val instance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, listOf<String>())
+
+      assertThat(instance).isNotNull()
+      assertThat((factoryInstance as Factory<*>).get()).isNotNull()
+    }
+  }
+
   @Test fun `a factory class is generated for an inject constructor without a package`() {
     compile(
       """
