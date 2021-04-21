@@ -8,7 +8,6 @@ import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import com.squareup.anvil.compiler.publishedApiFqName
 import com.squareup.anvil.compiler.safePackageString
-import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -48,7 +47,6 @@ import org.jetbrains.kotlin.psi.allConstructors
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.utils.addIfNotNull
 
 private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName, publishedApiFqName)
 
@@ -412,39 +410,33 @@ internal fun KtClassOrObject.typeVariableNames(
   // It's also technically possible to have one constraint in the type parameter spot, like this:
   // class MyClass<T : Any> where T : Set<*>, T : MutableCollection<*>
   // Merge both groups of type parameters in order to get the full list of bounds.
-  val boundsByVariableName = mutableMapOf<String, MutableList<TypeName>>()
-
-  typeParameterList
+  val boundsByVariableName = typeParameterList
     ?.parameters
-    ?.forEach { parameter ->
+    ?.filter { it.fqNameOrNull(module) == null }
+    ?.associateTo(mutableMapOf()) { parameter ->
+      val variableName = parameter.nameAsSafeName.asString()
+      val extendsBound = parameter.extendsBound?.requireTypeName(module)
 
-      if (parameter.fqNameOrNull(module) == null) {
-        val variableName = parameter.nameAsSafeName.asString()
-        val extendsBound = parameter.extendsBound?.requireTypeName(module)
-        boundsByVariableName
-          .getOrPut(variableName) { mutableListOf() }
-          .addIfNotNull(extendsBound)
-      }
-    }
+      variableName to mutableListOf(extendsBound)
+    } ?: mutableMapOf()
 
   typeConstraintList
     ?.constraints
+    ?.filter { it.fqNameOrNull(module) == null }
     ?.forEach { constraint ->
+      val variableName = constraint.subjectTypeParameterName
+        ?.getReferencedName()
+        ?: return@forEach
+      val extendsBound = constraint.boundTypeReference?.requireTypeName(module)
 
-      if (constraint.fqNameOrNull(module) == null) {
-        val variableName = constraint.subjectTypeParameterName
-          ?.getReferencedName()
-          ?: return@forEach
-        val extendsBound = constraint.boundTypeReference?.requireTypeName(module)
-        boundsByVariableName
-          .getOrPut(variableName) { mutableListOf() }
-          .addIfNotNull(extendsBound)
-      }
+      boundsByVariableName
+        .getValue(variableName)
+        .add(extendsBound)
     }
 
   return boundsByVariableName
     .map { (variableName, bounds) ->
-      TypeVariableName(variableName, bounds)
+      TypeVariableName(variableName, bounds.filterNotNull())
     }
 }
 
