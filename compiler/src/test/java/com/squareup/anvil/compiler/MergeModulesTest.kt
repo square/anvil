@@ -830,6 +830,30 @@ class MergeModulesTest {
     }
   }
 
+  @Test fun `inner contributed modules are merged`() {
+    // This code snippet used to trigger an error, see https://github.com/square/anvil/issues/256
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.compat.MergeModules
+      import com.squareup.anvil.annotations.ContributesBinding
+
+      interface BaseFactory
+
+      class Outer {
+        @ContributesBinding(Any::class)
+        object Factory : BaseFactory
+      }
+      
+      @MergeModules(Any::class)
+      class DaggerModule1
+      """
+    ) {
+      assertThat(daggerModule1AnvilModule.declaredMethods).hasLength(1)
+    }
+  }
+
   @Test fun `a module is not allowed to be included and excluded`() {
     compile(
       """

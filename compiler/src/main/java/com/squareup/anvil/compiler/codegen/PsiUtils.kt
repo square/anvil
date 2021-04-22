@@ -227,7 +227,14 @@ internal fun PsiElement.requireFqName(
 
   val classReference = when (this) {
     // If a fully qualified name is used, then we're done and don't need to do anything further.
-    is KtDotQualifiedExpression -> return FqName(text)
+    // An inner class reference like Abc.Inner is also considered a KtDotQualifiedExpression in
+    // some cases.
+    is KtDotQualifiedExpression -> {
+      module
+        .resolveClassByFqName(FqName(text), KotlinLookupLocation(this))
+        ?.let { return it.fqNameSafe }
+        ?: text
+    }
     is KtNameReferenceExpression -> getReferencedName()
     is KtUserType -> {
       val isGenericType = children.any { it is KtTypeArgumentList }
