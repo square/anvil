@@ -38,10 +38,16 @@ compileKotlin {
 // Add the task dependencies to enforce correct ordering when depending out outputs. Requires a
 // afterEvaluate block, because sourcesJar seems to be registered in a later lifecycle.
 afterEvaluate {
-  tasks.named('sourcesJar').configure {
-    it.dependsOn(generateBuildProperties)
-  }
-  tasks.named('dokkaHtml').configure {
-    it.dependsOn(generateBuildProperties)
+  def taskNames = [
+      'dokkaHtml',
+      'publishPluginJar',
+      'runKtlintCheckOverMainSourceSet',
+      'sourcesJar',
+  ]
+
+  taskNames.each { taskName ->
+    tasks.named(taskName).configure {
+      it.dependsOn(generateBuildProperties)
+    }
   }
 }
