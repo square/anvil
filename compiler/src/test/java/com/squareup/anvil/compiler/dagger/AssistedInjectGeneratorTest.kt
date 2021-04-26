@@ -368,7 +368,7 @@ public final class AssistedService_Factory {
         .invoke(null, Provider { 5 })
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-      val newInstance = staticMethods.single { it.name == "newInstance" }
+      staticMethods.single { it.name == "newInstance" }
         .invoke(null, 5, StringBuilder())
     }
   }

@@ -62,7 +62,7 @@ subprojects {
     kotlinOptions {
       jvmTarget = JavaVersion.VERSION_1_8
       useIR = rootProject.ext.kotlinUseIR
-      allWarningsAsErrors = rootProject.ext.allWarningsAsErrors
+      allWarningsAsErrors = rootProject.ext.makeWarningsErrors
     }
   }
 
