@@ -6,6 +6,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
+import com.squareup.anvil.compiler.internal.capitalize
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import com.tschuchort.compiletesting.PluginOption
@@ -17,7 +18,6 @@ import dagger.internal.codegen.ComponentProcessor
 import org.jetbrains.kotlin.config.JvmTarget
 import java.io.File
 import java.io.OutputStream
-import java.util.Locale
 import kotlin.reflect.KClass
 
 /**
@@ -106,7 +106,7 @@ public fun Class<*>.moduleFactoryClass(
 
   return classLoader.loadClass(
     "${packageName()}$enclosingClassString$simpleName$companionString" +
-      "_${providerMethodName.capitalize(Locale.US)}Factory"
+      "_${providerMethodName.capitalize()}Factory"
   )
 }
 

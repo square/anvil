@@ -166,3 +166,9 @@ public fun FqName.safePackageString(
     val suffix = if (dotSuffix) "." else ""
     "$prefix$this$suffix"
   }
+
+@ExperimentalAnvilApi
+public fun String.capitalize(): String = replaceFirstChar(Char::uppercaseChar)
+
+@ExperimentalAnvilApi
+public fun String.decapitalize(): String = replaceFirstChar(Char::lowercaseChar)

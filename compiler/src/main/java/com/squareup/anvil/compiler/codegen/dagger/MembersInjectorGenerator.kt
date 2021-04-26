@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
@@ -44,7 +45,6 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import java.io.File
-import java.util.Locale.US
 
 @AutoService(CodeGenerator::class)
 internal class MembersInjectorGenerator : PrivateCodeGenerator() {
@@ -157,7 +157,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                       "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
                     else -> parameter.name + ".get()"
                   }
-                  addStatement("inject${propertyName.capitalize(US)}(instance, $parameterString)")
+                  addStatement("inject${propertyName.capitalize()}(instance, $parameterString)")
                 }
               }
               .build()
@@ -187,7 +187,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                   val propertyName = property.nameAsSafeName.asString()
 
                   addFunction(
-                    FunSpec.builder("inject${propertyName.capitalize(US)}")
+                    FunSpec.builder("inject${propertyName.capitalize()}")
                       .jvmStatic()
                       .addAnnotation(
                         AnnotationSpec.builder(InjectedFieldSignature::class)

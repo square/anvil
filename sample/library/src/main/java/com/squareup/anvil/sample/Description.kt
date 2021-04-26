@@ -7,8 +7,8 @@ import java.util.Locale
 
 object Description {
   fun of(god: God): String {
-    val name = god.name.toLowerCase(Locale.US)
-      .capitalize(Locale.US)
+    val name = god.name.lowercase(Locale.US)
+      .replaceFirstChar(Char::uppercaseChar)
 
     val child = when (god.parent) {
       FATHER -> "son"

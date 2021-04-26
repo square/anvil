@@ -13,6 +13,7 @@ import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
@@ -37,7 +38,6 @@ import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import java.io.File
-import java.util.Locale.US
 
 @AutoService(CodeGenerator::class)
 internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
@@ -151,7 +151,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
 
                   val property = memberInjectProperties[index]
                   val propertyName = property.nameAsSafeName.asString()
-                  val functionName = "inject${propertyName.capitalize(US)}"
+                  val functionName = "inject${propertyName.capitalize()}"
 
                   val param = when {
                     parameter.isWrappedInProvider -> parameter.name

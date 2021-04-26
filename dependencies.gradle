@@ -7,15 +7,14 @@ ext {
   daggerVersion = '2.36'
   espressoVersion = '3.2.0'
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
-      project.getProperty('square.kotlinVersion') : '1.4.32'
+      project.getProperty('square.kotlinVersion') : '1.5.10'
 
   kotlinUseIR = (project.hasProperty('square.useIR') ?
       project.getProperty('square.useIR') : 'false').toBoolean()
 
   generateDaggerFactoriesWithAnvil = (project.hasProperty('square.generateDaggerFactoriesWithAnvil') ?
       project.getProperty('square.generateDaggerFactoriesWithAnvil') : 'true').toBoolean()
-  makeWarningsErrors = ci &&
-      VersionNumber.parse(kotlinVersion).baseVersion < VersionNumber.parse("1.5.0").baseVersion
+  makeWarningsErrors = true
 
   ktlintVersion = "0.41.0"
 
