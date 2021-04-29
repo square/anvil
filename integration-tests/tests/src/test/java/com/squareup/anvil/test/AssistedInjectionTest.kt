@@ -1,7 +1,7 @@
 package com.squareup.anvil.test
 
 import com.google.common.truth.Truth.assertThat
-import dagger.Component
+import com.squareup.anvil.annotations.MergeComponent
 import dagger.Module
 import dagger.Provides
 import org.junit.Test
@@ -16,7 +16,10 @@ internal class AssistedInjectionTest {
     assertThat(assistedService.string).isEqualTo("Hello")
   }
 
-  @Component(modules = [DaggerModule::class])
+  @MergeComponent(
+    scope = AssistedScope::class,
+    modules = [DaggerModule::class]
+  )
   interface AppComponent {
     fun serviceFactory(): AssistedService.Factory
   }
