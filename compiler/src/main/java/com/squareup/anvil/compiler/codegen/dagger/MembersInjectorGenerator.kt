@@ -9,10 +9,13 @@ import com.squareup.anvil.compiler.codegen.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.isGenericClass
 import com.squareup.anvil.compiler.codegen.mapToParameter
+import com.squareup.anvil.compiler.codegen.requireClassDescriptor
 import com.squareup.anvil.compiler.codegen.requireFqName
+import com.squareup.anvil.compiler.codegen.toAnnotationSpec
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.injectFqName
+import com.squareup.anvil.compiler.isQualifier
 import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -29,12 +32,15 @@ import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.MembersInjector
 import dagger.internal.InjectedFieldSignature
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import java.io.File
 import java.util.Locale.US
 
@@ -58,7 +64,12 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
           .toList()
           .ifEmpty { return@forEach }
 
-        generateMembersInjectorClass(codeGenDir, module, clazz, injectProperties)
+        generateMembersInjectorClass(
+          codeGenDir = codeGenDir,
+          module = module,
+          clazz = clazz,
+          injectProperties = injectProperties
+        )
       }
   }
 
@@ -91,6 +102,15 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
     }
 
     val memberInjectorClass = ClassName(packageName, className)
+
+    // Lazily evaluated, only computed if any properties have any non-inject annotations
+    val propertyDescriptors by lazy {
+      clazz.requireClassDescriptor(module)
+        .unsubstitutedMemberScope
+        .getContributedDescriptors(DescriptorKindFilter.VARIABLES)
+        .filterIsInstance<PropertyDescriptor>()
+        .associateBy { it.name.toString() }
+    }
 
     val content = FileSpec.buildFile(packageName, className) {
       addType(
@@ -172,6 +192,19 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                           .addMember("%S", property.requireFqName())
                           .build()
                       )
+                      .apply {
+                        val hasNonInjectAnnotation = property.annotationEntries
+                          .filterNot { it.isInject(module) }
+                          .isNotEmpty()
+                        if (hasNonInjectAnnotation) {
+                          addAnnotations(
+                            propertyDescriptors.getValue(propertyName)
+                              .annotations
+                              .filter { it.isQualifier() }
+                              .map { it.toAnnotationSpec(module) }
+                          )
+                        }
+                      }
                       .addParameter("instance", classType)
                       .addParameter(propertyName, parameter.originalTypeName)
                       .addStatement("instance.$propertyName = $propertyName")
@@ -186,5 +219,9 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
     }
 
     return createGeneratedFile(codeGenDir, packageName, className, content)
+  }
+
+  private fun KtAnnotationEntry.isInject(module: ModuleDescriptor): Boolean {
+    return requireFqName(module) == injectFqName
   }
 }

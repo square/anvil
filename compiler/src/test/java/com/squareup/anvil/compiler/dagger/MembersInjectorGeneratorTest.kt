@@ -39,6 +39,7 @@ import dagger.internal.InjectedFieldSignature;
 import java.util.List;
 import java.util.Set;
 import javax.annotation.Generated;
+import javax.inject.Named;
 import javax.inject.Provider;
 import kotlin.Pair;
 import kotlin.jvm.functions.Function1;
@@ -54,6 +55,8 @@ import kotlin.jvm.functions.Function1;
 public final class InjectClass_MembersInjector implements MembersInjector<InjectClass> {
   private final Provider<String> stringProvider;
 
+  private final Provider<String> qualifiedStringProvider;
+
   private final Provider<CharSequence> charSequenceProvider;
 
   private final Provider<List<String>> listProvider;
@@ -63,10 +66,11 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
   private final Provider<Set<Function1<List<String>, List<String>>>> setProvider;
 
   public InjectClass_MembersInjector(Provider<String> stringProvider,
-      Provider<CharSequence> charSequenceProvider, Provider<List<String>> listProvider,
-      Provider<Pair<Pair<String, Integer>, ? extends Set<String>>> pairProvider,
-      Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
+      Provider<String> qualifiedStringProvider, Provider<CharSequence> charSequenceProvider,
+      Provider<List<String>> listProvider, Provider<Pair<Pair<String, Integer>,
+      ? extends Set<String>>> pairProvider, Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
     this.stringProvider = stringProvider;
+    this.qualifiedStringProvider = qualifiedStringProvider;
     this.charSequenceProvider = charSequenceProvider;
     this.listProvider = listProvider;
     this.pairProvider = pairProvider;
@@ -74,14 +78,16 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
   }
 
   public static MembersInjector<InjectClass> create(Provider<String> stringProvider,
-      Provider<CharSequence> charSequenceProvider, Provider<List<String>> listProvider,
-      Provider<Pair<Pair<String, Integer>, ? extends Set<String>>> pairProvider,
-      Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
-    return new InjectClass_MembersInjector(stringProvider, charSequenceProvider, listProvider, pairProvider, setProvider);}
+      Provider<String> qualifiedStringProvider, Provider<CharSequence> charSequenceProvider,
+      Provider<List<String>> listProvider, Provider<Pair<Pair<String, Integer>,
+      ? extends Set<String>>> pairProvider, Provider<Set<Function1<List<String>,
+      List<String>>>> setProvider) {
+    return new InjectClass_MembersInjector(stringProvider, qualifiedStringProvider, charSequenceProvider, listProvider, pairProvider, setProvider);}
 
   @Override
   public void injectMembers(InjectClass instance) {
     injectString(instance, stringProvider.get());
+    injectQualifiedString(instance, qualifiedStringProvider.get());
     injectCharSequence(instance, charSequenceProvider.get());
     injectList(instance, listProvider.get());
     injectPair(instance, pairProvider.get());
@@ -91,6 +97,12 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
   @InjectedFieldSignature("com.squareup.test.InjectClass.string")
   public static void injectString(InjectClass instance, String string) {
     instance.string = string;
+  }
+
+  @Named("qualified")
+  @InjectedFieldSignature("com.squareup.test.InjectClass.qualifiedString")
+  public static void injectQualifiedString(InjectClass instance, String qualifiedString) {
+    instance.qualifiedString = qualifiedString;
   }
 
   @InjectedFieldSignature("com.squareup.test.InjectClass.charSequence")
@@ -122,11 +134,13 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       package com.squareup.test
       
       import javax.inject.Inject
+      import javax.inject.Named
       
       typealias StringList = List<String>
       
       class InjectClass {
         @Inject lateinit var string: String
+        @Named("qualified") @Inject lateinit var qualifiedString: String
         @Inject lateinit var charSequence: CharSequence
         @Inject lateinit var list: List<String>
         @Inject lateinit var pair: Pair<Pair<String, Int>, Set<String>>
@@ -139,6 +153,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           other as InjectClass
       
           if (string != other.string) return false
+          if (qualifiedString != other.qualifiedString) return false
           if (charSequence != other.charSequence) return false
           if (list != other.list) return false
           if (pair != other.pair) return false
@@ -149,6 +164,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       
         override fun hashCode(): Int {
           var result = string.hashCode()
+          result = 31 * result + qualifiedString.hashCode()
           result = 31 * result + charSequence.hashCode()
           result = 31 * result + list.hashCode()
           result = 31 * result + pair.hashCode()
@@ -167,6 +183,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           Provider::class.java,
           Provider::class.java,
           Provider::class.java,
+          Provider::class.java,
           Provider::class.java
         )
 
@@ -174,10 +191,11 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       val membersInjectorInstance = constructor
         .newInstance(
           Provider { "a" },
-          Provider<CharSequence> { "b" },
-          Provider { listOf("c") },
-          Provider { Pair(Pair("a", 1), setOf("b")) },
-          Provider { setOf { _: List<String> -> listOf("d") } }
+          Provider { "b" },
+          Provider<CharSequence> { "c" },
+          Provider { listOf("d") },
+          Provider { Pair(Pair("e", 1), setOf("f")) },
+          Provider { setOf { _: List<String> -> listOf("g") } }
         )
         as MembersInjector<Any>
 
@@ -188,14 +206,16 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
 
       membersInjector.staticInjectMethod("string")
         .invoke(null, injectInstanceStatic, "a")
+      membersInjector.staticInjectMethod("qualifiedString")
+        .invoke(null, injectInstanceStatic, "b")
       membersInjector.staticInjectMethod("charSequence")
-        .invoke(null, injectInstanceStatic, "b" as CharSequence)
+        .invoke(null, injectInstanceStatic, "c" as CharSequence)
       membersInjector.staticInjectMethod("list")
-        .invoke(null, injectInstanceStatic, listOf("c"))
+        .invoke(null, injectInstanceStatic, listOf("d"))
       membersInjector.staticInjectMethod("pair")
-        .invoke(null, injectInstanceStatic, Pair(Pair("a", 1), setOf("b")))
+        .invoke(null, injectInstanceStatic, Pair(Pair("e", 1), setOf("f")))
       membersInjector.staticInjectMethod("set")
-        .invoke(null, injectInstanceStatic, setOf { _: List<String> -> listOf("d") })
+        .invoke(null, injectInstanceStatic, setOf { _: List<String> -> listOf("g") })
 
       assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
       assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
