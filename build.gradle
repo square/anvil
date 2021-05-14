@@ -63,6 +63,13 @@ subprojects {
       jvmTarget = JavaVersion.VERSION_1_8
       useIR = rootProject.ext.kotlinUseIR
       allWarningsAsErrors = rootProject.ext.makeWarningsErrors
+      freeCompilerArgs += ["-Xjvm-default=all", "-Xopt-in=kotlin.RequiresOptIn"]
+      boolean optInExperimental = project.name != "annotations"
+          && project.name != "scopes"
+          && project.name != "dagger-factories-only"
+      if (optInExperimental) {
+        freeCompilerArgs += "-Xopt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
+      }
     }
   }
 
@@ -73,6 +80,7 @@ subprojects {
     resolutionStrategy.dependencySubstitution {
       substitute module("com.squareup.anvil:annotations") with project(':annotations')
       substitute module("com.squareup.anvil:compiler") with project(':compiler')
+      substitute module("com.squareup.anvil:compiler-api") with project(':compiler-api')
     }
   }
   // This is an ugly workaround.
@@ -93,6 +101,7 @@ subprojects {
       }
       if (it.name == 'kotlinCompilerPluginClasspath') {
         brokenProject.dependencies.add('kotlinCompilerPluginClasspath', project(':compiler'))
+        brokenProject.dependencies.add('kotlinCompilerPluginClasspath', project(':compiler-api'))
       }
     }
   }

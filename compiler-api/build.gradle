@@ -4,3 +4,8 @@ apply plugin: 'com.vanniktech.maven.publish'
 kotlin {
   explicitApi()
 }
+
+dependencies {
+  api project(':annotations')
+  api deps.kotlin.compiler
+}

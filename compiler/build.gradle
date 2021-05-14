@@ -6,6 +6,7 @@ apply from: project.file('generate_build_properties.gradle')
 
 dependencies {
   implementation project(':annotations')
+  implementation project(':compiler-api')
   implementation deps.dagger2.dagger
   implementation deps.jsr250
   implementation deps.kotlinpoet
@@ -20,15 +21,4 @@ dependencies {
   testImplementation deps.kotlin.compile_testing
   testImplementation deps.kotlin.compiler
   testImplementation deps.truth
-}
-
-//noinspection UnnecessaryQualifiedReference
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-  kotlinOptions {
-    jvmTarget = JavaVersion.VERSION_1_8
-
-    // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin
-    // compiler requires this flag when doing so.
-    freeCompilerArgs += "-Xjvm-default=enable"
-  }
 }

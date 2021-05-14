@@ -1,10 +1,14 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.HINT_MULTIBINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
-import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.squareup.anvil.compiler.api.AnvilContext
+import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.isMapKey
 import com.squareup.anvil.compiler.safePackageString
@@ -24,7 +28,11 @@ import kotlin.reflect.KClass
  * allows the compiler plugin to find all contributed multibindings a lot faster when merging
  * modules and component interfaces.
  */
+@AutoService(CodeGenerator::class)
 internal class ContributesMultibindingGenerator : CodeGenerator {
+
+  override fun isApplicable(context: AnvilContext) = !context.generateFactoriesOnly
+
   override fun generateCode(
     codeGenDir: File,
     module: ModuleDescriptor,

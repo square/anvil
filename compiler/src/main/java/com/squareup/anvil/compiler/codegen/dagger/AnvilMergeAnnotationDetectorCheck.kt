@@ -1,6 +1,9 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
+import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.AnvilCompilationException
+import com.squareup.anvil.compiler.api.AnvilContext
+import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.hasAnnotation
@@ -12,7 +15,10 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
+@AutoService(CodeGenerator::class)
 internal class AnvilMergeAnnotationDetectorCheck : PrivateCodeGenerator() {
+
+  override fun isApplicable(context: AnvilContext): Boolean = context.disableComponentMerging
 
   override fun generateCodePrivate(
     codeGenDir: File,

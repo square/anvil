@@ -13,15 +13,10 @@ if (rootProject.ext.generateDaggerFactoriesWithAnvil) {
   }
 }
 
-dependencies {
-  api deps.dagger2.dagger
+kotlin {
+  explicitApi()
 }
 
-//noinspection UnnecessaryQualifiedReference
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-  kotlinOptions {
-    freeCompilerArgs += [
-            "-Xexplicit-api=strict",
-    ]
-  }
+dependencies {
+  api deps.dagger2.dagger
 }

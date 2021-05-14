@@ -1,20 +1,10 @@
 package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
+import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
-import com.squareup.anvil.compiler.codegen.CodeGenerator
-import com.squareup.anvil.compiler.codegen.ContributesBindingGenerator
-import com.squareup.anvil.compiler.codegen.ContributesMultibindingGenerator
-import com.squareup.anvil.compiler.codegen.ContributesToGenerator
-import com.squareup.anvil.compiler.codegen.dagger.AnvilAnnotationDetectorCheck
-import com.squareup.anvil.compiler.codegen.dagger.AnvilMergeAnnotationDetectorCheck
-import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator
-import com.squareup.anvil.compiler.codegen.dagger.AssistedInjectGenerator
-import com.squareup.anvil.compiler.codegen.dagger.ComponentDetectorCheck
-import com.squareup.anvil.compiler.codegen.dagger.InjectConstructorFactoryGenerator
-import com.squareup.anvil.compiler.codegen.dagger.MembersInjectorGenerator
-import com.squareup.anvil.compiler.codegen.dagger.ProvidesMethodFactoryGenerator
+import com.squareup.anvil.compiler.codegen.RealAnvilContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -24,6 +14,7 @@ import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
+import java.util.ServiceLoader
 
 /**
  * Entry point for the Anvil Kotlin compiler plugin. It registers several callbacks for the
@@ -38,30 +29,21 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     val sourceGenFolder = File(configuration.getNotNull(srcGenDirKey))
     val scanner = ClassScanner()
 
-    val codeGenerators = mutableListOf<CodeGenerator>()
+    val generateDaggerFactories = configuration.get(generateDaggerFactoriesKey, false)
     val generateDaggerFactoriesOnly = configuration.get(generateDaggerFactoriesOnlyKey, false)
     val disableComponentMerging = configuration.get(disableComponentMergingKey, false)
+    val context = RealAnvilContext(
+      generateDaggerFactories,
+      generateDaggerFactoriesOnly,
+      disableComponentMerging
+    )
+    val codeGenerators = loadCodeGenerators()
+      .filter { it.isApplicable(context) }
+      .toMutableList()
 
     if (!generateDaggerFactoriesOnly) {
-      codeGenerators += ContributesToGenerator()
-      codeGenerators += ContributesBindingGenerator()
-      codeGenerators += ContributesMultibindingGenerator()
+      // We special case this one due to the ClassScanner requirement
       codeGenerators += BindingModuleGenerator(scanner)
-    } else if (!disableComponentMerging) {
-      codeGenerators += AnvilAnnotationDetectorCheck()
-    }
-
-    if (disableComponentMerging) {
-      codeGenerators += AnvilMergeAnnotationDetectorCheck()
-    }
-
-    if (configuration.get(generateDaggerFactoriesKey, false)) {
-      codeGenerators += ProvidesMethodFactoryGenerator()
-      codeGenerators += InjectConstructorFactoryGenerator()
-      codeGenerators += MembersInjectorGenerator()
-      codeGenerators += ComponentDetectorCheck()
-      codeGenerators += AssistedInjectGenerator()
-      codeGenerators += AssistedFactoryGenerator()
     }
 
     // It's important to register our extension at the first position. The compiler calls each
@@ -104,5 +86,10 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     project.extensionArea
       .getExtensionPoint(AnalysisHandlerExtension.extensionPointName)
       .registerExtension(extension, LoadingOrder.FIRST, project)
+  }
+
+  private fun loadCodeGenerators(): List<CodeGenerator> {
+    return ServiceLoader.load(CodeGenerator::class.java, CodeGenerator::class.java.classLoader)
+      .toList()
   }
 }
