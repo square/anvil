@@ -29,8 +29,10 @@ internal fun compile(
     .apply {
       compilerPlugins = listOf(AnvilComponentRegistrar())
       useIR = USE_IR
+      useOldBackend = !USE_IR
       inheritClassPath = true
       jvmTarget = JvmTarget.JVM_1_8.description
+      verbose = false
       this.allWarningsAsErrors = allWarningsAsErrors
 
       if (enableDaggerAnnotationProcessor) {
