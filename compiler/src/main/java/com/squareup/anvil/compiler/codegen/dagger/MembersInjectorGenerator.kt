@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
 import com.squareup.anvil.compiler.codegen.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.isGenericClass
+import com.squareup.anvil.compiler.codegen.isQualifier
 import com.squareup.anvil.compiler.codegen.mapToParameter
 import com.squareup.anvil.compiler.codegen.requireClassDescriptor
 import com.squareup.anvil.compiler.codegen.requireFqName
@@ -103,13 +104,13 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
 
     val memberInjectorClass = ClassName(packageName, className)
 
-    // Lazily evaluated, only computed if any properties have any non-inject annotations
+    // Lazily evaluated, only computed if any properties have any non-inject annotations.
     val propertyDescriptors by lazy {
       clazz.requireClassDescriptor(module)
         .unsubstitutedMemberScope
         .getContributedDescriptors(DescriptorKindFilter.VARIABLES)
         .filterIsInstance<PropertyDescriptor>()
-        .associateBy { it.name.toString() }
+        .associateBy { it.name.asString() }
     }
 
     val content = FileSpec.buildFile(packageName, className) {
@@ -193,10 +194,10 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                           .build()
                       )
                       .apply {
-                        val hasNonInjectAnnotation = property.annotationEntries
-                          .filterNot { it.isInject(module) }
-                          .isNotEmpty()
-                        if (hasNonInjectAnnotation) {
+                        val hasQualifier = property.annotationEntries
+                          .any { it.isQualifier(module) }
+
+                        if (hasQualifier) {
                           addAnnotations(
                             propertyDescriptors.getValue(propertyName)
                               .annotations

@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.createInstance
+import com.squareup.anvil.compiler.getValue
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.isStatic
 import com.squareup.anvil.compiler.membersInjector
@@ -15,6 +16,7 @@ import org.junit.runners.Parameterized.Parameters
 import java.io.File
 import java.lang.reflect.Method
 import java.util.Locale.US
+import javax.inject.Named
 import javax.inject.Provider
 
 @Suppress("UNCHECKED_CAST")
@@ -219,6 +221,10 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
 
       assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
       assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+
+      val namedAnnotation = membersInjector.staticInjectMethod("qualifiedString").annotations
+        .single { it.annotationClass == Named::class }
+      assertThat(namedAnnotation.getValue<String>()).isEqualTo("qualified")
     }
   }
 
