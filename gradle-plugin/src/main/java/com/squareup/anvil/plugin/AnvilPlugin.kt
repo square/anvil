@@ -13,6 +13,7 @@ import com.squareup.anvil.plugin.ProjectType.MULTIPLATFORM_ANDROID
 import com.squareup.anvil.plugin.ProjectType.MULTIPLATFORM_JVM
 import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.AppliedPlugin
 import org.gradle.api.plugins.PluginManager
 import org.gradle.api.provider.Provider
@@ -87,6 +88,12 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   override fun apply(target: Project) {
     val extension = target.extensions.create("anvil", AnvilExtension::class.java)
 
+    // Create a configuration for collecting CodeGenerator dependencies.
+    val anvilConfiguration = target.configurations.maybeCreate("anvil").apply {
+      description = "This configuration is used for dependencies with Anvil CodeGenerator " +
+        "implementations."
+    }
+
     val once = AtomicBoolean()
 
     fun PluginManager.withPluginOnce(
@@ -104,7 +111,7 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     // issue. Also make sure to apply it only once. A module could accidentally apply the JVM and
     // Android Kotlin plugin.
     target.pluginManager.withPluginOnce("org.jetbrains.kotlin.android") {
-      realApply(target, ANDROID, extension)
+      realApply(target, ANDROID, extension, anvilConfiguration)
     }
     target.pluginManager.withPluginOnce("org.jetbrains.kotlin.multiplatform") {
       target.afterEvaluate {
@@ -115,9 +122,9 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
         when {
           targets?.any { it.platformType == androidJvm } == true ->
-            realApply(target, MULTIPLATFORM_ANDROID, extension)
+            realApply(target, MULTIPLATFORM_ANDROID, extension, anvilConfiguration)
           targets?.any { it.platformType == jvm } == true ->
-            realApply(target, MULTIPLATFORM_JVM, extension)
+            realApply(target, MULTIPLATFORM_JVM, extension, anvilConfiguration)
           else -> throw GradleException(
             "Multiplatform project $target is not setup for Android or JVM."
           )
@@ -125,7 +132,7 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       }
     }
     target.pluginManager.withPluginOnce("org.jetbrains.kotlin.jvm") {
-      realApply(target, JVM, extension)
+      realApply(target, JVM, extension, anvilConfiguration)
     }
 
     target.afterEvaluate {
@@ -148,7 +155,8 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   private fun realApply(
     project: Project,
     projectType: ProjectType,
-    extension: AnvilExtension
+    extension: AnvilExtension,
+    anvilConfiguration: Configuration
   ) {
     disableIncrementalKotlinCompilation(project, projectType, extension)
     disablePreciseJavaTracking(project)
@@ -163,6 +171,10 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         project.dependencies.add("implementation", "$GROUP:annotations:$VERSION")
       }
     }
+
+    // Make the kotlin compiler classpath extend our configuration to pick up our extra generators.
+    project.configurations.getByName(PLUGIN_CLASSPATH_CONFIGURATION_NAME)
+      .extendsFrom(anvilConfiguration)
   }
 
   private fun disablePreciseJavaTracking(
