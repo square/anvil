@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.getAllSuperTypes
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import com.squareup.anvil.compiler.publishedApiFqName
+import com.squareup.anvil.compiler.qualifierFqName
 import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
@@ -544,4 +545,16 @@ fun KtClassOrObject.requireClassDescriptor(module: ModuleDescriptor): ClassDescr
 fun FqName.requireClassDescriptor(module: ModuleDescriptor): ClassDescriptor {
   return module.resolveClassByFqName(this, FROM_BACKEND)
     ?: throw AnvilCompilationException("Couldn't resolve class for $this.")
+}
+
+fun KtAnnotationEntry.isQualifier(module: ModuleDescriptor): Boolean {
+  return typeReference
+    ?.requireFqName(module)
+    // Often entries are annotated with @Inject, in this case we know it's not a qualifier and we
+    // can stop early.
+    ?.takeIf { it != injectFqName }
+    ?.requireClassDescriptor(module)
+    ?.annotations
+    ?.hasAnnotation(qualifierFqName)
+    ?: false
 }
