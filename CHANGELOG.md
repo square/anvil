@@ -1,9 +1,12 @@
 # Changelog
 
-## 2.2.2 (next)
+## 2.2.2 (2021-05-16)
 
 * Handle inner generic classes in factories for constructor injection properly, see #244.
 * Generate a correct factory when a class has both constructor and member injection, see #246.
+* Make generated assisted factories match interface function names, see #252.  
+* Fix a parsing error for inner class reference expressions, see #256.
+* Verify that the qualifier is added to generated methods for member injection, see #264.
 
 ## 2.2.1 (2021-04-09)
 
