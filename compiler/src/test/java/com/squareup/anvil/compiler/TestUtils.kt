@@ -22,6 +22,7 @@ internal fun compile(
   enableDaggerAnnotationProcessor: Boolean = false,
   generateDaggerFactories: Boolean = false,
   generateDaggerFactoriesOnly: Boolean = false,
+  disableComponentMerging: Boolean = false,
   allWarningsAsErrors: Boolean = true,
   block: Result.() -> Unit = { }
 ): Result {
@@ -57,6 +58,11 @@ internal fun compile(
           pluginId = commandLineProcessor.pluginId,
           optionName = generateDaggerFactoriesOnlyName,
           optionValue = generateDaggerFactoriesOnly.toString()
+        ),
+        PluginOption(
+          pluginId = commandLineProcessor.pluginId,
+          optionName = disableComponentMergingName,
+          optionValue = disableComponentMerging.toString()
         )
       )
 
