@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.2.3 (2021-05-25)
+
+* Support the JVM and Android targets for Kotlin Multiplatform projects, see #222.
+* Add a generation only mode for Anvil in order to avoid performance penalties when still using KAPT in the same module, see #258.
+* Respect qualifiers when checking whether there is a duplicate binding, see #270.
+
 ## 2.2.2 (2021-05-16)
 
 * Handle inner generic classes in factories for constructor injection properly, see #244.
