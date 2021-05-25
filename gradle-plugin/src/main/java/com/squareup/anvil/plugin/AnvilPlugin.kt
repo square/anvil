@@ -7,16 +7,23 @@ import com.android.build.gradle.LibraryPlugin
 import com.android.build.gradle.TestExtension
 import com.android.build.gradle.TestedExtension
 import com.android.build.gradle.api.BaseVariant
+import com.squareup.anvil.plugin.ProjectType.ANDROID
+import com.squareup.anvil.plugin.ProjectType.JVM
+import com.squareup.anvil.plugin.ProjectType.MULTIPLATFORM_ANDROID
+import com.squareup.anvil.plugin.ProjectType.MULTIPLATFORM_JVM
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.plugins.AppliedPlugin
 import org.gradle.api.plugins.PluginManager
 import org.gradle.api.provider.Provider
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.FilesSubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm
 import org.jetbrains.kotlin.gradle.plugin.KotlinPluginWrapper
 import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
@@ -97,10 +104,28 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     // issue. Also make sure to apply it only once. A module could accidentally apply the JVM and
     // Android Kotlin plugin.
     target.pluginManager.withPluginOnce("org.jetbrains.kotlin.android") {
-      realApply(target, true, extension)
+      realApply(target, ANDROID, extension)
+    }
+    target.pluginManager.withPluginOnce("org.jetbrains.kotlin.multiplatform") {
+      target.afterEvaluate {
+        // We need to run this in afterEvaluate, because otherwise the multiplatform extension
+        // isn't initialized.
+        val targets =
+          target.extensions.findByType(KotlinMultiplatformExtension::class.java)?.targets
+
+        when {
+          targets?.any { it.platformType == androidJvm } == true ->
+            realApply(target, MULTIPLATFORM_ANDROID, extension)
+          targets?.any { it.platformType == jvm } == true ->
+            realApply(target, MULTIPLATFORM_JVM, extension)
+          else -> throw GradleException(
+            "Multiplatform project $target is not setup for Android or JVM."
+          )
+        }
+      }
     }
     target.pluginManager.withPluginOnce("org.jetbrains.kotlin.jvm") {
-      realApply(target, false, extension)
+      realApply(target, JVM, extension)
     }
 
     target.afterEvaluate {
@@ -122,10 +147,10 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
   private fun realApply(
     project: Project,
-    isAndroidProject: Boolean,
+    projectType: ProjectType,
     extension: AnvilExtension
   ) {
-    disableIncrementalKotlinCompilation(project, isAndroidProject, extension)
+    disableIncrementalKotlinCompilation(project, projectType, extension)
     disablePreciseJavaTracking(project)
 
     project.afterEvaluate {
@@ -166,7 +191,7 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
   private fun disableIncrementalKotlinCompilation(
     project: Project,
-    isAndroidProject: Boolean,
+    projectType: ProjectType,
     extension: AnvilExtension
   ) {
     // Use this signal to share state between DisableIncrementalCompilationTask and the Kotlin
@@ -175,21 +200,31 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     @Suppress("UnstableApiUsage")
     val incrementalSignal = IncrementalSignal.registerIfAbsent(project)
 
+    val taskSuffix = when (projectType) {
+      JVM, ANDROID -> "Kotlin"
+      MULTIPLATFORM_JVM -> "KotlinJvm"
+      MULTIPLATFORM_ANDROID -> "KotlinAndroid"
+    }
+
     if (extension.generateDaggerFactoriesOnly || extension.disableComponentMerging) {
       // We don't need to disable the incremental compilation for the stub generating task, when we
       // only generate Dagger factories or contributing modules. That's only needed for merging
       // Dagger modules.
-      if (isAndroidProject) {
+      if (projectType.isAndroid) {
         project.androidVariantsConfigure { variant ->
-          val compileTaskName = "kaptGenerateStubs${variant.name.capitalize(US)}Kotlin"
+          val compileTaskName = "kaptGenerateStubs${variant.name.capitalize(US)}$taskSuffix"
           disableIncrementalCompilationAction(project, incrementalSignal, compileTaskName)
         }
       } else {
-        disableIncrementalCompilationAction(project, incrementalSignal, "kaptGenerateStubsKotlin")
         disableIncrementalCompilationAction(
           project,
           incrementalSignal,
-          "kaptGenerateStubsTestKotlin"
+          "kaptGenerateStubs$taskSuffix"
+        )
+        disableIncrementalCompilationAction(
+          project,
+          incrementalSignal,
+          "kaptGenerateStubsTest$taskSuffix"
         )
       }
     } else {
@@ -210,15 +245,15 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         }
     }
 
-    if (isAndroidProject) {
+    if (projectType.isAndroid) {
       project.androidVariantsConfigure { variant ->
-        val compileTaskName = "compile${variant.name.capitalize(US)}Kotlin"
+        val compileTaskName = "compile${variant.name.capitalize(US)}$taskSuffix"
         disableIncrementalCompilationAction(project, incrementalSignal, compileTaskName)
       }
     } else {
       // The Java plugin has two Kotlin tasks we care about: compileKotlin and compileTestKotlin.
-      disableIncrementalCompilationAction(project, incrementalSignal, "compileKotlin")
-      disableIncrementalCompilationAction(project, incrementalSignal, "compileTestKotlin")
+      disableIncrementalCompilationAction(project, incrementalSignal, "compile$taskSuffix")
+      disableIncrementalCompilationAction(project, incrementalSignal, "compileTest$taskSuffix")
     }
   }
 
@@ -331,4 +366,11 @@ private val AGP_ON_CLASSPATH = try {
   Class.forName("com.android.build.gradle.AppPlugin") != null
 } catch (t: Throwable) {
   false
+}
+
+private enum class ProjectType(val isAndroid: Boolean) {
+  JVM(false),
+  ANDROID(true),
+  MULTIPLATFORM_JVM(false),
+  MULTIPLATFORM_ANDROID(true),
 }
