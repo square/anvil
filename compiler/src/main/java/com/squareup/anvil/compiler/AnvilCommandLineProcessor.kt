@@ -18,6 +18,10 @@ internal const val generateDaggerFactoriesOnlyName = "generate-dagger-factories-
 internal val generateDaggerFactoriesOnlyKey =
   CompilerConfigurationKey.create<Boolean>("anvil $generateDaggerFactoriesOnlyName")
 
+internal const val disableComponentMergingName = "disable-component-merging"
+internal val disableComponentMergingKey =
+  CompilerConfigurationKey.create<Boolean>("anvil $disableComponentMergingName")
+
 /**
  * Parses arguments from the Gradle plugin for the compiler plugin.
  */
@@ -49,6 +53,14 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
         "contributed code.",
       required = false,
       allowMultipleOccurrences = false
+    ),
+    CliOption(
+      optionName = disableComponentMergingName,
+      valueDescription = "<true|false>",
+      description = "Whether Anvil should generate code only and not transform code for " +
+        "@MergeComponent or @MergeSubcomponent.",
+      required = false,
+      allowMultipleOccurrences = false
     )
   )
 
@@ -63,6 +75,8 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
         configuration.put(generateDaggerFactoriesKey, value.toBoolean())
       generateDaggerFactoriesOnlyName ->
         configuration.put(generateDaggerFactoriesOnlyKey, value.toBoolean())
+      disableComponentMergingName ->
+        configuration.put(disableComponentMergingKey, value.toBoolean())
     }
   }
 }

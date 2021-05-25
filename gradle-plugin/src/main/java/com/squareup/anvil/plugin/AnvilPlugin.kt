@@ -68,6 +68,10 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         SubpluginOption(
           key = "generate-dagger-factories-only",
           value = extension.generateDaggerFactoriesOnly.toString()
+        ),
+        SubpluginOption(
+          key = "disable-component-merging",
+          value = extension.disableComponentMerging.toString()
         )
       )
     }
@@ -171,9 +175,10 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     @Suppress("UnstableApiUsage")
     val incrementalSignal = IncrementalSignal.registerIfAbsent(project)
 
-    if (extension.generateDaggerFactoriesOnly) {
+    if (extension.generateDaggerFactoriesOnly || extension.disableComponentMerging) {
       // We don't need to disable the incremental compilation for the stub generating task, when we
-      // only generate Dagger factories. That's only needed for merging Dagger modules.
+      // only generate Dagger factories or contributing modules. That's only needed for merging
+      // Dagger modules.
       if (isAndroidProject) {
         project.androidVariantsConfigure { variant ->
           val compileTaskName = "kaptGenerateStubs${variant.name.capitalize(US)}Kotlin"

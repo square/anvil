@@ -25,4 +25,13 @@ open class AnvilExtension {
    * to `true`, then also [generateDaggerFactories] must be set to `true`.
    */
   var generateDaggerFactoriesOnly = false
+
+  /**
+   * Enabling this indicates that only code generation should run and no component merging should
+   * run. This is useful for cases where you want to use `@ContributesTo`, `@ContributesBinding`,
+   * or similar annotations but _not_ `@MergeComponent` or `@MergeSubcomponent` functionality.
+   * This allows for anvil use in projects with kapt enabled but _not_ require disabling
+   * incremental compilation in kapt stub generation tasks.
+   */
+  var disableComponentMerging = false
 }
