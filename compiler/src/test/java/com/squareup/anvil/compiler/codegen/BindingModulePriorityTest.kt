@@ -189,6 +189,145 @@ class BindingModulePriorityTest(
     }
   }
 
+  @Test fun `bindings can use different qualifiers`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      import javax.inject.Named
+      $import
+      
+      interface ParentInterface
+      
+      @ContributesBinding(Any::class)
+      @Named("a")
+      interface ContributingInterface : ParentInterface
+      
+      @ContributesBinding(Any::class)
+      @Named("b")
+      interface SecondContributingInterface : ParentInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val bindingMethods = componentInterfaceAnvilModule.declaredMethods
+        .filter { it.returnType == parentInterface }
+
+      assertThat(bindingMethods).hasSize(2)
+
+      assertThat(
+        bindingMethods.singleOrNull { it.parameterTypes.contains(contributingInterface) }
+      ).isNotNull()
+      assertThat(
+        bindingMethods.singleOrNull { it.parameterTypes.contains(secondContributingInterface) }
+      ).isNotNull()
+    }
+  }
+
+  @Test fun `bindings with the same qualifier are duplicate bindings`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      import javax.inject.Named
+      $import
+      
+      interface ParentInterface
+      
+      @ContributesBinding(Any::class)
+      @Named("a")
+      interface ContributingInterface : ParentInterface
+      
+      @ContributesBinding(Any::class)
+      @Named("a")
+      interface SecondContributingInterface : ParentInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+
+      assertThat(messages).contains(
+        "There are multiple contributed bindings with the same bound type. The bound type is " +
+          "com.squareup.test.ParentInterface. The contributed binding classes are: ["
+      )
+      // Check the contributed bindings separately, we cannot rely on the order in the string.
+      assertThat(messages).contains("com.squareup.test.ContributingInterface")
+      assertThat(messages).contains("com.squareup.test.SecondContributingInterface")
+    }
+  }
+
+  @Test fun `ignored qualifiers can lead to duplicate bindings`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      import javax.inject.Named
+      $import
+      
+      interface ParentInterface
+      
+      @ContributesBinding(Any::class, ignoreQualifier = true)
+      @Named("a")
+      interface ContributingInterface : ParentInterface
+      
+      @ContributesBinding(Any::class, ignoreQualifier = true)
+      @Named("b")
+      interface SecondContributingInterface : ParentInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+
+      assertThat(messages).contains(
+        "There are multiple contributed bindings with the same bound type. The bound type is " +
+          "com.squareup.test.ParentInterface. The contributed binding classes are: ["
+      )
+      // Check the contributed bindings separately, we cannot rely on the order in the string.
+      assertThat(messages).contains("com.squareup.test.ContributingInterface")
+      assertThat(messages).contains("com.squareup.test.SecondContributingInterface")
+    }
+  }
+
+  @Test fun `bindings with the same qualifier can be excluded`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      import javax.inject.Named
+      $import
+      
+      interface ParentInterface
+      
+      @ContributesBinding(Any::class)
+      @Named("a")
+      interface ContributingInterface : ParentInterface
+      
+      @ContributesBinding(Any::class)
+      @Named("a")
+      interface SecondContributingInterface : ParentInterface
+      
+      $annotation(Any::class, exclude = [ContributingInterface::class])
+      interface ComponentInterface
+      """
+    ) {
+      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+
+      with(bindingMethod) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(secondContributingInterface)
+      }
+    }
+  }
+
   @Test fun `multiple multibindings with the same type are allowed`() {
     compile(
       """

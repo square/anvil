@@ -31,6 +31,7 @@ import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
 import com.squareup.anvil.compiler.priority
 import com.squareup.anvil.compiler.replaces
+import com.squareup.anvil.compiler.requireFqName
 import com.squareup.anvil.compiler.safePackageString
 import com.squareup.anvil.compiler.scope
 import com.squareup.kotlinpoet.AnnotationSpec
@@ -53,6 +54,8 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
+import org.jetbrains.kotlin.resolve.constants.EnumValue
+import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
 import org.jetbrains.kotlin.types.KotlinType
@@ -245,11 +248,7 @@ internal class BindingModuleGenerator(
               bindings
             } else {
               bindings
-                .groupBy {
-                  // It's safe to use the FqName here, because we don't allow generic super types.
-                  // If we wouldn't have this limitation, we'd need to use the Kotlin type.
-                  it.boundType.fqNameSafe
-                }
+                .groupBy { binding -> binding.key(module) }
                 .map {
                   it.value.findHighestPriorityBinding()
                 }
@@ -521,3 +520,37 @@ private fun List<Binding>.findHighestPriorityBinding(): Binding {
 }
 
 private val Collection<GeneratedMethod>.specs get() = map { it.spec }
+
+private fun Binding.key(module: ModuleDescriptor): String {
+  // Careful! If we ever decide to support generic types, then we might need to use the
+  // Kotlin type and not just the FqName.
+  val fqName = boundType.fqNameSafe.asString()
+  if (annotation.ignoreQualifier()) return fqName
+
+  // Note that we sort all elements. That's important for a stable string comparison.
+  val allArguments = contributedClass.annotations
+    .filter { it.isQualifier() }
+    .sortedBy { it.requireFqName().hashCode() }
+    .joinToString(separator = "") { annotation ->
+      val annotationFqName = annotation.requireFqName().asString()
+
+      val argumentString = annotation.allValueArguments
+        .toList()
+        .sortedBy { it.first }
+        .map { (name, value) ->
+          val valueString = when (value) {
+            is KClassValue -> value.argumentType(module)
+              .classDescriptorForType().fqNameSafe.asString()
+            is EnumValue -> value.enumEntryName.asString()
+            // String, int, long, ... other primitives.
+            else -> value.toString()
+          }
+
+          name.asString() + valueString
+        }
+
+      annotationFqName + argumentString
+    }
+
+  return fqName + allArguments
+}

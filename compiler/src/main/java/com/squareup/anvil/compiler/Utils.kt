@@ -259,6 +259,12 @@ internal fun AnnotationDescriptor.requireClass(): ClassDescriptor {
   )
 }
 
+internal fun AnnotationDescriptor.requireFqName(): FqName {
+  return fqName ?: throw AnvilCompilationException(
+    message = "Couldn't find the fqName for $this",
+  )
+}
+
 /**
  * This function should only be used for package names. If the FqName is the root (no package at
  * all), then this function returns an empty string whereas `toString()` would return "<root>". For
