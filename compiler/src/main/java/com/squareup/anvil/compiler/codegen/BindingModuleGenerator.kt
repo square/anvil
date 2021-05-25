@@ -11,7 +11,6 @@ import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.annotation
 import com.squareup.anvil.compiler.annotationOrNull
 import com.squareup.anvil.compiler.api.AnvilContext
-import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.argumentType
 import com.squareup.anvil.compiler.boundType
@@ -72,7 +71,7 @@ private val supportedFqNames = listOf(
 
 internal class BindingModuleGenerator(
   private val classScanner: ClassScanner
-) : CodeGenerator {
+) : FlushingCodeGenerator {
 
   override fun isApplicable(context: AnvilContext): Boolean {
     throw NotImplementedError("This should not actually be checked as we instantiate this manually")
