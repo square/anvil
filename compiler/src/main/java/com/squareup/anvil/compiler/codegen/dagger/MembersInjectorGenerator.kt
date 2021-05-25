@@ -1,11 +1,14 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
-import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.google.auto.service.AutoService
+import com.squareup.anvil.compiler.api.AnvilContext
+import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.asClassName
 import com.squareup.anvil.compiler.codegen.buildFile
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
-import com.squareup.anvil.compiler.codegen.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.hasAnnotation
 import com.squareup.anvil.compiler.codegen.isGenericClass
 import com.squareup.anvil.compiler.codegen.isQualifier
@@ -45,7 +48,10 @@ import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import java.io.File
 import java.util.Locale.US
 
+@AutoService(CodeGenerator::class)
 internal class MembersInjectorGenerator : PrivateCodeGenerator() {
+
+  override fun isApplicable(context: AnvilContext) = context.generateFactories
 
   override fun generateCodePrivate(
     codeGenDir: File,

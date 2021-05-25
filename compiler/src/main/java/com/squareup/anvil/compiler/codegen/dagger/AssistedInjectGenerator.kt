@@ -1,15 +1,18 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
+import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.AnvilCompilationException
+import com.squareup.anvil.compiler.api.AnvilContext
+import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.assistedInjectFqName
-import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.codegen.Parameter
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.asArgumentList
 import com.squareup.anvil.compiler.codegen.asClassName
 import com.squareup.anvil.compiler.codegen.buildFile
 import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
-import com.squareup.anvil.compiler.codegen.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.codegen.mapToParameter
 import com.squareup.anvil.compiler.codegen.typeVariableNames
@@ -39,7 +42,10 @@ import java.io.File
  * class AssistedService_Factory { .. }
  * ```
  */
+@AutoService(CodeGenerator::class)
 internal class AssistedInjectGenerator : PrivateCodeGenerator() {
+
+  override fun isApplicable(context: AnvilContext) = context.generateFactories
 
   override fun generateCodePrivate(
     codeGenDir: File,

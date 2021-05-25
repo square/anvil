@@ -10,10 +10,12 @@ import com.squareup.anvil.compiler.HINT_MULTIBINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.annotation
 import com.squareup.anvil.compiler.annotationOrNull
+import com.squareup.anvil.compiler.api.AnvilContext
+import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.argumentType
 import com.squareup.anvil.compiler.boundType
 import com.squareup.anvil.compiler.classDescriptorForType
-import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
 import com.squareup.anvil.compiler.codegen.GeneratedMethod.BindingMethod
 import com.squareup.anvil.compiler.codegen.GeneratedMethod.ProviderMethod
 import com.squareup.anvil.compiler.contributesBindingFqName
@@ -71,6 +73,10 @@ private val supportedFqNames = listOf(
 internal class BindingModuleGenerator(
   private val classScanner: ClassScanner
 ) : CodeGenerator {
+
+  override fun isApplicable(context: AnvilContext): Boolean {
+    throw NotImplementedError("This should not actually be checked as we instantiate this manually")
+  }
 
   // Keeps track of for which scopes which files were generated. Usually there is only one file,
   // but technically there can be multiple.

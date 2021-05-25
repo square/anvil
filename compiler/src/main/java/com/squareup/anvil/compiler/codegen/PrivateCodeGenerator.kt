@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
-import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.api.GeneratedFile
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File

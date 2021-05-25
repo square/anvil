@@ -2,6 +2,10 @@ apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'org.jetbrains.kotlin.kapt'
 apply plugin: 'com.squareup.anvil'
 
+kotlin {
+  explicitApi()
+}
+
 dependencies {
   testImplementation project(':integration-tests:library')
   testImplementation deps.dagger2.dagger
@@ -9,15 +13,6 @@ dependencies {
   testImplementation deps.truth
 
   kaptTest deps.dagger2.compiler
-}
-
-//noinspection UnnecessaryQualifiedReference
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-  kotlinOptions {
-    freeCompilerArgs += [
-            "-Xexplicit-api=strict",
-    ]
-  }
 }
 
 // Okay, this check is sketchy here. But this module serves as integration test so it's not too

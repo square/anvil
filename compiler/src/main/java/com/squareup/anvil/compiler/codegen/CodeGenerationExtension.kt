@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
-import com.squareup.anvil.compiler.codegen.CodeGenerator.GeneratedFile
+import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.api.GeneratedFile
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.analyzer.AnalysisResult.RetryWithAdditionalRoots
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
