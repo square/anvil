@@ -38,6 +38,7 @@ subprojects {
 
     ktlint {
       version = rootProject.ext.ktlintVersion
+      verbose = true
     }
   }
 

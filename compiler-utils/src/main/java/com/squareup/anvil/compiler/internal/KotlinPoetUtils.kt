@@ -1,31 +1,21 @@
-package com.squareup.anvil.compiler.codegen
+@file:Suppress("unused")
 
-import com.squareup.anvil.compiler.AnvilComponentRegistrar
+package com.squareup.anvil.compiler.internal
+
+import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.argumentType
-import com.squareup.anvil.compiler.assistedFqName
-import com.squareup.anvil.compiler.classDescriptorForType
-import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
-import com.squareup.anvil.compiler.daggerLazyFqName
-import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
-import com.squareup.anvil.compiler.providerFqName
-import com.squareup.anvil.compiler.requireClass
-import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.MemberName
 import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
-import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
-import dagger.Lazy
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -38,13 +28,9 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNullableType
 import org.jetbrains.kotlin.psi.KtProjectionKind
-import org.jetbrains.kotlin.psi.KtStringTemplateExpression
-import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeElement
-import org.jetbrains.kotlin.psi.KtTypeProjection
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
-import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
@@ -53,9 +39,9 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import java.io.ByteArrayOutputStream
-import javax.inject.Provider
 
-internal fun KtClassOrObject.asClassName(): ClassName =
+@ExperimentalAnvilApi
+public fun KtClassOrObject.asClassName(): ClassName =
   ClassName(
     packageName = containingKtFile.packageFqName.safePackageString(),
     simpleNames = parentsWithSelf
@@ -65,7 +51,8 @@ internal fun KtClassOrObject.asClassName(): ClassName =
       .reversed()
   )
 
-internal fun ClassDescriptor.asClassName(): ClassName =
+@ExperimentalAnvilApi
+public fun ClassDescriptor.asClassName(): ClassName =
   ClassName(
     packageName = parents.filterIsInstance<PackageFragmentDescriptor>().first()
       .fqName.safePackageString(),
@@ -75,7 +62,8 @@ internal fun ClassDescriptor.asClassName(): ClassName =
       .reversed()
   )
 
-internal fun FqName.asClassName(module: ModuleDescriptor): ClassName {
+@ExperimentalAnvilApi
+public fun FqName.asClassName(module: ModuleDescriptor): ClassName {
   val segments = pathSegments().map { it.asString() }
 
   // If the first sentence case is not the last segment of the path it becomes ambiguous,
@@ -105,7 +93,8 @@ internal fun FqName.asClassName(module: ModuleDescriptor): ClassName {
   throw AnvilCompilationException("Couldn't parse ClassName for $this.")
 }
 
-internal fun KtTypeReference.requireTypeName(
+@ExperimentalAnvilApi
+public fun KtTypeReference.requireTypeName(
   module: ModuleDescriptor
 ): TypeName {
   fun PsiElement.fail(): Nothing = throw AnvilCompilationException(
@@ -194,7 +183,8 @@ internal fun KtTypeReference.requireTypeName(
   return (typeElement ?: fail()).requireTypeName()
 }
 
-fun KotlinType.asTypeName(): TypeName {
+@ExperimentalAnvilApi
+public fun KotlinType.asTypeName(): TypeName {
   if (isTypeParameter()) return TypeVariableName(toString())
 
   val className = classDescriptorForType().asClassName()
@@ -211,85 +201,8 @@ fun KotlinType.asTypeName(): TypeName {
   return className.parameterizedBy(argumentTypeNames).copy(nullable = isMarkedNullable)
 }
 
-internal data class Parameter(
-  val name: String,
-  val typeName: TypeName,
-  val providerTypeName: ParameterizedTypeName,
-  val lazyTypeName: ParameterizedTypeName,
-  val isWrappedInProvider: Boolean,
-  val isWrappedInLazy: Boolean,
-  val isAssisted: Boolean,
-  val assistedIdentifier: String,
-  val assistedParameterKey: AssistedParameterKey = AssistedParameterKey(
-    typeName,
-    assistedIdentifier
-  )
-) {
-  val originalTypeName: TypeName = when {
-    isWrappedInProvider -> providerTypeName
-    isWrappedInLazy -> lazyTypeName
-    else -> typeName
-  }
-
-  // @Assisted parameters are equal, if the type and the identifier match. This subclass makes
-  // diffing the parameters easier.
-  data class AssistedParameterKey(
-    private val typeName: TypeName,
-    private val assistedIdentifier: String
-  )
-}
-
-internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor): List<Parameter> =
-  mapIndexed { index, parameter ->
-    val typeElement = parameter.typeReference?.typeElement
-    val typeFqName = typeElement?.fqNameOrNull(module)
-
-    val isWrappedInProvider = typeFqName == providerFqName
-    val isWrappedInLazy = typeFqName == daggerLazyFqName
-
-    val typeName = when {
-      parameter.requireTypeReference().isNullable() ->
-        parameter.requireTypeReference().requireTypeName(module).copy(nullable = true)
-
-      isWrappedInProvider || isWrappedInLazy ->
-        typeElement!!.children
-          .filterIsInstance<KtTypeArgumentList>()
-          .single()
-          .children
-          .filterIsInstance<KtTypeProjection>()
-          .single()
-          .children
-          .filterIsInstance<KtTypeReference>()
-          .single()
-          .requireTypeName(module)
-
-      else -> parameter.requireTypeReference().requireTypeName(module)
-    }.withJvmSuppressWildcardsIfNeeded(parameter)
-
-    val assistedAnnotation = parameter.findAnnotation(assistedFqName)
-    val assistedIdentifier =
-      (assistedAnnotation?.valueArguments?.firstOrNull() as? KtValueArgument)
-        ?.children
-        ?.filterIsInstance<KtStringTemplateExpression>()
-        ?.single()
-        ?.children
-        ?.first()
-        ?.text
-        ?: ""
-
-    Parameter(
-      name = "param$index",
-      typeName = typeName,
-      providerTypeName = typeName.wrapInProvider(),
-      lazyTypeName = typeName.wrapInLazy(),
-      isWrappedInProvider = isWrappedInProvider,
-      isWrappedInLazy = isWrappedInLazy,
-      isAssisted = assistedAnnotation != null,
-      assistedIdentifier = assistedIdentifier
-    )
-  }
-
-internal fun <T : KtCallableDeclaration> TypeName.withJvmSuppressWildcardsIfNeeded(
+@ExperimentalAnvilApi
+public fun <T : KtCallableDeclaration> TypeName.withJvmSuppressWildcardsIfNeeded(
   callableDeclaration: T
 ): TypeName {
   // If the parameter is annotated with @JvmSuppressWildcards, then add the annotation
@@ -311,65 +224,9 @@ internal fun <T : KtCallableDeclaration> TypeName.withJvmSuppressWildcardsIfNeed
   }
 }
 
-/**
- * Converts the parameter list to comma separated argument list that can be used to call other
- * functions, e.g.
- * ```
- * [param0: String, param1: Int] -> "param0, param1"
- * ```
- * [asProvider] allows you to decide if each parameter is wrapped in a `Provider` interface. If
- * true, then the `get()` function will be called for the provider parameter. If false, then
- * then always only the parameter name will used in the argument list:
- * ```
- * "param0.get()" vs "param0"
- * ```
- * Set [includeModule] to true if a Dagger module instance is part of the argument list.
- */
-internal fun List<Parameter>.asArgumentList(
-  asProvider: Boolean,
-  includeModule: Boolean
-): String {
-  return this
-    .let { list ->
-      if (asProvider) {
-        list.map { parameter ->
-          when {
-            parameter.isWrappedInProvider -> parameter.name
-            // Normally Dagger changes Lazy<Type> parameters to a Provider<Type> (usually the
-            // container is a joined type), therefore we use `.lazy(..)` to convert the Provider
-            // to a Lazy. Assisted parameters behave differently and the Lazy type is not changed
-            // to a Provider and we can simply use the parameter name in the argument list.
-            parameter.isWrappedInLazy && parameter.isAssisted -> parameter.name
-            parameter.isWrappedInLazy -> "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
-            parameter.isAssisted -> parameter.name
-            else -> "${parameter.name}.get()"
-          }
-        }
-      } else list.map { it.name }
-    }
-    .let {
-      if (includeModule) {
-        val result = it.toMutableList()
-        result.add(0, "module")
-        result.toList()
-      } else {
-        it
-      }
-    }
-    .joinToString()
-}
-
-private fun TypeName.wrapInProvider(): ParameterizedTypeName {
-  return Provider::class.asClassName().parameterizedBy(this)
-}
-
-private fun TypeName.wrapInLazy(): ParameterizedTypeName {
-  return Lazy::class.asClassName().parameterizedBy(this)
-}
-
 private fun String.addGeneratedByComment(): String {
   return """
-  // Generated by ${AnvilComponentRegistrar::class.java.canonicalName}
+  // Generated by Anvil.
   // https://github.com/square/anvil
   
   """.trimIndent() + this
@@ -387,7 +244,8 @@ private fun FileSpec.Builder.suppressWarnings() {
   addAnnotation(AnnotationSpec.builder(Suppress::class).addMember("\"DEPRECATION\"").build())
 }
 
-fun FileSpec.Companion.buildFile(
+@ExperimentalAnvilApi
+public fun FileSpec.Companion.buildFile(
   packageName: String,
   fileName: String,
   block: FileSpec.Builder.() -> Unit
@@ -403,7 +261,8 @@ fun FileSpec.Companion.buildFile(
     .writeToString()
     .addGeneratedByComment()
 
-internal fun AnnotationDescriptor.toAnnotationSpec(module: ModuleDescriptor): AnnotationSpec {
+@ExperimentalAnvilApi
+public fun AnnotationDescriptor.toAnnotationSpec(module: ModuleDescriptor): AnnotationSpec {
   return AnnotationSpec
     .builder(requireClass().asClassName())
     .apply {

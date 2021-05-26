@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler
 
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.internal.safePackageString
 import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext

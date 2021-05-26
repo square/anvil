@@ -9,4 +9,8 @@ dependencies {
   api project(':annotations')
   api project(':compiler-api')
   api deps.kotlin.compiler
+  api deps.kotlinpoet
+
+  implementation deps.dagger2.dagger
+  implementation deps.inject
 }
