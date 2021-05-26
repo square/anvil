@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.ANVIL_MODULE_SUFFIX
-import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.ClassScanner
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.HINT_CONTRIBUTES_PACKAGE_PREFIX
@@ -10,6 +9,7 @@ import com.squareup.anvil.compiler.HINT_MULTIBINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.annotation
 import com.squareup.anvil.compiler.annotationOrNull
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.argumentType

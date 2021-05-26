@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler
 
 import com.squareup.anvil.annotations.ContributesTo
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -51,7 +52,7 @@ internal class ModuleMergerIr(
     declaration: IrClass
   ) {
     if (declaration.annotationOrNull(daggerFqName) != null) {
-      throw AnvilCompilationIrException(
+      throw AnvilCompilationException(
         message = "When using @${annotationFqName.shortName()} it's not allowed to annotate " +
           "the same class with @${daggerFqName.shortName()}. The Dagger annotation will " +
           "be generated.",
@@ -92,7 +93,7 @@ internal class ModuleMergerIr(
       .filter { (classSymbol, _) ->
         val moduleAnnotation = classSymbol.owner.annotationOrNull(daggerModuleFqName)
         if (!classSymbol.owner.isInterface && moduleAnnotation == null) {
-          throw AnvilCompilationIrException(
+          throw AnvilCompilationException(
             message = "${classSymbol.fqName} is annotated with " +
               "@${ContributesTo::class.simpleName}, but this class is neither an interface " +
               "nor a Dagger module. Did you forget to add @${Module::class.simpleName}?",
@@ -104,7 +105,7 @@ internal class ModuleMergerIr(
       }
       .onEach { (classSymbol, _) ->
         if (classSymbol.owner.visibility != DescriptorVisibilities.PUBLIC) {
-          throw AnvilCompilationIrException(
+          throw AnvilCompilationException(
             message = "${classSymbol.fqName} is contributed to the Dagger graph, but the " +
               "module is not public. Only public modules are supported.",
             element = classSymbol
@@ -125,7 +126,7 @@ internal class ModuleMergerIr(
               irClassForReplacement.annotationOrNull(contributesBindingFqName) == null &&
               irClassForReplacement.annotationOrNull(contributesMultibindingFqName) == null
             ) {
-              throw AnvilCompilationIrException(
+              throw AnvilCompilationException(
                 message = "${classSymbol.fqName} wants to replace " +
                   "${irClassForReplacement.fqName}, but the class being " +
                   "replaced is not a Dagger module.",
@@ -185,14 +186,14 @@ internal class ModuleMergerIr(
         val scopeOfExclusion = contributesToAnnotation?.scope()
           ?: contributesBindingAnnotation?.scope()
           ?: contributesMultibindingAnnotation?.scope()
-          ?: throw AnvilCompilationIrException(
+          ?: throw AnvilCompilationException(
             message = "Could not determine the scope of the excluded class " +
               "${excludedClass.fqName}.",
             element = declaration
           )
 
         if (scopeOfExclusion != scope) {
-          throw AnvilCompilationIrException(
+          throw AnvilCompilationException(
             message = "${declaration.fqName} with scope $scope wants to exclude " +
               "${excludedClass.fqName} with scope $scopeOfExclusion. The exclusion must " +
               "use the same scope.",
@@ -204,7 +205,7 @@ internal class ModuleMergerIr(
     if (predefinedModules.isNotEmpty()) {
       val intersect = predefinedModules.intersect(excludedModules)
       if (intersect.isNotEmpty()) {
-        throw AnvilCompilationIrException(
+        throw AnvilCompilationException(
           message = "${declaration.fqName} includes and excludes modules " +
             "at the same time: ${intersect.joinToString { it.fqName.asString() }}",
           element = declaration
@@ -305,14 +306,14 @@ internal class ModuleMergerIr(
     val scopeOfReplacement = contributesToAnnotation?.scope()
       ?: contributesBindingAnnotation?.scope()
       ?: contributesMultibindingAnnotation?.scope()
-      ?: throw AnvilCompilationIrException(
+      ?: throw AnvilCompilationException(
         message = "Could not determine the scope of the replaced class " +
           "${classDescriptorForReplacement.fqName}.",
         element = contributedClass
       )
 
     if (scopeOfReplacement != scopeFqName) {
-      throw AnvilCompilationIrException(
+      throw AnvilCompilationException(
         message = "${contributedClass.fqName} with scope $scopeFqName wants to replace " +
           "${classDescriptorForReplacement.fqName} with scope $scopeOfReplacement. The " +
           "replacement must use the same scope.",

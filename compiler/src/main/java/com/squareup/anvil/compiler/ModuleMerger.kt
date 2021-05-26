@@ -4,6 +4,7 @@ import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
