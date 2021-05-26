@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler
 
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
 import org.jetbrains.kotlin.descriptors.effectiveVisibility

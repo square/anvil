@@ -1,7 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
-import com.squareup.anvil.compiler.AnvilCompilationException
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.argumentType
 import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.classDescriptorForType

@@ -1,6 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
-import com.squareup.anvil.compiler.AnvilCompilationException
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.getAllSuperTypes
