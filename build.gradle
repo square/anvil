@@ -82,6 +82,7 @@ subprojects {
       substitute module("com.squareup.anvil:annotations") with project(':annotations')
       substitute module("com.squareup.anvil:compiler") with project(':compiler')
       substitute module("com.squareup.anvil:compiler-api") with project(':compiler-api')
+      substitute module("com.squareup.anvil:compiler-utils") with project(':compiler-utils')
     }
   }
   // This is an ugly workaround.
@@ -103,6 +104,7 @@ subprojects {
       if (it.name == 'kotlinCompilerPluginClasspath') {
         brokenProject.dependencies.add('kotlinCompilerPluginClasspath', project(':compiler'))
         brokenProject.dependencies.add('kotlinCompilerPluginClasspath', project(':compiler-api'))
+        brokenProject.dependencies.add('kotlinCompilerPluginClasspath', project(':compiler-utils'))
       }
     }
   }

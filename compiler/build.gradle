@@ -7,6 +7,7 @@ apply from: project.file('generate_build_properties.gradle')
 dependencies {
   implementation project(':annotations')
   implementation project(':compiler-api')
+  implementation project(':compiler-utils')
   implementation deps.dagger2.dagger
   implementation deps.jsr250
   implementation deps.kotlinpoet

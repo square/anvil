@@ -1,0 +1,12 @@
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'com.vanniktech.maven.publish'
+
+kotlin {
+  explicitApi()
+}
+
+dependencies {
+  api project(':annotations')
+  api project(':compiler-api')
+  api deps.kotlin.compiler
+}
