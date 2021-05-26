@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler
 
+import java.lang.reflect.Executable
 import java.lang.reflect.Member
 import java.lang.reflect.Modifier
 
@@ -14,3 +15,16 @@ val Member.isAbstract: Boolean get() = Modifier.isAbstract(modifiers)
 fun <T : Any> Class<T>.createInstance(
   vararg initargs: Any?
 ): T = declaredConstructors.single().use { it.newInstance(*initargs) } as T
+
+inline fun <T, E : Executable> E.use(block: (E) -> T): T {
+  // Deprecated since Java 9, but many projects still use JDK 8 for compilation.
+  @Suppress("DEPRECATION")
+  val original = isAccessible
+
+  return try {
+    isAccessible = true
+    block(this)
+  } finally {
+    isAccessible = original
+  }
+}
