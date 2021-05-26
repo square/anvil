@@ -63,7 +63,8 @@ subprojects {
       jvmTarget = JavaVersion.VERSION_1_8
       useIR = rootProject.ext.kotlinUseIR
       allWarningsAsErrors = rootProject.ext.makeWarningsErrors
-      freeCompilerArgs += ["-Xjvm-default=all", "-Xopt-in=kotlin.RequiresOptIn"]
+      freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
+
       boolean optInExperimental = project.name != "annotations"
           && project.name != "scopes"
           && project.name != "dagger-factories-only"
