@@ -68,6 +68,7 @@ internal class CodeGenerationExtension(
     }
 
     val flushedFiles = codeGenerators
+      .filterIsInstance<FlushingCodeGenerator>()
       .flatMap { codeGenerator -> codeGenerator.flush(codeGenDir, module) }
       .parse(psiManager)
 
@@ -75,6 +76,11 @@ internal class CodeGenerationExtension(
       .filterIsInstance<PrivateCodeGenerator>()
       .forEach { codeGenerator ->
         codeGenerator.generateCode(codeGenDir, module, flushedFiles)
+      }
+
+    codeGenerators
+      .filterIsInstance<FlushingCodeGenerator>()
+      .forEach { codeGenerator ->
         codeGenerator.flush(codeGenDir, module)
       }
 
