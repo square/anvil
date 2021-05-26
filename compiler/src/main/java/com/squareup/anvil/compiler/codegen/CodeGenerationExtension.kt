@@ -18,10 +18,13 @@ import java.io.File
 
 internal class CodeGenerationExtension(
   private val codeGenDir: File,
-  private val codeGenerators: List<CodeGenerator>
+  codeGenerators: List<CodeGenerator>
 ) : AnalysisHandlerExtension {
 
   private var didRecompile = false
+
+  private val codeGenerators = codeGenerators
+    .sortedBy { it is PrivateCodeGenerator }
 
   override fun doAnalysis(
     project: Project,
@@ -57,7 +60,6 @@ internal class CodeGenerationExtension(
 
     fun generateCode(files: Collection<KtFile>): Collection<GeneratedFile> =
       codeGenerators
-        .sortedBy { it is PrivateCodeGenerator }
         .flatMap { codeGenerator ->
           codeGenerator.generateCode(codeGenDir, anvilModule, files).also { new ->
             anvilModule.addFiles(new.parse(psiManager))
