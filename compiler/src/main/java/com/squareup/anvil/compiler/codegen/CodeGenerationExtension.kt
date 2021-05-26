@@ -52,13 +52,17 @@ internal class CodeGenerationExtension(
         }
       }
 
+    val psiManager = PsiManager.getInstance(project)
+    val anvilModule = AnvilModuleDescriptor(module, emptyList())
+
     fun generateCode(files: Collection<KtFile>): Collection<GeneratedFile> =
       codeGenerators
-        .flatMap {
-          it.generateCode(codeGenDir, module, files)
+        .sortedBy { it is PrivateCodeGenerator }
+        .flatMap { codeGenerator ->
+          codeGenerator.generateCode(codeGenDir, anvilModule, files).also { new ->
+            anvilModule.addFiles(new.parse(psiManager))
+          }
         }
-
-    val psiManager = PsiManager.getInstance(project)
 
     var newFiles = generateCode(files)
     while (newFiles.isNotEmpty()) {
@@ -69,25 +73,31 @@ internal class CodeGenerationExtension(
 
     val flushedFiles = codeGenerators
       .filterIsInstance<FlushingCodeGenerator>()
-      .flatMap { codeGenerator -> codeGenerator.flush(codeGenDir, module) }
+      .flatMap { codeGenerator -> codeGenerator.flush(codeGenDir, anvilModule) }
       .parse(psiManager)
+
+    anvilModule.addFiles(flushedFiles)
 
     codeGenerators
       .filterIsInstance<PrivateCodeGenerator>()
       .forEach { codeGenerator ->
-        codeGenerator.generateCode(codeGenDir, module, flushedFiles)
+        codeGenerator.generateCode(codeGenDir, anvilModule, flushedFiles).let { new ->
+          anvilModule.addFiles(new.parse(psiManager))
+        }
       }
 
     codeGenerators
       .filterIsInstance<FlushingCodeGenerator>()
       .forEach { codeGenerator ->
-        codeGenerator.flush(codeGenDir, module)
+        codeGenerator.flush(codeGenDir, anvilModule).let { new ->
+          anvilModule.addFiles(new.parse(psiManager))
+        }
       }
 
     // This restarts the analysis phase and will include our files.
     return RetryWithAdditionalRoots(
       bindingContext = bindingTrace.bindingContext,
-      moduleDescriptor = module,
+      moduleDescriptor = anvilModule,
       additionalJavaRoots = emptyList(),
       additionalKotlinRoots = listOf(codeGenDir),
       addToEnvironment = true

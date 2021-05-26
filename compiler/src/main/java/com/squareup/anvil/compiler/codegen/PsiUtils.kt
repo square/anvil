@@ -8,19 +8,14 @@ import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.jvmSuppressWildcardsFqName
 import com.squareup.anvil.compiler.publishedApiFqName
 import com.squareup.anvil.compiler.qualifierFqName
-import com.squareup.anvil.compiler.safePackageString
 import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation.FROM_BACKEND
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
@@ -48,6 +43,7 @@ import org.jetbrains.kotlin.psi.allConstructors
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName, publishedApiFqName)
 
@@ -329,8 +325,8 @@ internal fun PsiElement.requireFqName(
     }
 
   // If there is no import, then try to resolve the class with the same package as this file.
-  module.findClassOrTypeAlias(containingKtFile.packageFqName, classReference)
-    ?.let { return it.fqNameSafe }
+  module.resolveFqNameOrNull(containingKtFile.packageFqName, classReference)
+    ?.let { return it }
 
   // If this doesn't work, then maybe a class from the Kotlin package is used.
   module.resolveClassByFqName(FqName("kotlin.$classReference"), FROM_BACKEND)
@@ -360,7 +356,7 @@ internal fun PsiElement.requireFqName(
       it.importPath?.fqName
     }
     .forEach { importFqName ->
-      module.findClassOrTypeAlias(importFqName, classReference)?.let { return it.fqNameSafe }
+      module.resolveFqNameOrNull(importFqName, classReference)?.let { return it }
     }
 
   // Check if it's a named import.
@@ -398,17 +394,18 @@ private fun PsiElement.findFqNameInSuperTypes(
     .firstOrNull()
 }
 
-internal fun ModuleDescriptor.findClassOrTypeAlias(
+internal fun ModuleDescriptor.resolveFqNameOrNull(
   packageName: FqName,
   className: String
-): ClassifierDescriptorWithTypeParameters? {
-  resolveClassByFqName(FqName("${packageName.safePackageString()}$className"), FROM_BACKEND)
-    ?.let { return it }
+): FqName? {
 
-  findTypeAliasAcrossModuleDependencies(ClassId(packageName, Name.identifier(className)))
-    ?.let { return it }
+  if (this !is AnvilModuleDescriptor) {
+    throw AnvilCompilationException(
+      "Expected ${AnvilModuleDescriptor::class.qualifiedName} receiver but got ${this::class.qualifiedName}."
+    )
+  }
 
-  return null
+  return cast<AnvilModuleDescriptor>().resolveFqNameOrNull(packageName, className)
 }
 
 internal fun KtClassOrObject.typeVariableNames(
