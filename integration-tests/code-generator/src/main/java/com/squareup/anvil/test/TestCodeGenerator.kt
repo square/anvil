@@ -37,13 +37,47 @@ class TestCodeGenerator : CodeGenerator {
           class GeneratedClass 
         """.trimIndent()
 
+        @Language("kotlin")
+        val contributedInterface = """
+          package $generatedPackage
+          
+          import com.squareup.anvil.annotations.ContributesTo
+
+          @ContributesTo(Unit::class)
+          interface ContributedInterface 
+        """.trimIndent()
+
+        @Language("kotlin")
+        val contributedModule = """
+          package $generatedPackage
+          
+          import com.squareup.anvil.annotations.ContributesTo
+          import dagger.Module 
+
+          @ContributesTo(Unit::class)
+          @Module
+          interface ContributedModule 
+        """.trimIndent()
+
         sequenceOf(
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "GeneratedClass",
             content = generatedClass
-          )
+          ),
+          createGeneratedFile(
+            codeGenDir = codeGenDir,
+            packageName = generatedPackage,
+            fileName = "ContributedInterface",
+            content = contributedInterface
+          ),
+          createGeneratedFile(
+            codeGenDir = codeGenDir,
+            packageName = generatedPackage,
+            fileName = "ContributedModule",
+            content = contributedModule
+          ),
         )
       }
       .toList()
