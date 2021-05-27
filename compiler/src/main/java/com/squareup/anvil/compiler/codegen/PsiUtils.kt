@@ -401,7 +401,8 @@ internal fun ModuleDescriptor.resolveFqNameOrNull(
 
   if (this !is AnvilModuleDescriptor) {
     throw AnvilCompilationException(
-      "Expected ${AnvilModuleDescriptor::class.qualifiedName} receiver but got ${this::class.qualifiedName}."
+      "Expected ${AnvilModuleDescriptor::class.qualifiedName} as a receiver " +
+        "but got ${this::class.qualifiedName}."
     )
   }
 
