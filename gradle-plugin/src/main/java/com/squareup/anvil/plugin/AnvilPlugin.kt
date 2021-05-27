@@ -72,15 +72,15 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         ),
         SubpluginOption(
           key = "generate-dagger-factories",
-          lazy { extension.generateDaggerFactories.getOrElse(false).toString() }
+          lazy { extension.generateDaggerFactories.get().toString() }
         ),
         SubpluginOption(
           key = "generate-dagger-factories-only",
-          lazy { extension.generateDaggerFactoriesOnly.getOrElse(false).toString() }
+          lazy { extension.generateDaggerFactoriesOnly.get().toString() }
         ),
         SubpluginOption(
           key = "disable-component-merging",
-          lazy { extension.disableComponentMerging.getOrElse(false).toString() }
+          lazy { extension.disableComponentMerging.get().toString() }
         )
       )
     }
@@ -144,8 +144,8 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         )
       }
 
-      if (!extension.generateDaggerFactories.getOrElse(false) &&
-        extension.generateDaggerFactoriesOnly.getOrElse(false)
+      if (!extension.generateDaggerFactories.get() &&
+        extension.generateDaggerFactoriesOnly.get()
       ) {
         throw GradleException(
           "You cannot set generateDaggerFactories to false and generateDaggerFactoriesOnly " +
@@ -165,7 +165,7 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     disablePreciseJavaTracking(project)
 
     project.afterEvaluate {
-      if (!extension.generateDaggerFactoriesOnly.getOrElse(false)) {
+      if (!extension.generateDaggerFactoriesOnly.get()) {
         project.pluginManager.withPlugin("org.jetbrains.kotlin.kapt") {
           // This needs to be disabled, otherwise compiler plugins fail in weird ways when generating stubs.
           project.extensions.findByType(KaptExtension::class.java)?.correctErrorTypes = false
@@ -221,8 +221,8 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       MULTIPLATFORM_ANDROID -> "KotlinAndroid"
     }
 
-    if (extension.generateDaggerFactoriesOnly.getOrElse(false) ||
-      extension.disableComponentMerging.getOrElse(false)
+    if (extension.generateDaggerFactoriesOnly.get() ||
+      extension.disableComponentMerging.get()
     ) {
       // We don't need to disable the incremental compilation for the stub generating task, when we
       // only generate Dagger factories or contributing modules. That's only needed for merging
