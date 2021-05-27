@@ -61,7 +61,8 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       project.buildDir,
       "anvil${File.separator}src-gen-${kotlinCompilation.name}"
     )
-    val extension = project.extensions.findByType(AnvilExtension::class.java) ?: AnvilExtension()
+    val extension = project.extensions.findByType(AnvilExtension::class.java)
+      ?: project.objects.newInstance(AnvilExtension::class.java)
 
     return project.provider {
       listOf(
@@ -71,15 +72,15 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         ),
         SubpluginOption(
           key = "generate-dagger-factories",
-          value = extension.generateDaggerFactories.toString()
+          lazy { extension.generateDaggerFactories.getOrElse(false).toString() }
         ),
         SubpluginOption(
           key = "generate-dagger-factories-only",
-          value = extension.generateDaggerFactoriesOnly.toString()
+          lazy { extension.generateDaggerFactoriesOnly.getOrElse(false).toString() }
         ),
         SubpluginOption(
           key = "disable-component-merging",
-          value = extension.disableComponentMerging.toString()
+          lazy { extension.disableComponentMerging.getOrElse(false).toString() }
         )
       )
     }
@@ -143,7 +144,9 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         )
       }
 
-      if (!extension.generateDaggerFactories && extension.generateDaggerFactoriesOnly) {
+      if (!extension.generateDaggerFactories.getOrElse(false) &&
+        extension.generateDaggerFactoriesOnly.getOrElse(false)
+      ) {
         throw GradleException(
           "You cannot set generateDaggerFactories to false and generateDaggerFactoriesOnly " +
             "to true at the same time."
@@ -162,7 +165,7 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     disablePreciseJavaTracking(project)
 
     project.afterEvaluate {
-      if (!extension.generateDaggerFactoriesOnly) {
+      if (!extension.generateDaggerFactoriesOnly.getOrElse(false)) {
         project.pluginManager.withPlugin("org.jetbrains.kotlin.kapt") {
           // This needs to be disabled, otherwise compiler plugins fail in weird ways when generating stubs.
           project.extensions.findByType(KaptExtension::class.java)?.correctErrorTypes = false
@@ -218,7 +221,9 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       MULTIPLATFORM_ANDROID -> "KotlinAndroid"
     }
 
-    if (extension.generateDaggerFactoriesOnly || extension.disableComponentMerging) {
+    if (extension.generateDaggerFactoriesOnly.getOrElse(false) ||
+      extension.disableComponentMerging.getOrElse(false)
+    ) {
       // We don't need to disable the incremental compilation for the stub generating task, when we
       // only generate Dagger factories or contributing modules. That's only needed for merging
       // Dagger modules.
