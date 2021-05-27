@@ -56,7 +56,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
       .asSequence()
       .flatMap { it.classesAndInnerClasses() }
       .forEach { clazz ->
-        clazz.injectConstructor(assistedInjectFqName)
+        clazz.injectConstructor(assistedInjectFqName, module)
           ?.let {
             generateFactoryClass(codeGenDir, module, clazz, it)
           }

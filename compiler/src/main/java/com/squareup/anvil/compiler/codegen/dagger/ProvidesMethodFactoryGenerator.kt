@@ -66,12 +66,12 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     projectFiles
       .asSequence()
       .flatMap { it.classesAndInnerClasses() }
-      .filter { it.hasAnnotation(daggerModuleFqName) }
+      .filter { it.hasAnnotation(daggerModuleFqName, module) }
       .forEach { clazz ->
         clazz
           .functions(includeCompanionObjects = true)
           .asSequence()
-          .filter { it.hasAnnotation(daggerProvidesFqName) }
+          .filter { it.hasAnnotation(daggerProvidesFqName, module) }
           .onEach { function ->
             checkFunctionIsNotAbstract(clazz, function)
           }
@@ -98,7 +98,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
           .asSequence()
           .filter { property ->
             // Must be '@get:Provides'.
-            property.findAnnotation(daggerProvidesFqName)?.useSiteTarget?.text == "get"
+            property.findAnnotation(daggerProvidesFqName, module)?.useSiteTarget?.text == "get"
           }
           .forEach { property ->
             generateFactoryClass(codeGenDir, module, clazz, property)
@@ -123,7 +123,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
     val isMangled = !isProperty &&
       declaration.visibilityModifierTypeOrDefault() == INTERNAL_KEYWORD &&
-      !declaration.hasAnnotation(publishedApiFqName)
+      !declaration.hasAnnotation(publishedApiFqName, module)
 
     val packageName = clazz.containingKtFile.packageFqName.safePackageString()
     val className = buildString {
@@ -146,8 +146,8 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
     val parameters = declaration.valueParameters.mapToParameter(module)
 
-    val returnType = declaration.requireTypeReference().requireTypeName(module)
-      .withJvmSuppressWildcardsIfNeeded(declaration)
+    val returnType = declaration.requireTypeReference(module).requireTypeName(module)
+      .withJvmSuppressWildcardsIfNeeded(declaration, module)
     val returnTypeIsNullable = declaration.typeReference?.isNullable() ?: false
 
     val factoryClass = ClassName(packageName, className)

@@ -29,10 +29,10 @@ internal class AnvilMergeAnnotationDetectorCheck : PrivateCodeGenerator() {
       .asSequence()
       .flatMap { it.classesAndInnerClasses() }
       .firstOrNull {
-        it.hasAnnotation(mergeComponentFqName) ||
-          it.hasAnnotation(mergeSubcomponentFqName) ||
-          it.hasAnnotation(mergeInterfacesFqName) ||
-          it.hasAnnotation(mergeModulesFqName)
+        it.hasAnnotation(mergeComponentFqName, module) ||
+          it.hasAnnotation(mergeSubcomponentFqName, module) ||
+          it.hasAnnotation(mergeInterfacesFqName, module) ||
+          it.hasAnnotation(mergeModulesFqName, module)
       }
 
     if (clazz != null) {

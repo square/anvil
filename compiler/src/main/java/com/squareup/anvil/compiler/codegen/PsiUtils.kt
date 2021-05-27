@@ -18,7 +18,10 @@ import org.jetbrains.kotlin.psi.allConstructors
  * multiple constructors annotated with either of these annotations, then this method throws
  * an error as multiple injected constructors aren't allowed.
  */
-internal fun KtClassOrObject.injectConstructor(injectAnnotationFqName: FqName): KtConstructor<*>? {
+internal fun KtClassOrObject.injectConstructor(
+  injectAnnotationFqName: FqName,
+  module: ModuleDescriptor
+): KtConstructor<*>? {
   if (injectAnnotationFqName != injectFqName && injectAnnotationFqName != assistedInjectFqName) {
     throw IllegalArgumentException(
       "injectAnnotationFqName must be either $injectFqName or $assistedInjectFqName. " +
@@ -27,12 +30,16 @@ internal fun KtClassOrObject.injectConstructor(injectAnnotationFqName: FqName): 
   }
 
   val constructors = allConstructors.filter {
-    it.hasAnnotation(injectFqName) || it.hasAnnotation(assistedInjectFqName)
+    it.hasAnnotation(injectFqName, module) || it.hasAnnotation(assistedInjectFqName, module)
   }
 
   return when (constructors.size) {
     0 -> null
-    1 -> if (constructors[0].hasAnnotation(injectAnnotationFqName)) constructors[0] else null
+    1 -> if (constructors[0].hasAnnotation(injectAnnotationFqName, module)) {
+      constructors[0]
+    } else {
+      null
+    }
     else -> throw AnvilCompilationException(
       "Types may only contain one injected constructor.",
       element = this
@@ -44,7 +51,7 @@ internal fun KtClassOrObject.boundType(
   annotationFqName: FqName,
   module: ModuleDescriptor
 ): FqName? {
-  return findClassLiteralExpression(annotationFqName, name = "boundType", index = 1)
+  return findClassLiteralExpression(annotationFqName, name = "boundType", index = 1, module)
     ?.let {
       val children = it.children
       children.singleOrNull() ?: throw AnvilCompilationException(

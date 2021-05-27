@@ -50,9 +50,9 @@ internal class ContributesToGenerator : CodeGenerator {
   ): Collection<GeneratedFile> {
     return projectFiles.asSequence()
       .flatMap { it.classesAndInnerClasses() }
-      .filter { it.hasAnnotation(contributesToFqName) }
+      .filter { it.hasAnnotation(contributesToFqName, module) }
       .onEach { clazz ->
-        if (!clazz.isInterface() && !clazz.hasAnnotation(daggerModuleFqName)) {
+        if (!clazz.isInterface() && !clazz.hasAnnotation(daggerModuleFqName, module)) {
           throw AnvilCompilationException(
             "${clazz.requireFqName()} is annotated with " +
               "@${ContributesTo::class.simpleName}, but this class is neither an interface " +

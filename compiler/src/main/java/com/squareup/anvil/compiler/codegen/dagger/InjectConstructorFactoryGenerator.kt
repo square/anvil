@@ -53,7 +53,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
       .asSequence()
       .flatMap { it.classesAndInnerClasses() }
       .forEach { clazz ->
-        clazz.injectConstructor(injectFqName)
+        clazz.injectConstructor(injectFqName, module)
           ?.let {
             generateFactoryClass(codeGenDir, module, clazz, it)
           }
@@ -74,7 +74,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
       .filterIsInstance<KtClassBody>()
       .flatMap { it.properties.asSequence() }
       .filterNot { it.visibilityModifierTypeOrDefault() == KtTokens.PRIVATE_KEYWORD }
-      .filter { it.hasAnnotation(injectFqName) }
+      .filter { it.hasAnnotation(injectFqName, module) }
       .toList()
 
     val parameters = constructor.valueParameters

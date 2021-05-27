@@ -25,7 +25,7 @@ internal class ComponentDetectorCheck : PrivateCodeGenerator() {
     val component = projectFiles
       .asSequence()
       .flatMap { it.classesAndInnerClasses() }
-      .firstOrNull { it.hasAnnotation(daggerComponentFqName) }
+      .firstOrNull { it.hasAnnotation(daggerComponentFqName, module) }
 
     if (component != null) {
       throw AnvilCompilationException(

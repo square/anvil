@@ -61,8 +61,8 @@ internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor
     val isWrappedInLazy = typeFqName == daggerLazyFqName
 
     val typeName = when {
-      parameter.requireTypeReference().isNullable() ->
-        parameter.requireTypeReference().requireTypeName(module).copy(nullable = true)
+      parameter.requireTypeReference(module).isNullable() ->
+        parameter.requireTypeReference(module).requireTypeName(module).copy(nullable = true)
 
       isWrappedInProvider || isWrappedInLazy ->
         typeElement!!.children
@@ -76,10 +76,10 @@ internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor
           .single()
           .requireTypeName(module)
 
-      else -> parameter.requireTypeReference().requireTypeName(module)
-    }.withJvmSuppressWildcardsIfNeeded(parameter)
+      else -> parameter.requireTypeReference(module).requireTypeName(module)
+    }.withJvmSuppressWildcardsIfNeeded(parameter, module)
 
-    val assistedAnnotation = parameter.findAnnotation(assistedFqName)
+    val assistedAnnotation = parameter.findAnnotation(assistedFqName, module)
     val assistedIdentifier =
       (assistedAnnotation?.valueArguments?.firstOrNull() as? KtValueArgument)
         ?.children

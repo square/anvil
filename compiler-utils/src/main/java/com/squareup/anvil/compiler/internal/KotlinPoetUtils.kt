@@ -203,12 +203,13 @@ public fun KotlinType.asTypeName(): TypeName {
 
 @ExperimentalAnvilApi
 public fun <T : KtCallableDeclaration> TypeName.withJvmSuppressWildcardsIfNeeded(
-  callableDeclaration: T
+  callableDeclaration: T,
+  module: ModuleDescriptor
 ): TypeName {
   // If the parameter is annotated with @JvmSuppressWildcards, then add the annotation
   // to our type so that this information is forwarded when our Factory is compiled.
   val hasJvmSuppressWildcards =
-    callableDeclaration.typeReference?.hasAnnotation(jvmSuppressWildcardsFqName) ?: false
+    callableDeclaration.typeReference?.hasAnnotation(jvmSuppressWildcardsFqName, module) ?: false
 
   // Add the @JvmSuppressWildcards annotation even for simple generic return types like
   // Set<String>. This avoids some edge cases where Dagger chokes.
