@@ -88,6 +88,7 @@ subprojects {
   }
   // This is an ugly workaround.
   def brokenProjects = [
+      project(':integration-tests:code-generator-tests'),
       project(':integration-tests:dagger-factories-only'),
       project(':integration-tests:library'),
       project(':integration-tests:tests'),

@@ -1,0 +1,10 @@
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'org.jetbrains.kotlin.kapt'
+
+dependencies {
+  api project(':compiler-api')
+  implementation project(':compiler-utils')
+
+  compileOnly deps.auto.service.annotations
+  kapt deps.auto.service.processor
+}
