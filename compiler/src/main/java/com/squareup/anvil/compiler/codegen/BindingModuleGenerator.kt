@@ -34,7 +34,6 @@ import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.toAnnotationSpec
-import com.squareup.anvil.compiler.isAnvilModule
 import com.squareup.anvil.compiler.isMapKey
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
@@ -92,7 +91,7 @@ internal class BindingModuleGenerator(
 
   private val contributedBindingClasses = mutableListOf<FqName>()
   private val contributedMultibindingClasses = mutableListOf<FqName>()
-  private val contributedModuleAndInterfaceClasses = mutableListOf<FqName>()
+  private val contributedModuleClasses = mutableListOf<KtClassOrObject>()
 
   override fun generateCode(
     codeGenDir: File,
@@ -182,31 +181,20 @@ internal class BindingModuleGenerator(
       //
       // We precompute this list here and share the result in the methods below. Resolving classes
       // and types can be an expensive operation, so avoid doing it twice.
-      val bindingsReplacedInDaggerModules = contributedModuleAndInterfaceClasses
+      val bindingsReplacedInDaggerModules = contributedModuleClasses
         .asSequence()
-        .mapNotNull {
-          if (it.isAnvilModule()) {
-            // The generated Anvil Dagger module cannot replace bindings. Exclude it, because the
-            // descriptor can't be resolved since it's a generated class.
-            null
-          } else {
-            it.requireClassDescriptor(module)
-          }
-        }
+        .filter { it.scope(contributesToFqName, module) == scope }
+        .flatMap { it.replaces(contributesToFqName, module) }
         .plus(
-          classScanner.findContributedClasses(
-            module,
-            packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
-            annotation = contributesToFqName,
-            scope = scope
-          )
+          classScanner
+            .findContributedClasses(
+              module = module,
+              packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
+              annotation = contributesToFqName,
+              scope = scope
+            )
+            .map { it.fqNameSafe }
         )
-        .filter { it.annotationOrNull(daggerModuleFqName) != null }
-        .flatMap {
-          it.annotationOrNull(contributesToFqName, scope)
-            ?.replaces(module)
-            ?: emptyList()
-        }
         .toList()
 
       // Note that this is an inner function to share some of the parameters. It computes all
@@ -239,7 +227,9 @@ internal class BindingModuleGenerator(
 
         return (contributedBindingsThisModule + contributedBindingsDependencies)
           .minus(replacedBindings)
-          .minus(bindingsReplacedInDaggerModules)
+          .filterNot {
+            it.fqNameSafe in bindingsReplacedInDaggerModules
+          }
           .minus(excludedTypesForScope[scope].orEmpty())
           .filter {
             val annotation = it.annotationOrNull(annotationFqName)
@@ -427,9 +417,11 @@ internal class BindingModuleGenerator(
     classes: List<KtClassOrObject>,
     module: ModuleDescriptor
   ) {
-    contributedModuleAndInterfaceClasses += classes
-      .filter { it.hasAnnotation(contributesToFqName, module) }
-      .map { it.requireFqName() }
+    contributedModuleClasses += classes
+      .filter {
+        it.hasAnnotation(contributesToFqName, module) &&
+          it.hasAnnotation(daggerModuleFqName, module)
+      }
   }
 
   private fun checkExtendsBoundType(

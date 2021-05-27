@@ -74,6 +74,17 @@ public fun KtAnnotated.hasAnnotation(
 }
 
 @ExperimentalAnvilApi
+public fun KtAnnotated.requireAnnotation(
+  fqName: FqName,
+  module: ModuleDescriptor
+): KtAnnotationEntry {
+  return findAnnotation(fqName, module) ?: throw AnvilCompilationException(
+    element = this,
+    message = "Couldn't find the annotation $fqName."
+  )
+}
+
+@ExperimentalAnvilApi
 public fun KtAnnotated.findAnnotation(
   fqName: FqName,
   module: ModuleDescriptor
@@ -134,7 +145,8 @@ public fun KtClassOrObject.scope(
   annotationFqName: FqName,
   module: ModuleDescriptor
 ): FqName {
-  return findClassLiteralExpression(annotationFqName, name = "scope", index = 0, module)
+  return requireAnnotation(annotationFqName, module)
+    .findAnnotationArgument<KtClassLiteralExpression>(name = "scope", index = 0)
     .let { classLiteralExpression ->
       if (classLiteralExpression == null) {
         throw AnvilCompilationException(
@@ -143,36 +155,22 @@ public fun KtClassOrObject.scope(
         )
       }
 
-      val children = classLiteralExpression.children
-      children.singleOrNull() ?: throw AnvilCompilationException(
-        "Expected a single child, but there were ${children.size} instead: " +
-          classLiteralExpression.text,
-        element = this
-      )
+      classLiteralExpression.requireFqName(module)
     }
-    .requireFqName(module)
 }
 
 /**
- * Finds the class literal expression in the given annotation. [name] refers to the parameter name
+ * Finds the argument in the given annotation. [name] refers to the parameter name
  * in the annotation and [index] to the position of the argument, e.g. if you look for the scope in
  * `@ContributesBinding(Int::class, boundType = Unit::class)`, then [name] would be "scope" and the
  * index 0. If you look for the bound type, then [name] would be "boundType" and the index 1.
  */
 @ExperimentalAnvilApi
-public fun KtClassOrObject.findClassLiteralExpression(
-  annotationFqName: FqName,
+public inline fun <reified T> KtAnnotationEntry.findAnnotationArgument(
   name: String,
-  index: Int,
-  module: ModuleDescriptor
-): KtClassLiteralExpression? {
-  val annotationEntry = findAnnotation(annotationFqName, module)
-    ?: throw AnvilCompilationException(
-      "Couldn't find $annotationFqName for Psi element: $text",
-      element = this
-    )
-
-  val annotationValues = annotationEntry.valueArguments
+  index: Int
+): T? {
+  val annotationValues = valueArguments
     .asSequence()
     .filterIsInstance<KtValueArgument>()
 
@@ -183,9 +181,9 @@ public fun KtClassOrObject.findClassLiteralExpression(
       val children = valueArgument.children
       if (children.size == 2 && children[0] is KtValueArgumentName &&
         (children[0] as KtValueArgumentName).asName.asString() == name &&
-        children[1] is KtClassLiteralExpression
+        children[1] is T
       ) {
-        children[1] as KtClassLiteralExpression
+        children[1] as T
       } else {
         null
       }
@@ -198,7 +196,7 @@ public fun KtClassOrObject.findClassLiteralExpression(
   return annotationValues
     .elementAtOrNull(index)
     ?.let { valueArgument ->
-      valueArgument.children.firstOrNull() as? KtClassLiteralExpression
+      valueArgument.children.firstOrNull() as? T
     }
 }
 
@@ -294,6 +292,14 @@ public fun PsiElement.requireFqName(
     }
     is KtNullableType -> return innerType?.requireFqName(module) ?: failTypeHandling()
     is KtAnnotationEntry -> return typeReference?.requireFqName(module) ?: failTypeHandling()
+    is KtClassLiteralExpression -> {
+      // Returns "Abc" for "Abc::class".
+      val element = children.singleOrNull() ?: throw AnvilCompilationException(
+        "Expected a single child, but there were ${children.size} instead: $text",
+        element = this
+      )
+      return element.requireFqName(module)
+    }
     else -> failTypeHandling()
   }
 
@@ -493,7 +499,7 @@ public fun KtClassOrObject.isGenericClass(): Boolean = typeParameterList != null
 public fun KtCallableDeclaration.requireTypeReference(module: ModuleDescriptor): KtTypeReference {
   typeReference?.let { return it }
 
-  if (this is KtFunction && findAnnotation(daggerProvidesFqName, module) != null) {
+  if (this is KtFunction && hasAnnotation(daggerProvidesFqName, module)) {
     throw AnvilCompilationException(
       message = "Dagger provider methods must specify the return type explicitly when using " +
         "Anvil. The return type cannot be inferred implicitly.",
