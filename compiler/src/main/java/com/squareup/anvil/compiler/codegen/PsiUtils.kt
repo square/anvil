@@ -2,13 +2,19 @@ package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.assistedInjectFqName
+import com.squareup.anvil.compiler.contributesBindingFqName
+import com.squareup.anvil.compiler.contributesMultibindingFqName
+import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.injectFqName
-import com.squareup.anvil.compiler.internal.findClassLiteralExpression
+import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.hasAnnotation
+import com.squareup.anvil.compiler.internal.requireAnnotation
 import com.squareup.anvil.compiler.internal.requireFqName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.allConstructors
 
@@ -51,13 +57,27 @@ internal fun KtClassOrObject.boundType(
   annotationFqName: FqName,
   module: ModuleDescriptor
 ): FqName? {
-  return findClassLiteralExpression(annotationFqName, name = "boundType", index = 1, module)
-    ?.let {
-      val children = it.children
-      children.singleOrNull() ?: throw AnvilCompilationException(
-        "Expected a single child, but there were ${children.size} instead: ${it.text}",
-        element = this
-      )
-    }
+  return requireAnnotation(annotationFqName, module)
+    .findAnnotationArgument<KtClassLiteralExpression>(name = "boundType", index = 1)
     ?.requireFqName(module)
+}
+
+internal fun KtClassOrObject.replaces(
+  annotationFqName: FqName,
+  module: ModuleDescriptor
+): List<FqName> {
+  val index = when (annotationFqName) {
+    contributesToFqName -> 1
+    contributesBindingFqName, contributesMultibindingFqName -> 2
+    else -> throw IllegalArgumentException("$annotationFqName has no replaces field.")
+  }
+
+  return requireAnnotation(annotationFqName, module)
+    .findAnnotationArgument<KtCollectionLiteralExpression>(name = "replaces", index = index)
+    ?.let { classCollection ->
+      classCollection.children
+        .filterIsInstance<KtClassLiteralExpression>()
+        .map { it.requireFqName(module) }
+    }
+    ?: emptyList()
 }
