@@ -1,6 +1,11 @@
 package com.squareup.anvil.plugin
 
-open class AnvilExtension {
+import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.Property
+import javax.inject.Inject
+import kotlin.DeprecationLevel.HIDDEN
+
+abstract class AnvilExtension @Inject constructor(objects: ObjectFactory) {
   /**
    * Allows you to use Anvil to generate Factory classes that usually the Dagger annotation
    * processor would generate for @Provides methods, @Inject constructors and @Inject fields.
@@ -16,7 +21,7 @@ open class AnvilExtension {
    *
    * By default this feature is disabled.
    */
-  var generateDaggerFactories = false
+  val generateDaggerFactories: Property<Boolean> = objects.property(Boolean::class.java)
 
   /**
    * There are occasions where consumers of Anvil are only interested in generating Dagger
@@ -24,7 +29,7 @@ open class AnvilExtension {
    * flag Anvil will only generate Dagger factories and skip all other steps. If this flag is set
    * to `true`, then also [generateDaggerFactories] must be set to `true`.
    */
-  var generateDaggerFactoriesOnly = false
+  val generateDaggerFactoriesOnly: Property<Boolean> = objects.property(Boolean::class.java)
 
   /**
    * Enabling this indicates that only code generation should run and no component merging should
@@ -33,5 +38,73 @@ open class AnvilExtension {
    * This allows for anvil use in projects with kapt enabled but _not_ require disabling
    * incremental compilation in kapt stub generation tasks.
    */
-  var disableComponentMerging = false
+  val disableComponentMerging: Property<Boolean> = objects.property(Boolean::class.java)
+
+  /*
+   * The below properties are legacy former properties. We do a bit of Kotlin sugar to preserve
+   * binary compatibility but not Kotlin source compatibility.
+   *
+   * @get:JvmName("getGenerateDaggerFactories") preserves the get signature with the old name. Even
+   * though this has the same name as the new property, it returns a Boolean instead of a Property.
+   * This is not legal in source but it _is_ legal in the JVM at runtime, so they are
+   * binary-compatible.
+   *
+   * @set:JvmName("setGenerateDaggerFactories") preserves the set signature with the old name. Since
+   * there is no setter for the new property, this has no overload ambiguity. We do hide it anyway
+   * with JvmSynthetic just to keep the API lean and simple.
+   *
+   * @JvmSynthetic hides this from non-Kotlin callers to avoid overload ambiguity.
+   *
+   * DeprecationLevel.HIDDEN further hides this from Kotlin users (since it's a source-breaking
+   * change anyway). Kotlin previously compiled against this will still work at runtime, but new
+   * sources will now point to the new property and require using `.set()` and `.get()`
+   */
+
+  @get:[JvmName("getGenerateDaggerFactories") JvmSynthetic]
+  @set:[JvmName("setGenerateDaggerFactories") JvmSynthetic]
+  var generateDaggerFactoriesLegacy: Boolean
+    @Deprecated(
+      "Use generateDaggerFactories property",
+      ReplaceWith("generateDaggerFactories.getOrElse(false)"),
+      level = HIDDEN
+    )
+    get() = generateDaggerFactories.getOrElse(false)
+    @Deprecated(
+      "Use generateDaggerFactories property",
+      ReplaceWith("generateDaggerFactories.set(value)"),
+      level = HIDDEN
+    )
+    set(value) = generateDaggerFactories.set(value)
+
+  @get:[JvmName("getDaggerFactoriesOnly") JvmSynthetic]
+  @set:[JvmName("setDaggerFactoriesOnly") JvmSynthetic]
+  var generateDaggerFactoriesOnlyLegacy: Boolean
+    @Deprecated(
+      "Use generateDaggerFactoriesOnly property",
+      ReplaceWith("generateDaggerFactoriesOnly.getOrElse(false)"),
+      level = HIDDEN
+    )
+    get() = generateDaggerFactoriesOnly.getOrElse(false)
+    @Deprecated(
+      "Use generateDaggerFactoriesOnly property",
+      ReplaceWith("generateDaggerFactoriesOnly.set(value)"),
+      level = HIDDEN
+    )
+    set(value) = generateDaggerFactoriesOnly.set(value)
+
+  @get:[JvmName("getDisableComponentMerging") JvmSynthetic]
+  @set:[JvmName("setDisableComponentMerging") JvmSynthetic]
+  var disableComponentMergingLegacy: Boolean
+    @Deprecated(
+      "Use disableComponentMerging property",
+      ReplaceWith("disableComponentMerging.getOrElse(false)"),
+      level = HIDDEN
+    )
+    get() = disableComponentMerging.getOrElse(false)
+    @Deprecated(
+      "Use disableComponentMerging property",
+      ReplaceWith("disableComponentMerging.set(value)"),
+      level = HIDDEN
+    )
+    set(value) = disableComponentMerging.set(value)
 }
