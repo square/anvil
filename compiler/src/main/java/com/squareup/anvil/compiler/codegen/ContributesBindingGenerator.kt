@@ -4,7 +4,6 @@ import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
-import com.squareup.anvil.compiler.annotation
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
@@ -12,8 +11,16 @@ import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.boundType
 import com.squareup.anvil.compiler.contributesBindingFqName
-import com.squareup.anvil.compiler.isQualifier
-import com.squareup.anvil.compiler.safePackageString
+import com.squareup.anvil.compiler.internal.annotation
+import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.hasAnnotation
+import com.squareup.anvil.compiler.internal.isQualifier
+import com.squareup.anvil.compiler.internal.requireClassDescriptor
+import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.safePackageString
+import com.squareup.anvil.compiler.internal.scope
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy

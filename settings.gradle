@@ -1,6 +1,7 @@
 include ':annotations'
 include ':compiler'
 include ':compiler-api'
+include ':compiler-utils'
 include ':integration-tests:dagger-factories-only'
 include ':integration-tests:library'
 include ':integration-tests:tests'

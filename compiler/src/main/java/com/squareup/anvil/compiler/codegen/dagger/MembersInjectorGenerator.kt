@@ -6,21 +6,20 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
-import com.squareup.anvil.compiler.codegen.asClassName
-import com.squareup.anvil.compiler.codegen.buildFile
-import com.squareup.anvil.compiler.codegen.classesAndInnerClasses
-import com.squareup.anvil.compiler.codegen.hasAnnotation
-import com.squareup.anvil.compiler.codegen.isGenericClass
-import com.squareup.anvil.compiler.codegen.isQualifier
 import com.squareup.anvil.compiler.codegen.mapToParameter
-import com.squareup.anvil.compiler.codegen.requireClassDescriptor
-import com.squareup.anvil.compiler.codegen.requireFqName
-import com.squareup.anvil.compiler.codegen.toAnnotationSpec
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
-import com.squareup.anvil.compiler.generateClassName
 import com.squareup.anvil.compiler.injectFqName
-import com.squareup.anvil.compiler.isQualifier
-import com.squareup.anvil.compiler.safePackageString
+import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.generateClassName
+import com.squareup.anvil.compiler.internal.hasAnnotation
+import com.squareup.anvil.compiler.internal.isGenericClass
+import com.squareup.anvil.compiler.internal.isQualifier
+import com.squareup.anvil.compiler.internal.requireClassDescriptor
+import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.safePackageString
+import com.squareup.anvil.compiler.internal.toAnnotationSpec
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -38,7 +37,6 @@ import dagger.internal.InjectedFieldSignature
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
@@ -153,16 +151,13 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                   val property = injectProperties[index]
                   val propertyName = property.nameAsSafeName.asString()
 
-                  addStatement(
-                    "inject${propertyName.capitalize(US)}(instance, ${
-                    when {
-                      parameter.isWrappedInProvider -> parameter.name
-                      parameter.isWrappedInLazy ->
-                        "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
-                      else -> parameter.name + ".get()"
-                    }
-                    })"
-                  )
+                  val parameterString = when {
+                    parameter.isWrappedInProvider -> parameter.name
+                    parameter.isWrappedInLazy ->
+                      "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
+                    else -> parameter.name + ".get()"
+                  }
+                  addStatement("inject${propertyName.capitalize(US)}(instance, $parameterString)")
                 }
               }
               .build()
@@ -226,9 +221,5 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
     }
 
     return createGeneratedFile(codeGenDir, packageName, className, content)
-  }
-
-  private fun KtAnnotationEntry.isInject(module: ModuleDescriptor): Boolean {
-    return requireFqName(module) == injectFqName
   }
 }
