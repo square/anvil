@@ -1,6 +1,8 @@
 package com.squareup.anvil.compiler
 
 import com.google.common.truth.Truth.assertThat
+import com.sqareup.anvil.compiler.internal.testing.daggerModule
+import com.sqareup.anvil.compiler.internal.testing.withoutAnvilModule
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import org.junit.Test
 

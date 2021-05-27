@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.USE_IR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
@@ -125,10 +126,11 @@ class AnvilAnnotationDetectorCheckTest {
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
-  ): Result = com.squareup.anvil.compiler.compile(
+  ): Result = com.sqareup.anvil.compiler.internal.testing.compile(
     sources = sources,
     generateDaggerFactories = true,
     generateDaggerFactoriesOnly = true,
+    useIR = USE_IR,
     block = block
   )
 }

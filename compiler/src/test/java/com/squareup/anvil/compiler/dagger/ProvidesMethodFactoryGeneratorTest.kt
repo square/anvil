@@ -1,15 +1,16 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.sqareup.anvil.compiler.internal.testing.createInstance
+import com.sqareup.anvil.compiler.internal.testing.isStatic
+import com.sqareup.anvil.compiler.internal.testing.moduleFactoryClass
+import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.componentInterfaceAnvilModule
-import com.squareup.anvil.compiler.createInstance
 import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
 import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
 import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
-import com.squareup.anvil.compiler.isStatic
-import com.squareup.anvil.compiler.moduleFactoryClass
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
@@ -757,7 +758,8 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     }
   }
 
-  @Test fun `a factory class is generated for an internal provider method with a mangled name in an object`() {
+  @Test
+  fun `a factory class is generated for an internal provider method with a mangled name in an object`() {
     /*
 package com.squareup.test;
 
@@ -822,7 +824,8 @@ public final class DaggerModule1_ProvideString$mainFactory implements Factory<St
     }
   }
 
-  @Test fun `a factory class is generated for an internal provider method with a mangled name in a companion object`() {
+  @Test
+  fun `a factory class is generated for an internal provider method with a mangled name in a companion object`() {
     compile(
       """
       package com.squareup.test
@@ -854,7 +857,8 @@ public final class DaggerModule1_ProvideString$mainFactory implements Factory<St
     }
   }
 
-  @Test fun `the factory does not contain the mangled name if the function is internal and uses @PublishedApi`() {
+  @Test
+  fun `the factory does not contain the mangled name if the function is internal and uses @PublishedApi`() {
     compile(
       """
       package com.squareup.test
@@ -1176,7 +1180,8 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     }
   }
 
-  @Test fun `a factory class is generated for a provider method with a lazy parameter using a fully qualified name`() {
+  @Test
+  fun `a factory class is generated for a provider method with a lazy parameter using a fully qualified name`() {
     compile(
       """
       package com.squareup.test
@@ -3142,10 +3147,11 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
-  ): Result = com.squareup.anvil.compiler.compile(
+  ): Result = com.sqareup.anvil.compiler.internal.testing.compile(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
+    useIR = USE_IR,
     block = block
   )
 }

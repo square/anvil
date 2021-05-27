@@ -5,6 +5,7 @@ apply plugin: 'org.jetbrains.kotlin.kapt'
 dependencies {
   anvil project(':integration-tests:code-generator')
 
+  testImplementation testFixtures(project(":compiler-utils"))
   testImplementation deps.dagger2.dagger
   testImplementation deps.junit
   testImplementation deps.truth

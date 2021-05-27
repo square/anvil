@@ -1,6 +1,7 @@
 package com.squareup.anvil.test
 
 import com.google.common.truth.Truth.assertThat
+import com.sqareup.anvil.compiler.internal.testing.withoutAnvilModule
 import com.squareup.anvil.annotations.compat.MergeModules
 import dagger.Component
 import dagger.Module
