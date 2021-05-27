@@ -65,7 +65,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     projectFiles
       .asSequence()
       .flatMap { it.classesAndInnerClasses() }
-      .filter { it.hasAnnotation(assistedFactoryFqName) }
+      .filter { it.hasAnnotation(assistedFactoryFqName, module) }
       .forEach { clazz ->
         generateFactoryClass(codeGenDir, module, clazz)
       }

@@ -54,7 +54,7 @@ internal class ContributesBindingGenerator : CodeGenerator {
   ): Collection<GeneratedFile> {
     return projectFiles.asSequence()
       .flatMap { it.classesAndInnerClasses() }
-      .filter { it.hasAnnotation(contributesBindingFqName) }
+      .filter { it.hasAnnotation(contributesBindingFqName, module) }
       .onEach { clazz ->
         clazz.checkClassIsPublic()
         clazz.checkNotMoreThanOneQualifier(module, contributesBindingFqName)

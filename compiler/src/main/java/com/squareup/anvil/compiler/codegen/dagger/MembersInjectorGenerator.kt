@@ -65,7 +65,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
           .filterIsInstance<KtClassBody>()
           .flatMap { it.properties.asSequence() }
           .filterNot { it.visibilityModifierTypeOrDefault() == KtTokens.PRIVATE_KEYWORD }
-          .filter { it.hasAnnotation(injectFqName) }
+          .filter { it.hasAnnotation(injectFqName, module) }
           .toList()
           .ifEmpty { return@forEach }
 

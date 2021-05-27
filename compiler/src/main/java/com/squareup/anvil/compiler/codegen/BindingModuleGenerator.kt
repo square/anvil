@@ -120,11 +120,11 @@ internal class BindingModuleGenerator(
     }
 
     // Similar to the explanation above, we must track contributed modules.
-    findContributedModules(classes)
+    findContributedModules(classes, module)
 
     // Generate a Dagger module for each @MergeComponent and friends.
     return classes
-      .filter { psiClass -> supportedFqNames.any { psiClass.hasAnnotation(it) } }
+      .filter { psiClass -> supportedFqNames.any { psiClass.hasAnnotation(it, module) } }
       .map { psiClass ->
         val classDescriptor = psiClass.requireClassDescriptor(module)
 
@@ -423,9 +423,12 @@ internal class BindingModuleGenerator(
       }
   }
 
-  private fun findContributedModules(classes: List<KtClassOrObject>) {
+  private fun findContributedModules(
+    classes: List<KtClassOrObject>,
+    module: ModuleDescriptor
+  ) {
     contributedModuleAndInterfaceClasses += classes
-      .filter { it.hasAnnotation(contributesToFqName) }
+      .filter { it.hasAnnotation(contributesToFqName, module) }
       .map { it.requireFqName() }
   }
 

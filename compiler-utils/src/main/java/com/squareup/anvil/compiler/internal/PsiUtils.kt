@@ -66,12 +66,18 @@ public fun KtNamedDeclaration.requireFqName(): FqName = requireNotNull(fqName) {
 public fun KtAnnotated.isInterface(): Boolean = this is KtClass && this.isInterface()
 
 @ExperimentalAnvilApi
-public fun KtAnnotated.hasAnnotation(fqName: FqName): Boolean {
-  return findAnnotation(fqName) != null
+public fun KtAnnotated.hasAnnotation(
+  fqName: FqName,
+  module: ModuleDescriptor
+): Boolean {
+  return findAnnotation(fqName, module) != null
 }
 
 @ExperimentalAnvilApi
-public fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
+public fun KtAnnotated.findAnnotation(
+  fqName: FqName,
+  module: ModuleDescriptor
+): KtAnnotationEntry? {
   val annotationEntries = annotationEntries
   if (annotationEntries.isEmpty()) return null
 
@@ -111,6 +117,15 @@ public fun KtAnnotated.findAnnotation(fqName: FqName): KtAnnotationEntry? {
     }
   if (hasStarImport) return annotationEntryShort
 
+  // At this point we know that the class is annotated with an annotation that has the same simple
+  // name as fqName. We couldn't find any imports, so the annotation is likely part of the same
+  // package or Kotlin namespace. Leverage our existing utility function and to find the FqName
+  // and then compare the result.
+  val fqNameOfShort = annotationEntryShort.fqNameOrNull(module)
+  if (fqName == fqNameOfShort) {
+    return annotationEntryShort
+  }
+
   return null
 }
 
@@ -119,7 +134,7 @@ public fun KtClassOrObject.scope(
   annotationFqName: FqName,
   module: ModuleDescriptor
 ): FqName {
-  return findClassLiteralExpression(annotationFqName, name = "scope", index = 0)
+  return findClassLiteralExpression(annotationFqName, name = "scope", index = 0, module)
     .let { classLiteralExpression ->
       if (classLiteralExpression == null) {
         throw AnvilCompilationException(
@@ -148,9 +163,10 @@ public fun KtClassOrObject.scope(
 public fun KtClassOrObject.findClassLiteralExpression(
   annotationFqName: FqName,
   name: String,
-  index: Int
+  index: Int,
+  module: ModuleDescriptor
 ): KtClassLiteralExpression? {
-  val annotationEntry = findAnnotation(annotationFqName)
+  val annotationEntry = findAnnotation(annotationFqName, module)
     ?: throw AnvilCompilationException(
       "Couldn't find $annotationFqName for Psi element: $text",
       element = this
@@ -474,10 +490,10 @@ public fun KtTypeReference.isFunctionType(): Boolean = typeElement is KtFunction
 public fun KtClassOrObject.isGenericClass(): Boolean = typeParameterList != null
 
 @ExperimentalAnvilApi
-public fun KtCallableDeclaration.requireTypeReference(): KtTypeReference {
+public fun KtCallableDeclaration.requireTypeReference(module: ModuleDescriptor): KtTypeReference {
   typeReference?.let { return it }
 
-  if (this is KtFunction && findAnnotation(daggerProvidesFqName) != null) {
+  if (this is KtFunction && findAnnotation(daggerProvidesFqName, module) != null) {
     throw AnvilCompilationException(
       message = "Dagger provider methods must specify the return type explicitly when using " +
         "Anvil. The return type cannot be inferred implicitly.",

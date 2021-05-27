@@ -47,7 +47,7 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
   ): Collection<GeneratedFile> {
     return projectFiles.asSequence()
       .flatMap { it.classesAndInnerClasses() }
-      .filter { it.hasAnnotation(contributesMultibindingFqName) }
+      .filter { it.hasAnnotation(contributesMultibindingFqName, module) }
       .onEach { clazz ->
         clazz.checkClassIsPublic()
         clazz.checkNotMoreThanOneQualifier(module, contributesMultibindingFqName)

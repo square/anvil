@@ -32,12 +32,12 @@ internal class AnvilAnnotationDetectorCheck : PrivateCodeGenerator() {
       .asSequence()
       .flatMap { it.classesAndInnerClasses() }
       .firstOrNull {
-        it.hasAnnotation(mergeComponentFqName) ||
-          it.hasAnnotation(mergeSubcomponentFqName) ||
-          it.hasAnnotation(mergeInterfacesFqName) ||
-          it.hasAnnotation(mergeModulesFqName) ||
-          it.hasAnnotation(contributesToFqName) ||
-          it.hasAnnotation(contributesBindingFqName)
+        it.hasAnnotation(mergeComponentFqName, module) ||
+          it.hasAnnotation(mergeSubcomponentFqName, module) ||
+          it.hasAnnotation(mergeInterfacesFqName, module) ||
+          it.hasAnnotation(mergeModulesFqName, module) ||
+          it.hasAnnotation(contributesToFqName, module) ||
+          it.hasAnnotation(contributesBindingFqName, module)
       }
 
     if (clazz != null) {
