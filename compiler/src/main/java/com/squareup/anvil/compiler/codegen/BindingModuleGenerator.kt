@@ -130,8 +130,7 @@ internal class BindingModuleGenerator(
 
         // The annotation must be present due to the filter above.
         val mergeAnnotation = supportedFqNames
-          .mapNotNull { classDescriptor.annotationOrNull(it) }
-          .first()
+          .firstNotNullOf { classDescriptor.annotationOrNull(it) }
 
         val scope = mergeAnnotation.scope(module).fqNameSafe
 
