@@ -1,14 +1,14 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.sqareup.anvil.compiler.internal.testing.compileAnvil
-import com.sqareup.anvil.compiler.internal.testing.createInstance
-import com.sqareup.anvil.compiler.internal.testing.getValue
-import com.sqareup.anvil.compiler.internal.testing.isStatic
-import com.sqareup.anvil.compiler.internal.testing.membersInjector
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.createInstance
+import com.squareup.anvil.compiler.internal.testing.getValue
+import com.squareup.anvil.compiler.internal.testing.isStatic
+import com.squareup.anvil.compiler.internal.testing.membersInjector
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.MembersInjector

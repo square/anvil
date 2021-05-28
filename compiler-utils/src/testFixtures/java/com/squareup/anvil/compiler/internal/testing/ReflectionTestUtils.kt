@@ -1,6 +1,6 @@
 @file:Suppress("unused")
 
-package com.sqareup.anvil.compiler.internal.testing
+package com.squareup.anvil.compiler.internal.testing
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import java.lang.reflect.Executable

@@ -1,10 +1,6 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.sqareup.anvil.compiler.internal.testing.compileAnvil
-import com.sqareup.anvil.compiler.internal.testing.createInstance
-import com.sqareup.anvil.compiler.internal.testing.isStatic
-import com.sqareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.componentInterfaceAnvilModule
 import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
@@ -12,6 +8,10 @@ import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercaseP
 import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
+import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.createInstance
+import com.squareup.anvil.compiler.internal.testing.isStatic
+import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result

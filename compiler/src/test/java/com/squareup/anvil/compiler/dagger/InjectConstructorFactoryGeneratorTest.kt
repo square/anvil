@@ -1,11 +1,11 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.sqareup.anvil.compiler.internal.testing.compileAnvil
-import com.sqareup.anvil.compiler.internal.testing.factoryClass
-import com.sqareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.injectClass
+import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.factoryClass
+import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy

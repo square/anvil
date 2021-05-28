@@ -1,10 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
-import com.sqareup.anvil.compiler.internal.testing.AnyDaggerComponent
-import com.sqareup.anvil.compiler.internal.testing.anyDaggerComponent
-import com.sqareup.anvil.compiler.internal.testing.daggerModule
-import com.sqareup.anvil.compiler.internal.testing.isAbstract
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
@@ -14,6 +10,10 @@ import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.componentInterfaceAnvilModule
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule1
+import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
+import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
+import com.squareup.anvil.compiler.internal.testing.daggerModule
+import com.squareup.anvil.compiler.internal.testing.isAbstract
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface

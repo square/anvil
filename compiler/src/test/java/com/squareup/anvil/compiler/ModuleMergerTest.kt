@@ -1,13 +1,13 @@
 package com.squareup.anvil.compiler
 
 import com.google.common.truth.Truth.assertThat
-import com.sqareup.anvil.compiler.internal.testing.AnyDaggerComponent
-import com.sqareup.anvil.compiler.internal.testing.anyDaggerComponent
-import com.sqareup.anvil.compiler.internal.testing.daggerComponent
-import com.sqareup.anvil.compiler.internal.testing.daggerSubcomponent
-import com.sqareup.anvil.compiler.internal.testing.withoutAnvilModule
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
+import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
+import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
+import com.squareup.anvil.compiler.internal.testing.daggerComponent
+import com.squareup.anvil.compiler.internal.testing.daggerSubcomponent
+import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import dagger.Component
 import dagger.Subcomponent

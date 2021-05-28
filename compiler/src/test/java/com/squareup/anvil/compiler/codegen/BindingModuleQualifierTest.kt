@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
-import com.sqareup.anvil.compiler.internal.testing.isAbstract
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
@@ -9,6 +8,7 @@ import com.squareup.anvil.compiler.anyQualifier
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterfaceAnvilModule
 import com.squareup.anvil.compiler.contributingInterface
+import com.squareup.anvil.compiler.internal.testing.isAbstract
 import com.squareup.anvil.compiler.parentInterface
 import dagger.Binds
 import dagger.Provides

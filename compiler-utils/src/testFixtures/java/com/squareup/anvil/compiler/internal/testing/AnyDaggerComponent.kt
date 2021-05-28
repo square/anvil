@@ -1,4 +1,4 @@
-package com.sqareup.anvil.compiler.internal.testing
+package com.squareup.anvil.compiler.internal.testing
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.annotations.MergeComponent
