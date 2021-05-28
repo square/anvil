@@ -1,10 +1,10 @@
 package com.squareup.anvil.compiler
 
 import com.google.common.truth.Truth.assertThat
-import com.sqareup.anvil.compiler.internal.testing.compileAnvil
-import com.sqareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.packageName
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Assume
 import kotlin.reflect.KClass

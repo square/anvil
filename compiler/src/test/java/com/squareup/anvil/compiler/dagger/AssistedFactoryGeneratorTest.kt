@@ -1,17 +1,17 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.sqareup.anvil.compiler.internal.testing.compileAnvil
-import com.sqareup.anvil.compiler.internal.testing.createInstance
-import com.sqareup.anvil.compiler.internal.testing.factoryClass
-import com.sqareup.anvil.compiler.internal.testing.implClass
-import com.sqareup.anvil.compiler.internal.testing.isStatic
-import com.sqareup.anvil.compiler.internal.testing.moduleFactoryClass
-import com.sqareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.assistedServiceFactory
 import com.squareup.anvil.compiler.daggerModule1
+import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.createInstance
+import com.squareup.anvil.compiler.internal.testing.factoryClass
+import com.squareup.anvil.compiler.internal.testing.implClass
+import com.squareup.anvil.compiler.internal.testing.isStatic
+import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
+import com.squareup.anvil.compiler.internal.testing.use
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test

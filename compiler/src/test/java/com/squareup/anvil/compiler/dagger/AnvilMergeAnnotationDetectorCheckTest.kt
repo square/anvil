@@ -1,8 +1,8 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.sqareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.USE_IR
+import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result

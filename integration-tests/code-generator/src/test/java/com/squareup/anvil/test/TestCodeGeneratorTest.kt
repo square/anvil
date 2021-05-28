@@ -1,8 +1,8 @@
 package com.squareup.anvil.test
 
 import com.google.common.truth.Truth.assertThat
-import com.sqareup.anvil.compiler.internal.testing.compileAnvil
-import com.sqareup.anvil.compiler.internal.testing.createInstance
+import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.createInstance
 import org.junit.Test
 
 class TestCodeGeneratorTest {
