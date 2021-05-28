@@ -12,7 +12,7 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireFqName
@@ -45,8 +45,8 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>
   ): Collection<GeneratedFile> {
-    return projectFiles.asSequence()
-      .flatMap { it.classesAndInnerClasses() }
+    return projectFiles
+      .classesAndInnerClass(module)
       .filter { it.hasAnnotation(contributesMultibindingFqName, module) }
       .onEach { clazz ->
         clazz.checkClassIsPublic()

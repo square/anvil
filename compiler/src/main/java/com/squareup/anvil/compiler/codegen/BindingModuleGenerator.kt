@@ -25,7 +25,7 @@ import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classDescriptorForType
-import com.squareup.anvil.compiler.internal.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.decapitalize
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.getAnnotationValue
@@ -114,10 +114,7 @@ internal class BindingModuleGenerator(
       hintPackagePrefix = HINT_MULTIBINDING_PACKAGE_PREFIX
     )
 
-    val classes = projectFiles.flatMap {
-      it.classesAndInnerClasses()
-        .toList()
-    }
+    val classes = projectFiles.classesAndInnerClass(module).toList()
 
     // Similar to the explanation above, we must track contributed modules.
     findContributedModules(classes, module)

@@ -15,7 +15,7 @@ import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.asTypeName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classDescriptorForType
-import com.squareup.anvil.compiler.internal.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
@@ -63,8 +63,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     projectFiles
-      .asSequence()
-      .flatMap { it.classesAndInnerClasses() }
+      .classesAndInnerClass(module)
       .filter { it.hasAnnotation(assistedFactoryFqName, module) }
       .forEach { clazz ->
         generateFactoryClass(codeGenDir, module, clazz)

@@ -14,7 +14,7 @@ import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.safePackageString
@@ -50,8 +50,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     projectFiles
-      .asSequence()
-      .flatMap { it.classesAndInnerClasses() }
+      .classesAndInnerClass(module)
       .forEach { clazz ->
         clazz.injectConstructor(injectFqName, module)
           ?.let {

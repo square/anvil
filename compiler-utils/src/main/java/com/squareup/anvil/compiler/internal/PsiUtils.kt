@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
-import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
@@ -38,19 +37,6 @@ import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 
 private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName, publishedApiFqName)
-
-@ExperimentalAnvilApi
-public fun KtFile.classesAndInnerClasses(): Sequence<KtClassOrObject> {
-  val children = findChildrenByClass(KtClassOrObject::class.java)
-
-  return generateSequence(children.toList()) { list ->
-    list
-      .flatMap {
-        it.declarations.filterIsInstance<KtClassOrObject>()
-      }
-      .ifEmpty { null }
-  }.flatMap { it.asSequence() }
-}
 
 @ExperimentalAnvilApi
 public fun KtNamedDeclaration.requireFqName(): FqName = requireNotNull(fqName) {
