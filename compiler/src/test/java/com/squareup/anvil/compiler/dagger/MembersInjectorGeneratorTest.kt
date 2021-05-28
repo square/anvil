@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.sqareup.anvil.compiler.internal.testing.compileAnvil
 import com.sqareup.anvil.compiler.internal.testing.createInstance
 import com.sqareup.anvil.compiler.internal.testing.getValue
 import com.sqareup.anvil.compiler.internal.testing.isStatic
@@ -775,7 +776,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
-  ): Result = com.sqareup.anvil.compiler.internal.testing.compile(
+  ): Result = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,

@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.sqareup.anvil.compiler.internal.testing.compileAnvil
 import com.sqareup.anvil.compiler.internal.testing.createInstance
 import com.sqareup.anvil.compiler.internal.testing.isStatic
 import com.sqareup.anvil.compiler.internal.testing.moduleFactoryClass
@@ -3147,7 +3148,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
-  ): Result = com.sqareup.anvil.compiler.internal.testing.compile(
+  ): Result = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,

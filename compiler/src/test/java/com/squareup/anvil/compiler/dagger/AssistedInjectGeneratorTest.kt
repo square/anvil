@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.sqareup.anvil.compiler.internal.testing.compileAnvil
 import com.sqareup.anvil.compiler.internal.testing.factoryClass
 import com.sqareup.anvil.compiler.internal.testing.invokeGet
 import com.sqareup.anvil.compiler.internal.testing.isStatic
@@ -627,7 +628,7 @@ public final class AssistedService_Factory {
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
-  ): Result = com.sqareup.anvil.compiler.internal.testing.compile(
+  ): Result = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,

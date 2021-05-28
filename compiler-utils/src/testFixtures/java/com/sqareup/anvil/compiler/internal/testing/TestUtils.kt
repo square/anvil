@@ -24,7 +24,7 @@ import kotlin.reflect.KClass
  * Helpful for testing code generators in unit tests end to end.
  */
 @ExperimentalAnvilApi
-public fun compile(
+public fun compileAnvil(
   vararg sources: String,
   enableDaggerAnnotationProcessor: Boolean = false,
   generateDaggerFactories: Boolean = false,

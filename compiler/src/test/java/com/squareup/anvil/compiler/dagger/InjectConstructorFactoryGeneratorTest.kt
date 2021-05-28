@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.sqareup.anvil.compiler.internal.testing.compileAnvil
 import com.sqareup.anvil.compiler.internal.testing.factoryClass
 import com.sqareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.USE_IR
@@ -1943,7 +1944,7 @@ public class InjectClass_Factory<T : List<String>>(
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
-  ): Result = com.sqareup.anvil.compiler.internal.testing.compile(
+  ): Result = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,

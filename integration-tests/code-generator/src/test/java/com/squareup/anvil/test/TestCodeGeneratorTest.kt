@@ -1,14 +1,14 @@
 package com.squareup.anvil.test
 
 import com.google.common.truth.Truth.assertThat
-import com.sqareup.anvil.compiler.internal.testing.compile
+import com.sqareup.anvil.compiler.internal.testing.compileAnvil
 import com.sqareup.anvil.compiler.internal.testing.createInstance
 import org.junit.Test
 
 class TestCodeGeneratorTest {
 
   @Test fun `code is generated`() {
-    compile(
+    compileAnvil(
       """
       package com.squareup.test
       

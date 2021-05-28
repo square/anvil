@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.sqareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.USE_IR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -114,7 +115,7 @@ class AnvilMergeAnnotationDetectorCheckTest {
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
-  ): Result = com.sqareup.anvil.compiler.internal.testing.compile(
+  ): Result = compileAnvil(
     sources = sources,
     disableComponentMerging = true,
     useIR = USE_IR,
