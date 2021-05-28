@@ -1,9 +1,11 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.factoryClass
+import com.sqareup.anvil.compiler.internal.testing.compileAnvil
+import com.sqareup.anvil.compiler.internal.testing.factoryClass
+import com.sqareup.anvil.compiler.internal.testing.isStatic
+import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.injectClass
-import com.squareup.anvil.compiler.isStatic
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
@@ -1676,7 +1678,8 @@ public class InjectClass_Factory<T>(
     }
   }
 
-  @Test fun `a factory class is generated for a generic class with two type parameters and a where clause`() {
+  @Test
+  fun `a factory class is generated for a generic class with two type parameters and a where clause`() {
     /*
 package com.squareup.test
 
@@ -1761,7 +1764,8 @@ public class InjectClass_Factory<T, R : Set<String>>(
     }
   }
 
-  @Test fun `a factory class is generated for a generic class with a where clause with a class bound`() {
+  @Test
+  fun `a factory class is generated for a generic class with a where clause with a class bound`() {
     /*
 package com.squareup.test
 
@@ -1940,12 +1944,13 @@ public class InjectClass_Factory<T : List<String>>(
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
-  ): Result = com.squareup.anvil.compiler.compile(
+  ): Result = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
     // Many constructor parameters are unused.
     allWarningsAsErrors = false,
+    useIR = USE_IR,
     block = block
   )
 }

@@ -1,90 +1,23 @@
 package com.squareup.anvil.compiler
 
 import com.google.common.truth.Truth.assertThat
+import com.sqareup.anvil.compiler.internal.testing.compileAnvil
+import com.sqareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.annotations.MergeComponent
-import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.Result
-import com.tschuchort.compiletesting.PluginOption
-import com.tschuchort.compiletesting.SourceFile
-import dagger.Component
-import dagger.Module
-import dagger.Subcomponent
-import dagger.internal.codegen.ComponentProcessor
-import org.jetbrains.kotlin.config.JvmTarget
-import org.jetbrains.kotlin.name.FqName
-import org.junit.Assume.assumeTrue
-import java.io.File
-import java.util.Locale.US
+import org.junit.Assume
+import java.util.Locale
 import kotlin.reflect.KClass
 
+@Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
 internal fun compile(
   vararg sources: String,
-  enableDaggerAnnotationProcessor: Boolean = false,
-  generateDaggerFactories: Boolean = false,
-  generateDaggerFactoriesOnly: Boolean = false,
-  disableComponentMerging: Boolean = false,
-  allWarningsAsErrors: Boolean = true,
   block: Result.() -> Unit = { }
-): Result {
-  return KotlinCompilation()
-    .apply {
-      compilerPlugins = listOf(AnvilComponentRegistrar())
-      useIR = USE_IR
-      useOldBackend = !USE_IR
-      inheritClassPath = true
-      jvmTarget = JvmTarget.JVM_1_8.description
-      verbose = false
-      this.allWarningsAsErrors = allWarningsAsErrors
-
-      if (enableDaggerAnnotationProcessor) {
-        annotationProcessors = listOf(ComponentProcessor())
-      }
-
-      val commandLineProcessor = AnvilCommandLineProcessor()
-      commandLineProcessors = listOf(commandLineProcessor)
-
-      pluginOptions = listOf(
-        PluginOption(
-          pluginId = commandLineProcessor.pluginId,
-          optionName = srcGenDirName,
-          optionValue = File(workingDir, "build/anvil").absolutePath
-        ),
-        PluginOption(
-          pluginId = commandLineProcessor.pluginId,
-          optionName = generateDaggerFactoriesName,
-          optionValue = generateDaggerFactories.toString()
-        ),
-        PluginOption(
-          pluginId = commandLineProcessor.pluginId,
-          optionName = generateDaggerFactoriesOnlyName,
-          optionValue = generateDaggerFactoriesOnly.toString()
-        ),
-        PluginOption(
-          pluginId = commandLineProcessor.pluginId,
-          optionName = disableComponentMergingName,
-          optionValue = disableComponentMerging.toString()
-        )
-      )
-
-      this.sources = sources.map { content ->
-        val packageDir = content.lines()
-          .firstOrNull { it.trim().startsWith("package ") }
-          ?.substringAfter("package ")
-          ?.replace('.', '/')
-          ?.let { "$it/" }
-          ?: ""
-
-        val name = "${workingDir.absolutePath}/sources/src/main/java/$packageDir/Source.kt"
-        with(File(name).parentFile) {
-          check(exists() || mkdirs())
-        }
-
-        SourceFile.kotlin(name, contents = content, trimIndent = true)
-      }
-    }
-    .compile()
-    .also(block)
-}
+): Result = compileAnvil(
+  sources = sources,
+  useIR = USE_IR,
+  block = block
+)
 
 internal val Result.contributingInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ContributingInterface")
@@ -177,47 +110,11 @@ private fun Class<*>.getHintScope(prefix: String): KClass<*>? =
     ?.also { assertThat(it.size).isEqualTo(1) }
     ?.first()
 
-internal fun Class<*>.moduleFactoryClass(
-  providerMethodName: String,
-  companion: Boolean = false
-): Class<*> {
-  val companionString = if (companion) "_Companion" else ""
-  val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
-
-  return classLoader.loadClass(
-    "${packageName()}$enclosingClassString$simpleName$companionString" +
-      "_${providerMethodName.capitalize(US)}Factory"
-  )
-}
-
-internal fun Class<*>.factoryClass(): Class<*> {
-  val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
-
-  return classLoader.loadClass("${packageName()}$enclosingClassString${simpleName}_Factory")
-}
-
-internal fun Class<*>.implClass(): Class<*> {
-  val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
-  return classLoader.loadClass("${packageName()}$enclosingClassString${simpleName}_Impl")
-}
-
-internal fun Class<*>.membersInjector(): Class<*> {
-  val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
-
-  return classLoader.loadClass(
-    "${packageName()}$enclosingClassString${simpleName}_MembersInjector"
-  )
-}
-
-private fun Class<*>.packageName(): String = `package`.name.let {
-  if (it.isBlank()) "" else "$it."
-}
-
 private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*>>? {
   // The capitalize() doesn't make sense, I don't know where this is coming from. Maybe it's a
   // bug in the compile testing library?
   val className = canonicalName.replace('.', '_')
-    .capitalize(US) + "Kt"
+    .capitalize(Locale.US) + "Kt"
 
   val clazz = try {
     classLoader.loadClass("$packagePrefix.${packageName()}$className")
@@ -233,36 +130,6 @@ private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*
     .filterIsInstance<KClass<*>>()
 }
 
-internal val Class<*>.daggerComponent: Component
-  get() = annotations.filterIsInstance<Component>()
-    .also { assertThat(it).hasSize(1) }
-    .first()
-
-internal val Class<*>.daggerSubcomponent: Subcomponent
-  get() = annotations.filterIsInstance<Subcomponent>()
-    .also { assertThat(it).hasSize(1) }
-    .first()
-
-internal val Class<*>.daggerModule: Module
-  get() = annotations.filterIsInstance<Module>()
-    .also { assertThat(it).hasSize(1) }
-    .first()
-
-internal infix fun Class<*>.extends(other: Class<*>): Boolean = other.isAssignableFrom(this)
-
 internal fun assumeMergeComponent(annotationClass: KClass<*>) {
-  assumeTrue(annotationClass == MergeComponent::class)
+  Assume.assumeTrue(annotationClass == MergeComponent::class)
 }
-
-internal fun Array<KClass<*>>.withoutAnvilModule(): List<KClass<*>> = toList().withoutAnvilModule()
-internal fun Collection<KClass<*>>.withoutAnvilModule(): List<KClass<*>> =
-  filterNot { FqName(it.qualifiedName!!).isAnvilModule() }
-
-internal fun Any.invokeGet(vararg args: Any?): Any {
-  val method = this::class.java.declaredMethods.single { it.name == "get" }
-  return method.invoke(this, *args)
-}
-
-@Suppress("UNCHECKED_CAST")
-internal fun <T> Annotation.getValue(): T =
-  this::class.java.declaredMethods.single { it.name == "value" }.invoke(this) as T

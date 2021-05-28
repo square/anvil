@@ -1,10 +1,12 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.sqareup.anvil.compiler.internal.testing.compileAnvil
+import com.sqareup.anvil.compiler.internal.testing.factoryClass
+import com.sqareup.anvil.compiler.internal.testing.invokeGet
+import com.sqareup.anvil.compiler.internal.testing.isStatic
+import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.assistedService
-import com.squareup.anvil.compiler.factoryClass
-import com.squareup.anvil.compiler.invokeGet
-import com.squareup.anvil.compiler.isStatic
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
@@ -626,10 +628,11 @@ public final class AssistedService_Factory {
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
-  ): Result = com.squareup.anvil.compiler.compile(
+  ): Result = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
+    useIR = USE_IR,
     block = block
   )
 }

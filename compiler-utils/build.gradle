@@ -1,9 +1,12 @@
 apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'java-test-fixtures'
 apply plugin: 'com.vanniktech.maven.publish'
 
 kotlin {
   explicitApi()
 }
+
+def isIdeSync = getSystemProperty('idea.sync.active', 'false').toBoolean()
 
 dependencies {
   api project(':annotations')
@@ -13,4 +16,30 @@ dependencies {
 
   implementation deps.dagger2.dagger
   implementation deps.inject
+
+  testFixturesApi deps.kotlin.compile_testing
+  testFixturesImplementation project(':compiler')
+  testFixturesImplementation deps.dagger2.compiler
+  testFixturesImplementation deps.dagger2.dagger
+  testFixturesImplementation deps.junit
+  testFixturesImplementation deps.truth
+
+  // This workaround is needed to resolve classes in the IDE properly.
+  if (isIdeSync) {
+    compileOnly project(':compiler')
+    compileOnly deps.dagger2.compiler
+    compileOnly deps.junit
+    compileOnly deps.kotlin.compile_testing
+    compileOnly deps.truth
+  }
 }
+
+private def getSystemProperty(String name, String defaultValue = null) {
+  def provider = providers.systemProperty(name).forUseAtConfigurationTime()
+  if (defaultValue) {
+    return provider.getOrElse(defaultValue)
+  } else {
+    return provider.getOrNull()
+  }
+}
+

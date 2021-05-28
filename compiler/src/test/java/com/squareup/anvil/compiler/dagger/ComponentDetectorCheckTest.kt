@@ -1,6 +1,8 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.sqareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.USE_IR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
@@ -92,9 +94,10 @@ class ComponentDetectorCheckTest {
   private fun compile(
     vararg sources: String,
     block: Result.() -> Unit = { }
-  ): Result = com.squareup.anvil.compiler.compile(
+  ): Result = compileAnvil(
     sources = sources,
     generateDaggerFactories = true,
+    useIR = USE_IR,
     block = block
   )
 }
