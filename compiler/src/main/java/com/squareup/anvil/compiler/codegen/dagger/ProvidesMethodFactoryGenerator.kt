@@ -13,6 +13,7 @@ import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.functions
@@ -51,7 +52,6 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import java.io.File
-import java.util.Locale.US
 
 @AutoService(CodeGenerator::class)
 internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
@@ -135,7 +135,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
       if (isProperty) {
         append("Get")
       }
-      append(declaration.requireFqName().shortName().asString().capitalize(US))
+      append(declaration.requireFqName().shortName().asString().capitalize())
       if (isMangled) {
         append("\$${module.mangledNameSuffix()}")
       }
@@ -154,7 +154,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     val moduleClass = clazz.asClassName()
 
     val byteCodeFunctionName = when {
-      isProperty -> "get" + callableName.capitalize(US)
+      isProperty -> "get" + callableName.capitalize()
       isMangled -> "$callableName\$${module.mangledNameSuffix()}"
       else -> callableName
     }

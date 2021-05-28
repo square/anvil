@@ -4,9 +4,9 @@ import com.google.common.truth.Truth.assertThat
 import com.sqareup.anvil.compiler.internal.testing.compileAnvil
 import com.sqareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.annotations.MergeComponent
+import com.squareup.anvil.compiler.internal.capitalize
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Assume
-import java.util.Locale
 import kotlin.reflect.KClass
 
 @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
@@ -114,7 +114,7 @@ private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*
   // The capitalize() doesn't make sense, I don't know where this is coming from. Maybe it's a
   // bug in the compile testing library?
   val className = canonicalName.replace('.', '_')
-    .capitalize(Locale.US) + "Kt"
+    .capitalize() + "Kt"
 
   val clazz = try {
     classLoader.loadClass("$packagePrefix.${packageName()}$className")

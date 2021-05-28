@@ -8,6 +8,7 @@ import com.sqareup.anvil.compiler.internal.testing.isStatic
 import com.sqareup.anvil.compiler.internal.testing.membersInjector
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.injectClass
+import com.squareup.anvil.compiler.internal.capitalize
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.MembersInjector
@@ -17,7 +18,6 @@ import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import java.io.File
 import java.lang.reflect.Method
-import java.util.Locale.US
 import javax.inject.Named
 import javax.inject.Provider
 
@@ -769,7 +769,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     // retention.
     return declaredMethods
       .filter { it.isStatic }
-      .single { it.name == "inject${memberName.capitalize(US)}" }
+      .single { it.name == "inject${memberName.capitalize()}" }
   }
 
   @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")

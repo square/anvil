@@ -23,8 +23,10 @@ import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classDescriptorForType
 import com.squareup.anvil.compiler.internal.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.decapitalize
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.hasAnnotation
@@ -66,7 +68,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
 import org.jetbrains.kotlin.types.KotlinType
 import java.io.File
-import java.util.Locale.US
 
 private val supportedFqNames = listOf(
   mergeComponentFqName,
@@ -288,7 +289,7 @@ internal class BindingModuleGenerator(
                         prefix = "provide",
                         postfix = if (isMultibinding) "Multi" else ""
                       ) {
-                        it.capitalize(US)
+                        it.capitalize()
                       }
                   )
                   .addAnnotation(Provides::class)
@@ -316,7 +317,7 @@ internal class BindingModuleGenerator(
                         prefix = "bind",
                         postfix = if (isMultibinding) "Multi" else ""
                       ) {
-                        it.capitalize(US)
+                        it.capitalize()
                       }
                   )
                   .addAnnotation(Binds::class)
@@ -330,7 +331,7 @@ internal class BindingModuleGenerator(
                   .addAnnotations(mapKeys)
                   .addModifiers(ABSTRACT)
                   .addParameter(
-                    name = concreteType.shortName().asString().decapitalize(US),
+                    name = concreteType.shortName().asString().decapitalize(),
                     type = contributedClass.asClassName()
                   )
                   .returns(boundType.asClassName())
