@@ -7,7 +7,7 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
-import com.squareup.anvil.compiler.internal.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeInterfacesFqName
@@ -29,8 +29,7 @@ internal class AnvilAnnotationDetectorCheck : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     val clazz = projectFiles
-      .asSequence()
-      .flatMap { it.classesAndInnerClasses() }
+      .classesAndInnerClass(module)
       .firstOrNull {
         it.hasAnnotation(mergeComponentFqName, module) ||
           it.hasAnnotation(mergeSubcomponentFqName, module) ||

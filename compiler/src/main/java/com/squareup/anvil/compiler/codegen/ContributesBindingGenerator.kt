@@ -14,7 +14,7 @@ import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
@@ -52,8 +52,8 @@ internal class ContributesBindingGenerator : CodeGenerator {
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>
   ): Collection<GeneratedFile> {
-    return projectFiles.asSequence()
-      .flatMap { it.classesAndInnerClasses() }
+    return projectFiles
+      .classesAndInnerClass(module)
       .filter { it.hasAnnotation(contributesBindingFqName, module) }
       .onEach { clazz ->
         clazz.checkClassIsPublic()

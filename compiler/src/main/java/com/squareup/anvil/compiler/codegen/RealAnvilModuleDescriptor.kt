@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.internal.AnvilModuleDescriptor
-import com.squareup.anvil.compiler.internal.classesAndInnerClasses
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
@@ -14,15 +13,21 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class RealAnvilModuleDescriptor(
   delegate: ModuleDescriptor
-) : AnvilModuleDescriptor(), ModuleDescriptor by delegate {
+) : AnvilModuleDescriptor, ModuleDescriptor by delegate {
 
-  private val classesMap = mutableMapOf<KtFile, List<KtClassOrObject>>()
+  private val classesMap = mutableMapOf<String, List<KtClassOrObject>>()
   private val allClasses: Sequence<KtClassOrObject>
     get() = classesMap.values.asSequence().flatMap { it }
 
   fun addFiles(files: Collection<KtFile>) {
     files.forEach { ktFile ->
-      classesMap[ktFile] = ktFile.classesAndInnerClasses().toList()
+      classesMap[ktFile.identifier] = ktFile.classesAndInnerClasses()
+    }
+  }
+
+  override fun getClassesAndInnerClasses(ktFile: KtFile): List<KtClassOrObject> {
+    return classesMap.getOrPut(ktFile.identifier) {
+      ktFile.classesAndInnerClasses()
     }
   }
 
@@ -39,4 +44,19 @@ class RealAnvilModuleDescriptor(
       .firstOrNull { it.fqName == fqName }
       ?.fqName
   }
+
+  private val KtFile.identifier: String
+    get() = packageFqName.asString() + name
+}
+
+private fun KtFile.classesAndInnerClasses(): List<KtClassOrObject> {
+  val children = findChildrenByClass(KtClassOrObject::class.java)
+
+  return generateSequence(children.toList()) { list ->
+    list
+      .flatMap {
+        it.declarations.filterIsInstance<KtClassOrObject>()
+      }
+      .ifEmpty { null }
+  }.flatten().toList()
 }
