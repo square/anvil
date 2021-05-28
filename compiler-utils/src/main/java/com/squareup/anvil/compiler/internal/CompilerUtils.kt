@@ -168,6 +168,19 @@ public fun FqName.safePackageString(
   }
 
 @ExperimentalAnvilApi
+public fun FqName.classIdBestGuess(): ClassId {
+  val segments = pathSegments().map { it.asString() }
+  val classNameIndex = segments.indexOfFirst { it[0].isUpperCase() }
+  if (classNameIndex < 0) {
+    return ClassId.topLevel(this)
+  }
+
+  val packageFqName = FqName.fromSegments(segments.subList(0, classNameIndex))
+  val relativeClassName = FqName.fromSegments(segments.subList(classNameIndex, segments.size))
+  return ClassId(packageFqName, relativeClassName, false)
+}
+
+@ExperimentalAnvilApi
 public fun String.capitalize(): String = replaceFirstChar(Char::uppercaseChar)
 
 @ExperimentalAnvilApi

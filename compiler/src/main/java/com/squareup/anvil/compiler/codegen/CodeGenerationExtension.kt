@@ -18,10 +18,22 @@ import java.io.File
 
 internal class CodeGenerationExtension(
   private val codeGenDir: File,
-  private val codeGenerators: List<CodeGenerator>
+  codeGenerators: List<CodeGenerator>
 ) : AnalysisHandlerExtension {
 
   private var didRecompile = false
+
+  private val codeGenerators = codeGenerators
+    .onEach {
+      check(it !is FlushingCodeGenerator || it !is PrivateCodeGenerator) {
+        "A code generator can't be a private code generator and flushing code generator at the " +
+          "same time. Private code generators don't impact other code generators, therefore " +
+          "they shouldn't need to flush files after other code generators generated code."
+      }
+    }
+    // Use a stable sort in case code generators depend on the order.
+    // At least don't make it random.
+    .sortedWith(compareBy({ it is PrivateCodeGenerator }, { it::class.qualifiedName }))
 
   override fun doAnalysis(
     project: Project,
@@ -52,56 +64,58 @@ internal class CodeGenerationExtension(
         }
       }
 
-    fun generateCode(files: Collection<KtFile>): Collection<GeneratedFile> =
-      codeGenerators
-        .flatMap {
-          it.generateCode(codeGenDir, module, files)
-        }
-
     val psiManager = PsiManager.getInstance(project)
 
-    var newFiles = generateCode(files)
+    val anvilModule = RealAnvilModuleDescriptor(module)
+    anvilModule.addFiles(files)
+
+    fun Collection<GeneratedFile>.toKtFile(): Collection<KtFile> {
+      return this
+        .mapNotNull { (file, content) ->
+          val virtualFile = LightVirtualFile(
+            file.relativeTo(codeGenDir).path,
+            KotlinFileType.INSTANCE,
+            content
+          )
+
+          psiManager.findFile(virtualFile)
+        }
+        .filterIsInstance<KtFile>()
+        .also { anvilModule.addFiles(it) }
+    }
+
+    fun Collection<CodeGenerator>.generateCode(files: Collection<KtFile>): Collection<KtFile> =
+      flatMap { codeGenerator ->
+        codeGenerator.generateCode(codeGenDir, anvilModule, files).toKtFile()
+      }
+
+    fun Collection<CodeGenerator>.flush(): Collection<KtFile> =
+      filterIsInstance<FlushingCodeGenerator>()
+        .flatMap { codeGenerator ->
+          codeGenerator.flush(codeGenDir, anvilModule).toKtFile()
+        }
+
+    var newFiles = codeGenerators.generateCode(files)
     while (newFiles.isNotEmpty()) {
       // Parse the KtFile for each generated file. Then feed the code generators with the new
       // parsed files until no new files are generated.
-      newFiles = generateCode(newFiles.parse(psiManager))
+      newFiles = codeGenerators.generateCode(newFiles)
     }
 
-    val flushedFiles = codeGenerators
-      .filterIsInstance<FlushingCodeGenerator>()
-      .flatMap { codeGenerator -> codeGenerator.flush(codeGenDir, module) }
-      .parse(psiManager)
+    val flushedFiles = codeGenerators.flush()
 
+    // The contract is that PrivateCodeGenerators are called one last time after flush().
     codeGenerators
       .filterIsInstance<PrivateCodeGenerator>()
-      .forEach { codeGenerator ->
-        codeGenerator.generateCode(codeGenDir, module, flushedFiles)
-      }
-
-    codeGenerators
-      .filterIsInstance<FlushingCodeGenerator>()
-      .forEach { codeGenerator ->
-        codeGenerator.flush(codeGenDir, module)
-      }
+      .generateCode(flushedFiles)
 
     // This restarts the analysis phase and will include our files.
     return RetryWithAdditionalRoots(
       bindingContext = bindingTrace.bindingContext,
-      moduleDescriptor = module,
+      moduleDescriptor = anvilModule,
       additionalJavaRoots = emptyList(),
       additionalKotlinRoots = listOf(codeGenDir),
       addToEnvironment = true
     )
   }
-
-  private fun Collection<GeneratedFile>.parse(psiManager: PsiManager): Collection<KtFile> =
-    mapNotNull { (file, content) ->
-      val virtualFile = LightVirtualFile(
-        file.relativeTo(codeGenDir).path,
-        KotlinFileType.INSTANCE,
-        content
-      )
-
-      psiManager.findFile(virtualFile)
-    }.filterIsInstance<KtFile>()
 }

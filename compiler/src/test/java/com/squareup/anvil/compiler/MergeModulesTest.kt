@@ -148,7 +148,7 @@ class MergeModulesTest {
       import com.squareup.anvil.annotations.compat.MergeModules
 
       @ContributesTo(Any::class)
-      abstract class DaggerModule1
+      abstract class DaggerModule2
 
       @MergeModules(Any::class)
       class DaggerModule1

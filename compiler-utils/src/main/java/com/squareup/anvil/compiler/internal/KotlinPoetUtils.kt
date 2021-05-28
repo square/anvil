@@ -77,12 +77,12 @@ public fun FqName.asClassName(module: ModuleDescriptor): ClassName {
     val packageSegments = segments.subList(0, index)
     val classSegments = segments.subList(index, segments.size)
 
-    val classifier = module.findClassOrTypeAlias(
+    val validFqName = module.canResolveFqName(
       packageName = FqName.fromSegments(packageSegments),
       className = classSegments.joinToString(separator = ".")
     )
 
-    if (classifier != null) {
+    if (validFqName) {
       return ClassName(
         packageName = packageSegments.joinToString(separator = "."),
         simpleNames = classSegments
