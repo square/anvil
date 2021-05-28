@@ -172,7 +172,7 @@ public inline fun <reified T> KtAnnotationEntry.findAnnotationArgument(
   // First check if the is any named parameter. Named parameters allow a different order of
   // arguments.
   annotationValues
-    .mapNotNull { valueArgument ->
+    .firstNotNullOfOrNull { valueArgument ->
       val children = valueArgument.children
       if (children.size == 2 && children[0] is KtValueArgumentName &&
         (children[0] as KtValueArgumentName).asName.asString() == name &&
@@ -183,7 +183,6 @@ public inline fun <reified T> KtAnnotationEntry.findAnnotationArgument(
         null
       }
     }
-    .firstOrNull()
     ?.let { return it }
 
   // If there is no named argument, then take the first argument, which must be a class literal
