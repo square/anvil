@@ -59,6 +59,15 @@ class TestCodeGenerator : CodeGenerator {
           interface ContributedModule 
         """.trimIndent()
 
+        @Language("kotlin")
+        val injectClass = """
+          package $generatedPackage
+          
+          import javax.inject.Inject
+    
+          class InjectClass @Inject constructor() 
+        """.trimIndent()
+
         sequenceOf(
           createGeneratedFile(
             codeGenDir = codeGenDir,
@@ -77,6 +86,12 @@ class TestCodeGenerator : CodeGenerator {
             packageName = generatedPackage,
             fileName = "ContributedModule",
             content = contributedModule
+          ),
+          createGeneratedFile(
+            codeGenDir = codeGenDir,
+            packageName = generatedPackage,
+            fileName = "InjectClass",
+            content = injectClass
           ),
         )
       }
