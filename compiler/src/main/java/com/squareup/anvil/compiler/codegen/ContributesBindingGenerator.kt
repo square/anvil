@@ -113,7 +113,7 @@ internal fun KtClassOrObject.checkNotMoreThanOneQualifier(
   // annotations, then there can't be more than two qualifiers.
   if (annotationEntries.size <= 2) return
 
-  val qualifiers = requireClassDescriptor(module).annotations.filter { it.isQualifier() }
+  val qualifiers = annotationEntries.filter { it.isQualifier(module) }
 
   if (qualifiers.size > 1) {
     throw AnvilCompilationException(

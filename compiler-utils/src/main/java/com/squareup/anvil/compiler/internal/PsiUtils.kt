@@ -7,15 +7,11 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ClassifierDescriptorWithTypeParameters
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation.FROM_BACKEND
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
@@ -40,7 +36,6 @@ import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.KtValueArgumentName
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName, publishedApiFqName)
 
@@ -232,9 +227,8 @@ public fun PsiElement.requireFqName(
     // An inner class reference like Abc.Inner is also considered a KtDotQualifiedExpression in
     // some cases.
     is KtDotQualifiedExpression -> {
-      module
-        .resolveClassByFqName(FqName(text), KotlinLookupLocation(this))
-        ?.let { return it.fqNameSafe }
+      module.resolveFqNameOrNull(FqName(text))
+        ?.let { return it }
         ?: text
     }
     is KtNameReferenceExpression -> getReferencedName()
@@ -251,9 +245,8 @@ public fun PsiElement.requireFqName(
         if (qualifierText != null) {
 
           // The generic might be fully qualified. Try to resolve it and return early.
-          module
-            .resolveClassByFqName(FqName("$qualifierText.$className"), FROM_BACKEND)
-            ?.let { return it.fqNameSafe }
+          module.resolveFqNameOrNull(FqName("$qualifierText.$className"))
+            ?.let { return it }
 
           // If the name isn't fully qualified, then it's something like "Outer.Inner".
           // We can't use `text` here because that includes the type parameter(s).
@@ -266,9 +259,8 @@ public fun PsiElement.requireFqName(
 
         // Sometimes a KtUserType is a fully qualified name. Give it a try and return early.
         if (text.contains(".") && text[0].isLowerCase()) {
-          module
-            .resolveClassByFqName(FqName(text), FROM_BACKEND)
-            ?.let { return it.fqNameSafe }
+          module.resolveFqNameOrNull(FqName(text))
+            ?.let { return it }
         }
 
         // We can't use referencedName here. For inner classes like "Outer.Inner" it would only
@@ -318,7 +310,7 @@ public fun PsiElement.requireFqName(
           return matchingImportPaths[0].fqName
         matchingImportPaths.size > 1 ->
           return matchingImportPaths.first { importPath ->
-            module.resolveClassByFqName(importPath.fqName, FROM_BACKEND) != null
+            module.canResolveFqName(importPath.fqName)
           }.fqName
       }
     }
@@ -331,31 +323,30 @@ public fun PsiElement.requireFqName(
           return FqName("${matchingImportPaths[0].fqName.parent()}.$classReference")
         matchingImportPaths.size > 1 ->
           return matchingImportPaths.first { importPath ->
-            val fqName = FqName("${importPath.fqName.parent()}.$classReference")
-            module.resolveClassByFqName(fqName, FROM_BACKEND) != null
+            module.canResolveFqName(importPath.fqName, classReference)
           }.fqName
       }
     }
 
   // If there is no import, then try to resolve the class with the same package as this file.
-  module.findClassOrTypeAlias(containingKtFile.packageFqName, classReference)
-    ?.let { return it.fqNameSafe }
+  module.resolveFqNameOrNull(containingKtFile.packageFqName, classReference)
+    ?.let { return it }
 
   // If this doesn't work, then maybe a class from the Kotlin package is used.
-  module.resolveClassByFqName(FqName("kotlin.$classReference"), FROM_BACKEND)
-    ?.let { return it.fqNameSafe }
+  module.resolveFqNameOrNull(FqName("kotlin.$classReference"))
+    ?.let { return it }
 
   // If this doesn't work, then maybe a class from the Kotlin collection package is used.
-  module.resolveClassByFqName(FqName("kotlin.collections.$classReference"), FROM_BACKEND)
-    ?.let { return it.fqNameSafe }
+  module.resolveFqNameOrNull(FqName("kotlin.collections.$classReference"))
+    ?.let { return it }
 
   // If this doesn't work, then maybe a class from the Kotlin jvm package is used.
-  module.resolveClassByFqName(FqName("kotlin.jvm.$classReference"), FROM_BACKEND)
-    ?.let { return it.fqNameSafe }
+  module.resolveFqNameOrNull(FqName("kotlin.jvm.$classReference"))
+    ?.let { return it }
 
   // Or java.lang.
-  module.resolveClassByFqName(FqName("java.lang.$classReference"), FROM_BACKEND)
-    ?.let { return it.fqNameSafe }
+  module.resolveFqNameOrNull(FqName("java.lang.$classReference"))
+    ?.let { return it }
 
   findFqNameInSuperTypes(module, classReference)
     ?.let { return it }
@@ -369,7 +360,8 @@ public fun PsiElement.requireFqName(
       it.importPath?.fqName
     }
     .forEach { importFqName ->
-      module.findClassOrTypeAlias(importFqName, classReference)?.let { return it.fqNameSafe }
+      module.resolveFqNameOrNull(importFqName, classReference)
+        ?.let { return it }
     }
 
   // Check if it's a named import.
@@ -390,9 +382,7 @@ private fun PsiElement.findFqNameInSuperTypes(
   classReference: String
 ): FqName? {
   fun tryToResolveClassFqName(outerClass: FqName): FqName? =
-    module
-      .resolveClassByFqName(FqName("$outerClass.$classReference"), FROM_BACKEND)
-      ?.fqNameSafe
+    module.resolveFqNameOrNull(FqName("$outerClass.$classReference"))
 
   return parents.filterIsInstance<KtClassOrObject>()
     .flatMap { clazz ->
@@ -405,20 +395,6 @@ private fun PsiElement.findFqNameInSuperTypes(
         .mapNotNull { tryToResolveClassFqName(it) }
     }
     .firstOrNull()
-}
-
-@ExperimentalAnvilApi
-public fun ModuleDescriptor.findClassOrTypeAlias(
-  packageName: FqName,
-  className: String
-): ClassifierDescriptorWithTypeParameters? {
-  resolveClassByFqName(FqName("${packageName.safePackageString()}$className"), FROM_BACKEND)
-    ?.let { return it }
-
-  findTypeAliasAcrossModuleDependencies(ClassId(packageName, Name.identifier(className)))
-    ?.let { return it }
-
-  return null
 }
 
 @ExperimentalAnvilApi
