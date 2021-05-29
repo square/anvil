@@ -11,8 +11,10 @@ import com.squareup.anvil.plugin.ProjectType.ANDROID
 import com.squareup.anvil.plugin.ProjectType.JVM
 import com.squareup.anvil.plugin.ProjectType.MULTIPLATFORM_ANDROID
 import com.squareup.anvil.plugin.ProjectType.MULTIPLATFORM_JVM
+import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
+import org.gradle.api.Task
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.plugins.AppliedPlugin
 import org.gradle.api.plugins.PluginManager
@@ -188,7 +190,7 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       .configureEach { compileTask ->
         val result = CheckMixedSourceSet.preparePreciseJavaTrackingCheck(compileTask)
 
-        compileTask.doFirst {
+        compileTask.doFirstCompat {
           // Disable precise java tracking if needed. Note that the doFirst() action only runs
           // if the task is not up to date. That's ideal, because if nothing needs to be
           // compiled, then we don't need to disable the flag.
@@ -253,7 +255,7 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
           // that we pick up any change from a dependency when merging all the classes. Without
           // this workaround we could make changes in any library, but these changes wouldn't be
           // contributed to the Dagger graph, because incremental compilation tricked us.
-          stubsTask.doFirst {
+          stubsTask.doFirstCompat {
             stubsTask.incremental = false
             stubsTask.logger.info(
               "Anvil: Incremental compilation enabled: ${stubsTask.incremental} (stub)"
@@ -305,7 +307,7 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     // disableIncrementalCompilationTaskProvider to be visible from the doFirst block
 
     project.tasks.named(compileTaskName, KotlinCompile::class.java) { compileTask ->
-      compileTask.doFirst {
+      compileTask.doFirstCompat {
         // If the signal is set, then the plugin classpath changed. Apply the setting that
         // DisableIncrementalCompilationTask requested.
         val incremental = incrementalSignal.get().isIncremental(projectPath)
@@ -390,4 +392,26 @@ private enum class ProjectType(val isAndroid: Boolean) {
   ANDROID(true),
   MULTIPLATFORM_JVM(false),
   MULTIPLATFORM_ANDROID(true),
+}
+
+/*
+ * Don't convert this to a lambda to avoid this error:
+ *
+ * The task was not up-to-date because of the following reasons:
+ * Additional action for task ':sample:library:compileKotlin': was implemented by the Java
+ * lambda 'com.squareup.anvil.plugin.AnvilPlugin$$Lambda$7578/0x0000000801769440'. Using Java
+ * lambdas is not supported, use an (anonymous) inner class instead.
+ *
+ * Sample build scan: https://scans.gradle.com/s/ppwb2psllveks/timeline?details=j62m2xx52wwxy
+ *
+ * More context is here: https://github.com/gradle/gradle/issues/5510#issuecomment-416860213
+ */
+@Suppress("ObjectLiteralToLambda")
+private fun <T : Task> T.doFirstCompat(block: (T) -> Unit) {
+  doFirst(object : Action<Task> {
+    override fun execute(task: Task) {
+      @Suppress("UNCHECKED_CAST")
+      block(task as T)
+    }
+  })
 }
