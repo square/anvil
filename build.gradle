@@ -32,6 +32,8 @@ allprojects {
   }
 }
 
+boolean configureOnDemandEnabled = getProperty("org.gradle.configureondemand", "false").toBoolean()
+
 subprojects {
   if (buildFile.exists()) {
     apply plugin: 'org.jlleitschuh.gradle.ktlint'
@@ -75,9 +77,6 @@ subprojects {
     }
   }
 
-  // TODO: fix obscure dependency substitution error
-  // This is the ideal solution, but doesn't quite work for some reason. The workaround below is
-  // needed to make it work for now.
   configurations.all {
     resolutionStrategy.dependencySubstitution {
       substitute module("com.squareup.anvil:annotations") with project(':annotations')
@@ -86,33 +85,25 @@ subprojects {
       substitute module("com.squareup.anvil:compiler-utils") with project(':compiler-utils')
     }
   }
-  // This is an ugly workaround.
-  def brokenProjects = [
-      project(':integration-tests:code-generator-tests'),
-      project(':integration-tests:dagger-factories-only'),
-      project(':integration-tests:library'),
-      project(':integration-tests:tests'),
-      project(':sample:library'),
-      project(':sample:app')
-  ]
-  brokenProjects.each { brokenProject ->
-    brokenProject.configurations.whenObjectAdded {
-      if (it.name == 'api') {
-        if (brokenProject.path != ':integration-tests:dagger-factories-only' ||
-            !rootProject.ext.generateDaggerFactoriesWithAnvil) {
-          brokenProject.dependencies.add('api', project(':annotations'))
-        }
-      }
-      if (it.name == 'kotlinCompilerPluginClasspath') {
-        brokenProject.dependencies.add('kotlinCompilerPluginClasspath', project(':compiler'))
-        brokenProject.dependencies.add('kotlinCompilerPluginClasspath', project(':compiler-api'))
-        brokenProject.dependencies.add('kotlinCompilerPluginClasspath', project(':compiler-utils'))
-      }
-    }
+
+  // We disable configure on demand in the local gradle.properties, but you can override this flag
+  // either in the CLI command or in ~/.gradle/gradle.properties. We really need to disable
+  // configure on demand in order to support the dependency substitution feature above. As a
+  // workaround force the evaluation of subprojects.
+  //
+  // The other option would be to stop the build if we detect configure on the demand, but some
+  // folks (including myself 🙃) set the flag globally in the Gradle home dir. The workaround
+  // is good enough for now.
+  if (configureOnDemandEnabled) {
+    //noinspection UnnecessaryQualifiedReference
+    (it as org.gradle.api.internal.project.DefaultProject).evaluate()
   }
-  // End ugly workaround.
 }
 
 task clean(type: Delete) {
   delete rootProject.buildDir
+}
+
+def getProperty(String name, String defaultValue) {
+  return project.hasProperty(name) ? project.getProperty(name) : defaultValue
 }
