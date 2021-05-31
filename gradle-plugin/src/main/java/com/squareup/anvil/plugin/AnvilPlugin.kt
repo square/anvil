@@ -169,7 +169,15 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     project.afterEvaluate {
       if (!extension.generateDaggerFactoriesOnly.get()) {
         project.pluginManager.withPlugin("org.jetbrains.kotlin.kapt") {
-          // This needs to be disabled, otherwise compiler plugins fail in weird ways when generating stubs.
+          // This needs to be disabled, otherwise compiler plugins fail in weird ways when
+          // generating stubs, e.g.:
+          //
+          // /anvil/sample/app/build/generated/source/kapt/debug/com/squareup/anvil
+          // /sample/DaggerAppComponent.java:13: error: DaggerAppComponent is not abstract and does
+          // not override abstract method string() in RandomComponent
+          // public final class DaggerAppComponent implements AppComponent {
+          //              ^
+          // 1 error
           project.extensions.findByType(KaptExtension::class.java)?.correctErrorTypes = false
         }
 
