@@ -190,6 +190,12 @@ internal class BindingModuleGenerator(
               annotation = contributesToFqName,
               scope = scope
             )
+            .filter { it.annotationOrNull(daggerModuleFqName) != null }
+            .flatMap {
+              it.annotationOrNull(contributesToFqName, scope)
+                ?.replaces(module)
+                ?: emptyList()
+            }
             .map { it.fqNameSafe }
         )
         .toList()
