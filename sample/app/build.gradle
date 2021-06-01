@@ -59,3 +59,11 @@ dependencies {
 
   kaptAndroidTest deps.dagger2.compiler
 }
+
+// Keep that here for testing purposes. The Anvil Gradle plugin will set this flag to false again,
+// otherwise Android projects will fail to build. This serves kinda as an integration test.
+pluginManager.withPlugin('kotlin-kapt') {
+  kapt {
+    correctErrorTypes = true
+  }
+}
