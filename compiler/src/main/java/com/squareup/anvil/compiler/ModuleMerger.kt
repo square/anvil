@@ -118,7 +118,46 @@ internal class ModuleMerger(
       // for replaced classes and the final result.
       .toList()
 
+    val excludedModules = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)
+      ?.value
+      ?.map {
+        val argumentType = it.argumentType(module)
+        val classDescriptorForExclusion = argumentType.classDescriptorForType()
+
+        val contributesToAnnotation = classDescriptorForExclusion
+          .annotationOrNull(contributesToFqName)
+        val contributesBindingAnnotation = classDescriptorForExclusion
+          .annotationOrNull(contributesBindingFqName)
+        val contributesMultibindingAnnotation = classDescriptorForExclusion
+          .annotationOrNull(contributesMultibindingFqName)
+
+        // Verify that the the replaced classes use the same scope.
+        val scopeOfExclusion = contributesToAnnotation?.scope(module)
+          ?: contributesBindingAnnotation?.scope(module)
+          ?: contributesMultibindingAnnotation?.scope(module)
+          ?: throw AnvilCompilationException(
+            codegen.descriptor,
+            "Could not determine the scope of the excluded class " +
+              "${classDescriptorForExclusion.fqNameSafe}."
+          )
+
+        if (scopeOfExclusion.fqNameSafe != scopeFqName) {
+          throw AnvilCompilationException(
+            codegen.descriptor,
+            "${codegen.descriptor.fqNameSafe} with scope $scopeFqName wants to exclude " +
+              "${classDescriptorForExclusion.fqNameSafe} with scope " +
+              "${scopeOfExclusion.fqNameSafe}. The exclusion must use the same scope."
+          )
+        }
+
+        argumentType.asmType(codegen.typeMapper)
+      }
+      ?: emptyList()
+
     val replacedModules = modules
+      .filter { (classDescriptor, _) ->
+        classDescriptor.defaultType.asmType(codegen.typeMapper) !in excludedModules
+      }
       .flatMap { (classDescriptor, contributeAnnotation) ->
         contributeAnnotation.replaces(module)
           .map { classDescriptorForReplacement ->
@@ -181,42 +220,6 @@ internal class ModuleMerger(
       annotationFqName = contributesMultibindingFqName,
       hintPackagePrefix = HINT_MULTIBINDING_PACKAGE_PREFIX
     )
-
-    val excludedModules = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)
-      ?.value
-      ?.map {
-        val argumentType = it.argumentType(module)
-        val classDescriptorForExclusion = argumentType.classDescriptorForType()
-
-        val contributesToAnnotation = classDescriptorForExclusion
-          .annotationOrNull(contributesToFqName)
-        val contributesBindingAnnotation = classDescriptorForExclusion
-          .annotationOrNull(contributesBindingFqName)
-        val contributesMultibindingAnnotation = classDescriptorForExclusion
-          .annotationOrNull(contributesMultibindingFqName)
-
-        // Verify that the the replaced classes use the same scope.
-        val scopeOfExclusion = contributesToAnnotation?.scope(module)
-          ?: contributesBindingAnnotation?.scope(module)
-          ?: contributesMultibindingAnnotation?.scope(module)
-          ?: throw AnvilCompilationException(
-            codegen.descriptor,
-            "Could not determine the scope of the excluded class " +
-              "${classDescriptorForExclusion.fqNameSafe}."
-          )
-
-        if (scopeOfExclusion.fqNameSafe != scopeFqName) {
-          throw AnvilCompilationException(
-            codegen.descriptor,
-            "${codegen.descriptor.fqNameSafe} with scope $scopeFqName wants to exclude " +
-              "${classDescriptorForExclusion.fqNameSafe} with scope " +
-              "${scopeOfExclusion.fqNameSafe}. The exclusion must use the same scope."
-          )
-        }
-
-        argumentType.asmType(codegen.typeMapper)
-      }
-      ?: emptyList()
 
     if (predefinedModules != null) {
       val intersect = predefinedModules.intersect(excludedModules)
