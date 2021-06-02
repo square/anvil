@@ -1,6 +1,6 @@
 # Changelog
 
-## 2.3.0
+## 2.3.0 (2021-06-02)
 
 * Add option to extend Anvil with your own `CodeGenerator`, see [here](README.md#extending-anvil) and #265.
 * Use Gradle Property APIs in the Anvil extension. This is a source-breaking change (but binary-compatible) for Kotlin and .kts consumers of the Anvil Gradle plugin, see #284.
