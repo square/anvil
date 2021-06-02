@@ -201,7 +201,48 @@ wrong imports and deeply nested dependency chains applications might need to mak
 exclusion rule does what it implies. In this specific example `DaggerModule` wishes to be
 contributed to this scope, but it has been excluded for this component and thus is not added.
 
-## Advantages
+## Dagger Factory Generation
+
+Anvil allows you to generate Factory classes that usually the Dagger annotation processor would
+generate for `@Provides` methods, `@Inject` constructors and `@Inject` fields. The benefit of this
+feature is that you don't need to enable the Dagger annotation processor in this module. That often
+means you can skip KAPT and the stub generating task. In addition Anvil generates Kotlin instead
+of Java code, which allows Gradle to skip the Java compilation task. The result is faster
+builds.
+
+```groovy
+anvil {
+  generateDaggerFactories = true // default is false
+}
+```
+
+In our codebase we measured that modules using Dagger build 65% faster with this new Anvil feature
+compared to using the Dagger annotation processor:
+
+| Stub generation | Kapt | Javac | Kotlinc | Sum
+:--- | ---: | ---: | ---: | ---: | ---:
+Dagger | 12.976 | 40.377 | 8.571 | 10.241 | 72.165
+Anvil | 0 | 0 | 6.965 | 17.748 | 24.713
+
+For full builds of applications we measured savings of 16% on average.
+
+![Benchmark Dagger Factories](images/benchmark_dagger_factories.png?raw=true "Benchmark Dagger Factories")
+
+This feature can only be enabled in Gradle modules that don't compile any Dagger component. Since
+Anvil only processes Kotlin code, you shouldn't enable it in modules with mixed Kotlin / Java
+sources either.
+
+When you enable this feature, don't forget to remove the Dagger annotation processor. You should
+keep all other dependencies.
+
+## Extending Anvil
+
+Every codebase has its own dependency injection patterns where certain code structures need to be
+repeated over and over again. Here Anvil comes to the rescue and you can extend the compiler 
+plugin with your own `CodeGenerator`. For usage please take a look at the 
+[`compiler-api` artifact](compiler-api/README.md)
+
+## Advantages of Anvil
 
 Adding Dagger modules to components in a large modularized codebase with many application targets
 is overhead. You need to know where components are defined when creating a new Dagger module and
@@ -235,6 +276,9 @@ on top. The overhead is marginal, because Kotlin code is still compiled incremen
 compile tasks are skipped entirely, if nothing has changed. This doesn't change with Anvil.
 
 ![Benchmark](images/benchmark.png?raw=true "Benchmark")
+
+On top of that, Anvil provides actual build time improvements by replacing the Dagger annotation
+processor in many modules if you enable [Dagger Factory generation](#dagger-factory-generation).
 
 ## Kotlin compiler plugin
 
@@ -275,40 +319,6 @@ usage of the Dagger annotation processor to only [specific modules](https://spea
 for performance reasons. With Hilt we wouldn't be able to enforce this requirement anymore for
 component interfaces. The development of Anvil started long before Hilt was announced and the
 internal version is being used in production for a while.
-
-## Dagger Factory generation
-
-Anvil allows you to generate Factory classes that usually the Dagger annotation processor would 
-generate for `@Provides` methods, `@Inject` constructors and `@Inject` fields. The benefit of this 
-feature is that you don't need to enable the Dagger annotation processor in this module. That often 
-means you can skip KAPT and the stub generating task. In addition Anvil generates Kotlin instead 
-of Java code, which allows Gradle to skip the Java compilation task. The result is faster 
-builds.
-
-```groovy
-anvil {
-  generateDaggerFactories = true // default is false
-}
-```
-
-In our codebase we measured that modules using Dagger build 65% faster with this new Anvil feature
-compared to using the Dagger annotation processor:
-
-  | Stub generation | Kapt | Javac | Kotlinc | Sum
-:--- | ---: | ---: | ---: | ---: | ---:
-Dagger | 12.976 | 40.377 | 8.571 | 10.241 | 72.165
-Anvil | 0 | 0 | 6.965 | 17.748 | 24.713
-
-For full builds of applications we measured savings of 16% on average.
-
-![Benchmark Dagger Factories](images/benchmark_dagger_factories.png?raw=true "Benchmark Dagger Factories")
-
-This feature can only be enabled in Gradle modules that don't compile any Dagger component. Since 
-Anvil only processes Kotlin code, you shouldn't enable it in modules with mixed Kotlin / Java 
-sources either.
-
-When you enable this feature, don't forget to remove the Dagger annotation processor. You should
-keep all other dependencies.
 
 ## License
 

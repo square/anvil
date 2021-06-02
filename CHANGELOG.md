@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.0
+
+* Add option to extend Anvil with your own `CodeGenerator`, see [here](README.md#extending-anvil) and #265.
+* Use Gradle Property APIs in the Anvil extension. This is a source-breaking change (but binary-compatible) for Kotlin and .kts consumers of the Anvil Gradle plugin, see #284.
+* Upgrade Anvil to Kotlin `1.5.10`. The old legacy compiler backend is still supported and the IR backend not required yet.  
+
 ## 2.2.3 (2021-05-25)
 
 * Support the JVM and Android targets for Kotlin Multiplatform projects, see #222.
