@@ -1,0 +1,56 @@
+plugins {
+  id 'org.jetbrains.kotlin.multiplatform'
+  id 'com.android.library'
+  id 'org.jetbrains.kotlin.kapt'
+  id 'com.squareup.anvil'
+}
+
+android {
+  compileSdkVersion 30
+
+  defaultConfig {
+    minSdkVersion 24
+    targetSdkVersion 30
+    versionCode 1
+    versionName "1.0.0"
+  }
+
+  compileOptions {
+    sourceCompatibility JavaVersion.VERSION_1_8
+    targetCompatibility JavaVersion.VERSION_1_8
+  }
+
+  lintOptions {
+    warningsAsErrors true
+  }
+
+  variantFilter { variant ->
+    //noinspection UnnecessaryQualifiedReference
+    if (variant.buildType.name == com.android.builder.core.BuilderConstants.RELEASE) {
+      variant.setIgnore(true)
+    }
+  }
+}
+
+kotlin {
+  android()
+
+  sourceSets {
+    androidMain {
+      dependencies {
+        implementation deps.dagger2.dagger
+      }
+    }
+
+    androidTest {
+      dependencies {
+        implementation deps.junit
+        implementation deps.truth
+      }
+    }
+  }
+}
+
+dependencies {
+  kapt deps.dagger2.compiler
+}

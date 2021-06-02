@@ -1,0 +1,30 @@
+plugins {
+  id 'org.jetbrains.kotlin.multiplatform'
+  id 'org.jetbrains.kotlin.kapt'
+  id 'com.squareup.anvil'
+}
+
+kotlin {
+  jvm {
+    withJava()
+  }
+
+  sourceSets {
+    jvmMain {
+      dependencies {
+        implementation deps.dagger2.dagger
+      }
+    }
+
+    jvmTest {
+      dependencies {
+        implementation deps.junit
+        implementation deps.truth
+      }
+    }
+  }
+}
+
+dependencies {
+  kapt deps.dagger2.compiler
+}

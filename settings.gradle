@@ -1,3 +1,5 @@
+import org.gradle.util.VersionNumber
+
 include ':annotations'
 include ':compiler'
 include ':compiler-api'
@@ -6,6 +8,15 @@ include ':integration-tests:code-generator'
 include ':integration-tests:code-generator-tests'
 include ':integration-tests:dagger-factories-only'
 include ':integration-tests:library'
+
+// TODO: There seems to be a bug with the Kotlin preview and MPP projects. Disable the Android
+//  module for now until the bug is resolved.
+def kotlinVersion = hasProperty('square.kotlinVersion') ? getProperty('square.kotlinVersion').toString() : '1.5.10'
+if (VersionNumber.parse(kotlinVersion).baseVersion < VersionNumber.parse("1.5.20")) {
+  include ':integration-tests:mpp:android-module'
+}
+
+include ':integration-tests:mpp:jvm-module'
 include ':integration-tests:tests'
 include ':sample:app'
 include ':sample:library'
