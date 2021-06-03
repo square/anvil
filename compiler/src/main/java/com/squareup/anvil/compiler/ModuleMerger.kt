@@ -156,6 +156,7 @@ internal class ModuleMerger(
 
     val replacedModules = modules
       .filter { (classDescriptor, _) ->
+        // Ignore replaced modules or bindings specified by excluded modules.
         classDescriptor.defaultType.asmType(codegen.typeMapper) !in excludedModules
       }
       .flatMap { (classDescriptor, contributeAnnotation) ->

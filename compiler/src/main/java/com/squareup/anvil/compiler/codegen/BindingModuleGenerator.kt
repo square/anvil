@@ -181,6 +181,7 @@ internal class BindingModuleGenerator(
       val bindingsReplacedInDaggerModules = contributedModuleClasses
         .asSequence()
         .filter { it.scope(contributesToFqName, module) == scope }
+        // Ignore replaced bindings specified by excluded modules for this scope.
         .filter { it.fqName !in excludedTypesForScope[scope].orEmpty().map { it.fqNameSafe } }
         .flatMap { it.replaces(contributesToFqName, module) }
         .plus(
@@ -192,6 +193,7 @@ internal class BindingModuleGenerator(
               scope = scope
             )
             .filter { it.annotationOrNull(daggerModuleFqName) != null }
+            // Ignore replaced bindings specified by excluded modules for this scope.
             .filter { it !in excludedTypesForScope[scope].orEmpty() }
             .flatMap {
               it.annotationOrNull(contributesToFqName, scope)
