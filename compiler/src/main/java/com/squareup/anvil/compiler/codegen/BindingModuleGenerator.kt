@@ -88,7 +88,6 @@ internal class BindingModuleGenerator(
   private val mergedScopes = mutableMapOf<FqName, MutableList<Pair<File, KtClassOrObject>>>()
     .withDefault { mutableListOf() }
 
-  // excludes DaggerModule1
   private val excludedTypesForScope = mutableMapOf<FqName, List<ClassDescriptor>>()
 
   private val contributedBindingClasses = mutableListOf<FqName>()
