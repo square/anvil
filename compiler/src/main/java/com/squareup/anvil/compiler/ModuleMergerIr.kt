@@ -117,7 +117,38 @@ internal class ModuleMergerIr(
       // for replaced classes and the final result.
       .toList()
 
+    val excludedModules = annotationConstructorCall.exclude()
+      .onEach { excludedClass ->
+        val contributesToAnnotation = excludedClass
+          .annotationOrNull(contributesToFqName)
+        val contributesBindingAnnotation = excludedClass
+          .annotationOrNull(contributesBindingFqName)
+        val contributesMultibindingAnnotation = excludedClass
+          .annotationOrNull(contributesMultibindingFqName)
+
+        // Verify that the the replaced classes use the same scope.
+        val scopeOfExclusion = contributesToAnnotation?.scope()
+          ?: contributesBindingAnnotation?.scope()
+          ?: contributesMultibindingAnnotation?.scope()
+          ?: throw AnvilCompilationException(
+            message = "Could not determine the scope of the excluded class " +
+              "${excludedClass.fqName}.",
+            element = declaration
+          )
+
+        if (scopeOfExclusion != scope) {
+          throw AnvilCompilationException(
+            message = "${declaration.fqName} with scope $scope wants to exclude " +
+              "${excludedClass.fqName} with scope $scopeOfExclusion. The exclusion must " +
+              "use the same scope.",
+            element = declaration
+          )
+        }
+      }
+
     val replacedModules = modules
+      // Ignore replaced modules or bindings specified by excluded modules.
+      .filter { (classSymbol, _) -> classSymbol.owner !in excludedModules }
       .flatMap { (classSymbol, contributesAnnotation) ->
         contributesAnnotation.replaces()
           .onEach { irClassForReplacement ->
@@ -173,35 +204,6 @@ internal class ModuleMergerIr(
       annotationFqName = contributesMultibindingFqName,
       hintPackagePrefix = HINT_MULTIBINDING_PACKAGE_PREFIX
     )
-
-    val excludedModules = annotationConstructorCall.exclude()
-      .onEach { excludedClass ->
-        val contributesToAnnotation = excludedClass
-          .annotationOrNull(contributesToFqName)
-        val contributesBindingAnnotation = excludedClass
-          .annotationOrNull(contributesBindingFqName)
-        val contributesMultibindingAnnotation = excludedClass
-          .annotationOrNull(contributesMultibindingFqName)
-
-        // Verify that the the replaced classes use the same scope.
-        val scopeOfExclusion = contributesToAnnotation?.scope()
-          ?: contributesBindingAnnotation?.scope()
-          ?: contributesMultibindingAnnotation?.scope()
-          ?: throw AnvilCompilationException(
-            message = "Could not determine the scope of the excluded class " +
-              "${excludedClass.fqName}.",
-            element = declaration
-          )
-
-        if (scopeOfExclusion != scope) {
-          throw AnvilCompilationException(
-            message = "${declaration.fqName} with scope $scope wants to exclude " +
-              "${excludedClass.fqName} with scope $scopeOfExclusion. The exclusion must " +
-              "use the same scope.",
-            element = declaration
-          )
-        }
-      }
 
     if (predefinedModules.isNotEmpty()) {
       val intersect = predefinedModules.intersect(excludedModules)

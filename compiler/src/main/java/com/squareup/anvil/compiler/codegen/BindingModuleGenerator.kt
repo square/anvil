@@ -173,6 +173,9 @@ internal class BindingModuleGenerator(
     module: ModuleDescriptor
   ): Collection<GeneratedFile> {
     return mergedScopes.flatMap { (scope, daggerModuleFiles) ->
+      // Precompute this list once per scope since it expensive.
+      val excludedNames = excludedTypesForScope[scope].orEmpty().map { it.fqNameSafe }
+
       // Contributed Dagger modules can replace other Dagger modules but also contributed bindings.
       // If a binding is replaced, then we must not generate the binding method.
       //
@@ -181,6 +184,8 @@ internal class BindingModuleGenerator(
       val bindingsReplacedInDaggerModules = contributedModuleClasses
         .asSequence()
         .filter { it.scope(contributesToFqName, module) == scope }
+        // Ignore replaced bindings specified by excluded modules for this scope.
+        .filter { it.fqName !in excludedNames }
         .flatMap { it.replaces(contributesToFqName, module) }
         .plus(
           classScanner
@@ -191,6 +196,8 @@ internal class BindingModuleGenerator(
               scope = scope
             )
             .filter { it.annotationOrNull(daggerModuleFqName) != null }
+            // Ignore replaced bindings specified by excluded modules for this scope.
+            .filter { it !in excludedTypesForScope[scope].orEmpty() }
             .flatMap {
               it.annotationOrNull(contributesToFqName, scope)
                 ?.replaces(module)

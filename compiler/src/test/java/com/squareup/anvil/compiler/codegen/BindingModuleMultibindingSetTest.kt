@@ -305,6 +305,51 @@ class BindingModuleMultibindingSetTest(
     }
   }
 
+  @Test fun `the contributed multibinding is not replaced by excluded modules`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+
+      interface ParentInterface
+
+      @ContributesMultibinding(Any::class)
+      interface ContributingInterface : ParentInterface
+      
+      @ContributesTo(
+          Any::class,
+          replaces = [ContributingInterface::class]
+      )
+      @dagger.Module
+      abstract class DaggerModule1
+      
+      $annotation(Any::class, exclude = [DaggerModule1::class])
+      interface ComponentInterface
+      """
+    ) {
+      val modules = if (annotationClass == MergeModules::class) {
+        componentInterface.daggerModule.includes.toList()
+      } else {
+        componentInterface.anyDaggerComponent.modules
+      }
+      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+
+      val methods = modules.first().java.declaredMethods
+      assertThat(methods).hasLength(1)
+
+      with(methods[0]) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+        assertThat(isAnnotationPresent(IntoSet::class.java)).isTrue()
+      }
+    }
+  }
+
   private val Class<*>.anyDaggerComponent: AnyDaggerComponent
     get() = anyDaggerComponent(annotationClass)
 }

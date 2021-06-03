@@ -675,6 +675,36 @@ class ModuleMergerTest(
     }
   }
 
+  @Test fun `contributed modules cannot be replaced by excluded modules`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+
+      @ContributesTo(Any::class, replaces = [DaggerModule2::class])
+      @dagger.Module
+      abstract class DaggerModule1
+
+      @ContributesTo(Any::class)
+      @dagger.Module
+      abstract class DaggerModule2 
+
+      $annotation(
+          scope = Any::class,
+          exclude = [
+            DaggerModule1::class
+          ]
+      )
+      interface ComponentInterface
+      """
+    ) {
+      val component = componentInterface.anyDaggerComponent
+      assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule2.kotlin)
+    }
+  }
+
   @Test fun `contributed bindings can be excluded`() {
     compile(
       """
