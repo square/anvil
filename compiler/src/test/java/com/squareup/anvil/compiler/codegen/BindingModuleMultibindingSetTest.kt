@@ -345,6 +345,7 @@ class BindingModuleMultibindingSetTest(
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+        assertThat(isAnnotationPresent(IntoSet::class.java)).isTrue()
       }
     }
   }
