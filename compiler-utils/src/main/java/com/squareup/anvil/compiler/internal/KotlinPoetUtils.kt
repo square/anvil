@@ -185,9 +185,22 @@ public fun KtTypeReference.requireTypeName(
 
 @ExperimentalAnvilApi
 public fun KotlinType.asTypeName(): TypeName {
+  return asTypeName { true }!!
+}
+
+/**
+ * @param rawTypeFilter an optional raw type filter to allow for
+ *                      short-circuiting this before attempting to
+ *                      resolve type arguments.
+ */
+@ExperimentalAnvilApi
+public fun KotlinType.asTypeName(rawTypeFilter: (ClassName) -> Boolean = { true }): TypeName? {
   if (isTypeParameter()) return TypeVariableName(toString())
 
   val className = classDescriptorForType().asClassName()
+  if (!rawTypeFilter(className)) {
+    return null
+  }
   if (arguments.isEmpty()) return className.copy(nullable = isMarkedNullable)
 
   val argumentTypeNames = arguments.map { typeProjection ->
