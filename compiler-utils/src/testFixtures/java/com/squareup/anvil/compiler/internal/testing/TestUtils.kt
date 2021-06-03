@@ -33,6 +33,7 @@ public fun compileAnvil(
   allWarningsAsErrors: Boolean = true,
   useIR: Boolean = true,
   messageOutputStream: OutputStream = System.out,
+  workingDir: File? = null,
   block: Result.() -> Unit = { }
 ): Result {
   return KotlinCompilation()
@@ -45,6 +46,10 @@ public fun compileAnvil(
       verbose = false
       this.allWarningsAsErrors = allWarningsAsErrors
       this.messageOutputStream = messageOutputStream
+
+      if (workingDir != null) {
+        this.workingDir = workingDir
+      }
 
       if (enableDaggerAnnotationProcessor) {
         annotationProcessors = listOf(ComponentProcessor())
@@ -84,7 +89,7 @@ public fun compileAnvil(
           ?.let { "$it/" }
           ?: ""
 
-        val name = "${workingDir.absolutePath}/sources/src/main/java/$packageDir/Source.kt"
+        val name = "${this.workingDir.absolutePath}/sources/src/main/java/$packageDir/Source.kt"
         with(File(name).parentFile) {
           check(exists() || mkdirs())
         }
