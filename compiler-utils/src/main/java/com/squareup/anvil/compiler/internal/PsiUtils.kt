@@ -35,8 +35,12 @@ import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.KtValueArgumentName
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
+import kotlin.reflect.KClass
 
 private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName, publishedApiFqName)
+
+/** Returns the computed [FqName] representation of this [KClass]. */
+public val KClass<*>.fqName: FqName get() = FqName(java.canonicalName)
 
 @ExperimentalAnvilApi
 public fun KtNamedDeclaration.requireFqName(): FqName = requireNotNull(fqName) {
