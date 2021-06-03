@@ -11,6 +11,7 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.classDescriptorForType
+import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import dagger.Component
 import dagger.Lazy
@@ -38,28 +39,27 @@ import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Qualifier
 
-internal val mergeComponentFqName = FqName(MergeComponent::class.java.canonicalName)
-internal val mergeSubcomponentFqName = FqName(MergeSubcomponent::class.java.canonicalName)
-internal val mergeInterfacesFqName = FqName(MergeInterfaces::class.java.canonicalName)
-internal val mergeModulesFqName = FqName(MergeModules::class.java.canonicalName)
-internal val contributesToFqName = FqName(ContributesTo::class.java.canonicalName)
-internal val contributesBindingFqName = FqName(ContributesBinding::class.java.canonicalName)
-internal val contributesMultibindingFqName =
-  FqName(ContributesMultibinding::class.java.canonicalName)
-internal val daggerComponentFqName = FqName(Component::class.java.canonicalName)
-internal val daggerSubcomponentFqName = FqName(Subcomponent::class.java.canonicalName)
-internal val daggerModuleFqName = FqName(Module::class.java.canonicalName)
-internal val daggerProvidesFqName = FqName(Provides::class.java.canonicalName)
-internal val daggerLazyFqName = FqName(Lazy::class.java.canonicalName)
-internal val injectFqName = FqName(Inject::class.java.canonicalName)
-internal val qualifierFqName = FqName(Qualifier::class.java.canonicalName)
-internal val mapKeyFqName = FqName(MapKey::class.java.canonicalName)
-internal val assistedFqName = FqName(Assisted::class.java.canonicalName)
-internal val assistedFactoryFqName = FqName(AssistedFactory::class.java.canonicalName)
-internal val assistedInjectFqName = FqName(AssistedInject::class.java.canonicalName)
-internal val providerFqName = FqName(Provider::class.java.canonicalName)
-internal val jvmSuppressWildcardsFqName = FqName(JvmSuppressWildcards::class.java.canonicalName)
-internal val publishedApiFqName = FqName(PublishedApi::class.java.canonicalName)
+internal val mergeComponentFqName = MergeComponent::class.fqName
+internal val mergeSubcomponentFqName = MergeSubcomponent::class.fqName
+internal val mergeInterfacesFqName = MergeInterfaces::class.fqName
+internal val mergeModulesFqName = MergeModules::class.fqName
+internal val contributesToFqName = ContributesTo::class.fqName
+internal val contributesBindingFqName = ContributesBinding::class.fqName
+internal val contributesMultibindingFqName = ContributesMultibinding::class.fqName
+internal val daggerComponentFqName = Component::class.fqName
+internal val daggerSubcomponentFqName = Subcomponent::class.fqName
+internal val daggerModuleFqName = Module::class.fqName
+internal val daggerProvidesFqName = Provides::class.fqName
+internal val daggerLazyFqName = Lazy::class.fqName
+internal val injectFqName = Inject::class.fqName
+internal val qualifierFqName = Qualifier::class.fqName
+internal val mapKeyFqName = MapKey::class.fqName
+internal val assistedFqName = Assisted::class.fqName
+internal val assistedFactoryFqName = AssistedFactory::class.fqName
+internal val assistedInjectFqName = AssistedInject::class.fqName
+internal val providerFqName = Provider::class.fqName
+internal val jvmSuppressWildcardsFqName = JvmSuppressWildcards::class.fqName
+internal val publishedApiFqName = PublishedApi::class.fqName
 
 internal val daggerDoubleCheckFqNameString = DoubleCheck::class.java.canonicalName
 
