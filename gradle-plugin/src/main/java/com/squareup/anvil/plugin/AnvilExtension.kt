@@ -5,7 +5,7 @@ import org.gradle.api.provider.Property
 import javax.inject.Inject
 import kotlin.DeprecationLevel.HIDDEN
 
-abstract class AnvilExtension @Inject constructor(objects: ObjectFactory) {
+public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory) {
   /**
    * Allows you to use Anvil to generate Factory classes that usually the Dagger annotation
    * processor would generate for @Provides methods, @Inject constructors and @Inject fields.
@@ -21,7 +21,7 @@ abstract class AnvilExtension @Inject constructor(objects: ObjectFactory) {
    *
    * By default this feature is disabled.
    */
-  val generateDaggerFactories: Property<Boolean> = objects.property(Boolean::class.java)
+  public val generateDaggerFactories: Property<Boolean> = objects.property(Boolean::class.java)
     .convention(false)
 
   /**
@@ -30,7 +30,7 @@ abstract class AnvilExtension @Inject constructor(objects: ObjectFactory) {
    * flag Anvil will only generate Dagger factories and skip all other steps. If this flag is set
    * to `true`, then also [generateDaggerFactories] must be set to `true`.
    */
-  val generateDaggerFactoriesOnly: Property<Boolean> = objects.property(Boolean::class.java)
+  public val generateDaggerFactoriesOnly: Property<Boolean> = objects.property(Boolean::class.java)
     .convention(false)
 
   /**
@@ -40,7 +40,7 @@ abstract class AnvilExtension @Inject constructor(objects: ObjectFactory) {
    * This allows for anvil use in projects with kapt enabled but _not_ require disabling
    * incremental compilation in kapt stub generation tasks.
    */
-  val disableComponentMerging: Property<Boolean> = objects.property(Boolean::class.java)
+  public val disableComponentMerging: Property<Boolean> = objects.property(Boolean::class.java)
     .convention(false)
 
   /*
@@ -65,7 +65,7 @@ abstract class AnvilExtension @Inject constructor(objects: ObjectFactory) {
 
   @get:[JvmName("getGenerateDaggerFactories") JvmSynthetic]
   @set:[JvmName("setGenerateDaggerFactories") JvmSynthetic]
-  var generateDaggerFactoriesLegacy: Boolean
+  public var generateDaggerFactoriesLegacy: Boolean
     @Deprecated(
       "Use generateDaggerFactories property",
       ReplaceWith("generateDaggerFactories.get()"),
@@ -81,7 +81,7 @@ abstract class AnvilExtension @Inject constructor(objects: ObjectFactory) {
 
   @get:[JvmName("getDaggerFactoriesOnly") JvmSynthetic]
   @set:[JvmName("setDaggerFactoriesOnly") JvmSynthetic]
-  var generateDaggerFactoriesOnlyLegacy: Boolean
+  public var generateDaggerFactoriesOnlyLegacy: Boolean
     @Deprecated(
       "Use generateDaggerFactoriesOnly property",
       ReplaceWith("generateDaggerFactoriesOnly.get()"),
@@ -97,7 +97,7 @@ abstract class AnvilExtension @Inject constructor(objects: ObjectFactory) {
 
   @get:[JvmName("getDisableComponentMerging") JvmSynthetic]
   @set:[JvmName("setDisableComponentMerging") JvmSynthetic]
-  var disableComponentMergingLegacy: Boolean
+  public var disableComponentMergingLegacy: Boolean
     @Deprecated(
       "Use disableComponentMerging property",
       ReplaceWith("disableComponentMerging.get()"),

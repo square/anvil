@@ -23,7 +23,7 @@ private val KEY = "incrementalSignal-" + Random.nextLong()
 
 /** This signal is used to share state between the task above and Kotlin compile tasks. */
 @Suppress("UnstableApiUsage")
-abstract class IncrementalSignal : BuildService<None> {
+internal abstract class IncrementalSignal : BuildService<None> {
   private val incremental = mutableMapOf<String, Boolean?>()
 
   @Synchronized fun setIncremental(

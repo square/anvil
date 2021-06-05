@@ -63,6 +63,10 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   }
 }
 
+kotlin {
+  explicitApi()
+}
+
 ktlint {
   version = rootProject.ext.ktlintVersion
 }

@@ -33,7 +33,7 @@ import java.io.File
 import java.util.Locale.US
 
 @Suppress("unused")
-open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
+internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
   override fun apply(target: Project) {
     val extension = target.extensions.create("anvil", AnvilExtension::class.java)
