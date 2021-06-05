@@ -1,6 +1,12 @@
 package com.squareup.anvil.plugin
 
+import com.android.build.gradle.AppExtension
+import com.android.build.gradle.LibraryExtension
+import com.android.build.gradle.TestExtension
+import com.android.build.gradle.TestedExtension
 import com.android.build.gradle.api.BaseVariant
+import com.android.build.gradle.api.TestVariant
+import com.android.build.gradle.api.UnitTestVariant
 import com.android.build.gradle.internal.tasks.factory.dependsOn
 import org.gradle.api.Action
 import org.gradle.api.GradleException
@@ -29,15 +35,39 @@ import java.util.Locale.US
 @Suppress("unused")
 open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
-  private lateinit var commonAnvilConfiguration: Configuration
-
   override fun apply(target: Project) {
     val extension = target.extensions.create("anvil", AnvilExtension::class.java)
 
-    // Create a configuration for collecting CodeGenerator dependencies.
-    commonAnvilConfiguration = target.configurations.create("anvil") {
-      it.description = "This configuration is used for dependencies with Anvil CodeGenerator " +
-        "implementations."
+    // Create a configuration for collecting CodeGenerator dependencies. We need to create all
+    // configurations eagerly and cannot wait for applyToCompilation(..) below, because this
+    // function is called in an afterEvaluate block by the Kotlin Gradle Plugin. That's too late
+    // to register the configurations.
+    val commonConfiguration = getConfiguration(target, buildType = "")
+
+    // anvilTest is the common test configuration similar to other configurations like kaptTest.
+    // Android build type specific unit test variants will extend this variant below. For the JVM
+    // this single variant is enough.
+    val testConfiguration = getConfiguration(target, buildType = "test").apply {
+      extendsFrom(commonConfiguration)
+    }
+
+    agpPlugins.forEach { agpPlugin ->
+      target.pluginManager.withPlugin(agpPlugin) {
+        // This is the common android test variant, similar to anvilTest above.
+        val androidTestVariant = getConfiguration(target, buildType = "androidTest").apply {
+          extendsFrom(commonConfiguration)
+        }
+
+        target.androidVariantsConfigure { variant ->
+          // E.g. "debugAnvil", "testReleaseAnvil", ...
+          val configuration = getConfiguration(target, buildType = variant.name)
+
+          when (variant) {
+            is UnitTestVariant -> configuration.extendsFrom(testConfiguration)
+            is TestVariant -> configuration.extendsFrom(androidTestVariant)
+          }
+        }
+      }
     }
 
     target.afterEvaluate {
@@ -65,20 +95,10 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     val variant = Variant(kotlinCompilation)
     val project = variant.project
 
-    // Create a configuration for collecting CodeGenerator dependencies.
-    val anvilConfiguration = project.configurations
-      .maybeCreate("anvil${variant.nameCapitalized}")
-      .apply {
-        description = "This configuration is used for dependencies with Anvil CodeGenerator " +
-          "implementations for the build type ${variant.name}."
-
-        extendsFrom(commonAnvilConfiguration)
-      }
-
-    // Make the kotlin compiler classpath extend our configuration to pick up our extra
+    // Make the kotlin compiler classpath extend our configurations to pick up our extra
     // generators.
     project.configurations.getByName(variant.compilerPluginClasspathName)
-      .extendsFrom(anvilConfiguration)
+      .extendsFrom(getConfiguration(project, variant.name))
 
     disableIncrementalKotlinCompilation(variant)
     disablePreciseJavaTracking(variant)
@@ -254,6 +274,17 @@ open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       }
     }
   }
+
+  private fun getConfiguration(
+    project: Project,
+    buildType: String
+  ): Configuration {
+    val name = if (buildType.isEmpty()) "anvil" else "anvil${buildType.capitalize(US)}"
+    return project.configurations.maybeCreate(name).apply {
+      description = "This configuration is used for dependencies with Anvil CodeGenerator " +
+        "implementations."
+    }
+  }
 }
 
 /*
@@ -309,9 +340,33 @@ private inline fun <reified T : Task> Project.namedLazy(
   }
 }
 
-class Variant private constructor(
+/**
+ * Runs the given [action] for each Android variant including androidTest and unit test variants.
+ */
+private fun Project.androidVariantsConfigure(action: (BaseVariant) -> Unit) {
+  val androidExtension = extensions.findByName("android")
+
+  when (androidExtension) {
+    is AppExtension -> androidExtension.applicationVariants.configureEach(action)
+    is LibraryExtension -> androidExtension.libraryVariants.configureEach(action)
+    is TestExtension -> androidExtension.applicationVariants.configureEach(action)
+  }
+
+  if (androidExtension is TestedExtension) {
+    androidExtension.unitTestVariants.configureEach(action)
+    androidExtension.testVariants.configureEach(action)
+  }
+}
+
+private val agpPlugins = listOf(
+  "com.android.library",
+  "com.android.application",
+  "com.android.test",
+  "com.android.dynamic-feature",
+)
+
+internal class Variant private constructor(
   val name: String,
-  val nameCapitalized: String,
   val project: Project,
   val extension: AnvilExtension,
   val compileTaskProvider: TaskProvider<KotlinCompile>,
@@ -334,12 +389,10 @@ class Variant private constructor(
 
       val project = kotlinCompilation.target.project
       val name = kotlinCompilation.name
-      val nameCapitalized = name.capitalize(US)
 
       @Suppress("UNCHECKED_CAST")
       return Variant(
         name = name,
-        nameCapitalized = nameCapitalized,
         project = project,
         extension = project.extensions.getByType(AnvilExtension::class.java),
         compileTaskProvider = kotlinCompilation.compileKotlinTaskProvider as
@@ -347,7 +400,7 @@ class Variant private constructor(
         androidVariant = (kotlinCompilation as? KotlinJvmAndroidCompilation)?.androidVariant,
         compilerPluginClasspathName = PLUGIN_CLASSPATH_CONFIGURATION_NAME +
           kotlinCompilation.target.targetName.capitalize(US) +
-          nameCapitalized
+          name.capitalize(US)
       ).also {
         // Sanity check.
         check(it.compileTaskProvider.name.startsWith("compile"))
