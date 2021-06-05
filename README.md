@@ -219,7 +219,7 @@ anvil {
 In our codebase we measured that modules using Dagger build 65% faster with this new Anvil feature
 compared to using the Dagger annotation processor:
 
-| Stub generation | Kapt | Javac | Kotlinc | Sum
+|| Stub generation | Kapt | Javac | Kotlinc | Sum
 :--- | ---: | ---: | ---: | ---: | ---:
 Dagger | 12.976 | 40.377 | 8.571 | 10.241 | 72.165
 Anvil | 0 | 0 | 6.965 | 17.748 | 24.713
