@@ -59,6 +59,20 @@ class TestCodeGenerator : CodeGenerator {
           interface ContributedModule 
         """.trimIndent()
 
+        // This snippet is helpful for testing #310, which is still failing.
+        @Language("kotlin")
+        val contributedBinding = """
+          /*
+          package $generatedPackage
+          
+          import com.squareup.anvil.annotations.ContributesBinding
+          import javax.inject.Inject
+
+          @ContributesBinding(Unit::class)
+          abstract class ContributedBinding @Inject constructor() : CharSequence
+           */
+        """.trimIndent()
+
         @Language("kotlin")
         val injectClass = """
           package $generatedPackage
@@ -86,6 +100,12 @@ class TestCodeGenerator : CodeGenerator {
             packageName = generatedPackage,
             fileName = "ContributedModule",
             content = contributedModule
+          ),
+          createGeneratedFile(
+            codeGenDir = codeGenDir,
+            packageName = generatedPackage,
+            fileName = "ContributedBinding",
+            content = contributedBinding
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
