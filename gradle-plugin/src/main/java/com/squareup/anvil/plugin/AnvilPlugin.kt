@@ -31,9 +31,12 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
 import java.util.Locale.US
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("unused")
 internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
+
+  private val variantCache = ConcurrentHashMap<String, Variant>()
 
   override fun apply(target: Project) {
     val extension = target.extensions.create("anvil", AnvilExtension::class.java)
@@ -84,7 +87,8 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean {
     return when (kotlinCompilation.platformType) {
-      androidJvm, jvm -> true
+      // If the variant is ignored, then don't apply the compiler plugin.
+      androidJvm, jvm -> !getVariant(kotlinCompilation).variantFilter.ignore
       else -> false
     }
   }
@@ -92,7 +96,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   override fun applyToCompilation(
     kotlinCompilation: KotlinCompilation<*>
   ): Provider<List<SubpluginOption>> {
-    val variant = Variant(kotlinCompilation)
+    val variant = getVariant(kotlinCompilation)
     val project = variant.project
 
     // Make the kotlin compiler classpath extend our configurations to pick up our extra
@@ -111,12 +115,12 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       }
     }
 
-    // Notice that we use the name of the Kotlin compilation as a directory name. Generated code
+    // Notice that we use the name of the variant as a directory name. Generated code
     // for this specific compile task will be included in the task output. The output of different
     // compile tasks shouldn't be mixed.
     val srcGenDir = File(
       project.buildDir,
-      "anvil${File.separator}src-gen-${kotlinCompilation.name}"
+      "anvil${File.separator}src-gen-${variant.name}"
     )
     val extension = project.extensions.findByType(AnvilExtension::class.java)
       ?: project.objects.newInstance(AnvilExtension::class.java)
@@ -285,6 +289,19 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         "implementations."
     }
   }
+
+  private fun getVariant(kotlinCompilation: KotlinCompilation<*>): Variant {
+    return variantCache.computeIfAbsent(kotlinCompilation.name) {
+      val variant = Variant(kotlinCompilation)
+
+      // The cache makes sure that we execute this filter action only once.
+      variant.project.extensions.getByType(AnvilExtension::class.java)
+        ._variantFilter
+        ?.execute(variant.variantFilter)
+
+      variant
+    }
+  }
 }
 
 /*
@@ -372,6 +389,7 @@ internal class Variant private constructor(
   val compileTaskProvider: TaskProvider<KotlinCompile>,
   val androidVariant: BaseVariant?,
   val compilerPluginClasspathName: String,
+  val variantFilter: VariantFilter,
 ) {
   // E.g. compileKotlin, compileKotlinJvm, compileDebugKotlin.
   val taskSuffix = compileTaskProvider.name.substringAfter("compile")
@@ -388,19 +406,27 @@ internal class Variant private constructor(
       }
 
       val project = kotlinCompilation.target.project
-      val name = kotlinCompilation.name
+      val androidVariant = (kotlinCompilation as? KotlinJvmAndroidCompilation)?.androidVariant
+
+      val commonFilter = CommonFilter(kotlinCompilation.name)
+      val variantFilter = if (androidVariant != null) {
+        AndroidVariantFilter(commonFilter, androidVariant)
+      } else {
+        JvmVariantFilter(commonFilter)
+      }
 
       @Suppress("UNCHECKED_CAST")
       return Variant(
-        name = name,
+        name = kotlinCompilation.name,
         project = project,
         extension = project.extensions.getByType(AnvilExtension::class.java),
         compileTaskProvider = kotlinCompilation.compileKotlinTaskProvider as
           TaskProvider<KotlinCompile>,
-        androidVariant = (kotlinCompilation as? KotlinJvmAndroidCompilation)?.androidVariant,
+        androidVariant = androidVariant,
         compilerPluginClasspathName = PLUGIN_CLASSPATH_CONFIGURATION_NAME +
           kotlinCompilation.target.targetName.capitalize(US) +
-          name.capitalize(US)
+          kotlinCompilation.name.capitalize(US),
+        variantFilter = variantFilter
       ).also {
         // Sanity check.
         check(it.compileTaskProvider.name.startsWith("compile"))

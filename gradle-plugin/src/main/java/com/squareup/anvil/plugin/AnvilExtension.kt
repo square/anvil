@@ -1,5 +1,6 @@
 package com.squareup.anvil.plugin
 
+import org.gradle.api.Action
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import javax.inject.Inject
@@ -42,6 +43,17 @@ public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory)
    */
   public val disableComponentMerging: Property<Boolean> = objects.property(Boolean::class.java)
     .convention(false)
+
+  @Suppress("PropertyName")
+  internal var _variantFilter: Action<VariantFilter>? = null
+
+  /**
+   * Configures each variant of this project. For Android projects these are the respective
+   * Android variants, for JVM projects these are usually the main and test variant.
+   */
+  public fun variantFilter(action: Action<VariantFilter>) {
+    _variantFilter = action
+  }
 
   /*
    * The below properties are legacy former properties. We do a bit of Kotlin sugar to preserve

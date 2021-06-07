@@ -1,3 +1,6 @@
+import com.android.build.gradle.api.UnitTestVariant
+import com.squareup.anvil.plugin.AndroidVariantFilter
+
 plugins {
   id 'org.jetbrains.kotlin.multiplatform'
   id 'com.android.library'
@@ -47,6 +50,15 @@ kotlin {
         implementation deps.junit
         implementation deps.truth
       }
+    }
+  }
+}
+
+anvil {
+  variantFilter { filter ->
+    if (filter instanceof AndroidVariantFilter &&
+        filter.androidVariant instanceof UnitTestVariant) {
+      ignore = true
     }
   }
 }
