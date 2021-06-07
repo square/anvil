@@ -17,26 +17,24 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
  * The workaround for now is to set the kotlin.incremental.usePreciseJavaTracking flag to false for
  * these module using this task.
  */
-object CheckMixedSourceSet {
+internal object CheckMixedSourceSet {
 
-  fun preparePreciseJavaTrackingCheck(compileTask: KotlinCompile): Input {
-    return Input(
-      sources = getAndroidSourceDirs(compileTask)
-        ?: getJvmSourceDirs(compileTask.project)
-        ?: compileTask.project.files(),
-      isKaptApplied = compileTask.project.isKaptApplied()
+  fun preparePreciseJavaTrackingCheck(variant: Variant): Input =
+    Input(
+      sources = getAndroidSourceDirs(variant) ?: getJvmSourceDirs(variant),
+      isKaptApplied = variant.project.isKaptApplied()
     )
-  }
 
   fun disablePreciseJavaTrackingIfNeeded(
     compileTask: KotlinCompile,
     input: Input
   ) {
-    val sourceFiles = input.sources
-      .asSequence()
-      .flatMap { it.walk() }
-      .filter { it.isFile }
-    val hasJavaFile = sourceFiles.any { it.extension == "java" }
+    val hasJavaFile = input.sources
+      ?.asSequence()
+      ?.flatMap { it.walk() }
+      ?.filter { it.isFile }
+      ?.any { it.extension == "java" }
+      ?: false
 
     // If there is Java file, then disable precise Java tracking.
     //
@@ -47,31 +45,18 @@ object CheckMixedSourceSet {
     }
   }
 
-  private fun getAndroidSourceDirs(
-    compileTask: KotlinCompile
-  ): FileCollection? {
-    val project = compileTask.project
-    return if (project.isAndroidProject) {
-      project.androidVariants()
-        .findVariantForCompileTask(compileTask)
-        .sourceSets
-        .flatMap { it.javaDirectories }
-        .let { project.files(it) }
-    } else {
-      null
-    }
+  private fun getAndroidSourceDirs(variant: Variant): FileCollection? {
+    return variant.androidVariant
+      ?.sourceSets
+      ?.flatMap { it.javaDirectories }
+      ?.let { variant.project.files(it) }
   }
 
-  private fun getJvmSourceDirs(project: Project): FileCollection? {
-    return if (project.isKotlinJvmProject) {
-      project.convention.getPlugin(JavaPluginConvention::class.java)
-        .sourceSets
-        // Ignore "test", similar to androidVariants() we ignore unit tests.
-        .single { it.name == "main" }
-        .allJava
-    } else {
-      null
-    }
+  private fun getJvmSourceDirs(variant: Variant): FileCollection? {
+    return variant.project.convention.findPlugin(JavaPluginConvention::class.java)
+      ?.sourceSets
+      ?.single { it.name == variant.name }
+      ?.allJava
   }
 
   private fun Project.isKaptApplied(): Property<Boolean> =
@@ -82,7 +67,7 @@ object CheckMixedSourceSet {
       }
 
   class Input(
-    val sources: FileCollection,
+    val sources: FileCollection?,
     val isKaptApplied: Property<Boolean>
   )
 }

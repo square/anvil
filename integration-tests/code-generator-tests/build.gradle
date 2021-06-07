@@ -2,12 +2,8 @@ apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'com.squareup.anvil'
 apply plugin: 'org.jetbrains.kotlin.kapt'
 
-anvil {
-  generateDaggerFactories = true
-}
-
 dependencies {
-  anvil project(':integration-tests:code-generator')
+  anvilTest project(':integration-tests:code-generator')
 
   testImplementation testFixtures(project(":compiler-utils"))
   testImplementation deps.dagger2.dagger
