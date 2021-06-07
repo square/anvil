@@ -14,7 +14,7 @@ import org.gradle.api.tasks.TaskAction
 import java.io.File
 
 // Workaround for https://youtrack.jetbrains.com/issue/KT-38570
-abstract class DisableIncrementalCompilationTask : DefaultTask() {
+internal abstract class DisableIncrementalCompilationTask : DefaultTask() {
 
   @Suppress("unused")
   @get:Classpath
