@@ -9,12 +9,11 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
-import com.squareup.anvil.compiler.boundType
 import com.squareup.anvil.compiler.contributesBindingFqName
-import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
+import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
@@ -158,10 +157,18 @@ internal fun KtClassOrObject.checkClassExtendsBoundType(
   module: ModuleDescriptor,
   annotationFqName: FqName
 ) {
-  val descriptor = requireClassDescriptor(module)
-  val annotation = descriptor.annotation(annotationFqName)
-  val boundType = annotation.boundType(module, descriptor, annotationFqName).fqNameSafe
+  // Check the super type through the Psi APIs first.
+  val boundType = boundType(annotationFqName, module)
+    ?: superTypeListEntries.singleOrNull()?.requireFqName(module)
+    ?: throw AnvilCompilationException(
+      element = this,
+      message = "Couldn't find the bound type."
+    )
 
+  val hasSuperTypePsi = superTypeListEntries.any { it.fqNameOrNull(module) == boundType }
+  if (hasSuperTypePsi) return
+
+  val descriptor = requireClassDescriptor(module)
   val hasSuperType = descriptor.getAllSuperClassifiers()
     .any { it.fqNameSafe == boundType }
 
