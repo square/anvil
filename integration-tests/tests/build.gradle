@@ -6,6 +6,12 @@ kotlin {
   explicitApi()
 }
 
+anvil {
+  variantFilter {
+    ignore = name == 'main'
+  }
+}
+
 dependencies {
   testImplementation project(':integration-tests:library')
   testImplementation testFixtures(project(":compiler-utils"))

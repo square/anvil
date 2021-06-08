@@ -31,12 +31,15 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
 import java.util.Locale.US
+import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("unused")
 internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
+  private val variantCache = ConcurrentHashMap<String, Variant>()
+
   override fun apply(target: Project) {
-    val extension = target.extensions.create("anvil", AnvilExtension::class.java)
+    target.extensions.create("anvil", AnvilExtension::class.java)
 
     // Create a configuration for collecting CodeGenerator dependencies. We need to create all
     // configurations eagerly and cannot wait for applyToCompilation(..) below, because this
@@ -71,22 +74,12 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         }
       }
     }
-
-    target.afterEvaluate {
-      if (!extension.generateDaggerFactories.get() &&
-        extension.generateDaggerFactoriesOnly.get()
-      ) {
-        throw GradleException(
-          "You cannot set generateDaggerFactories to false and generateDaggerFactoriesOnly " +
-            "to true at the same time."
-        )
-      }
-    }
   }
 
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean {
     return when (kotlinCompilation.platformType) {
-      androidJvm, jvm -> true
+      // If the variant is ignored, then don't apply the compiler plugin.
+      androidJvm, jvm -> !getVariant(kotlinCompilation).variantFilter.ignore
       else -> false
     }
   }
@@ -94,8 +87,17 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   override fun applyToCompilation(
     kotlinCompilation: KotlinCompilation<*>
   ): Provider<List<SubpluginOption>> {
-    val variant = Variant(kotlinCompilation)
+    val variant = getVariant(kotlinCompilation)
     val project = variant.project
+
+    if (!variant.variantFilter.generateDaggerFactories &&
+      variant.variantFilter.generateDaggerFactoriesOnly
+    ) {
+      throw GradleException(
+        "You cannot set generateDaggerFactories to false and generateDaggerFactoriesOnly " +
+          "to true at the same time for variant ${variant.name}."
+      )
+    }
 
     // Make the kotlin compiler classpath extend our configurations to pick up our extra
     // generators.
@@ -105,7 +107,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     disableIncrementalKotlinCompilation(variant)
     disablePreciseJavaTracking(variant)
 
-    if (!variant.extension.generateDaggerFactoriesOnly.get()) {
+    if (!variant.variantFilter.generateDaggerFactoriesOnly) {
       disableCorrectErrorTypes(variant)
 
       kotlinCompilation.dependencies {
@@ -113,15 +115,13 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       }
     }
 
-    // Notice that we use the name of the Kotlin compilation as a directory name. Generated code
+    // Notice that we use the name of the variant as a directory name. Generated code
     // for this specific compile task will be included in the task output. The output of different
     // compile tasks shouldn't be mixed.
     val srcGenDir = File(
       project.buildDir,
-      "anvil${File.separator}src-gen-${kotlinCompilation.name}"
+      "anvil${File.separator}src-gen-${variant.name}"
     )
-    val extension = project.extensions.findByType(AnvilExtension::class.java)
-      ?: project.objects.newInstance(AnvilExtension::class.java)
 
     return project.provider {
       listOf(
@@ -131,15 +131,15 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         ),
         SubpluginOption(
           key = "generate-dagger-factories",
-          lazy { extension.generateDaggerFactories.get().toString() }
+          lazy { variant.variantFilter.generateDaggerFactories.toString() }
         ),
         SubpluginOption(
           key = "generate-dagger-factories-only",
-          lazy { extension.generateDaggerFactoriesOnly.get().toString() }
+          lazy { variant.variantFilter.generateDaggerFactoriesOnly.toString() }
         ),
         SubpluginOption(
           key = "disable-component-merging",
-          lazy { extension.disableComponentMerging.get().toString() }
+          lazy { variant.variantFilter.disableComponentMerging.toString() }
         )
       )
     }
@@ -204,8 +204,8 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         .namedLazy<KaptGenerateStubsTask>(
           "kaptGenerateStubs${variant.taskSuffix}"
         ) { stubsTaskProvider ->
-          if (variant.extension.generateDaggerFactoriesOnly.get() ||
-            variant.extension.disableComponentMerging.get()
+          if (variant.variantFilter.generateDaggerFactoriesOnly ||
+            variant.variantFilter.disableComponentMerging
           ) {
             // We don't need to disable the incremental compilation for the stub generating task
             // every time, when we only generate Dagger factories or contribute modules. That's only
@@ -285,6 +285,19 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     return project.configurations.maybeCreate(name).apply {
       description = "This configuration is used for dependencies with Anvil CodeGenerator " +
         "implementations."
+    }
+  }
+
+  private fun getVariant(kotlinCompilation: KotlinCompilation<*>): Variant {
+    return variantCache.computeIfAbsent(kotlinCompilation.name) {
+      val variant = Variant(kotlinCompilation)
+
+      // The cache makes sure that we execute this filter action only once.
+      variant.project.extensions.getByType(AnvilExtension::class.java)
+        ._variantFilter
+        ?.execute(variant.variantFilter)
+
+      variant
     }
   }
 }
@@ -370,10 +383,10 @@ private val agpPlugins = listOf(
 internal class Variant private constructor(
   val name: String,
   val project: Project,
-  val extension: AnvilExtension,
   val compileTaskProvider: TaskProvider<KotlinCompile>,
   val androidVariant: BaseVariant?,
   val compilerPluginClasspathName: String,
+  val variantFilter: VariantFilter,
 ) {
   // E.g. compileKotlin, compileKotlinJvm, compileDebugKotlin.
   val taskSuffix = compileTaskProvider.name.substringAfter("compile")
@@ -390,19 +403,27 @@ internal class Variant private constructor(
       }
 
       val project = kotlinCompilation.target.project
-      val name = kotlinCompilation.name
+      val extension = project.extensions.getByType(AnvilExtension::class.java)
+      val androidVariant = (kotlinCompilation as? KotlinJvmAndroidCompilation)?.androidVariant
+
+      val commonFilter = CommonFilter(kotlinCompilation.name, extension)
+      val variantFilter = if (androidVariant != null) {
+        AndroidVariantFilter(commonFilter, androidVariant)
+      } else {
+        JvmVariantFilter(commonFilter)
+      }
 
       @Suppress("UNCHECKED_CAST")
       return Variant(
-        name = name,
+        name = kotlinCompilation.name,
         project = project,
-        extension = project.extensions.getByType(AnvilExtension::class.java),
         compileTaskProvider = kotlinCompilation.compileKotlinTaskProvider as
           TaskProvider<KotlinCompile>,
-        androidVariant = (kotlinCompilation as? KotlinJvmAndroidCompilation)?.androidVariant,
+        androidVariant = androidVariant,
         compilerPluginClasspathName = PLUGIN_CLASSPATH_CONFIGURATION_NAME +
           kotlinCompilation.target.targetName.capitalize(US) +
-          name.capitalize(US)
+          kotlinCompilation.name.capitalize(US),
+        variantFilter = variantFilter
       ).also {
         // Sanity check.
         check(it.compileTaskProvider.name.startsWith("compile"))
