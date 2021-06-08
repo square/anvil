@@ -146,7 +146,8 @@ jobs:
           java-version: 11.0.10
 
       - name: Publish to Maven Local
-        run: ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd gradle-plugin && ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd ..
+        # Note the -x signMavenPublication which skips signing in CI.
+        run: ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace -x signMavenPublication && cd gradle-plugin && ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace -x signMavenPublication && cd ..
 
   build-gradle-plugin:
     runs-on: ubuntu-latest
