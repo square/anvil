@@ -14,6 +14,7 @@ import org.gradle.api.Project
 import org.gradle.api.Task
 import org.gradle.api.UnknownTaskException
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.plugins.JavaPluginConvention
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
@@ -59,12 +60,14 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         }
 
         target.androidVariantsConfigure { variant ->
-          // E.g. "debugAnvil", "testReleaseAnvil", ...
+          // E.g. "anvilDebug", "anvilTestRelease", ...
           val configuration = getConfiguration(target, buildType = variant.name)
 
           when (variant) {
             is UnitTestVariant -> configuration.extendsFrom(testConfiguration)
             is TestVariant -> configuration.extendsFrom(androidTestVariant)
+            // non-test variants like "debug" extend the main config
+            else -> configuration.extendsFrom(commonConfiguration)
           }
         }
       }
