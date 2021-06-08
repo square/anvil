@@ -166,7 +166,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         // and minimize the IO at configuration time.
         CheckMixedSourceSet.disablePreciseJavaTrackingIfNeeded(compileTask, result)
 
-        compileTask.logger.info(
+        compileTask.log(
           "Anvil: Use precise java tracking: ${compileTask.usePreciseJavaTracking}"
         )
       }
@@ -225,7 +225,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
               // contributed to the Dagger graph, because incremental compilation tricked us.
               stubsTask.doFirstCompat {
                 stubsTask.incremental = false
-                stubsTask.logger.info(
+                stubsTask.log(
                   "Anvil: Incremental compilation enabled: ${stubsTask.incremental} (stub)"
                 )
               }
@@ -270,7 +270,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
           compileTask.incremental = incremental
         }
 
-        compileTask.logger.info(
+        compileTask.log(
           "Anvil: Incremental compilation enabled: ${compileTask.incremental} (compile)"
         )
       }
