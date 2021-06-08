@@ -59,12 +59,14 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         }
 
         target.androidVariantsConfigure { variant ->
-          // E.g. "debugAnvil", "testReleaseAnvil", ...
+          // E.g. "anvilDebug", "anvilTestRelease", ...
           val configuration = getConfiguration(target, buildType = variant.name)
 
           when (variant) {
             is UnitTestVariant -> configuration.extendsFrom(testConfiguration)
             is TestVariant -> configuration.extendsFrom(androidTestVariant)
+            // non-test variants like "debug" extend the main config
+            else -> configuration.extendsFrom(commonConfiguration)
           }
         }
       }
