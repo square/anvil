@@ -27,7 +27,7 @@ import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classDescriptorForType
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.decapitalize
-import com.squareup.anvil.compiler.internal.fqNameOrNull
+import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isQualifier
@@ -120,19 +120,20 @@ internal class BindingModuleGenerator(
 
     // Generate a Dagger module for each @MergeComponent and friends.
     return classes
-      .filter { psiClass -> supportedFqNames.any { psiClass.hasAnnotation(it, module) } }
-      .map { psiClass ->
-
-        // The annotation must be present due to the filter above.
-        val mergeAnnotation = psiClass
-          .annotationEntries
-          .first { it.fqNameOrNull(module) in supportedFqNames }
-
-        val scope = psiClass.scope(mergeAnnotation.requireFqName(module), module)
+      .mapNotNull { psiClass ->
+        supportedFqNames
+          .firstNotNullOfOrNull { supportedFqName ->
+            psiClass.findAnnotation(supportedFqName, module)
+          }
+          ?.let { psiClass to it }
+      }
+      .map { (psiClass, mergeAnnotation) ->
+        val annotationFqName = mergeAnnotation.requireFqName(module)
+        val scope = psiClass.scope(annotationFqName, module)
 
         // Remember for which scopes which types were excluded so that we later don't generate
         // a binding method for these types.
-        psiClass.excludeOrNull(mergeAnnotation.requireFqName(module), module)
+        psiClass.excludeOrNull(annotationFqName, module)
           ?.let { excludedTypesForScope[scope] = it }
 
         val packageName = generatePackageName(psiClass)
