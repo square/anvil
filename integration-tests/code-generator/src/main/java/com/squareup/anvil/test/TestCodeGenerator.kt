@@ -59,6 +59,16 @@ class TestCodeGenerator : CodeGenerator {
           interface ContributedModule 
         """.trimIndent()
 
+        @Language("kotlin")
+        val mergedComponent = """
+          package $generatedPackage
+          
+          import com.squareup.anvil.annotations.MergeComponent
+
+          @MergeComponent(Unit::class)
+          interface MergedComponent 
+        """.trimIndent()
+
         // This snippet is helpful for testing #310, which is still failing.
         @Language("kotlin")
         val contributedBinding = """
@@ -100,6 +110,12 @@ class TestCodeGenerator : CodeGenerator {
             packageName = generatedPackage,
             fileName = "ContributedModule",
             content = contributedModule
+          ),
+          createGeneratedFile(
+            codeGenDir = codeGenDir,
+            packageName = generatedPackage,
+            fileName = "mergedComponent",
+            content = mergedComponent
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
