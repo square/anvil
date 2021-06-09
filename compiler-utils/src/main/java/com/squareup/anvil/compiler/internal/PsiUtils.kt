@@ -28,7 +28,7 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtNullableType
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPureElement
-import org.jetbrains.kotlin.psi.KtSuperTypeEntry
+import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
@@ -282,7 +282,7 @@ public fun PsiElement.requireFqName(
       )
       return element.requireFqName(module)
     }
-    is KtSuperTypeEntry -> return typeReference?.requireFqName(module) ?: failTypeHandling()
+    is KtSuperTypeListEntry -> return typeReference?.requireFqName(module) ?: failTypeHandling()
     else -> failTypeHandling()
   }
 

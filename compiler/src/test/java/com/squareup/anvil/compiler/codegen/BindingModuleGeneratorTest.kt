@@ -340,7 +340,8 @@ class BindingModuleGeneratorTest(
     }
   }
 
-  @Test fun `a Dagger module is generated for a merged class and added to the component without a package`() {
+  @Test
+  fun `a Dagger module is generated for a merged class and added to the component without a package`() {
     compile(
       """
       $import
@@ -425,6 +426,44 @@ class BindingModuleGeneratorTest(
       assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
+      assertThat(methods).hasLength(1)
+
+      with(methods[0]) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      }
+    }
+  }
+
+  @Test fun `the super type can be evaluated for a delegated class`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      $import
+      
+      inline fun <reified T> noop(): T = TODO()
+      
+      interface ParentInterface
+
+      @ContributesBinding(Any::class)
+      class ContributingInterface : ParentInterface by noop()
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val modules = if (annotationClass == MergeModules::class) {
+        componentInterface.daggerModule.includes.toList()
+      } else {
+        componentInterface.anyDaggerComponent.modules
+      }
+      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+
+      val methods = modules.single().java.declaredMethods
       assertThat(methods).hasLength(1)
 
       with(methods[0]) {
