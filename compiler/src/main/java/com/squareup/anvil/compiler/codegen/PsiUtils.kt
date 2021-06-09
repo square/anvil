@@ -7,11 +7,17 @@ import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
+import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.requireAnnotation
 import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.mergeComponentFqName
+import com.squareup.anvil.compiler.mergeInterfacesFqName
+import com.squareup.anvil.compiler.mergeModulesFqName
+import com.squareup.anvil.compiler.mergeSubcomponentFqName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
@@ -80,4 +86,31 @@ internal fun KtClassOrObject.replaces(
         .map { it.requireFqName(module) }
     }
     ?: emptyList()
+}
+
+/**
+ * Returns the `List<FqName>` of types excluded by a "Merge___" annotation,
+ * or null if there are none.
+ *
+ * @receiver the annotated interface or abstract class
+ * @param annotationFqName the "Merge___" annotation to inspect
+ * @see KtAnnotationEntry.findAnnotationArgument
+ */
+internal fun KtClassOrObject.excludeOrNull(
+  annotationFqName: FqName,
+  module: ModuleDescriptor
+): List<FqName>? {
+
+  val index = when (annotationFqName) {
+    mergeInterfacesFqName -> 1
+    mergeSubcomponentFqName -> 2
+    mergeComponentFqName, mergeModulesFqName -> 3
+    else -> throw IllegalArgumentException("$annotationFqName has no exclude field.")
+  }
+
+  return requireAnnotation(annotationFqName, module)
+    .findAnnotationArgument<KtCollectionLiteralExpression>(name = "exclude", index = index)
+    ?.children
+    ?.filterIsInstance<KtClassLiteralExpression>()
+    ?.mapNotNull { it.fqNameOrNull(module) }
 }

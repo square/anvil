@@ -136,7 +136,7 @@ public fun KtClassOrObject.scope(
     .let { classLiteralExpression ->
       if (classLiteralExpression == null) {
         throw AnvilCompilationException(
-          "The first argument for $annotationFqName must be a class literal: $text",
+          "Couldn't find scope for $annotationFqName.",
           element = this
         )
       }

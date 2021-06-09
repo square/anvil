@@ -27,8 +27,8 @@ import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classDescriptorForType
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.decapitalize
+import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.generateClassName
-import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
@@ -61,7 +61,6 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -88,7 +87,7 @@ internal class BindingModuleGenerator(
   private val mergedScopes = mutableMapOf<FqName, MutableList<Pair<File, KtClassOrObject>>>()
     .withDefault { mutableListOf() }
 
-  private val excludedTypesForScope = mutableMapOf<FqName, List<ClassDescriptor>>()
+  private val excludedTypesForScope = mutableMapOf<FqName, List<FqName>>()
 
   private val contributedBindingClasses = mutableListOf<FqName>()
   private val contributedMultibindingClasses = mutableListOf<FqName>()
@@ -123,20 +122,17 @@ internal class BindingModuleGenerator(
     return classes
       .filter { psiClass -> supportedFqNames.any { psiClass.hasAnnotation(it, module) } }
       .map { psiClass ->
-        val classDescriptor = psiClass.requireClassDescriptor(module)
 
         // The annotation must be present due to the filter above.
-        val mergeAnnotation = supportedFqNames
-          .firstNotNullOf { classDescriptor.annotationOrNull(it) }
+        val mergeAnnotation = psiClass
+          .annotationEntries
+          .first { it.fqNameOrNull(module) in supportedFqNames }
 
-        val scope = mergeAnnotation.scope(module).fqNameSafe
+        val scope = psiClass.scope(mergeAnnotation.requireFqName(module), module)
 
         // Remember for which scopes which types were excluded so that we later don't generate
         // a binding method for these types.
-        (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)?.value
-          ?.map {
-            it.argumentType(module).classDescriptorForType()
-          }
+        psiClass.excludeOrNull(mergeAnnotation.requireFqName(module), module)
           ?.let { excludedTypesForScope[scope] = it }
 
         val packageName = generatePackageName(psiClass)
@@ -174,7 +170,7 @@ internal class BindingModuleGenerator(
   ): Collection<GeneratedFile> {
     return mergedScopes.flatMap { (scope, daggerModuleFiles) ->
       // Precompute this list once per scope since it expensive.
-      val excludedNames = excludedTypesForScope[scope].orEmpty().map { it.fqNameSafe }
+      val excludedNames = excludedTypesForScope[scope].orEmpty()
 
       // Contributed Dagger modules can replace other Dagger modules but also contributed bindings.
       // If a binding is replaced, then we must not generate the binding method.
@@ -197,7 +193,7 @@ internal class BindingModuleGenerator(
             )
             .filter { it.annotationOrNull(daggerModuleFqName) != null }
             // Ignore replaced bindings specified by excluded modules for this scope.
-            .filter { it !in excludedTypesForScope[scope].orEmpty() }
+            .filter { it.fqNameSafe !in excludedTypesForScope[scope].orEmpty() }
             .flatMap {
               it.annotationOrNull(contributesToFqName, scope)
                 ?.replaces(module)
@@ -237,10 +233,8 @@ internal class BindingModuleGenerator(
 
         return (contributedBindingsThisModule + contributedBindingsDependencies)
           .minus(replacedBindings)
-          .filterNot {
-            it.fqNameSafe in bindingsReplacedInDaggerModules
-          }
-          .minus(excludedTypesForScope[scope].orEmpty())
+          .filterNot { it.fqNameSafe in bindingsReplacedInDaggerModules }
+          .filterNot { it.fqNameSafe in excludedTypesForScope[scope].orEmpty() }
           .filter {
             val annotation = it.annotationOrNull(annotationFqName)
             annotation != null && scope == annotation.scope(module).fqNameSafe
