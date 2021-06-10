@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.1 (2021-06-09)
+
+* Ignore replaced bindings/modules from excluded bindings/modules, see #302.
+* Create separate Anvil configurations for each build type, see #307.
+* Introduce a new VariantFilter for the Gradle extension. This API allows you to enable and disable Anvil for specific variants. Allow to override `generateDaggerFactories`, `generateDaggerFactoriesOnly` and `disableComponentMerging` through the variant filter, see #100.
+
 ## 2.3.0 (2021-06-02)
 
 * Add option to extend Anvil with your own `CodeGenerator`, see [here](README.md#extending-anvil) and #265.
