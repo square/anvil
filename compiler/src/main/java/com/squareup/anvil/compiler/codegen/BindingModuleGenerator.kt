@@ -84,10 +84,9 @@ internal class BindingModuleGenerator(
 
   // Keeps track of for which scopes which files were generated. Usually there is only one file,
   // but technically there can be multiple.
-  private val mergedScopes = mutableMapOf<FqName, MutableList<Pair<File, KtClassOrObject>>>()
-    .withDefault { mutableListOf() }
+  private val mergedClasses = mutableMapOf<MergedClassKey, File>()
 
-  private val excludedTypesForScope = mutableMapOf<FqName, List<FqName>>()
+  private val excludedTypesForClass = mutableMapOf<MergedClassKey, List<FqName>>()
 
   private val contributedBindingClasses = mutableListOf<FqName>()
   private val contributedMultibindingClasses = mutableListOf<FqName>()
@@ -130,11 +129,12 @@ internal class BindingModuleGenerator(
       .map { (psiClass, mergeAnnotation) ->
         val annotationFqName = mergeAnnotation.requireFqName(module)
         val scope = psiClass.scope(annotationFqName, module)
+        val mergedClassKey = MergedClassKey(scope, psiClass)
 
         // Remember for which scopes which types were excluded so that we later don't generate
         // a binding method for these types.
         psiClass.excludeOrNull(annotationFqName, module)
-          ?.let { excludedTypesForScope[scope] = it }
+          ?.let { excludedTypesForClass[mergedClassKey] = it }
 
         val packageName = generatePackageName(psiClass)
         val className = psiClass.generateClassName()
@@ -157,8 +157,7 @@ internal class BindingModuleGenerator(
           generatedMethods = emptyList()
         )
 
-        mergedScopes[scope] = mergedScopes.getValue(scope)
-          .apply { this += file to psiClass }
+        mergedClasses[mergedClassKey] = file
 
         GeneratedFile(file, content)
       }
@@ -169,9 +168,11 @@ internal class BindingModuleGenerator(
     codeGenDir: File,
     module: ModuleDescriptor
   ): Collection<GeneratedFile> {
-    return mergedScopes.flatMap { (scope, daggerModuleFiles) ->
-      // Precompute this list once per scope since it expensive.
-      val excludedNames = excludedTypesForScope[scope].orEmpty()
+    return mergedClasses.map { (mergedClassKey, daggerModuleFile) ->
+      val scope = mergedClassKey.scope
+
+      // Precompute this list once per class since it's expensive.
+      val excludedNames = excludedTypesForClass[mergedClassKey].orEmpty()
 
       // Contributed Dagger modules can replace other Dagger modules but also contributed bindings.
       // If a binding is replaced, then we must not generate the binding method.
@@ -194,7 +195,7 @@ internal class BindingModuleGenerator(
             )
             .filter { it.annotationOrNull(daggerModuleFqName) != null }
             // Ignore replaced bindings specified by excluded modules for this scope.
-            .filter { it.fqNameSafe !in excludedTypesForScope[scope].orEmpty() }
+            .filter { it.fqNameSafe !in excludedNames }
             .flatMap {
               it.annotationOrNull(contributesToFqName, scope)
                 ?.replaces(module)
@@ -235,7 +236,7 @@ internal class BindingModuleGenerator(
         return (contributedBindingsThisModule + contributedBindingsDependencies)
           .minus(replacedBindings)
           .filterNot { it.fqNameSafe in bindingsReplacedInDaggerModules }
-          .filterNot { it.fqNameSafe in excludedTypesForScope[scope].orEmpty() }
+          .filterNot { it.fqNameSafe in excludedNames }
           .filter {
             val annotation = it.annotationOrNull(annotationFqName)
             annotation != null && scope == annotation.scope(module).fqNameSafe
@@ -358,17 +359,15 @@ internal class BindingModuleGenerator(
         isMultibinding = true
       )
 
-      daggerModuleFiles.map { (file, psiClass) ->
-        val content = daggerModuleContent(
-          scope = scope.asString(),
-          psiClass = psiClass,
-          generatedMethods = generatedMethods
-        )
+      val content = daggerModuleContent(
+        scope = scope.asString(),
+        psiClass = mergedClassKey.clazz,
+        generatedMethods = generatedMethods
+      )
 
-        file.writeText(content)
+      daggerModuleFile.writeText(content)
 
-        GeneratedFile(file, content)
-      }
+      GeneratedFile(daggerModuleFile, content)
     }
   }
 
@@ -564,4 +563,29 @@ private fun Binding.key(module: ModuleDescriptor): String {
     }
 
   return fqName + allArguments
+}
+
+private class MergedClassKey(
+  val scope: FqName,
+  val clazz: KtClassOrObject
+) {
+  private val classFqName = clazz.requireFqName()
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (javaClass != other?.javaClass) return false
+
+    other as MergedClassKey
+
+    if (scope != other.scope) return false
+    if (classFqName != other.classFqName) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = scope.hashCode()
+    result = 31 * result + classFqName.hashCode()
+    return result
+  }
 }

@@ -437,6 +437,49 @@ class BindingModuleGeneratorTest(
     }
   }
 
+  @Test fun `bindings are excluded only in one component`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+
+      interface ParentInterface
+      
+      @ContributesBinding(Any::class)
+      interface ContributingInterface : ParentInterface
+            
+      $annotation(Any::class)
+      interface ComponentInterface
+            
+      $annotation(
+        scope = Any::class,
+        exclude = [ContributingInterface::class]
+      )
+      interface ComponentInterface2
+      """
+    ) {
+      val anvilModule1 = if (annotationClass == MergeModules::class) {
+        componentInterface.daggerModule.includes.toList()
+      } else {
+        componentInterface.anyDaggerComponent.modules
+      }.single()
+
+      val anvilModule2 = if (annotationClass == MergeModules::class) {
+        classLoader.loadClass("com.squareup.test.ComponentInterface2")
+          .daggerModule.includes.toList()
+      } else {
+        classLoader.loadClass("com.squareup.test.ComponentInterface2")
+          .anyDaggerComponent.modules
+      }.single()
+
+      assertThat(anvilModule1.java.declaredMethods).hasLength(1)
+      assertThat(anvilModule2.java.declaredMethods).isEmpty()
+    }
+  }
+
   @Test fun `the super type can be evaluated for a delegated class`() {
     compile(
       """
