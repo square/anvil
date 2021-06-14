@@ -7,7 +7,6 @@ import com.android.build.gradle.TestedExtension
 import com.android.build.gradle.api.BaseVariant
 import com.android.build.gradle.api.TestVariant
 import com.android.build.gradle.api.UnitTestVariant
-import com.android.build.gradle.internal.tasks.factory.dependsOn
 import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -256,7 +255,9 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       task.incrementalSignal.set(incrementalSignal)
     }
 
-    compileTaskProvider.dependsOn(disableIncrementalCompilationTaskProvider)
+    compileTaskProvider.configure {
+      it.dependsOn(disableIncrementalCompilationTaskProvider)
+    }
 
     // We avoid a reference to the project in the doFirst.
     val projectPath = variant.project.path
