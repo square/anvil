@@ -1,5 +1,11 @@
 # Changelog
 
+## 2.3.2 (2021-06-15)
+
+* Remove an accidental required dependency on the Android Gradle Plugin, see #323.
+* Ensure that excluded bindings and modules are only excluded for the specific component that merges a scope and not all components merging the same scope, see #321.
+* Disable precise Java tracking for the stub generating Kotlin compilation task when needed, see #324. 
+
 ## 2.3.1 (2021-06-09)
 
 * Ignore replaced bindings/modules from excluded bindings/modules, see #302.
