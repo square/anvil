@@ -185,7 +185,7 @@ public fun KtTypeReference.requireTypeName(
 
 @ExperimentalAnvilApi
 public fun KotlinType.asTypeName(): TypeName {
-  return asTypeName { true }!!
+  return asTypeNameOrNull { true }!!
 }
 
 /**
@@ -194,7 +194,9 @@ public fun KotlinType.asTypeName(): TypeName {
  *                      resolve type arguments.
  */
 @ExperimentalAnvilApi
-public fun KotlinType.asTypeName(rawTypeFilter: (ClassName) -> Boolean = { true }): TypeName? {
+public fun KotlinType.asTypeNameOrNull(
+  rawTypeFilter: (ClassName) -> Boolean = { true }
+): TypeName? {
   if (isTypeParameter()) return TypeVariableName(toString())
 
   val className = classDescriptorForType().asClassName()
