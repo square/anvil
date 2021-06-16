@@ -153,7 +153,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   )
 
   private fun disablePreciseJavaTracking(variant: Variant) {
-    variant.compileTaskProvider.configure { compileTask ->
+    val configureAction: (KotlinCompile) -> Unit = { compileTask ->
       val result = CheckMixedSourceSet.preparePreciseJavaTrackingCheck(variant)
 
       compileTask.doFirstCompat {
@@ -170,10 +170,19 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         )
       }
     }
+
+    variant.compileTaskProvider.configure(configureAction)
+
+    variant.project.pluginManager.withPlugin(KAPT_PLUGIN_ID) {
+      variant.project
+        .namedLazy<KaptGenerateStubsTask>(variant.stubsTaskName) { stubsTaskProvider ->
+          stubsTaskProvider.configure(configureAction)
+        }
+    }
   }
 
   private fun disableCorrectErrorTypes(variant: Variant) {
-    variant.project.pluginManager.withPlugin("org.jetbrains.kotlin.kapt") {
+    variant.project.pluginManager.withPlugin(KAPT_PLUGIN_ID) {
       // This needs to be disabled, otherwise compiler plugins fail in weird ways when
       // generating stubs, e.g.:
       //
@@ -198,11 +207,9 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       variant, incrementalSignal, variant.compileTaskProvider
     )
 
-    variant.project.pluginManager.withPlugin("org.jetbrains.kotlin.kapt") {
+    variant.project.pluginManager.withPlugin(KAPT_PLUGIN_ID) {
       variant.project
-        .namedLazy<KaptGenerateStubsTask>(
-          "kaptGenerateStubs${variant.taskSuffix}"
-        ) { stubsTaskProvider ->
+        .namedLazy<KaptGenerateStubsTask>(variant.stubsTaskName) { stubsTaskProvider ->
           if (variant.variantFilter.generateDaggerFactoriesOnly ||
             variant.variantFilter.disableComponentMerging
           ) {
@@ -381,6 +388,8 @@ private val agpPlugins = listOf(
   "com.android.dynamic-feature",
 )
 
+private const val KAPT_PLUGIN_ID = "org.jetbrains.kotlin.kapt"
+
 internal class Variant private constructor(
   val name: String,
   val project: Project,
@@ -390,7 +399,8 @@ internal class Variant private constructor(
   val variantFilter: VariantFilter,
 ) {
   // E.g. compileKotlin, compileKotlinJvm, compileDebugKotlin.
-  val taskSuffix = compileTaskProvider.name.substringAfter("compile")
+  private val taskSuffix = compileTaskProvider.name.substringAfter("compile")
+  val stubsTaskName = "kaptGenerateStubs$taskSuffix"
 
   companion object {
     operator fun invoke(kotlinCompilation: KotlinCompilation<*>): Variant {
