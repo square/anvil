@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
+@Suppress("unused")
 @AutoService(CodeGenerator::class)
 class TestCodeGenerator : CodeGenerator {
   override fun isApplicable(context: AnvilContext): Boolean = true
@@ -92,6 +93,32 @@ class TestCodeGenerator : CodeGenerator {
           class InjectClass @Inject constructor() 
         """.trimIndent()
 
+        // This snippet is helpful for testing #326, which is still failing.
+        @Language("kotlin")
+        val assistedInject = """
+          /*
+          package $generatedPackage
+          
+          import dagger.assisted.Assisted
+          import dagger.assisted.AssistedFactory
+          import dagger.assisted.AssistedInject
+
+          data class AssistedService @AssistedInject constructor(
+            val int: Int,
+            @Assisted val string: String
+          )
+
+          interface ParentAssistedFactory {
+            fun create(string: String): AssistedService
+          }
+    
+          @AssistedFactory
+          interface SampleAssistedFactory : ParentAssistedFactory {
+            override fun create(string: String): AssistedService
+          }
+           */
+        """.trimIndent()
+
         sequenceOf(
           createGeneratedFile(
             codeGenDir = codeGenDir,
@@ -128,6 +155,12 @@ class TestCodeGenerator : CodeGenerator {
             packageName = generatedPackage,
             fileName = "InjectClass",
             content = injectClass
+          ),
+          createGeneratedFile(
+            codeGenDir = codeGenDir,
+            packageName = generatedPackage,
+            fileName = "AssistedInject",
+            content = assistedInject
           ),
         )
       }
