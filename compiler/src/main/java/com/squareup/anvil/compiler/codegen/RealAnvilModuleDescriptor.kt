@@ -15,11 +15,15 @@ class RealAnvilModuleDescriptor(
   delegate: ModuleDescriptor
 ) : AnvilModuleDescriptor, ModuleDescriptor by delegate {
 
+  internal val allFiles = mutableListOf<KtFile>()
+
   private val classesMap = mutableMapOf<String, List<KtClassOrObject>>()
   private val allClasses: Sequence<KtClassOrObject>
     get() = classesMap.values.asSequence().flatMap { it }
 
   fun addFiles(files: Collection<KtFile>) {
+    allFiles += files
+
     files.forEach { ktFile ->
       classesMap[ktFile.identifier] = ktFile.classesAndInnerClasses()
     }
