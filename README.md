@@ -3,6 +3,8 @@
 [![Maven Central](https://img.shields.io/maven-central/v/com.squareup.anvil/gradle-plugin.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.squareup.anvil%22)
 [![CI](https://github.com/square/anvil/workflows/CI/badge.svg)](https://github.com/square/anvil/actions?query=branch%3Amain)
 
+> _"When all you have is an anvil, every problem looks like a hammer."_ - [Abraham Maslow](https://en.wikipedia.org/wiki/Law_of_the_instrument)
+
 Anvil is a Kotlin compiler plugin to make dependency injection with [Dagger](https://dagger.dev/)
 easier by automatically merging Dagger modules and component interfaces. In a nutshell, instead of
 manually adding modules to a Dagger component and making the Dagger component extend all component
