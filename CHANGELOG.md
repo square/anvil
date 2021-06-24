@@ -1,5 +1,9 @@
 # Changelog
 
+## 2.3.3 (2021-06-23)
+
+* Fix a bug in the Gradle plugin that accidentally realized all tasks in the module instead of evaluating them lazily, see #330.
+
 ## 2.3.2 (2021-06-15)
 
 * Remove an accidental required dependency on the Android Gradle Plugin, see #323.
