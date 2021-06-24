@@ -222,11 +222,14 @@ jobs:
           java-version: 11.0.10
 
       - name: Instrumentation Tests
-        uses: reactivecircus/android-emulator-runner@v2
+        uses: ReactiveCircus/android-emulator-runner@v2.18.0
         with:
           api-level: ${{ matrix.api-level }}
+          emulator-build: 6110076
           arch: x86_64
           script: ./gradlew connectedCheck --no-build-cache --no-daemon --stacktrace
+        env :
+          API_LEVEL : ${{ matrix.api-level }}
 
       - name: Upload results
         uses: actions/upload-artifact@v2
