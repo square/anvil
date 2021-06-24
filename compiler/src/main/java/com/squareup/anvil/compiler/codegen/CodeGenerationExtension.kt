@@ -69,6 +69,9 @@ internal class CodeGenerationExtension(
     val anvilModule = RealAnvilModuleDescriptor(module)
     anvilModule.addFiles(files)
 
+    val (privateCodeGenerators, nonPrivateCodeGenerators) =
+      codeGenerators.partition { it is PrivateCodeGenerator }
+
     fun Collection<GeneratedFile>.toKtFile(): Collection<KtFile> {
       return this
         .mapNotNull { (file, content) ->
@@ -95,19 +98,19 @@ internal class CodeGenerationExtension(
           codeGenerator.flush(codeGenDir, anvilModule).toKtFile()
         }
 
-    var newFiles = codeGenerators.generateCode(files)
+    var newFiles = nonPrivateCodeGenerators.generateCode(files)
+
     while (newFiles.isNotEmpty()) {
       // Parse the KtFile for each generated file. Then feed the code generators with the new
       // parsed files until no new files are generated.
-      newFiles = codeGenerators.generateCode(newFiles)
+      newFiles = nonPrivateCodeGenerators.generateCode(newFiles)
     }
 
-    val flushedFiles = codeGenerators.flush()
+    nonPrivateCodeGenerators.flush()
 
-    // The contract is that PrivateCodeGenerators are called one last time after flush().
-    codeGenerators
-      .filterIsInstance<PrivateCodeGenerator>()
-      .generateCode(flushedFiles)
+    // PrivateCodeGenerators don't impact other code generators. Therefore, they can be called a
+    // single time at the end.
+    privateCodeGenerators.generateCode(anvilModule.allFiles)
 
     // This restarts the analysis phase and will include our files.
     return RetryWithAdditionalRoots(
