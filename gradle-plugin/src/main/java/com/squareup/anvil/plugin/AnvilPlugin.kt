@@ -349,8 +349,8 @@ private inline fun <reified T : Task> Project.namedLazy(
 
   var didRun = false
 
-  tasks.whenTaskAdded { task ->
-    if (task.name == name && task is T) {
+  tasks.withType(T::class.java) { task ->
+    if (task.name == name) {
       action(tasks.named(name, T::class.java))
       didRun = true
     }
