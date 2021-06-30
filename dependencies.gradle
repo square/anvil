@@ -10,7 +10,7 @@ ext {
       project.getProperty('square.kotlinVersion') : '1.5.20'
 
   kotlinUseIR = (project.hasProperty('square.useIR') ?
-      project.getProperty('square.useIR') : 'false').toBoolean()
+      project.getProperty('square.useIR') : 'true').toBoolean()
 
   generateDaggerFactoriesWithAnvil = (project.hasProperty('square.generateDaggerFactoriesWithAnvil') ?
       project.getProperty('square.generateDaggerFactoriesWithAnvil') : 'true').toBoolean()
