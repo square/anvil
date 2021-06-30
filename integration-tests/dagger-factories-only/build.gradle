@@ -1,7 +1,8 @@
 apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'com.squareup.anvil'
 
 if (rootProject.ext.generateDaggerFactoriesWithAnvil) {
+  apply plugin: 'com.squareup.anvil'
+
   anvil {
     generateDaggerFactories = true
     generateDaggerFactoriesOnly = true
