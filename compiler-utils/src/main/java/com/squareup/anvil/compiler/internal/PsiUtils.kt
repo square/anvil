@@ -474,7 +474,10 @@ public fun KtCallableDeclaration.requireTypeReference(module: ModuleDescriptor):
     )
   }
 
-  throw AnvilCompilationException("Couldn't obtain type reference.", element = this)
+  throw AnvilCompilationException(
+    message = "Couldn't obtain type reference. Did you declare an explicit type for ${this.name}?",
+    element = this
+  )
 }
 
 @ExperimentalAnvilApi
