@@ -29,7 +29,7 @@ class AssistedFactoryGeneratorTest(
   companion object {
     @Parameters(name = "Use Dagger: {0}")
     @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(false)
+      return listOf(true, false)
     }
   }
 
