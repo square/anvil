@@ -149,6 +149,9 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
         @Inject lateinit var list: List<String>
         @Inject lateinit var pair: Pair<Pair<String, Int>, Set<String>>
         @Inject lateinit var set: @JvmSuppressWildcards Set<(StringList) -> StringList>
+        var setterAnnotated: Map<String, String> = emptyMap()
+          @Inject set
+        @set:Inject var setterAnnotated2: Map<String, Boolean> = emptyMap()
         
         override fun equals(other: Any?): Boolean {
           if (this === other) return true
@@ -162,6 +165,8 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           if (list != other.list) return false
           if (pair != other.pair) return false
           if (set.single().invoke(emptyList())[0] != other.set.single().invoke(emptyList())[0]) return false
+          if (setterAnnotated != other.setterAnnotated) return false
+          if (setterAnnotated2 != other.setterAnnotated2) return false
       
           return true
         }
@@ -173,6 +178,8 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           result = 31 * result + list.hashCode()
           result = 31 * result + pair.hashCode()
           result = 31 * result + set.single().invoke(emptyList())[0].hashCode()
+          result = 31 * result + setterAnnotated.hashCode()
+          result = 31 * result + setterAnnotated2.hashCode()
           return result
         }
       }
@@ -183,6 +190,8 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       val constructor = membersInjector.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
           Provider::class.java,
           Provider::class.java,
           Provider::class.java,
@@ -199,7 +208,9 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           Provider<CharSequence> { "c" },
           Provider { listOf("d") },
           Provider { Pair(Pair("e", 1), setOf("f")) },
-          Provider { setOf { _: List<String> -> listOf("g") } }
+          Provider { setOf { _: List<String> -> listOf("g") } },
+          Provider { mapOf("Hello" to "World") },
+          Provider { mapOf("Hello" to false) },
         )
         as MembersInjector<Any>
 
@@ -220,6 +231,12 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
         .invoke(null, injectInstanceStatic, Pair(Pair("e", 1), setOf("f")))
       membersInjector.staticInjectMethod("set")
         .invoke(null, injectInstanceStatic, setOf { _: List<String> -> listOf("g") })
+      // From dagger, it will just see a plain old "set" method rather than a field
+      val name = if (useDagger) "setSetterAnnotated" else "setterAnnotated"
+      membersInjector.staticInjectMethod(name)
+        .invoke(null, injectInstanceStatic, mapOf("Hello" to "World"))
+      membersInjector.staticInjectMethod("${name}2")
+        .invoke(null, injectInstanceStatic, mapOf("Hello" to false))
 
       assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
       assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
