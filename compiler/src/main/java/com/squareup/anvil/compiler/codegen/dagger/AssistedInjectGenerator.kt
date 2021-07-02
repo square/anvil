@@ -71,9 +71,15 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
     val packageName = clazz.containingKtFile.packageFqName.safePackageString()
     val className = "${clazz.generateClassName()}_Factory"
 
-    val parameters = constructor.valueParameters.mapToParameter(module)
+    val memberInjectProperties = clazz.injectedMembers(module)
+
+    val parameters = constructor.valueParameters
+      .plus(memberInjectProperties)
+      .mapToParameter(module)
     val parametersAssisted = parameters.filter { it.isAssisted }
     val parametersNotAssisted = parameters.filterNot { it.isAssisted }
+    val constructorSize = constructor.valueParameters.size
+    val memberInjectParameters = parameters.drop(constructorSize)
 
     checkAssistedParametersAreDistinct(clazz, parametersAssisted)
 
@@ -124,7 +130,14 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
                 includeModule = false
               )
 
-              addStatement("return newInstance($argumentList)")
+              if (memberInjectParameters.isEmpty()) {
+                addStatement("return newInstance($argumentList)")
+              } else {
+                val instanceName = "instance"
+                addStatement("val $instanceName = newInstance($argumentList)")
+                addMemberInjection(packageName, clazz, memberInjectParameters, memberInjectProperties, instanceName)
+                addStatement("return $instanceName")
+              }
             }
             .build()
         )
