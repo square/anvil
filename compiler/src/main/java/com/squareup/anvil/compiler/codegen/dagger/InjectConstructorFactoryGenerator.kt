@@ -16,7 +16,6 @@ import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.generateClassName
-import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.typeVariableNames
 import com.squareup.kotlinpoet.ClassName
@@ -31,12 +30,9 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.internal.Factory
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import java.io.File
 
 @AutoService(CodeGenerator::class)
@@ -68,13 +64,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     val packageName = clazz.containingKtFile.packageFqName.safePackageString()
     val className = "${clazz.generateClassName()}_Factory"
 
-    val memberInjectProperties = clazz.children
-      .asSequence()
-      .filterIsInstance<KtClassBody>()
-      .flatMap { it.properties.asSequence() }
-      .filterNot { it.visibilityModifierTypeOrDefault() == KtTokens.PRIVATE_KEYWORD }
-      .filter { it.hasAnnotation(injectFqName, module) }
-      .toList()
+    val memberInjectProperties = clazz.injectedMembers(module)
 
     val parameters = constructor.valueParameters
       .plus(memberInjectProperties)
