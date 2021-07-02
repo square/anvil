@@ -79,6 +79,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
     val parametersAssisted = parameters.filter { it.isAssisted }
     val parametersNotAssisted = parameters.filterNot { it.isAssisted }
     val constructorSize = constructor.valueParameters.size
+    val constructorParameters = parameters.take(constructorSize)
     val memberInjectParameters = parameters.drop(constructorSize)
 
     checkAssistedParametersAreDistinct(clazz, parametersAssisted)
@@ -125,7 +126,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
                 addParameter(parameter.name, parameter.originalTypeName)
               }
 
-              val argumentList = parameters.asArgumentList(
+              val argumentList = constructorParameters.asArgumentList(
                 asProvider = true,
                 includeModule = false
               )
@@ -135,7 +136,13 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
               } else {
                 val instanceName = "instance"
                 addStatement("val $instanceName = newInstance($argumentList)")
-                addMemberInjection(packageName, clazz, memberInjectParameters, memberInjectProperties, instanceName)
+                addMemberInjection(
+                  packageName,
+                  clazz,
+                  memberInjectParameters,
+                  memberInjectProperties,
+                  instanceName
+                )
                 addStatement("return $instanceName")
               }
             }
@@ -174,13 +181,13 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
                   if (typeParameters.isNotEmpty()) {
                     addTypeVariables(typeParameters)
                   }
-                  parameters.forEach { parameter ->
+                  constructorParameters.forEach { parameter ->
                     addParameter(
                       name = parameter.name,
                       type = parameter.originalTypeName
                     )
                   }
-                  val argumentsWithoutModule = parameters.joinToString { it.name }
+                  val argumentsWithoutModule = constructorParameters.joinToString { it.name }
 
                   addStatement("return %T($argumentsWithoutModule)", classType)
                 }

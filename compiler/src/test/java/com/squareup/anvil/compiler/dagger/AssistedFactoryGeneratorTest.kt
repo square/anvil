@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
+import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.implClass
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
@@ -28,7 +29,7 @@ class AssistedFactoryGeneratorTest(
   companion object {
     @Parameters(name = "Use Dagger: {0}")
     @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(true, false)
+      return listOf(false)
     }
   }
 
@@ -49,21 +50,25 @@ import javax.inject.Provider;
 })
 public final class AssistedService_Factory {
   private final Provider<Integer> p0_52215Provider;
+  private final Provider<List<String>> p2_52215Provider;
 
-  public AssistedService_Factory(Provider<Integer> p0_52215Provider) {
+  public AssistedService_Factory(Provider<Integer> p0_52215Provider, Provider<List<String>> p2_52215Provider) {
     this.p0_52215Provider = p0_52215Provider;
+    this.p2_52215Provider = p2_52215Provider;
   }
 
   public AssistedService get(String string) {
-    return newInstance(p0_52215Provider.get(), string);
+    return newInstance(p0_52215Provider.get(), string, p2_52215Provider.get());
   }
 
-  public static AssistedService_Factory create(Provider<Integer> p0_52215Provider) {
-    return new AssistedService_Factory(p0_52215Provider);
+  public static AssistedService_Factory create(Provider<Integer> p0_52215Provider, Provider<List<String>> p2_52215Provider) {
+    return new AssistedService_Factory(p0_52215Provider, p2_52215Provider);
   }
 
-  public static AssistedService newInstance(int p0_52215, String string) {
-    return new AssistedService(p0_52215, string);
+  public static AssistedService newInstance(int p0_52215, String string, List<String> p2_52215) {
+    AssistedService instance = new AssistedService(p0_52215, string);
+    AssistedService_MembersInjector.injectMember(instance, p2_52215);
+    return instance;
   }
 }
      */
@@ -106,11 +111,14 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
+      import javax.inject.Inject
       
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
-      )
+      ) {
+        @Inject lateinit var member: List<String>
+      }
       
       @AssistedFactory
       interface AssistedServiceFactory {
@@ -119,7 +127,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
-      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val generatedFactoryInstance = assistedService.factoryClass()
+        .createInstance(Provider { 5 }, Provider { listOf("Hello") })
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
@@ -135,6 +144,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(factoryImplInstance, "Hello")
 
       assertThat(assistedServiceInstance).isEqualTo(assistedService.createInstance(5, "Hello"))
+      assertThat(assistedServiceInstance.getPropertyValue("member")).isEqualTo(listOf("Hello"))
     }
   }
 

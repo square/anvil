@@ -131,7 +131,13 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
               } else {
                 val instanceName = "instance"
                 addStatement("val $instanceName = newInstance($newInstanceArgumentList)")
-                addMemberInjection(packageName, clazz, memberInjectParameters, memberInjectProperties, instanceName)
+                addMemberInjection(
+                  packageName,
+                  clazz,
+                  memberInjectParameters,
+                  memberInjectProperties,
+                  instanceName
+                )
                 addStatement("return $instanceName")
               }
             }
