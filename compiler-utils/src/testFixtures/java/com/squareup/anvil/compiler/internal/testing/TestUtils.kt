@@ -182,9 +182,7 @@ public fun Any.invokeGet(vararg args: Any?): Any {
 
 @ExperimentalAnvilApi
 public fun Any.getPropertyValue(name: String): Any {
-  val propField = this::class.java.getDeclaredField(name)
-    .apply { isAccessible = true }
-  return propField.get(this)
+  return this::class.java.getDeclaredField(name).use { it.get(this) }
 }
 
 @Suppress("UNCHECKED_CAST")
