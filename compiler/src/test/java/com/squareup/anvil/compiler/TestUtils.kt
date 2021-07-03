@@ -70,6 +70,9 @@ internal val Result.daggerModule4: Class<*>
 internal val Result.innerModule: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ComponentInterface\$InnerModule")
 
+internal val Result.nestedInjectClass: Class<*>
+  get() = classLoader.loadClass("com.squareup.test.ParentClass\$NestedInjectClass")
+
 internal val Result.injectClass: Class<*>
   get() = classLoader.loadClass("com.squareup.test.InjectClass")
 
