@@ -40,15 +40,18 @@ class MembersInjectorGeneratorTest(
 package com.squareup.test;
 
 import dagger.MembersInjector;
+import dagger.internal.DaggerGenerated;
 import dagger.internal.InjectedFieldSignature;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import javax.annotation.Generated;
+import javax.annotation.processing.Generated;
 import javax.inject.Named;
 import javax.inject.Provider;
 import kotlin.Pair;
 import kotlin.jvm.functions.Function1;
 
+@DaggerGenerated
 @Generated(
     value = "dagger.internal.codegen.ComponentProcessor",
     comments = "https://dagger.dev"
@@ -70,24 +73,34 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
 
   private final Provider<Set<Function1<List<String>, List<String>>>> setProvider;
 
+  private final Provider<Map<String, String>> p0Provider;
+
+  private final Provider<Map<String, Boolean>> p0Provider2;
+
   public InjectClass_MembersInjector(Provider<String> stringProvider,
       Provider<String> qualifiedStringProvider, Provider<CharSequence> charSequenceProvider,
-      Provider<List<String>> listProvider, Provider<Pair<Pair<String, Integer>,
-      ? extends Set<String>>> pairProvider, Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
+      Provider<List<String>> listProvider,
+      Provider<Pair<Pair<String, Integer>, ? extends Set<String>>> pairProvider,
+      Provider<Set<Function1<List<String>, List<String>>>> setProvider,
+      Provider<Map<String, String>> p0Provider, Provider<Map<String, Boolean>> p0Provider2) {
     this.stringProvider = stringProvider;
     this.qualifiedStringProvider = qualifiedStringProvider;
     this.charSequenceProvider = charSequenceProvider;
     this.listProvider = listProvider;
     this.pairProvider = pairProvider;
     this.setProvider = setProvider;
+    this.p0Provider = p0Provider;
+    this.p0Provider2 = p0Provider2;
   }
 
   public static MembersInjector<InjectClass> create(Provider<String> stringProvider,
       Provider<String> qualifiedStringProvider, Provider<CharSequence> charSequenceProvider,
-      Provider<List<String>> listProvider, Provider<Pair<Pair<String, Integer>,
-      ? extends Set<String>>> pairProvider, Provider<Set<Function1<List<String>,
-      List<String>>>> setProvider) {
-    return new InjectClass_MembersInjector(stringProvider, qualifiedStringProvider, charSequenceProvider, listProvider, pairProvider, setProvider);}
+      Provider<List<String>> listProvider,
+      Provider<Pair<Pair<String, Integer>, ? extends Set<String>>> pairProvider,
+      Provider<Set<Function1<List<String>, List<String>>>> setProvider,
+      Provider<Map<String, String>> p0Provider, Provider<Map<String, Boolean>> p0Provider2) {
+    return new InjectClass_MembersInjector(stringProvider, qualifiedStringProvider, charSequenceProvider, listProvider, pairProvider, setProvider, p0Provider, p0Provider2);
+  }
 
   @Override
   public void injectMembers(InjectClass instance) {
@@ -97,6 +110,8 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
     injectList(instance, listProvider.get());
     injectPair(instance, pairProvider.get());
     injectSet(instance, setProvider.get());
+    injectSetSetterAnnotated(instance, p0Provider.get());
+    injectSetSetterAnnotated2(instance, p0Provider2.get());
   }
 
   @InjectedFieldSignature("com.squareup.test.InjectClass.string")
@@ -104,8 +119,8 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
     instance.string = string;
   }
 
-  @Named("qualified")
   @InjectedFieldSignature("com.squareup.test.InjectClass.qualifiedString")
+  @Named("qualified")
   public static void injectQualifiedString(InjectClass instance, String qualifiedString) {
     instance.qualifiedString = qualifiedString;
   }
@@ -131,8 +146,16 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       Set<Function1<List<String>, List<String>>> set) {
     instance.set = set;
   }
+
+  public static void injectSetSetterAnnotated(InjectClass instance, Map<String, String> p0) {
+    instance.setSetterAnnotated(p0);
+  }
+
+  public static void injectSetSetterAnnotated2(InjectClass instance, Map<String, Boolean> p0) {
+    instance.setSetterAnnotated2(p0);
+  }
 }
-     */
+*/
 
     compile(
       """
