@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 internal fun KtClassOrObject.injectedMembers(module: ModuleDescriptor) = children
   .asSequence()
   .filterIsInstance<KtClassBody>()
-  .flatMap { it.properties.asSequence() }
+  .flatMap { it.properties }
   .filterNot { it.visibilityModifierTypeOrDefault() == KtTokens.PRIVATE_KEYWORD }
   .filter {
     it.hasAnnotation(injectFqName, module) ||
