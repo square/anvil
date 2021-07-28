@@ -17,7 +17,7 @@ ext {
   ktlintVersion = "0.41.0"
 
   deps = [
-      android_gradle_plugin: "com.android.tools.build:gradle:4.1.0",
+      android_gradle_plugin: "com.android.tools.build:gradle:4.2.0",
       anvil_plugin: "com.squareup.anvil:gradle-plugin:${findProperty('VERSION_NAME')}",
       maven_publishing_plugin: "com.vanniktech:gradle-maven-publish-plugin:0.14.2",
       gradle_publishing_plugin: "com.gradle.publish:plugin-publish-plugin:0.15.0",
