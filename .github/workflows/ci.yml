@@ -152,7 +152,7 @@ jobs:
           check-latest : true
 
       - name: Publish to Maven Local
-        run: ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd gradle-plugin && ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd ..
+        run: ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd ..
 
   build-gradle-plugin:
     runs-on: ubuntu-latest
@@ -267,14 +267,12 @@ jobs:
           check-latest : true
 
       - name: Instrumentation Tests
-        uses: ReactiveCircus/android-emulator-runner@v2.18.0
+        uses: reactivecircus/android-emulator-runner@v2
         with:
           api-level: ${{ matrix.api-level }}
-          emulator-build: 6110076
+          target: default
           arch: x86_64
           script: ./gradlew connectedCheck --no-build-cache --no-daemon --stacktrace
-        env :
-          API_LEVEL : ${{ matrix.api-level }}
 
       - name: Upload results
         uses: actions/upload-artifact@v2
