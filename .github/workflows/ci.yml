@@ -152,7 +152,7 @@ jobs:
           check-latest : true
 
       - name: Publish to Maven Local
-        run: ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd gradle-plugin && ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd ..
+        run: ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd ..
 
   build-gradle-plugin:
     runs-on: ubuntu-latest
