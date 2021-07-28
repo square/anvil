@@ -1,5 +1,3 @@
-import org.gradle.util.VersionNumber
-
 ext {
   ci = (System.getenv('CI') ?: 'false').toBoolean()
 
@@ -7,7 +5,7 @@ ext {
   daggerVersion = '2.36'
   espressoVersion = '3.2.0'
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
-      project.getProperty('square.kotlinVersion') : '1.5.20'
+      project.getProperty('square.kotlinVersion') : '1.5.21'
 
   kotlinUseIR = (project.hasProperty('square.useIR') ?
       project.getProperty('square.useIR') : 'true').toBoolean()
