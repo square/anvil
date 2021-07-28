@@ -255,11 +255,9 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
         .invoke(null, injectInstanceStatic, Pair(Pair("e", 1), setOf("f")))
       membersInjector.staticInjectMethod("set")
         .invoke(null, injectInstanceStatic, setOf { _: List<String> -> listOf("g") })
-      // From dagger, it will just see a plain old "set" method rather than a field
-      val name = if (useDagger) "setSetterAnnotated" else "setterAnnotated"
-      membersInjector.staticInjectMethod(name)
+      membersInjector.staticInjectMethod("setSetterAnnotated")
         .invoke(null, injectInstanceStatic, mapOf("Hello" to "World"))
-      membersInjector.staticInjectMethod("${name}2")
+      membersInjector.staticInjectMethod("setSetterAnnotated2")
         .invoke(null, injectInstanceStatic, mapOf("Hello" to false))
 
       assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)

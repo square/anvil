@@ -4,16 +4,25 @@ import com.squareup.anvil.compiler.codegen.Parameter
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
+
+internal fun KtProperty.isSetterInjected(module: ModuleDescriptor): Boolean {
+  return setter?.hasAnnotation(injectFqName, module) == true ||
+    findAnnotation(injectFqName, module)
+    ?.useSiteTarget
+    ?.getAnnotationUseSiteTarget() == AnnotationUseSiteTarget.PROPERTY_SETTER
+}
 
 // TODO
 //  Include methods: https://github.com/square/anvil/issues/339
@@ -25,7 +34,7 @@ internal fun KtClassOrObject.injectedMembers(module: ModuleDescriptor) = childre
   .filterNot { it.visibilityModifierTypeOrDefault() == KtTokens.PRIVATE_KEYWORD }
   .filter {
     it.hasAnnotation(injectFqName, module) ||
-      it.setter?.hasAnnotation(injectFqName, module) == true
+      it.isSetterInjected(module)
   }
   .toList()
 
