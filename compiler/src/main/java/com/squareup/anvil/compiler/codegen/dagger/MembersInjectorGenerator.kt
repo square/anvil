@@ -8,13 +8,11 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.mapToParameter
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
-import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.generateClassName
-import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isGenericClass
 import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
@@ -37,12 +35,9 @@ import dagger.MembersInjector
 import dagger.internal.InjectedFieldSignature
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import java.io.File
 
@@ -59,13 +54,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
     projectFiles
       .classesAndInnerClass(module)
       .forEach { clazz ->
-        val injectProperties = clazz.children
-          .asSequence()
-          .filterIsInstance<KtClassBody>()
-          .flatMap { it.properties.asSequence() }
-          .filterNot { it.visibilityModifierTypeOrDefault() == KtTokens.PRIVATE_KEYWORD }
-          .filter { it.hasAnnotation(injectFqName, module) }
-          .toList()
+        val injectProperties = clazz.injectedMembers(module)
           .ifEmpty { return@forEach }
 
         generateMembersInjectorClass(
@@ -156,7 +145,12 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                       "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
                     else -> parameter.name + ".get()"
                   }
-                  addStatement("inject${propertyName.capitalize()}(instance, $parameterString)")
+                  val propertyRef = if (property.isSetterInjected(module)) {
+                    "set${propertyName.capitalize()}"
+                  } else {
+                    propertyName
+                  }
+                  addStatement("inject${propertyRef.capitalize()}(instance, $parameterString)")
                 }
               }
               .build()
@@ -184,15 +178,26 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                 parameters.forEachIndexed { index, parameter ->
                   val property = injectProperties[index]
                   val propertyName = property.nameAsSafeName.asString()
+                  val isSetterInjected = property.isSetterInjected(module)
+                  val propertyRef = if (isSetterInjected) {
+                    "set${propertyName.capitalize()}"
+                  } else {
+                    propertyName
+                  }
 
                   addFunction(
-                    FunSpec.builder("inject${propertyName.capitalize()}")
+                    FunSpec.builder("inject${propertyRef.capitalize()}")
                       .jvmStatic()
-                      .addAnnotation(
-                        AnnotationSpec.builder(InjectedFieldSignature::class)
-                          .addMember("%S", property.requireFqName())
-                          .build()
-                      )
+                      .apply {
+                        // Don't add @InjectedFieldSignature when it's calling a setter method
+                        if (!isSetterInjected) {
+                          addAnnotation(
+                            AnnotationSpec.builder(InjectedFieldSignature::class)
+                              .addMember("%S", property.requireFqName())
+                              .build()
+                          )
+                        }
+                      }
                       .apply {
                         val hasQualifier = property.annotationEntries
                           .any { it.isQualifier(module) }

@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.membersInjector
+import com.squareup.anvil.compiler.nestedInjectClass
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.MembersInjector
@@ -39,15 +40,18 @@ class MembersInjectorGeneratorTest(
 package com.squareup.test;
 
 import dagger.MembersInjector;
+import dagger.internal.DaggerGenerated;
 import dagger.internal.InjectedFieldSignature;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
-import javax.annotation.Generated;
+import javax.annotation.processing.Generated;
 import javax.inject.Named;
 import javax.inject.Provider;
 import kotlin.Pair;
 import kotlin.jvm.functions.Function1;
 
+@DaggerGenerated
 @Generated(
     value = "dagger.internal.codegen.ComponentProcessor",
     comments = "https://dagger.dev"
@@ -69,24 +73,34 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
 
   private final Provider<Set<Function1<List<String>, List<String>>>> setProvider;
 
+  private final Provider<Map<String, String>> p0Provider;
+
+  private final Provider<Map<String, Boolean>> p0Provider2;
+
   public InjectClass_MembersInjector(Provider<String> stringProvider,
       Provider<String> qualifiedStringProvider, Provider<CharSequence> charSequenceProvider,
-      Provider<List<String>> listProvider, Provider<Pair<Pair<String, Integer>,
-      ? extends Set<String>>> pairProvider, Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
+      Provider<List<String>> listProvider,
+      Provider<Pair<Pair<String, Integer>, ? extends Set<String>>> pairProvider,
+      Provider<Set<Function1<List<String>, List<String>>>> setProvider,
+      Provider<Map<String, String>> p0Provider, Provider<Map<String, Boolean>> p0Provider2) {
     this.stringProvider = stringProvider;
     this.qualifiedStringProvider = qualifiedStringProvider;
     this.charSequenceProvider = charSequenceProvider;
     this.listProvider = listProvider;
     this.pairProvider = pairProvider;
     this.setProvider = setProvider;
+    this.p0Provider = p0Provider;
+    this.p0Provider2 = p0Provider2;
   }
 
   public static MembersInjector<InjectClass> create(Provider<String> stringProvider,
       Provider<String> qualifiedStringProvider, Provider<CharSequence> charSequenceProvider,
-      Provider<List<String>> listProvider, Provider<Pair<Pair<String, Integer>,
-      ? extends Set<String>>> pairProvider, Provider<Set<Function1<List<String>,
-      List<String>>>> setProvider) {
-    return new InjectClass_MembersInjector(stringProvider, qualifiedStringProvider, charSequenceProvider, listProvider, pairProvider, setProvider);}
+      Provider<List<String>> listProvider,
+      Provider<Pair<Pair<String, Integer>, ? extends Set<String>>> pairProvider,
+      Provider<Set<Function1<List<String>, List<String>>>> setProvider,
+      Provider<Map<String, String>> p0Provider, Provider<Map<String, Boolean>> p0Provider2) {
+    return new InjectClass_MembersInjector(stringProvider, qualifiedStringProvider, charSequenceProvider, listProvider, pairProvider, setProvider, p0Provider, p0Provider2);
+  }
 
   @Override
   public void injectMembers(InjectClass instance) {
@@ -96,6 +110,8 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
     injectList(instance, listProvider.get());
     injectPair(instance, pairProvider.get());
     injectSet(instance, setProvider.get());
+    injectSetSetterAnnotated(instance, p0Provider.get());
+    injectSetSetterAnnotated2(instance, p0Provider2.get());
   }
 
   @InjectedFieldSignature("com.squareup.test.InjectClass.string")
@@ -103,8 +119,8 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
     instance.string = string;
   }
 
-  @Named("qualified")
   @InjectedFieldSignature("com.squareup.test.InjectClass.qualifiedString")
+  @Named("qualified")
   public static void injectQualifiedString(InjectClass instance, String qualifiedString) {
     instance.qualifiedString = qualifiedString;
   }
@@ -130,8 +146,16 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       Set<Function1<List<String>, List<String>>> set) {
     instance.set = set;
   }
+
+  public static void injectSetSetterAnnotated(InjectClass instance, Map<String, String> p0) {
+    instance.setSetterAnnotated(p0);
+  }
+
+  public static void injectSetSetterAnnotated2(InjectClass instance, Map<String, Boolean> p0) {
+    instance.setSetterAnnotated2(p0);
+  }
 }
-     */
+*/
 
     compile(
       """
@@ -149,6 +173,9 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
         @Inject lateinit var list: List<String>
         @Inject lateinit var pair: Pair<Pair<String, Int>, Set<String>>
         @Inject lateinit var set: @JvmSuppressWildcards Set<(StringList) -> StringList>
+        var setterAnnotated: Map<String, String> = emptyMap()
+          @Inject set
+        @set:Inject var setterAnnotated2: Map<String, Boolean> = emptyMap()
         
         override fun equals(other: Any?): Boolean {
           if (this === other) return true
@@ -162,6 +189,8 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           if (list != other.list) return false
           if (pair != other.pair) return false
           if (set.single().invoke(emptyList())[0] != other.set.single().invoke(emptyList())[0]) return false
+          if (setterAnnotated != other.setterAnnotated) return false
+          if (setterAnnotated2 != other.setterAnnotated2) return false
       
           return true
         }
@@ -173,6 +202,8 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           result = 31 * result + list.hashCode()
           result = 31 * result + pair.hashCode()
           result = 31 * result + set.single().invoke(emptyList())[0].hashCode()
+          result = 31 * result + setterAnnotated.hashCode()
+          result = 31 * result + setterAnnotated2.hashCode()
           return result
         }
       }
@@ -183,6 +214,8 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       val constructor = membersInjector.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
           Provider::class.java,
           Provider::class.java,
           Provider::class.java,
@@ -199,7 +232,9 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           Provider<CharSequence> { "c" },
           Provider { listOf("d") },
           Provider { Pair(Pair("e", 1), setOf("f")) },
-          Provider { setOf { _: List<String> -> listOf("g") } }
+          Provider { setOf { _: List<String> -> listOf("g") } },
+          Provider { mapOf("Hello" to "World") },
+          Provider { mapOf("Hello" to false) },
         )
         as MembersInjector<Any>
 
@@ -220,6 +255,10 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
         .invoke(null, injectInstanceStatic, Pair(Pair("e", 1), setOf("f")))
       membersInjector.staticInjectMethod("set")
         .invoke(null, injectInstanceStatic, setOf { _: List<String> -> listOf("g") })
+      membersInjector.staticInjectMethod("setSetterAnnotated")
+        .invoke(null, injectInstanceStatic, mapOf("Hello" to "World"))
+      membersInjector.staticInjectMethod("setSetterAnnotated2")
+        .invoke(null, injectInstanceStatic, mapOf("Hello" to false))
 
       assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
       assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
@@ -227,6 +266,104 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       val namedAnnotation = membersInjector.staticInjectMethod("qualifiedString").annotations
         .single { it.annotationClass == Named::class }
       assertThat(namedAnnotation.getValue<String>()).isEqualTo("qualified")
+    }
+  }
+
+  @Test fun `a factory class is generated for a field injection in a nested class`() {
+    /*
+package com.squareup.test;
+
+import dagger.MembersInjector;
+import dagger.internal.InjectedFieldSignature;
+import java.util.List;
+import java.util.Set;
+import javax.annotation.Generated;
+import javax.inject.Named;
+import javax.inject.Provider;
+import kotlin.Pair;
+import kotlin.jvm.functions.Function1;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class ParentClass_NestedInjectClass_MembersInjector implements MembersInjector<InjectClass> {
+  private final Provider<String> stringProvider;
+
+  public ParentClass_NestedInjectClass_MembersInjector(Provider<String> stringProvider) {
+    this.stringProvider = stringProvider;
+  }
+
+  public static MembersInjector<InjectClass> create(Provider<String> stringProvider) {
+    return new ParentClass_NestedInjectClass_MembersInjector(stringProvider);}
+
+  @Override
+  public void injectMembers(InjectClass instance) {
+    injectString(instance, stringProvider.get());
+  }
+
+  @InjectedFieldSignature("com.squareup.test.ParentClass.NestedInjectClass.string")
+  public static void injectString(InjectClass instance, String string) {
+    instance.string = string;
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      import javax.inject.Named
+      
+      typealias StringList = List<String>
+      
+      class ParentClass {
+        class NestedInjectClass {
+          @Inject lateinit var string: String
+          
+          override fun equals(other: Any?): Boolean {
+            if (this === other) return true
+            if (javaClass != other?.javaClass) return false
+        
+            other as NestedInjectClass
+        
+            if (string != other.string) return false
+        
+            return true
+          }
+        
+          override fun hashCode(): Int {
+            return string.hashCode()
+          }
+        }
+      }
+      """
+    ) {
+      val membersInjector = nestedInjectClass.membersInjector()
+
+      val constructor = membersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
+
+      @Suppress("RedundantLambdaArrow")
+      val membersInjectorInstance = constructor
+        .newInstance(Provider { "a" }) as MembersInjector<Any>
+
+      val injectInstanceConstructor = nestedInjectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = nestedInjectClass.createInstance()
+
+      membersInjector.staticInjectMethod("string")
+        .invoke(null, injectInstanceStatic, "a")
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
     }
   }
 

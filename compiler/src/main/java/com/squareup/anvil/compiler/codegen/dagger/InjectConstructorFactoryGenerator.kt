@@ -9,14 +9,11 @@ import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.asArgumentList
 import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.codegen.mapToParameter
-import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.generateClassName
-import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.typeVariableNames
 import com.squareup.kotlinpoet.ClassName
@@ -31,12 +28,9 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.internal.Factory
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import java.io.File
 
 @AutoService(CodeGenerator::class)
@@ -68,13 +62,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     val packageName = clazz.containingKtFile.packageFqName.safePackageString()
     val className = "${clazz.generateClassName()}_Factory"
 
-    val memberInjectProperties = clazz.children
-      .asSequence()
-      .filterIsInstance<KtClassBody>()
-      .flatMap { it.properties.asSequence() }
-      .filterNot { it.visibilityModifierTypeOrDefault() == KtTokens.PRIVATE_KEYWORD }
-      .filter { it.hasAnnotation(injectFqName, module) }
-      .toList()
+    val memberInjectProperties = clazz.injectedMembers(module)
 
     val parameters = constructor.valueParameters
       .plus(memberInjectProperties)
@@ -141,27 +129,16 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
               if (memberInjectParameters.isEmpty()) {
                 addStatement("return newInstance($newInstanceArgumentList)")
               } else {
-                addStatement("val instance = newInstance($newInstanceArgumentList)")
-
-                val memberInjectorClassName = "${clazz.generateClassName()}_MembersInjector"
-                val memberInjectorClass = ClassName(packageName, memberInjectorClassName)
-
-                memberInjectParameters.forEachIndexed { index, parameter ->
-
-                  val property = memberInjectProperties[index]
-                  val propertyName = property.nameAsSafeName.asString()
-                  val functionName = "inject${propertyName.capitalize()}"
-
-                  val param = when {
-                    parameter.isWrappedInProvider -> parameter.name
-                    parameter.isWrappedInLazy ->
-                      "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
-                    else -> parameter.name + ".get()"
-                  }
-
-                  addStatement("%T.$functionName(instance, $param)", memberInjectorClass)
-                }
-                addStatement("return instance")
+                val instanceName = "instance"
+                addStatement("val $instanceName = newInstance($newInstanceArgumentList)")
+                addMemberInjection(
+                  packageName,
+                  clazz,
+                  memberInjectParameters,
+                  memberInjectProperties,
+                  instanceName
+                )
+                addStatement("return $instanceName")
               }
             }
             .build()

@@ -180,6 +180,11 @@ public fun Any.invokeGet(vararg args: Any?): Any {
   return method.invoke(this, *args)
 }
 
+@ExperimentalAnvilApi
+public fun Any.getPropertyValue(name: String): Any {
+  return this::class.java.getDeclaredField(name).use { it.get(this) }
+}
+
 @Suppress("UNCHECKED_CAST")
 @ExperimentalAnvilApi
 public fun <T> Annotation.getValue(): T =
