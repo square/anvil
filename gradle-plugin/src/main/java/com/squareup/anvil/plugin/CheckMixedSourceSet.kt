@@ -2,7 +2,7 @@ package com.squareup.anvil.plugin
 
 import org.gradle.api.Project
 import org.gradle.api.file.FileCollection
-import org.gradle.api.plugins.JavaPluginConvention
+import org.gradle.api.plugins.JavaPluginExtension
 import org.gradle.api.provider.Property
 import org.jetbrains.kotlin.gradle.internal.Kapt3GradleSubplugin
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -53,7 +53,7 @@ internal object CheckMixedSourceSet {
   }
 
   private fun getJvmSourceDirs(variant: Variant): FileCollection? {
-    return variant.project.convention.findPlugin(JavaPluginConvention::class.java)
+    return variant.project.extensions.findByType(JavaPluginExtension::class.java)
       ?.sourceSets
       ?.single { it.name == variant.name }
       ?.allJava
