@@ -1,3 +1,5 @@
+import org.gradle.util.internal.VersionNumber
+
 ext {
   ci = (System.getenv('CI') ?: 'false').toBoolean()
 
@@ -12,7 +14,10 @@ ext {
 
   generateDaggerFactoriesWithAnvil = (project.hasProperty('square.generateDaggerFactoriesWithAnvil') ?
       project.getProperty('square.generateDaggerFactoriesWithAnvil') : 'true').toBoolean()
-  makeWarningsErrors = ci
+
+  // TODO: remove version check with Kotlin 1.5.30-RC, https://youtrack.jetbrains.com/issue/KT-47754
+  makeWarningsErrors = ci &&
+      VersionNumber.parse(kotlinVersion).baseVersion < VersionNumber.parse("1.5.30").baseVersion
 
   ktlintVersion = "0.41.0"
 
