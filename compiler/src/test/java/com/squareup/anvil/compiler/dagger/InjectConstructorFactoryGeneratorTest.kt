@@ -1506,6 +1506,60 @@ public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
     }
   }
 
+  @Test fun `a factory class is generated for a class with a type parameter no constructor argument`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.DaggerGenerated;
+import dagger.internal.Factory;
+import javax.annotation.processing.Generated;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
+  @Override
+  public InjectClass<T> get() {
+    return newInstance();
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <T> InjectClass_Factory<T> create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static <T> InjectClass<T> newInstance() {
+    return new InjectClass<T>();
+  }
+
+  private static final class InstanceHolder {
+    @SuppressWarnings("rawtypes")
+    private static final InjectClass_Factory INSTANCE = new InjectClass_Factory();
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      
+      class InjectClass<T> @Inject constructor()
+      """
+    ) {
+      val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
+        .factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+    }
+  }
+
   @Test fun `a factory class is generated for generics without modifier`() {
     /*
 package com.squareup.test;

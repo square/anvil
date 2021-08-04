@@ -84,7 +84,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     }
 
     val content = FileSpec.buildFile(packageName, className) {
-      val canGenerateAnObject = parameters.isEmpty()
+      val canGenerateAnObject = parameters.isEmpty() && typeParameters.isEmpty()
       val classBuilder = if (canGenerateAnObject) {
         TypeSpec.objectBuilder(factoryClass)
       } else {
