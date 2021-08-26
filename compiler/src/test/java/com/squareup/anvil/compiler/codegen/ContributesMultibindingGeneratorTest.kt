@@ -147,7 +147,7 @@ class ContributesMultibindingGeneratorTest {
       ) {
         assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
         // Position to the class.
-        assertThat(messages).contains("Source.kt: (8, ")
+        assertThat(messages).contains("Source0.kt: (8, ")
         assertThat(messages).contains(
           "com.squareup.test.ContributingInterface is binding a type, but the class is not " +
             "public. Only public types are supported."

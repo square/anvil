@@ -143,7 +143,7 @@ class InterfaceMergerTest(
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
-      assertThat(messages).contains("Source.kt: (6, 16)")
+      assertThat(messages).contains("Source0.kt: (6, 16)")
     }
   }
 
@@ -197,7 +197,7 @@ class InterfaceMergerTest(
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class. Unfortunately, a different error is reported that the class is
       // missing an @Module annotation.
-      assertThat(messages).contains("Source.kt: (7, 7)")
+      assertThat(messages).contains("Source0.kt: (7, 7)")
     }
   }
 
@@ -225,7 +225,7 @@ class InterfaceMergerTest(
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class. Unfortunately, a different error is reported that the class is
       // missing an @Module annotation.
-      assertThat(messages).contains("Source.kt: (13, 11)")
+      assertThat(messages).contains("Source0.kt: (13, 11)")
       assertThat(messages).contains(
         "com.squareup.test.SecondContributingInterface with scope kotlin.Any wants to replace " +
           "com.squareup.test.ContributingInterface with scope kotlin.Unit. The replacement " +
@@ -313,7 +313,7 @@ class InterfaceMergerTest(
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
-      assertThat(messages).contains("Source.kt: (18, 11)")
+      assertThat(messages).contains("Source0.kt: (18, 11)")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
           "com.squareup.test.ContributingInterface with scope kotlin.Unit. The exclusion " +
@@ -444,7 +444,7 @@ class InterfaceMergerTest(
       ) {
         assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
         // Position to the class.
-        assertThat(messages).contains("Source.kt: (7, ")
+        assertThat(messages).contains("Source0.kt: (7, ")
       }
     }
   }
