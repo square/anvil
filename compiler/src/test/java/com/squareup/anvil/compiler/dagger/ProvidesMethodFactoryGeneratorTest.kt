@@ -2523,7 +2523,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       assumeFalse(useDagger)
 
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-      assertThat(messages).contains("Source.kt: (5, 3)")
+      assertThat(messages).contains("Source0.kt: (5, 3)")
       assertThat(messages).contains(
         "Dagger provider methods must specify the return type explicitly when using Anvil. " +
           "The return type cannot be inferred implicitly."

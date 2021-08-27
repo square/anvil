@@ -164,7 +164,7 @@ class ContributesToGeneratorTest {
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Position to the class.
-      assertThat(messages).contains("Source.kt: (6, 16)")
+      assertThat(messages).contains("Source0.kt: (6, 16)")
     }
   }
 
@@ -189,7 +189,7 @@ class ContributesToGeneratorTest {
       ) {
         assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
         // Position to the class.
-        assertThat(messages).contains("Source.kt: (7, ")
+        assertThat(messages).contains("Source0.kt: (7, ")
       }
     }
   }
@@ -214,7 +214,7 @@ class ContributesToGeneratorTest {
       ) {
         assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
         // Position to the class.
-        assertThat(messages).contains("Source.kt: (6, ")
+        assertThat(messages).contains("Source0.kt: (6, ")
       }
     }
   }

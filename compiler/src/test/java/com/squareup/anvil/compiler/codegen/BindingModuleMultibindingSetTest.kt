@@ -267,7 +267,7 @@ class BindingModuleMultibindingSetTest(
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
 
-      assertThat(messages).contains("Source.kt: (6, 11)")
+      assertThat(messages).contains("Source0.kt: (6, 11)")
       assertThat(messages).contains(
         "Binding com.squareup.test.ParentInterface contains type parameters(s)" +
           " <Map<String, List<Pair<String, Int>>>, SomeOtherType>"

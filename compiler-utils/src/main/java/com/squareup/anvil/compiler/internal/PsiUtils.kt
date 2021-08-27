@@ -319,6 +319,19 @@ public fun PsiElement.requireFqName(
       }
     }
 
+  containingKtFile.importDirectives
+    .asSequence()
+    .filter { it.isAllUnder }
+    .mapNotNull {
+      // This fqName is everything in front of the star, e.g. for "import java.io.*" it
+      // returns "java.io".
+      it.importPath?.fqName
+    }
+    .forEach { importFqName ->
+      module.resolveFqNameOrNull(importFqName, classReference)
+        ?.let { return it }
+    }
+
   // If there is no import, then try to resolve the class with the same package as this file.
   module.resolveFqNameOrNull(containingKtFile.packageFqName, classReference)
     ?.let { return it }
@@ -341,19 +354,6 @@ public fun PsiElement.requireFqName(
 
   findFqNameInSuperTypes(module, classReference)
     ?.let { return it }
-
-  containingKtFile.importDirectives
-    .asSequence()
-    .filter { it.isAllUnder }
-    .mapNotNull {
-      // This fqName is the everything in front of the star, e.g. for "import java.io.*" it
-      // returns "java.io".
-      it.importPath?.fqName
-    }
-    .forEach { importFqName ->
-      module.resolveFqNameOrNull(importFqName, classReference)
-        ?.let { return it }
-    }
 
   // Check if it's a named import.
   containingKtFile.importDirectives

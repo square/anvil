@@ -81,7 +81,7 @@ public fun compileAnvil(
         )
       )
 
-      this.sources = sources.map { content ->
+      this.sources = sources.mapIndexed { index, content ->
         val packageDir = content.lines()
           .firstOrNull { it.trim().startsWith("package ") }
           ?.substringAfter("package ")
@@ -89,7 +89,8 @@ public fun compileAnvil(
           ?.let { "$it/" }
           ?: ""
 
-        val name = "${this.workingDir.absolutePath}/sources/src/main/java/$packageDir/Source.kt"
+        val name =
+          "${this.workingDir.absolutePath}/sources/src/main/java/$packageDir/Source$index.kt"
         with(File(name).parentFile) {
           check(exists() || mkdirs())
         }

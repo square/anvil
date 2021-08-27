@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.internal.Factory
@@ -1991,6 +1992,33 @@ public class InjectClass_Factory<T : List<String>>(
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       assertThat(messages).contains("Types may only contain one injected constructor")
+    }
+  }
+
+  @Test fun `verify the right state class is imported`() {
+    // That was reported here https://github.com/square/anvil/issues/358
+    compile(
+      """
+      package com.squareup.test
+      
+      interface Contract {
+        data class State(
+          val loading: Boolean = false
+        )
+      }
+      """,
+      """
+      package com.squareup.test
+        
+      import com.squareup.test.Contract.*
+      import javax.inject.Inject
+      
+      class SomeClass @Inject constructor(
+        state: State
+      )  
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
     }
   }
 

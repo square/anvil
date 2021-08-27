@@ -103,7 +103,7 @@ class AnvilMergeAnnotationDetectorCheckTest {
 
   private fun Result.assertError() {
     assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-    assertThat(messages).contains("Source.kt: (5, 1")
+    assertThat(messages).contains("Source0.kt: (5, 1")
     assertThat(messages).contains(
       "This Gradle module is configured to ONLY generate code with the " +
         "`disableComponentMerging` flag. However, this module contains code that uses " +
