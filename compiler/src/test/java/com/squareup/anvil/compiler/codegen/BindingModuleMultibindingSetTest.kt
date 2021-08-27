@@ -269,8 +269,9 @@ class BindingModuleMultibindingSetTest(
 
       assertThat(messages).contains("Source0.kt: (6, 11)")
       assertThat(messages).contains(
-        "Binding com.squareup.test.ParentInterface contains type parameters(s)" +
-          " <Map<String, List<Pair<String, Int>>>, SomeOtherType>"
+        "Class com.squareup.test.ContributingInterface binds com.squareup.test.ParentInterface, " +
+          "but the bound type contains type parameter(s) <T, S>. Type parameters in bindings " +
+          "are not supported. This binding needs to be contributed in a Dagger module manually."
       )
     }
   }

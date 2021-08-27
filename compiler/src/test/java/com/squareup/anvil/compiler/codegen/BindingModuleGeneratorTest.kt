@@ -375,7 +375,7 @@ class BindingModuleGeneratorTest(
       
       class SomeOtherType
       
-      @ContributesBinding(Any::class, ParentInterface::class)
+      @ContributesBinding(Any::class)
       interface ContributingInterface :
               ParentInterface<Map<String, List<Pair<String, Int>>>, SomeOtherType>
       
@@ -387,8 +387,41 @@ class BindingModuleGeneratorTest(
 
       assertThat(messages).contains("Source0.kt: (6, 11)")
       assertThat(messages).contains(
-        "Binding com.squareup.test.ParentInterface contains type parameters(s)" +
-          " <Map<String, List<Pair<String, Int>>>, SomeOtherType>"
+        "Class com.squareup.test.ContributingInterface binds com.squareup.test.ParentInterface, " +
+          "but the bound type contains type parameter(s) <T, S>. Type parameters in bindings " +
+          "are not supported. This binding needs to be contributed in a Dagger module manually."
+      )
+    }
+  }
+
+  @Test fun `the contributed binding class must not have a generic type parameter with super type chain`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      $import
+
+      interface ParentInterface<out OutputT : Any>
+      interface MiddleInterface<out OutputT : Any> : ParentInterface<OutputT>
+      
+      class SomeOtherType
+      
+      @ContributesBinding(Any::class, ParentInterface::class)
+      interface ContributingInterface : MiddleInterface<SomeOtherType>
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+
+      assertThat(messages).contains("Source0.kt: (6, 11)")
+      assertThat(messages).contains(
+        "Class com.squareup.test.ContributingInterface binds com.squareup.test.ParentInterface, " +
+          "but the bound type contains type parameter(s) <OutputT>. Type parameters in " +
+          "bindings are not supported. This binding needs to be contributed in a Dagger module " +
+          "manually."
       )
     }
   }
