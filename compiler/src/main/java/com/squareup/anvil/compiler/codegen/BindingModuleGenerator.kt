@@ -380,20 +380,16 @@ internal class BindingModuleGenerator(
       fun KotlinType.describeTypeParameters(): String = arguments
         .ifEmpty { return "" }
         .joinToString(prefix = "<", postfix = ">") { typeArgument ->
-          typeArgument.type.classDescriptorForType().name.asString() +
-            typeArgument.type.describeTypeParameters()
+          typeArgument.type.toString() + typeArgument.type.describeTypeParameters()
         }
-
-      val boundType = type.typeConstructor
-        .supertypes
-        .first { it.classDescriptorForType() == boundTypeDescriptor }
 
       throw AnvilCompilationException(
         classDescriptor = boundTypeDescriptor,
-        message = "Binding ${boundTypeDescriptor.fqNameSafe} contains type parameters(s)" +
-          " ${boundType.describeTypeParameters()}." +
+        message = "Class ${type.fqNameSafe} binds ${boundTypeDescriptor.fqNameSafe}," +
+          " but the bound type contains type parameter(s)" +
+          " ${boundTypeDescriptor.defaultType.describeTypeParameters()}." +
           " Type parameters in bindings are not supported. This binding needs" +
-          " to be contributed to a dagger module manually"
+          " to be contributed in a Dagger module manually."
       )
     }
   }
