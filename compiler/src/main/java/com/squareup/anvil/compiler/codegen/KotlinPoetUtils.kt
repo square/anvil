@@ -15,10 +15,12 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import dagger.Lazy
+import dagger.internal.ProviderOfLazy
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
+import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtTypeProjection
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtValueArgument
@@ -31,6 +33,7 @@ internal data class Parameter(
   val lazyTypeName: ParameterizedTypeName,
   val isWrappedInProvider: Boolean,
   val isWrappedInLazy: Boolean,
+  val isLazyWrappedInProvider: Boolean,
   val isAssisted: Boolean,
   val assistedIdentifier: String,
   val assistedParameterKey: AssistedParameterKey = AssistedParameterKey(
@@ -39,6 +42,7 @@ internal data class Parameter(
   )
 ) {
   val originalTypeName: TypeName = when {
+    isLazyWrappedInProvider -> lazyTypeName.wrapInProvider()
     isWrappedInProvider -> providerTypeName
     isWrappedInLazy -> lazyTypeName
     else -> typeName
@@ -52,6 +56,18 @@ internal data class Parameter(
   )
 }
 
+private fun KtTypeElement.singleTypeArgument(): KtTypeReference {
+  return children
+    .filterIsInstance<KtTypeArgumentList>()
+    .single()
+    .children
+    .filterIsInstance<KtTypeProjection>()
+    .single()
+    .children
+    .filterIsInstance<KtTypeReference>()
+    .single()
+}
+
 internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor): List<Parameter> =
   mapIndexed { index, parameter ->
     val typeElement = parameter.typeReference?.typeElement
@@ -60,21 +76,26 @@ internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor
     val isWrappedInProvider = typeFqName == providerFqName
     val isWrappedInLazy = typeFqName == daggerLazyFqName
 
+    var isLazyWrappedInProvider = false
+
     val typeName = when {
       parameter.requireTypeReference(module).isNullable() ->
         parameter.requireTypeReference(module).requireTypeName(module).copy(nullable = true)
 
-      isWrappedInProvider || isWrappedInLazy ->
-        typeElement!!.children
-          .filterIsInstance<KtTypeArgumentList>()
-          .single()
-          .children
-          .filterIsInstance<KtTypeProjection>()
-          .single()
-          .children
-          .filterIsInstance<KtTypeReference>()
-          .single()
-          .requireTypeName(module)
+      isWrappedInProvider || isWrappedInLazy -> {
+        val typeParameterReference = typeElement!!.singleTypeArgument()
+
+        if (isWrappedInProvider &&
+          typeParameterReference.fqNameOrNull(module) == daggerLazyFqName
+        ) {
+          // This is a super rare case when someone injects Provider<Lazy<Type>> that requires
+          // special care.
+          isLazyWrappedInProvider = true
+          typeParameterReference.typeElement!!.singleTypeArgument().requireTypeName(module)
+        } else {
+          typeParameterReference.requireTypeName(module)
+        }
+      }
 
       else -> parameter.requireTypeReference(module).requireTypeName(module)
     }.withJvmSuppressWildcardsIfNeeded(parameter, module)
@@ -97,6 +118,7 @@ internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor
       lazyTypeName = typeName.wrapInLazy(),
       isWrappedInProvider = isWrappedInProvider,
       isWrappedInLazy = isWrappedInLazy,
+      isLazyWrappedInProvider = isLazyWrappedInProvider,
       isAssisted = assistedAnnotation != null,
       assistedIdentifier = assistedIdentifier
     )
@@ -125,6 +147,8 @@ internal fun List<Parameter>.asArgumentList(
       if (asProvider) {
         list.map { parameter ->
           when {
+            parameter.isLazyWrappedInProvider ->
+              "${ProviderOfLazy::class.qualifiedName}.create(${parameter.name})"
             parameter.isWrappedInProvider -> parameter.name
             // Normally Dagger changes Lazy<Type> parameters to a Provider<Type> (usually the
             // container is a joined type), therefore we use `.lazy(..)` to convert the Provider

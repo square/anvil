@@ -11,6 +11,7 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.internal.Factory
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -278,6 +279,183 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
       val newInstance = staticMethods.single { it.name == "newInstance" }
         .invoke(null, "a", Provider { "b" }, Provider { listOf("c") }, Lazy { "d" })
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
+
+      assertThat(newInstance).isEqualTo(getInstance)
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
+    }
+  }
+
+  @Test
+  fun `a factory class is generated for an inject constructor with a lazy argument wrapped in a provider`() {
+    /*
+package com.squareup.test;
+
+import dagger.Lazy;
+import dagger.internal.DaggerGenerated;
+import dagger.internal.Factory;
+import dagger.internal.ProviderOfLazy;
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<String> stringProvider;
+
+  public InjectClass_Factory(Provider<String> stringProvider) {
+    this.stringProvider = stringProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(ProviderOfLazy.create(stringProvider));
+  }
+
+  public static InjectClass_Factory create(Provider<String> stringProvider) {
+    return new InjectClass_Factory(stringProvider);
+  }
+
+  public static InjectClass newInstance(Provider<Lazy<String>> string) {
+    return new InjectClass(string);
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Lazy
+      import javax.inject.Inject
+      import javax.inject.Provider
+      
+      class InjectClass @Inject constructor(
+        val string: Provider<Lazy<String>>
+      ) {
+        override fun equals(other: Any?): Boolean {
+          return toString() == other.toString()
+        }
+        override fun toString(): String {
+         return string.get().get() 
+        }
+      }
+      """
+    ) {
+      val factoryClass = injectClass.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { "a" })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, Provider { dagger.Lazy { "a" } })
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
+
+      assertThat(newInstance).isEqualTo(getInstance)
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
+    }
+  }
+
+  @Test
+  @Ignore("This test is broken with Dagger as well.")
+  // Notice in the get() function Dagger creates a Lazy of a Provider of Provider instead of a
+  // Lazy of a Provider.
+  fun `a factory class is generated for an inject constructor with a provider argument wrapped in a lazy`() {
+    /*
+package com.squareup.test;
+
+import dagger.Lazy;
+import dagger.internal.DaggerGenerated;
+import dagger.internal.DoubleCheck;
+import dagger.internal.Factory;
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<Provider<String>> stringProvider;
+
+  public InjectClass_Factory(Provider<Provider<String>> stringProvider) {
+    this.stringProvider = stringProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(DoubleCheck.lazy(stringProvider));
+  }
+
+  public static InjectClass_Factory create(Provider<Provider<String>> stringProvider) {
+    return new InjectClass_Factory(stringProvider);
+  }
+
+  public static InjectClass newInstance(Lazy<Provider<String>> string) {
+    return new InjectClass(string);
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Lazy
+      import javax.inject.Inject
+      import javax.inject.Provider
+      
+      class InjectClass @Inject constructor(
+        val string: Lazy<Provider<String>>
+      ) {
+        override fun equals(other: Any?): Boolean {
+          return toString() == other.toString()
+        }
+        override fun toString(): String {
+         return string.get().get() 
+        }
+      }
+      """
+    ) {
+      val factoryClass = injectClass.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { "a" })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, dagger.Lazy { Provider { "a" } })
       val getInstance = (factoryInstance as Factory<*>).get()
 
       assertThat(newInstance).isNotNull()
