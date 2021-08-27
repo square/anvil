@@ -1,5 +1,14 @@
 # Changelog
 
+# 2.3.4 (2021-08-27)
+
+* Upgraded Anvil to Kotlin `1.5.21`.
+* Properly inject members when property setters are annotated, see #340.
+* Properly inject members when using assisted injection, see #342.
+* Don't generate a singleton factory (object), if the class with the inject constructor has any type parameter, see #348.
+* Look for star imports before checking imports from the Kotlin package. Star imports have a higher priority, see #358.
+* Handle the special case of injecting a `Provider<Lazy<Type>>` properly, see #344.
+
 ## 2.3.3 (2021-06-23)
 
 * Fix a bug in the Gradle plugin that accidentally realized all tasks in the module instead of evaluating them lazily, see #330.
