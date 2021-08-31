@@ -166,7 +166,8 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       
       typealias StringList = List<String>
       
-      class InjectClass {
+      // Generate a factory too to cover for https://github.com/square/anvil/issues/362
+      class InjectClass @Inject constructor() {
         @Inject lateinit var string: String
         @Named("qualified") @Inject lateinit var qualifiedString: String
         @Inject lateinit var charSequence: CharSequence
