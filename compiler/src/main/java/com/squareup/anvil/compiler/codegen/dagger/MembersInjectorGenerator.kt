@@ -137,7 +137,6 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
               .apply {
                 parameters.forEachIndexed { index, parameter ->
                   val property = injectProperties[index]
-                  val propertyName = property.nameAsSafeName.asString()
 
                   val parameterString = when {
                     parameter.isWrappedInProvider -> parameter.name
@@ -145,11 +144,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                       "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
                     else -> parameter.name + ".get()"
                   }
-                  val propertyRef = if (property.isSetterInjected(module)) {
-                    "set${propertyName.capitalize()}"
-                  } else {
-                    propertyName
-                  }
+                  val propertyRef = property.memberInjectionAccessName(module)
                   addStatement("inject${propertyRef.capitalize()}(instance, $parameterString)")
                 }
               }

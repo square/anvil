@@ -136,7 +136,8 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                   clazz,
                   memberInjectParameters,
                   memberInjectProperties,
-                  instanceName
+                  instanceName,
+                  module
                 )
                 addStatement("return $instanceName")
               }

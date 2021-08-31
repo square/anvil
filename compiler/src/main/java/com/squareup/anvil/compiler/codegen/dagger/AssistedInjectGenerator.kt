@@ -141,7 +141,8 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
                   clazz,
                   memberInjectParameters,
                   memberInjectProperties,
-                  instanceName
+                  instanceName,
+                  module
                 )
                 addStatement("return $instanceName")
               }
