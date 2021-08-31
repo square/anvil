@@ -43,15 +43,15 @@ internal fun FunSpec.Builder.addMemberInjection(
   clazz: KtClassOrObject,
   memberInjectParameters: List<Parameter>,
   memberInjectProperties: List<KtProperty>,
-  instanceName: String
+  instanceName: String,
+  module: ModuleDescriptor
 ) {
   val memberInjectorClassName = "${clazz.generateClassName()}_MembersInjector"
   val memberInjectorClass = ClassName(packageName, memberInjectorClassName)
 
   memberInjectParameters.forEachIndexed { index, parameter ->
     val property = memberInjectProperties[index]
-    val propertyName = property.nameAsSafeName.asString()
-    val functionName = "inject${propertyName.capitalize()}"
+    val functionName = "inject${property.memberInjectionAccessName(module).capitalize()}"
 
     val param = when {
       parameter.isWrappedInProvider -> parameter.name
@@ -61,5 +61,15 @@ internal fun FunSpec.Builder.addMemberInjection(
     }
 
     addStatement("%T.$functionName($instanceName, $param)", memberInjectorClass)
+  }
+}
+
+/** Returns the access name for a property, which is prefixed with "set" if it's a setter. */
+internal fun KtProperty.memberInjectionAccessName(module: ModuleDescriptor): String {
+  val propertyName = nameAsSafeName.asString()
+  return if (isSetterInjected(module)) {
+    "set${propertyName.capitalize()}"
+  } else {
+    propertyName
   }
 }
