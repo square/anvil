@@ -505,6 +505,94 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
     }
   }
 
+  @Test fun `a factory class is generated for a field injection with Lazy wrapped in a Provider`() {
+    /*
+package com.squareup.test;
+
+import dagger.Lazy;
+import dagger.MembersInjector;
+import dagger.internal.DaggerGenerated;
+import dagger.internal.InjectedFieldSignature;
+import dagger.internal.ProviderOfLazy;
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_MembersInjector implements MembersInjector<InjectClass> {
+  private final Provider<String> stringProvider;
+
+  public InjectClass_MembersInjector(Provider<String> stringProvider) {
+    this.stringProvider = stringProvider;
+  }
+
+  public static MembersInjector<InjectClass> create(Provider<String> stringProvider) {
+    return new InjectClass_MembersInjector(stringProvider);
+  }
+
+  @Override
+  public void injectMembers(InjectClass instance) {
+    injectLazyStringProvider(instance, ProviderOfLazy.create(stringProvider));
+  }
+
+  @InjectedFieldSignature("com.squareup.test.InjectClass.lazyStringProvider")
+  public static void injectLazyStringProvider(InjectClass instance,
+      Provider<Lazy<String>> lazyStringProvider) {
+    instance.lazyStringProvider = lazyStringProvider;
+  }
+}
+     */
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Lazy
+      import javax.inject.Inject
+      import javax.inject.Provider
+      
+      class InjectClass {
+        @Inject lateinit var lazyStringProvider: Provider<Lazy<String>>
+        
+        override fun equals(other: Any?): Boolean {
+          return toString() == other.toString()
+        }
+        override fun toString(): String {
+         return lazyStringProvider.get().get()
+        }
+      }
+      """
+    ) {
+      val membersInjector = injectClass.membersInjector()
+
+      val constructor = membersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
+
+      val membersInjectorInstance = constructor
+        .newInstance(Provider { "a" })
+        as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      membersInjector.staticInjectMethod("lazyStringProvider")
+        .invoke(null, injectInstanceStatic, Provider { dagger.Lazy { "a" } })
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
   @Test fun `a factory class is generated for a field injection with star imports`() {
     /*
 package com.squareup.test;

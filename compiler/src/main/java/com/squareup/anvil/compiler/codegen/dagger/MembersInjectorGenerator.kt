@@ -33,6 +33,7 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.MembersInjector
 import dagger.internal.InjectedFieldSignature
+import dagger.internal.ProviderOfLazy
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -139,6 +140,8 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                   val property = injectProperties[index]
 
                   val parameterString = when {
+                    parameter.isLazyWrappedInProvider ->
+                      "${ProviderOfLazy::class.qualifiedName}.create(${parameter.name})"
                     parameter.isWrappedInProvider -> parameter.name
                     parameter.isWrappedInLazy ->
                       "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
