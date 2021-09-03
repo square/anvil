@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
+import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.membersInjector
@@ -21,6 +22,7 @@ import java.io.File
 import java.lang.reflect.Method
 import javax.inject.Named
 import javax.inject.Provider
+import kotlin.reflect.KClass
 
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
@@ -267,6 +269,80 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       val namedAnnotation = membersInjector.staticInjectMethod("qualifiedString").annotations
         .single { it.annotationClass == Named::class }
       assertThat(namedAnnotation.getValue<String>()).isEqualTo("qualified")
+    }
+  }
+
+  @Test fun `a factory class is generated for a qualifier with an enum`() {
+
+    compile(
+      //language=kotlin
+      """
+      package com.squareup.test
+      
+      import kotlin.LazyThreadSafetyMode.NONE
+      import kotlin.LazyThreadSafetyMode.SYNCHRONIZED 
+      import kotlin.reflect.KClass      
+      import javax.inject.Inject
+      import javax.inject.Qualifier
+      
+      class InjectClass @Inject constructor() {
+        @ClassArrayQualifier([String::class, Int::class]) @Inject lateinit var classArrayString: String
+        @ClassQualifier(String::class) @Inject lateinit var classString: String
+        @EnumArrayQualifier([NONE, SYNCHRONIZED]) @Inject lateinit var enumArrayString: String
+        @EnumQualifier(SYNCHRONIZED) @Inject lateinit var enumString: String
+        @IntQualifier(3) @Inject lateinit var intString: String
+      }
+      
+      @Qualifier
+      annotation class ClassArrayQualifier(val value: Array<KClass<*>>)
+      
+      @Qualifier
+      annotation class ClassQualifier(val value: KClass<*>)
+      
+      @Qualifier
+      annotation class EnumArrayQualifier(val value: Array<LazyThreadSafetyMode>)
+      
+      @Qualifier
+      annotation class EnumQualifier(val value: LazyThreadSafetyMode)
+      
+      @Qualifier
+      annotation class IntQualifier(val value: Int)
+      """
+    ) {
+      val membersInjector = injectClass.membersInjector()
+
+      val classArrayAnnotation = membersInjector.staticInjectMethod("classArrayString")
+        .annotations
+        .single { it.annotationClass.simpleName == "ClassArrayQualifier" }
+
+      assertThat(classArrayAnnotation.getValue<Array<KClass<*>>>().toList())
+        .isEqualTo(arrayOf(String::class.java, Int::class.javaPrimitiveType).toList())
+
+      val classAnnotation = membersInjector.staticInjectMethod("classString")
+        .annotations
+        .single { it.annotationClass.simpleName == "ClassQualifier" }
+
+      assertThat(classAnnotation.getValue<KClass<*>>()).isEqualTo(String::class.java)
+
+      val enumArrayAnnotation = membersInjector.staticInjectMethod("enumArrayString")
+        .annotations
+        .single { it.annotationClass.simpleName == "EnumArrayQualifier" }
+
+      assertThat(enumArrayAnnotation.getValue<Array<LazyThreadSafetyMode>>())
+        .isEqualTo(arrayOf(LazyThreadSafetyMode.NONE, LazyThreadSafetyMode.SYNCHRONIZED))
+
+      val enumAnnotation = membersInjector.staticInjectMethod("enumString")
+        .annotations
+        .single { it.annotationClass.simpleName == "EnumQualifier" }
+
+      assertThat(enumAnnotation.getValue<LazyThreadSafetyMode>())
+        .isEqualTo(LazyThreadSafetyMode.SYNCHRONIZED)
+
+      val intAnnotation = membersInjector.staticInjectMethod("intString")
+        .annotations
+        .single { it.annotationClass.simpleName == "IntQualifier" }
+
+      assertThat(intAnnotation.getValue<Int>()).isEqualTo(3)
     }
   }
 
@@ -822,6 +898,151 @@ public final class OuterClass_InjectClass_MembersInjector implements MembersInje
 
       assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
       assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
+  @Test
+  fun `a factory class is generated for a field injection on a super class`() {
+/*
+package com.squareup.test;
+
+import dagger.MembersInjector;
+import dagger.internal.DaggerGenerated;
+import dagger.internal.InjectedFieldSignature;
+import java.util.List;
+import java.util.Set;
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_MembersInjector implements MembersInjector<InjectClass> {
+  private final Provider<List<Integer>> base1Provider;
+
+  private final Provider<List<String>> base2Provider;
+
+  private final Provider<Set<Integer>> middle1Provider;
+
+  private final Provider<Set<String>> middle2Provider;
+
+  private final Provider<String> nameProvider;
+
+  public InjectClass_MembersInjector(Provider<List<Integer>> base1Provider,
+      Provider<List<String>> base2Provider, Provider<Set<Integer>> middle1Provider,
+      Provider<Set<String>> middle2Provider, Provider<String> nameProvider) {
+    this.base1Provider = base1Provider;
+    this.base2Provider = base2Provider;
+    this.middle1Provider = middle1Provider;
+    this.middle2Provider = middle2Provider;
+    this.nameProvider = nameProvider;
+  }
+
+  public static MembersInjector<InjectClass> create(Provider<List<Integer>> base1Provider,
+      Provider<List<String>> base2Provider, Provider<Set<Integer>> middle1Provider,
+      Provider<Set<String>> middle2Provider, Provider<String> nameProvider) {
+    return new InjectClass_MembersInjector(base1Provider, base2Provider, middle1Provider, middle2Provider, nameProvider);
+  }
+
+  @Override
+  public void injectMembers(InjectClass instance) {
+    Base_MembersInjector.injectBase1(instance, base1Provider.get());
+    Base_MembersInjector.injectBase2(instance, base2Provider.get());
+    Middle_MembersInjector.injectMiddle1(instance, middle1Provider.get());
+    Middle_MembersInjector.injectMiddle2(instance, middle2Provider.get());
+    injectName(instance, nameProvider.get());
+  }
+
+  @InjectedFieldSignature("com.squareup.test.InjectClass.name")
+  public static void injectName(InjectClass instance, String name) {
+    instance.name = name;
+  }
+}
+
+ */
+    compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+      import javax.inject.Provider
+      import dagger.Lazy
+
+      class InjectClass : Middle() {
+
+        @Inject
+        lateinit var name: String
+      }
+
+      abstract class Middle : Base() {
+
+        @Inject
+        lateinit var middle1: Set<Int>
+
+        @Inject
+        lateinit var middle2: Set<String>
+      }
+      
+      abstract class Base {
+
+        @Inject
+        lateinit var base1: List<Int>
+
+        @Inject
+        lateinit var base2: List<String>
+      }
+      """
+    ) {
+      val membersInjector = injectClass.membersInjector()
+
+      val injectorConstructor = membersInjector.declaredConstructors.single()
+      assertThat(injectorConstructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val name = "name"
+      val middle1 = setOf(1)
+      val middle2 = setOf("middle2")
+      val base1 = listOf(3)
+      val base2 = listOf("base2")
+
+      val injectorInstance = membersInjector.createInstance(
+        Provider { base1 },
+        Provider { base2 },
+        Provider { middle1 },
+        Provider { middle2 },
+        Provider { name }
+      )
+        as MembersInjector<Any>
+
+      val classInstanceConstructor = injectClass.createInstance()
+      injectorInstance.injectMembers(classInstanceConstructor)
+
+      assertThat(classInstanceConstructor.getPropertyValue("name")).isEqualTo(name)
+      assertThat(classInstanceConstructor.getPropertyValue("middle1")).isEqualTo(middle1)
+      assertThat(classInstanceConstructor.getPropertyValue("middle2")).isEqualTo(middle2)
+      assertThat(classInstanceConstructor.getPropertyValue("base1")).isEqualTo(base1)
+      assertThat(classInstanceConstructor.getPropertyValue("base2")).isEqualTo(base2)
+
+      val classInstanceStatic = injectClass.createInstance()
+      injectorInstance.injectMembers(classInstanceStatic)
+
+      assertThat(classInstanceStatic.getPropertyValue("name")).isEqualTo(name)
+      assertThat(classInstanceStatic.getPropertyValue("middle1")).isEqualTo(middle1)
+      assertThat(classInstanceStatic.getPropertyValue("middle2")).isEqualTo(middle2)
+      assertThat(classInstanceStatic.getPropertyValue("base1")).isEqualTo(base1)
+      assertThat(classInstanceStatic.getPropertyValue("base2")).isEqualTo(base2)
     }
   }
 

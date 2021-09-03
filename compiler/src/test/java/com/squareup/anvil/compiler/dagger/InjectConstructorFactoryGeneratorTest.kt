@@ -4,7 +4,9 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
+import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -949,6 +951,86 @@ public class InjectClass_Factory(
       assertThat(getInstance).isNotNull()
 
       assertThat(newInstance).isNotSameInstanceAs(getInstance)
+    }
+  }
+
+  @Test
+  fun `a factory class performs member injection on super classes`() {
+
+    compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+      import javax.inject.Provider
+      import dagger.Lazy
+
+      class InjectClass @Inject constructor() : Middle() {
+
+        @Inject
+        lateinit var name: String
+      }
+
+      abstract class Middle : Base() {
+
+        @Inject
+        lateinit var middle1: Set<Int>
+
+        @Inject
+        lateinit var middle2: Set<String>
+      }
+      
+      abstract class Base {
+
+        @Inject
+        lateinit var base1: List<Int>
+
+        @Inject
+        lateinit var base2: List<String>
+      }
+      """
+    ) {
+
+      val factoryClass = injectClass.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val name = "name"
+      val middle1 = setOf(1)
+      val middle2 = setOf("middle2")
+      val base1 = listOf(3)
+      val base2 = listOf("base2")
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = factoryClass.createInstance(
+        Provider { base1 },
+        Provider { base2 },
+        Provider { middle1 },
+        Provider { middle2 },
+        Provider { name }
+      )
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null)
+      assertThat(newInstance).isNotNull()
+
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(getInstance.getPropertyValue("name")).isEqualTo(name)
+      assertThat(getInstance.getPropertyValue("middle1")).isEqualTo(middle1)
+      assertThat(getInstance.getPropertyValue("middle2")).isEqualTo(middle2)
+      assertThat(getInstance.getPropertyValue("base1")).isEqualTo(base1)
+      assertThat(getInstance.getPropertyValue("base2")).isEqualTo(base2)
     }
   }
 

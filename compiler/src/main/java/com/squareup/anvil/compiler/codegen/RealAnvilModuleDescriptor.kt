@@ -49,6 +49,11 @@ class RealAnvilModuleDescriptor(
       ?.fqName
   }
 
+  override fun getKtClassOrObjectOrNull(fqName: FqName): KtClassOrObject? {
+    return allClasses
+      .firstOrNull { it.fqName == fqName }
+  }
+
   private val KtFile.identifier: String
     get() = packageFqName.asString() + name
 }

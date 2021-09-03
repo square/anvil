@@ -11,7 +11,7 @@ import com.squareup.anvil.compiler.codegen.Parameter
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.asArgumentList
 import com.squareup.anvil.compiler.codegen.injectConstructor
-import com.squareup.anvil.compiler.codegen.mapToParameter
+import com.squareup.anvil.compiler.codegen.mapToConstructorParameters
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
@@ -71,16 +71,15 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
     val packageName = clazz.containingKtFile.packageFqName.safePackageString()
     val className = "${clazz.generateClassName()}_Factory"
 
-    val memberInjectProperties = clazz.injectedMembers(module)
+    val constructorParameters = constructor.valueParameters
+      .mapToConstructorParameters(module)
 
-    val parameters = constructor.valueParameters
-      .plus(memberInjectProperties)
-      .mapToParameter(module)
+    val memberInjectParameters = clazz.memberInjectParameters(module)
+
+    val parameters = constructorParameters + memberInjectParameters
+
     val parametersAssisted = parameters.filter { it.isAssisted }
     val parametersNotAssisted = parameters.filterNot { it.isAssisted }
-    val constructorSize = constructor.valueParameters.size
-    val constructorParameters = parameters.take(constructorSize)
-    val memberInjectParameters = parameters.drop(constructorSize)
 
     checkAssistedParametersAreDistinct(clazz, parametersAssisted)
 
@@ -136,14 +135,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
               } else {
                 val instanceName = "instance"
                 addStatement("val $instanceName = newInstance($argumentList)")
-                addMemberInjection(
-                  packageName,
-                  clazz,
-                  memberInjectParameters,
-                  memberInjectProperties,
-                  instanceName,
-                  module
-                )
+                addMemberInjection(memberInjectParameters, instanceName)
                 addStatement("return $instanceName")
               }
             }

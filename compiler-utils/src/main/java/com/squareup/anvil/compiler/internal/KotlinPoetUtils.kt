@@ -16,10 +16,13 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
+import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
@@ -38,6 +41,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.io.ByteArrayOutputStream
 
 @ExperimentalAnvilApi
@@ -232,6 +236,32 @@ public fun <T : KtCallableDeclaration> TypeName.withJvmSuppressWildcardsIfNeeded
 
   // Same for functions.
   val isFunctionType = callableDeclaration.typeReference?.isFunctionType() ?: false
+
+  return when {
+    hasJvmSuppressWildcards || isGenericType -> this.jvmSuppressWildcards()
+    isFunctionType -> this.jvmSuppressWildcards()
+    else -> this
+  }
+}
+
+@ExperimentalAnvilApi
+public fun TypeName.withJvmSuppressWildcardsIfNeeded(
+  callableMemberDescriptor: CallableMemberDescriptor
+): TypeName {
+  // If the parameter is annotated with @JvmSuppressWildcards, then add the annotation
+  // to our type so that this information is forwarded when our Factory is compiled.
+  val hasJvmSuppressWildcards = callableMemberDescriptor.annotations
+    .hasAnnotation(jvmSuppressWildcardsFqName)
+
+  // Add the @JvmSuppressWildcards annotation even for simple generic return types like
+  // Set<String>. This avoids some edge cases where Dagger chokes.
+  val isGenericType = callableMemberDescriptor.typeParameters.isNotEmpty()
+
+  val type = callableMemberDescriptor.safeAs<PropertyDescriptor>()?.type
+    ?: callableMemberDescriptor.valueParameters.first().type
+
+  // Same for functions.
+  val isFunctionType = type.isFunctionType
 
   return when {
     hasJvmSuppressWildcards || isGenericType -> this.jvmSuppressWildcards()

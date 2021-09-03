@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.psi.KtFile
 public interface AnvilModuleDescriptor : ModuleDescriptor {
   public fun resolveClassIdOrNull(classId: ClassId): FqName?
   public fun getClassesAndInnerClasses(ktFile: KtFile): List<KtClassOrObject>
+  public fun getKtClassOrObjectOrNull(fqName: FqName): KtClassOrObject?
 }
 
 @Suppress("NOTHING_TO_INLINE")
@@ -22,6 +23,11 @@ private inline fun ModuleDescriptor.asAnvilModuleDescriptor(): AnvilModuleDescri
 public fun ModuleDescriptor.resolveFqNameOrNull(
   fqName: FqName
 ): FqName? = asAnvilModuleDescriptor().resolveClassIdOrNull(fqName.classIdBestGuess())
+
+@ExperimentalAnvilApi
+public fun ModuleDescriptor.getKtClassOrObjectOrNull(
+  fqName: FqName
+): KtClassOrObject? = asAnvilModuleDescriptor().getKtClassOrObjectOrNull(fqName)
 
 @ExperimentalAnvilApi
 public fun ModuleDescriptor.canResolveFqName(

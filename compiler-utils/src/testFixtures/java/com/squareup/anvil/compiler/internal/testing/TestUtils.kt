@@ -183,7 +183,7 @@ public fun Any.invokeGet(vararg args: Any?): Any {
 
 @ExperimentalAnvilApi
 public fun Any.getPropertyValue(name: String): Any {
-  return this::class.java.getDeclaredField(name).use { it.get(this) }
+  return this::class.java.fields.first { it.name == name }.use { it.get(this) }
 }
 
 @Suppress("UNCHECKED_CAST")

@@ -8,7 +8,7 @@ import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.asArgumentList
-import com.squareup.anvil.compiler.codegen.mapToParameter
+import com.squareup.anvil.compiler.codegen.mapToConstructorParameters
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.internal.asClassName
@@ -143,7 +143,8 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
     val callableName = declaration.nameAsSafeName.asString()
 
-    val parameters = declaration.valueParameters.mapToParameter(module)
+    val parameters = declaration.valueParameters
+      .mapToConstructorParameters(module)
 
     val returnType = declaration.requireTypeReference(module).requireTypeName(module)
       .withJvmSuppressWildcardsIfNeeded(declaration, module)
