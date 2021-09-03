@@ -73,6 +73,15 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         }
       }
     }
+
+    jvmPlugins.forEach { javaPlugin ->
+      target.pluginManager.withPlugin(javaPlugin) {
+        // Without this connection anvil(..) dependencies won't be picked up in the main build
+        // for JVM modules. We already do this for the test configuration above, which is shared
+        // between JVM and Android. The main configuration is specific to the JVM.
+        getConfiguration(target, "main").extendsFrom(commonConfiguration)
+      }
+    }
   }
 
   override fun isApplicable(kotlinCompilation: KotlinCompilation<*>): Boolean {
@@ -380,6 +389,13 @@ private fun Project.androidVariantsConfigure(action: (BaseVariant) -> Unit) {
     androidExtension.testVariants.configureEach(action)
   }
 }
+
+// I considered extending this list with 'java-library' and 'application', but they both apply
+// the 'java' plugin implicitly. One could also apply the 'java' plugin alone without the
+// application or library plugin, so 'java' must be included in this list.
+private val jvmPlugins = listOf(
+  "java"
+)
 
 private val agpPlugins = listOf(
   "com.android.library",
