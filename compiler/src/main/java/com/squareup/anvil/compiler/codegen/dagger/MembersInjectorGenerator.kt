@@ -5,20 +5,15 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
+import com.squareup.anvil.compiler.codegen.MemberInjectParameter
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
-import com.squareup.anvil.compiler.codegen.mapToParameter
-import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.isGenericClass
-import com.squareup.anvil.compiler.internal.isQualifier
-import com.squareup.anvil.compiler.internal.requireClassDescriptor
-import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.anvil.compiler.internal.toAnnotationSpec
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -33,13 +28,9 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.MembersInjector
 import dagger.internal.InjectedFieldSignature
-import dagger.internal.ProviderOfLazy
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import java.io.File
 
 @AutoService(CodeGenerator::class)
@@ -55,23 +46,21 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
     projectFiles
       .classesAndInnerClass(module)
       .forEach { clazz ->
-        val injectProperties = clazz.injectedMembers(module)
+        val parameters = clazz.memberInjectParameters(module)
           .ifEmpty { return@forEach }
 
         generateMembersInjectorClass(
           codeGenDir = codeGenDir,
-          module = module,
           clazz = clazz,
-          injectProperties = injectProperties
+          parameters = parameters
         )
       }
   }
 
   private fun generateMembersInjectorClass(
     codeGenDir: File,
-    module: ModuleDescriptor,
     clazz: KtClassOrObject,
-    injectProperties: List<KtProperty>
+    parameters: List<MemberInjectParameter>
   ): GeneratedFile {
     val packageName = clazz.containingKtFile.packageFqName.safePackageString()
     val className = "${clazz.generateClassName()}_MembersInjector"
@@ -84,8 +73,6 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
         }
       }
 
-    val parameters = injectProperties.mapToParameter(module)
-
     fun createArgumentList(asProvider: Boolean): String {
       return parameters
         .map { it.name }
@@ -96,15 +83,6 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
     }
 
     val memberInjectorClass = ClassName(packageName, className)
-
-    // Lazily evaluated, only computed if any properties have any non-inject annotations.
-    val propertyDescriptors by lazy {
-      clazz.requireClassDescriptor(module)
-        .unsubstitutedMemberScope
-        .getContributedDescriptors(DescriptorKindFilter.VARIABLES)
-        .filterIsInstance<PropertyDescriptor>()
-        .associateBy { it.name.asString() }
-    }
 
     val content = FileSpec.buildFile(packageName, className) {
       addType(
@@ -135,22 +113,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
             FunSpec.builder("injectMembers")
               .addModifiers(OVERRIDE)
               .addParameter("instance", classType)
-              .apply {
-                parameters.forEachIndexed { index, parameter ->
-                  val property = injectProperties[index]
-
-                  val parameterString = when {
-                    parameter.isLazyWrappedInProvider ->
-                      "${ProviderOfLazy::class.qualifiedName}.create(${parameter.name})"
-                    parameter.isWrappedInProvider -> parameter.name
-                    parameter.isWrappedInLazy ->
-                      "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
-                    else -> parameter.name + ".get()"
-                  }
-                  val propertyRef = property.memberInjectionAccessName(module)
-                  addStatement("inject${propertyRef.capitalize()}(instance, $parameterString)")
-                }
-              }
+              .addMemberInjection(parameters, "instance")
               .build()
           )
           .addType(
@@ -173,48 +136,33 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                   .build()
               )
               .apply {
-                parameters.forEachIndexed { index, parameter ->
-                  val property = injectProperties[index]
-                  val propertyName = property.nameAsSafeName.asString()
-                  val isSetterInjected = property.isSetterInjected(module)
-                  val propertyRef = if (isSetterInjected) {
-                    "set${propertyName.capitalize()}"
-                  } else {
-                    propertyName
+                parameters
+                  // Don't generate the static single-property "inject___" functions for super-classes
+                  .filter { it.memberInjectorClassName == memberInjectorClass }
+                  .forEach { parameter ->
+
+                    val originalName = parameter.originalName
+
+                    addFunction(
+                      FunSpec.builder("inject${parameter.accessName.capitalize()}")
+                        .jvmStatic()
+                        .apply {
+                          // Don't add @InjectedFieldSignature when it's calling a setter method
+                          if (!parameter.isSetterInjected) {
+                            addAnnotation(
+                              AnnotationSpec.builder(InjectedFieldSignature::class)
+                                .addMember("%S", parameter.injectedFieldSignature)
+                                .build()
+                            )
+                          }
+                        }
+                        .addAnnotations(parameter.qualifierAnnotationSpecs)
+                        .addParameter("instance", classType)
+                        .addParameter(originalName, parameter.originalTypeName)
+                        .addStatement("instance.$originalName = $originalName")
+                        .build()
+                    )
                   }
-
-                  addFunction(
-                    FunSpec.builder("inject${propertyRef.capitalize()}")
-                      .jvmStatic()
-                      .apply {
-                        // Don't add @InjectedFieldSignature when it's calling a setter method
-                        if (!isSetterInjected) {
-                          addAnnotation(
-                            AnnotationSpec.builder(InjectedFieldSignature::class)
-                              .addMember("%S", property.requireFqName())
-                              .build()
-                          )
-                        }
-                      }
-                      .apply {
-                        val hasQualifier = property.annotationEntries
-                          .any { it.isQualifier(module) }
-
-                        if (hasQualifier) {
-                          addAnnotations(
-                            propertyDescriptors.getValue(propertyName)
-                              .annotations
-                              .filter { it.isQualifier() }
-                              .map { it.toAnnotationSpec(module) }
-                          )
-                        }
-                      }
-                      .addParameter("instance", classType)
-                      .addParameter(propertyName, parameter.originalTypeName)
-                      .addStatement("instance.$propertyName = $propertyName")
-                      .build()
-                  )
-                }
               }
               .build()
           )

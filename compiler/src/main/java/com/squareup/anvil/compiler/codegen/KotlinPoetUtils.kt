@@ -1,15 +1,24 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.assistedFqName
+import com.squareup.anvil.compiler.codegen.dagger.isSetterInjected
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
+import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.fqNameOrNull
+import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.isNullable
+import com.squareup.anvil.compiler.internal.isQualifier
+import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.requireTypeReference
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.providerFqName
+import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
@@ -17,44 +26,21 @@ import com.squareup.kotlinpoet.asClassName
 import dagger.Lazy
 import dagger.internal.ProviderOfLazy
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
+import org.jetbrains.kotlin.psi.KtClassLiteralExpression
+import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
+import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtNameReferenceExpression
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtTypeProjection
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtValueArgument
+import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import javax.inject.Provider
-
-internal data class Parameter(
-  val name: String,
-  val typeName: TypeName,
-  val providerTypeName: ParameterizedTypeName,
-  val lazyTypeName: ParameterizedTypeName,
-  val isWrappedInProvider: Boolean,
-  val isWrappedInLazy: Boolean,
-  val isLazyWrappedInProvider: Boolean,
-  val isAssisted: Boolean,
-  val assistedIdentifier: String,
-  val assistedParameterKey: AssistedParameterKey = AssistedParameterKey(
-    typeName,
-    assistedIdentifier
-  )
-) {
-  val originalTypeName: TypeName = when {
-    isLazyWrappedInProvider -> lazyTypeName.wrapInProvider()
-    isWrappedInProvider -> providerTypeName
-    isWrappedInLazy -> lazyTypeName
-    else -> typeName
-  }
-
-  // @Assisted parameters are equal, if the type and the identifier match. This subclass makes
-  // diffing the parameters easier.
-  data class AssistedParameterKey(
-    private val typeName: TypeName,
-    private val assistedIdentifier: String
-  )
-}
 
 private fun KtTypeElement.singleTypeArgument(): KtTypeReference {
   return children
@@ -68,61 +54,165 @@ private fun KtTypeElement.singleTypeArgument(): KtTypeReference {
     .single()
 }
 
-internal fun List<KtCallableDeclaration>.mapToParameter(module: ModuleDescriptor): List<Parameter> =
-  mapIndexed { index, parameter ->
-    val typeElement = parameter.typeReference?.typeElement
-    val typeFqName = typeElement?.fqNameOrNull(module)
-
-    val isWrappedInProvider = typeFqName == providerFqName
-    val isWrappedInLazy = typeFqName == daggerLazyFqName
-
-    var isLazyWrappedInProvider = false
-
-    val typeName = when {
-      parameter.requireTypeReference(module).isNullable() ->
-        parameter.requireTypeReference(module).requireTypeName(module).copy(nullable = true)
-
-      isWrappedInProvider || isWrappedInLazy -> {
-        val typeParameterReference = typeElement!!.singleTypeArgument()
-
-        if (isWrappedInProvider &&
-          typeParameterReference.fqNameOrNull(module) == daggerLazyFqName
-        ) {
-          // This is a super rare case when someone injects Provider<Lazy<Type>> that requires
-          // special care.
-          isLazyWrappedInProvider = true
-          typeParameterReference.typeElement!!.singleTypeArgument().requireTypeName(module)
-        } else {
-          typeParameterReference.requireTypeName(module)
-        }
-      }
-
-      else -> parameter.requireTypeReference(module).requireTypeName(module)
-    }.withJvmSuppressWildcardsIfNeeded(parameter, module)
-
-    val assistedAnnotation = parameter.findAnnotation(assistedFqName, module)
-    val assistedIdentifier =
-      (assistedAnnotation?.valueArguments?.firstOrNull() as? KtValueArgument)
-        ?.children
-        ?.filterIsInstance<KtStringTemplateExpression>()
-        ?.single()
-        ?.children
-        ?.first()
-        ?.text
-        ?: ""
-
-    Parameter(
-      name = "param$index",
-      typeName = typeName,
-      providerTypeName = typeName.wrapInProvider(),
-      lazyTypeName = typeName.wrapInLazy(),
-      isWrappedInProvider = isWrappedInProvider,
-      isWrappedInLazy = isWrappedInLazy,
-      isLazyWrappedInProvider = isLazyWrappedInProvider,
-      isAssisted = assistedAnnotation != null,
-      assistedIdentifier = assistedIdentifier
-    )
+internal fun List<KtCallableDeclaration>.mapToConstructorParameters(
+  module: ModuleDescriptor
+): List<ConstructorParameter> =
+  map { ktCallableDeclaration ->
+    ktCallableDeclaration.toConstructorParameter(module = module)
   }
+
+private fun KtCallableDeclaration.toConstructorParameter(
+  module: ModuleDescriptor
+): ConstructorParameter {
+
+  val typeElement = typeReference?.typeElement
+  val typeFqName = typeElement?.fqNameOrNull(module)
+
+  val isWrappedInProvider = typeFqName == providerFqName
+  val isWrappedInLazy = typeFqName == daggerLazyFqName
+
+  var isLazyWrappedInProvider = false
+
+  val typeName = when {
+    requireTypeReference(module).isNullable() ->
+      requireTypeReference(module).requireTypeName(module).copy(nullable = true)
+
+    isWrappedInProvider || isWrappedInLazy -> {
+      val typeParameterReference = typeElement!!.singleTypeArgument()
+
+      if (isWrappedInProvider &&
+        typeParameterReference.fqNameOrNull(module) == daggerLazyFqName
+      ) {
+        // This is a super rare case when someone injects Provider<Lazy<Type>> that requires
+        // special care.
+        isLazyWrappedInProvider = true
+        typeParameterReference.typeElement!!.singleTypeArgument().requireTypeName(module)
+      } else {
+        typeParameterReference.requireTypeName(module)
+      }
+    }
+
+    else -> requireTypeReference(module).requireTypeName(module)
+  }.withJvmSuppressWildcardsIfNeeded(this, module)
+
+  val assistedAnnotation = findAnnotation(assistedFqName, module)
+  val assistedIdentifier =
+    (assistedAnnotation?.valueArguments?.firstOrNull() as? KtValueArgument)
+      ?.children
+      ?.filterIsInstance<KtStringTemplateExpression>()
+      ?.single()
+      ?.children
+      ?.first()
+      ?.text
+      ?: ""
+
+  return ConstructorParameter(
+    name = nameAsSafeName.asString(),
+    typeName = typeName,
+    providerTypeName = typeName.wrapInProvider(),
+    lazyTypeName = typeName.wrapInLazy(),
+    isWrappedInProvider = isWrappedInProvider,
+    isWrappedInLazy = isWrappedInLazy,
+    isLazyWrappedInProvider = isLazyWrappedInProvider,
+    isAssisted = assistedAnnotation != null,
+    assistedIdentifier = assistedIdentifier
+  )
+}
+
+internal fun List<KtProperty>.mapToMemberInjectParameters(
+  module: ModuleDescriptor
+): List<MemberInjectParameter> = map { ktProperty ->
+  ktProperty.toMemberInjectParameter(
+    module = module
+  )
+}
+
+private fun KtProperty.toMemberInjectParameter(
+  module: ModuleDescriptor
+): MemberInjectParameter {
+
+  val constructorParameter = toConstructorParameter(module)
+
+  val originalName = nameAsSafeName.asString()
+
+  val containingClass = containingClass()!!
+  val packageName = containingClass.containingKtFile.packageFqName.asString()
+
+  val memberInjectorClassName = "${containingClass.generateClassName()}_MembersInjector"
+  val memberInjectorClass = ClassName(packageName, memberInjectorClassName)
+
+  val qualifierAnnotations = annotationEntries.qualifierAnnotationSpecs(module)
+  val isSetterInjected = isSetterInjected(module)
+
+  // setter delegates require a "set" prefix for their inject function
+  val accessName = if (isSetterInjected) {
+    "set${originalName.capitalize()}"
+  } else {
+    originalName
+  }
+  return MemberInjectParameter(
+    name = constructorParameter.name,
+    typeName = constructorParameter.typeName,
+    providerTypeName = constructorParameter.providerTypeName,
+    lazyTypeName = constructorParameter.lazyTypeName,
+    isWrappedInProvider = constructorParameter.isWrappedInProvider,
+    isWrappedInLazy = constructorParameter.isWrappedInLazy,
+    isLazyWrappedInProvider = constructorParameter.isLazyWrappedInProvider,
+    isAssisted = constructorParameter.isAssisted,
+    assistedIdentifier = constructorParameter.assistedIdentifier,
+    memberInjectorClassName = memberInjectorClass,
+    originalName = originalName,
+    isSetterInjected = isSetterInjected,
+    accessName = accessName,
+    qualifierAnnotationSpecs = qualifierAnnotations,
+    injectedFieldSignature = requireFqName()
+  )
+}
+
+fun List<KtAnnotationEntry>.qualifierAnnotationSpecs(
+  module: ModuleDescriptor
+): List<AnnotationSpec> = mapNotNull { annotationEntry ->
+
+  if (!annotationEntry.isQualifier(module)) return@mapNotNull null
+
+  fun KtExpression.codeBlock(): CodeBlock {
+
+    return when (this) {
+      // MyClass::class
+      is KtClassLiteralExpression -> {
+        val className = requireFqName(module).asClassName(module)
+        CodeBlock.of("%T::class", className)
+      }
+      // enums
+      is KtNameReferenceExpression -> {
+        val className = requireFqName(module).asClassName(module)
+        CodeBlock.of("%T", className)
+      }
+      is KtCollectionLiteralExpression -> CodeBlock.of(
+        getInnerExpressions()
+          .map { it.codeBlock() }
+          .joinToString(prefix = "[", postfix = "]")
+      )
+      // primitives
+      else -> CodeBlock.of(text)
+    }
+  }
+
+  val fqName = annotationEntry.requireFqName(module)
+
+  AnnotationSpec.builder(fqName.asClassName(module))
+    .apply {
+      annotationEntry.valueArguments
+        .filterIsInstance<KtValueArgument>()
+        .mapNotNull { valueArgument ->
+
+          valueArgument.getArgumentExpression()?.codeBlock()
+        }.forEach {
+          addMember(it)
+        }
+    }
+    .build()
+}
 
 /**
  * Converts the parameter list to comma separated argument list that can be used to call other
@@ -174,10 +264,10 @@ internal fun List<Parameter>.asArgumentList(
     .joinToString()
 }
 
-private fun TypeName.wrapInProvider(): ParameterizedTypeName {
+internal fun TypeName.wrapInProvider(): ParameterizedTypeName {
   return Provider::class.asClassName().parameterizedBy(this)
 }
 
-private fun TypeName.wrapInLazy(): ParameterizedTypeName {
+internal fun TypeName.wrapInLazy(): ParameterizedTypeName {
   return Lazy::class.asClassName().parameterizedBy(this)
 }

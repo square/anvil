@@ -1,14 +1,17 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
-import com.squareup.anvil.compiler.codegen.Parameter
+import com.squareup.anvil.compiler.codegen.MemberInjectParameter
+import com.squareup.anvil.compiler.codegen.mapToMemberInjectParameters
+import com.squareup.anvil.compiler.codegen.superClassMemberInjectedParameters
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.injectFqName
+import com.squareup.anvil.compiler.internal.allPsiSuperClasses
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.findAnnotation
-import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
+import dagger.internal.ProviderOfLazy
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
 import org.jetbrains.kotlin.lexer.KtTokens
@@ -16,6 +19,7 @@ import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 internal fun KtProperty.isSetterInjected(module: ModuleDescriptor): Boolean {
   return setter?.hasAnnotation(injectFqName, module) == true ||
@@ -26,7 +30,6 @@ internal fun KtProperty.isSetterInjected(module: ModuleDescriptor): Boolean {
 
 // TODO
 //  Include methods: https://github.com/square/anvil/issues/339
-//  Include superclass: https://github.com/square/anvil/issues/343
 internal fun KtClassOrObject.injectedMembers(module: ModuleDescriptor) = children
   .asSequence()
   .filterIsInstance<KtClassBody>()
@@ -39,37 +42,64 @@ internal fun KtClassOrObject.injectedMembers(module: ModuleDescriptor) = childre
   .toList()
 
 internal fun FunSpec.Builder.addMemberInjection(
-  packageName: String,
-  clazz: KtClassOrObject,
-  memberInjectParameters: List<Parameter>,
-  memberInjectProperties: List<KtProperty>,
-  instanceName: String,
-  module: ModuleDescriptor
-) {
-  val memberInjectorClassName = "${clazz.generateClassName()}_MembersInjector"
-  val memberInjectorClass = ClassName(packageName, memberInjectorClassName)
+  memberInjectParameters: List<MemberInjectParameter>,
+  instanceName: String
+): FunSpec.Builder = apply {
 
-  memberInjectParameters.forEachIndexed { index, parameter ->
-    val property = memberInjectProperties[index]
-    val functionName = "inject${property.memberInjectionAccessName(module).capitalize()}"
+  memberInjectParameters.forEach { parameter ->
+
+    val functionName = "inject${parameter.accessName.capitalize()}"
 
     val param = when {
+      parameter.isLazyWrappedInProvider ->
+        "${ProviderOfLazy::class.qualifiedName}.create(${parameter.name})"
       parameter.isWrappedInProvider -> parameter.name
       parameter.isWrappedInLazy ->
         "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
       else -> parameter.name + ".get()"
     }
 
-    addStatement("%T.$functionName($instanceName, $param)", memberInjectorClass)
+    addStatement("%T.$functionName($instanceName, $param)", parameter.memberInjectorClassName)
   }
 }
 
-/** Returns the access name for a property, which is prefixed with "set" if it's a setter. */
-internal fun KtProperty.memberInjectionAccessName(module: ModuleDescriptor): String {
-  val propertyName = nameAsSafeName.asString()
-  return if (isSetterInjected(module)) {
-    "set${propertyName.capitalize()}"
-  } else {
-    propertyName
-  }
+/**
+ * Returns all member-injected parameters for the receiver class *and any superclasses*.
+ *
+ * We use Psi whenever possible, to support generated code.
+ *
+ * Order is important. Dagger expects the properties of the most-upstream class to be listed first
+ * in a factory's constructor.
+ *
+ * Given the hierarchy:
+ * Impl -> Middle -> Base
+ * The order of dependencies in `Impl_Factory`'s constructor should be:
+ * Base -> Middle -> Impl
+ */
+internal fun KtClassOrObject.memberInjectParameters(
+  module: ModuleDescriptor
+): List<MemberInjectParameter> {
+
+  val psiSuperClasses = allPsiSuperClasses(module)
+
+  // We start at the bottom of the hierarchy and work our way up.
+  val descriptorParams = psiSuperClasses.lastOrNull()
+    ?.classDescriptorOrNull(module)
+    ?.superClassMemberInjectedParameters(module)
+    .orEmpty()
+
+  // Everything PSI can tell us about super-class member-injected properties.
+  val allSuperclassParams = psiSuperClasses
+    .reversed()
+    .fold(descriptorParams) { acc, ktClassOrObject ->
+
+      acc + ktClassOrObject.injectedMembers(module)
+        .mapToMemberInjectParameters(module)
+    }
+
+  // Finally, the class itself.
+  val thisClassMemberInjectedParameters = injectedMembers(module)
+    .mapToMemberInjectParameters(module)
+
+  return allSuperclassParams.plus(thisClassMemberInjectedParameters).cast()
 }

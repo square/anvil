@@ -8,7 +8,7 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.asArgumentList
 import com.squareup.anvil.compiler.codegen.injectConstructor
-import com.squareup.anvil.compiler.codegen.mapToParameter
+import com.squareup.anvil.compiler.codegen.mapToConstructorParameters
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
@@ -62,16 +62,12 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     val packageName = clazz.containingKtFile.packageFqName.safePackageString()
     val className = "${clazz.generateClassName()}_Factory"
 
-    val memberInjectProperties = clazz.injectedMembers(module)
+    val constructorParameters = constructor.valueParameters
+      .mapToConstructorParameters(module)
 
-    val parameters = constructor.valueParameters
-      .plus(memberInjectProperties)
-      .mapToParameter(module)
+    val memberInjectParameters = clazz.memberInjectParameters(module)
 
-    val constructorSize = constructor.valueParameters.size
-
-    val constructorInjectParameters = parameters.take(constructorSize)
-    val memberInjectParameters = parameters.drop(constructorSize)
+    val allParameters = constructorParameters + memberInjectParameters
 
     val typeParameters = clazz.typeVariableNames(module)
 
@@ -84,7 +80,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     }
 
     val content = FileSpec.buildFile(packageName, className) {
-      val canGenerateAnObject = parameters.isEmpty() && typeParameters.isEmpty()
+      val canGenerateAnObject = allParameters.isEmpty() && typeParameters.isEmpty()
       val classBuilder = if (canGenerateAnObject) {
         TypeSpec.objectBuilder(factoryClass)
       } else {
@@ -95,18 +91,18 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
       classBuilder
         .addSuperinterface(Factory::class.asClassName().parameterizedBy(classType))
         .apply {
-          if (parameters.isNotEmpty()) {
+          if (allParameters.isNotEmpty()) {
             primaryConstructor(
               FunSpec.constructorBuilder()
                 .apply {
-                  parameters.forEach { parameter ->
+                  allParameters.forEach { parameter ->
                     addParameter(parameter.name, parameter.providerTypeName)
                   }
                 }
                 .build()
             )
 
-            parameters.forEach { parameter ->
+            allParameters.forEach { parameter ->
               addProperty(
                 PropertySpec.builder(parameter.name, parameter.providerTypeName)
                   .initializer(parameter.name)
@@ -121,7 +117,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
             .addModifiers(OVERRIDE)
             .returns(classType)
             .apply {
-              val newInstanceArgumentList = constructorInjectParameters.asArgumentList(
+              val newInstanceArgumentList = constructorParameters.asArgumentList(
                 asProvider = true,
                 includeModule = false
               )
@@ -131,14 +127,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
               } else {
                 val instanceName = "instance"
                 addStatement("val $instanceName = newInstance($newInstanceArgumentList)")
-                addMemberInjection(
-                  packageName,
-                  clazz,
-                  memberInjectParameters,
-                  memberInjectProperties,
-                  instanceName,
-                  module
-                )
+                addMemberInjection(memberInjectParameters, instanceName)
                 addStatement("return $instanceName")
               }
             }
@@ -157,11 +146,11 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                   if (canGenerateAnObject) {
                     addStatement("return this")
                   } else {
-                    parameters.forEach { parameter ->
+                    allParameters.forEach { parameter ->
                       addParameter(parameter.name, parameter.providerTypeName)
                     }
 
-                    val argumentList = parameters.asArgumentList(
+                    val argumentList = allParameters.asArgumentList(
                       asProvider = false,
                       includeModule = false
                     )
@@ -182,13 +171,13 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                   if (typeParameters.isNotEmpty()) {
                     addTypeVariables(typeParameters)
                   }
-                  constructorInjectParameters.forEach { parameter ->
+                  constructorParameters.forEach { parameter ->
                     addParameter(
                       name = parameter.name,
                       type = parameter.originalTypeName
                     )
                   }
-                  val argumentsWithoutModule = constructorInjectParameters.joinToString { it.name }
+                  val argumentsWithoutModule = constructorParameters.joinToString { it.name }
 
                   addStatement("return %T($argumentsWithoutModule)", classType)
                 }
