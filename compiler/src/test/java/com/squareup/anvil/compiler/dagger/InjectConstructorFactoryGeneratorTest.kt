@@ -472,12 +472,15 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     /*
 package com.squareup.test;
 
+import dagger.internal.DaggerGenerated;
 import dagger.internal.Factory;
-import error.NonExistentClass;
 import java.io.File;
-import javax.annotation.Generated;
+import java.nio.file.Path;
+import java.util.Set;
+import javax.annotation.processing.Generated;
 import javax.inject.Provider;
 
+@DaggerGenerated
 @Generated(
     value = "dagger.internal.codegen.ComponentProcessor",
     comments = "https://dagger.dev"
@@ -489,25 +492,29 @@ import javax.inject.Provider;
 public final class InjectClass_Factory implements Factory<InjectClass> {
   private final Provider<File> fileProvider;
 
-  private final Provider<NonExistentClass> pathProvider;
+  private final Provider<Path> pathProvider;
 
-  public InjectClass_Factory(Provider<File> fileProvider, Provider<NonExistentClass> pathProvider) {
+  private final Provider<Set<String>> setMultibindingProvider;
+
+  public InjectClass_Factory(Provider<File> fileProvider, Provider<Path> pathProvider,
+      Provider<Set<String>> setMultibindingProvider) {
     this.fileProvider = fileProvider;
     this.pathProvider = pathProvider;
+    this.setMultibindingProvider = setMultibindingProvider;
   }
 
   @Override
   public InjectClass get() {
-    return newInstance(fileProvider.get(), pathProvider.get());
+    return newInstance(fileProvider.get(), pathProvider.get(), setMultibindingProvider.get());
   }
 
-  public static InjectClass_Factory create(Provider<File> fileProvider,
-      Provider<NonExistentClass> pathProvider) {
-    return new InjectClass_Factory(fileProvider, pathProvider);
+  public static InjectClass_Factory create(Provider<File> fileProvider, Provider<Path> pathProvider,
+      Provider<Set<String>> setMultibindingProvider) {
+    return new InjectClass_Factory(fileProvider, pathProvider, setMultibindingProvider);
   }
 
-  public static InjectClass newInstance(File file, NonExistentClass path) {
-    return new InjectClass(file, path);
+  public static InjectClass newInstance(File file, Path path, Set<String> setMultibinding) {
+    return new InjectClass(file, path, setMultibinding);
   }
 }
      */
@@ -518,11 +525,13 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       
       import java.io.*
       import java.nio.file.*
+      import java.util.*
       import javax.inject.*
       
       data class InjectClass @Inject constructor(
         val file: File, 
-        val path: Path
+        val path: Path,
+        val setMultibinding: Set<String>,
       )
       """
     ) {
@@ -530,17 +539,22 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
-        .containsExactly(Provider::class.java, Provider::class.java)
+        .containsExactly(Provider::class.java, Provider::class.java, Provider::class.java)
         .inOrder()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
       val factoryInstance = staticMethods.single { it.name == "create" }
-        .invoke(null, Provider { File("") }, Provider { File("").toPath() })
+        .invoke(
+          null,
+          Provider { File("") },
+          Provider { File("").toPath() },
+          Provider { emptySet<String>() }
+        )
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val newInstance = staticMethods.single { it.name == "newInstance" }
-        .invoke(null, File(""), File("").toPath())
+        .invoke(null, File(""), File("").toPath(), emptySet<String>())
       val getInstance = (factoryInstance as Factory<*>).get()
 
       assertThat(newInstance).isNotNull()
@@ -1767,7 +1781,8 @@ public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
     }
   }
 
-  @Test fun `a factory class is generated for a class with a type parameter no constructor argument`() {
+  @Test
+  fun `a factory class is generated for a class with a type parameter no constructor argument`() {
     /*
 package com.squareup.test;
 
