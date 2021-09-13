@@ -359,6 +359,14 @@ public fun PsiElement.requireFqName(
       it.importPath?.fqName
     }
     .forEach { importFqName ->
+      if (importFqName.asString() == "java.util") {
+        // If there's a star import for java.util.* and the import is a Collection type, then
+        // the Kotlin compiler overrides these with Kotlin types.
+        module
+          .resolveFqNameOrNull(FqName("kotlin.collections.$classReference"))
+          ?.let { return it }
+      }
+
       module.resolveFqNameOrNull(importFqName, classReference)
         ?.let { return it }
     }
