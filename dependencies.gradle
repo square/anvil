@@ -7,7 +7,7 @@ ext {
   daggerVersion = '2.36'
   espressoVersion = '3.2.0'
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
-      project.getProperty('square.kotlinVersion') : '1.5.21'
+      project.getProperty('square.kotlinVersion') : '1.5.31'
 
   kotlinUseIR = (project.hasProperty('square.useIR') ?
       project.getProperty('square.useIR') : 'true').toBoolean()
@@ -68,6 +68,7 @@ ext {
           dokka: "org.jetbrains.dokka:dokka-gradle-plugin:1.4.32",
           gradle_plugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
           gradle_plugin_api: "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$kotlinVersion",
+          metadata: "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.3.0",
           reflect: "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion",
           test: "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion",
       ],
