@@ -16,6 +16,7 @@ internal fun compile(
 ): Result = compileAnvil(
   sources = sources,
   useIR = USE_IR,
+  allWarningsAsErrors = WARNINGS_AS_ERRORS,
   block = block
 )
 

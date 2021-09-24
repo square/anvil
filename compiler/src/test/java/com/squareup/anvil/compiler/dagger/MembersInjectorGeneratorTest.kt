@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.USE_IR
+import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
@@ -1228,6 +1229,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
     useIR = USE_IR,
+    allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block
   )
 }
