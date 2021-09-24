@@ -10,7 +10,7 @@ jobs:
   test-ubuntu-old-backend:
     runs-on: ubuntu-latest
     timeout-minutes: 25
-    continue-on-error: ${{ startsWith(matrix.kotlin-version, '1.5.30') }}
+    continue-on-error: ${{ startsWith(matrix.kotlin-version, '1.6') }}
 
     strategy:
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
@@ -18,7 +18,7 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version : [ 1.5.21, 1.5.30-RC ]
+        kotlin-version : [ 1.5.31, 1.5.30-RC ]
 
     steps:
       - uses: actions/checkout@v2
@@ -48,7 +48,7 @@ jobs:
     strategy :
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.5.21, 1.5.30-RC ]
+        kotlin-version : [ 1.5.31, 1.5.30-RC ]
 
     steps:
       - uses: actions/checkout@v2
@@ -168,7 +168,7 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version: [ 1.5.21, 1.5.30-RC ]
+        kotlin-version: [ 1.5.31, 1.5.30-RC ]
 
     steps:
       - uses: actions/checkout@v2
@@ -221,7 +221,7 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version : [ 1.5.21, 1.5.30-RC ]
+        kotlin-version : [ 1.5.31, 1.5.30-RC ]
 
     steps:
       - uses: actions/checkout@v2
