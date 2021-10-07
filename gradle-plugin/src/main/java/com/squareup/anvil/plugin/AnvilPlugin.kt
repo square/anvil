@@ -29,7 +29,6 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
-import java.util.Locale.US
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("unused")
@@ -298,7 +297,8 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     project: Project,
     buildType: String
   ): Configuration {
-    val name = if (buildType.isEmpty()) "anvil" else "anvil${buildType.capitalize(US)}"
+    val name =
+      if (buildType.isEmpty()) "anvil" else "anvil${buildType.replaceFirstChar(Char::uppercase)}"
     return project.configurations.maybeCreate(name).apply {
       description = "This configuration is used for dependencies with Anvil CodeGenerator " +
         "implementations."
@@ -448,8 +448,8 @@ internal class Variant private constructor(
           TaskProvider<KotlinCompile>,
         androidVariant = androidVariant,
         compilerPluginClasspathName = PLUGIN_CLASSPATH_CONFIGURATION_NAME +
-          kotlinCompilation.target.targetName.capitalize(US) +
-          kotlinCompilation.name.capitalize(US),
+          kotlinCompilation.target.targetName.replaceFirstChar(Char::uppercase) +
+          kotlinCompilation.name.replaceFirstChar(Char::uppercase),
         variantFilter = variantFilter
       ).also {
         // Sanity check.
