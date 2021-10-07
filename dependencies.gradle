@@ -63,9 +63,9 @@ ext {
 
       kotlin: [
           annotation_processing_embeddable: "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable:$kotlinVersion",
-          compile_testing: "com.github.tschuchortdev:kotlin-compile-testing:1.4.0",
+          compile_testing: "com.github.tschuchortdev:kotlin-compile-testing:1.4.5",
           compiler: "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion",
-          dokka: "org.jetbrains.dokka:dokka-gradle-plugin:1.4.32",
+          dokka: "org.jetbrains.dokka:dokka-gradle-plugin:1.5.31",
           gradle_plugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
           gradle_plugin_api: "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$kotlinVersion",
           metadata: "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.3.0",
@@ -73,8 +73,8 @@ ext {
           test: "org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion",
       ],
 
-      kotlinpoet: "com.squareup:kotlinpoet:1.8.0",
+      kotlinpoet: "com.squareup:kotlinpoet:1.10.1",
 
-      truth: "com.google.truth:truth:1.1.2",
+      truth: "com.google.truth:truth:1.1.3",
   ]
 }
