@@ -2,13 +2,12 @@
 
 ## 2.3.5 (2021-10-06)
 
-* Use correct setter name for members in generated factories, see #362. 
+* Upgraded Anvil to Kotlin `1.5.31`.
+* Use correct setter name for members in generated factories, see #362.
 * Handle the special case of injecting a `Provider<Lazy<Type>>` properly for member injection, see #365.
 * Make sure in JVM modules that the configuration `anvilMain` extends `anvil` so that code generators are picked up, see #368.
 * Support member injection for super classes, see #343.
 * Prefer Kotlin collection types when Java collections are imported through a star import, see #371.
-* Upgrade Kotlin to `1.5.31`.
-* Upgraded Anvil to Kotlin `1.5.31`.
 
 ## 2.3.4 (2021-08-27)
 
