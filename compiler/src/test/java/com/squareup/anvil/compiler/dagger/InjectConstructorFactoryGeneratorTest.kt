@@ -2297,6 +2297,125 @@ public class InjectClass_Factory<T : List<String>>(
     }
   }
 
+  @Test fun `verify qualifiers are supported`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.DaggerGenerated;
+import dagger.internal.Factory;
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<String> classArrayStringProvider;
+
+  private final Provider<String> classStringProvider;
+
+  private final Provider<String> enumArrayStringProvider;
+
+  private final Provider<String> enumStringProvider;
+
+  private final Provider<String> intStringProvider;
+
+  private final Provider<String> string1Provider;
+
+  private final Provider<String> string2Provider;
+
+  private final Provider<String> string3Provider;
+
+  public InjectClass_Factory(Provider<String> classArrayStringProvider,
+      Provider<String> classStringProvider, Provider<String> enumArrayStringProvider,
+      Provider<String> enumStringProvider, Provider<String> intStringProvider,
+      Provider<String> string1Provider, Provider<String> string2Provider,
+      Provider<String> string3Provider) {
+    this.classArrayStringProvider = classArrayStringProvider;
+    this.classStringProvider = classStringProvider;
+    this.enumArrayStringProvider = enumArrayStringProvider;
+    this.enumStringProvider = enumStringProvider;
+    this.intStringProvider = intStringProvider;
+    this.string1Provider = string1Provider;
+    this.string2Provider = string2Provider;
+    this.string3Provider = string3Provider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(classArrayStringProvider.get(), classStringProvider.get(), enumArrayStringProvider.get(), enumStringProvider.get(), intStringProvider.get(), string1Provider.get(), string2Provider.get(), string3Provider.get());
+  }
+
+  public static InjectClass_Factory create(Provider<String> classArrayStringProvider,
+      Provider<String> classStringProvider, Provider<String> enumArrayStringProvider,
+      Provider<String> enumStringProvider, Provider<String> intStringProvider,
+      Provider<String> string1Provider, Provider<String> string2Provider,
+      Provider<String> string3Provider) {
+    return new InjectClass_Factory(classArrayStringProvider, classStringProvider, enumArrayStringProvider, enumStringProvider, intStringProvider, string1Provider, string2Provider, string3Provider);
+  }
+
+  public static InjectClass newInstance(String classArrayString, String classString,
+      String enumArrayString, String enumString, String intString, String string1, String string2,
+      String string3) {
+    return new InjectClass(classArrayString, classString, enumArrayString, enumString, intString, string1, string2, string3);
+  }
+}
+     */
+    compile(
+      //language=kotlin
+      """
+      package com.squareup.test
+
+      import kotlin.LazyThreadSafetyMode.NONE
+      import kotlin.LazyThreadSafetyMode.SYNCHRONIZED 
+      import kotlin.reflect.KClass      
+      import javax.inject.Inject
+      import javax.inject.Named
+      import javax.inject.Qualifier
+      
+      const val CONSTANT = "def"
+
+      class InjectClass @Inject constructor(
+        @ClassArrayQualifier([String::class, Int::class]) val classArrayString: String,
+        @ClassQualifier(String::class) val classString: String,
+        @EnumArrayQualifier([NONE, SYNCHRONIZED]) val enumArrayString: String,
+        @EnumQualifier(SYNCHRONIZED) val enumString: String,
+        @IntQualifier(3) val intString: String,
+        @StringQualifier("abc") val string1: String,
+        @StringQualifier(CONSTANT) val string2: String,
+        @Named(CONSTANT) val string3: String
+      )
+      
+      @Qualifier
+      annotation class ClassArrayQualifier(val value: Array<KClass<*>>)
+      
+      @Qualifier
+      annotation class ClassQualifier(val value: KClass<*>)
+      
+      @Qualifier
+      annotation class EnumArrayQualifier(val value: Array<LazyThreadSafetyMode>)
+      
+      @Qualifier
+      annotation class EnumQualifier(val value: LazyThreadSafetyMode)
+      
+      @Qualifier
+      annotation class IntQualifier(val value: Int)
+      
+      @Qualifier
+      annotation class StringQualifier(val value: String)
+      """
+    ) {
+      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).hasSize(8)
+    }
+  }
+
   @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
     vararg sources: String,
