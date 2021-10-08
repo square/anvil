@@ -53,9 +53,17 @@ subprojects {
     }
   }
 
-  tasks.withType(JavaCompile).configureEach {
-    sourceCompatibility = JavaVersion.VERSION_1_8
-    targetCompatibility = JavaVersion.VERSION_1_8
+  pluginManager.withPlugin("java") {
+    // Use JDK 11 but target Java 8 for maximum compatibility.
+    java {
+      toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+      }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+      options.release.set(8)
+    }
   }
 
   //noinspection UnnecessaryQualifiedReference
