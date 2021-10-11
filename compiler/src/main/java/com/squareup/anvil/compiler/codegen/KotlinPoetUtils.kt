@@ -4,7 +4,6 @@ import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.codegen.dagger.isSetterInjected
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
-import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.fqNameOrNull
@@ -24,7 +23,6 @@ import com.squareup.kotlinpoet.asClassName
 import dagger.Lazy
 import dagger.internal.ProviderOfLazy
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.fir.lightTree.converter.nameAsSafeName
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
