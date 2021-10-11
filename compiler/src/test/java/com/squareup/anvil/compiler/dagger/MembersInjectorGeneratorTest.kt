@@ -15,6 +15,7 @@ import com.squareup.anvil.compiler.nestedInjectClass
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.MembersInjector
+import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -478,10 +479,29 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 }
      */
     compile(
-      //language=kotlin
+      """
+      package com.squareup.test2
+      
+      const val CONST_IMPORTED = "yay"
+      
+      object Constants {
+        const val CONST_NESTED = "yay2"
+      }
+      
+      class ClassWithCompanion {
+        class NestedClassWithCompanion {
+          companion object CustomCompanionName {
+            const val CONST_NESTED_IN_COMPANION = "yay2"
+          }
+        }
+      }
+      """,
       """
       package com.squareup.test
       
+      import com.squareup.test2.CONST_IMPORTED
+      import com.squareup.test2.Constants
+      import com.squareup.test2.ClassWithCompanion.NestedClassWithCompanion
       import kotlin.LazyThreadSafetyMode.NONE
       import kotlin.LazyThreadSafetyMode.SYNCHRONIZED 
       import kotlin.reflect.KClass      
@@ -500,6 +520,14 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         @StringQualifier("abc") @Inject lateinit var string1: String
         @StringQualifier(CONSTANT) @Inject lateinit var string2: String
         @Named(CONSTANT) @Inject lateinit var string3: String
+        @Named(NESTED_CONSTANT) @Inject lateinit var string4: String
+        @Named(CONST_IMPORTED) @Inject lateinit var string5: String
+        @Named(Constants.CONST_NESTED) @Inject lateinit var string6: String
+        @Named(NestedClassWithCompanion.CONST_NESTED_IN_COMPANION) @Inject lateinit var string7: String
+        
+        companion object {
+          const val NESTED_CONSTANT = "def2"
+        }
       }
       
       @Qualifier
@@ -1433,7 +1461,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
   @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
-    vararg sources: String,
+    @Language("kotlin") vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
