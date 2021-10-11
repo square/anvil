@@ -1,16 +1,19 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.codegen.dagger.isSetterInjected
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.asMemberName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.isNullable
 import com.squareup.anvil.compiler.internal.isQualifier
+import com.squareup.anvil.compiler.internal.properties
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.requireTypeReference
@@ -25,14 +28,24 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import dagger.Lazy
 import dagger.internal.ProviderOfLazy
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.fir.lightTree.converter.nameAsSafeName
+import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
+import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
+import org.jetbrains.kotlin.psi.KtElement
 import org.jetbrains.kotlin.psi.KtExpression
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtQualifiedExpression
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeElement
@@ -183,10 +196,39 @@ fun List<KtAnnotationEntry>.qualifierAnnotationSpecs(
         val className = requireFqName(module).asClassName(module)
         CodeBlock.of("%T::class", className)
       }
-      // enums
-      is KtNameReferenceExpression -> {
-        val className = requireFqName(module).asClassName(module)
-        CodeBlock.of("%T", className)
+      // enums or qualified references
+      is KtNameReferenceExpression, is KtQualifiedExpression -> {
+        val fqName = try {
+          requireFqName(module)
+        } catch (e: AnvilCompilationException) {
+          if (this is KtNameReferenceExpression) {
+            null
+          } else {
+            throw e
+          }
+        }
+        if (fqName != null) {
+          if (this is KtNameReferenceExpression) {
+            CodeBlock.of("%T", fqName.asClassName(module))
+          } else {
+            CodeBlock.of("%M", fqName.asMemberName(module))
+          }
+        } else {
+          // It's (hopefully) an in-scope constant, look up the hierarchy.
+          val ref = (this as KtNameReferenceExpression).getReferencedName()
+          findConstantDefinitionInScope(ref)
+            ?.asMemberName(module)
+            ?.let { memberRef ->
+              CodeBlock.of("%M", memberRef)
+            }
+            // Everything else isn't supported.
+            ?: run {
+              throw AnvilCompilationException(
+                "Couldn't resolve FqName $ref for Psi element: $text",
+                element = this
+              )
+            }
+        }
       }
       is KtCollectionLiteralExpression -> CodeBlock.of(
         getInnerExpressions()
@@ -205,13 +247,52 @@ fun List<KtAnnotationEntry>.qualifierAnnotationSpecs(
       annotationEntry.valueArguments
         .filterIsInstance<KtValueArgument>()
         .mapNotNull { valueArgument ->
-
           valueArgument.getArgumentExpression()?.codeBlock()
         }.forEach {
           addMember(it)
         }
     }
     .build()
+}
+
+private fun List<KtProperty>.containsConstPropertyWithName(name: String): Boolean {
+  return any { property ->
+    property.hasModifier(KtTokens.CONST_KEYWORD) && property.name == name
+  }
+}
+
+private fun PsiElement.findConstantDefinitionInScope(name: String): FqName? {
+  when (this) {
+    is KtProperty, is KtNamedFunction -> {
+      // Function or Property, traverse up
+      return (this as KtElement).containingClass()?.findConstantDefinitionInScope(name)
+        ?: containingFile.findConstantDefinitionInScope(name)
+    }
+    is KtObjectDeclaration -> {
+      if (properties(includeCompanionObjects = false).containsConstPropertyWithName(name)) {
+        return requireFqName().child(name.nameAsSafeName())
+      } else if (isCompanion()) {
+        // Nowhere else to look and don't try to traverse up because this is only looked at from a
+        // class already.
+        return null
+      }
+    }
+    is KtFile -> {
+      if (children.filterIsInstance<KtProperty>().containsConstPropertyWithName(name)) {
+        return packageFqName.child(name.nameAsSafeName())
+      }
+    }
+    is KtClass -> {
+      // Look in companion object or traverse up
+      return companionObjects.asSequence()
+        .mapNotNull { it.findConstantDefinitionInScope(name) }
+        .firstOrNull()
+        ?: containingClass()?.findConstantDefinitionInScope(name)
+        ?: containingKtFile.findConstantDefinitionInScope(name)
+    }
+  }
+
+  return parent?.findConstantDefinitionInScope(name)
 }
 
 /**

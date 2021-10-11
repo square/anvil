@@ -27,6 +27,7 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
+import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNullableType
@@ -68,10 +69,15 @@ public fun ClassDescriptor.asClassName(): ClassName =
 
 @ExperimentalAnvilApi
 public fun FqName.asClassName(module: ModuleDescriptor): ClassName {
+  return asClassNameOrNull(module)
+    ?: throw AnvilCompilationException("Couldn't parse ClassName for $this.")
+}
+
+private fun FqName.asClassNameOrNull(module: ModuleDescriptor): ClassName? {
   val segments = pathSegments().map { it.asString() }
 
   // If the first sentence case is not the last segment of the path it becomes ambiguous,
-  // for example, com.Foo.Bar could be a inner class Bar or an unconventional package com.Foo.
+  // for example, com.Foo.Bar could be an inner class Bar or an unconventional package com.Foo.
   val canGuessClassName = segments.indexOfFirst { it[0].isUpperCase() } == segments.size - 1
   if (canGuessClassName) {
     return ClassName.bestGuess(asString())
@@ -94,7 +100,28 @@ public fun FqName.asClassName(module: ModuleDescriptor): ClassName {
     }
   }
 
-  throw AnvilCompilationException("Couldn't parse ClassName for $this.")
+  // No matching class found. It's either a package name only or doesn't exist.
+  return null
+}
+
+@ExperimentalAnvilApi
+public fun FqName.asMemberName(module: ModuleDescriptor): MemberName {
+  val segments = pathSegments().map { it.asString() }
+  val simpleName = segments.last()
+  val prefixFqName = FqName.fromSegments(segments.dropLast(1))
+  return prefixFqName.asClassNameOrNull(module)?.let {
+    val classOrObj = module.getKtClassOrObjectOrNull(prefixFqName)
+    val imported = if (classOrObj is KtClass) {
+      // Must be in a companion, check its name
+      // We do this because accessors could be just Foo.CONSTANT but to member import it we need
+      // to include the companion path
+      val companionName = classOrObj.companionObjects.first().name ?: "Companion"
+      it.nestedClass(companionName)
+    } else {
+      it
+    }
+    MemberName(imported, simpleName)
+  } ?: MemberName(prefixFqName.pathSegments().joinToString("."), simpleName)
 }
 
 @ExperimentalAnvilApi
