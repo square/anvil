@@ -185,8 +185,16 @@ private fun KtProperty.toMemberInjectParameter(
 fun List<KtAnnotationEntry>.qualifierAnnotationSpecs(
   module: ModuleDescriptor
 ): List<AnnotationSpec> = mapNotNull { annotationEntry ->
+  if (!annotationEntry.isQualifier(module)) {
+    null
+  } else {
+    annotationEntry.toAnnotationSpec(module)
+  }
+}
 
-  if (!annotationEntry.isQualifier(module)) return@mapNotNull null
+fun KtAnnotationEntry.toAnnotationSpec(
+  module: ModuleDescriptor
+): AnnotationSpec {
 
   fun KtExpression.codeBlock(): CodeBlock {
 
@@ -240,11 +248,11 @@ fun List<KtAnnotationEntry>.qualifierAnnotationSpecs(
     }
   }
 
-  val fqName = annotationEntry.requireFqName(module)
+  val fqName = requireFqName(module)
 
-  AnnotationSpec.builder(fqName.asClassName(module))
+  return AnnotationSpec.builder(fqName.asClassName(module))
     .apply {
-      annotationEntry.valueArguments
+      valueArguments
         .filterIsInstance<KtValueArgument>()
         .mapNotNull { valueArgument ->
           valueArgument.getArgumentExpression()?.codeBlock()
