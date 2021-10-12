@@ -4,21 +4,18 @@ import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.codegen.dagger.isSetterInjected
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
-import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.isNullable
-import com.squareup.anvil.compiler.internal.isQualifier
+import com.squareup.anvil.compiler.internal.qualifierAnnotationSpecs
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.requireTypeReference
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.providerFqName
-import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
@@ -26,12 +23,7 @@ import com.squareup.kotlinpoet.asClassName
 import dagger.Lazy
 import dagger.internal.ProviderOfLazy
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
-import org.jetbrains.kotlin.psi.KtClassLiteralExpression
-import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
-import org.jetbrains.kotlin.psi.KtExpression
-import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
@@ -167,51 +159,6 @@ private fun KtProperty.toMemberInjectParameter(
     qualifierAnnotationSpecs = qualifierAnnotations,
     injectedFieldSignature = requireFqName()
   )
-}
-
-fun List<KtAnnotationEntry>.qualifierAnnotationSpecs(
-  module: ModuleDescriptor
-): List<AnnotationSpec> = mapNotNull { annotationEntry ->
-
-  if (!annotationEntry.isQualifier(module)) return@mapNotNull null
-
-  fun KtExpression.codeBlock(): CodeBlock {
-
-    return when (this) {
-      // MyClass::class
-      is KtClassLiteralExpression -> {
-        val className = requireFqName(module).asClassName(module)
-        CodeBlock.of("%T::class", className)
-      }
-      // enums
-      is KtNameReferenceExpression -> {
-        val className = requireFqName(module).asClassName(module)
-        CodeBlock.of("%T", className)
-      }
-      is KtCollectionLiteralExpression -> CodeBlock.of(
-        getInnerExpressions()
-          .map { it.codeBlock() }
-          .joinToString(prefix = "[", postfix = "]")
-      )
-      // primitives
-      else -> CodeBlock.of(text)
-    }
-  }
-
-  val fqName = annotationEntry.requireFqName(module)
-
-  AnnotationSpec.builder(fqName.asClassName(module))
-    .apply {
-      annotationEntry.valueArguments
-        .filterIsInstance<KtValueArgument>()
-        .mapNotNull { valueArgument ->
-
-          valueArgument.getArgumentExpression()?.codeBlock()
-        }.forEach {
-          addMember(it)
-        }
-    }
-    .build()
 }
 
 /**

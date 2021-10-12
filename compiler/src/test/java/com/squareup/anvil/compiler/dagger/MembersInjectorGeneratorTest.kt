@@ -15,6 +15,7 @@ import com.squareup.anvil.compiler.nestedInjectClass
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.MembersInjector
+import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -274,24 +275,259 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
   }
 
   @Test fun `a factory class is generated for a qualifier with an enum`() {
+    /*
+package com.squareup.test;
 
+import dagger.MembersInjector;
+import dagger.internal.DaggerGenerated;
+import dagger.internal.InjectedFieldSignature;
+import javax.annotation.processing.Generated;
+import javax.inject.Named;
+import javax.inject.Provider;
+import kotlin.LazyThreadSafetyMode;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_MembersInjector implements MembersInjector<InjectClass> {
+  private final Provider<String> classArrayStringProvider;
+
+  private final Provider<String> classStringProvider;
+
+  private final Provider<String> enumArrayStringProvider;
+
+  private final Provider<String> enumStringProvider;
+
+  private final Provider<String> intStringProvider;
+
+  private final Provider<String> string1Provider;
+
+  private final Provider<String> string2Provider;
+
+  private final Provider<String> string3Provider;
+
+  public InjectClass_MembersInjector(Provider<String> classArrayStringProvider,
+      Provider<String> classStringProvider, Provider<String> enumArrayStringProvider,
+      Provider<String> enumStringProvider, Provider<String> intStringProvider,
+      Provider<String> string1Provider, Provider<String> string2Provider,
+      Provider<String> string3Provider) {
+    this.classArrayStringProvider = classArrayStringProvider;
+    this.classStringProvider = classStringProvider;
+    this.enumArrayStringProvider = enumArrayStringProvider;
+    this.enumStringProvider = enumStringProvider;
+    this.intStringProvider = intStringProvider;
+    this.string1Provider = string1Provider;
+    this.string2Provider = string2Provider;
+    this.string3Provider = string3Provider;
+  }
+
+  public static MembersInjector<InjectClass> create(Provider<String> classArrayStringProvider,
+      Provider<String> classStringProvider, Provider<String> enumArrayStringProvider,
+      Provider<String> enumStringProvider, Provider<String> intStringProvider,
+      Provider<String> string1Provider, Provider<String> string2Provider,
+      Provider<String> string3Provider) {
+    return new InjectClass_MembersInjector(classArrayStringProvider, classStringProvider, enumArrayStringProvider, enumStringProvider, intStringProvider, string1Provider, string2Provider, string3Provider);
+  }
+
+  @Override
+  public void injectMembers(InjectClass instance) {
+    injectClassArrayString(instance, classArrayStringProvider.get());
+    injectClassString(instance, classStringProvider.get());
+    injectEnumArrayString(instance, enumArrayStringProvider.get());
+    injectEnumString(instance, enumStringProvider.get());
+    injectIntString(instance, intStringProvider.get());
+    injectString1(instance, string1Provider.get());
+    injectString2(instance, string2Provider.get());
+    injectString3(instance, string3Provider.get());
+  }
+
+  @InjectedFieldSignature("com.squareup.test.InjectClass.classArrayString")
+  @ClassArrayQualifier({
+      String.class,
+      int.class
+  })
+  public static void injectClassArrayString(InjectClass instance, String classArrayString) {
+    instance.classArrayString = classArrayString;
+  }
+
+  @InjectedFieldSignature("com.squareup.test.InjectClass.classString")
+  @ClassQualifier(String.class)
+  public static void injectClassString(InjectClass instance, String classString) {
+    instance.classString = classString;
+  }
+
+  @InjectedFieldSignature("com.squareup.test.InjectClass.enumArrayString")
+  @EnumArrayQualifier({
+      LazyThreadSafetyMode.NONE,
+      LazyThreadSafetyMode.SYNCHRONIZED
+  })
+  public static void injectEnumArrayString(InjectClass instance, String enumArrayString) {
+    instance.enumArrayString = enumArrayString;
+  }
+
+  @InjectedFieldSignature("com.squareup.test.InjectClass.enumString")
+  @EnumQualifier(LazyThreadSafetyMode.SYNCHRONIZED)
+  public static void injectEnumString(InjectClass instance, String enumString) {
+    instance.enumString = enumString;
+  }
+
+  @InjectedFieldSignature("com.squareup.test.InjectClass.intString")
+  @IntQualifier(3)
+  public static void injectIntString(InjectClass instance, String intString) {
+    instance.intString = intString;
+  }
+
+  @InjectedFieldSignature("com.squareup.test.InjectClass.string1")
+  @StringQualifier("abc")
+  public static void injectString1(InjectClass instance, String string1) {
+    instance.string1 = string1;
+  }
+
+  @InjectedFieldSignature("com.squareup.test.InjectClass.string2")
+  @StringQualifier("def")
+  public static void injectString2(InjectClass instance, String string2) {
+    instance.string2 = string2;
+  }
+
+  @InjectedFieldSignature("com.squareup.test.InjectClass.string3")
+  @Named("def")
+  public static void injectString3(InjectClass instance, String string3) {
+    instance.string3 = string3;
+  }
+}
+     */
+    /*
+package com.squareup.test;
+
+import dagger.internal.DaggerGenerated;
+import dagger.internal.Factory;
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<String> classArrayStringProvider;
+
+  private final Provider<String> classStringProvider;
+
+  private final Provider<String> enumArrayStringProvider;
+
+  private final Provider<String> enumStringProvider;
+
+  private final Provider<String> intStringProvider;
+
+  private final Provider<String> string1Provider;
+
+  private final Provider<String> string2Provider;
+
+  private final Provider<String> string3Provider;
+
+  public InjectClass_Factory(Provider<String> classArrayStringProvider,
+      Provider<String> classStringProvider, Provider<String> enumArrayStringProvider,
+      Provider<String> enumStringProvider, Provider<String> intStringProvider,
+      Provider<String> string1Provider, Provider<String> string2Provider,
+      Provider<String> string3Provider) {
+    this.classArrayStringProvider = classArrayStringProvider;
+    this.classStringProvider = classStringProvider;
+    this.enumArrayStringProvider = enumArrayStringProvider;
+    this.enumStringProvider = enumStringProvider;
+    this.intStringProvider = intStringProvider;
+    this.string1Provider = string1Provider;
+    this.string2Provider = string2Provider;
+    this.string3Provider = string3Provider;
+  }
+
+  @Override
+  public InjectClass get() {
+    InjectClass instance = newInstance();
+    InjectClass_MembersInjector.injectClassArrayString(instance, classArrayStringProvider.get());
+    InjectClass_MembersInjector.injectClassString(instance, classStringProvider.get());
+    InjectClass_MembersInjector.injectEnumArrayString(instance, enumArrayStringProvider.get());
+    InjectClass_MembersInjector.injectEnumString(instance, enumStringProvider.get());
+    InjectClass_MembersInjector.injectIntString(instance, intStringProvider.get());
+    InjectClass_MembersInjector.injectString1(instance, string1Provider.get());
+    InjectClass_MembersInjector.injectString2(instance, string2Provider.get());
+    InjectClass_MembersInjector.injectString3(instance, string3Provider.get());
+    return instance;
+  }
+
+  public static InjectClass_Factory create(Provider<String> classArrayStringProvider,
+      Provider<String> classStringProvider, Provider<String> enumArrayStringProvider,
+      Provider<String> enumStringProvider, Provider<String> intStringProvider,
+      Provider<String> string1Provider, Provider<String> string2Provider,
+      Provider<String> string3Provider) {
+    return new InjectClass_Factory(classArrayStringProvider, classStringProvider, enumArrayStringProvider, enumStringProvider, intStringProvider, string1Provider, string2Provider, string3Provider);
+  }
+
+  public static InjectClass newInstance() {
+    return new InjectClass();
+  }
+}
+     */
     compile(
-      //language=kotlin
+      """
+      package com.squareup.test2
+      
+      const val CONST_IMPORTED = "yay"
+      
+      object Constants {
+        const val CONST_NESTED = "yay2"
+      }
+      
+      class ClassWithCompanion {
+        class NestedClassWithCompanion {
+          companion object CustomCompanionName {
+            const val CONST_NESTED_IN_COMPANION = "yay2"
+          }
+        }
+      }
+      """,
       """
       package com.squareup.test
       
+      import com.squareup.test2.CONST_IMPORTED
+      import com.squareup.test2.Constants
+      import com.squareup.test2.ClassWithCompanion.NestedClassWithCompanion
       import kotlin.LazyThreadSafetyMode.NONE
       import kotlin.LazyThreadSafetyMode.SYNCHRONIZED 
       import kotlin.reflect.KClass      
       import javax.inject.Inject
+      import javax.inject.Named
       import javax.inject.Qualifier
       
+      const val CONSTANT = "def"
+
       class InjectClass @Inject constructor() {
         @ClassArrayQualifier([String::class, Int::class]) @Inject lateinit var classArrayString: String
         @ClassQualifier(String::class) @Inject lateinit var classString: String
         @EnumArrayQualifier([NONE, SYNCHRONIZED]) @Inject lateinit var enumArrayString: String
         @EnumQualifier(SYNCHRONIZED) @Inject lateinit var enumString: String
         @IntQualifier(3) @Inject lateinit var intString: String
+        @StringQualifier("abc") @Inject lateinit var string1: String
+        @StringQualifier(CONSTANT) @Inject lateinit var string2: String
+        @Named(CONSTANT) @Inject lateinit var string3: String
+        @Named(NESTED_CONSTANT) @Inject lateinit var string4: String
+        @Named(CONST_IMPORTED) @Inject lateinit var string5: String
+        @Named(Constants.CONST_NESTED) @Inject lateinit var string6: String
+        @Named(NestedClassWithCompanion.CONST_NESTED_IN_COMPANION) @Inject lateinit var string7: String
+        
+        companion object {
+          const val NESTED_CONSTANT = "def2"
+        }
       }
       
       @Qualifier
@@ -308,6 +544,9 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
       
       @Qualifier
       annotation class IntQualifier(val value: Int)
+      
+      @Qualifier
+      annotation class StringQualifier(val value: String)
       """
     ) {
       val membersInjector = injectClass.membersInjector()
@@ -1222,7 +1461,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
   @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
-    vararg sources: String,
+    @Language("kotlin") vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
