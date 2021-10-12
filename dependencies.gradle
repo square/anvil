@@ -15,7 +15,8 @@ ext {
   generateDaggerFactoriesWithAnvil = (project.hasProperty('square.generateDaggerFactoriesWithAnvil') ?
       project.getProperty('square.generateDaggerFactoriesWithAnvil') : 'true').toBoolean()
 
-  makeWarningsErrors = ci
+  // TODO: Remove when we remove the old backend.
+  makeWarningsErrors = ci && (kotlinVersion.startsWith('1.5') || kotlinUseIR)
 
   ktlintVersion = "0.41.0"
 
