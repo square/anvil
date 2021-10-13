@@ -3,6 +3,7 @@
 ## 2.3.6 (2021-10-12)
 
 * Support constant members in annotations properly, see #379.
+* Use Anvil version `2.3.6-1-6-0-RC` if you want to test Kotlin `1.6.0-RC`. Until Anvil hasn't adopted Kotlin `1.6` I'll publish additional versions that are required due to compiler API incompatibilities. 
 
 ## 2.3.5 (2021-10-06)
 
