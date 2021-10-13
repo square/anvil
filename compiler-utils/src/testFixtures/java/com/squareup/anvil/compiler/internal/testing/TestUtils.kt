@@ -15,42 +15,36 @@ import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
 import dagger.internal.codegen.ComponentProcessor
+import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.config.JvmTarget
 import java.io.File
 import java.io.OutputStream
+import java.nio.file.Files
 import kotlin.reflect.KClass
 
 /**
- * Helpful for testing code generators in unit tests end to end.
+ * A simple API over a [KotlinCompilation] with extra configuration support for Anvil.
  */
 @ExperimentalAnvilApi
-public fun compileAnvil(
-  vararg sources: String,
-  enableDaggerAnnotationProcessor: Boolean = false,
-  generateDaggerFactories: Boolean = false,
-  generateDaggerFactoriesOnly: Boolean = false,
-  disableComponentMerging: Boolean = false,
-  allWarningsAsErrors: Boolean = true,
-  useIR: Boolean = true,
-  messageOutputStream: OutputStream = System.out,
-  workingDir: File? = null,
-  block: Result.() -> Unit = { }
-): Result {
-  return KotlinCompilation()
-    .apply {
+public class AnvilCompilation internal constructor(
+  val kotlinCompilation: KotlinCompilation
+) {
+
+  private var isCompiled = false
+  private var anvilConfigured = false
+
+  /** Configures this the Anvil behavior of this compilation. */
+  @ExperimentalAnvilApi
+  public fun configureAnvil(
+    enableDaggerAnnotationProcessor: Boolean = false,
+    generateDaggerFactories: Boolean = false,
+    generateDaggerFactoriesOnly: Boolean = false,
+    disableComponentMerging: Boolean = false,
+  ) = apply {
+    checkNotCompiled()
+    anvilConfigured = true
+    kotlinCompilation.apply {
       compilerPlugins = listOf(AnvilComponentRegistrar())
-      this.useIR = useIR
-      useOldBackend = !useIR
-      inheritClassPath = true
-      jvmTarget = JvmTarget.JVM_1_8.description
-      verbose = false
-      this.allWarningsAsErrors = allWarningsAsErrors
-      this.messageOutputStream = messageOutputStream
-
-      if (workingDir != null) {
-        this.workingDir = workingDir
-      }
-
       if (enableDaggerAnnotationProcessor) {
         annotationProcessors = listOf(ComponentProcessor())
       }
@@ -80,25 +74,134 @@ public fun compileAnvil(
           optionValue = disableComponentMerging.toString()
         )
       )
+    }
+  }
 
-      this.sources = sources.mapIndexed { index, content ->
-        val packageDir = content.lines()
-          .firstOrNull { it.trim().startsWith("package ") }
-          ?.substringAfter("package ")
-          ?.replace('.', '/')
-          ?.let { "$it/" }
-          ?: ""
+  /**
+   * Helpful shim to configure both [KotlinCompilation.useIR] and [KotlinCompilation.useOldBackend]
+   * accordingly.
+   */
+  public fun useIR(useIR: Boolean) = apply {
+    checkNotCompiled()
+    kotlinCompilation.useIR = useIR
+    kotlinCompilation.useOldBackend = !useIR
+  }
 
-        val name =
-          "${this.workingDir.absolutePath}/sources/src/main/java/$packageDir/Source$index.kt"
-        with(File(name).parentFile) {
-          check(exists() || mkdirs())
+  /** Adds the given sources to this compilation with their packages and names inferred. */
+  public fun addSources(@Language("kotlin") vararg sources: String) = apply {
+    checkNotCompiled()
+    kotlinCompilation.sources += sources.mapIndexed { index, content ->
+      val packageDir = content.lines()
+        .firstOrNull { it.trim().startsWith("package ") }
+        ?.substringAfter("package ")
+        ?.replace('.', '/')
+        ?.let { "$it/" }
+        ?: ""
+
+      val name = "${kotlinCompilation.workingDir.absolutePath}/sources/src/main/java/" +
+        "$packageDir/Source$index.kt"
+
+      Files.createDirectories(File(name).parentFile.toPath())
+
+      SourceFile.kotlin(name, contents = content, trimIndent = true)
+    }
+  }
+
+  /**
+   * Returns an Anvil-generated file with the given [packageName] and [fileName] from its expected
+   * path.
+   */
+  public fun generatedAnvilFile(packageName: String, fileName: String): File {
+    check(isCompiled) {
+      "No compilation run yet! Call compile() first."
+    }
+    return File(
+      kotlinCompilation.workingDir,
+      "build/anvil/${packageName.replace('.', File.separatorChar)}/$fileName.kt"
+    )
+      .apply {
+        check(exists()) {
+          "Generated file not found!"
         }
+      }
+  }
 
-        SourceFile.kotlin(name, contents = content, trimIndent = true)
+  private fun checkNotCompiled() {
+    check(!isCompiled) {
+      "Already compiled! Create a new compilation if you want to compile again."
+    }
+  }
+
+  /**
+   * Compiles the underlying [KotlinCompilation]. Note that if [configureAnvil] has not been called
+   * prior to this, it will be configured with default behavior.
+   */
+  public fun compile(
+    @Language("kotlin") vararg sources: String,
+    block: Result.() -> Unit = {}
+  ): Result {
+    checkNotCompiled()
+    if (!anvilConfigured) {
+      // Configure with default behaviors
+      configureAnvil()
+    }
+    addSources(*sources)
+    isCompiled = true
+    return kotlinCompilation.compile()
+      .apply(block)
+  }
+
+  companion object {
+    public operator fun invoke(): AnvilCompilation {
+      return AnvilCompilation(
+        KotlinCompilation().apply {
+          // Sensible default behaviors
+          inheritClassPath = true
+          jvmTarget = JvmTarget.JVM_1_8.description
+          verbose = false
+        }
+      )
+    }
+  }
+}
+
+/**
+ * Helpful for testing code generators in unit tests end to end.
+ *
+ * This covers common cases, but is built upon reusable logic in [AnvilCompilation] and
+ * [configureForAnvil]. Consider using those APIs if more advanced configuration is needed.
+ */
+@ExperimentalAnvilApi
+public fun compileAnvil(
+  vararg sources: String,
+  enableDaggerAnnotationProcessor: Boolean = false,
+  generateDaggerFactories: Boolean = false,
+  generateDaggerFactoriesOnly: Boolean = false,
+  disableComponentMerging: Boolean = false,
+  allWarningsAsErrors: Boolean = true,
+  useIR: Boolean = true,
+  messageOutputStream: OutputStream = System.out,
+  workingDir: File? = null,
+  block: Result.() -> Unit = { }
+): Result {
+  return AnvilCompilation()
+    .configureAnvil(
+      enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+      generateDaggerFactories = generateDaggerFactories,
+      generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
+      disableComponentMerging = disableComponentMerging
+    )
+    .useIR(useIR)
+    .apply {
+      kotlinCompilation.apply {
+        this.allWarningsAsErrors = allWarningsAsErrors
+        this.messageOutputStream = messageOutputStream
+        if (workingDir != null) {
+          this.workingDir = workingDir
+        }
       }
     }
-    .compile()
+    .compile(*sources)
     .also(block)
 }
 
