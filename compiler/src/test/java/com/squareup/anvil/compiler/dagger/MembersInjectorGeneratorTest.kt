@@ -500,6 +500,11 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       """
       package com.squareup.test
       
+      const val CONST_SAME_PACKAGE = "samePackageConst"
+      """,
+      """
+      package com.squareup.test
+      
       import com.squareup.test2.CONST_IMPORTED
       import com.squareup.test2.Constants
       import com.squareup.test2.Constants.CONST_NESTED_BUT_IMPORTED_DIRECTLY
@@ -527,6 +532,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         @Named(Constants.CONST_NESTED) @Inject lateinit var string6: String
         @Named(CONST_NESTED_BUT_IMPORTED_DIRECTLY) @Inject lateinit var string7: String
         @Named(NestedClassWithCompanion.CONST_NESTED_IN_COMPANION) @Inject lateinit var string8: String
+        @Named(CONST_SAME_PACKAGE) @Inject lateinit var string9: String
         
         companion object {
           const val NESTED_CONSTANT = "def2"
@@ -586,6 +592,12 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         .single { it.annotationClass.simpleName == "IntQualifier" }
 
       assertThat(intAnnotation.getValue<Int>()).isEqualTo(3)
+
+      val string9 = membersInjector.staticInjectMethod("string9")
+        .annotations
+        .single { it.annotationClass.simpleName == "Named" }
+
+      assertThat(string9.getValue<String>()).isEqualTo("samePackageConst")
     }
   }
 
