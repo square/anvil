@@ -422,7 +422,7 @@ private fun KtExpression.codeBlock(module: ModuleDescriptor): CodeBlock {
         }
       }
       if (fqName != null) {
-        if (this is KtNameReferenceExpression) {
+        if (module.canResolveFqName(fqName)) {
           CodeBlock.of("%T", fqName.asClassName(module))
         } else {
           CodeBlock.of("%M", fqName.asMemberName(module))
