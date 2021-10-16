@@ -422,7 +422,7 @@ private fun KtExpression.codeBlock(module: ModuleDescriptor): CodeBlock {
         }
       }
       if (fqName != null) {
-        if (this is KtNameReferenceExpression) {
+        if (module.canResolveFqName(fqName)) {
           CodeBlock.of("%T", fqName.asClassName(module))
         } else {
           CodeBlock.of("%M", fqName.asMemberName(module))
@@ -435,13 +435,10 @@ private fun KtExpression.codeBlock(module: ModuleDescriptor): CodeBlock {
           ?.let { memberRef ->
             CodeBlock.of("%M", memberRef)
           }
-          // Everything else isn't supported.
-          ?: run {
-            throw AnvilCompilationException(
-              "Couldn't resolve FqName $ref for Psi element: $text",
-              element = this
-            )
-          }
+          // If we reach here, it's a top-level constant defined in the same package but a different
+          // file. In this case, we can just do the same in our generated code because we're in the
+          // same package and can play by the same rules.
+          ?: CodeBlock.of("%L", ref)
       }
     }
     is KtCollectionLiteralExpression -> CodeBlock.of(

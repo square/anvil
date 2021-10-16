@@ -486,12 +486,13 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       
       object Constants {
         const val CONST_NESTED = "yay2"
+        const val CONST_NESTED_BUT_IMPORTED_DIRECTLY = "yay3"
       }
       
       class ClassWithCompanion {
         class NestedClassWithCompanion {
           companion object CustomCompanionName {
-            const val CONST_NESTED_IN_COMPANION = "yay2"
+            const val CONST_NESTED_IN_COMPANION = "yay4"
           }
         }
       }
@@ -499,8 +500,14 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       """
       package com.squareup.test
       
+      const val CONST_SAME_PACKAGE = "samePackageConst"
+      """,
+      """
+      package com.squareup.test
+      
       import com.squareup.test2.CONST_IMPORTED
       import com.squareup.test2.Constants
+      import com.squareup.test2.Constants.CONST_NESTED_BUT_IMPORTED_DIRECTLY
       import com.squareup.test2.ClassWithCompanion.NestedClassWithCompanion
       import kotlin.LazyThreadSafetyMode.NONE
       import kotlin.LazyThreadSafetyMode.SYNCHRONIZED 
@@ -523,7 +530,9 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         @Named(NESTED_CONSTANT) @Inject lateinit var string4: String
         @Named(CONST_IMPORTED) @Inject lateinit var string5: String
         @Named(Constants.CONST_NESTED) @Inject lateinit var string6: String
-        @Named(NestedClassWithCompanion.CONST_NESTED_IN_COMPANION) @Inject lateinit var string7: String
+        @Named(CONST_NESTED_BUT_IMPORTED_DIRECTLY) @Inject lateinit var string7: String
+        @Named(NestedClassWithCompanion.CONST_NESTED_IN_COMPANION) @Inject lateinit var string8: String
+        @Named(CONST_SAME_PACKAGE) @Inject lateinit var string9: String
         
         companion object {
           const val NESTED_CONSTANT = "def2"
@@ -583,6 +592,12 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         .single { it.annotationClass.simpleName == "IntQualifier" }
 
       assertThat(intAnnotation.getValue<Int>()).isEqualTo(3)
+
+      val string9 = membersInjector.staticInjectMethod("string9")
+        .annotations
+        .single { it.annotationClass.simpleName == "Named" }
+
+      assertThat(string9.getValue<String>()).isEqualTo("samePackageConst")
     }
   }
 
