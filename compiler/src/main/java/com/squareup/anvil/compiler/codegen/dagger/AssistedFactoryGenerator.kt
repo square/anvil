@@ -10,15 +10,26 @@ import com.squareup.anvil.compiler.assistedFactoryFqName
 import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
+import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.AssistedFactoryFunction.Companion.toAssistedFactoryFunction
 import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.AssistedParameterKey.Companion.toKeysList
+import com.squareup.anvil.compiler.codegen.injectConstructor
+import com.squareup.anvil.compiler.internal.allPsiSuperTypes
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.asTypeName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classDescriptorForType
+import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
+import com.squareup.anvil.compiler.internal.findAnnotation
+import com.squareup.anvil.compiler.internal.findAnnotationArgument
+import com.squareup.anvil.compiler.internal.fqNameOrNull
+import com.squareup.anvil.compiler.internal.functions
 import com.squareup.anvil.compiler.internal.generateClassName
+import com.squareup.anvil.compiler.internal.getKtClassOrObjectOrNull
 import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.anvil.compiler.internal.requireClassDescriptor
+import com.squareup.anvil.compiler.internal.isInterface
+import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.typeVariableNames
 import com.squareup.kotlinpoet.ClassName
@@ -39,18 +50,23 @@ import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
-import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.psi.KtStringTemplateEntry
+import org.jetbrains.kotlin.psi.KtStringTemplateExpression
+import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
+import org.jetbrains.kotlin.psi.psiUtil.isProtected
+import org.jetbrains.kotlin.psi.psiUtil.isPublic
 import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter.Companion.FUNCTIONS
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import java.io.File
 import javax.inject.Provider
+import kotlin.LazyThreadSafetyMode.NONE
 
 @AutoService(CodeGenerator::class)
 internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
@@ -75,63 +91,41 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     module: ModuleDescriptor,
     clazz: KtClassOrObject
   ): GeneratedFile {
-    // It's necessary to resolve the class in order to check super types.
-    val classDescriptor = clazz.requireClassDescriptor(module)
-    val functions = classDescriptor.unsubstitutedMemberScope
-      .getContributedDescriptors(FUNCTIONS)
-      .asSequence()
-      .filterIsInstance<FunctionDescriptor>()
-      .filter { it.modality == ABSTRACT }
-      .filter { it.visibility == PUBLIC || it.visibility == PROTECTED }
-      .toList()
 
-    // Check for exact number of functions.
-    val function = when (functions.size) {
-      0 -> throw AnvilCompilationException(
-        "The @AssistedFactory-annotated type is missing an abstract, non-default method " +
-          "whose return type matches the assisted injection type.",
-        element = clazz
-      )
-      1 -> functions[0]
-      else -> throw AnvilCompilationException(
-        "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
-          "method but found multiple.",
-        element = clazz
-      )
-    }
+    val packageName = clazz.containingKtFile.packageFqName.safePackageString()
 
-    val returnType = function.returnType?.classDescriptorForType()
-      ?: throw AnvilCompilationException(
-        "Couldn't get return type for function.",
-        element = function.findPsi()
-      )
+    val delegateFactoryName = "delegateFactory"
+
+    val function = clazz.requireSingleAbstractFunction(module)
+
+    val returnTypeFqName = function.returnTypeLazy.value
 
     // The return type of the function must have an @AssistedInject constructor.
-    val constructor = returnType.constructors
-      .singleOrNull { it.annotations.findAnnotation(assistedInjectFqName) != null }
+    val constructor = module.getKtClassOrObjectOrNull(returnTypeFqName)
+      ?.injectConstructor(assistedInjectFqName, module)
       ?: throw AnvilCompilationException(
-        "Invalid return type: ${returnType.fqNameSafe}. An assisted factory's abstract " +
+        "Invalid return type: $returnTypeFqName. An assisted factory's abstract " +
           "method must return a type with an @AssistedInject-annotated constructor.",
         element = clazz
       )
 
-    val functionParameters = function.valueParameters
+    val functionParameters = function.parameterKeys.value
     val assistedParameters = constructor.valueParameters.filter {
-      it.annotations.findAnnotation(assistedFqName) != null
+      it.findAnnotation(assistedFqName, module) != null
     }
 
     // Check that the parameters of the function match the @Assisted parameters of the constructor.
     if (assistedParameters.size != functionParameters.size) {
       throw AnvilCompilationException(
         "The parameters in the factory method must match the @Assisted parameters in " +
-          "${returnType.fqNameSafe}.",
+          "$returnTypeFqName.",
         element = clazz
       )
     }
 
     // Compute for each parameter its key.
-    val functionParameterKeys = functionParameters.toKeysList()
-    val assistedParameterKeys = assistedParameters.toKeysList()
+    val functionParameterKeys = function.parameterKeys.value
+    val assistedParameterKeys = assistedParameters.toKeysList(module)
 
     // The factory function may not have two or more parameters with the same key.
     val duplicateKeys = functionParameterKeys
@@ -150,7 +144,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
           if (key.identifier.isNotEmpty()) {
             append("@Assisted(\"${key.identifier}\") ")
           }
-          append(key.kotlinType.classDescriptorForType().fqNameSafe)
+          append(key.typeName)
         },
         element = clazz
       )
@@ -167,14 +161,10 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     if (notMatchingKeys.isNotEmpty()) {
       throw AnvilCompilationException(
         "The parameters in the factory method must match the @Assisted parameters in " +
-          "${returnType.fqNameSafe}.",
+          "$returnTypeFqName.",
         element = clazz
       )
     }
-
-    val packageName = clazz.containingKtFile.packageFqName.safePackageString()
-    val className = "${clazz.generateClassName()}_Impl"
-    val implClass = ClassName(packageName, className)
 
     val typeParameters = clazz.typeVariableNames(module)
 
@@ -182,44 +172,53 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
       return if (typeParameters.isEmpty()) this else parameterizedBy(typeParameters)
     }
 
-    val generatedFactory = FqName(returnType.fqNameSafe.asString() + "_Factory")
-      .asClassName(module).parameterized()
+    val generatedFactoryTypeName = FqName(returnTypeFqName.asString() + "_Factory")
+      .asClassName(module)
+      .parameterized()
 
-    val classType = clazz.asClassName().parameterized()
-    val delegateFactoryName = "delegateFactory"
+    val baseFactoryTypeName = clazz.asClassName().parameterized()
 
-    val content = FileSpec.buildFile(packageName, className) {
-      TypeSpec.classBuilder(implClass)
+    val returnTypeName = returnTypeFqName.asClassName(module).parameterized()
+
+    val implClassName = ClassName(packageName, "${clazz.generateClassName()}_Impl")
+    val implParameterizedTypeName = implClassName.parameterized()
+    val functionName = function.name
+    val baseFactoryIsInterface = clazz.isInterface()
+    val functionParameterPairs = function.parameterPairs
+
+    val content = FileSpec.buildFile(packageName, implClassName.simpleName) {
+      TypeSpec.classBuilder(implClassName)
         .apply {
           typeParameters.forEach { addTypeVariable(it) }
 
-          if (DescriptorUtils.isInterface(classDescriptor)) {
-            addSuperinterface(classType)
+          if (baseFactoryIsInterface) {
+            addSuperinterface(baseFactoryTypeName)
           } else {
-            superclass(classType)
+            superclass(baseFactoryTypeName)
           }
 
           primaryConstructor(
             FunSpec.constructorBuilder()
-              .addParameter(delegateFactoryName, generatedFactory)
+              .addParameter(delegateFactoryName, generatedFactoryTypeName)
               .build()
           )
 
           addProperty(
-            PropertySpec.builder(delegateFactoryName, generatedFactory)
+            PropertySpec.builder(delegateFactoryName, generatedFactoryTypeName)
               .initializer(delegateFactoryName)
               .addModifiers(PRIVATE)
               .build()
           )
         }
         .addFunction(
-          FunSpec.builder(function.name.asString())
+          FunSpec.builder(functionName)
             .addModifiers(OVERRIDE)
-            .returns(returnType.asClassName().parameterized())
+            .returns(returnTypeName)
             .apply {
-              functionParameters.forEach { parameter ->
-                addParameter(parameter.name.asString(), parameter.type.asTypeName())
-              }
+              functionParameterPairs.value
+                .forEach { parameter ->
+                  addParameter(parameter.first, parameter.second)
+                }
 
               // We call the @AssistedInject constructor. Therefore, find for each assisted
               // parameter the function parameter where the keys match.
@@ -232,7 +231,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
                   "Unexpected assistedIndex."
                 }
 
-                functionParameters[functionIndex].name.asString()
+                functionParameterPairs.value[functionIndex].first
               }
 
               addStatement("return $delegateFactoryName.get($argumentList)")
@@ -245,12 +244,12 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
               FunSpec.builder("create")
                 .jvmStatic()
                 .addTypeVariables(typeParameters)
-                .addParameter(delegateFactoryName, generatedFactory)
-                .returns(Provider::class.asClassName().parameterizedBy(classType))
+                .addParameter(delegateFactoryName, generatedFactoryTypeName)
+                .returns(Provider::class.asClassName().parameterizedBy(baseFactoryTypeName))
                 .addStatement(
                   "return %T.create(%T($delegateFactoryName))",
                   InstanceFactory::class,
-                  implClass.parameterized()
+                  implParameterizedTypeName
                 )
                 .build()
             )
@@ -263,7 +262,140 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
         .let { addType(it) }
     }
 
-    return createGeneratedFile(codeGenDir, packageName, className, content)
+    return createGeneratedFile(codeGenDir, packageName, implClassName.simpleName, content)
+  }
+
+  /**
+   * Represents a parsed function in an `@AssistedInject.Factory`-annotated interface.
+   */
+  private data class AssistedFactoryFunction(
+    val name: String,
+    val returnTypeLazy: Lazy<FqName>,
+    val parameterKeys: Lazy<List<AssistedParameterKey>>,
+    /**
+     * Pair of parameter name to parameter type
+     */
+    val parameterPairs: Lazy<List<Pair<String, TypeName>>>
+  ) {
+    companion object {
+      fun FunctionDescriptor.toAssistedFactoryFunction(
+        factoryClass: KtClassOrObject
+      ): AssistedFactoryFunction {
+        val returnTypeLazy = lazy(NONE) {
+          returnType
+            ?.classDescriptorForType()
+            ?.fqNameSafe
+            ?: throw AnvilCompilationException(
+              "Invalid return type: ${factoryClass.requireFqName()}. An assisted factory's " +
+                "abstract method must return a type with an @AssistedInject-annotated constructor.",
+              element = factoryClass
+            )
+        }
+        val parameterPairs = lazy(NONE) {
+          valueParameters.map { param ->
+            param.name.asString() to param.type.asTypeName()
+          }
+        }
+        return AssistedFactoryFunction(
+          name = name.asString(),
+          returnTypeLazy = returnTypeLazy,
+          parameterKeys = lazy(NONE) { valueParameters.toKeysList() },
+          parameterPairs = parameterPairs
+        )
+      }
+
+      fun KtNamedFunction.toAssistedFactoryFunction(
+        module: ModuleDescriptor
+      ): AssistedFactoryFunction {
+        val returnTypeLazy = lazy(NONE) {
+          typeReference
+            ?.fqNameOrNull(module)
+            ?: throw AnvilCompilationException(
+              "Invalid return type: ${requireFqName()}. An assisted factory's abstract " +
+                "method must return a type with an @AssistedInject-annotated constructor.",
+              element = this
+            )
+        }
+        val parameterPairs = lazy(NONE) {
+          valueParameters.map { param ->
+
+            val typeName = param.typeReference
+              ?.requireTypeName(module)
+              ?: throw AnvilCompilationException(
+                "Couldn't get type for parameter.",
+                element = param
+              )
+
+            param.nameAsSafeName.asString() to typeName
+          }
+        }
+        return AssistedFactoryFunction(
+          name = name!!,
+          returnTypeLazy = returnTypeLazy,
+          parameterKeys = lazy(NONE) { valueParameters.toKeysList(module) },
+          parameterPairs = parameterPairs
+        )
+      }
+    }
+  }
+
+  private fun KtClassOrObject.requireSingleAbstractFunction(
+    module: ModuleDescriptor
+  ): AssistedFactoryFunction {
+
+    val psiSuperTypes = allPsiSuperTypes(module).toList()
+
+    // Go as far as we can with Psi, then at the end, get the FqName of the last Psi element.
+    // In case there's a deep hierarchy, we need to try to resolve super types using descriptors
+    val superFqName = psiSuperTypes.lastOrNull()
+      ?.fqName
+      ?: requireFqName()
+
+    // Try to resolve super-types using descriptors, but don't use "require" in case the code is
+    // generated.  It's important to try resolving the most "super" FqName that we know about,
+    // because the annotated class could be generated.
+    val functionsFromDescriptor = superFqName.classDescriptorOrNull(module)
+      ?.unsubstitutedMemberScope
+      ?.getContributedDescriptors(DescriptorKindFilter.FUNCTIONS)
+      ?.asSequence()
+      ?.filterIsInstance<FunctionDescriptor>()
+      ?.filter { it.modality == ABSTRACT }
+      ?.filter { it.visibility == PUBLIC || it.visibility == PROTECTED }
+      ?.map { it.toAssistedFactoryFunction(this) }
+      ?.toList()
+      .orEmpty()
+
+    // `clazz` must be first in the list because of `distinctBy { ... }`, which keeps the first
+    // matched element.  If the function's inherited, it can be overridden as well.  Prioritizing
+    // the version from the file we're parsing ensures the correct variance of the referenced types.
+    val functions = listOf(this)
+      .plus(psiSuperTypes)
+      .flatMap { type ->
+
+        type.takeIf { it.isInterface() }
+          ?.functions(false)
+          ?: type.functions(false)
+            .filter { it.hasModifier(KtTokens.ABSTRACT_KEYWORD) }
+            .filter { it.isPublic || it.isProtected() }
+      }
+      .map { it.toAssistedFactoryFunction(module) }
+      .plus(functionsFromDescriptor)
+      .distinctBy { it.name }
+
+    // Check for exact number of functions.
+    return when (functions.size) {
+      0 -> throw AnvilCompilationException(
+        "The @AssistedFactory-annotated type is missing an abstract, non-default method " +
+          "whose return type matches the assisted injection type.",
+        element = this
+      )
+      1 -> functions[0]
+      else -> throw AnvilCompilationException(
+        "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
+          "method but found multiple.",
+        element = this
+      )
+    }
   }
 
   // Dagger matches parameters of the factory function with the parameters of the @AssistedInject
@@ -271,26 +403,50 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
   // The key is a combination of the type and identifier (value parameter) of the
   // @Assisted("...") annotation. For each parameter the key must be unique.
   private data class AssistedParameterKey(
-    val kotlinType: KotlinType,
+    val typeName: TypeName,
     val identifier: String
   ) {
 
-    // That's how we compute the key value. It's similar to a hash function, but with the only
-    // condition that the kotlinType cannot be a type parameter. For type parameters
-    // (class Abc<TypeParameter>) we use the string representation as key, which must be unique.
-    val key: Int = identifier.hashCode() * 31 +
-      if (kotlinType.isTypeParameter()) kotlinType.toString().hashCode() else kotlinType.hashCode()
+    // Key value is similar to a hash function.  There used to be a special case for KotlinTypes
+    // which were parameterized, but this is now handled by KotlinPoet's TypeName.
+    // `MyType<String>` and `MyType<Int>` now generate different hashCodes.
+    val key: Int = identifier.hashCode() * 31 + typeName.hashCode()
 
     companion object {
       fun Collection<ValueParameterDescriptor>.toKeysList(): List<AssistedParameterKey> =
         map { descriptor ->
+
+          val type = descriptor.type.asTypeName()
+
           AssistedParameterKey(
-            kotlinType = descriptor.type,
+            typeName = type,
             identifier = descriptor.annotations.findAnnotation(assistedFqName)
               ?.argumentValue("value")
               ?.value
               ?.toString()
               ?: ""
+          )
+        }
+
+      @JvmName("ughGenerics")
+      fun Collection<KtParameter>.toKeysList(module: ModuleDescriptor): List<AssistedParameterKey> =
+        map { parameter ->
+
+          val typeName = parameter.typeReference?.requireTypeName(module)
+            ?: throw AnvilCompilationException(
+              "Couldn't get type for parameter.",
+              element = parameter
+            )
+
+          val identifier = parameter.findAnnotation(assistedFqName, module)
+            ?.findAnnotationArgument<KtStringTemplateExpression>("value", 0)
+            ?.getChildOfType<KtStringTemplateEntry>()
+            ?.text
+            ?: ""
+
+          AssistedParameterKey(
+            typeName = typeName,
+            identifier = identifier
           )
         }
     }

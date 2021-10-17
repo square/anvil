@@ -196,8 +196,11 @@ public inline fun <reified T> KtAnnotationEntry.findAnnotationArgument(
  *
  * If you have a class hierarchy which extends into dependencies, and you need to reference those
  * super classes, you'll need to take the last class in this list and resolve its `ClassDescriptor`,
- * then resolve its super-classes that way. Note that this will only work if the last class in the
- * list is not generated, so that it's parsed and part of the plain ModuleDescriptor.
+ * then resolve its super-classes that way. Note that this will only work if the last class
+ * in the list is not generated, so that it's parsed and part of the plain ModuleDescriptor.
+ *
+ * **Note** This function only returns classes. See [allPsiSuperTypes] for a version which also
+ * returns interfaces.
  */
 @ExperimentalAnvilApi
 public fun KtClassOrObject.allPsiSuperClasses(
@@ -214,6 +217,37 @@ public fun KtClassOrObject.allPsiSuperClasses(
     ?: return emptyList()
 
   return listOf(superOrNull) + superOrNull.allPsiSuperClasses(module)
+}
+
+/**
+ * This will return all super types which are parsed as PSI, which means anything defined in this
+ * module. This will include generated code, assuming it has already been generated. It **will not**
+ * include any classes from other modules or external dependencies.
+ *
+ * The first elements in the returned list represents the direct superclass to the receiver. The
+ * last elements represent the types which are furthest up-stream.
+ *
+ * If you have a class hierarchy which extends into dependencies, and you need to reference those
+ * super classes, you'll need to take the last class in this list and resolve its `ClassDescriptor`,
+ * then resolve its super-classes that way. Note that this will only work if the last class
+ * in the list is not generated, so that it's parsed and part of the plain ModuleDescriptor.
+ *
+ * **Note** This function returns all classes and interfaces. See [allPsiSuperClasses] for a version
+ * which only returns classes.
+ */
+@ExperimentalAnvilApi
+public fun KtClassOrObject.allPsiSuperTypes(
+  module: ModuleDescriptor
+): Sequence<KtClassOrObject> {
+
+  if (this is KtEnumEntry) return emptySequence()
+
+  val supers = superTypeListEntries
+    .asSequence()
+    .mapNotNull { it.typeReference?.fqNameOrNull(module) }
+    .mapNotNull { module.getKtClassOrObjectOrNull(it) }
+
+  return supers + supers.flatMap { it.allPsiSuperTypes(module) }
 }
 
 @ExperimentalAnvilApi
@@ -551,8 +585,13 @@ public fun KtClassOrObject.classDescriptorOrNull(module: ModuleDescriptor): Clas
 
 @ExperimentalAnvilApi
 public fun FqName.requireClassDescriptor(module: ModuleDescriptor): ClassDescriptor {
-  return module.resolveClassByFqName(this, FROM_BACKEND)
+  return classDescriptorOrNull(module)
     ?: throw AnvilCompilationException("Couldn't resolve class for $this.")
+}
+
+@ExperimentalAnvilApi
+public fun FqName.classDescriptorOrNull(module: ModuleDescriptor): ClassDescriptor? {
+  return module.resolveClassByFqName(this, FROM_BACKEND)
 }
 
 @ExperimentalAnvilApi

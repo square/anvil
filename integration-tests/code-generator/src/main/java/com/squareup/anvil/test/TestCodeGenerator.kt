@@ -14,6 +14,12 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
+/**
+ * This generator creates code which can go in a source set which uses Anvil's factory generation.
+ *
+ * This is necessary because files with @Inject or @AssistedInject will generate duplicate classes
+ * if they trigger both Anvil and Dagger generation.
+ */
 @Suppress("unused")
 @AutoService(CodeGenerator::class)
 class TestCodeGenerator : CodeGenerator {
@@ -60,16 +66,6 @@ class TestCodeGenerator : CodeGenerator {
           interface ContributedModule 
         """.trimIndent()
 
-        @Language("kotlin")
-        val mergedComponent = """
-          package $generatedPackage
-          
-          import com.squareup.anvil.annotations.MergeComponent
-
-          @MergeComponent(Unit::class)
-          interface MergedComponent 
-        """.trimIndent()
-
         // This snippet is helpful for testing #310, which is still failing.
         @Language("kotlin")
         val contributedBinding = """
@@ -93,10 +89,9 @@ class TestCodeGenerator : CodeGenerator {
           class InjectClass @Inject constructor() 
         """.trimIndent()
 
-        // This snippet is helpful for testing #326, which is still failing.
+        // This snippet is helpful for testing #326.
         @Language("kotlin")
         val assistedInject = """
-          /*
           package $generatedPackage
           
           import dagger.assisted.Assisted
@@ -104,7 +99,6 @@ class TestCodeGenerator : CodeGenerator {
           import dagger.assisted.AssistedInject
 
           data class AssistedService @AssistedInject constructor(
-            val int: Int,
             @Assisted val string: String
           )
 
@@ -116,7 +110,6 @@ class TestCodeGenerator : CodeGenerator {
           interface SampleAssistedFactory : ParentAssistedFactory {
             override fun create(string: String): AssistedService
           }
-           */
         """.trimIndent()
 
         sequenceOf(
@@ -137,12 +130,6 @@ class TestCodeGenerator : CodeGenerator {
             packageName = generatedPackage,
             fileName = "ContributedModule",
             content = contributedModule
-          ),
-          createGeneratedFile(
-            codeGenDir = codeGenDir,
-            packageName = generatedPackage,
-            fileName = "mergedComponent",
-            content = mergedComponent
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
