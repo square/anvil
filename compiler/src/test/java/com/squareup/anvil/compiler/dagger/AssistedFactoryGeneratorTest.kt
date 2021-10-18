@@ -1438,6 +1438,70 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
+  @Test fun `assisted covariant parameters are supported`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      import dagger.Module
+      import dagger.Provides
+      import java.lang.Class
+      import javax.inject.Provider
+      
+      data class AssistedService @AssistedInject constructor(
+        @Assisted private val list: List<Class<out String>>,
+        private val int: Int
+      ) {
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+    
+          other as AssistedService
+    
+          if (list.size != other.list.size) return false
+          if (int != other.int) return false
+    
+          return true
+        }
+    
+        override fun hashCode(): Int {
+          var result = int
+          result = 31 * result + list.hashCode()
+          return result
+        }
+      }
+      
+      @AssistedFactory
+      interface AssistedServiceFactory {
+        fun create(list: List<Class<out String>>): AssistedService
+      }
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass()
+        .createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, listOf<Class<out String>>())
+
+      assertThat(assistedServiceInstance)
+        .isEqualTo(assistedService.createInstance(listOf<Class<out String>>(), 5))
+    }
+  }
+
   @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
     vararg sources: String,

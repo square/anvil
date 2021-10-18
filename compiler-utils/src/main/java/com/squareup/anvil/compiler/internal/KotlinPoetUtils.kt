@@ -56,6 +56,9 @@ import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.Variance.INVARIANT
+import org.jetbrains.kotlin.types.Variance.IN_VARIANCE
+import org.jetbrains.kotlin.types.Variance.OUT_VARIANCE
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.io.ByteArrayOutputStream
@@ -255,7 +258,12 @@ public fun KotlinType.asTypeNameOrNull(
     if (typeProjection.isStarProjection) {
       STAR
     } else {
-      typeProjection.type.asTypeName()
+      val typeName = typeProjection.type.asTypeName()
+      when (typeProjection.projectionKind) {
+        INVARIANT -> typeName
+        OUT_VARIANCE -> WildcardTypeName.producerOf(typeName)
+        IN_VARIANCE -> WildcardTypeName.consumerOf(typeName)
+      }
     }
   }
 
