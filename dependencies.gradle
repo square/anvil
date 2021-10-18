@@ -25,7 +25,7 @@ ext {
       anvil_plugin: "com.squareup.anvil:gradle-plugin:${findProperty('VERSION_NAME')}",
       maven_publishing_plugin: "com.vanniktech:gradle-maven-publish-plugin:0.14.2",
       gradle_publishing_plugin: "com.gradle.publish:plugin-publish-plugin:0.15.0",
-      ktlint_plugin: "org.jlleitschuh.gradle:ktlint-gradle:10.0.0",
+      ktlint_plugin: "org.jlleitschuh.gradle:ktlint-gradle:10.2.0",
 
       androidx: [
           appcompat: "androidx.appcompat:appcompat:1.1.0",
