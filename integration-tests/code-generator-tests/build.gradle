@@ -8,10 +8,11 @@ anvil {
 }
 
 dependencies {
-  anvilTest project(':integration-tests:code-generator')
+  anvil project(':integration-tests:code-generator')
+
+  implementation deps.dagger2.dagger
 
   testImplementation testFixtures(project(":compiler-utils"))
-  testImplementation deps.dagger2.dagger
   testImplementation deps.junit
   testImplementation deps.truth
 

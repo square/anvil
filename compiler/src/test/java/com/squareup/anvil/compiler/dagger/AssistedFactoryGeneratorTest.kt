@@ -1204,6 +1204,35 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
+  @Test fun `two factory functions aren't supported - interface from different module`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      import javax.inject.Provider
+      
+      data class AssistedService @AssistedInject constructor(
+        val int: Int,
+        @Assisted val string: String
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory : Provider<AssistedService>{
+        fun create(string: String): AssistedService
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains(
+        "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
+          "method but found multiple"
+      )
+    }
+  }
+
   @Test fun `a factory function is required`() {
     compile(
       """
