@@ -149,6 +149,52 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
+  @Test fun `an implementation for a factory class is generated with intermixed assisted parameters`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      import javax.inject.Inject
+      
+      data class AssistedService @AssistedInject constructor(
+        @Assisted val string: String,
+        val int: Int,
+        @Assisted val charSequence: CharSequence
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory {
+        fun create(
+          string: String,
+          charSequence: CharSequence
+        ): AssistedService
+      }
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, "Hello", "World")
+
+      assertThat(assistedServiceInstance)
+        .isEqualTo(assistedService.createInstance("Hello", 5, "World"))
+    }
+  }
+
   @Test fun `the factory function is allowed to be provided by a super type`() {
     compile(
       """
