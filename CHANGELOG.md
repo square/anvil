@@ -1,5 +1,13 @@
 # Changelog
 
+## 2.3.7 (2021-10-19)
+
+* Allow configuring the `KotlinCompilation` when using the utilities to test custom code generators, see #386.
+* Support invariant and covariant type parameters properly, see #388.
+* Use Psi parsing for assisted factory generation, see #326.
+* Support assisted injection for deeply nested inner classes, see #394.
+* Use Anvil version `2.3.7-1-6-0-RC` if you want to test Kotlin `1.6.0-RC`. Until Anvil hasn't adopted Kotlin `1.6` I'll publish additional versions that are required due to compiler API incompatibilities.
+
 ## 2.3.6 (2021-10-12)
 
 * Support constant members in annotations properly, see #379.
