@@ -185,3 +185,25 @@ public fun String.capitalize(): String = replaceFirstChar(Char::uppercaseChar)
 
 @ExperimentalAnvilApi
 public fun String.decapitalize(): String = replaceFirstChar(Char::lowercaseChar)
+
+@ExperimentalAnvilApi
+public fun FqName.generateClassName(
+  separator: String = "_",
+  suffix: String = ""
+): String {
+  val classId = classIdBestGuess()
+  val packageName = classId.packageFqName
+    .takeIf { !it.isRoot }
+    ?.asString()
+    ?.let { "$it." }
+    ?: ""
+
+  return generateSequence(classId) { it.outerClassId }
+    .toList()
+    .reversed()
+    .joinToString(
+      separator = separator,
+      prefix = packageName,
+      postfix = suffix
+    ) { it.shortClassName.asString() }
+}
