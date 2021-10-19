@@ -651,6 +651,51 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
     }
   }
 
+  @Test fun `an implementation for an inner class is generated`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      class Outer {
+        data class AssistedService @AssistedInject constructor(
+          val int: Int,
+          @Assisted val string: String
+        ) {
+          @AssistedFactory
+          interface Factory {
+            fun create(string: String): AssistedService
+          }
+        }
+      }
+      """
+    ) {
+      val factoryImplClass = classLoader
+        .loadClass("com.squareup.test.Outer\$AssistedService\$Factory").implClass()
+      val assistedService = classLoader
+        .loadClass("com.squareup.test.Outer\$AssistedService")
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .single { it.name == "create" }
+        .invoke(factoryImplInstance, "Hello")
+
+      assertThat(assistedServiceInstance).isEqualTo(assistedService.createInstance(5, "Hello"))
+    }
+  }
+
   @Test fun `an implementation for a factory class with nullable parameters is generated`() {
     /*
 package com.squareup.test;

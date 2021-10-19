@@ -111,7 +111,10 @@ public class AnvilCompilation internal constructor(
    * Returns an Anvil-generated file with the given [packageName] and [fileName] from its expected
    * path.
    */
-  public fun generatedAnvilFile(packageName: String, fileName: String): File {
+  public fun generatedAnvilFile(
+    packageName: String,
+    fileName: String
+  ): File {
     check(isCompiled) {
       "No compilation run yet! Call compile() first."
     }
@@ -211,34 +214,33 @@ public fun Class<*>.moduleFactoryClass(
   companion: Boolean = false
 ): Class<*> {
   val companionString = if (companion) "_Companion" else ""
-  val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
-
   return classLoader.loadClass(
-    "${packageName()}$enclosingClassString$simpleName$companionString" +
-      "_${providerMethodName.capitalize()}Factory"
+    "${generatedClassesString()}${companionString}_${providerMethodName.capitalize()}Factory"
   )
 }
 
 @ExperimentalAnvilApi
 public fun Class<*>.factoryClass(): Class<*> {
-  val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
-
-  return classLoader.loadClass("${packageName()}$enclosingClassString${simpleName}_Factory")
+  return classLoader.loadClass("${generatedClassesString()}_Factory")
 }
 
 @ExperimentalAnvilApi
 public fun Class<*>.implClass(): Class<*> {
-  val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
-  return classLoader.loadClass("${packageName()}$enclosingClassString${simpleName}_Impl")
+  return classLoader.loadClass("${generatedClassesString()}_Impl")
 }
 
 @ExperimentalAnvilApi
 public fun Class<*>.membersInjector(): Class<*> {
-  val enclosingClassString = enclosingClass?.let { "${it.simpleName}_" } ?: ""
+  return classLoader.loadClass("${generatedClassesString()}_MembersInjector")
+}
 
-  return classLoader.loadClass(
-    "${packageName()}$enclosingClassString${simpleName}_MembersInjector"
-  )
+private fun Class<*>.generatedClassesString(): String {
+  return generateSequence(enclosingClass) { it.enclosingClass }
+    .toList()
+    .reversed()
+    .joinToString(separator = "", prefix = packageName(), postfix = simpleName) {
+      "${it.simpleName}_"
+    }
 }
 
 @ExperimentalAnvilApi
