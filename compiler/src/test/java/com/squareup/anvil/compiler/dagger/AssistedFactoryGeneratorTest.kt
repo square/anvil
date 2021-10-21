@@ -237,6 +237,82 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
+  @Test fun `the factory function may be provided by a generic super type`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService @AssistedInject constructor(
+        val int: Int,
+        @Assisted val string: String
+      )
+      
+      interface Base<R: CharSequence, T> {
+        fun create(r :R): T
+      }
+      
+      interface Mid<T> : Base<String, T>
+      
+      @AssistedFactory
+      interface AssistedServiceFactory : Mid<AssistedService>
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .last { it.name == "create" }
+        .invoke(factoryImplInstance, "Hello")
+
+      assertThat(assistedServiceInstance).isEqualTo(assistedService.createInstance(5, "Hello"))
+    }
+  }
+
+  @Test fun `the factory function may be provided by a generic super type from another module`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      import kotlin.properties.ReadOnlyProperty
+      import kotlin.reflect.KProperty
+      
+      class AssistedService @AssistedInject constructor(
+          @Assisted val thisRef: String,
+          @Assisted val property: KProperty<*>
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory : ReadOnlyProperty<String, AssistedService> 
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance()
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+    }
+  }
+
   @Test fun `the implementation function name matches the factory name`() {
     compile(
       """

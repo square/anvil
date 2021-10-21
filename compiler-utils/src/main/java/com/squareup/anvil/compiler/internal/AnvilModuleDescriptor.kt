@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.internal
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -28,6 +29,12 @@ public fun ModuleDescriptor.resolveFqNameOrNull(
 public fun ModuleDescriptor.getKtClassOrObjectOrNull(
   fqName: FqName
 ): KtClassOrObject? = asAnvilModuleDescriptor().getKtClassOrObjectOrNull(fqName)
+
+@ExperimentalAnvilApi
+public fun ModuleDescriptor.requireKtClassOrObject(
+  fqName: FqName
+): KtClassOrObject = getKtClassOrObjectOrNull(fqName)
+  ?: throw AnvilCompilationException("Couldn't resolve KtClassOrObject for ${fqName.asString()}")
 
 @ExperimentalAnvilApi
 public fun ModuleDescriptor.canResolveFqName(
