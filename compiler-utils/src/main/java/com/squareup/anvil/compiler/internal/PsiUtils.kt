@@ -157,6 +157,25 @@ public fun KtClassOrObject.scopeOrNull(
     ?.requireFqName(module)
 }
 
+@ExperimentalAnvilApi
+public fun KtClassOrObject.parentScope(
+  annotationFqName: FqName,
+  module: ModuleDescriptor
+): FqName {
+  return requireAnnotation(annotationFqName, module)
+    .findAnnotationArgument<KtClassLiteralExpression>(name = "parentScope", index = 1)
+    .let { classLiteralExpression ->
+      if (classLiteralExpression == null) {
+        throw AnvilCompilationException(
+          "Couldn't find parentScope for $annotationFqName.",
+          element = this
+        )
+      }
+
+      classLiteralExpression.requireFqName(module)
+    }
+}
+
 /**
  * Finds the argument in the given annotation. [name] refers to the parameter name
  * in the annotation and [index] to the position of the argument, e.g. if you look for the scope in

@@ -55,6 +55,21 @@ class AnvilAnnotationDetectorCheckTest {
     }
   }
 
+  @Test fun `@ContributeSubcomponent is not allowed`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Subcomponent
+      
+      @com.squareup.anvil.annotations.ContributesSubcomponent(Any::class, Unit::class)
+      class AnyClass
+      """
+    ) {
+      assertError()
+    }
+  }
+
   @Test fun `@MergeComponent is not allowed`() {
     compile(
       """

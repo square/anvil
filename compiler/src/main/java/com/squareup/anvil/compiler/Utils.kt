@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesBinding.Priority.NORMAL
 import com.squareup.anvil.annotations.ContributesMultibinding
+import com.squareup.anvil.annotations.ContributesSubcomponent
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
@@ -42,6 +43,7 @@ internal val mergeModulesFqName = MergeModules::class.fqName
 internal val contributesToFqName = ContributesTo::class.fqName
 internal val contributesBindingFqName = ContributesBinding::class.fqName
 internal val contributesMultibindingFqName = ContributesMultibinding::class.fqName
+internal val contributesSubcomponentFqName = ContributesSubcomponent::class.fqName
 internal val daggerComponentFqName = Component::class.fqName
 internal val daggerSubcomponentFqName = Subcomponent::class.fqName
 internal val daggerModuleFqName = Module::class.fqName
@@ -62,6 +64,7 @@ internal val daggerDoubleCheckFqNameString = DoubleCheck::class.java.canonicalNa
 internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "anvil.hint.merge"
 internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
 internal const val HINT_MULTIBINDING_PACKAGE_PREFIX = "anvil.hint.multibinding"
+internal const val HINT_SUBCOMPONENTS_PACKAGE_PREFIX = "anvil.hint.subcomponent"
 internal const val MODULE_PACKAGE_PREFIX = "anvil.module"
 
 internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"

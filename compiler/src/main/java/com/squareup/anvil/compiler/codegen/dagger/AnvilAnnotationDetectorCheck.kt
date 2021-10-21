@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.contributesBindingFqName
+import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.hasAnnotation
@@ -36,6 +37,7 @@ internal class AnvilAnnotationDetectorCheck : PrivateCodeGenerator() {
           it.hasAnnotation(mergeInterfacesFqName, module) ||
           it.hasAnnotation(mergeModulesFqName, module) ||
           it.hasAnnotation(contributesToFqName, module) ||
+          it.hasAnnotation(contributesSubcomponentFqName, module) ||
           it.hasAnnotation(contributesBindingFqName, module)
       }
 

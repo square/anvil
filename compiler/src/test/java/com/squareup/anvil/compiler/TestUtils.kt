@@ -97,6 +97,12 @@ internal val Class<*>.hintMultibinding: KClass<*>?
 internal val Class<*>.hintMultibindingScope: KClass<*>?
   get() = getHintScope(HINT_MULTIBINDING_PACKAGE_PREFIX)
 
+internal val Class<*>.hintSubcomponent: KClass<*>?
+  get() = getHint(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
+
+internal val Class<*>.hintSubcomponentParentScope: KClass<*>?
+  get() = getHintScope(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
+
 internal val Class<*>.anvilModule: Class<*>
   get() = classLoader.loadClass(
     "$MODULE_PACKAGE_PREFIX.${generatedClassesString(separator = "")}$ANVIL_MODULE_SUFFIX"
