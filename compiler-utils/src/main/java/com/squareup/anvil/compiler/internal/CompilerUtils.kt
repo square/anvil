@@ -21,6 +21,9 @@ import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue.Value.NormalClass
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
+import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
+import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.ErrorType
 import org.jetbrains.kotlin.types.KotlinType
@@ -62,6 +65,16 @@ public fun ClassDescriptor.annotation(
   "Couldn't find $annotationFqName with scope $scope for $fqNameSafe."
 }
 
+/**
+ * Returns only the super class (excluding [Any]) and implemented interfaces declared directly by
+ * this class. This is different from [getAllSuperClassifiers] in that the latter returns the entire
+ * hierarchy.
+ */
+public fun ClassDescriptor.directSuperClassAndInterfaces(): List<ClassDescriptor> {
+  return listOfNotNull(getSuperClassNotAny())
+    .plus(getSuperInterfaces())
+}
+
 @ExperimentalAnvilApi
 public fun ConstantValue<*>.toType(
   module: ModuleDescriptor,
@@ -76,8 +89,9 @@ public fun ConstantValue<*>.toType(
 public fun KotlinType.argumentType(): KotlinType = arguments.first().type
 
 @ExperimentalAnvilApi
-public fun KotlinType.classDescriptorForType(): ClassDescriptor =
-  DescriptorUtils.getClassDescriptorForType(this)
+public fun KotlinType.classDescriptorForType(): ClassDescriptor {
+  return DescriptorUtils.getClassDescriptorForType(this)
+}
 
 @ExperimentalAnvilApi
 public fun AnnotationDescriptor.getAnnotationValue(key: String): ConstantValue<*>? =
