@@ -117,6 +117,17 @@ public fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescriptor
 }
 
 @ExperimentalAnvilApi
+public fun AnnotationDescriptor.parentScope(module: ModuleDescriptor): ClassDescriptor {
+  val annotationValue = getAnnotationValue("parentScope") as? KClassValue
+    ?: throw AnvilCompilationException(
+      annotationDescriptor = this,
+      message = "Couldn't find parentScope for $fqName."
+    )
+
+  return annotationValue.argumentType(module).requireClassDescriptor()
+}
+
+@ExperimentalAnvilApi
 public fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType {
   val argumentType = getType(module).argumentType()
   if (argumentType !is ErrorType) return argumentType

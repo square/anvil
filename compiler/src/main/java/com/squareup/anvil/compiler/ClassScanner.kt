@@ -22,7 +22,7 @@ internal class ClassScanner {
     module: ModuleDescriptor,
     packageName: String,
     annotation: FqName,
-    scope: FqName
+    scope: FqName?
   ): Sequence<ClassDescriptor> {
     val packageDescriptor = module.getPackage(FqName(packageName))
     return generateSequence(listOf(packageDescriptor)) { subPackages ->
@@ -51,9 +51,16 @@ internal class ClassScanner {
         properties.size == propertySuffixes.size
       }
       .map { ContributedHint(it) }
-      .filter { hint ->
-        // The scope must match what we're looking for.
-        hint.scope.fqNameSafe == scope
+      .let { sequence ->
+        if (scope != null) {
+          sequence
+            .filter { hint ->
+              // The scope must match what we're looking for.
+              hint.scope.fqNameSafe == scope
+            }
+        } else {
+          sequence
+        }
       }
       .map { hint -> hint.reference }
       .filter {

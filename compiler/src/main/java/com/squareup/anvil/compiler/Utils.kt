@@ -66,8 +66,10 @@ internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
 internal const val HINT_MULTIBINDING_PACKAGE_PREFIX = "anvil.hint.multibinding"
 internal const val HINT_SUBCOMPONENTS_PACKAGE_PREFIX = "anvil.hint.subcomponent"
 internal const val MODULE_PACKAGE_PREFIX = "anvil.module"
+internal const val COMPONENT_PACKAGE_PREFIX = "anvil.component"
 
 internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
+internal const val ANVIL_SUBCOMPONENT_SUFFIX = "AnvilSubcomponent"
 
 internal const val REFERENCE_SUFFIX = "_reference"
 internal const val SCOPE_SUFFIX = "_scope"

@@ -22,6 +22,7 @@ dependencies {
   testImplementation deps.kotlin.annotation_processing_embeddable
   testImplementation deps.kotlin.compile_testing
   testImplementation deps.kotlin.compiler
+  testImplementation deps.kotlin.test
   testImplementation deps.truth
 }
 
