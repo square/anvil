@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Assume
@@ -35,16 +36,8 @@ internal val Result.parentInterface: Class<*>
 internal val Result.componentInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ComponentInterface")
 
-internal val Result.componentInterfaceAnvilModule: Class<*>
-  get() = classLoader
-    .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.ComponentInterfaceAnvilModule")
-
 internal val Result.subcomponentInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface")
-
-internal val Result.subcomponentInterfaceAnvilModule: Class<*>
-  get() = classLoader
-    .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.SubcomponentInterfaceAnvilModule")
 
 internal val Result.daggerModule1: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule1")
@@ -54,10 +47,6 @@ internal val Result.assistedService: Class<*>
 
 internal val Result.assistedServiceFactory: Class<*>
   get() = classLoader.loadClass("com.squareup.test.AssistedServiceFactory")
-
-internal val Result.daggerModule1AnvilModule: Class<*>
-  get() = classLoader
-    .loadClass("$MODULE_PACKAGE_PREFIX.com.squareup.test.DaggerModule1AnvilModule")
 
 internal val Result.daggerModule2: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule2")
@@ -101,6 +90,11 @@ internal val Class<*>.hintMultibinding: KClass<*>?
 
 internal val Class<*>.hintMultibindingScope: KClass<*>?
   get() = getHintScope(HINT_MULTIBINDING_PACKAGE_PREFIX)
+
+internal val Class<*>.anvilModule: Class<*>
+  get() = classLoader.loadClass(
+    "$MODULE_PACKAGE_PREFIX.${generatedClassesString(separator = "")}$ANVIL_MODULE_SUFFIX"
+  )
 
 private fun Class<*>.getHint(prefix: String): KClass<*>? = contributedProperties(prefix)
   ?.filter { it.java == this }

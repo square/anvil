@@ -4,9 +4,10 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.compiler.anvilModule
 import com.squareup.anvil.compiler.anyQualifier
 import com.squareup.anvil.compiler.compile
-import com.squareup.anvil.compiler.componentInterfaceAnvilModule
+import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.internal.testing.isAbstract
 import com.squareup.anvil.compiler.parentInterface
@@ -57,7 +58,7 @@ class BindingModuleQualifierTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -92,7 +93,7 @@ class BindingModuleQualifierTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -127,7 +128,7 @@ class BindingModuleQualifierTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -162,7 +163,7 @@ class BindingModuleQualifierTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -194,7 +195,7 @@ class BindingModuleQualifierTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -234,7 +235,7 @@ class BindingModuleQualifierTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -281,7 +282,7 @@ class BindingModuleQualifierTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -324,7 +325,7 @@ class BindingModuleQualifierTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -361,7 +362,7 @@ class BindingModuleQualifierTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -395,7 +396,7 @@ class BindingModuleQualifierTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
       val annotations = bindingMethod.annotations.map { it.annotationClass }
 
       assertThat(annotations).doesNotContain(anyQualifier.kotlin)
@@ -425,7 +426,7 @@ class BindingModuleQualifierTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
       val annotations = bindingMethod.annotations.map { it.annotationClass }
 
       assertThat(annotations).doesNotContain(anyQualifier.kotlin)

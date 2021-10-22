@@ -4,9 +4,9 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.compiler.anvilModule
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
-import com.squareup.anvil.compiler.componentInterfaceAnvilModule
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
@@ -101,7 +101,7 @@ class BindingModuleMultibindingSetTest(
       } else {
         componentInterface.anyDaggerComponent.modules
       }
-      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
 
       val methods = modules.single().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -187,7 +187,7 @@ class BindingModuleMultibindingSetTest(
       } else {
         componentInterface.anyDaggerComponent.modules
       }
-      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -230,7 +230,7 @@ class BindingModuleMultibindingSetTest(
       } else {
         componentInterface.anyDaggerComponent.modules
       }
-      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -336,7 +336,7 @@ class BindingModuleMultibindingSetTest(
       } else {
         componentInterface.anyDaggerComponent.modules
       }
-      assertThat(modules).containsExactly(componentInterfaceAnvilModule.kotlin)
+      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)

@@ -216,7 +216,7 @@ class MergeModulesTest {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
         .containsExactly(daggerModule2.kotlin)
 
-      assertThat(daggerModule1AnvilModule.declaredMethods).isEmpty()
+      assertThat(daggerModule1.anvilModule.declaredMethods).isEmpty()
     }
   }
 
@@ -248,7 +248,7 @@ class MergeModulesTest {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
         .containsExactly(daggerModule2.kotlin)
 
-      assertThat(daggerModule1AnvilModule.declaredMethods).isEmpty()
+      assertThat(daggerModule1.anvilModule.declaredMethods).isEmpty()
     }
   }
 
@@ -350,7 +350,7 @@ class MergeModulesTest {
       """
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule()).isEmpty()
-      assertThat(daggerModule1AnvilModule.declaredMethods).hasLength(1)
+      assertThat(daggerModule1.anvilModule.declaredMethods).hasLength(1)
     }
   }
 
@@ -380,7 +380,7 @@ class MergeModulesTest {
       """
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule()).isEmpty()
-      assertThat(daggerModule1AnvilModule.declaredMethods).hasLength(1)
+      assertThat(daggerModule1.anvilModule.declaredMethods).hasLength(1)
     }
   }
 
@@ -634,7 +634,7 @@ class MergeModulesTest {
       interface ComponentInterface
       """
     ) {
-      assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
+      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
     }
   }
 
@@ -660,7 +660,7 @@ class MergeModulesTest {
       interface ComponentInterface
       """
     ) {
-      assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
+      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
     }
   }
 
@@ -852,7 +852,7 @@ class MergeModulesTest {
       class DaggerModule1
       """
     ) {
-      assertThat(daggerModule1AnvilModule.declaredMethods).hasLength(1)
+      assertThat(daggerModule1.anvilModule.declaredMethods).hasLength(1)
     }
   }
 

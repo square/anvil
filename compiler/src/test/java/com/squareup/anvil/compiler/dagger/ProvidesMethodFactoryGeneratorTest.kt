@@ -3,7 +3,8 @@ package com.squareup.anvil.compiler.dagger
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
-import com.squareup.anvil.compiler.componentInterfaceAnvilModule
+import com.squareup.anvil.compiler.anvilModule
+import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
 import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
 import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
@@ -2298,23 +2299,23 @@ import javax.annotation.Generated;
     "unchecked",
     "rawtypes"
 })
-public final class ComponentInterfaceAnvilModule_ProvideComSquareupTestContributingObjectFactory implements Factory<ParentInterface> {
+public final class componentInterface.anvilModule_ProvideComSquareupTestContributingObjectFactory implements Factory<ParentInterface> {
   @Override
   public ParentInterface get() {
     return provideComSquareupTestContributingObject();
   }
 
-  public static ComponentInterfaceAnvilModule_ProvideComSquareupTestContributingObjectFactory create(
+  public static componentInterface.anvilModule_ProvideComSquareupTestContributingObjectFactory create(
       ) {
     return InstanceHolder.INSTANCE;
   }
 
   public static ParentInterface provideComSquareupTestContributingObject() {
-    return Preconditions.checkNotNull(ComponentInterfaceAnvilModule.INSTANCE.provideComSquareupTestContributingObject(), "Cannot return null from a non-@Nullable @Provides method");
+    return Preconditions.checkNotNull(componentInterface.anvilModule.INSTANCE.provideComSquareupTestContributingObject(), "Cannot return null from a non-@Nullable @Provides method");
   }
 
   private static final class InstanceHolder {
-    private static final ComponentInterfaceAnvilModule_ProvideComSquareupTestContributingObjectFactory INSTANCE = new ComponentInterfaceAnvilModule_ProvideComSquareupTestContributingObjectFactory();
+    private static final componentInterface.anvilModule_ProvideComSquareupTestContributingObjectFactory INSTANCE = new componentInterface.anvilModule_ProvideComSquareupTestContributingObjectFactory();
   }
 }
      */
@@ -2322,7 +2323,7 @@ public final class ComponentInterfaceAnvilModule_ProvideComSquareupTestContribut
     /*
 package com.squareup.test;
 
-import anvil.module.com.squareup.test.ComponentInterfaceAnvilModule;
+import anvil.module.com.squareup.test.componentInterface.anvilModule;
 import dagger.internal.Preconditions;
 import javax.annotation.Generated;
 
@@ -2355,9 +2356,9 @@ public final class DaggerComponentInterface implements ComponentInterface {
      * @deprecated This module is declared, but an instance is not used in the component. This method is a no-op. For more, see https://dagger.dev/unused-modules.
      */
     @Deprecated
-    public Builder componentInterfaceAnvilModule(
-        ComponentInterfaceAnvilModule componentInterfaceAnvilModule) {
-      Preconditions.checkNotNull(componentInterfaceAnvilModule);
+    public Builder componentInterface.anvilModule(
+        componentInterface.anvilModule componentInterface.anvilModule) {
+      Preconditions.checkNotNull(componentInterface.anvilModule);
       return this;
     }
 
@@ -2384,7 +2385,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       interface ComponentInterface
       """
     ) {
-      val factoryClass = componentInterfaceAnvilModule
+      val factoryClass = componentInterface.anvilModule
         .moduleFactoryClass("provideComSquareupTestContributingObject")
 
       val constructor = factoryClass.declaredConstructors.single()
