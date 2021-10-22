@@ -14,8 +14,8 @@ import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isAbstract
+import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.parentInterface
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import dagger.Binds
 import dagger.Provides
 import dagger.multibindings.IntoMap
@@ -283,7 +283,7 @@ class BindingModuleMultibindingMapTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "Classes annotated with @ContributesMultibinding may not use more than one @MapKey."
       )

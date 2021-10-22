@@ -8,8 +8,7 @@ import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
+import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -215,7 +214,7 @@ public final class AssistedService_Factory {
       )
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@AssistedInject constructor has duplicate @Assisted type: " +
           "@Assisted com.squareup.test.SomeType"
@@ -239,7 +238,7 @@ public final class AssistedService_Factory {
       )
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@AssistedInject constructor has duplicate @Assisted type: " +
           "@Assisted(\"one\") com.squareup.test.SomeType"
@@ -597,8 +596,7 @@ public final class AssistedService_Factory {
       }
       """
     ) {
-      // For some reason with Dagger this test throws an internal error.
-      assertThat(exitCode).isIn(listOf(COMPILATION_ERROR, INTERNAL_ERROR))
+      assertThat(exitCode).isError()
       assertThat(messages).contains("Types may only contain one injected constructor")
     }
   }
@@ -620,7 +618,7 @@ public final class AssistedService_Factory {
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains("Types may only contain one injected constructor")
     }
   }

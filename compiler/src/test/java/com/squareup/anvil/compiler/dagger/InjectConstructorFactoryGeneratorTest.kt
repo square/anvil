@@ -8,7 +8,7 @@ import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
@@ -2265,7 +2265,7 @@ public class InjectClass_Factory<T : List<String>>(
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains("Types may only contain one injected constructor")
     }
   }

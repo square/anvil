@@ -1,11 +1,15 @@
 package com.squareup.anvil.compiler
 
+import com.google.common.truth.ComparableSubject
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Assume
 import kotlin.reflect.KClass
@@ -130,4 +134,8 @@ private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*
 
 internal fun assumeMergeComponent(annotationClass: KClass<*>) {
   Assume.assumeTrue(annotationClass == MergeComponent::class)
+}
+
+internal fun ComparableSubject<ExitCode>.isError() {
+  isIn(setOf(COMPILATION_ERROR, INTERNAL_ERROR))
 }

@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test
@@ -103,7 +103,7 @@ class AnvilMergeAnnotationDetectorCheckTest {
   }
 
   private fun Result.assertError() {
-    assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+    assertThat(exitCode).isError()
     assertThat(messages).contains("Source0.kt: (5, 1")
     assertThat(messages).contains(
       "This Gradle module is configured to ONLY generate code with the " +
