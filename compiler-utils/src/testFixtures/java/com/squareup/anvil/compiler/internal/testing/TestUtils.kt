@@ -234,12 +234,15 @@ public fun Class<*>.membersInjector(): Class<*> {
   return classLoader.loadClass("${generatedClassesString()}_MembersInjector")
 }
 
-private fun Class<*>.generatedClassesString(): String {
+@ExperimentalAnvilApi
+public fun Class<*>.generatedClassesString(
+  separator: String = "_"
+): String {
   return generateSequence(enclosingClass) { it.enclosingClass }
     .toList()
     .reversed()
     .joinToString(separator = "", prefix = packageName(), postfix = simpleName) {
-      "${it.simpleName}_"
+      "${it.simpleName}$separator"
     }
 }
 

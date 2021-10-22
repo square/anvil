@@ -274,7 +274,7 @@ class ModuleMergerTest(
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
         .containsExactly(daggerModule1.kotlin)
 
-      assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
+      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
     }
   }
 
@@ -306,7 +306,7 @@ class ModuleMergerTest(
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
         .containsExactly(daggerModule1.kotlin)
 
-      assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
+      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
     }
   }
 
@@ -408,7 +408,7 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule()).isEmpty()
-      assertThat(componentInterfaceAnvilModule.declaredMethods).hasLength(1)
+      assertThat(componentInterface.anvilModule.declaredMethods).hasLength(1)
     }
   }
 
@@ -438,7 +438,7 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule()).isEmpty()
-      assertThat(componentInterfaceAnvilModule.declaredMethods).hasLength(1)
+      assertThat(componentInterface.anvilModule.declaredMethods).hasLength(1)
     }
   }
 
@@ -762,7 +762,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
+      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
     }
   }
 
@@ -788,7 +788,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(componentInterfaceAnvilModule.declaredMethods).isEmpty()
+      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
     }
   }
 

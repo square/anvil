@@ -4,8 +4,9 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.compiler.anvilModule
 import com.squareup.anvil.compiler.compile
-import com.squareup.anvil.compiler.componentInterfaceAnvilModule
+import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.secondContributingInterface
@@ -56,7 +57,7 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -90,7 +91,7 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -151,7 +152,7 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -180,7 +181,7 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -212,7 +213,7 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethods = componentInterfaceAnvilModule.declaredMethods
+      val bindingMethods = componentInterface.anvilModule.declaredMethods
         .filter { it.returnType == parentInterface }
 
       assertThat(bindingMethods).hasSize(2)
@@ -319,7 +320,7 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethod = componentInterfaceAnvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -348,7 +349,7 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """
     ) {
-      val bindingMethods = componentInterfaceAnvilModule.declaredMethods
+      val bindingMethods = componentInterface.anvilModule.declaredMethods
       assertThat(bindingMethods).hasLength(2)
     }
   }

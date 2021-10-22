@@ -204,20 +204,20 @@ public fun String.decapitalize(): String = replaceFirstChar(Char::lowercaseChar)
 public fun FqName.generateClassName(
   separator: String = "_",
   suffix: String = ""
+): String = classIdBestGuess().generateClassName(separator = separator, suffix = suffix)
+
+@ExperimentalAnvilApi
+public fun ClassId.generateClassName(
+  separator: String = "_",
+  suffix: String = ""
 ): String {
-  val classId = classIdBestGuess()
-  val packageName = classId.packageFqName
+  val packageName = packageFqName
     .takeIf { !it.isRoot }
     ?.asString()
     ?.let { "$it." }
     ?: ""
 
-  return generateSequence(classId) { it.outerClassId }
-    .toList()
-    .reversed()
-    .joinToString(
-      separator = separator,
-      prefix = packageName,
-      postfix = suffix
-    ) { it.shortClassName.asString() }
+  val className = relativeClassName.asString().replace(".", separator)
+
+  return "$packageName$className$suffix"
 }
