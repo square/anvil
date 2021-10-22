@@ -33,3 +33,9 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     freeCompilerArgs += "-Xjvm-default=all"
   }
 }
+
+if (!rootProject.ext.ci) {
+  tasks.withType(Test).configureEach {
+    maxParallelForks = Runtime.runtime.availableProcessors()
+  }
+}
