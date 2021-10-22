@@ -14,7 +14,7 @@ import com.squareup.anvil.compiler.internal.testing.implClass
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.internal.testing.use
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -896,7 +896,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "Invalid return type: com.squareup.test.AssistedService. An assisted factory's " +
           "abstract method must return a type with an @AssistedInject-annotated constructor."
@@ -922,7 +922,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains("Invalid return type:")
       assertThat(messages).contains(
         "An assisted factory's abstract method must return a type with an " +
@@ -951,7 +951,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The parameters in the factory method must match the @Assisted parameters " +
           "in com.squareup.test.AssistedService."
@@ -979,7 +979,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The parameters in the factory method must match the @Assisted parameters " +
           "in com.squareup.test.AssistedService."
@@ -1302,7 +1302,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@AssistedFactory method has duplicate @Assisted types: " +
           "@Assisted(\"one\") com.squareup.test.Type"
@@ -1331,7 +1331,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
           "method but found multiple"
@@ -1363,7 +1363,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
           "method but found multiple"
@@ -1392,7 +1392,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
           "method but found multiple"
@@ -1418,7 +1418,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The @AssistedFactory-annotated type is missing an abstract, non-default method " +
           "whose return type matches the assisted injection type."
@@ -1446,7 +1446,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The @AssistedFactory-annotated type is missing an abstract, non-default method " +
           "whose return type matches the assisted injection type."

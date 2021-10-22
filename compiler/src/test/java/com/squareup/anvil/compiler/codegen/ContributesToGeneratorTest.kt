@@ -9,7 +9,7 @@ import com.squareup.anvil.compiler.hintContributes
 import com.squareup.anvil.compiler.hintContributesScope
 import com.squareup.anvil.compiler.innerInterface
 import com.squareup.anvil.compiler.innerModule
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import com.squareup.anvil.compiler.isError
 import org.junit.Test
 
 class ContributesToGeneratorTest {
@@ -162,7 +162,7 @@ class ContributesToGeneratorTest {
       abstract class DaggerModule1
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (6, 16)")
     }
@@ -187,7 +187,7 @@ class ContributesToGeneratorTest {
         $visibility abstract class DaggerModule1
         """
       ) {
-        assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt: (7, ")
       }
@@ -212,7 +212,7 @@ class ContributesToGeneratorTest {
         $visibility interface ContributingInterface
         """
       ) {
-        assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt: (6, ")
       }

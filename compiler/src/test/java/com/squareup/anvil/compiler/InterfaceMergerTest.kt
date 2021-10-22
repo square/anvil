@@ -5,7 +5,6 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.compiler.internal.testing.extends
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -141,7 +140,7 @@ class InterfaceMergerTest(
       abstract class MergingClass
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (6, 16)")
     }
@@ -194,7 +193,7 @@ class InterfaceMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class. Unfortunately, a different error is reported that the class is
       // missing an @Module annotation.
       assertThat(messages).contains("Source0.kt: (7, 7)")
@@ -222,7 +221,7 @@ class InterfaceMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class. Unfortunately, a different error is reported that the class is
       // missing an @Module annotation.
       assertThat(messages).contains("Source0.kt: (13, 11)")
@@ -311,7 +310,7 @@ class InterfaceMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (18, 11)")
       assertThat(messages).contains(
@@ -348,7 +347,7 @@ class InterfaceMergerTest(
       interface ComponentInterface : ContributingInterface, OtherInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains(
         "ComponentInterface excludes types that it implements or extends. These types cannot " +
@@ -442,7 +441,7 @@ class InterfaceMergerTest(
         interface ComponentInterface
         """
       ) {
-        assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt: (7, ")
       }

@@ -5,7 +5,7 @@ import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.hintBinding
 import com.squareup.anvil.compiler.hintBindingScope
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import com.squareup.anvil.compiler.isError
 import org.junit.Test
 
 class ContributesBindingGeneratorTest {
@@ -145,7 +145,7 @@ class ContributesBindingGeneratorTest {
         $visibility class ContributingInterface : ParentInterface
         """
       ) {
-        assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt: (8, ")
         assertThat(messages).contains(
@@ -177,7 +177,7 @@ class ContributesBindingGeneratorTest {
       interface ContributingInterface : ParentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "Classes annotated with @ContributesBinding may not use more than one @Qualifier."
       )
@@ -197,7 +197,7 @@ class ContributesBindingGeneratorTest {
       interface ContributingInterface : ParentInterface, CharSequence
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
           "the bound type. This is only allowed with exactly one direct super type. If there " +
@@ -222,7 +222,7 @@ class ContributesBindingGeneratorTest {
       interface ContributingInterface : Abc(), ParentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
           "the bound type. This is only allowed with exactly one direct super type. If there " +
@@ -243,7 +243,7 @@ class ContributesBindingGeneratorTest {
       object ContributingInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
           "the bound type. This is only allowed with exactly one direct super type. If there " +
@@ -284,7 +284,7 @@ class ContributesBindingGeneratorTest {
       interface ContributingInterface : CharSequence
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface contributes a binding for " +
           "com.squareup.test.ParentInterface, but doesn't extend this type."

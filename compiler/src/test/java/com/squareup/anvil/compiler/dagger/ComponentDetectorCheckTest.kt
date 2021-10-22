@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test
@@ -22,7 +22,7 @@ class ComponentDetectorCheckTest {
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (5, 1")
       assertThat(messages).contains(
@@ -62,7 +62,7 @@ class ComponentDetectorCheckTest {
         }
         """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (6, 3")
       assertThat(messages).contains(

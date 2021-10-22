@@ -8,9 +8,9 @@ import com.squareup.anvil.compiler.anvilModule
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
+import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.secondContributingInterface
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -120,7 +120,7 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
 
       assertThat(messages).contains(
         "There are multiple contributed bindings with the same bound type. The bound type is " +
@@ -250,7 +250,7 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
 
       assertThat(messages).contains(
         "There are multiple contributed bindings with the same bound type. The bound type is " +
@@ -285,7 +285,7 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
 
       assertThat(messages).contains(
         "There are multiple contributed bindings with the same bound type. The bound type is " +

@@ -185,6 +185,7 @@ public fun compileAnvil(
   useIR: Boolean = true,
   messageOutputStream: OutputStream = System.out,
   workingDir: File? = null,
+  enableExperimentalAnvilApis: Boolean = true,
   block: Result.() -> Unit = { }
 ): Result {
   return AnvilCompilation()
@@ -199,6 +200,12 @@ public fun compileAnvil(
       kotlinCompilation.apply {
         this.allWarningsAsErrors = allWarningsAsErrors
         this.messageOutputStream = messageOutputStream
+        if (enableExperimentalAnvilApis) {
+          this.kotlincArguments += listOf(
+            "-Xopt-in=kotlin.RequiresOptIn",
+            "-Xopt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
+          )
+        }
         if (workingDir != null) {
           this.workingDir = workingDir
         }

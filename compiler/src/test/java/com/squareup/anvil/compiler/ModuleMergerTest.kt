@@ -8,7 +8,6 @@ import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerSubcomponent
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import dagger.Component
 import dagger.Subcomponent
 import org.junit.Test
@@ -121,7 +120,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (7, 11)")
     }
@@ -212,7 +211,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (7, 16)")
     }
@@ -335,7 +334,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 16)")
       assertThat(messages).contains(
@@ -371,7 +370,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 16)")
       assertThat(messages).contains(
@@ -467,7 +466,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 11)")
       assertThat(messages).contains(
@@ -503,7 +502,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 11)")
       assertThat(messages).contains(
@@ -535,7 +534,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (13, 16)")
     }
@@ -564,7 +563,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (15, 16)")
       assertThat(messages).contains(
@@ -664,7 +663,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (20, 11)")
       assertThat(messages).contains(
@@ -814,7 +813,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 11)")
       assertThat(messages).contains(
@@ -847,7 +846,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 11)")
       assertThat(messages).contains(
@@ -944,7 +943,7 @@ class ModuleMergerTest(
         interface ComponentInterface
         """
       ) {
-        assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt: (8, ")
       }
@@ -990,7 +989,7 @@ class ModuleMergerTest(
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains("File being compiled: (10,18)")
     }
   }
@@ -1066,7 +1065,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt: (19, 11)")
     }
   }
@@ -1082,7 +1081,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "Couldn't find scope for ${annotationClass.java.canonicalName}"
       )

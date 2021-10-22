@@ -14,8 +14,7 @@ import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
+import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.internal.Factory
@@ -2423,7 +2422,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "Cannot have more than one binding method with the same name in a single module"
       )
@@ -2524,7 +2523,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
     ) {
       assumeFalse(useDagger)
 
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt: (5, 3)")
       assertThat(messages).contains(
         "Dagger provider methods must specify the return type explicitly when using Anvil. " +
@@ -3100,7 +3099,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
       assertThat(messages).contains("@Provides methods cannot be abstract")
     }
   }
@@ -3119,8 +3118,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       }
       """
     ) {
-      // For some reason with Dagger this test throws an internal error.
-      assertThat(exitCode).isIn(setOf(COMPILATION_ERROR, INTERNAL_ERROR))
+      assertThat(exitCode).isError()
       assertThat(messages).contains("@Provides methods cannot be abstract")
     }
   }

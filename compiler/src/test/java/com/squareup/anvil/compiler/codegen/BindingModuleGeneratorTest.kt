@@ -13,10 +13,10 @@ import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.isAbstract
+import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import dagger.Binds
 import dagger.Provides
 import org.junit.Test
@@ -382,7 +382,7 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
 
       assertThat(messages).contains("Source0.kt: (6, 11)")
       assertThat(messages).contains(
@@ -413,7 +413,7 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(exitCode).isError()
 
       assertThat(messages).contains("Source0.kt: (6, 11)")
       assertThat(messages).contains(
