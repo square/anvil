@@ -18,6 +18,7 @@ import com.squareup.anvil.compiler.internal.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.asFunctionType
 import com.squareup.anvil.compiler.internal.asTypeName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classDescriptorForType
@@ -40,6 +41,7 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PRIVATE
+import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
@@ -451,6 +453,14 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
               ?: typeReference
           }
           ?.requireTypeName(module)
+          ?.let { typeName ->
+            // This is a special case when mixing parsing between descriptors and PSI.  Descriptors
+            // will always represent lambda types as kotlin.Function* types, so lambda arguments
+            // must be converted or their signatures won't match.
+            // see https://github.com/square/anvil/issues/400
+            (typeName as? LambdaTypeName)?.asFunctionType()
+              ?: typeName
+          }
           ?: throw AnvilCompilationException(
             "Couldn't get type for parameter.",
             element = parameter
