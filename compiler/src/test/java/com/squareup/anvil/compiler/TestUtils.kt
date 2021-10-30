@@ -17,11 +17,13 @@ import kotlin.reflect.KClass
 @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
 internal fun compile(
   vararg sources: String,
+  previousCompilationResult: Result? = null,
   block: Result.() -> Unit = { }
 ): Result = compileAnvil(
   sources = sources,
   useIR = USE_IR,
   allWarningsAsErrors = WARNINGS_AS_ERRORS,
+  previousCompilationResult = previousCompilationResult,
   block = block
 )
 
