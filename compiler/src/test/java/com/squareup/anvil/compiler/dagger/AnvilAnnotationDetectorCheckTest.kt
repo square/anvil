@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
+import org.intellij.lang.annotations.Language
 import org.junit.Test
 
 class AnvilAnnotationDetectorCheckTest {
@@ -124,9 +125,8 @@ class AnvilAnnotationDetectorCheckTest {
     )
   }
 
-  @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
-    vararg sources: String,
+    @Language("kotlin") vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,

@@ -209,7 +209,7 @@ public class AnvilCompilation internal constructor(
  */
 @ExperimentalAnvilApi
 public fun compileAnvil(
-  vararg sources: String,
+  @Language("kotlin") vararg sources: String,
   enableDaggerAnnotationProcessor: Boolean = false,
   generateDaggerFactories: Boolean = false,
   generateDaggerFactoriesOnly: Boolean = false,

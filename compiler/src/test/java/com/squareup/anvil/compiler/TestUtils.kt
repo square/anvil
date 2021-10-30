@@ -11,12 +11,12 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
+import org.intellij.lang.annotations.Language
 import org.junit.Assume
 import kotlin.reflect.KClass
 
-@Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
 internal fun compile(
-  vararg sources: String,
+  @Language("kotlin") vararg sources: String,
   previousCompilationResult: Result? = null,
   block: Result.() -> Unit = { }
 ): Result = compileAnvil(

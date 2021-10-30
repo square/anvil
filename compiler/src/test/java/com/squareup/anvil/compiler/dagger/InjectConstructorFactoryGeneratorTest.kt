@@ -13,6 +13,7 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.internal.Factory
+import org.intellij.lang.annotations.Language
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -2368,7 +2369,6 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 }
      */
     compile(
-      //language=kotlin
       """
       package com.squareup.test
 
@@ -2416,9 +2416,8 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
-  @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
-    vararg sources: String,
+    @Language("kotlin") vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
