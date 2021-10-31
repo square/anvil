@@ -19,6 +19,7 @@ import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.config.JvmTarget
 import java.io.File
 import java.io.OutputStream
+import java.net.URLClassLoader
 import java.nio.file.Files
 import kotlin.reflect.KClass
 
@@ -32,6 +33,7 @@ public class AnvilCompilation internal constructor(
 
   private var isCompiled = false
   private var anvilConfigured = false
+  private var swapClassLoader = false
 
   /** Configures this the Anvil behavior of this compilation. */
   @ExperimentalAnvilApi
@@ -107,6 +109,12 @@ public class AnvilCompilation internal constructor(
     }
   }
 
+  public fun addPreviousCompilationResult(result: Result) = apply {
+    checkNotCompiled()
+    kotlinCompilation.classpaths += result.outputDirectory
+    swapClassLoader = true
+  }
+
   /**
    * Returns an Anvil-generated file with the given [packageName] and [fileName] from its expected
    * path.
@@ -152,6 +160,22 @@ public class AnvilCompilation internal constructor(
     isCompiled = true
     return kotlinCompilation.compile()
       .apply(block)
+      .apply { swapClassLoaderIfNecessary() }
+  }
+
+  // This workaround is needed until this issue is resolved:
+  // https://github.com/tschuchortdev/kotlin-compile-testing/issues/216
+  private fun Result.swapClassLoaderIfNecessary() {
+    if (!swapClassLoader) return
+
+    val newClassLoader = URLClassLoader(
+      kotlinCompilation.classpaths.plus(outputDirectory).map { it.toURI().toURL() }.toTypedArray(),
+      this::class.java.classLoader
+    )
+
+    Result::class.java.declaredFields
+      .single { it.name == "classLoader" }
+      .use { it.set(this, newClassLoader) }
   }
 
   companion object {
@@ -186,6 +210,7 @@ public fun compileAnvil(
   messageOutputStream: OutputStream = System.out,
   workingDir: File? = null,
   enableExperimentalAnvilApis: Boolean = true,
+  previousCompilationResult: Result? = null,
   block: Result.() -> Unit = { }
 ): Result {
   return AnvilCompilation()
@@ -209,6 +234,10 @@ public fun compileAnvil(
         if (workingDir != null) {
           this.workingDir = workingDir
         }
+      }
+
+      if (previousCompilationResult != null) {
+        addPreviousCompilationResult(previousCompilationResult)
       }
     }
     .compile(*sources)
