@@ -36,12 +36,14 @@ public class AnvilCompilation internal constructor(
   private var swapClassLoader = false
 
   /** Configures this the Anvil behavior of this compilation. */
+  @Suppress("SuspiciousCollectionReassignment")
   @ExperimentalAnvilApi
   public fun configureAnvil(
     enableDaggerAnnotationProcessor: Boolean = false,
     generateDaggerFactories: Boolean = false,
     generateDaggerFactoriesOnly: Boolean = false,
     disableComponentMerging: Boolean = false,
+    enableExperimentalAnvilApis: Boolean = true,
   ) = apply {
     checkNotCompiled()
     anvilConfigured = true
@@ -76,6 +78,13 @@ public class AnvilCompilation internal constructor(
           optionValue = disableComponentMerging.toString()
         )
       )
+
+      if (enableExperimentalAnvilApis) {
+        kotlincArguments += listOf(
+          "-Xopt-in=kotlin.RequiresOptIn",
+          "-Xopt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
+        )
+      }
     }
   }
 
@@ -200,7 +209,7 @@ public class AnvilCompilation internal constructor(
  */
 @ExperimentalAnvilApi
 public fun compileAnvil(
-  vararg sources: String,
+  @Language("kotlin") vararg sources: String,
   enableDaggerAnnotationProcessor: Boolean = false,
   generateDaggerFactories: Boolean = false,
   generateDaggerFactoriesOnly: Boolean = false,
@@ -218,19 +227,14 @@ public fun compileAnvil(
       enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
       generateDaggerFactories = generateDaggerFactories,
       generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
-      disableComponentMerging = disableComponentMerging
+      disableComponentMerging = disableComponentMerging,
+      enableExperimentalAnvilApis = enableExperimentalAnvilApis,
     )
     .useIR(useIR)
     .apply {
       kotlinCompilation.apply {
         this.allWarningsAsErrors = allWarningsAsErrors
         this.messageOutputStream = messageOutputStream
-        if (enableExperimentalAnvilApis) {
-          this.kotlincArguments += listOf(
-            "-Xopt-in=kotlin.RequiresOptIn",
-            "-Xopt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
-          )
-        }
         if (workingDir != null) {
           this.workingDir = workingDir
         }

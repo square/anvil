@@ -18,6 +18,7 @@ import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.internal.Factory
+import org.intellij.lang.annotations.Language
 import org.junit.Assume.assumeFalse
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -3144,9 +3145,8 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
     }
   }
 
-  @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
-    vararg sources: String,
+    @Language("kotlin") vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,

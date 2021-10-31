@@ -1474,7 +1474,6 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       .single { it.name == "inject${memberName.capitalize()}" }
   }
 
-  @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
     @Language("kotlin") vararg sources: String,
     block: Result.() -> Unit = { }

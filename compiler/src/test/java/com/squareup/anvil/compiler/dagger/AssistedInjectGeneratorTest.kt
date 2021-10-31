@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.KotlinCompilation.Result
+import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -623,9 +624,8 @@ public final class AssistedService_Factory {
     }
   }
 
-  @Suppress("CHANGING_ARGUMENTS_EXECUTION_ORDER_FOR_NAMED_VARARGS")
   private fun compile(
-    vararg sources: String,
+    @Language("kotlin") vararg sources: String,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
