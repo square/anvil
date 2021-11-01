@@ -1,37 +1,54 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.ANVIL_SUBCOMPONENT_SUFFIX
 import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.ClassScanner
 import com.squareup.anvil.compiler.HINT_SUBCOMPONENTS_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.PARENT_COMPONENT
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
+import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.internal.annotation
+import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.parentScope
+import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
 import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier.ABSTRACT
+import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.TypeSpec
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities.PUBLIC
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter.Companion.CLASSIFIERS
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter.Companion.FUNCTIONS
 import java.io.File
 
 /**
@@ -134,11 +151,8 @@ internal class ContributesSubcomponentHandlerGenerator(
 
     return newContributions
       .map { contribution ->
-        val generatedPackage = COMPONENT_PACKAGE_PREFIX +
-          contribution.clazz.packageFqName.safePackageString(dotPrefix = true)
-
-        val componentClassName = contribution.clazz.relativeClassName.generateClassName() +
-          ANVIL_SUBCOMPONENT_SUFFIX
+        val generatedPackage = contribution.generatedPackage
+        val componentClassName = contribution.generatedSubcomponentClassName
 
         val content = FileSpec.buildFile(generatedPackage, componentClassName) {
           TypeSpec
@@ -150,6 +164,7 @@ internal class ContributesSubcomponentHandlerGenerator(
                 .addMember("%T::class", contribution.scope.asClassName(module))
                 .build()
             )
+            .addType(generateParentComponent(contribution, module))
             .build()
             .also { addType(it) }
         }
@@ -162,6 +177,99 @@ internal class ContributesSubcomponentHandlerGenerator(
         )
       }
       .toList()
+  }
+
+  private fun generateParentComponent(
+    contribution: Contribution,
+    module: ModuleDescriptor
+  ): TypeSpec {
+    val parentComponentInterface = findParentComponentInterface(contribution, module)
+
+    return TypeSpec
+      .interfaceBuilder(PARENT_COMPONENT)
+      .apply {
+        if (parentComponentInterface != null) {
+          addSuperinterface(parentComponentInterface.componentInterface)
+        }
+      }
+      .addAnnotation(
+        AnnotationSpec
+          .builder(ContributesTo::class)
+          .addMember("%T::class", contribution.parentScope.asClassName(module))
+          .apply {
+            if (parentComponentInterface != null) {
+              addMember(
+                "replaces = [%T::class]", parentComponentInterface.componentInterface
+              )
+            }
+          }
+          .build()
+      )
+      .addFunction(
+        FunSpec
+          .builder(
+            name = parentComponentInterface
+              ?.functionName
+              ?: "create${contribution.generatedSubcomponentClassName}"
+          )
+          .addModifiers(ABSTRACT)
+          .apply {
+            if (parentComponentInterface != null) {
+              addModifiers(OVERRIDE)
+            }
+          }
+          .returns(
+            ClassName(contribution.generatedPackage, contribution.generatedSubcomponentClassName)
+          )
+          .build()
+      )
+      .build()
+  }
+
+  private fun findParentComponentInterface(
+    contribution: Contribution,
+    module: ModuleDescriptor
+  ): ParentComponentInterfaceHolder? {
+    val contributionFqName = contribution.clazz.asSingleFqName()
+    val contributionDescriptor = contributionFqName.requireClassDescriptor(module)
+
+    val contributedInnerComponentInterfaces = contributionDescriptor.unsubstitutedMemberScope
+      .getContributedDescriptors(kindFilter = CLASSIFIERS)
+      .filterIsInstance<ClassDescriptor>()
+      .filter { DescriptorUtils.isInterface(it) }
+      .filter {
+        val annotation = it.annotationOrNull(contributesToFqName, contribution.parentScope)
+        annotation != null
+      }
+
+    val componentInterface = when (contributedInnerComponentInterfaces.size) {
+      0 -> return null
+      1 -> contributedInnerComponentInterfaces[0]
+      else -> throw AnvilCompilationException(
+        classDescriptor = contributionDescriptor,
+        message = "Expected zero or one parent component interface within " +
+          "${contributionDescriptor.fqNameSafe} being contributed to the parent scope."
+      )
+    }
+
+    val functions = componentInterface.unsubstitutedMemberScope
+      .getContributedDescriptors(kindFilter = FUNCTIONS)
+      .asSequence()
+      .filterIsInstance<FunctionDescriptor>()
+      .filter { it.modality == Modality.ABSTRACT && it.visibility == PUBLIC }
+      .filter { it.returnType?.fqNameOrNull() == contributionFqName }
+      .toList()
+
+    val function = when (functions.size) {
+      0 -> return null
+      1 -> functions[0]
+      else -> throw AnvilCompilationException(
+        classDescriptor = componentInterface,
+        message = "Expected zero or one function returning the subcomponent $contributionFqName."
+      )
+    }
+
+    return ParentComponentInterfaceHolder(componentInterface, function)
   }
 
   private companion object {
@@ -191,8 +299,22 @@ internal class ContributesSubcomponentHandlerGenerator(
     val parentScope: FqName,
     // TODO: modules, excludes
   ) {
+    val generatedPackage = COMPONENT_PACKAGE_PREFIX +
+      clazz.packageFqName.safePackageString(dotPrefix = true)
+
+    val generatedSubcomponentClassName = clazz.relativeClassName.generateClassName() +
+      ANVIL_SUBCOMPONENT_SUFFIX
+
     override fun toString(): String {
       return "Contribution(class=$clazz, parentScope=$parentScope)"
     }
+  }
+
+  private class ParentComponentInterfaceHolder(
+    componentInterface: ClassDescriptor,
+    function: FunctionDescriptor
+  ) {
+    val componentInterface = componentInterface.asClassName()
+    val functionName = function.name.asString()
   }
 }

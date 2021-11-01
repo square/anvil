@@ -18,12 +18,14 @@ import kotlin.reflect.KClass
 internal fun compile(
   @Language("kotlin") vararg sources: String,
   previousCompilationResult: Result? = null,
+  enableDaggerAnnotationProcessor: Boolean = false,
   block: Result.() -> Unit = { }
 ): Result = compileAnvil(
   sources = sources,
   useIR = USE_IR,
   allWarningsAsErrors = WARNINGS_AS_ERRORS,
   previousCompilationResult = previousCompilationResult,
+  enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
   block = block
 )
 

@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.hintSubcomponent
 import com.squareup.anvil.compiler.hintSubcomponentParentScope
@@ -146,4 +147,34 @@ class ContributesSubcomponentGeneratorTest {
       }
     }
   }
+
+  @Test
+  fun `a contributed subcomponent is allowed to have a parent component that's contributed to the parent scope`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesTo
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @ContributesTo(Unit::class)
+          interface AnyParentComponent {
+            fun createComponent(): SubcomponentInterface
+          }
+        }
+      """
+    ) {
+      val parentComponent = subcomponentInterface.parentComponentInterface
+      assertThat(parentComponent).isNotNull()
+
+      val annotation = parentComponent.getAnnotation(ContributesTo::class.java)
+      assertThat(annotation).isNotNull()
+      assertThat(annotation.scope).isEqualTo(Unit::class)
+    }
+  }
+
+  private val Class<*>.parentComponentInterface: Class<*>
+    get() = classLoader.loadClass("$canonicalName\$AnyParentComponent")
 }

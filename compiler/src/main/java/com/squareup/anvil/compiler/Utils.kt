@@ -70,6 +70,7 @@ internal const val COMPONENT_PACKAGE_PREFIX = "anvil.component"
 
 internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
 internal const val ANVIL_SUBCOMPONENT_SUFFIX = "AnvilSubcomponent"
+internal const val PARENT_COMPONENT = "ParentComponent"
 
 internal const val REFERENCE_SUFFIX = "_reference"
 internal const val SCOPE_SUFFIX = "_scope"
