@@ -16,10 +16,14 @@ import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.annotationOrNull
+import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
+import com.squareup.anvil.compiler.internal.findAnnotation
+import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.generateClassName
+import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
@@ -43,8 +47,10 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter.Companion.CLASSIFIERS
@@ -94,7 +100,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           clazz.hasAnnotation(trigger, module)
         } ?: return@mapNotNull null
 
-        Trigger(clazz, annotation, clazz.scope(annotation, module))
+        Trigger(clazz, clazz.scope(annotation, module))
       }
       .also {
         triggers += it
@@ -119,10 +125,22 @@ internal class ContributesSubcomponentHandlerGenerator(
             val parentScope = annotation.parentScope(module).fqNameSafe
             if (parentScope != trigger.scope) return@mapNotNull null
 
+            val modules = (annotation.getAnnotationValue("modules") as? ArrayValue)
+              ?.value
+              ?.map { it.argumentType(module).fqName() }
+              ?: emptyList()
+
+            val exclude = (annotation.getAnnotationValue("exclude") as? ArrayValue)
+              ?.value
+              ?.map { it.argumentType(module).fqName() }
+              ?: emptyList()
+
             Contribution(
               clazz = requireNotNull(descriptor.classId),
               scope = annotation.scope(module).fqNameSafe,
-              parentScope = parentScope
+              parentScope = parentScope,
+              modules = modules,
+              exclude = exclude
             )
           }
       }
@@ -132,12 +150,25 @@ internal class ContributesSubcomponentHandlerGenerator(
     contributions += projectFiles
       .classesAndInnerClass(module)
       .mapNotNull { clazz ->
-        if (!clazz.hasAnnotation(contributesSubcomponentFqName, module)) return@mapNotNull null
+        val annotation = clazz.findAnnotation(contributesSubcomponentFqName, module)
+          ?: return@mapNotNull null
+
+        val modules = annotation
+          .findAnnotationArgument<KtCollectionLiteralExpression>("modules", 2)
+          ?.toFqNames(module)
+          ?: emptyList()
+
+        val exclude = annotation
+          .findAnnotationArgument<KtCollectionLiteralExpression>("exclude", 3)
+          ?.toFqNames(module)
+          ?: emptyList()
 
         Contribution(
           clazz = requireNotNull(clazz.getClassId()),
           scope = clazz.scope(contributesSubcomponentFqName, module),
-          parentScope = clazz.parentScope(contributesSubcomponentFqName, module)
+          parentScope = clazz.parentScope(contributesSubcomponentFqName, module),
+          modules = modules,
+          exclude = exclude
         )
       }
 
@@ -161,7 +192,24 @@ internal class ContributesSubcomponentHandlerGenerator(
             .addAnnotation(
               AnnotationSpec
                 .builder(MergeSubcomponent::class)
-                .addMember("%T::class", contribution.scope.asClassName(module))
+                .addMember("scope = %T::class", contribution.scope.asClassName(module))
+                .apply {
+                  fun addClassArrayMember(
+                    name: String,
+                    fqNames: List<FqName>
+                  ) {
+                    if (fqNames.isNotEmpty()) {
+                      val classes = fqNames.map { it.asClassName(module) }
+                      val template = classes
+                        .joinToString(prefix = "[", postfix = "]") { "%T::class" }
+
+                      addMember("$name = $template", *classes.toTypedArray())
+                    }
+                  }
+
+                  addClassArrayMember("modules", contribution.modules)
+                  addClassArrayMember("exclude", contribution.exclude)
+                }
                 .build()
             )
             .addType(generateParentComponent(contribution, module))
@@ -285,7 +333,6 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private class Trigger(
     val clazz: KtClassOrObject,
-    val annotation: FqName,
     val scope: FqName
   ) {
     override fun toString(): String {
@@ -297,7 +344,8 @@ internal class ContributesSubcomponentHandlerGenerator(
     val clazz: ClassId,
     val scope: FqName,
     val parentScope: FqName,
-    // TODO: modules, excludes
+    val modules: List<FqName>,
+    val exclude: List<FqName>
   ) {
     val generatedPackage = COMPONENT_PACKAGE_PREFIX +
       clazz.packageFqName.safePackageString(dotPrefix = true)

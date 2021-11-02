@@ -8,10 +8,13 @@ import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
+import com.squareup.anvil.compiler.contributingInterface
+import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.internal.testing.extends
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.junit.Test
@@ -236,6 +239,176 @@ class ContributesSubcomponentHandlerGeneratorTest {
       val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
       assertThat(annotation).isNotNull()
       assertThat(annotation.scope).isEqualTo(Any::class)
+    }
+  }
+
+  @Test fun `Dagger modules can be added manually`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.Module
+
+        @Module
+        object DaggerModule1
+  
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Unit::class,
+          modules = [DaggerModule1::class]
+        )
+        interface SubcomponentInterface
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """.trimIndent()
+    ) {
+      val annotation = subcomponentInterface.anvilComponent
+        .getAnnotation(MergeSubcomponent::class.java)
+
+      assertThat(annotation.modules.toList()).containsExactly(daggerModule1.kotlin)
+    }
+  }
+
+  @Test fun `Dagger modules can be added manually with multiple compilations`() {
+    val firstCompilationResult = compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import dagger.Module
+
+        @Module
+        object DaggerModule1
+  
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Unit::class,
+          modules = [DaggerModule1::class]
+        )
+        interface SubcomponentInterface
+      """.trimIndent()
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.MergeComponent
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """.trimIndent(),
+      previousCompilationResult = firstCompilationResult
+    ) {
+      val annotation = subcomponentInterface.anvilComponent
+        .getAnnotation(MergeSubcomponent::class.java)
+
+      assertThat(annotation.modules.toList()).containsExactly(daggerModule1.kotlin)
+    }
+  }
+
+  @Test fun `Dagger modules, component interfaces and bindings can be excluded`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.Module
+
+        @Module
+        @ContributesTo(Any::class)
+        object DaggerModule1
+
+        @ContributesTo(Any::class)
+        interface ContributingInterface
+  
+        @ContributesBinding(Any::class)
+        interface SecondContributingInterface : CharSequence
+  
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Unit::class,
+          exclude = [
+            DaggerModule1::class, 
+            ContributingInterface::class, 
+            SecondContributingInterface::class
+          ]
+        )
+        interface SubcomponentInterface
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """.trimIndent()
+    ) {
+      val annotation = subcomponentInterface.anvilComponent
+        .getAnnotation(MergeSubcomponent::class.java)
+
+      assertThat(annotation.exclude.toList()).containsExactly(
+        daggerModule1.kotlin, contributingInterface.kotlin, secondContributingInterface.kotlin
+      )
+    }
+  }
+
+  @Test fun `Dagger modules, component interfaces and bindings can be excluded with multiple compilations`() {
+    val firstCompilationResult = compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesTo
+        import dagger.Module
+
+        @Module
+        @ContributesTo(Any::class)
+        object DaggerModule1
+
+        @ContributesTo(Any::class)
+        interface ContributingInterface
+  
+        @ContributesBinding(Any::class)
+        interface SecondContributingInterface : CharSequence
+  
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Unit::class,
+          exclude = [
+            DaggerModule1::class, 
+            ContributingInterface::class, 
+            SecondContributingInterface::class
+          ]
+        )
+        interface SubcomponentInterface
+      """.trimIndent()
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.MergeComponent
+
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """.trimIndent(),
+      previousCompilationResult = firstCompilationResult
+    ) {
+      val annotation = subcomponentInterface.anvilComponent
+        .getAnnotation(MergeSubcomponent::class.java)
+
+      assertThat(annotation.exclude.toList()).containsExactly(
+        daggerModule1.kotlin, contributingInterface.kotlin, secondContributingInterface.kotlin
+      )
     }
   }
 
