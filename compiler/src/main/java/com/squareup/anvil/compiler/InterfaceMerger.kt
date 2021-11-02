@@ -97,7 +97,7 @@ internal class InterfaceMerger(
             val contributesMultibindingAnnotation = classDescriptorForReplacement
               .annotationOrNull(contributesMultibindingFqName)
 
-            // Verify that the the replaced classes use the same scope.
+            // Verify that the replaced classes use the same scope.
             val scopeOfReplacement = contributesToAnnotation?.scope(module)
               ?: contributesBindingAnnotation?.scope(module)
               ?: contributesMultibindingAnnotation?.scope(module)
@@ -133,7 +133,7 @@ internal class InterfaceMerger(
         val contributesMultibindingAnnotation = classDescriptorForExclusion
           .annotationOrNull(contributesMultibindingFqName)
 
-        // Verify that the the replaced classes use the same scope.
+        // Verify that the replaced classes use the same scope.
         val scopeOfExclusion = contributesToAnnotation?.scope(module)
           ?: contributesBindingAnnotation?.scope(module)
           ?: contributesMultibindingAnnotation?.scope(module)
@@ -159,7 +159,7 @@ internal class InterfaceMerger(
     if (excludedClasses.isNotEmpty()) {
       val intersect = supertypes.getAllSuperTypes()
         .toList()
-        .intersect(excludedClasses)
+        .intersect(excludedClasses.toSet())
 
       if (intersect.isNotEmpty()) {
         throw AnvilCompilationException(
