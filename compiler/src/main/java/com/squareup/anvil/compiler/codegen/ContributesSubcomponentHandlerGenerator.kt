@@ -27,6 +27,7 @@ import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
+import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.mergeComponentFqName
@@ -51,7 +52,6 @@ import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter.Companion.CLASSIFIERS
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter.Companion.FUNCTIONS
@@ -100,7 +100,9 @@ internal class ContributesSubcomponentHandlerGenerator(
           clazz.hasAnnotation(trigger, module)
         } ?: return@mapNotNull null
 
-        Trigger(clazz, clazz.scope(annotation, module))
+        val exclusions = clazz.excludeOrNull(module, annotation) ?: emptyList()
+
+        Trigger(clazz, clazz.scope(annotation, module), exclusions)
       }
       .also {
         triggers += it
@@ -136,7 +138,7 @@ internal class ContributesSubcomponentHandlerGenerator(
               ?: emptyList()
 
             Contribution(
-              clazz = requireNotNull(descriptor.classId),
+              clazz = descriptor.requireClassId(),
               scope = annotation.scope(module).fqNameSafe,
               parentScope = parentScope,
               modules = modules,
@@ -172,10 +174,16 @@ internal class ContributesSubcomponentHandlerGenerator(
         )
       }
 
-    val triggerScopes = triggers.map { it.scope }
     val newContributions = contributions
-      .filter { contribution ->
-        contribution.parentScope in triggerScopes
+      .filterNot { contribution ->
+        val allMatchingTriggers = triggers.filter { it.scope == contribution.parentScope }
+        val excludedInAllTriggers = allMatchingTriggers.all { trigger ->
+          contribution.clazzFqName in trigger.exclusions
+        }
+
+        // If the contributed subcomponent is excluded in all triggers, then we don't want to
+        // generate any code for it and not add it to our newContributions list.
+        excludedInAllTriggers
       }
 
     contributions -= newContributions.toSet()
@@ -278,7 +286,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     contribution: Contribution,
     module: ModuleDescriptor
   ): ParentComponentInterfaceHolder? {
-    val contributionFqName = contribution.clazz.asSingleFqName()
+    val contributionFqName = contribution.clazzFqName
     val contributionDescriptor = contributionFqName.requireClassDescriptor(module)
 
     val contributedInnerComponentInterfaces = contributionDescriptor.unsubstitutedMemberScope
@@ -333,7 +341,8 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private class Trigger(
     val clazz: KtClassOrObject,
-    val scope: FqName
+    val scope: FqName,
+    val exclusions: List<FqName>
   ) {
     override fun toString(): String {
       return "Trigger(clazz=$clazz, scope=$scope)"
@@ -347,11 +356,16 @@ internal class ContributesSubcomponentHandlerGenerator(
     val modules: List<FqName>,
     val exclude: List<FqName>
   ) {
-    val generatedPackage = COMPONENT_PACKAGE_PREFIX +
-      clazz.packageFqName.safePackageString(dotPrefix = true)
+    val clazzFqName = clazz.asSingleFqName()
 
-    val generatedSubcomponentClassName = clazz.relativeClassName.generateClassName() +
-      ANVIL_SUBCOMPONENT_SUFFIX
+    val generatedPackage: String
+    val generatedSubcomponentClassName: String
+
+    init {
+      val generatedAnvilSubcomponent = clazz.generatedAnvilSubcomponent()
+      generatedPackage = generatedAnvilSubcomponent.packageFqName.asString()
+      generatedSubcomponentClassName = generatedAnvilSubcomponent.relativeClassName.asString()
+    }
 
     override fun toString(): String {
       return "Contribution(class=$clazz, parentScope=$parentScope)"
@@ -365,4 +379,15 @@ internal class ContributesSubcomponentHandlerGenerator(
     val componentInterface = componentInterface.asClassName()
     val functionName = function.name.asString()
   }
+}
+
+/**
+ * Returns the Anvil subcomponent that will be generated for a class annotated with
+ * `ContributesSubcomponent`.
+ */
+internal fun ClassId.generatedAnvilSubcomponent(): ClassId {
+  val packageFqName = COMPONENT_PACKAGE_PREFIX +
+    packageFqName.safePackageString(dotPrefix = true, dotSuffix = false)
+  val relativeClassName = relativeClassName.generateClassName() + ANVIL_SUBCOMPONENT_SUFFIX
+  return ClassId(FqName(packageFqName), FqName(relativeClassName), false)
 }

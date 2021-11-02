@@ -357,7 +357,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
     }
   }
 
-  @Test fun `Dagger modules, component interfaces and bindings can be excluded with multiple compilations`() {
+  @Test
+  fun `Dagger modules, component interfaces and bindings can be excluded with multiple compilations`() {
     val firstCompilationResult = compile(
       """
         package com.squareup.test
@@ -681,6 +682,135 @@ class ContributesSubcomponentHandlerGeneratorTest {
         .use { it.invoke(subcomponent) as Int }
 
       assertThat(int).isEqualTo(5)
+    }
+  }
+
+  @Test fun `contributed subcomponents can be excluded with @MergeComponent`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesSubcomponent
+      import com.squareup.anvil.annotations.MergeComponent
+
+      @ContributesSubcomponent(Unit::class, parentScope = Any::class)
+      interface SubcomponentInterface
+
+      @MergeComponent(
+          scope = Any::class,
+          exclude = [SubcomponentInterface::class]
+      )
+      interface ComponentInterface
+      """
+    ) {
+      // Fails because the component is never generated.
+      assertFailsWith<ClassNotFoundException> { subcomponentInterface.anvilComponent }
+    }
+  }
+
+  @Test fun `contributed subcomponents can be excluded with @MergeSubcomponent`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesSubcomponent
+      import com.squareup.anvil.annotations.MergeSubcomponent
+
+      @ContributesSubcomponent(Unit::class, parentScope = Any::class)
+      interface SubcomponentInterface
+
+      @MergeSubcomponent(
+          scope = Any::class,
+          exclude = [SubcomponentInterface::class]
+      )
+      interface ComponentInterface
+      """
+    ) {
+      // Fails because the component is never generated.
+      assertFailsWith<ClassNotFoundException> { subcomponentInterface.anvilComponent }
+    }
+  }
+
+  @Test fun `contributed subcomponents can be excluded with @MergeModules`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.compat.MergeModules
+      import com.squareup.anvil.annotations.ContributesSubcomponent
+
+      @ContributesSubcomponent(Unit::class, parentScope = Any::class)
+      interface SubcomponentInterface
+
+      @MergeModules(
+          scope = Any::class,
+          exclude = [SubcomponentInterface::class]
+      )
+      interface ComponentInterface
+      """
+    ) {
+      // Fails because the component is never generated.
+      assertFailsWith<ClassNotFoundException> { subcomponentInterface.anvilComponent }
+    }
+  }
+
+  @Test fun `contributed subcomponents can be excluded in one component but not the other`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesSubcomponent
+      import com.squareup.anvil.annotations.MergeComponent
+
+      @ContributesSubcomponent(Unit::class, parentScope = Any::class)
+      interface SubcomponentInterface
+
+      @MergeComponent(
+        scope = Any::class,
+        exclude = [SubcomponentInterface::class]
+      )
+      interface ComponentInterface
+
+      @MergeComponent(
+        scope = Any::class,
+      )
+      interface ContributingInterface
+      """
+    ) {
+      assertThat(
+        componentInterface extends subcomponentInterface.anvilComponent.parentComponentInterface
+      ).isFalse()
+
+      assertThat(
+        contributingInterface extends subcomponentInterface.anvilComponent.parentComponentInterface
+      ).isTrue()
+    }
+  }
+
+  @Test fun `contributed subcomponents can be excluded only with a matching scope`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesSubcomponent
+      import com.squareup.anvil.annotations.MergeComponent
+
+      @ContributesSubcomponent(Unit::class, parentScope = Int::class)
+      interface SubcomponentInterface
+
+      @MergeComponent(
+          scope = Any::class,
+          exclude = [SubcomponentInterface::class]
+      )
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains(
+        "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
+          "com.squareup.test.SubcomponentInterface with scope kotlin.Int. The exclusion " +
+          "must use the same scope."
+      )
     }
   }
 

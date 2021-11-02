@@ -19,6 +19,7 @@ import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue.Value.NormalClass
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
+import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
@@ -239,4 +240,12 @@ public fun ClassId.generateClassName(
   val className = relativeClassName.asString().replace(".", separator)
 
   return "$packageName$className$suffix"
+}
+
+@ExperimentalAnvilApi
+public fun ClassDescriptor.requireClassId(): ClassId {
+  return classId ?: throw AnvilCompilationException(
+    classDescriptor = this,
+    message = "Couldn't find the classId for $fqNameSafe."
+  )
 }
