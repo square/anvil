@@ -6,6 +6,7 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.ANVIL_SUBCOMPONENT_SUFFIX
 import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.PARENT_COMPONENT
+import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
@@ -814,6 +815,189 @@ class ContributesSubcomponentHandlerGeneratorTest {
     }
   }
 
+  @Test
+  fun `the parent component interface can return a factory`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @ContributesTo(Unit::class)
+          interface AnyParentComponent {
+            fun createFactory(): ComponentFactory
+          }
+
+          @Factory
+          interface ComponentFactory {
+            fun createComponent(): SubcomponentInterface
+          }
+        }
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """.trimIndent()
+    ) {
+      val createFactoryFunction = subcomponentInterface.anvilComponent
+        .parentComponentInterface
+        .declaredMethods
+        .single()
+
+      assertThat(createFactoryFunction.returnType)
+        .isEqualTo(subcomponentInterface.anvilComponent.generatedFactory)
+      assertThat(createFactoryFunction.name).isEqualTo("createFactory")
+
+      assertThat(
+        subcomponentInterface.anvilComponent.generatedFactory extends
+          subcomponentInterface.componentFactory
+      ).isTrue()
+    }
+  }
+
+  @Test
+  fun `a factory can be an abstract class`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @ContributesTo(Unit::class)
+          interface AnyParentComponent {
+            fun createFactory(): ComponentFactory
+          }
+
+          @Factory
+          abstract class ComponentFactory {
+            abstract fun createComponent(): SubcomponentInterface
+          }
+        }
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """.trimIndent()
+    ) {
+      val createFactoryFunction = subcomponentInterface.anvilComponent
+        .parentComponentInterface
+        .declaredMethods
+        .single()
+
+      assertThat(createFactoryFunction.returnType)
+        .isEqualTo(subcomponentInterface.anvilComponent.generatedFactory)
+      assertThat(createFactoryFunction.name).isEqualTo("createFactory")
+
+      assertThat(
+        subcomponentInterface.anvilComponent.generatedFactory extends
+          subcomponentInterface.componentFactory
+      ).isTrue()
+    }
+  }
+
+  @Test fun `the generated parent component interface returns the factory if one is present`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Factory
+          interface ComponentFactory {
+            fun createComponent(): SubcomponentInterface
+          }
+        }
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """.trimIndent()
+    ) {
+      val parentComponent = subcomponentInterface.anvilComponent.parentComponentInterface
+      assertThat(parentComponent).isNotNull()
+
+      val createFactoryFunction = parentComponent.declaredMethods.single()
+      assertThat(createFactoryFunction.returnType)
+        .isEqualTo(subcomponentInterface.anvilComponent.generatedFactory)
+      assertThat(createFactoryFunction.name).isEqualTo("createComponentFactory")
+
+      assertThat(
+        subcomponentInterface.anvilComponent.generatedFactory extends
+          subcomponentInterface.componentFactory
+      ).isTrue()
+    }
+  }
+
+  @Test fun `Dagger generates the real component and subcomponent with a factory`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.BindsInstance
+
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @ContributesTo(Unit::class)
+          interface AnyParentComponent {
+            fun createFactory(): ComponentFactory
+          }
+
+          @Factory
+          interface ComponentFactory {
+            fun createComponent(
+              @BindsInstance integer: Int
+            ): SubcomponentInterface
+          }
+          
+          fun integer(): Int
+        }
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """,
+      enableDaggerAnnotationProcessor = true
+    ) {
+      val daggerComponent = componentInterface.daggerComponent.declaredMethods
+        .single { it.name == "create" }
+        .invoke(null)
+
+      // Note that there are no declared methods, only inherited methods.
+      assertThat(componentInterface.declaredMethods.toList()).isEmpty()
+
+      // There are two methods: one from AnyParentComponent and one from the generated component
+      // interface. Both show up in the reflection APIs.
+      val factory = componentInterface.methods
+        .first { it.name == "createFactory" }
+        .invoke(daggerComponent)
+
+      val subcomponent = factory::class.java.declaredMethods
+        .single { it.returnType == subcomponentInterface }
+        .use { it.invoke(factory, 5) }
+
+      val int = subcomponent::class.java.declaredMethods
+        .single { it.name == "integer" }
+        .use { it.invoke(subcomponent) as Int }
+
+      assertThat(int).isEqualTo(5)
+    }
+  }
+
   private val Class<*>.anvilComponent: Class<*>
     get() = classLoader
       .loadClass("$COMPONENT_PACKAGE_PREFIX.${generatedClassesString()}$ANVIL_SUBCOMPONENT_SUFFIX")
@@ -823,6 +1007,12 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
   private val Class<*>.parentComponentInterface: Class<*>
     get() = classLoader.loadClass("$canonicalName\$$PARENT_COMPONENT")
+
+  private val Class<*>.generatedFactory: Class<*>
+    get() = classLoader.loadClass("$canonicalName\$$SUBCOMPONENT_FACTORY")
+
+  private val Class<*>.componentFactory: Class<*>
+    get() = classLoader.loadClass("$canonicalName\$ComponentFactory")
 
   private val Class<*>.daggerComponent: Class<*>
     get() = classLoader.loadClass("$packageName.Dagger$simpleName")

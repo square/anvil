@@ -92,4 +92,39 @@ public annotation class ContributesSubcomponent(
    * same scope, but should be excluded from the subcomponent.
    */
   val exclude: Array<KClass<*>> = []
-)
+) {
+  /**
+   * A factory for a contributed subcomponent.
+   *
+   * This follows all the rules of `Subcomponent.Factory`, except it must appear in classes
+   * annotated with `@ContributesSubcomponent` instead of `@Subcomponent`.
+   *
+   * It's strongly recommended creating a parent component interface next to the factory that is
+   * contributed to the parent scope. The parent component interface should have one method that
+   * returns the factory type, e.g.
+   * ```
+   * @ContributesSubcomponent(
+   *   scope = ActivityScope::class,
+   *   parentScope = AppScope::class
+   * )
+   * interface ActivitySubcomponent {
+   *
+   *   @ContributesSubcomponent.Factory
+   *   interface Factory {
+   *     fun createActivitySubcomponent(
+   *       @BindsInstance int: Int
+   *     ): ActivitySubcomponent
+   *   }
+   *
+   *   @ContributesTo(AppScope::class)
+   *   interface ParentComponent {
+   *     fun createActivityComponentFactory(): ActivityComponent.Factory
+   *   }
+   * }
+   * ```
+   * If no parent component interface but a factory is present, then the automatically generated
+   * parent component interface will return a type of the factory and not the subcomponent
+   * directly.
+   */
+  public annotation class Factory
+}

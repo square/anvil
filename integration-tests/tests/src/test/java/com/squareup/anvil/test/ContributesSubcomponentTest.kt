@@ -14,6 +14,17 @@ class ContributesSubcomponentTest {
     assertThat(appComponent.component().integer()).isEqualTo(3)
   }
 
-  @MergeComponent(ContributesSubcomponentParentScope::class)
+  @Test fun `a subcomponent is contributed with a factory`() {
+    val appComponent =
+      DaggerContributesSubcomponentTest_AppComponentFactory.create()
+        as ContributedSubcomponentFactory.ParentInterface
+
+    assertThat(appComponent.factory().createComponent(3).integer()).isEqualTo(3)
+  }
+
+  @MergeComponent(ContributedSubcomponent.ParentScope::class)
   interface AppComponent
+
+  @MergeComponent(ContributedSubcomponentFactory.ParentScope::class)
+  interface AppComponentFactory
 }

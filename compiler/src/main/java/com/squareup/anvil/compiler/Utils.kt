@@ -44,6 +44,7 @@ internal val contributesToFqName = ContributesTo::class.fqName
 internal val contributesBindingFqName = ContributesBinding::class.fqName
 internal val contributesMultibindingFqName = ContributesMultibinding::class.fqName
 internal val contributesSubcomponentFqName = ContributesSubcomponent::class.fqName
+internal val contributesSubcomponentFactoryFqName = ContributesSubcomponent.Factory::class.fqName
 internal val daggerComponentFqName = Component::class.fqName
 internal val daggerSubcomponentFqName = Subcomponent::class.fqName
 internal val daggerModuleFqName = Module::class.fqName
@@ -71,6 +72,7 @@ internal const val COMPONENT_PACKAGE_PREFIX = "anvil.component"
 internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
 internal const val ANVIL_SUBCOMPONENT_SUFFIX = "AnvilSubcomponent"
 internal const val PARENT_COMPONENT = "ParentComponent"
+internal const val SUBCOMPONENT_FACTORY = "SubcomponentFactory"
 
 internal const val REFERENCE_SUFFIX = "_reference"
 internal const val SCOPE_SUFFIX = "_scope"

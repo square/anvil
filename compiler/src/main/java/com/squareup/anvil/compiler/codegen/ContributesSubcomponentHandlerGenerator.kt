@@ -7,11 +7,13 @@ import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.ClassScanner
 import com.squareup.anvil.compiler.HINT_SUBCOMPONENTS_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.PARENT_COMPONENT
+import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
+import com.squareup.anvil.compiler.contributesSubcomponentFactoryFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.internal.annotation
@@ -40,6 +42,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.ABSTRACT
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.TypeSpec
+import dagger.Subcomponent
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities.PUBLIC
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
@@ -192,6 +195,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       .map { contribution ->
         val generatedPackage = contribution.generatedPackage
         val componentClassName = contribution.generatedSubcomponentClassName
+        val factoryClass = findFactoryClass(contribution, module)
 
         val content = FileSpec.buildFile(generatedPackage, componentClassName) {
           TypeSpec
@@ -220,7 +224,12 @@ internal class ContributesSubcomponentHandlerGenerator(
                 }
                 .build()
             )
-            .addType(generateParentComponent(contribution, module))
+            .apply {
+              if (factoryClass != null) {
+                addType(generateFactory(factoryClass.originalDescriptor))
+              }
+            }
+            .addType(generateParentComponent(contribution, module, factoryClass))
             .build()
             .also { addType(it) }
         }
@@ -235,11 +244,33 @@ internal class ContributesSubcomponentHandlerGenerator(
       .toList()
   }
 
+  private fun generateFactory(
+    factoryDescriptor: ClassDescriptor
+  ): TypeSpec {
+    val builder = if (DescriptorUtils.isInterface(factoryDescriptor)) {
+      TypeSpec
+        .interfaceBuilder(SUBCOMPONENT_FACTORY)
+        .addSuperinterface(factoryDescriptor.asClassName())
+    } else {
+      TypeSpec
+        .classBuilder(SUBCOMPONENT_FACTORY)
+        .addModifiers(ABSTRACT)
+        .superclass(factoryDescriptor.asClassName())
+    }
+
+    return builder
+      .addAnnotation(Subcomponent.Factory::class)
+      .build()
+  }
+
   private fun generateParentComponent(
     contribution: Contribution,
-    module: ModuleDescriptor
+    module: ModuleDescriptor,
+    factoryClass: FactoryClassHolder?,
   ): TypeSpec {
-    val parentComponentInterface = findParentComponentInterface(contribution, module)
+    val parentComponentInterface = findParentComponentInterface(
+      contribution, module, factoryClass?.originalDescriptor?.fqNameSafe
+    )
 
     return TypeSpec
       .interfaceBuilder(PARENT_COMPONENT)
@@ -266,6 +297,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           .builder(
             name = parentComponentInterface
               ?.functionName
+              ?: factoryClass?.let { "create${it.originalDescriptor.name}" }
               ?: "create${contribution.generatedSubcomponentClassName}"
           )
           .addModifiers(ABSTRACT)
@@ -273,10 +305,18 @@ internal class ContributesSubcomponentHandlerGenerator(
             if (parentComponentInterface != null) {
               addModifiers(OVERRIDE)
             }
+
+            if (factoryClass != null) {
+              returns(factoryClass.generatedFactoryName)
+            } else {
+              returns(
+                ClassName(
+                  contribution.generatedPackage,
+                  contribution.generatedSubcomponentClassName
+                )
+              )
+            }
           }
-          .returns(
-            ClassName(contribution.generatedPackage, contribution.generatedSubcomponentClassName)
-          )
           .build()
       )
       .build()
@@ -284,7 +324,8 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private fun findParentComponentInterface(
     contribution: Contribution,
-    module: ModuleDescriptor
+    module: ModuleDescriptor,
+    factoryClass: FqName?
   ): ParentComponentInterfaceHolder? {
     val contributionFqName = contribution.clazzFqName
     val contributionDescriptor = contributionFqName.requireClassDescriptor(module)
@@ -310,11 +351,12 @@ internal class ContributesSubcomponentHandlerGenerator(
 
     val functions = componentInterface.unsubstitutedMemberScope
       .getContributedDescriptors(kindFilter = FUNCTIONS)
-      .asSequence()
       .filterIsInstance<FunctionDescriptor>()
       .filter { it.modality == Modality.ABSTRACT && it.visibility == PUBLIC }
-      .filter { it.returnType?.fqNameOrNull() == contributionFqName }
-      .toList()
+      .filter {
+        val returnType = it.returnType?.fqNameOrNull() ?: return@filter false
+        returnType == contributionFqName || (factoryClass != null && returnType == factoryClass)
+      }
 
     val function = when (functions.size) {
       0 -> return null
@@ -326,6 +368,58 @@ internal class ContributesSubcomponentHandlerGenerator(
     }
 
     return ParentComponentInterfaceHolder(componentInterface, function)
+  }
+
+  private fun findFactoryClass(
+    contribution: Contribution,
+    module: ModuleDescriptor
+  ): FactoryClassHolder? {
+    val contributionFqName = contribution.clazzFqName
+    val contributionDescriptor = contributionFqName.requireClassDescriptor(module)
+
+    val contributedFactories = contributionDescriptor.unsubstitutedMemberScope
+      .getContributedDescriptors(kindFilter = CLASSIFIERS)
+      .filterIsInstance<ClassDescriptor>()
+      .filter { it.annotations.hasAnnotation(contributesSubcomponentFactoryFqName) }
+      .onEach { factory ->
+        if (!DescriptorUtils.isInterface(factory) && factory.modality != Modality.ABSTRACT) {
+          throw AnvilCompilationException(
+            classDescriptor = factory,
+            message = "A factory must be an interface or an abstract class."
+          )
+        }
+
+        val createComponentFunctions = factory.unsubstitutedMemberScope
+          .getContributedDescriptors(kindFilter = FUNCTIONS)
+          .filterIsInstance<FunctionDescriptor>()
+          .filter { it.modality == Modality.ABSTRACT }
+          .filter { it.returnType?.fqNameOrNull() == contributionFqName }
+
+        if (createComponentFunctions.size != 1) {
+          throw AnvilCompilationException(
+            classDescriptor = factory,
+            message = "A factory must have exactly one abstract function returning the " +
+              "subcomponent $contributionFqName."
+          )
+        }
+      }
+
+    val descriptor = when (contributedFactories.size) {
+      0 -> return null
+      1 -> contributedFactories[0]
+      else -> throw AnvilCompilationException(
+        classDescriptor = contributionDescriptor,
+        message = "Expected zero or one factory within ${contributionDescriptor.fqNameSafe}."
+      )
+    }
+
+    return FactoryClassHolder(
+      originalDescriptor = descriptor,
+      generatedFactoryName = ClassName(
+        packageName = contribution.generatedPackage,
+        simpleNames = listOf(contribution.generatedSubcomponentClassName, SUBCOMPONENT_FACTORY)
+      )
+    )
   }
 
   private companion object {
@@ -379,6 +473,11 @@ internal class ContributesSubcomponentHandlerGenerator(
     val componentInterface = componentInterface.asClassName()
     val functionName = function.name.asString()
   }
+
+  private class FactoryClassHolder(
+    val originalDescriptor: ClassDescriptor,
+    val generatedFactoryName: ClassName
+  )
 }
 
 /**
