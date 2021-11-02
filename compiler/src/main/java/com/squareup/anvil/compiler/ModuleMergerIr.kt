@@ -126,7 +126,7 @@ internal class ModuleMergerIr(
         val contributesMultibindingAnnotation = excludedClass
           .annotationOrNull(contributesMultibindingFqName)
 
-        // Verify that the the replaced classes use the same scope.
+        // Verify that the replaced classes use the same scope.
         val scopeOfExclusion = contributesToAnnotation?.scope()
           ?: contributesBindingAnnotation?.scope()
           ?: contributesMultibindingAnnotation?.scope()
@@ -206,7 +206,7 @@ internal class ModuleMergerIr(
     )
 
     if (predefinedModules.isNotEmpty()) {
-      val intersect = predefinedModules.intersect(excludedModules)
+      val intersect = predefinedModules.intersect(excludedModules.toSet())
       if (intersect.isNotEmpty()) {
         throw AnvilCompilationException(
           message = "${declaration.fqName} includes and excludes modules " +
@@ -219,11 +219,10 @@ internal class ModuleMergerIr(
     val contributedModules = modules
       .asSequence()
       .map { it.first.owner }
-      .filterIsInstance<IrClass>()
-      .minus(replacedModules)
-      .minus(replacedModulesByContributedBindings)
-      .minus(replacedModulesByContributedMultibindings)
-      .minus(excludedModules)
+      .minus(replacedModules.toSet())
+      .minus(replacedModulesByContributedBindings.toSet())
+      .minus(replacedModulesByContributedMultibindings.toSet())
+      .minus(excludedModules.toSet())
       .plus(predefinedModules)
       .distinct()
 
@@ -305,7 +304,7 @@ internal class ModuleMergerIr(
     val contributesMultibindingAnnotation = classDescriptorForReplacement
       .annotationOrNull(contributesMultibindingFqName)
 
-    // Verify that the the replaced classes use the same scope.
+    // Verify that the replaced classes use the same scope.
     val scopeOfReplacement = contributesToAnnotation?.scope()
       ?: contributesBindingAnnotation?.scope()
       ?: contributesMultibindingAnnotation?.scope()

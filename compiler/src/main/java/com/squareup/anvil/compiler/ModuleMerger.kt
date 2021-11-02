@@ -131,7 +131,7 @@ internal class ModuleMerger(
         val contributesMultibindingAnnotation = classDescriptorForExclusion
           .annotationOrNull(contributesMultibindingFqName)
 
-        // Verify that the the replaced classes use the same scope.
+        // Verify that the replaced classes use the same scope.
         val scopeOfExclusion = contributesToAnnotation?.scope(module)
           ?: contributesBindingAnnotation?.scope(module)
           ?: contributesMultibindingAnnotation?.scope(module)
@@ -223,7 +223,7 @@ internal class ModuleMerger(
     )
 
     if (predefinedModules != null) {
-      val intersect = predefinedModules.intersect(excludedModules)
+      val intersect = predefinedModules.intersect(excludedModules.toSet())
       if (intersect.isNotEmpty()) {
         throw AnvilCompilationException(
           codegen.descriptor,
@@ -236,10 +236,10 @@ internal class ModuleMerger(
     val contributedModules = modules
       .asSequence()
       .map { codegen.typeMapper.mapType(it.first) }
-      .minus(replacedModules)
-      .minus(replacedModulesByContributedBindings)
-      .minus(replacedModulesByContributedMultibindings)
-      .minus(excludedModules)
+      .minus(replacedModules.toSet())
+      .minus(replacedModulesByContributedBindings.toSet())
+      .minus(replacedModulesByContributedMultibindings.toSet())
+      .minus(excludedModules.toSet())
       .distinct()
 
     codegen.v
@@ -313,7 +313,7 @@ internal class ModuleMerger(
     val contributesMultibindingAnnotation = classDescriptorForReplacement
       .annotationOrNull(contributesMultibindingFqName)
 
-    // Verify that the the replaced classes use the same scope.
+    // Verify that the replaced classes use the same scope.
     val scopeOfReplacement = contributesToAnnotation?.scope(module)
       ?: contributesBindingAnnotation?.scope(module)
       ?: contributesMultibindingAnnotation?.scope(module)
