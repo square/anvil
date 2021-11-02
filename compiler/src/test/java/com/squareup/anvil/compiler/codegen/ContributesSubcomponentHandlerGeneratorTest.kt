@@ -569,69 +569,6 @@ class ContributesSubcomponentHandlerGeneratorTest {
     }
   }
 
-  @Test fun `there must be only one parent component interface`() {
-    compile(
-      """
-        package com.squareup.test
-  
-        import com.squareup.anvil.annotations.ContributesSubcomponent
-        import com.squareup.anvil.annotations.ContributesTo
-        import com.squareup.anvil.annotations.MergeComponent
-  
-        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
-        interface SubcomponentInterface {
-          @ContributesTo(Unit::class)
-          interface AnyParentComponent1
-          
-          @ContributesTo(Unit::class)
-          interface AnyParentComponent1
-        }
-        
-        @MergeComponent(Unit::class)
-        interface ComponentInterface
-      """.trimIndent()
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt: (8, 11)")
-      assertThat(messages).contains(
-        "Expected zero or one parent component interface within " +
-          "com.squareup.test.SubcomponentInterface being contributed to the parent scope."
-      )
-    }
-  }
-
-  @Test
-  fun `a parent component interface must have no more than one function returning the contributed subcomponent`() {
-    compile(
-      """
-        package com.squareup.test
-  
-        import com.squareup.anvil.annotations.ContributesSubcomponent
-        import com.squareup.anvil.annotations.ContributesTo
-        import com.squareup.anvil.annotations.MergeComponent
-  
-        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
-        interface SubcomponentInterface {
-          @ContributesTo(Unit::class)
-          interface AnyParentComponent {
-            fun createComponent1(): SubcomponentInterface
-            fun createComponent2(): SubcomponentInterface
-          }
-        }
-        
-        @MergeComponent(Unit::class)
-        interface ComponentInterface
-      """.trimIndent()
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt: (10, 13)")
-      assertThat(messages).contains(
-        "Expected zero or one function returning the subcomponent " +
-          "com.squareup.test.SubcomponentInterface."
-      )
-    }
-  }
-
   @Test
   fun `Dagger generates the real component and subcomponent and they can be instantiated through the component interfaces`() {
     compile(

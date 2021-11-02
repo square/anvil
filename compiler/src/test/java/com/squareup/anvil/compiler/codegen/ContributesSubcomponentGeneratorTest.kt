@@ -175,6 +175,225 @@ class ContributesSubcomponentGeneratorTest {
     }
   }
 
+  @Test fun `two or more parent component interfaces aren't allowed`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesTo
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @ContributesTo(Unit::class)
+          interface AnyParentComponent1 {
+            fun createComponent(): SubcomponentInterface
+          }
+          @ContributesTo(Unit::class)
+          interface AnyParentComponent2 {
+            fun createComponent(): SubcomponentInterface
+          }
+        }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("Source0.kt: (6, 1)")
+      assertThat(messages).contains(
+        "Expected zero or one parent component interface within " +
+          "com.squareup.test.SubcomponentInterface being contributed to the parent scope."
+      )
+    }
+  }
+
+  @Test
+  fun `a parent component interface must not have more than one function returning the subcomponent`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesTo
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @ContributesTo(Unit::class)
+          interface AnyParentComponent1 {
+            fun createComponent1(): SubcomponentInterface
+            fun createComponent2(): SubcomponentInterface
+          }
+        }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("Source0.kt: (6, 1)")
+      assertThat(messages).contains(
+        "Expected zero or one function returning the subcomponent " +
+          "com.squareup.test.SubcomponentInterface."
+      )
+    }
+  }
+
+  @Test
+  fun `there must be only one factory`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Factory
+          interface ComponentFactory1 {
+            fun createComponent(): SubcomponentInterface
+          }
+          @Factory
+          interface ComponentFactory2 {
+            fun createComponent(): SubcomponentInterface
+          }
+        }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("Source0.kt: (7, 1)")
+      assertThat(messages).contains(
+        "Expected zero or one factory within com.squareup.test.SubcomponentInterface."
+      )
+    }
+  }
+
+  @Test
+  fun `a factory must be an abstract class or interface`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Factory
+          object ComponentFactory {
+            fun createComponent(): SubcomponentInterface = throw NotImplementedError()
+          }
+        }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("Source0.kt: (9, 3)")
+      assertThat(messages).contains("A factory must be an interface or an abstract class.")
+    }
+
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Factory
+          class ComponentFactory {
+            fun createComponent(): SubcomponentInterface = throw NotImplementedError()
+          }
+        }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("Source0.kt: (9, 3)")
+      assertThat(messages).contains("A factory must be an interface or an abstract class.")
+    }
+  }
+
+  @Test
+  fun `a factory must have a single abstract method returning the subcomponent - no function`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Factory
+          interface ComponentFactory
+        }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("Source0.kt: (9, 3)")
+      assertThat(messages).contains(
+        "A factory must have exactly one abstract function returning the subcomponent " +
+          "com.squareup.test.SubcomponentInterface."
+      )
+    }
+  }
+
+  @Test
+  fun `a factory must have a single abstract method returning the subcomponent - two functions`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Factory
+          interface ComponentFactory {
+            fun createComponent1(): SubcomponentInterface
+            fun createComponent2(): SubcomponentInterface
+          }
+        }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("Source0.kt: (9, 3)")
+      assertThat(messages).contains(
+        "A factory must have exactly one abstract function returning the subcomponent " +
+          "com.squareup.test.SubcomponentInterface."
+      )
+    }
+  }
+
+  @Test
+  fun `a factory must have a single abstract method returning the subcomponent - non-abstract function`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Factory
+          abstract class ComponentFactory {
+            fun createComponent(): SubcomponentInterface = throw NotImplementedError()
+          }
+        }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("Source0.kt: (9, 3)")
+      assertThat(messages).contains(
+        "A factory must have exactly one abstract function returning the subcomponent " +
+          "com.squareup.test.SubcomponentInterface."
+      )
+    }
+  }
+
   private val Class<*>.parentComponentInterface: Class<*>
     get() = classLoader.loadClass("$canonicalName\$AnyParentComponent")
 }
