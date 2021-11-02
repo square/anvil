@@ -3,9 +3,9 @@ package com.squareup.anvil.compiler
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
-import com.squareup.anvil.compiler.internal.classDescriptorForType
 import com.squareup.anvil.compiler.internal.getAllSuperTypes
 import com.squareup.anvil.compiler.internal.getAnnotationValue
+import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.scope
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
@@ -123,7 +123,7 @@ internal class InterfaceMerger(
 
     val excludedClasses = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)
       ?.value
-      ?.map { it.argumentType(module).classDescriptorForType() }
+      ?.map { it.argumentType(module).requireClassDescriptor() }
       ?.filter { DescriptorUtils.isInterface(it) }
       ?.map { classDescriptorForExclusion ->
         val contributesToAnnotation = classDescriptorForExclusion

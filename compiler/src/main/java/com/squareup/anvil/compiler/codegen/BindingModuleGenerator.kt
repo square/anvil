@@ -24,7 +24,6 @@ import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.classDescriptorForType
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.decapitalize
 import com.squareup.anvil.compiler.internal.findAnnotation
@@ -546,7 +545,7 @@ private fun Binding.key(module: ModuleDescriptor): String {
         .map { (name, value) ->
           val valueString = when (value) {
             is KClassValue -> value.argumentType(module)
-              .classDescriptorForType().fqNameSafe.asString()
+              .requireClassDescriptor().fqNameSafe.asString()
             is EnumValue -> value.enumEntryName.asString()
             // String, int, long, ... other primitives.
             else -> value.toString()

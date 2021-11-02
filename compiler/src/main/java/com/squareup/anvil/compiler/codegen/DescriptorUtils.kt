@@ -7,7 +7,6 @@ import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.asTypeName
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.classDescriptorForType
 import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.toAnnotationSpec
@@ -83,7 +82,7 @@ fun PropertyDescriptor.isSetterInjected(): Boolean {
   return setter?.annotations?.hasAnnotation(injectFqName) == true
 }
 
-fun KotlinType.fqNameOrNull(): FqName? = classDescriptorForType()
+fun KotlinType.fqNameOrNull(): FqName? = requireClassDescriptor()
   .fqNameOrNull()
 
 internal fun List<CallableMemberDescriptor>.mapToMemberInjectParameters(

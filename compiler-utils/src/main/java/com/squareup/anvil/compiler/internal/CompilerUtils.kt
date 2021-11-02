@@ -15,7 +15,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.platform.has
 import org.jetbrains.kotlin.platform.jvm.JvmPlatform
-import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue.Value.NormalClass
@@ -27,6 +26,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.ErrorType
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeUtils
 import org.jetbrains.kotlin.types.typeUtil.supertypes
 import org.jetbrains.org.objectweb.asm.Type
 
@@ -89,8 +89,16 @@ public fun ConstantValue<*>.toType(
 public fun KotlinType.argumentType(): KotlinType = arguments.first().type
 
 @ExperimentalAnvilApi
-public fun KotlinType.classDescriptorForType(): ClassDescriptor {
-  return DescriptorUtils.getClassDescriptorForType(this)
+public fun KotlinType.classDescriptorOrNull(): ClassDescriptor? {
+  return TypeUtils.getClassDescriptor(this)
+}
+
+@ExperimentalAnvilApi
+public fun KotlinType.requireClassDescriptor(): ClassDescriptor {
+  return classDescriptorOrNull()
+    ?: throw AnvilCompilationException(
+      "Unable to resolve type for ${this.asTypeName()}"
+    )
 }
 
 @ExperimentalAnvilApi
@@ -105,7 +113,7 @@ public fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescriptor
       message = "Couldn't find scope for $fqName."
     )
 
-  return annotationValue.argumentType(module).classDescriptorForType()
+  return annotationValue.argumentType(module).requireClassDescriptor()
 }
 
 @ExperimentalAnvilApi
@@ -141,7 +149,7 @@ public fun List<KotlinType>.getAllSuperTypes(): Sequence<FqName> =
     kotlinTypes.ifEmpty { null }?.flatMap { it.supertypes() }
   }
     .flatMap { it.asSequence() }
-    .map { it.classDescriptorForType().fqNameSafe }
+    .map { it.requireClassDescriptor().fqNameSafe }
 
 @ExperimentalAnvilApi
 public fun AnnotationDescriptor.isQualifier(): Boolean {

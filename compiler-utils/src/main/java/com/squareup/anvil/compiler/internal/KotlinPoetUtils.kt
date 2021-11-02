@@ -266,7 +266,7 @@ public fun KotlinType.asTypeNameOrNull(
 ): TypeName? {
   if (isTypeParameter()) return TypeVariableName(toString())
 
-  val className = classDescriptorForType().asClassName()
+  val className = requireClassDescriptor().asClassName()
   if (!rawTypeFilter(className)) {
     return null
   }
@@ -376,7 +376,7 @@ public fun AnnotationDescriptor.toAnnotationSpec(module: ModuleDescriptor): Anno
       allValueArguments.forEach { (name, value) ->
         when (value) {
           is KClassValue -> {
-            val className = value.argumentType(module).classDescriptorForType()
+            val className = value.argumentType(module).requireClassDescriptor()
               .asClassName()
             addMember("${name.asString()} = %T::class", className)
           }

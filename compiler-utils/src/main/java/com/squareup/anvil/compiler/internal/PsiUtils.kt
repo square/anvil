@@ -4,7 +4,6 @@ package com.squareup.anvil.compiler.internal
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.ClassReference.Psi
 import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
@@ -42,7 +41,7 @@ import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.KotlinType
 import kotlin.reflect.KClass
 
 private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName, publishedApiFqName)
@@ -223,82 +222,6 @@ public fun KtClassOrObject.allPsiSuperClasses(
     ?: return emptyList()
 
   return listOf(superOrNull) + superOrNull.allPsiSuperClasses(module)
-}
-
-/**
- * Used to create a common type between [KtClassOrObject] class references and [ClassDescriptor]
- * references, to streamline parsing.
- *
- * @see allSuperTypeClassReferences
- */
-@ExperimentalAnvilApi
-public sealed interface ClassReference {
-
-  public val fqName: FqName
-
-  public data class Psi(
-    val clazz: KtClassOrObject,
-    override val fqName: FqName
-  ) : ClassReference
-
-  public data class Descriptor(
-    val clazz: ClassDescriptor,
-    override val fqName: FqName
-  ) : ClassReference
-}
-
-/**
- * This will return all super types as [ClassReference], whether they're parsed as [KtClassOrObject]
- * or [ClassDescriptor]. This will include generated code, assuming it has already been generated.
- * The returned sequence will be distinct by FqName, and Psi types are preferred over Descriptors.
- *
- * The first elements in the returned sequence represent the direct superclass to the receiver. The
- * last elements represent the types which are furthest up-stream.
- *
- * @param includeSelf If true, the receiver class is the first element of the sequence
- */
-@ExperimentalAnvilApi
-public fun KtClassOrObject.allSuperTypeClassReferences(
-  module: ModuleDescriptor,
-  includeSelf: Boolean = false
-): Sequence<ClassReference> {
-
-  fun KtClassOrObject.superTypeEntryNames() = superTypeListEntries
-    .map { it.requireFqName(module) }
-
-  fun FqName.typeRef(module: ModuleDescriptor): ClassReference {
-    return classDescriptorOrNull(module)
-      ?.let { Descriptor(it, this) }
-      ?: Psi(module.requireKtClassOrObject(this), this)
-  }
-
-  fun List<FqName>.typeRefs(module: ModuleDescriptor): Sequence<ClassReference> {
-    return asSequence().map { it.typeRef(module) }
-  }
-
-  val initial = if (includeSelf) {
-    listOf(requireFqName()) + superTypeEntryNames()
-  } else {
-    superTypeEntryNames()
-  }.typeRefs(module)
-
-  return generateSequence(initial) { superTypes ->
-    superTypes
-      .mapNotNull { classRef ->
-        when (classRef) {
-          is Psi -> classRef.clazz.superTypeEntryNames()
-            .takeIf { it.isNotEmpty() }
-            ?.typeRefs(module)
-          is Descriptor -> classRef.clazz.directSuperClassAndInterfaces()
-            .takeIf { it.isNotEmpty() }
-            ?.asSequence()
-            ?.map { it.fqNameSafe.typeRef(module) }
-        }
-      }
-      .flatten()
-      .takeIf { it.firstOrNull() != null }
-  }.flatten()
-    .distinctBy { it.fqName }
 }
 
 @ExperimentalAnvilApi
@@ -621,14 +544,54 @@ public fun KtClassOrObject.resolveTypeReference(
 ): KtTypeReference? {
 
   // if the element isn't a type variable name like `T`, it can be resolved through imports.
-  typeReference.typeElement?.fqNameOrNull(module)?.let { return typeReference }
+  typeReference.typeElement?.fqNameOrNull(module)
+    ?.let { return typeReference }
 
-  val declaringClass = typeReference.typeElement?.containingClass()
-    ?: throw AnvilCompilationException(
-      "Unable to find a containing class.",
-      element = typeReference
-    )
-  val declaringClassFqName = declaringClass.requireFqName()
+  val declaringClass = typeReference.requireContainingClassReference()
+  val parameterName = typeReference.text
+
+  return resolveGenericTypeReference(module, declaringClass, parameterName)
+}
+
+/**
+ * Safely resolves a [KotlinType], when that type reference is a generic expressed by a type
+ * variable name. This is done by inspecting the class hierarchy to find where the generic type is
+ * declared, then resolving *that* reference.
+ *
+ * For instance, given:
+ *
+ * ```
+ * interface SomeFactory : Function1<String, SomeClass>
+ * ```
+ *
+ * There's an invisible `fun invoke(p1: P1): R`. If `SomeFactory` is parsed using PSI (such as if
+ * it's generated), then the function can only be parsed to have the projected types of `P1` and `R`
+ *
+ * @receiver The class which actually references the type. In the above example, this would be
+ *   `SomeFactory`.
+ * @param declaringClass The class which declares the generic type name. In the above example, this
+ *   would be `Function1`.
+ * @param typeToResolve The generic reference to be resolved. In the above example, this is the `T`
+ *   **return type**.
+ */
+@ExperimentalAnvilApi
+public fun KtClassOrObject.resolveGenericKotlinType(
+  module: ModuleDescriptor,
+  declaringClass: ClassReference,
+  typeToResolve: KotlinType
+): KtTypeReference? {
+
+  val parameterName = typeToResolve.toString()
+
+  return resolveGenericTypeReference(module, declaringClass, parameterName)
+}
+
+private fun KtClassOrObject.resolveGenericTypeReference(
+  module: ModuleDescriptor,
+  declaringClass: ClassReference,
+  parameterName: String
+): KtTypeReference? {
+  val declaringClassFqName = declaringClass.fqName
 
   // If the class/interface declaring the generic is the receiver class,
   // then the generic hasn't been set to a concrete type and can't be resolved.
@@ -637,28 +600,56 @@ public fun KtClassOrObject.resolveTypeReference(
   }
 
   // Used to determine which parameter to look at in a KtTypeArgumentList
-  val indexToResolve = declaringClass.typeParameters
-    .indexOfFirst { it.requireIdentifier() == typeReference.typeElement?.text }
+  val indexOfType = declaringClass.indexOfTypeParameter(parameterName)
 
   // Find where the supertype is actually declared by matching the FqName of the SuperTypeListEntry
   // to the type which declares the generic we're trying to resolve.
   // After finding the SuperTypeListEntry, just take the TypeReference from its type argument list
-  val resolvedTypeReference = allSuperTypeClassReferences(module, includeSelf = true)
-    .filterIsInstance<Psi>()
-    .firstNotNullOfOrNull { typeRef ->
-      typeRef.clazz
-        .superTypeListEntries
-        .firstOrNull { it.requireFqName(module) == declaringClassFqName }
-    }
+  val resolvedTypeReference = superTypeListEntryOrNull(module, declaringClassFqName)
     ?.typeReference
     ?.typeElement
     ?.getChildOfType<KtTypeArgumentList>()
     ?.arguments
-    ?.get(indexToResolve)
+    ?.get(indexOfType)
     ?.typeReference
 
   return resolvedTypeReference?.takeIf { it.fqNameOrNull(module) != null }
     ?: resolvedTypeReference?.let { resolveTypeReference(module, it) }
+}
+
+/**
+ * Find where a super type is extended/implemented by matching the FqName of a SuperTypeListEntry to
+ * the FqName of the target super type.
+ *
+ * For instance, given:
+ *
+ * ```
+ * interface Base<T> {
+ *   fun create(): T
+ * }
+ *
+ * abstract class Middle : Comparable<MyClass>, Provider<Something>, Base<Something>
+ *
+ * class InjectClass : Middle()
+ * ```
+ *
+ * We start at the declaration of `InjectClass`, looking for a super declaration of `Base<___>`.
+ * Since `InjectClass` doesn't declare it, we look through the supers of `Middle` and find it, then
+ * resolve `T` to `Something`.
+ */
+@ExperimentalAnvilApi
+public fun KtClassOrObject.superTypeListEntryOrNull(
+  module: ModuleDescriptor,
+  superTypeFqName: FqName
+): KtSuperTypeListEntry? {
+  return toClassReference()
+    .allSuperTypeClassReferences(module, includeSelf = true)
+    .filterIsInstance<Psi>()
+    .firstNotNullOfOrNull { classReference ->
+      classReference.clazz
+        .superTypeListEntries
+        .firstOrNull { it.requireFqName(module) == superTypeFqName }
+    }
 }
 
 @ExperimentalAnvilApi
@@ -746,3 +737,19 @@ public fun KtClassOrObject.generateClassName(
         .shortName()
         .asString()
     }
+
+@ExperimentalAnvilApi
+public fun KtTypeReference.containingClassReferenceOrNull(): ClassReference? {
+  return typeElement
+    ?.containingClass()
+    ?.toClassReference()
+}
+
+@ExperimentalAnvilApi
+public fun KtTypeReference.requireContainingClassReference(): ClassReference {
+  return containingClassReferenceOrNull()
+    ?: throw AnvilCompilationException(
+      "Unable to find a containing class.",
+      element = this
+    )
+}

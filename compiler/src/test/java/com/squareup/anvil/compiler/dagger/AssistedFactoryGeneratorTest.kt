@@ -482,6 +482,52 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
+  @Test fun `the factory function may be provided by a generic super type with generic parameter`() {
+
+    // This is broken for Dagger, but working with Anvil factory generation
+    // https://github.com/google/dagger/issues/2984
+    if (useDagger) return
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      import kotlin.properties.ReadOnlyProperty
+      import kotlin.reflect.KProperty
+      
+      data class AssistedService @AssistedInject constructor(
+          val int: Int,
+          @Assisted val strings: List<String>
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory : Function1<List<String>, AssistedService> 
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .last { it.name == "invoke" }
+        .invoke(factoryImplInstance, listOf("a"))
+
+      assertThat(assistedServiceInstance)
+        .isEqualTo(assistedService.createInstance(5, listOf("a")))
+    }
+  }
+
   @Test fun `the implementation function name matches the factory name`() {
     compile(
       """
