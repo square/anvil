@@ -8,7 +8,6 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
-import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.getAnnotationValue
@@ -32,9 +31,6 @@ import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
-import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Qualifier
@@ -79,33 +75,10 @@ internal fun FqName.isAnvilModule(): Boolean {
   return name.startsWith(MODULE_PACKAGE_PREFIX) && name.endsWith(ANVIL_MODULE_SUFFIX)
 }
 
-internal fun AnnotationDescriptor.boundType(
-  module: ModuleDescriptor,
-  annotatedClass: ClassDescriptor,
-  annotationFqName: FqName
-): ClassDescriptor {
-  (getAnnotationValue("boundType") as? KClassValue)
+internal fun AnnotationDescriptor.boundTypeOrNull(module: ModuleDescriptor): ClassDescriptor? {
+  return (getAnnotationValue("boundType") as? KClassValue)
     ?.argumentType(module)
     ?.requireClassDescriptor()
-    ?.let { return it }
-
-  val directSuperTypes = annotatedClass.getSuperInterfaces()
-    .plus(
-      annotatedClass.getSuperClassNotAny()
-        ?.let { listOf(it) }
-        ?: emptyList()
-    )
-
-  val boundType = directSuperTypes.singleOrNull()
-  if (boundType != null) return boundType
-
-  throw AnvilCompilationException(
-    classDescriptor = annotatedClass,
-    message = "${annotatedClass.fqNameSafe} contributes a binding, but does not " +
-      "specify the bound type. This is only allowed with exactly one direct super type. " +
-      "If there are multiple or none, then the bound type must be explicitly defined in " +
-      "the @${annotationFqName.shortName()} annotation."
-  )
 }
 
 internal fun AnnotationDescriptor.replaces(module: ModuleDescriptor): List<ClassDescriptor> {

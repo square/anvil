@@ -1,11 +1,14 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.annotations.ContributesBinding.Priority.NORMAL
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.injectFqName
+import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.hasAnnotation
@@ -21,7 +24,9 @@ import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
+import org.jetbrains.kotlin.psi.KtConstantExpression
 import org.jetbrains.kotlin.psi.KtConstructor
+import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.allConstructors
 
 /**
@@ -59,7 +64,7 @@ internal fun KtClassOrObject.injectConstructor(
   }
 }
 
-internal fun KtClassOrObject.boundType(
+internal fun KtClassOrObject.boundTypeOrNull(
   annotationFqName: FqName,
   module: ModuleDescriptor
 ): FqName? {
@@ -78,14 +83,31 @@ internal fun KtClassOrObject.replaces(
     else -> throw IllegalArgumentException("$annotationFqName has no replaces field.")
   }
 
-  return requireAnnotation(annotationFqName, module)
-    .findAnnotationArgument<KtCollectionLiteralExpression>(name = "replaces", index = index)
+  return findAnnotation(annotationFqName, module)
+    ?.findAnnotationArgument<KtCollectionLiteralExpression>(name = "replaces", index = index)
     ?.let { classCollection ->
       classCollection.children
         .filterIsInstance<KtClassLiteralExpression>()
         .map { it.requireFqName(module) }
     }
     ?: emptyList()
+}
+
+internal fun KtClassOrObject.ignoreQualifier(
+  module: ModuleDescriptor,
+  annotationFqName: FqName
+): Boolean {
+  val index = when (annotationFqName) {
+    contributesBindingFqName -> 4
+    contributesMultibindingFqName -> 3
+    else -> return false
+  }
+
+  return requireAnnotation(annotationFqName, module)
+    .findAnnotationArgument<KtConstantExpression>(name = "ignoreQualifier", index = index)
+    ?.text
+    ?.toBooleanStrictOrNull()
+    ?: false
 }
 
 /**
@@ -97,8 +119,8 @@ internal fun KtClassOrObject.replaces(
  * @see KtAnnotationEntry.findAnnotationArgument
  */
 internal fun KtClassOrObject.excludeOrNull(
-  annotationFqName: FqName,
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
+  annotationFqName: FqName
 ): List<FqName>? {
 
   val index = when (annotationFqName) {
@@ -113,4 +135,12 @@ internal fun KtClassOrObject.excludeOrNull(
     ?.children
     ?.filterIsInstance<KtClassLiteralExpression>()
     ?.mapNotNull { it.fqNameOrNull(module) }
+}
+
+/**
+ * @return the priority specified in the annotation, or [NORMAL] if there is no argument.
+ */
+internal fun KtAnnotationEntry.priority(): ContributesBinding.Priority {
+  val enumValue = findAnnotationArgument<KtNameReferenceExpression>("priority", 4) ?: return NORMAL
+  return ContributesBinding.Priority.valueOf(enumValue.text)
 }

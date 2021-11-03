@@ -139,7 +139,7 @@ internal fun KtClassOrObject.checkSingleSuperType(
 ) {
   // If the bound type exists, then you're allowed to have multiple super types. Without the bound
   // type there must be exactly one super type.
-  if (boundType(annotationFqName, module) != null) return
+  if (boundTypeOrNull(annotationFqName, module) != null) return
 
   val superTypes = superTypeListEntries
   if (superTypes.size != 1) {
@@ -158,7 +158,7 @@ internal fun KtClassOrObject.checkClassExtendsBoundType(
   annotationFqName: FqName
 ) {
   // Check the super type through the Psi APIs first.
-  val boundType = boundType(annotationFqName, module)
+  val boundType = boundTypeOrNull(annotationFqName, module)
     ?: superTypeListEntries.singleOrNull()?.requireFqName(module)
     ?: throw AnvilCompilationException(
       element = this,
