@@ -130,6 +130,22 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       "anvil${File.separator}src-gen-${variant.name}"
     )
 
+    if (variant.variantFilter.syncGeneratedSources) {
+      val isIdeSyncProvider = project.providers
+        .systemProperty("idea.sync.active")
+        .forUseAtConfigurationTime()
+
+      if (isIdeSyncProvider.getOrElse("false").toBoolean()) {
+        // Only add source sets during the IDE sync. Don't add them for compilation, otherwise
+        // we'll see weird compile errors especially with incremental compilation. For a longer
+        // explanation why this is a bad idea, see here:
+        // https://github.com/square/anvil/pull/207#issuecomment-850768750
+        kotlinCompilation.defaultSourceSet {
+          kotlin.srcDir(srcGenDir)
+        }
+      }
+    }
+
     return project.provider {
       listOf(
         FilesSubpluginOption(
