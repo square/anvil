@@ -3,7 +3,7 @@ import org.gradle.util.internal.VersionNumber
 ext {
   ci = (System.getenv('CI') ?: 'false').toBoolean()
 
-  autoServiceVersion = '1.0'
+  autoServiceVersion = '1.0.1'
   daggerVersion = '2.36'
   espressoVersion = '3.2.0'
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
