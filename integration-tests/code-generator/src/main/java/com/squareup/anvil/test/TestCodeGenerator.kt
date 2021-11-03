@@ -102,14 +102,10 @@ class TestCodeGenerator : CodeGenerator {
             @Assisted val string: String
           )
 
-          interface ParentAssistedFactory {
-            fun create(string: String): AssistedService
-          }
+          interface ParentAssistedFactory : Function1<String, AssistedService>
     
           @AssistedFactory
-          interface SampleAssistedFactory : ParentAssistedFactory {
-            override fun create(string: String): AssistedService
-          }
+          interface SampleAssistedFactory : ParentAssistedFactory
         """.trimIndent()
 
         sequenceOf(

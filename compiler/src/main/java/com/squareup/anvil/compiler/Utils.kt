@@ -10,9 +10,9 @@ import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.argumentType
-import com.squareup.anvil.compiler.internal.classDescriptorForType
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.getAnnotationValue
+import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import dagger.Component
 import dagger.Lazy
 import dagger.MapKey
@@ -86,7 +86,7 @@ internal fun AnnotationDescriptor.boundType(
 ): ClassDescriptor {
   (getAnnotationValue("boundType") as? KClassValue)
     ?.argumentType(module)
-    ?.classDescriptorForType()
+    ?.requireClassDescriptor()
     ?.let { return it }
 
   val directSuperTypes = annotatedClass.getSuperInterfaces()
@@ -111,9 +111,7 @@ internal fun AnnotationDescriptor.boundType(
 internal fun AnnotationDescriptor.replaces(module: ModuleDescriptor): List<ClassDescriptor> {
   return (getAnnotationValue("replaces") as? ArrayValue)
     ?.value
-    ?.map {
-      it.argumentType(module).classDescriptorForType()
-    }
+    ?.map { it.argumentType(module).requireClassDescriptor() }
     ?: emptyList()
 }
 

@@ -8,8 +8,8 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
-import com.squareup.anvil.compiler.internal.classDescriptorForType
 import com.squareup.anvil.compiler.internal.getAnnotationValue
+import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.toType
@@ -122,7 +122,7 @@ internal class ModuleMerger(
       ?.value
       ?.map {
         val argumentType = it.argumentType(module)
-        val classDescriptorForExclusion = argumentType.classDescriptorForType()
+        val classDescriptorForExclusion = argumentType.requireClassDescriptor()
 
         val contributesToAnnotation = classDescriptorForExclusion
           .annotationOrNull(contributesToFqName)
