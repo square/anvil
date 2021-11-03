@@ -10,17 +10,15 @@ import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.GeneratedFile
-import com.squareup.anvil.compiler.boundType
 import com.squareup.anvil.compiler.codegen.GeneratedMethod.BindingMethod
 import com.squareup.anvil.compiler.codegen.GeneratedMethod.ProviderMethod
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
-import com.squareup.anvil.compiler.ignoreQualifier
-import com.squareup.anvil.compiler.internal.annotation
+import com.squareup.anvil.compiler.internal.ClassReference.Descriptor
+import com.squareup.anvil.compiler.internal.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.annotationOrNull
-import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
@@ -29,17 +27,15 @@ import com.squareup.anvil.compiler.internal.decapitalize
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.anvil.compiler.internal.isQualifier
-import com.squareup.anvil.compiler.internal.requireClassDescriptor
+import com.squareup.anvil.compiler.internal.requireClassReference
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
-import com.squareup.anvil.compiler.internal.toAnnotationSpec
-import com.squareup.anvil.compiler.isMapKey
+import com.squareup.anvil.compiler.internal.scopeOrNull
+import com.squareup.anvil.compiler.internal.toClassReference
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
-import com.squareup.anvil.compiler.priority
 import com.squareup.anvil.compiler.replaces
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.FileSpec
@@ -51,20 +47,13 @@ import dagger.Module
 import dagger.Provides
 import dagger.multibindings.IntoMap
 import dagger.multibindings.IntoSet
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.constants.EnumValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
-import org.jetbrains.kotlin.types.KotlinType
 import java.io.File
 
 private val supportedFqNames = listOf(
@@ -132,7 +121,7 @@ internal class BindingModuleGenerator(
 
         // Remember for which scopes which types were excluded so that we later don't generate
         // a binding method for these types.
-        psiClass.excludeOrNull(annotationFqName, module)
+        psiClass.excludeOrNull(module, annotationFqName)
           ?.let { excludedTypesForClass[mergedClassKey] = it }
 
         val packageName = generatePackageName(psiClass)
@@ -214,135 +203,53 @@ internal class BindingModuleGenerator(
         annotationFqName: FqName,
         isMultibinding: Boolean
       ): List<GeneratedMethod> {
-        val contributedBindingsThisModule = collectedClasses
-          .asSequence()
-          .map { it.requireClassDescriptor(module) }
 
         val contributedBindingsDependencies = classScanner.findContributedClasses(
           module,
           packageName = hintPackagePrefix,
           annotation = annotationFqName,
           scope = scope
-        )
+        ).map { it.toClassReference() }
 
-        val replacedBindings = (contributedBindingsThisModule + contributedBindingsDependencies)
-          .flatMap {
-            it.annotationOrNull(annotationFqName, scope = scope)
-              ?.replaces(module)
-              ?: emptyList()
+        val allContributedClasses = collectedClasses
+          .map { name -> module.requireClassReference(name) }
+          .plus(contributedBindingsDependencies)
+
+        val replacedBindings = allContributedClasses
+          .flatMap { classReference ->
+
+            when (classReference) {
+              is Descriptor -> classReference.clazz.annotationOrNull(annotationFqName, scope)
+                ?.replaces(module)
+                ?.map { it.fqNameSafe }
+              is Psi -> classReference.clazz.replaces(annotationFqName, module)
+            }
+              .orEmpty()
           }
 
-        return (contributedBindingsThisModule + contributedBindingsDependencies)
-          .minus(replacedBindings)
-          .filterNot { it.fqNameSafe in bindingsReplacedInDaggerModules }
-          .filterNot { it.fqNameSafe in excludedNames }
-          .filter {
-            val annotation = it.annotationOrNull(annotationFqName)
-            annotation != null && scope == annotation.scope(module).fqNameSafe
-          }
-          .map { contributedClass ->
-            val annotation = contributedClass.annotation(annotationFqName)
-            val boundType = annotation.boundType(module, contributedClass, annotationFqName)
-
-            checkExtendsBoundType(type = contributedClass, boundType = boundType)
-            checkNotGeneric(type = contributedClass, boundTypeDescriptor = boundType)
-
-            Binding(contributedClass, annotation, boundType)
+        return allContributedClasses
+          .asSequence()
+          .filterNot { it.fqName in replacedBindings }
+          .filterNot { it.fqName in bindingsReplacedInDaggerModules }
+          .filterNot { it.fqName in excludedNames }
+          .filter { scope == it.scopeOrNull(module, annotationFqName) }
+          .map {
+            it.toContributedBinding(
+              module = module,
+              annotationFqName = annotationFqName,
+              isMultibinding = isMultibinding
+            )
           }
           .let { bindings ->
             if (isMultibinding) {
               bindings
             } else {
-              bindings
-                .groupBy { binding -> binding.key(module) }
-                .map {
-                  it.value.findHighestPriorityBinding()
-                }
+              bindings.groupBy { it.qualifiersKeyLazy.value }
+                .map { it.value.findHighestPriorityBinding() }
                 .asSequence()
             }
           }
-          .map { (contributedClass, annotation, boundType) ->
-            val concreteType = contributedClass.fqNameSafe
-
-            val qualifiers = if (annotation.ignoreQualifier()) {
-              emptyList()
-            } else {
-              contributedClass.annotations
-                .filter { it.isQualifier() }
-                .map { it.toAnnotationSpec(module) }
-            }
-
-            val mapKeys = if (isMultibinding) {
-              contributedClass.annotations
-                .filter { it.isMapKey() }
-                .map { it.toAnnotationSpec(module) }
-            } else {
-              emptyList()
-            }
-            val isMapMultibinding = mapKeys.isNotEmpty()
-
-            if (DescriptorUtils.isObject(contributedClass)) {
-              ProviderMethod(
-                FunSpec
-                  .builder(
-                    name = concreteType
-                      .asString()
-                      .split(".")
-                      .joinToString(
-                        separator = "",
-                        prefix = "provide",
-                        postfix = if (isMultibinding) "Multi" else ""
-                      ) {
-                        it.capitalize()
-                      }
-                  )
-                  .addAnnotation(Provides::class)
-                  .apply {
-                    when {
-                      isMapMultibinding -> addAnnotation(IntoMap::class)
-                      isMultibinding -> addAnnotation(IntoSet::class)
-                    }
-                  }
-                  .addAnnotations(qualifiers)
-                  .addAnnotations(mapKeys)
-                  .returns(boundType.asClassName())
-                  .addStatement("return %T", contributedClass.asClassName())
-                  .build()
-              )
-            } else {
-              BindingMethod(
-                FunSpec
-                  .builder(
-                    name = concreteType
-                      .asString()
-                      .split(".")
-                      .joinToString(
-                        separator = "",
-                        prefix = "bind",
-                        postfix = if (isMultibinding) "Multi" else ""
-                      ) {
-                        it.capitalize()
-                      }
-                  )
-                  .addAnnotation(Binds::class)
-                  .apply {
-                    when {
-                      isMapMultibinding -> addAnnotation(IntoMap::class)
-                      isMultibinding -> addAnnotation(IntoSet::class)
-                    }
-                  }
-                  .addAnnotations(qualifiers)
-                  .addAnnotations(mapKeys)
-                  .addModifiers(ABSTRACT)
-                  .addParameter(
-                    name = concreteType.shortName().asString().decapitalize(),
-                    type = contributedClass.asClassName()
-                  )
-                  .returns(boundType.asClassName())
-                  .build()
-              )
-            }
-          }
+          .map { binding -> binding.toGeneratedMethod(module, isMultibinding) }
           .toList()
       }
 
@@ -367,29 +274,6 @@ internal class BindingModuleGenerator(
       daggerModuleFile.writeText(content)
 
       GeneratedFile(daggerModuleFile, content)
-    }
-  }
-
-  private fun checkNotGeneric(
-    type: ClassDescriptor,
-    boundTypeDescriptor: ClassDescriptor
-  ) {
-    if (boundTypeDescriptor.declaredTypeParameters.isNotEmpty()) {
-
-      fun KotlinType.describeTypeParameters(): String = arguments
-        .ifEmpty { return "" }
-        .joinToString(prefix = "<", postfix = ">") { typeArgument ->
-          typeArgument.type.toString() + typeArgument.type.describeTypeParameters()
-        }
-
-      throw AnvilCompilationException(
-        classDescriptor = boundTypeDescriptor,
-        message = "Class ${type.fqNameSafe} binds ${boundTypeDescriptor.fqNameSafe}," +
-          " but the bound type contains type parameter(s)" +
-          " ${boundTypeDescriptor.defaultType.describeTypeParameters()}." +
-          " Type parameters in bindings are not supported. This binding needs" +
-          " to be contributed in a Dagger module manually."
-      )
     }
   }
 
@@ -421,23 +305,6 @@ internal class BindingModuleGenerator(
         it.hasAnnotation(contributesToFqName, module) &&
           it.hasAnnotation(daggerModuleFqName, module)
       }
-  }
-
-  private fun checkExtendsBoundType(
-    type: ClassDescriptor,
-    boundType: ClassDescriptor
-  ) {
-    val boundFqName = boundType.fqNameSafe
-    val hasSuperType = type.getAllSuperClassifiers()
-      .any { it.fqNameSafe == boundFqName }
-
-    if (!hasSuperType) {
-      throw AnvilCompilationException(
-        classDescriptor = type,
-        message = "${type.fqNameSafe} contributes a binding for $boundFqName, but doesn't " +
-          "extend this type."
-      )
-    }
   }
 
   private fun KtClassOrObject.generateClassName(): String =
@@ -497,68 +364,94 @@ private sealed class GeneratedMethod {
   class BindingMethod(override val spec: FunSpec) : GeneratedMethod()
 }
 
-private data class Binding(
-  val contributedClass: ClassDescriptor,
-  val annotation: AnnotationDescriptor,
-  val boundType: ClassDescriptor
-)
-
-private fun List<Binding>.findHighestPriorityBinding(): Binding {
+private fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBinding {
   if (size == 1) return this[0]
 
-  val bindings = groupBy { it.annotation.priority() }
+  val bindings = groupBy { it.priority }
     .toSortedMap()
     .let { it.getValue(it.lastKey()) }
 
   if (bindings.size > 1) {
     throw AnvilCompilationException(
       "There are multiple contributed bindings with the same bound type. The bound type is " +
-        "${bindings[0].boundType.fqNameSafe}. The contributed binding classes are: " +
+        "${bindings[0].boundTypeClassName}. The contributed binding classes are: " +
         bindings.joinToString(
           prefix = "[",
           postfix = "]"
-        ) { it.contributedClass.fqNameSafe.asString() }
+        ) { it.contributedFqName.asString() }
     )
   }
 
   return bindings[0]
 }
 
-private val Collection<GeneratedMethod>.specs get() = map { it.spec }
+private fun ContributedBinding.toGeneratedMethod(
+  module: ModuleDescriptor,
+  isMultibinding: Boolean
+): GeneratedMethod {
 
-private fun Binding.key(module: ModuleDescriptor): String {
-  // Careful! If we ever decide to support generic types, then we might need to use the
-  // Kotlin type and not just the FqName.
-  val fqName = boundType.fqNameSafe.asString()
-  if (annotation.ignoreQualifier()) return fqName
+  val isMapMultibinding = mapKeys.isNotEmpty()
 
-  // Note that we sort all elements. That's important for a stable string comparison.
-  val allArguments = contributedClass.annotations
-    .filter { it.isQualifier() }
-    .sortedBy { it.requireFqName().hashCode() }
-    .joinToString(separator = "") { annotation ->
-      val annotationFqName = annotation.requireFqName().asString()
-
-      val argumentString = annotation.allValueArguments
-        .toList()
-        .sortedBy { it.first }
-        .map { (name, value) ->
-          val valueString = when (value) {
-            is KClassValue -> value.argumentType(module)
-              .requireClassDescriptor().fqNameSafe.asString()
-            is EnumValue -> value.enumEntryName.asString()
-            // String, int, long, ... other primitives.
-            else -> value.toString()
+  return if (contributedClassIsObject) {
+    ProviderMethod(
+      FunSpec.builder(
+        name = contributedFqName.asString()
+          .split(".")
+          .joinToString(
+            separator = "",
+            prefix = "provide",
+            postfix = if (isMultibinding) "Multi" else ""
+          ) {
+            it.capitalize()
           }
-
-          name.asString() + valueString
+      )
+        .addAnnotation(Provides::class)
+        .apply {
+          when {
+            isMapMultibinding -> addAnnotation(IntoMap::class)
+            isMultibinding -> addAnnotation(IntoSet::class)
+          }
         }
-
-      annotationFqName + argumentString
-    }
-
-  return fqName + allArguments
+        .addAnnotations(qualifiers)
+        .addAnnotations(mapKeys)
+        .returns(boundTypeClassName)
+        .addStatement("return %T", contributedFqName.asClassName(module))
+        .build()
+    )
+  } else {
+    BindingMethod(
+      FunSpec.builder(
+        name = contributedFqName.asString()
+          .split(".")
+          .joinToString(
+            separator = "",
+            prefix = "bind",
+            postfix = if (isMultibinding) "Multi" else ""
+          ) {
+            it.capitalize()
+          }
+      )
+        .addAnnotation(Binds::class)
+        .apply {
+          when {
+            isMapMultibinding -> addAnnotation(IntoMap::class)
+            isMultibinding -> addAnnotation(IntoSet::class)
+          }
+        }
+        .addAnnotations(qualifiers)
+        .addAnnotations(mapKeys)
+        .addModifiers(ABSTRACT)
+        .addParameter(
+          name = contributedFqName.shortName().asString().decapitalize(),
+          type = contributedFqName.asClassName(module)
+        )
+        .returns(boundTypeClassName)
+        .build()
+    )
+  }
 }
+
+private val Collection<GeneratedMethod>.specs get() = map { it.spec }
 
 private class MergedClassKey(
   val scope: FqName,

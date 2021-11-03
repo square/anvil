@@ -4,6 +4,7 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.ClassReference.Psi
+import com.squareup.kotlinpoet.AnnotationSpec
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -92,37 +93,31 @@ public fun ClassReference.allSuperTypeClassReferences(
   module: ModuleDescriptor,
   includeSelf: Boolean = false
 ): Sequence<ClassReference> {
-
-  fun KtClassOrObject.superTypeEntryNames() = superTypeListEntries
-    .map { it.requireFqName(module) }
-
-  fun List<FqName>.typeRefs(): Sequence<ClassReference> {
-    return asSequence().map { module.requireClassReference(it) }
-  }
-
-  val initial = sequenceOf(this).drop(if (includeSelf) 0 else 1)
-
-  return generateSequence(initial) { superTypes ->
+  return generateSequence(sequenceOf(this)) { superTypes ->
     superTypes
-      .mapNotNull { classRef ->
-        when (classRef) {
-          is Psi -> {
-            classRef.clazz.superTypeEntryNames()
-              .takeIf { it.isNotEmpty() }
-              ?.typeRefs()
-          }
-          is Descriptor -> {
-            classRef.clazz.directSuperClassAndInterfaces()
-              .takeIf { it.isNotEmpty() }
-              ?.asSequence()
-              ?.map { module.requireClassReference(it.fqNameSafe) }
-          }
-        }
-      }
+      .map { classRef -> classRef.directSuperClassReferences(module) }
       .flatten()
       .takeIf { it.firstOrNull() != null }
-  }.flatten()
+  }
+    .drop(if (includeSelf) 0 else 1)
+    .flatten()
     .distinctBy { it.fqName }
+}
+
+@ExperimentalAnvilApi
+public fun ClassReference.directSuperClassReferences(
+  module: ModuleDescriptor
+): Sequence<ClassReference> {
+  return when (this) {
+    is Descriptor -> clazz.directSuperClassAndInterfaces()
+      .asSequence()
+      .map { module.requireClassReference(it.fqNameSafe) }
+    is Psi ->
+      clazz.superTypeListEntries
+        .asSequence()
+        .map { it.requireFqName(module) }
+        .map { module.requireClassReference(it) }
+  }
 }
 
 /**
@@ -132,15 +127,36 @@ public fun ClassReference.allSuperTypeClassReferences(
 @ExperimentalAnvilApi
 public fun ClassReference.indexOfTypeParameter(parameterName: String): Int {
   return when (this) {
-    is Psi -> {
-      clazz
-        .typeParameters
-        .indexOfFirst { it.identifyingElement?.text == parameterName }
-    }
-    is Descriptor -> {
-      clazz
-        .declaredTypeParameters
+    is Descriptor ->
+      clazz.declaredTypeParameters
         .indexOfFirst { it.name.asString() == parameterName }
-    }
+    is Psi ->
+      clazz.typeParameters
+        .indexOfFirst { it.identifyingElement?.text == parameterName }
+  }
+}
+
+@ExperimentalAnvilApi
+public fun ClassReference.scopeOrNull(
+  module: ModuleDescriptor,
+  annotationFqName: FqName
+): FqName? {
+  return when (this) {
+    is Descriptor -> clazz.annotationOrNull(annotationFqName)
+      ?.scope(module)
+      ?.fqNameSafe
+    is Psi -> clazz.scopeOrNull(annotationFqName, module)
+  }
+}
+
+@ExperimentalAnvilApi
+public fun ClassReference.qualifiers(
+  module: ModuleDescriptor
+): List<AnnotationSpec> {
+  return when (this) {
+    is Descriptor -> clazz.annotations.filter { it.isQualifier() }
+      .map { it.toAnnotationSpec(module) }
+    is Psi -> clazz.annotationEntries.filter { it.isQualifier(module) }
+      .map { it.toAnnotationSpec(module) }
   }
 }

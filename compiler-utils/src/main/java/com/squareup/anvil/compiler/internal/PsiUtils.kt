@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtNullableType
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPureElement
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
@@ -137,18 +138,21 @@ public fun KtClassOrObject.scope(
   annotationFqName: FqName,
   module: ModuleDescriptor
 ): FqName {
-  return requireAnnotation(annotationFqName, module)
-    .findAnnotationArgument<KtClassLiteralExpression>(name = "scope", index = 0)
-    .let { classLiteralExpression ->
-      if (classLiteralExpression == null) {
-        throw AnvilCompilationException(
-          "Couldn't find scope for $annotationFqName.",
-          element = this
-        )
-      }
+  return scopeOrNull(annotationFqName, module)
+    ?: throw AnvilCompilationException(
+      "Couldn't find scope for $annotationFqName.",
+      element = this
+    )
+}
 
-      classLiteralExpression.requireFqName(module)
-    }
+@ExperimentalAnvilApi
+public fun KtClassOrObject.scopeOrNull(
+  annotationFqName: FqName,
+  module: ModuleDescriptor
+): FqName? {
+  return findAnnotation(annotationFqName, module)
+    ?.findAnnotationArgument<KtClassLiteralExpression>(name = "scope", index = 0)
+    ?.requireFqName(module)
 }
 
 /**
@@ -483,6 +487,9 @@ public fun KtClassOrObject.properties(
   includeCompanionObjects: Boolean
 ): List<KtProperty> = classBodies(includeCompanionObjects).flatMap { it.properties }
 
+@ExperimentalAnvilApi
+public fun KtClassOrObject.isObject(): Boolean = this is KtObjectDeclaration
+
 private fun KtClassOrObject.classBodies(includeCompanionObjects: Boolean): List<KtClassBody> {
   val elements = children.toMutableList()
   if (includeCompanionObjects) {
@@ -721,6 +728,17 @@ public fun KtAnnotationEntry.isQualifier(module: ModuleDescriptor): Boolean {
     ?.requireClassDescriptor(module)
     ?.annotations
     ?.hasAnnotation(qualifierFqName)
+    ?: false
+}
+
+@ExperimentalAnvilApi
+public fun KtAnnotationEntry.isMapKey(module: ModuleDescriptor): Boolean {
+  return typeReference
+    ?.requireFqName(module)
+    ?.takeIf { it != injectFqName }
+    ?.requireClassDescriptor(module)
+    ?.annotations
+    ?.hasAnnotation(mapKeyFqName)
     ?: false
 }
 

@@ -44,6 +44,11 @@ class GeneratedCodeTest {
       .containsExactly(contributedModule)
   }
 
+  @Test fun `the generated contributed binding can be injected`() {
+    // This is a reproducer for https://github.com/square/anvil/issues/310.
+    assertThat(DaggerGeneratedCodeTest_AppComponent.create().contributedBindingClass()).isNotNull()
+  }
+
   @Test fun `the generated AssistedInject factory can be injected`() {
     // This is a reproducer for https://github.com/square/anvil/issues/326.
     assertThat(DaggerGeneratedCodeTest_AppComponent.create().assistedClass()).isNotNull()
@@ -58,7 +63,14 @@ class GeneratedCodeTest {
   interface AppComponent {
     fun otherClass(): OtherClass
     fun assistedClass(): AssistedClass
+    fun contributedBindingClass(): ContributedBindingClass
   }
+
+  class ContributedBindingClass @Inject constructor(
+    // Keep the fully qualified name, otherwise the one specific error from
+    // https://github.com/square/anvil/issues/310 can't be reproduced.
+    val binding: generated.test.com.squareup.anvil.test.Binding
+  )
 
   class AssistedClass @Inject constructor(
     // Keep the fully qualified name, otherwise the one specific error from
