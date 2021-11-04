@@ -44,6 +44,13 @@ public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory)
   public val disableComponentMerging: Property<Boolean> = objects.property(Boolean::class.java)
     .convention(false)
 
+  /**
+   * Add Anvil generated source directories to sourceSets in Gradle for indexing visibility in the
+   * IDE. This can be useful in debugging and is disabled by default.
+   */
+  public val syncGeneratedSources: Property<Boolean> = objects.property(Boolean::class.java)
+    .convention(false)
+
   @Suppress("PropertyName")
   internal var _variantFilter: Action<VariantFilter>? = null
 

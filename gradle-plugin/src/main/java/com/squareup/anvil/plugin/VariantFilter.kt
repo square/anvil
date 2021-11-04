@@ -30,6 +30,12 @@ public interface VariantFilter : Named {
    * details.
    */
   public var disableComponentMerging: Boolean
+
+  /**
+   * Add Anvil generated source directories to sourceSets in Gradle for indexing visibility in the
+   * IDE. This can be useful in debugging and is disabled by default.
+   */
+  public var syncGeneratedSources: Boolean
 }
 
 internal class CommonFilter(
@@ -58,6 +64,13 @@ internal class CommonFilter(
     get() = disableComponentMergingOverride ?: extension.disableComponentMerging.get()
     set(value) {
       disableComponentMergingOverride = value
+    }
+
+  private var syncGeneratedSourcesOverride: Boolean? = null
+  override var syncGeneratedSources: Boolean
+    get() = syncGeneratedSourcesOverride ?: extension.syncGeneratedSources.get()
+    set(value) {
+      syncGeneratedSourcesOverride = value
     }
 }
 
