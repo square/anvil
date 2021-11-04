@@ -1,5 +1,15 @@
 # Changelog
 
+## 2.3.8 (2021-11-04)
+
+* Add an option in the Anvil DSL `syncGeneratedSources` to sync generated sources in the IDE, see #412.
+* Fall back to PSI parsing for `BindingModuleGenerator`, see #310. (this allows you generated `@ContributesBinding` annotations in custom code generators)
+* Support generic supers for assisted factories when the assisted factory interface is generated, see #407.
+* Support generic type resolution in assisted factories, see #395. (regression in previous release)
+* Align `TypeNames` for assisted lambda arguments between descriptors and PSI, see #400. (regression in previous release)
+* Enable experimental Anvil APIs by default in the compiler testing utilities, see #398.
+* Make it easy the feed a compilation result to another Anvil compilation in the testing utilities, see #404.
+
 ## 2.3.7 (2021-10-19)
 
 * Allow configuring the `KotlinCompilation` when using the utilities to test custom code generators, see #386.
