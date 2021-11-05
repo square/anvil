@@ -6,7 +6,7 @@ import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.assistedServiceFactory
 import com.squareup.anvil.compiler.daggerModule1
-import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
@@ -15,6 +15,7 @@ import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.isError
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -1615,6 +1616,41 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
+  @Test fun `default functions do not count against SAM requirement`() {
+    prepareCompilation()
+      .apply {
+        // Necessary so Dagger-compiler recognizes default functions too
+        kotlinCompilation.kotlincArguments += "-Xjvm-default=all"
+      }
+      .configureAnvil()
+      .compile(
+        """
+        package com.squareup.test
+        
+        import dagger.assisted.AssistedFactory
+        import dagger.assisted.AssistedInject
+        import javax.inject.Provider
+        
+        data class AssistedService @AssistedInject constructor(
+          val int: Int
+        )
+        
+        @AssistedFactory
+        interface AssistedServiceFactory : Provider<AssistedService> {
+          fun create(): AssistedService {
+            return get()
+          }
+          
+          fun create(string: String): AssistedService {
+            return create()
+          }
+        }
+        """
+      ) {
+        assertThat(exitCode).isEqualTo(OK)
+      }
+  }
+
   @Test fun `a factory function is required`() {
     compile(
       """
@@ -1913,15 +1949,24 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
+  private fun prepareCompilation(): AnvilCompilation {
+    return AnvilCompilation()
+      .apply {
+        kotlinCompilation.allWarningsAsErrors = WARNINGS_AS_ERRORS
+      }
+      .configureAnvil(
+        enableDaggerAnnotationProcessor = useDagger,
+        generateDaggerFactories = !useDagger,
+      )
+      .useIR(USE_IR)
+  }
+
   private fun compile(
     @Language("kotlin") vararg sources: String,
     block: Result.() -> Unit = { }
-  ): Result = compileAnvil(
-    sources = sources,
-    enableDaggerAnnotationProcessor = useDagger,
-    generateDaggerFactories = !useDagger,
-    useIR = USE_IR,
-    allWarningsAsErrors = WARNINGS_AS_ERRORS,
-    block = block
-  )
+  ): Result {
+    return prepareCompilation()
+      .compile(*sources)
+      .apply(block)
+  }
 }
