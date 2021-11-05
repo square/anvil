@@ -1,6 +1,10 @@
+@file:Suppress("UnstableApiUsage")
+
 package com.squareup.anvil.plugin
 
+import com.android.build.api.dsl.AndroidSourceSet
 import com.android.build.gradle.AppExtension
+import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.TestExtension
 import com.android.build.gradle.TestedExtension
@@ -142,6 +146,11 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         // https://github.com/square/anvil/pull/207#issuecomment-850768750
         kotlinCompilation.defaultSourceSet {
           kotlin.srcDir(srcGenDir)
+        }
+
+        // For Android and AGP the above code doesn't work for some reason. This is the workaround.
+        variant.androidSourceSets?.forEach { sourceSet ->
+          sourceSet.java.srcDir(srcGenDir)
         }
       }
     }
@@ -427,6 +436,7 @@ internal class Variant private constructor(
   val project: Project,
   val compileTaskProvider: TaskProvider<KotlinCompile>,
   val androidVariant: BaseVariant?,
+  val androidSourceSets: List<AndroidSourceSet>?,
   val compilerPluginClasspathName: String,
   val variantFilter: VariantFilter,
 ) {
@@ -449,6 +459,16 @@ internal class Variant private constructor(
       val extension = project.extensions.getByType(AnvilExtension::class.java)
       val androidVariant = (kotlinCompilation as? KotlinJvmAndroidCompilation)?.androidVariant
 
+      val androidSourceSets = if (androidVariant != null) {
+        val sourceSetsByName = project.extensions.getByType(BaseExtension::class.java)
+          .sourceSets
+          .associateBy { it.name }
+
+        androidVariant.sourceSets.mapNotNull { sourceSetsByName[it.name] }
+      } else {
+        null
+      }
+
       val commonFilter = CommonFilter(kotlinCompilation.name, extension)
       val variantFilter = if (androidVariant != null) {
         AndroidVariantFilter(commonFilter, androidVariant)
@@ -463,6 +483,7 @@ internal class Variant private constructor(
         compileTaskProvider = kotlinCompilation.compileKotlinTaskProvider as
           TaskProvider<KotlinCompile>,
         androidVariant = androidVariant,
+        androidSourceSets = androidSourceSets,
         compilerPluginClasspathName = PLUGIN_CLASSPATH_CONFIGURATION_NAME +
           kotlinCompilation.target.targetName.replaceFirstChar(Char::uppercase) +
           kotlinCompilation.name.replaceFirstChar(Char::uppercase),
