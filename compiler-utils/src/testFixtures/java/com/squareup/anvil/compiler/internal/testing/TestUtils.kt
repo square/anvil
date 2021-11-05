@@ -223,14 +223,6 @@ public fun compileAnvil(
   block: Result.() -> Unit = { }
 ): Result {
   return AnvilCompilation()
-    .configureAnvil(
-      enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
-      generateDaggerFactories = generateDaggerFactories,
-      generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
-      disableComponentMerging = disableComponentMerging,
-      enableExperimentalAnvilApis = enableExperimentalAnvilApis,
-    )
-    .useIR(useIR)
     .apply {
       kotlinCompilation.apply {
         this.allWarningsAsErrors = allWarningsAsErrors
@@ -244,6 +236,14 @@ public fun compileAnvil(
         addPreviousCompilationResult(previousCompilationResult)
       }
     }
+    .configureAnvil(
+      enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+      generateDaggerFactories = generateDaggerFactories,
+      generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
+      disableComponentMerging = disableComponentMerging,
+      enableExperimentalAnvilApis = enableExperimentalAnvilApis,
+    )
+    .useIR(useIR)
     .compile(*sources)
     .also(block)
 }
