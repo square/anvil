@@ -1622,7 +1622,6 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         // Necessary so Dagger-compiler recognizes default functions too
         kotlinCompilation.kotlincArguments += "-Xjvm-default=all"
       }
-      .configureAnvil()
       .compile(
         """
         package com.squareup.test
