@@ -9,6 +9,7 @@
 * Align `TypeNames` for assisted lambda arguments between descriptors and PSI, see #400. (regression in previous release)
 * Enable experimental Anvil APIs by default in the compiler testing utilities, see #398.
 * Make it easy the feed a compilation result to another Anvil compilation in the testing utilities, see #404.
+* Use Anvil version `2.3.8-1-6-0-RC2` if you want to test Kotlin `1.6.0-RC2`. Until Anvil hasn't adopted Kotlin `1.6` I'll publish additional versions that are required due to compiler API incompatibilities.
 
 ## 2.3.7 (2021-10-19)
 
