@@ -442,9 +442,11 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
       )
       1 -> assistedFunctions[0]
       else -> {
-        val foundFunctions = assistedFunctions.joinToString { func ->
-          "${func.name}(${func.parameterPairs.value.map { it.first }})"
-        }
+        val foundFunctions = assistedFunctions
+          .sortedBy { it.name }
+          .joinToString { func ->
+            "${func.name}(${func.parameterPairs.value.map { it.first }})"
+          }
         throw AnvilCompilationException(
           "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
             "method but found multiple: [$foundFunctions]",

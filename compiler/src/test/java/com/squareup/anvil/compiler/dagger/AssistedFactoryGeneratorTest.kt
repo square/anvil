@@ -856,6 +856,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
+      @Suppress("EqualsOrHashCode")
       data class AssistedService<T> @AssistedInject constructor(
         val int: Int,
         @Assisted val stringBuilder: T
@@ -1548,9 +1549,9 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains(
+      assertThat(messages.lines().first { it.startsWith("e:") }.removeParameters()).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
-          "method but found multiple"
+          "method but found multiple: [create, create2]"
       )
     }
   }
@@ -1580,9 +1581,9 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains(
+      assertThat(messages.lines().first { it.startsWith("e:") }.removeParameters()).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
-          "method but found multiple"
+          "method but found multiple: [create, createParent]"
       )
     }
   }
@@ -1609,9 +1610,9 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains(
+      assertThat(messages.lines().first { it.startsWith("e:") }.removeParameters()).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
-          "method but found multiple"
+          "method but found multiple: [create, get]"
       )
     }
   }
@@ -1692,7 +1693,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       
       @AssistedFactory
       abstract class AssistedServiceFactory {
-        fun create(string: String): AssistedService = TODO()
+        fun create(string: String): AssistedService = throw NotImplementedError()
       }
       """
     ) {
@@ -1967,5 +1968,26 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     return prepareCompilation()
       .compile(*sources)
       .apply(block)
+  }
+
+  /**
+   * Removes parameters of the functions in a String like
+   * ```
+   * [create([string]), get([])]
+   * ```
+   * That's necessary, because the output of the parameters is slightly different between Anvil
+   * and Dagger. Dagger also doesn't guarantee any order of functions.
+   */
+  private fun String.removeParameters(): String {
+    val start = 1 + (indexOf('[').takeIf { it >= 0 } ?: return this)
+    val end = indexOfLast { it == ']' }.takeIf { it >= 0 } ?: return this
+
+    val sortedMethodNames = substring(start, end)
+      .split(',')
+      .map { it.trim() }
+      .sorted()
+      .joinToString { it.substringBefore('(') }
+
+    return replaceRange(start, end, sortedMethodNames)
   }
 }
