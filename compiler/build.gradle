@@ -34,8 +34,6 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   }
 }
 
-if (!rootProject.ext.ci) {
-  tasks.withType(Test).configureEach {
-    maxParallelForks = Runtime.runtime.availableProcessors()
-  }
+tasks.withType(Test).configureEach {
+  maxParallelForks = Runtime.runtime.availableProcessors()
 }
