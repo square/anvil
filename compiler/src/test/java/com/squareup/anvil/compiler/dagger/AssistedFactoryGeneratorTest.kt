@@ -484,10 +484,10 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   }
 
   @Test fun `the factory function may be provided by a generic super type with generic parameter`() {
-
-    // This is broken for Dagger, but working with Anvil factory generation
+    // Note the @JvmSuppressWildcards in the super type of the factory class. Without the
+    // annotation the test would fail with Dagger:
+    //
     // https://github.com/google/dagger/issues/2984
-    if (useDagger) return
 
     compile(
       """
@@ -505,7 +505,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       )
       
       @AssistedFactory
-      interface AssistedServiceFactory : Function1<List<String>, AssistedService> 
+      interface AssistedServiceFactory : Function1<@JvmSuppressWildcards List<String>, AssistedService> 
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
