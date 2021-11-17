@@ -18,7 +18,7 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version : [ 1.5.31, 1.6.0-RC2 ]
+        kotlin-version : [ 1.5.31, 1.6.0 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -48,7 +48,7 @@ jobs:
     strategy :
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.5.31, 1.6.0-RC2 ]
+        kotlin-version : [ 1.5.31, 1.6.0 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -168,7 +168,8 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version: [ 1.5.31, 1.6.0-RC2 ]
+        kotlin-version: [ 1.5.31, 1.6.0 ]
+        agp-version: [ 4.2.2, 7.0.3, 7.1.0-beta02 ]
 
     steps:
       - uses: actions/checkout@v2
@@ -180,14 +181,14 @@ jobs:
           check-latest : true
 
       - name: Test Gradle Plugin
-        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }} -Psquare.agpVersion=${{ matrix.agp-version }}
 
       - name: Upload Test Results
         uses: actions/upload-artifact@v2
         if: ${{ failure() }}
         with:
           # Use the Kotlin version to prevent overrides.
-          name: test-results-gradle-plugin-${{ matrix.kotlin-version }}
+          name: test-results-gradle-plugin-${{ matrix.kotlin-version }}-${{ matrix.agp-version }}
           path: ./**/build/reports/tests/
 
   ktlint-gradle-plugin:
@@ -221,7 +222,7 @@ jobs:
       # solution.
       fail-fast: false
       matrix:
-        kotlin-version : [ 1.5.31, 1.6.0-RC2 ]
+        kotlin-version : [ 1.5.31, 1.6.0 ]
 
     steps:
       - uses: actions/checkout@v2

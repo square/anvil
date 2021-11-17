@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
+import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.KotlinType
 import kotlin.reflect.KClass
 
@@ -587,8 +588,18 @@ public fun KtClassOrObject.resolveGenericKotlinType(
   declaringClass: ClassReference,
   typeToResolve: KotlinType
 ): KtTypeReference? {
-
-  val parameterName = typeToResolve.toString()
+  val parameterName = if (typeToResolve is FlexibleType) {
+    // A FlexibleType comes from Java code where the compiler doesn't know whether it's a nullable
+    // or non-nullable type. toString() returns something like "(T..T?)". To get proper results
+    // we use the type that's not nullable, "T" in this example.
+    if (typeToResolve.lowerBound.isMarkedNullable) {
+      typeToResolve.upperBound
+    } else {
+      typeToResolve.lowerBound
+    }
+  } else {
+    typeToResolve
+  }.toString()
 
   return resolveGenericTypeReference(module, declaringClass, parameterName)
 }

@@ -402,6 +402,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
         is Psi -> {
           val ktFunctions = clazz.takeIf { it.isInterface() }
             ?.functions(false)
+            ?.filterNot { it.hasBody() }
             ?: clazz.functions(false)
               .filter { it.hasModifier(KtTokens.ABSTRACT_KEYWORD) }
               .filter { it.isPublic || it.isProtected() }
@@ -440,11 +441,18 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
         element = this
       )
       1 -> assistedFunctions[0]
-      else -> throw AnvilCompilationException(
-        "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
-          "method but found multiple.",
-        element = this
-      )
+      else -> {
+        val foundFunctions = assistedFunctions
+          .sortedBy { it.name }
+          .joinToString { func ->
+            "${func.name}(${func.parameterPairs.value.map { it.first }})"
+          }
+        throw AnvilCompilationException(
+          "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
+            "method but found multiple: [$foundFunctions]",
+          element = this
+        )
+      }
     }
   }
 

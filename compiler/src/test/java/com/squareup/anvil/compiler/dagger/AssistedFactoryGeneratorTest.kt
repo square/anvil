@@ -6,7 +6,7 @@ import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.assistedServiceFactory
 import com.squareup.anvil.compiler.daggerModule1
-import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
@@ -15,6 +15,7 @@ import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.isError
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -483,10 +484,10 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   }
 
   @Test fun `the factory function may be provided by a generic super type with generic parameter`() {
-
-    // This is broken for Dagger, but working with Anvil factory generation
+    // Note the @JvmSuppressWildcards in the super type of the factory class. Without the
+    // annotation the test would fail with Dagger:
+    //
     // https://github.com/google/dagger/issues/2984
-    if (useDagger) return
 
     compile(
       """
@@ -504,7 +505,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       )
       
       @AssistedFactory
-      interface AssistedServiceFactory : Function1<List<String>, AssistedService> 
+      interface AssistedServiceFactory : Function1<@JvmSuppressWildcards List<String>, AssistedService> 
       """
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
@@ -855,6 +856,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       
+      @Suppress("EqualsOrHashCode")
       data class AssistedService<T> @AssistedInject constructor(
         val int: Int,
         @Assisted val stringBuilder: T
@@ -1547,9 +1549,9 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains(
+      assertThat(messages.lines().first { it.startsWith("e:") }.removeParameters()).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
-          "method but found multiple"
+          "method but found multiple: [create, create2]"
       )
     }
   }
@@ -1579,9 +1581,9 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains(
+      assertThat(messages.lines().first { it.startsWith("e:") }.removeParameters()).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
-          "method but found multiple"
+          "method but found multiple: [create, createParent]"
       )
     }
   }
@@ -1608,11 +1610,45 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains(
+      assertThat(messages.lines().first { it.startsWith("e:") }.removeParameters()).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
-          "method but found multiple"
+          "method but found multiple: [create, get]"
       )
     }
+  }
+
+  @Test fun `default functions do not count against SAM requirement`() {
+    prepareCompilation()
+      .apply {
+        // Necessary so Dagger-compiler recognizes default functions too
+        kotlinCompilation.kotlincArguments += "-Xjvm-default=all"
+      }
+      .compile(
+        """
+        package com.squareup.test
+        
+        import dagger.assisted.AssistedFactory
+        import dagger.assisted.AssistedInject
+        import javax.inject.Provider
+        
+        data class AssistedService @AssistedInject constructor(
+          val int: Int
+        )
+        
+        @AssistedFactory
+        interface AssistedServiceFactory : Provider<AssistedService> {
+          fun create(): AssistedService {
+            return get()
+          }
+          
+          fun create(string: String): AssistedService {
+            return create()
+          }
+        }
+        """
+      ) {
+        assertThat(exitCode).isEqualTo(OK)
+      }
   }
 
   @Test fun `a factory function is required`() {
@@ -1657,7 +1693,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       
       @AssistedFactory
       abstract class AssistedServiceFactory {
-        fun create(string: String): AssistedService = TODO()
+        fun create(string: String): AssistedService = throw NotImplementedError()
       }
       """
     ) {
@@ -1913,15 +1949,45 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
+  private fun prepareCompilation(): AnvilCompilation {
+    return AnvilCompilation()
+      .apply {
+        kotlinCompilation.allWarningsAsErrors = WARNINGS_AS_ERRORS
+      }
+      .configureAnvil(
+        enableDaggerAnnotationProcessor = useDagger,
+        generateDaggerFactories = !useDagger,
+      )
+      .useIR(USE_IR)
+  }
+
   private fun compile(
     @Language("kotlin") vararg sources: String,
     block: Result.() -> Unit = { }
-  ): Result = compileAnvil(
-    sources = sources,
-    enableDaggerAnnotationProcessor = useDagger,
-    generateDaggerFactories = !useDagger,
-    useIR = USE_IR,
-    allWarningsAsErrors = WARNINGS_AS_ERRORS,
-    block = block
-  )
+  ): Result {
+    return prepareCompilation()
+      .compile(*sources)
+      .apply(block)
+  }
+
+  /**
+   * Removes parameters of the functions in a String like
+   * ```
+   * [create([string]), get([])]
+   * ```
+   * That's necessary, because the output of the parameters is slightly different between Anvil
+   * and Dagger. Dagger also doesn't guarantee any order of functions.
+   */
+  private fun String.removeParameters(): String {
+    val start = 1 + (indexOf('[').takeIf { it >= 0 } ?: return this)
+    val end = indexOfLast { it == ']' }.takeIf { it >= 0 } ?: return this
+
+    val sortedMethodNames = substring(start, end)
+      .split(',')
+      .map { it.trim() }
+      .sorted()
+      .joinToString { it.substringBefore('(') }
+
+    return replaceRange(start, end, sortedMethodNames)
+  }
 }

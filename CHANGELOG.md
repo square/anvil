@@ -1,5 +1,12 @@
 # Changelog
 
+## 2.3.9 (2021-11-08)
+
+* Add a workaround for AGP to sync generated sources with `syncGeneratedSources`, see #413.
+* Ignore functions with defaults in assisted factories, see #415.
+* Use Anvil version `2.3.9-1-6-0-RC2` if you want to test Kotlin `1.6.0-RC2`. Until Anvil hasn't adopted Kotlin `1.6` I'll publish additional versions that are required due to compiler API incompatibilities.
+* Use Anvil version `2.3.9-1-6-0` if you want to test Kotlin `1.6.0`. Until Anvil hasn't adopted Kotlin `1.6` I'll publish additional versions that are required due to compiler API incompatibilities.
+
 ## 2.3.8 (2021-11-04)
 
 * Add an option in the Anvil DSL `syncGeneratedSources` to sync generated sources in the IDE, see #412.
