@@ -160,3 +160,13 @@ public fun ClassReference.qualifiers(
       .map { it.toAnnotationSpec(module) }
   }
 }
+
+@ExperimentalAnvilApi
+public fun ClassReference.daggerScopes(
+  module: ModuleDescriptor
+): List<AnnotationSpec> = when (this) {
+  is Descriptor -> clazz.annotations.filter { it.isDaggerScope() }
+    .map { it.toAnnotationSpec(module) }
+  is Psi -> clazz.annotationEntries.filter { it.isDaggerScope(module) }
+    .map { it.toAnnotationSpec(module) }
+}

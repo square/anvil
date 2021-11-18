@@ -773,6 +773,16 @@ public fun KtAnnotationEntry.isQualifier(module: ModuleDescriptor): Boolean {
 }
 
 @ExperimentalAnvilApi
+public fun KtAnnotationEntry.isDaggerScope(module: ModuleDescriptor): Boolean {
+  return typeReference
+    ?.requireFqName(module)
+    ?.requireClassDescriptor(module)
+    ?.annotations
+    ?.hasAnnotation(daggerScopeFqName)
+    ?: false
+}
+
+@ExperimentalAnvilApi
 public fun KtAnnotationEntry.isMapKey(module: ModuleDescriptor): Boolean {
   return typeReference
     ?.requireFqName(module)

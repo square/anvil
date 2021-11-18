@@ -169,6 +169,11 @@ public fun AnnotationDescriptor.isQualifier(): Boolean {
 }
 
 @ExperimentalAnvilApi
+public fun AnnotationDescriptor.isDaggerScope(): Boolean {
+  return annotationClass?.annotations?.hasAnnotation(daggerScopeFqName) ?: false
+}
+
+@ExperimentalAnvilApi
 public fun AnnotationDescriptor.requireClass(): ClassDescriptor {
   return annotationClass ?: throw AnvilCompilationException(
     message = "Couldn't find the annotation class for $fqName",

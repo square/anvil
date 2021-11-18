@@ -17,12 +17,14 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesSubcomponentFactoryFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
+import com.squareup.anvil.compiler.internal.ClassReference
 import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
+import com.squareup.anvil.compiler.internal.daggerScopes
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.generateClassName
@@ -33,6 +35,7 @@ import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
+import com.squareup.anvil.compiler.internal.toClassReference
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
@@ -142,6 +145,7 @@ internal class ContributesSubcomponentHandlerGenerator(
               ?: emptyList()
 
             Contribution(
+              classReference = descriptor.toClassReference(),
               clazz = descriptor.requireClassId(),
               scope = annotation.scope(module).fqNameSafe,
               parentScope = parentScope,
@@ -170,6 +174,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           ?: emptyList()
 
         Contribution(
+          classReference = clazz.toClassReference(),
           clazz = requireNotNull(clazz.getClassId()),
           scope = clazz.scope(contributesSubcomponentFqName, module),
           parentScope = clazz.parentScope(contributesSubcomponentFqName, module),
@@ -225,6 +230,7 @@ internal class ContributesSubcomponentHandlerGenerator(
                 }
                 .build()
             )
+            .addAnnotations(contribution.classReference.daggerScopes(module))
             .apply {
               if (factoryClass != null) {
                 addType(generateFactory(factoryClass.originalDescriptor, contribution, module))
@@ -457,6 +463,7 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private class Contribution(
+    val classReference: ClassReference,
     val clazz: ClassId,
     val scope: FqName,
     val parentScope: FqName,

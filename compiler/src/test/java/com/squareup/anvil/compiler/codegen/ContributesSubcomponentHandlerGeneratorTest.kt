@@ -19,6 +19,7 @@ import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.junit.Test
+import javax.inject.Singleton
 import kotlin.test.assertFailsWith
 
 class ContributesSubcomponentHandlerGeneratorTest {
@@ -992,6 +993,70 @@ class ContributesSubcomponentHandlerGeneratorTest {
         .use { it.invoke(subcomponent) as Int }
 
       assertThat(int).isEqualTo(5)
+    }
+  }
+
+  @Test fun `the generated subcomponent contains the same scope annotation`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.MergeComponent
+        import javax.inject.Singleton
+  
+        @ContributesSubcomponent(Any::class, Unit::class)
+        @Singleton
+        interface SubcomponentInterface
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """.trimIndent()
+    ) {
+      val anvilComponent = subcomponentInterface.anvilComponent
+      assertThat(anvilComponent).isNotNull()
+
+      val annotation = anvilComponent.getAnnotation(Singleton::class.java)
+      assertThat(annotation).isNotNull()
+    }
+  }
+
+  @Test fun `the generated subcomponent contains the same scope annotation - custom scope`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.MergeComponent
+        import javax.inject.Scope
+        import javax.inject.Singleton
+        import kotlin.reflect.KClass
+        
+        @Scope
+        @Retention(AnnotationRetention.RUNTIME)
+        annotation class SingleIn(val clazz: KClass<*>)
+  
+        @ContributesSubcomponent(Any::class, Unit::class)
+        @SingleIn(Any::class)
+        @Singleton
+        interface SubcomponentInterface
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """.trimIndent()
+    ) {
+      val anvilComponent = subcomponentInterface.anvilComponent
+      assertThat(anvilComponent).isNotNull()
+
+      val singleIn = classLoader.loadClass("com.squareup.test.SingleIn")
+        .asSubclass(Annotation::class.java)
+
+      val annotation = anvilComponent.getAnnotation(singleIn)
+      assertThat(annotation).isNotNull()
+      assertThat(anvilComponent.getAnnotation(Singleton::class.java)).isNotNull()
+
+      val singleInClass = singleIn.declaredMethods.single().invoke(annotation)
+      assertThat(singleInClass).isEqualTo(Any::class.java)
     }
   }
 
