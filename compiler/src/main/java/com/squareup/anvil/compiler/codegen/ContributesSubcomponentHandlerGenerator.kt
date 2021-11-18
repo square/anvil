@@ -32,7 +32,6 @@ import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
-import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.toClassReference
@@ -146,7 +145,6 @@ internal class ContributesSubcomponentHandlerGenerator(
 
             Contribution(
               classReference = descriptor.toClassReference(),
-              clazz = descriptor.requireClassId(),
               scope = annotation.scope(module).fqNameSafe,
               parentScope = parentScope,
               modules = modules,
@@ -175,7 +173,6 @@ internal class ContributesSubcomponentHandlerGenerator(
 
         Contribution(
           classReference = clazz.toClassReference(),
-          clazz = requireNotNull(clazz.getClassId()),
           scope = clazz.scope(contributesSubcomponentFqName, module),
           parentScope = clazz.parentScope(contributesSubcomponentFqName, module),
           modules = modules,
@@ -206,7 +203,7 @@ internal class ContributesSubcomponentHandlerGenerator(
         val content = FileSpec.buildFile(generatedPackage, componentClassName) {
           TypeSpec
             .interfaceBuilder(componentClassName)
-            .addSuperinterface(contribution.clazz.asClassName())
+            .addSuperinterface(contribution.classReference.asClassName())
             .addAnnotation(
               AnnotationSpec
                 .builder(MergeSubcomponent::class)
@@ -464,25 +461,24 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private class Contribution(
     val classReference: ClassReference,
-    val clazz: ClassId,
     val scope: FqName,
     val parentScope: FqName,
     val modules: List<FqName>,
     val exclude: List<FqName>
   ) {
-    val clazzFqName = clazz.asSingleFqName()
+    val clazzFqName = classReference.fqName
 
     val generatedPackage: String
     val generatedSubcomponentClassName: String
 
     init {
-      val generatedAnvilSubcomponent = clazz.generatedAnvilSubcomponent()
+      val generatedAnvilSubcomponent = classReference.classId.generatedAnvilSubcomponent()
       generatedPackage = generatedAnvilSubcomponent.packageFqName.asString()
       generatedSubcomponentClassName = generatedAnvilSubcomponent.relativeClassName.asString()
     }
 
     override fun toString(): String {
-      return "Contribution(class=$clazz, parentScope=$parentScope)"
+      return "Contribution(class=$classReference, parentScope=$parentScope)"
     }
   }
 
