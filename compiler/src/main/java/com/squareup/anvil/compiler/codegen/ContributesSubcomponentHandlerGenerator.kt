@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.ANVIL_SUBCOMPONENT_SUFFIX
@@ -226,7 +227,7 @@ internal class ContributesSubcomponentHandlerGenerator(
             )
             .apply {
               if (factoryClass != null) {
-                addType(generateFactory(factoryClass.originalDescriptor))
+                addType(generateFactory(factoryClass.originalDescriptor, contribution, module))
               }
             }
             .addType(generateParentComponent(contribution, module, factoryClass))
@@ -245,21 +246,33 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private fun generateFactory(
-    factoryDescriptor: ClassDescriptor
+    factoryDescriptor: ClassDescriptor,
+    contribution: Contribution,
+    module: ModuleDescriptor
   ): TypeSpec {
+    val superclass = factoryDescriptor.asClassName()
+
     val builder = if (DescriptorUtils.isInterface(factoryDescriptor)) {
       TypeSpec
         .interfaceBuilder(SUBCOMPONENT_FACTORY)
-        .addSuperinterface(factoryDescriptor.asClassName())
+        .addSuperinterface(superclass)
     } else {
       TypeSpec
         .classBuilder(SUBCOMPONENT_FACTORY)
         .addModifiers(ABSTRACT)
-        .superclass(factoryDescriptor.asClassName())
+        .superclass(superclass)
     }
 
     return builder
       .addAnnotation(Subcomponent.Factory::class)
+      .addAnnotation(
+        // This will allow injecting the factory instance.
+        AnnotationSpec
+          .builder(ContributesBinding::class)
+          .addMember("scope = %T::class", contribution.parentScope.asClassName(module))
+          .addMember("boundType = %T::class", superclass)
+          .build()
+      )
       .build()
   }
 

@@ -935,6 +935,66 @@ class ContributesSubcomponentHandlerGeneratorTest {
     }
   }
 
+  @Test
+  fun `the generated factory can be injected`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        // import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.BindsInstance
+        // import dagger.Module
+        // import dagger.Provides
+        import javax.inject.Inject 
+
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Factory
+          interface ComponentFactory {
+            fun createComponent(
+              @BindsInstance integer: Int
+            ): SubcomponentInterface
+          }
+          
+          fun integer(): Int
+        }
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface {
+          fun testClass(): TestClass
+        }
+
+        class TestClass @Inject constructor(val factory: SubcomponentInterface.ComponentFactory)
+      """,
+      enableDaggerAnnotationProcessor = true
+    ) {
+      val daggerComponent = componentInterface.daggerComponent.declaredMethods
+        .single { it.name == "create" }
+        .invoke(null)
+
+      val testClassInstance = componentInterface.declaredMethods
+        .single { it.name == "testClass" }
+        .invoke(daggerComponent)
+
+      val factory = testClassInstance::class.java.declaredMethods
+        .single { it.name == "getFactory" }
+        .invoke(testClassInstance)
+
+      val subcomponent = factory::class.java.declaredMethods
+        .single { it.returnType == subcomponentInterface }
+        .use { it.invoke(factory, 5) }
+
+      val int = subcomponent::class.java.declaredMethods
+        .single { it.name == "integer" }
+        .use { it.invoke(subcomponent) as Int }
+
+      assertThat(int).isEqualTo(5)
+    }
+  }
+
   private val Class<*>.anvilComponent: Class<*>
     get() = classLoader
       .loadClass("$COMPONENT_PACKAGE_PREFIX.${generatedClassesString()}$ANVIL_SUBCOMPONENT_SUFFIX")
