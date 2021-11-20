@@ -36,7 +36,7 @@ import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.toClassId
 import com.squareup.anvil.compiler.internal.toClassReference
 import com.squareup.anvil.compiler.mergeComponentFqName
-import com.squareup.anvil.compiler.mergeModulesFqName
+import com.squareup.anvil.compiler.mergeInterfacesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -434,10 +434,10 @@ internal class ContributesSubcomponentHandlerGenerator(
     val generationTrigger = setOf(
       mergeComponentFqName,
       mergeSubcomponentFqName,
-      // Note that we don't include @MergeInterfaces, because we would potentially generate
+      // Note that we don't include @MergeModules, because we would potentially generate
       // components twice. @MergeInterfaces and @MergeModules are doing separately what
       // @MergeComponent is doing at once.
-      mergeModulesFqName,
+      mergeInterfacesFqName,
     )
   }
 

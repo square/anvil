@@ -72,31 +72,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
     }
   }
 
-  @Test fun `there is a subcomponent generated for a @MergeModules`() {
-    compile(
-      """
-        package com.squareup.test
-  
-        import com.squareup.anvil.annotations.ContributesSubcomponent
-        import com.squareup.anvil.annotations.compat.MergeModules
-  
-        @ContributesSubcomponent(Any::class, Unit::class)
-        interface SubcomponentInterface
-        
-        @MergeModules(Unit::class)
-        interface ComponentInterface
-      """.trimIndent()
-    ) {
-      val anvilComponent = subcomponentInterface.anvilComponent(componentInterface)
-      assertThat(anvilComponent).isNotNull()
-
-      val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
-      assertThat(annotation).isNotNull()
-      assertThat(annotation.scope).isEqualTo(Any::class)
-    }
-  }
-
-  @Test fun `there is no subcomponent generated for a @MergeInterfaces`() {
+  @Test
+  fun `there is a subcomponent generated for a @MergeInterfaces and the parent component is added to the interface`() {
     compile(
       """
         package com.squareup.test
@@ -108,6 +85,36 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface SubcomponentInterface
         
         @MergeInterfaces(Unit::class)
+        interface ComponentInterface
+      """.trimIndent()
+    ) {
+      val anvilComponent = subcomponentInterface.anvilComponent(componentInterface)
+      assertThat(anvilComponent).isNotNull()
+
+      val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
+      assertThat(annotation).isNotNull()
+      assertThat(annotation.scope).isEqualTo(Any::class)
+
+      assertThat(
+        componentInterface extends subcomponentInterface
+          .anvilComponent(componentInterface)
+          .parentComponentInterface
+      ).isTrue()
+    }
+  }
+
+  @Test fun `there is no subcomponent generated for a @MergeModules`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.compat.MergeModules
+  
+        @ContributesSubcomponent(Any::class, Unit::class)
+        interface SubcomponentInterface
+        
+        @MergeModules(Unit::class)
         interface ComponentInterface
       """.trimIndent()
     ) {
