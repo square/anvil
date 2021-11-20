@@ -2,8 +2,10 @@ package com.squareup.anvil.compiler
 
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
+import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
+import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.getAllSuperTypes
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.parentScope
@@ -12,7 +14,9 @@ import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.scope
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.effectiveVisibility
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -159,16 +163,6 @@ internal class InterfaceMerger(
           )
         }
 
-        if (contributesSubcomponentAnnotation != null) {
-          // For contributed subcomponents we don't actually want to exclude the subcomponent,
-          // but the generated parent component that is contributed to the scope of our component
-          // interface.
-          return@map classDescriptorForExclusion.requireClassId()
-            .generatedAnvilSubcomponent()
-            .createNestedClassId(Name.identifier(PARENT_COMPONENT))
-            .asSingleFqName()
-        }
-
         classDescriptorForExclusion.fqNameSafe
       }
       ?: emptyList()
@@ -188,17 +182,42 @@ internal class InterfaceMerger(
       }
     }
 
+    @Suppress("ConvertCallChainIntoSequence")
     val contributedClasses = classes
       .map { it.first }
       .filterNot {
         val fqName = it.fqNameSafe
         replacedClasses.contains(fqName) || excludedClasses.contains(fqName)
       }
+      .plus(findContributedSubcomponentParentInterfaces(thisDescriptor, scopeFqName, module))
       // Avoids an error for repeated interfaces.
       .distinctBy { it.fqNameSafe }
       .map { it.defaultType }
 
     supertypes += contributedClasses
     super.addSyntheticSupertypes(thisDescriptor, supertypes)
+  }
+
+  private fun findContributedSubcomponentParentInterfaces(
+    descriptor: ClassDescriptor,
+    scope: FqName,
+    module: ModuleDescriptor
+  ): Sequence<ClassDescriptor> {
+    return classScanner
+      .findContributedClasses(
+        module = module,
+        packageName = HINT_SUBCOMPONENTS_PACKAGE_PREFIX,
+        annotation = contributesSubcomponentFqName,
+        scope = null
+      )
+      .filter {
+        it.annotation(contributesSubcomponentFqName).parentScope(module).fqNameSafe == scope
+      }
+      .mapNotNull { contributedSubcomponent ->
+        contributedSubcomponent.requireClassId()
+          .generatedAnvilSubcomponent(descriptor.requireClassId())
+          .createNestedClassId(Name.identifier(PARENT_COMPONENT))
+          .classDescriptorOrNull(module)
+      }
   }
 }

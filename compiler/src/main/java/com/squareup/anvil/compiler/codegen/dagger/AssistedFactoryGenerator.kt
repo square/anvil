@@ -182,8 +182,8 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
       return if (typeParameters.isEmpty()) this else parameterizedBy(typeParameters)
     }
 
-    val generatedFactoryTypeName = FqName(returnTypeFqName.generateClassName(suffix = "_Factory"))
-      .asClassName(module)
+    val generatedFactoryTypeName = returnTypeFqName.generateClassName(suffix = "_Factory")
+      .asClassName()
       .parameterized()
 
     val baseFactoryTypeName = clazz.asClassName().parameterized()

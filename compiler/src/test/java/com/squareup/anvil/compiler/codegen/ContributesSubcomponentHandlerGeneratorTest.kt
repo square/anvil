@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.ANVIL_SUBCOMPONENT_SUFFIX
 import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
@@ -18,6 +17,7 @@ import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
+import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test
 import javax.inject.Singleton
 import kotlin.test.assertFailsWith
@@ -39,7 +39,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val anvilComponent = subcomponentInterface.anvilComponent
+      val anvilComponent = subcomponentInterface.anvilComponent(componentInterface)
       assertThat(anvilComponent).isNotNull()
 
       val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
@@ -63,7 +63,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val anvilComponent = subcomponentInterface.anvilComponent
+      val anvilComponent = subcomponentInterface.anvilComponent(componentInterface)
       assertThat(anvilComponent).isNotNull()
 
       val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
@@ -87,7 +87,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val anvilComponent = subcomponentInterface.anvilComponent
+      val anvilComponent = subcomponentInterface.anvilComponent(componentInterface)
       assertThat(anvilComponent).isNotNull()
 
       val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
@@ -114,7 +114,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
       assertThat(exitCode).isEqualTo(OK)
 
       assertFailsWith<ClassNotFoundException> {
-        subcomponentInterface.anvilComponent
+        subcomponentInterface.anvilComponent(componentInterface)
       }
     }
   }
@@ -137,7 +137,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
       assertThat(exitCode).isEqualTo(OK)
 
       assertFailsWith<ClassNotFoundException> {
-        subcomponentInterface.anvilComponent
+        subcomponentInterface.anvilComponent(componentInterface)
       }
     }
   }
@@ -162,7 +162,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
       val subcomponentInterface = classLoader
         .loadClass("com.squareup.test.Outer\$SubcomponentInterface")
 
-      val anvilComponent = subcomponentInterface.anvilComponent
+      val anvilComponent = subcomponentInterface.anvilComponent(componentInterface)
       assertThat(anvilComponent).isNotNull()
 
       val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
@@ -193,15 +193,19 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface SubcomponentInterface3
       """.trimIndent()
     ) {
+      var parentComponentInterface = componentInterface
+
       for (index in 1..3) {
         val subcomponentInterface = classLoader
           .loadClass("com.squareup.test.SubcomponentInterface$index")
 
-        val anvilComponent = subcomponentInterface.anvilComponent
+        val anvilComponent = subcomponentInterface.anvilComponent(parentComponentInterface)
         assertThat(anvilComponent).isNotNull()
 
         val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
         assertThat(annotation).isNotNull()
+
+        parentComponentInterface = anvilComponent
       }
     }
   }
@@ -214,7 +218,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         import com.squareup.anvil.annotations.ContributesSubcomponent
         
         @ContributesSubcomponent(Any::class, parentScope = Unit::class)
-        interface SubcomponentInterface
+        interface SubcomponentInterface1
       """.trimIndent()
     ) {
       assertThat(exitCode).isEqualTo(OK)
@@ -228,19 +232,21 @@ class ContributesSubcomponentHandlerGeneratorTest {
         import com.squareup.anvil.annotations.ContributesSubcomponent
         
         @ContributesSubcomponent(Unit::class, parentScope = Int::class)
-        interface SubcomponentInterface
+        interface SubcomponentInterface2
         
         @MergeComponent(Int::class)
         interface ComponentInterface
       """.trimIndent(),
       previousCompilationResult = firstCompilationResult
     ) {
-      val anvilComponent = subcomponentInterface.anvilComponent
+      val anvilComponent = classLoader
+        .loadClass("com.squareup.test.SubcomponentInterface2")
+        .anvilComponent(componentInterface)
       assertThat(anvilComponent).isNotNull()
 
       val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
       assertThat(annotation).isNotNull()
-      assertThat(annotation.scope).isEqualTo(Any::class)
+      assertThat(annotation.scope).isEqualTo(Unit::class)
     }
   }
 
@@ -267,7 +273,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val annotation = subcomponentInterface.anvilComponent
+      val annotation = subcomponentInterface.anvilComponent(componentInterface)
         .getAnnotation(MergeSubcomponent::class.java)
 
       assertThat(annotation.modules.toList()).containsExactly(daggerModule1.kotlin)
@@ -307,7 +313,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
       """.trimIndent(),
       previousCompilationResult = firstCompilationResult
     ) {
-      val annotation = subcomponentInterface.anvilComponent
+      val annotation = subcomponentInterface.anvilComponent(componentInterface)
         .getAnnotation(MergeSubcomponent::class.java)
 
       assertThat(annotation.modules.toList()).containsExactly(daggerModule1.kotlin)
@@ -350,7 +356,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val annotation = subcomponentInterface.anvilComponent
+      val annotation = subcomponentInterface.anvilComponent(componentInterface)
         .getAnnotation(MergeSubcomponent::class.java)
 
       assertThat(annotation.exclude.toList()).containsExactly(
@@ -406,7 +412,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
       """.trimIndent(),
       previousCompilationResult = firstCompilationResult
     ) {
-      val annotation = subcomponentInterface.anvilComponent
+      val annotation = subcomponentInterface.anvilComponent(componentInterface)
         .getAnnotation(MergeSubcomponent::class.java)
 
       assertThat(annotation.exclude.toList()).containsExactly(
@@ -431,15 +437,14 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val parentComponent = subcomponentInterface.anvilComponent.parentComponentInterface
+      val parentComponent =
+        subcomponentInterface.anvilComponent(componentInterface).parentComponentInterface
       assertThat(parentComponent).isNotNull()
 
-      val annotation = parentComponent.getAnnotation(ContributesTo::class.java)
-      assertThat(annotation).isNotNull()
-      assertThat(annotation.scope).isEqualTo(Unit::class)
-
       assertThat(parentComponent.declaredMethods.single().returnType)
-        .isEqualTo(subcomponentInterface.anvilComponent)
+        .isEqualTo(subcomponentInterface.anvilComponent(componentInterface))
+
+      assertThat(componentInterface extends parentComponent).isTrue()
     }
   }
 
@@ -466,24 +471,21 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val parentComponent = subcomponentInterface.anvilComponent.parentComponentInterface
+      val parentComponent =
+        subcomponentInterface.anvilComponent(componentInterface).parentComponentInterface
       assertThat(parentComponent).isNotNull()
-
-      val annotation = parentComponent.getAnnotation(ContributesTo::class.java)
-      assertThat(annotation).isNotNull()
-      assertThat(annotation.scope).isEqualTo(Unit::class)
-      assertThat(annotation.replaces.toList())
-        .containsExactly(subcomponentInterface.anyParentComponentInterface.kotlin)
 
       val createComponentFunction = parentComponent.declaredMethods.single()
       assertThat(createComponentFunction.returnType)
-        .isEqualTo(subcomponentInterface.anvilComponent)
+        .isEqualTo(subcomponentInterface.anvilComponent(componentInterface))
       assertThat(createComponentFunction.name)
         .isEqualTo("createComponent")
 
       assertThat(
         parentComponent extends subcomponentInterface.anyParentComponentInterface
       ).isTrue()
+
+      assertThat(componentInterface extends parentComponent).isTrue()
     }
   }
 
@@ -520,24 +522,21 @@ class ContributesSubcomponentHandlerGeneratorTest {
       """,
       previousCompilationResult = firstCompilationResult
     ) {
-      val parentComponent = subcomponentInterface.anvilComponent.parentComponentInterface
+      val parentComponent =
+        subcomponentInterface.anvilComponent(componentInterface).parentComponentInterface
       assertThat(parentComponent).isNotNull()
-
-      val annotation = parentComponent.getAnnotation(ContributesTo::class.java)
-      assertThat(annotation).isNotNull()
-      assertThat(annotation.scope).isEqualTo(Unit::class)
-      assertThat(annotation.replaces.toList())
-        .containsExactly(subcomponentInterface.anyParentComponentInterface.kotlin)
 
       val createComponentFunction = parentComponent.declaredMethods.single()
       assertThat(createComponentFunction.returnType)
-        .isEqualTo(subcomponentInterface.anvilComponent)
+        .isEqualTo(subcomponentInterface.anvilComponent(componentInterface))
       assertThat(createComponentFunction.name)
         .isEqualTo("createComponent")
 
       assertThat(
         parentComponent extends subcomponentInterface.anyParentComponentInterface
       ).isTrue()
+
+      assertThat(componentInterface extends parentComponent).isTrue()
     }
   }
 
@@ -563,7 +562,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val parentComponent = subcomponentInterface.anvilComponent.parentComponentInterface
+      val parentComponent =
+        subcomponentInterface.anvilComponent(componentInterface).parentComponentInterface
       assertThat(
         parentComponent extends subcomponentInterface.anyParentComponentInterface
       ).isFalse()
@@ -642,8 +642,13 @@ class ContributesSubcomponentHandlerGeneratorTest {
       interface ComponentInterface
       """
     ) {
+      assertThat(exitCode).isEqualTo(OK)
+
       // Fails because the component is never generated.
-      assertFailsWith<ClassNotFoundException> { subcomponentInterface.anvilComponent }
+      assertFailsWith<ClassNotFoundException> {
+        subcomponentInterface.anvilComponent(componentInterface)
+      }
+      assertThat(componentInterface.interfaces).isEmpty()
     }
   }
 
@@ -665,8 +670,13 @@ class ContributesSubcomponentHandlerGeneratorTest {
       interface ComponentInterface
       """
     ) {
+      assertThat(exitCode).isEqualTo(OK)
+
       // Fails because the component is never generated.
-      assertFailsWith<ClassNotFoundException> { subcomponentInterface.anvilComponent }
+      assertFailsWith<ClassNotFoundException> {
+        subcomponentInterface.anvilComponent(componentInterface)
+      }
+      assertThat(componentInterface.interfaces).isEmpty()
     }
   }
 
@@ -688,8 +698,12 @@ class ContributesSubcomponentHandlerGeneratorTest {
       interface ComponentInterface
       """
     ) {
+      assertThat(exitCode).isEqualTo(OK)
+
       // Fails because the component is never generated.
-      assertFailsWith<ClassNotFoundException> { subcomponentInterface.anvilComponent }
+      assertFailsWith<ClassNotFoundException> {
+        subcomponentInterface.anvilComponent(componentInterface)
+      }
     }
   }
 
@@ -716,12 +730,16 @@ class ContributesSubcomponentHandlerGeneratorTest {
       interface ContributingInterface
       """
     ) {
-      assertThat(
-        componentInterface extends subcomponentInterface.anvilComponent.parentComponentInterface
-      ).isFalse()
+      // Fails because the component is never generated.
+      assertFailsWith<ClassNotFoundException> {
+        subcomponentInterface.anvilComponent(componentInterface)
+      }
 
       assertThat(
-        contributingInterface extends subcomponentInterface.anvilComponent.parentComponentInterface
+        contributingInterface extends
+          subcomponentInterface
+            .anvilComponent(contributingInterface)
+            .parentComponentInterface
       ).isTrue()
     }
   }
@@ -781,17 +799,17 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val createFactoryFunction = subcomponentInterface.anvilComponent
+      val createFactoryFunction = subcomponentInterface.anvilComponent(componentInterface)
         .parentComponentInterface
         .declaredMethods
         .single()
 
       assertThat(createFactoryFunction.returnType)
-        .isEqualTo(subcomponentInterface.anvilComponent.generatedFactory)
+        .isEqualTo(subcomponentInterface.anvilComponent(componentInterface).generatedFactory)
       assertThat(createFactoryFunction.name).isEqualTo("createFactory")
 
       assertThat(
-        subcomponentInterface.anvilComponent.generatedFactory extends
+        subcomponentInterface.anvilComponent(componentInterface).generatedFactory extends
           subcomponentInterface.componentFactory
       ).isTrue()
     }
@@ -825,17 +843,17 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val createFactoryFunction = subcomponentInterface.anvilComponent
+      val createFactoryFunction = subcomponentInterface.anvilComponent(componentInterface)
         .parentComponentInterface
         .declaredMethods
         .single()
 
       assertThat(createFactoryFunction.returnType)
-        .isEqualTo(subcomponentInterface.anvilComponent.generatedFactory)
+        .isEqualTo(subcomponentInterface.anvilComponent(componentInterface).generatedFactory)
       assertThat(createFactoryFunction.name).isEqualTo("createFactory")
 
       assertThat(
-        subcomponentInterface.anvilComponent.generatedFactory extends
+        subcomponentInterface.anvilComponent(componentInterface).generatedFactory extends
           subcomponentInterface.componentFactory
       ).isTrue()
     }
@@ -863,16 +881,17 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val parentComponent = subcomponentInterface.anvilComponent.parentComponentInterface
+      val parentComponent =
+        subcomponentInterface.anvilComponent(componentInterface).parentComponentInterface
       assertThat(parentComponent).isNotNull()
 
       val createFactoryFunction = parentComponent.declaredMethods.single()
       assertThat(createFactoryFunction.returnType)
-        .isEqualTo(subcomponentInterface.anvilComponent.generatedFactory)
+        .isEqualTo(subcomponentInterface.anvilComponent(componentInterface).generatedFactory)
       assertThat(createFactoryFunction.name).isEqualTo("createComponentFactory")
 
       assertThat(
-        subcomponentInterface.anvilComponent.generatedFactory extends
+        subcomponentInterface.anvilComponent(componentInterface).generatedFactory extends
           subcomponentInterface.componentFactory
       ).isTrue()
     }
@@ -944,11 +963,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
   
         import com.squareup.anvil.annotations.ContributesSubcomponent
         import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
-        // import com.squareup.anvil.annotations.ContributesTo
         import com.squareup.anvil.annotations.MergeComponent
         import dagger.BindsInstance
-        // import dagger.Module
-        // import dagger.Provides
         import javax.inject.Inject 
 
         @ContributesSubcomponent(Any::class, parentScope = Unit::class)
@@ -1013,7 +1029,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val anvilComponent = subcomponentInterface.anvilComponent
+      val anvilComponent = subcomponentInterface.anvilComponent(componentInterface)
       assertThat(anvilComponent).isNotNull()
 
       val annotation = anvilComponent.getAnnotation(Singleton::class.java)
@@ -1045,7 +1061,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface
       """.trimIndent()
     ) {
-      val anvilComponent = subcomponentInterface.anvilComponent
+      val anvilComponent = subcomponentInterface.anvilComponent(componentInterface)
       assertThat(anvilComponent).isNotNull()
 
       val singleIn = classLoader.loadClass("com.squareup.test.SingleIn")
@@ -1060,9 +1076,128 @@ class ContributesSubcomponentHandlerGeneratorTest {
     }
   }
 
-  private val Class<*>.anvilComponent: Class<*>
-    get() = classLoader
-      .loadClass("$COMPONENT_PACKAGE_PREFIX.${generatedClassesString()}$ANVIL_SUBCOMPONENT_SUFFIX")
+  @Test fun `subcomponent can be contributed and bindings replaced in a 2nd compilation`() {
+    // This test simulates a compilation in the main source set and test/androidTest source set,
+    // where contributed subcomponents are generated a second time for the test components. This
+    // test ensures that there are no duplicate generated classes.
+    val firstResult = compile(
+      """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.Module
+        import dagger.Provides
+
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          fun integer(): Int
+        }
+
+        @ContributesTo(Any::class)
+        @Module
+        object DaggerModule1 {
+          @Provides fun provideIntegerFive(): Int = 5
+        }
+
+        @MergeComponent(Unit::class)
+        interface ComponentInterface1
+      """,
+      enableDaggerAnnotationProcessor = true
+    ) {
+      val daggerComponent = componentInterface1.daggerComponent.declaredMethods
+        .single { it.name == "create" }
+        .invoke(null)
+
+      val subcomponent = componentInterface1.methods
+        .single()
+        .invoke(daggerComponent)
+
+      val int = subcomponent::class.java.declaredMethods
+        .single { it.name == "integer" }
+        .use { it.invoke(subcomponent) as Int }
+
+      assertThat(int).isEqualTo(5)
+    }
+
+    compile(
+      """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.Module
+        import dagger.Provides
+
+        @ContributesTo(Any::class, replaces = [DaggerModule1::class])
+        @Module
+        object DaggerModule2 {
+          @Provides fun provideIntegerSix(): Int = 6
+        }
+
+        @MergeComponent(Unit::class)
+        interface ComponentInterface2
+      """,
+      enableDaggerAnnotationProcessor = true,
+      previousCompilationResult = firstResult
+    ) {
+      val daggerComponent = componentInterface2.daggerComponent.declaredMethods
+        .single { it.name == "create" }
+        .invoke(null)
+
+      val subcomponent = componentInterface2.methods
+        .last()
+        .invoke(daggerComponent)
+
+      val int = subcomponent::class.java.declaredMethods
+        .single { it.name == "integer" }
+        .use { it.invoke(subcomponent) as Int }
+
+      assertThat(int).isEqualTo(6)
+    }
+  }
+
+  @Test fun `contributed subcomponent parent interfaces are merged with the right component`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesSubcomponent
+      import com.squareup.anvil.annotations.MergeComponent
+
+      @ContributesSubcomponent(Unit::class, parentScope = Any::class)
+      interface SubcomponentInterface
+
+      @MergeComponent(Any::class)
+      interface ComponentInterface1
+
+      @MergeComponent(Any::class)
+      interface ComponentInterface2
+      """
+    ) {
+      val parentComponentInterface1 = subcomponentInterface
+        .anvilComponent(componentInterface1)
+        .parentComponentInterface
+      val parentComponentInterface2 = subcomponentInterface
+        .anvilComponent(componentInterface2)
+        .parentComponentInterface
+
+      assertThat(componentInterface1 extends parentComponentInterface1).isTrue()
+      assertThat(componentInterface1 extends parentComponentInterface2).isFalse()
+
+      assertThat(componentInterface2 extends parentComponentInterface2).isTrue()
+      assertThat(componentInterface2 extends parentComponentInterface1).isFalse()
+    }
+  }
+
+  private fun Class<*>.anvilComponent(parent: Class<*>): Class<*> {
+    return classLoader.loadClass(
+      "$COMPONENT_PACKAGE_PREFIX.${generatedClassesString()}${ANVIL_SUBCOMPONENT_SUFFIX}_" +
+        parent.simpleName
+    )
+  }
 
   private val Class<*>.anyParentComponentInterface: Class<*>
     get() = classLoader.loadClass("$canonicalName\$AnyParentComponent")
@@ -1078,4 +1213,10 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
   private val Class<*>.daggerComponent: Class<*>
     get() = classLoader.loadClass("$packageName.Dagger$simpleName")
+
+  private val Result.componentInterface1: Class<*>
+    get() = classLoader.loadClass("com.squareup.test.ComponentInterface1")
+
+  private val Result.componentInterface2: Class<*>
+    get() = classLoader.loadClass("com.squareup.test.ComponentInterface2")
 }
