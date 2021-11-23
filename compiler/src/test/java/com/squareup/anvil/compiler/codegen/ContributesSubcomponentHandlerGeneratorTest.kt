@@ -11,7 +11,7 @@ import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.internal.testing.extends
-import com.squareup.anvil.compiler.internal.testing.generatedClassesString
+import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.secondContributingInterface
@@ -170,6 +170,35 @@ class ContributesSubcomponentHandlerGeneratorTest {
         .loadClass("com.squareup.test.Outer\$SubcomponentInterface")
 
       val anvilComponent = subcomponentInterface.anvilComponent(componentInterface)
+      assertThat(anvilComponent).isNotNull()
+
+      val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
+      assertThat(annotation).isNotNull()
+      assertThat(annotation.scope).isEqualTo(Any::class)
+    }
+  }
+
+  @Test fun `there is a subcomponent generated for an inner parent class`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.MergeComponent
+  
+        @ContributesSubcomponent(Any::class, Unit::class)
+        interface SubcomponentInterface
+        
+        class Outer {
+          @MergeComponent(Unit::class)
+          interface ComponentInterface
+        }
+        
+      """.trimIndent()
+    ) {
+      val anvilComponent = subcomponentInterface.anvilComponent(
+        classLoader.loadClass("com.squareup.test.Outer\$ComponentInterface")
+      )
       assertThat(anvilComponent).isNotNull()
 
       val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
@@ -1098,11 +1127,14 @@ class ContributesSubcomponentHandlerGeneratorTest {
         import dagger.Provides
 
         @ContributesSubcomponent(Any::class, parentScope = Unit::class)
-        interface SubcomponentInterface {
+        interface SubcomponentInterface1
+
+        @ContributesSubcomponent(Int::class, parentScope = Any::class)
+        interface SubcomponentInterface2 {
           fun integer(): Int
         }
 
-        @ContributesTo(Any::class)
+        @ContributesTo(Int::class)
         @Module
         object DaggerModule1 {
           @Provides fun provideIntegerFive(): Int = 5
@@ -1117,13 +1149,17 @@ class ContributesSubcomponentHandlerGeneratorTest {
         .single { it.name == "create" }
         .invoke(null)
 
-      val subcomponent = componentInterface1.methods
+      val subcomponent1 = componentInterface1.methods
         .single()
         .invoke(daggerComponent)
 
-      val int = subcomponent::class.java.declaredMethods
+      val subcomponent2 = subcomponent1::class.java.declaredMethods
+        .single()
+        .use { it.invoke(subcomponent1) }
+
+      val int = subcomponent2::class.java.declaredMethods
         .single { it.name == "integer" }
-        .use { it.invoke(subcomponent) as Int }
+        .use { it.invoke(subcomponent2) as Int }
 
       assertThat(int).isEqualTo(5)
     }
@@ -1138,10 +1174,16 @@ class ContributesSubcomponentHandlerGeneratorTest {
         import dagger.Module
         import dagger.Provides
 
-        @ContributesTo(Any::class, replaces = [DaggerModule1::class])
+        @ContributesTo(Int::class, replaces = [DaggerModule1::class])
         @Module
         object DaggerModule2 {
           @Provides fun provideIntegerSix(): Int = 6
+          @Provides fun provideLongSeven(): Long = 7L
+        }
+
+        @ContributesTo(Int::class)
+        interface ContributedComponentInterface {
+          fun getLong(): Long
         }
 
         @MergeComponent(Unit::class)
@@ -1154,15 +1196,25 @@ class ContributesSubcomponentHandlerGeneratorTest {
         .single { it.name == "create" }
         .invoke(null)
 
-      val subcomponent = componentInterface2.methods
-        .last()
+      val subcomponent1 = componentInterface2.methods
+        .single()
         .invoke(daggerComponent)
 
-      val int = subcomponent::class.java.declaredMethods
+      val subcomponent2 = subcomponent1::class.java.declaredMethods
+        .single()
+        .use { it.invoke(subcomponent1) }
+
+      val int = subcomponent2::class.java.declaredMethods
         .single { it.name == "integer" }
-        .use { it.invoke(subcomponent) as Int }
+        .use { it.invoke(subcomponent2) as Int }
 
       assertThat(int).isEqualTo(6)
+
+      val long = subcomponent2::class.java.methods
+        .single { it.name == "getLong" }
+        .use { it.invoke(subcomponent2) as Long }
+
+      assertThat(long).isEqualTo(7L)
     }
   }
 
@@ -1199,10 +1251,61 @@ class ContributesSubcomponentHandlerGeneratorTest {
     }
   }
 
+  @Test fun `contributed subcomponent class names are compacted`() {
+    // This test would fail when javac runs during annotation processing with the class names we
+    // originally generated. We now encode the parent class name in the package rather than the
+    // class name. Then Dagger won't create too long nested class names for subcomponents. See
+    // https://github.com/google/dagger/issues/421
+    compile(
+      """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.MergeComponent
+
+        @ContributesSubcomponent(Int::class, parentScope = Any::class)
+        interface SubcomponentInterface
+
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """,
+      """
+        package com.squareup.test.superlongpackagename.superlongpackagename.superlongpackagename.superlongpackagename
+
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+
+        @ContributesSubcomponent(scope = Any::class, parentScope = Unit::class)
+        interface SubcomponentInterfacewithVeryVeryVeryVeryVeryVeryVeryLongName
+      """,
+      enableDaggerAnnotationProcessor = true
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  // E.g. anvil.component.com.squareup.test.componentinterface.SubcomponentInterfaceA
   private fun Class<*>.anvilComponent(parent: Class<*>): Class<*> {
+    val packageName = parent.packageName()
+
+    val packagePrefix = if (packageName.startsWith(COMPONENT_PACKAGE_PREFIX)) {
+      ""
+    } else {
+      "$COMPONENT_PACKAGE_PREFIX."
+    }
+
+    val packageSuffix = generateSequence(parent) { it.enclosingClass }
+      .toList()
+      .reversed()
+      .joinToString(separator = ".") { it.simpleName }
+      .lowercase()
+
+    val className = generateSequence(this) { it.enclosingClass }
+      .toList()
+      .reversed()
+      .joinToString(separator = "_") { it.simpleName }
+
     return classLoader.loadClass(
-      "$COMPONENT_PACKAGE_PREFIX.${generatedClassesString()}${ANVIL_SUBCOMPONENT_SUFFIX}_" +
-        parent.simpleName
+      "$packagePrefix$packageName$packageSuffix.$className$ANVIL_SUBCOMPONENT_SUFFIX"
     )
   }
 
