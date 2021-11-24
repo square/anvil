@@ -3,6 +3,7 @@
 ## 2.3.10 (2021-11-24)
 
 * New experimental annotation [`@ContributesSubcomponent`](https://github.com/square/anvil/blob/main/annotations/src/main/java/com/squareup/anvil/annotations/ContributesSubcomponent.kt) to delay merging contributions until the parent component is created, see #160.
+* Add option to contribute class using `@MergeInterfaces` and `@MergeModules` to another scope with `@ContributesTo`.
 * Add a workaround for a bug in the Kotlin 1.6.0 compiler, see [KT-49340](https://youtrack.jetbrains.com/issue/KT-49340).
 * Use Anvil version `2.3.10-1-6-0` if you want to test Kotlin `1.6.0`. Until Anvil hasn't adopted Kotlin `1.6` I'll publish additional versions that are required due to compiler API incompatibilities.
 
