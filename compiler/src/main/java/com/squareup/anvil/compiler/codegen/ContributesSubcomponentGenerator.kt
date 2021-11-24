@@ -13,6 +13,8 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesSubcomponentFactoryFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
+import com.squareup.anvil.compiler.daggerSubcomponentBuilderFqName
+import com.squareup.anvil.compiler.daggerSubcomponentFactoryFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
@@ -163,6 +165,28 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
     module: ModuleDescriptor
   ) {
     val fqName = requireFqName()
+
+    innerClasses
+      .firstOrNull { it.hasAnnotation(daggerSubcomponentFactoryFqName, module) }
+      ?.let { factoryClass ->
+        throw AnvilCompilationException(
+          element = factoryClass,
+          message = "Within a class using @${ContributesSubcomponent::class.simpleName} you " +
+            "must use $contributesSubcomponentFactoryFqName and not " +
+            "$daggerSubcomponentFactoryFqName."
+        )
+      }
+
+    innerClasses
+      .firstOrNull { it.hasAnnotation(daggerSubcomponentBuilderFqName, module) }
+      ?.let { factoryClass ->
+        throw AnvilCompilationException(
+          element = factoryClass,
+          message = "Within a class using @${ContributesSubcomponent::class.simpleName} you " +
+            "must use $contributesSubcomponentFactoryFqName and not " +
+            "$daggerSubcomponentBuilderFqName. Builders aren't supported."
+        )
+      }
 
     val factories = innerClasses
       .filter { it.hasAnnotation(contributesSubcomponentFactoryFqName, module) }

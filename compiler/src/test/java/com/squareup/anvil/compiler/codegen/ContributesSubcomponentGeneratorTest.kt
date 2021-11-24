@@ -394,6 +394,62 @@ class ContributesSubcomponentGeneratorTest {
     }
   }
 
+  @Test
+  fun `using Dagger's @Subcomponent_Factory is an error`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import dagger.Subcomponent
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Subcomponent.Factory
+          interface ComponentFactory {
+            fun createComponent(): SubcomponentInterface
+          }
+        }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("Source0.kt: (8, 3)")
+      assertThat(messages).contains(
+        "Within a class using @ContributesSubcomponent you must use " +
+          "com.squareup.anvil.annotations.ContributesSubcomponent.Factory and not " +
+          "dagger.Subcomponent.Factory."
+      )
+    }
+  }
+
+  @Test
+  fun `using Dagger's @Subcomponent_Builder is an error`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import dagger.Subcomponent
+  
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Subcomponent.Builder
+          interface ComponentFactory {
+            fun createComponent(): SubcomponentInterface
+          }
+        }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("Source0.kt: (8, 3)")
+      assertThat(messages).contains(
+        "Within a class using @ContributesSubcomponent you must use " +
+          "com.squareup.anvil.annotations.ContributesSubcomponent.Factory and not " +
+          "dagger.Subcomponent.Builder. Builders aren't supported."
+      )
+    }
+  }
+
   private val Class<*>.parentComponentInterface: Class<*>
     get() = classLoader.loadClass("$canonicalName\$AnyParentComponent")
 }
