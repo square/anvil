@@ -229,22 +229,15 @@ public fun String.decapitalize(): String = replaceFirstChar(Char::lowercaseChar)
 public fun FqName.generateClassName(
   separator: String = "_",
   suffix: String = ""
-): String = classIdBestGuess().generateClassName(separator = separator, suffix = suffix)
+): ClassId = classIdBestGuess().generateClassName(separator = separator, suffix = suffix)
 
 @ExperimentalAnvilApi
 public fun ClassId.generateClassName(
   separator: String = "_",
   suffix: String = ""
-): String {
-  val packageName = packageFqName
-    .takeIf { !it.isRoot }
-    ?.asString()
-    ?.let { "$it." }
-    ?: ""
-
+): ClassId {
   val className = relativeClassName.asString().replace(".", separator)
-
-  return "$packageName$className$suffix"
+  return ClassId(packageFqName, FqName(className + suffix), false)
 }
 
 @ExperimentalAnvilApi

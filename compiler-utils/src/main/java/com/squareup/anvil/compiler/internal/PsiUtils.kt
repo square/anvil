@@ -771,6 +771,10 @@ public fun FqName.classDescriptorOrNull(module: ModuleDescriptor): ClassDescript
 }
 
 @ExperimentalAnvilApi
+public fun ClassId.classDescriptorOrNull(module: ModuleDescriptor): ClassDescriptor? =
+  asSingleFqName().classDescriptorOrNull(module)
+
+@ExperimentalAnvilApi
 public fun KtAnnotationEntry.isQualifier(module: ModuleDescriptor): Boolean {
   return typeReference
     ?.requireFqName(module)
