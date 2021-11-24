@@ -5,8 +5,10 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.ClassReference.Psi
 import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -21,17 +23,22 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 @ExperimentalAnvilApi
 public sealed class ClassReference {
 
+  public abstract val classId: ClassId
   public abstract val fqName: FqName
 
   public class Psi internal constructor(
     public val clazz: KtClassOrObject,
-    override val fqName: FqName
-  ) : ClassReference()
+    override val classId: ClassId
+  ) : ClassReference() {
+    override val fqName: FqName = classId.asSingleFqName()
+  }
 
   public class Descriptor internal constructor(
     public val clazz: ClassDescriptor,
-    override val fqName: FqName
-  ) : ClassReference()
+    override val classId: ClassId
+  ) : ClassReference() {
+    override val fqName: FqName = classId.asSingleFqName()
+  }
 
   override fun toString(): String {
     return "${this::class.qualifiedName}($fqName)"
@@ -64,12 +71,12 @@ public fun ModuleDescriptor.classReferenceOrNull(fqName: FqName): ClassReference
 
 @ExperimentalAnvilApi
 public fun ClassDescriptor.toClassReference(): Descriptor {
-  return Descriptor(this, fqNameSafe)
+  return Descriptor(this, this.requireClassId())
 }
 
 @ExperimentalAnvilApi
 public fun KtClassOrObject.toClassReference(): Psi {
-  return Psi(this, requireFqName())
+  return Psi(this, toClassId())
 }
 
 @ExperimentalAnvilApi
@@ -160,3 +167,16 @@ public fun ClassReference.qualifiers(
       .map { it.toAnnotationSpec(module) }
   }
 }
+
+@ExperimentalAnvilApi
+public fun ClassReference.daggerScopes(
+  module: ModuleDescriptor
+): List<AnnotationSpec> = when (this) {
+  is Descriptor -> clazz.annotations.filter { it.isDaggerScope() }
+    .map { it.toAnnotationSpec(module) }
+  is Psi -> clazz.annotationEntries.filter { it.isDaggerScope(module) }
+    .map { it.toAnnotationSpec(module) }
+}
+
+@ExperimentalAnvilApi
+public fun ClassReference.asClassName(): ClassName = classId.asClassName()

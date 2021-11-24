@@ -7,11 +7,13 @@ import com.squareup.anvil.annotations.ContributesTo
 import dagger.BindsInstance
 import dagger.Module
 import dagger.Provides
+import javax.inject.Singleton
 
 @ContributesSubcomponent(
   scope = ContributedSubcomponent.Scope::class,
   parentScope = ContributedSubcomponent.ParentScope::class
 )
+@Singleton
 public interface ContributedSubcomponent {
   public fun integer(): Int
 
@@ -23,7 +25,7 @@ public interface ContributedSubcomponent {
   @ContributesTo(ContributedSubcomponent.Scope::class)
   @Module
   public object SubcomponentModule {
-    @Provides public fun provideInteger(): Int = 3
+    @Provides @Singleton public fun provideInteger(): Int = 3
   }
 
   public abstract class Scope

@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation.FROM_BACKEND
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
@@ -55,6 +56,16 @@ public val KClass<*>.fqName: FqName get() = FqName(java.canonicalName)
 @ExperimentalAnvilApi
 public fun KtNamedDeclaration.requireFqName(): FqName = requireNotNull(fqName) {
   "fqName was null for $this, $nameAsSafeName"
+}
+
+@ExperimentalAnvilApi
+public fun KtClassOrObject.toClassId(): ClassId {
+  val className = parentsWithSelf.filterIsInstance<KtClassOrObject>()
+    .toList()
+    .reversed()
+    .joinToString(separator = ".") { it.nameAsSafeName.asString() }
+
+  return ClassId(containingKtFile.packageFqName, FqName(className), false)
 }
 
 @ExperimentalAnvilApi
@@ -229,8 +240,8 @@ public inline fun <reified T> KtAnnotationEntry.findAnnotationArgument(
  * then resolve its super-classes that way. Note that this will only work if the last class
  * in the list is not generated, so that it's parsed and part of the plain ModuleDescriptor.
  *
- * **Note** This function only returns classes. See [allPsiSuperTypes] for a version which also
- * returns interfaces.
+ * **Note** This function only returns classes. See [KtClassOrObject.allPsiSuperClasses] for a
+ * version which also returns interfaces.
  */
 @ExperimentalAnvilApi
 public fun KtClassOrObject.allPsiSuperClasses(
@@ -769,6 +780,16 @@ public fun KtAnnotationEntry.isQualifier(module: ModuleDescriptor): Boolean {
     ?.requireClassDescriptor(module)
     ?.annotations
     ?.hasAnnotation(qualifierFqName)
+    ?: false
+}
+
+@ExperimentalAnvilApi
+public fun KtAnnotationEntry.isDaggerScope(module: ModuleDescriptor): Boolean {
+  return typeReference
+    ?.requireFqName(module)
+    ?.requireClassDescriptor(module)
+    ?.annotations
+    ?.hasAnnotation(daggerScopeFqName)
     ?: false
 }
 

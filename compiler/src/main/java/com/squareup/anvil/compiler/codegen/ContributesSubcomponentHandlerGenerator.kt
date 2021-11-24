@@ -17,12 +17,14 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesSubcomponentFactoryFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
+import com.squareup.anvil.compiler.internal.ClassReference
 import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
+import com.squareup.anvil.compiler.internal.daggerScopes
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.generateClassName
@@ -30,9 +32,9 @@ import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
-import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
+import com.squareup.anvil.compiler.internal.toClassReference
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
@@ -142,7 +144,7 @@ internal class ContributesSubcomponentHandlerGenerator(
               ?: emptyList()
 
             Contribution(
-              clazz = descriptor.requireClassId(),
+              classReference = descriptor.toClassReference(),
               scope = annotation.scope(module).fqNameSafe,
               parentScope = parentScope,
               modules = modules,
@@ -170,7 +172,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           ?: emptyList()
 
         Contribution(
-          clazz = requireNotNull(clazz.getClassId()),
+          classReference = clazz.toClassReference(),
           scope = clazz.scope(contributesSubcomponentFqName, module),
           parentScope = clazz.parentScope(contributesSubcomponentFqName, module),
           modules = modules,
@@ -201,7 +203,7 @@ internal class ContributesSubcomponentHandlerGenerator(
         val content = FileSpec.buildFile(generatedPackage, componentClassName) {
           TypeSpec
             .interfaceBuilder(componentClassName)
-            .addSuperinterface(contribution.clazz.asClassName())
+            .addSuperinterface(contribution.classReference.asClassName())
             .addAnnotation(
               AnnotationSpec
                 .builder(MergeSubcomponent::class)
@@ -225,6 +227,7 @@ internal class ContributesSubcomponentHandlerGenerator(
                 }
                 .build()
             )
+            .addAnnotations(contribution.classReference.daggerScopes(module))
             .apply {
               if (factoryClass != null) {
                 addType(generateFactory(factoryClass.originalDescriptor, contribution, module))
@@ -457,25 +460,25 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private class Contribution(
-    val clazz: ClassId,
+    val classReference: ClassReference,
     val scope: FqName,
     val parentScope: FqName,
     val modules: List<FqName>,
     val exclude: List<FqName>
   ) {
-    val clazzFqName = clazz.asSingleFqName()
+    val clazzFqName = classReference.fqName
 
     val generatedPackage: String
     val generatedSubcomponentClassName: String
 
     init {
-      val generatedAnvilSubcomponent = clazz.generatedAnvilSubcomponent()
+      val generatedAnvilSubcomponent = classReference.classId.generatedAnvilSubcomponent()
       generatedPackage = generatedAnvilSubcomponent.packageFqName.asString()
       generatedSubcomponentClassName = generatedAnvilSubcomponent.relativeClassName.asString()
     }
 
     override fun toString(): String {
-      return "Contribution(class=$clazz, parentScope=$parentScope)"
+      return "Contribution(class=$classReference, parentScope=$parentScope)"
     }
   }
 
