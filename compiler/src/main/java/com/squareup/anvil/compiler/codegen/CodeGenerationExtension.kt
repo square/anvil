@@ -57,17 +57,18 @@ internal class CodeGenerationExtension(
     if (didRecompile || codeGenerators.isEmpty()) return null
     didRecompile = true
 
+    // It's important to resolve types before clearing the output directory
+    // to avoid https://youtrack.jetbrains.com/issue/KT-49340
+    val psiManager = PsiManager.getInstance(project)
+    val anvilModule = RealAnvilModuleDescriptor(module)
+    anvilModule.addFiles(files)
+
     codeGenDir.listFiles()
       ?.forEach {
         check(it.deleteRecursively()) {
           "Could not clean file: $it"
         }
       }
-
-    val psiManager = PsiManager.getInstance(project)
-
-    val anvilModule = RealAnvilModuleDescriptor(module)
-    anvilModule.addFiles(files)
 
     val (privateCodeGenerators, nonPrivateCodeGenerators) =
       codeGenerators.partition { it is PrivateCodeGenerator }
