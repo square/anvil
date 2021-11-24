@@ -6,6 +6,7 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerComponent
+import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.daggerSubcomponent
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
 import dagger.Component
@@ -1085,6 +1086,36 @@ class ModuleMergerTest(
       assertThat(messages).contains(
         "Couldn't find scope for ${annotationClass.java.canonicalName}"
       )
+    }
+  }
+
+  @Test fun `merged modules can be contributed to another scope at the same time`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.compat.MergeModules
+      import com.squareup.anvil.annotations.ContributesTo
+      import dagger.Module
+      $import
+
+      @ContributesTo(Any::class)
+      @Module
+      abstract class DaggerModule2
+
+      @MergeModules(Any::class)
+      @ContributesTo(Unit::class)
+      class DaggerModule1
+      
+      $annotation(Unit::class)
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+        .containsExactly(daggerModule2.kotlin)
+
+      val component = componentInterface.anyDaggerComponent
+      assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule1.kotlin)
     }
   }
 

@@ -20,6 +20,7 @@ import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
+import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -52,7 +53,10 @@ internal class ContributesToGenerator : CodeGenerator {
       .classesAndInnerClass(module)
       .filter { it.hasAnnotation(contributesToFqName, module) }
       .onEach { clazz ->
-        if (!clazz.isInterface() && !clazz.hasAnnotation(daggerModuleFqName, module)) {
+        if (!clazz.isInterface() &&
+          !clazz.hasAnnotation(daggerModuleFqName, module) &&
+          !clazz.hasAnnotation(mergeModulesFqName, module)
+        ) {
           throw AnvilCompilationException(
             "${clazz.requireFqName()} is annotated with " +
               "@${ContributesTo::class.simpleName}, but this class is neither an interface " +
