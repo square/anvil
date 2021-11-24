@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.getAnnotationValue
+import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
@@ -130,11 +131,14 @@ internal class ModuleMerger(
           .annotationOrNull(contributesBindingFqName)
         val contributesMultibindingAnnotation = classDescriptorForExclusion
           .annotationOrNull(contributesMultibindingFqName)
+        val contributesSubcomponentAnnotation = classDescriptorForExclusion
+          .annotationOrNull(contributesSubcomponentFqName)
 
         // Verify that the replaced classes use the same scope.
         val scopeOfExclusion = contributesToAnnotation?.scope(module)
           ?: contributesBindingAnnotation?.scope(module)
           ?: contributesMultibindingAnnotation?.scope(module)
+          ?: contributesSubcomponentAnnotation?.parentScope(module)
           ?: throw AnvilCompilationException(
             codegen.descriptor,
             "Could not determine the scope of the excluded class " +

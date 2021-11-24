@@ -85,11 +85,7 @@ internal fun KtClassOrObject.replaces(
 
   return findAnnotation(annotationFqName, module)
     ?.findAnnotationArgument<KtCollectionLiteralExpression>(name = "replaces", index = index)
-    ?.let { classCollection ->
-      classCollection.children
-        .filterIsInstance<KtClassLiteralExpression>()
-        .map { it.requireFqName(module) }
-    }
+    ?.toFqNames(module)
     ?: emptyList()
 }
 
@@ -144,3 +140,9 @@ internal fun KtAnnotationEntry.priority(): ContributesBinding.Priority {
   val enumValue = findAnnotationArgument<KtNameReferenceExpression>("priority", 4) ?: return NORMAL
   return ContributesBinding.Priority.valueOf(enumValue.text)
 }
+
+internal fun KtCollectionLiteralExpression.toFqNames(
+  module: ModuleDescriptor
+): List<FqName> = children
+  .filterIsInstance<KtClassLiteralExpression>()
+  .map { it.requireFqName(module) }

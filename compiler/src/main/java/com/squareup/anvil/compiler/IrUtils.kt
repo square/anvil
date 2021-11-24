@@ -69,6 +69,22 @@ internal fun IrConstructorCall.scope(): FqName {
   return FqName("${signature.packageFqName}.${signature.shortName}")
 }
 
+internal fun IrConstructorCall.parentScope(): FqName {
+  val expression = argument("parentScope")?.second
+    ?: throw AnvilCompilationException(
+      message = "Couldn't find parent scope annotation.",
+      element = this
+    )
+
+  val signature = expression.kclassUnwrapped.signature?.asPublic()
+    ?: throw AnvilCompilationException(
+      message = "Couldn't resolve parent scope signature.",
+      element = this
+    )
+
+  return FqName("${signature.packageFqName}.${signature.shortName}")
+}
+
 internal val IrDeclarationWithName.fqName: FqName
   get() = fqNameWhenAvailable ?: throw AnvilCompilationException(
     message = "Couldn't find FqName for $name",

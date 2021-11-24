@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.fir.lightTree.converter.nameAsSafeName
 import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
@@ -248,6 +249,14 @@ public fun LambdaTypeName.asFunctionType(): ParameterizedTypeName {
 
   return ClassName("kotlin", "Function${allTypes.size - 1}")
     .parameterizedBy(allTypes)
+}
+
+@ExperimentalAnvilApi
+public fun ClassId.asClassName(): ClassName {
+  return ClassName(
+    packageName = packageFqName.asString(),
+    simpleNames = relativeClassName.pathSegments().map { it.asString() }
+  )
 }
 
 @ExperimentalAnvilApi

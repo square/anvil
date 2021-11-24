@@ -85,6 +85,8 @@ fun PropertyDescriptor.isSetterInjected(): Boolean {
 
 fun KotlinType.fqNameOrNull(): FqName? = classDescriptorOrNull()?.fqNameOrNull()
 
+fun KotlinType.fqName(): FqName = requireClassDescriptor().fqNameSafe
+
 internal fun List<CallableMemberDescriptor>.mapToMemberInjectParameters(
   module: ModuleDescriptor,
   containingClassName: ClassName

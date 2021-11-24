@@ -59,6 +59,25 @@ class GeneratedCodeTest {
     assertThat(DaggerGeneratedCodeTest_AppComponent.create().otherClass()).isNotNull()
   }
 
+  @Test fun `the generated subcomponent is contribute the parent scope`() {
+    val contributedSubcomponent =
+      Class.forName("generated.test.com.squareup.anvil.test.ContributedSubcomponent")
+
+    val component = DaggerGeneratedCodeTest_AppComponent.create()
+
+    val subcomponent = AppComponent::class.java
+      .methods
+      .single { it.returnType extends contributedSubcomponent }
+      .invoke(component)
+
+    val int = subcomponent::class.java
+      .declaredMethods
+      .single { it.name == "integer" }
+      .invoke(subcomponent) as Int
+
+    assertThat(int).isEqualTo(7)
+  }
+
   @MergeComponent(Unit::class)
   interface AppComponent {
     fun otherClass(): OtherClass

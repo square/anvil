@@ -108,6 +108,27 @@ class TestCodeGenerator : CodeGenerator {
           interface SampleAssistedFactory : ParentAssistedFactory
         """.trimIndent()
 
+        @Language("kotlin")
+        val contributedSubcomponent = """
+          package $generatedPackage
+          
+          import com.squareup.anvil.annotations.ContributesSubcomponent
+          import com.squareup.anvil.annotations.ContributesTo
+          import dagger.Module
+          import dagger.Provides
+
+          @ContributesTo(Int::class)
+          @Module
+          object DaggerModule {
+            @Provides fun provideInteger(): Int = 7
+          }
+
+          @ContributesSubcomponent(Int::class, parentScope = Unit::class)
+          interface ContributedSubcomponent {
+            fun integer(): Int
+          }
+        """.trimIndent()
+
         sequenceOf(
           createGeneratedFile(
             codeGenDir = codeGenDir,
@@ -144,6 +165,12 @@ class TestCodeGenerator : CodeGenerator {
             packageName = generatedPackage,
             fileName = "AssistedInject",
             content = assistedInject
+          ),
+          createGeneratedFile(
+            codeGenDir = codeGenDir,
+            packageName = generatedPackage,
+            fileName = "ContributedSubcomponent",
+            content = contributedSubcomponent
           ),
         )
       }

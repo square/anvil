@@ -1,15 +1,19 @@
 package com.squareup.anvil.compiler
 
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.getAllSuperTypes
 import com.squareup.anvil.compiler.internal.getAnnotationValue
+import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
+import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.scope
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
 import org.jetbrains.kotlin.descriptors.effectiveVisibility
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -132,11 +136,14 @@ internal class InterfaceMerger(
           .annotationOrNull(contributesBindingFqName)
         val contributesMultibindingAnnotation = classDescriptorForExclusion
           .annotationOrNull(contributesMultibindingFqName)
+        val contributesSubcomponentAnnotation = classDescriptorForExclusion
+          .annotationOrNull(contributesSubcomponentFqName)
 
         // Verify that the replaced classes use the same scope.
         val scopeOfExclusion = contributesToAnnotation?.scope(module)
           ?: contributesBindingAnnotation?.scope(module)
           ?: contributesMultibindingAnnotation?.scope(module)
+          ?: contributesSubcomponentAnnotation?.parentScope(module)
           ?: throw AnvilCompilationException(
             thisDescriptor,
             "Could not determine the scope of the excluded class " +
@@ -150,6 +157,16 @@ internal class InterfaceMerger(
               "${classDescriptorForExclusion.fqNameSafe} with scope " +
               "${scopeOfExclusion.fqNameSafe}. The exclusion must use the same scope."
           )
+        }
+
+        if (contributesSubcomponentAnnotation != null) {
+          // For contributed subcomponents we don't actually want to exclude the subcomponent,
+          // but the generated parent component that is contributed to the scope of our component
+          // interface.
+          return@map classDescriptorForExclusion.requireClassId()
+            .generatedAnvilSubcomponent()
+            .createNestedClassId(Name.identifier(PARENT_COMPONENT))
+            .asSingleFqName()
         }
 
         classDescriptorForExclusion.fqNameSafe

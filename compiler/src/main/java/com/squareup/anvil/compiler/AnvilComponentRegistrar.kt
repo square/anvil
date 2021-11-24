@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
+import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
 import com.squareup.anvil.compiler.codegen.RealAnvilContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
@@ -42,8 +43,9 @@ class AnvilComponentRegistrar : ComponentRegistrar {
       .toMutableList()
 
     if (!generateDaggerFactoriesOnly) {
-      // We special case this one due to the ClassScanner requirement
+      // We special case these due to the ClassScanner requirement.
       codeGenerators += BindingModuleGenerator(scanner)
+      codeGenerators += ContributesSubcomponentHandlerGenerator(scanner)
     }
 
     // It's important to register our extension at the first position. The compiler calls each

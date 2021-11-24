@@ -125,11 +125,14 @@ internal class ModuleMergerIr(
           .annotationOrNull(contributesBindingFqName)
         val contributesMultibindingAnnotation = excludedClass
           .annotationOrNull(contributesMultibindingFqName)
+        val contributesSubcomponentAnnotation = excludedClass
+          .annotationOrNull(contributesSubcomponentFqName)
 
         // Verify that the replaced classes use the same scope.
         val scopeOfExclusion = contributesToAnnotation?.scope()
           ?: contributesBindingAnnotation?.scope()
           ?: contributesMultibindingAnnotation?.scope()
+          ?: contributesSubcomponentAnnotation?.parentScope()
           ?: throw AnvilCompilationException(
             message = "Could not determine the scope of the excluded class " +
               "${excludedClass.fqName}.",

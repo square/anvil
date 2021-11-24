@@ -18,12 +18,14 @@ import kotlin.reflect.KClass
 internal fun compile(
   @Language("kotlin") vararg sources: String,
   previousCompilationResult: Result? = null,
+  enableDaggerAnnotationProcessor: Boolean = false,
   block: Result.() -> Unit = { }
 ): Result = compileAnvil(
   sources = sources,
   useIR = USE_IR,
   allWarningsAsErrors = WARNINGS_AS_ERRORS,
   previousCompilationResult = previousCompilationResult,
+  enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
   block = block
 )
 
@@ -96,6 +98,12 @@ internal val Class<*>.hintMultibinding: KClass<*>?
 
 internal val Class<*>.hintMultibindingScope: KClass<*>?
   get() = getHintScope(HINT_MULTIBINDING_PACKAGE_PREFIX)
+
+internal val Class<*>.hintSubcomponent: KClass<*>?
+  get() = getHint(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
+
+internal val Class<*>.hintSubcomponentParentScope: KClass<*>?
+  get() = getHintScope(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
 
 internal val Class<*>.anvilModule: Class<*>
   get() = classLoader.loadClass(
