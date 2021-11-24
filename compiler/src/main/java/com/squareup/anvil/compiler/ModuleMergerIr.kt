@@ -93,7 +93,11 @@ internal class ModuleMergerIr(
       }
       .filter { (classSymbol, _) ->
         val moduleAnnotation = classSymbol.owner.annotationOrNull(daggerModuleFqName)
-        if (!classSymbol.owner.isInterface && moduleAnnotation == null) {
+        val mergeModulesAnnotation = classSymbol.owner.annotationOrNull(mergeModulesFqName)
+        if (!classSymbol.owner.isInterface &&
+          moduleAnnotation == null &&
+          mergeModulesAnnotation == null
+        ) {
           throw AnvilCompilationException(
             message = "${classSymbol.fqName} is annotated with " +
               "@${ContributesTo::class.simpleName}, but this class is neither an interface " +
@@ -102,7 +106,7 @@ internal class ModuleMergerIr(
           )
         }
 
-        moduleAnnotation != null
+        moduleAnnotation != null || mergeModulesAnnotation != null
       }
       .onEach { (classSymbol, _) ->
         if (classSymbol.owner.visibility != DescriptorVisibilities.PUBLIC) {

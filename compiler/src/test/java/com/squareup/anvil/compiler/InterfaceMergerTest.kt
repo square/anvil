@@ -592,4 +592,30 @@ class InterfaceMergerTest(
       assertThat(componentInterface extends secondContributingInterface).isFalse()
     }
   }
+
+  @Test fun `merged interfaces can be contributed to another scope at the same time`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Unit::class)
+      interface ContributingInterface
+      
+      @ContributesTo(Any::class)
+      @com.squareup.anvil.annotations.compat.MergeInterfaces(Unit::class)
+      interface SecondContributingInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(secondContributingInterface extends contributingInterface).isTrue()
+
+      assertThat(componentInterface extends contributingInterface).isTrue()
+      assertThat(componentInterface extends secondContributingInterface).isTrue()
+    }
+  }
 }

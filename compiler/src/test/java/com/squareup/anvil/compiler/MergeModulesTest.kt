@@ -883,4 +883,33 @@ class MergeModulesTest {
       assertThat(messages).contains("Source0.kt: (19, 11)")
     }
   }
+
+  @Test fun `merged modules can be contributed to another scope at the same time`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.compat.MergeModules
+      import com.squareup.anvil.annotations.ContributesTo
+      import dagger.Module
+
+      @ContributesTo(Any::class)
+      @Module
+      abstract class DaggerModule2
+
+      @MergeModules(Any::class)
+      @ContributesTo(Unit::class)
+      class DaggerModule1
+
+      @MergeModules(Unit::class)
+      class DaggerModule3
+      """
+    ) {
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+        .containsExactly(daggerModule2.kotlin)
+
+      assertThat(daggerModule3.daggerModule.includes.withoutAnvilModule())
+        .containsExactly(daggerModule1.kotlin)
+    }
+  }
 }

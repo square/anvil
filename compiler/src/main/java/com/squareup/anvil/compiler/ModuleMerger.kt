@@ -95,7 +95,11 @@ internal class ModuleMerger(
       }
       .filter { (classDescriptor, _) ->
         val moduleAnnotation = classDescriptor.annotationOrNull(daggerModuleFqName)
-        if (!DescriptorUtils.isInterface(classDescriptor) && moduleAnnotation == null) {
+        val mergeModulesAnnotation = classDescriptor.annotationOrNull(mergeModulesFqName)
+        if (!DescriptorUtils.isInterface(classDescriptor) &&
+          moduleAnnotation == null &&
+          mergeModulesAnnotation == null
+        ) {
           throw AnvilCompilationException(
             classDescriptor,
             "${classDescriptor.fqNameSafe} is annotated with " +
@@ -104,7 +108,7 @@ internal class ModuleMerger(
           )
         }
 
-        moduleAnnotation != null
+        moduleAnnotation != null || mergeModulesAnnotation != null
       }
       .onEach { (classDescriptor, _) ->
         if (classDescriptor.effectiveVisibility() !is Public) {
