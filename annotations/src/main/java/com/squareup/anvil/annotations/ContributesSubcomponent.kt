@@ -61,7 +61,7 @@ import kotlin.reflect.KClass
  *
  *   @ContributesTo(AppScope::class)
  *   interface ParentComponent {
- *     fun createActivityComponent(): ActivityComponent
+ *     fun createActivitySubcomponent(): ActivitySubcomponent
  *   }
  * }
  * ```
@@ -118,7 +118,7 @@ public annotation class ContributesSubcomponent(
    *
    *   @ContributesTo(AppScope::class)
    *   interface ParentComponent {
-   *     fun createActivityComponentFactory(): ActivityComponent.Factory
+   *     fun createActivitySubcomponentFactory(): ActivitySubcomponent.Factory
    *   }
    * }
    * ```
