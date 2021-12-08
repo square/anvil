@@ -1049,6 +1049,172 @@ public class InjectClass_Factory(
     }
   }
 
+  @Test fun `a factory class performs member injection on a super class from another module`() {
+
+    val otherModuleResult = compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      abstract class Base {
+
+        @Inject
+        lateinit var base1: List<Int>
+
+        @Inject
+        lateinit var base2: List<String>
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.test.Base
+      import javax.inject.Inject
+      import javax.inject.Provider
+      import dagger.Lazy
+
+      class InjectClass @Inject constructor() : Base() {
+
+        @Inject
+        lateinit var name: String
+      }
+      """,
+      previousCompilationResult = otherModuleResult
+    ) {
+
+      val factoryClass = injectClass.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val name = "name"
+      val base1 = listOf(3)
+      val base2 = listOf("base2")
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = factoryClass.createInstance(
+        Provider { base1 },
+        Provider { base2 },
+        Provider { name }
+      )
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null)
+      assertThat(newInstance).isNotNull()
+
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(getInstance.getPropertyValue("name")).isEqualTo(name)
+      assertThat(getInstance.getPropertyValue("base1")).isEqualTo(base1)
+      assertThat(getInstance.getPropertyValue("base2")).isEqualTo(base2)
+    }
+  }
+
+  @Test
+  fun `a factory class performs member injection on a grand-super class from another module`() {
+
+    val otherModuleResult = compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      abstract class Base {
+
+        @Inject
+        lateinit var base1: List<Int>
+
+        @Inject
+        lateinit var base2: List<String>
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.test.Base
+      import javax.inject.Inject
+      import javax.inject.Provider
+      import dagger.Lazy
+
+      class InjectClass @Inject constructor() : Middle() {
+
+        @Inject
+        lateinit var name: String
+      }
+
+      abstract class Middle : Base() {
+
+        @Inject
+        lateinit var middle1: Set<Int>
+
+        @Inject
+        lateinit var middle2: Set<String>
+      }
+      """,
+      previousCompilationResult = otherModuleResult
+    ) {
+
+      val factoryClass = injectClass.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val name = "name"
+      val middle1 = setOf(1)
+      val middle2 = setOf("middle2")
+      val base1 = listOf(3)
+      val base2 = listOf("base2")
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = factoryClass.createInstance(
+        Provider { base1 },
+        Provider { base2 },
+        Provider { middle1 },
+        Provider { middle2 },
+        Provider { name }
+      )
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null)
+      assertThat(newInstance).isNotNull()
+
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(getInstance.getPropertyValue("name")).isEqualTo(name)
+      assertThat(getInstance.getPropertyValue("middle1")).isEqualTo(middle1)
+      assertThat(getInstance.getPropertyValue("middle2")).isEqualTo(middle2)
+      assertThat(getInstance.getPropertyValue("base1")).isEqualTo(base1)
+      assertThat(getInstance.getPropertyValue("base2")).isEqualTo(base2)
+    }
+  }
+
   @Test
   fun `a factory class is generated which injects members when calling get`() {
     /*
@@ -2418,6 +2584,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
+    previousCompilationResult: Result? = null,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
@@ -2425,6 +2592,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     generateDaggerFactories = !useDagger,
     // Many constructor parameters are unused.
     allWarningsAsErrors = false,
+    previousCompilationResult = previousCompilationResult,
     useIR = USE_IR,
     block = block
   )

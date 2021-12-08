@@ -82,9 +82,14 @@ internal fun KtClassOrObject.memberInjectParameters(
 
   val psiSuperClasses = allPsiSuperClasses(module)
 
-  // We start at the bottom of the hierarchy and work our way up.
-  val descriptorParams = psiSuperClasses.lastOrNull()
-    ?.classDescriptorOrNull(module)
+  // If a super class is defined in the same module, select that.
+  // Otherwise, select the current KtClassOrObject.
+  val mostSuperPsi = psiSuperClasses.lastOrNull() ?: this@memberInjectParameters
+
+  // Use the descriptor of the most-super PSI class in order to look for more super types in
+  // other modules.
+  val descriptorParams = mostSuperPsi
+    .classDescriptorOrNull(module)
     ?.superClassMemberInjectedParameters(module)
     .orEmpty()
 

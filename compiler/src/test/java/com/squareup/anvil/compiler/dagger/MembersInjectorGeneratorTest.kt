@@ -12,6 +12,7 @@ import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.membersInjector
 import com.squareup.anvil.compiler.nestedInjectClass
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.MembersInjector
@@ -1466,6 +1467,166 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     }
   }
 
+  @Test fun `a member injector is generated for a class with a super class in another module`() {
+
+    val otherModuleResult = compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      abstract class Base {
+        @Inject lateinit var string: String
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.test.Base
+      import javax.inject.Inject
+
+      class InjectClass : Base() {
+        @Inject lateinit var numbers: List<Int>
+     
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+     
+          if (numbers != other.numbers) return false
+          if (string != other.string) return false
+     
+          return true
+        }
+      }
+      """,
+      previousCompilationResult = otherModuleResult
+    ) {
+      val baseMembersInjector = classLoader.loadClass("com.squareup.test.Base")
+        .membersInjector()
+
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val membersInjectorInstance = constructor
+        .newInstance(
+          Provider { "a" },
+          Provider { listOf(1, 2) }
+        ) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      injectClassMembersInjector.staticInjectMethod("numbers")
+        .invoke(null, injectInstanceStatic, listOf(1, 2))
+      baseMembersInjector.staticInjectMethod("string")
+        .invoke(null, injectInstanceStatic, "a")
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
+  @Test
+  fun `a member injector is generated for a class with a grand-super class in another module`() {
+
+    val otherModuleResult = compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      abstract class Base {
+        @Inject lateinit var string: String
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.test.Base
+      import javax.inject.Inject
+
+      abstract class Mid : Base() {
+        @Inject lateinit var strings: List<String>
+      }
+
+      class InjectClass : Mid() {
+        @Inject lateinit var numbers: List<Int>
+     
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+     
+          if (numbers != other.numbers) return false
+          if (strings != other.strings) return false
+          if (string != other.string) return false
+     
+          return true
+        }
+      }
+      """,
+      previousCompilationResult = otherModuleResult
+    ) {
+      val baseMembersInjector = classLoader.loadClass("com.squareup.test.Base")
+        .membersInjector()
+      val midMembersInjector = classLoader.loadClass("com.squareup.test.Mid")
+        .membersInjector()
+
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val membersInjectorInstance = constructor
+        .newInstance(
+          Provider { "a" },
+          Provider { listOf("b") },
+          Provider { listOf(1, 2) }
+        ) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      injectClassMembersInjector.staticInjectMethod("numbers")
+        .invoke(null, injectInstanceStatic, listOf(1, 2))
+      midMembersInjector.staticInjectMethod("strings")
+        .invoke(null, injectInstanceStatic, listOf("b"))
+      baseMembersInjector.staticInjectMethod("string")
+        .invoke(null, injectInstanceStatic, "a")
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
   private fun Class<*>.staticInjectMethod(memberName: String): Method {
     // We can't check the @InjectedFieldSignature annotation unfortunately, because it has class
     // retention.
@@ -1476,6 +1637,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
+    previousCompilationResult: Result? = null,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
@@ -1483,6 +1645,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     generateDaggerFactories = !useDagger,
     useIR = USE_IR,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
+    previousCompilationResult = previousCompilationResult,
     block = block
   )
 }

@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.containingPackage
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
@@ -31,12 +32,9 @@ import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
 internal fun ClassDescriptor.superClassMemberInjectedParameters(
   module: ModuleDescriptor
-): List<MemberInjectParameter> = superClassMemberInjectedDescriptors(module)
-  .mapToMemberInjectParameters(module, asClassName())
+): List<MemberInjectParameter> {
 
-fun ClassDescriptor.superClassMemberInjectedDescriptors(
-  module: ModuleDescriptor
-): List<CallableMemberDescriptor> {
+  val allInjectedPropertyNames = mutableSetOf<Name>()
 
   return getAllSuperClassifiers()
     // no point in parsing android/androidx classes for injected params, so skip them
@@ -45,21 +43,19 @@ fun ClassDescriptor.superClassMemberInjectedDescriptors(
     // returns [ Impl, Base, kotlin.Any ]
     // drop the first element since this function is supposed to return properties from supers.
     .drop(1)
+    .map { it.fqNameSafe.requireClassDescriptor(module) }
     // look for any @Inject-annotated members.
     // Downstream properties are parsed before the properties they override.
     // If a property has already been added from a downstream sub-class, then ignore it.
-    .fold(mutableListOf<CallableMemberDescriptor>()) { acc, classifierDescriptor ->
-
-      classifierDescriptor.fqNameSafe
-        .requireClassDescriptor(module)
+    .flatMap { classDescriptor ->
+      classDescriptor
         .unsubstitutedMemberScope
         .memberInjectedPropertyDescriptors()
-        .forEach { property ->
-          if (acc.none { existing -> existing.name == property.name }) {
-            acc.add(property)
-          }
+        .mapNotNull { property ->
+          // Only parse the property if it hasn't been added already.
+          property.takeIf { allInjectedPropertyNames.add(property.name) }
         }
-      acc
+        .mapToMemberInjectParameters(module, classDescriptor.asClassName())
     }
     .toList()
 }
