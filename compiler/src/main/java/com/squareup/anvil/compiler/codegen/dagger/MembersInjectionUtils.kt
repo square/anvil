@@ -1,15 +1,20 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.squareup.anvil.compiler.codegen.MemberInjectParameter
+import com.squareup.anvil.compiler.codegen.Parameter
 import com.squareup.anvil.compiler.codegen.mapToMemberInjectParameters
-import com.squareup.anvil.compiler.codegen.superClassMemberInjectedParameters
+import com.squareup.anvil.compiler.codegen.memberInjectedPropertyDescriptors
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.injectFqName
-import com.squareup.anvil.compiler.internal.allPsiSuperClasses
+import com.squareup.anvil.compiler.internal.ClassReference
+import com.squareup.anvil.compiler.internal.ClassReference.Descriptor
+import com.squareup.anvil.compiler.internal.ClassReference.Psi
+import com.squareup.anvil.compiler.internal.allSuperTypeClassReferences
+import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.hasAnnotation
+import com.squareup.anvil.compiler.internal.toClassReference
 import com.squareup.kotlinpoet.FunSpec
 import dagger.internal.ProviderOfLazy
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -19,7 +24,6 @@ import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 
 internal fun KtProperty.isSetterInjected(module: ModuleDescriptor): Boolean {
   return setter?.hasAnnotation(injectFqName, module) == true ||
@@ -80,31 +84,28 @@ internal fun KtClassOrObject.memberInjectParameters(
   module: ModuleDescriptor
 ): List<MemberInjectParameter> {
 
-  val psiSuperClasses = allPsiSuperClasses(module)
+  return toClassReference()
+    .allSuperTypeClassReferences(module, includeSelf = true)
+    .toList()
+    .foldRight(listOf()) { classReference, acc ->
 
-  // If a super class is defined in the same module, select that.
-  // Otherwise, select the current KtClassOrObject.
-  val mostSuperPsi = psiSuperClasses.lastOrNull() ?: this@memberInjectParameters
-
-  // Use the descriptor of the most-super PSI class in order to look for more super types in
-  // other modules.
-  val descriptorParams = mostSuperPsi
-    .classDescriptorOrNull(module)
-    ?.superClassMemberInjectedParameters(module)
-    .orEmpty()
-
-  // Everything PSI can tell us about super-class member-injected properties.
-  val allSuperclassParams = psiSuperClasses
-    .reversed()
-    .fold(descriptorParams) { acc, ktClassOrObject ->
-
-      acc + ktClassOrObject.injectedMembers(module)
-        .mapToMemberInjectParameters(module)
+      acc + classReference.declaredMemberInjectParameters(module, acc)
     }
+}
 
-  // Finally, the class itself.
-  val thisClassMemberInjectedParameters = injectedMembers(module)
-    .mapToMemberInjectParameters(module)
-
-  return allSuperclassParams.plus(thisClassMemberInjectedParameters).cast()
+/**
+ * @param superParameters injected parameters from any super-classes, regardless of whether they're
+ * overridden by the receiver class
+ * @return the member-injected parameters for this class only, not including any super-classes
+ */
+private fun ClassReference.declaredMemberInjectParameters(
+  module: ModuleDescriptor,
+  superParameters: List<Parameter>
+): List<MemberInjectParameter> {
+  return when (this) {
+    is Descriptor -> clazz.memberInjectedPropertyDescriptors()
+      .mapToMemberInjectParameters(module, clazz.asClassName(), superParameters)
+    is Psi -> clazz.injectedMembers(module)
+      .mapToMemberInjectParameters(module, superParameters)
+  }
 }

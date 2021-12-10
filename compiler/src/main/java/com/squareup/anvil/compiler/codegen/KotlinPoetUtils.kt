@@ -49,12 +49,16 @@ private fun KtTypeElement.singleTypeArgument(): KtTypeReference {
 internal fun List<KtCallableDeclaration>.mapToConstructorParameters(
   module: ModuleDescriptor
 ): List<ConstructorParameter> =
-  map { ktCallableDeclaration ->
-    ktCallableDeclaration.toConstructorParameter(module = module)
+  fold(listOf()) { acc, ktCallableDeclaration ->
+
+    val uniqueName = ktCallableDeclaration.nameAsSafeName.asString().uniqueParameterName(acc)
+
+    acc + ktCallableDeclaration.toConstructorParameter(module = module, uniqueName = uniqueName)
   }
 
 private fun KtCallableDeclaration.toConstructorParameter(
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
+  uniqueName: String
 ): ConstructorParameter {
 
   val typeElement = typeReference?.typeElement
@@ -99,7 +103,8 @@ private fun KtCallableDeclaration.toConstructorParameter(
       ?: ""
 
   return ConstructorParameter(
-    name = nameAsSafeName.asString(),
+    name = uniqueName,
+    originalName = nameAsSafeName.asString(),
     typeName = typeName,
     providerTypeName = typeName.wrapInProvider(),
     lazyTypeName = typeName.wrapInLazy(),
@@ -112,20 +117,22 @@ private fun KtCallableDeclaration.toConstructorParameter(
 }
 
 internal fun List<KtProperty>.mapToMemberInjectParameters(
-  module: ModuleDescriptor
-): List<MemberInjectParameter> = map { ktProperty ->
-  ktProperty.toMemberInjectParameter(
-    module = module
-  )
+  module: ModuleDescriptor,
+  superParameters: List<Parameter>
+): List<MemberInjectParameter> = fold(listOf()) { acc, ktProperty ->
+
+  val uniqueName = ktProperty.nameAsSafeName.asString()
+    .uniqueParameterName(superParameters, acc)
+
+  acc + ktProperty.toMemberInjectParameter(module = module, uniqueName = uniqueName)
 }
 
 private fun KtProperty.toMemberInjectParameter(
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
+  uniqueName: String
 ): MemberInjectParameter {
 
-  val constructorParameter = toConstructorParameter(module)
-
-  val originalName = nameAsSafeName.asString()
+  val constructorParameter = toConstructorParameter(module, uniqueName)
 
   val containingClass = containingClass()!!
   val packageName = containingClass.containingKtFile.packageFqName.asString()
@@ -135,6 +142,8 @@ private fun KtProperty.toMemberInjectParameter(
 
   val qualifierAnnotations = annotationEntries.qualifierAnnotationSpecs(module)
   val isSetterInjected = isSetterInjected(module)
+
+  val originalName = constructorParameter.originalName
 
   // setter delegates require a "set" prefix for their inject function
   val accessName = if (isSetterInjected) {

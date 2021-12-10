@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtEnumEntry
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 /**
@@ -119,11 +120,14 @@ public fun ClassReference.directSuperClassReferences(
     is Descriptor -> clazz.directSuperClassAndInterfaces()
       .asSequence()
       .map { module.requireClassReference(it.fqNameSafe) }
-    is Psi ->
+    is Psi -> if (clazz is KtEnumEntry) {
+      emptySequence()
+    } else {
       clazz.superTypeListEntries
         .asSequence()
         .map { it.requireFqName(module) }
         .map { module.requireClassReference(it) }
+    }
   }
 }
 

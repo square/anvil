@@ -4,7 +4,6 @@ import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.argumentType
-import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.asTypeName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
@@ -15,55 +14,25 @@ import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.providerFqName
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.containingPackage
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
-import org.jetbrains.kotlin.resolve.scopes.MemberScope
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.isNullable
 import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 
-internal fun ClassDescriptor.superClassMemberInjectedParameters(
-  module: ModuleDescriptor
-): List<MemberInjectParameter> {
+fun ClassDescriptor.memberInjectedPropertyDescriptors(): List<PropertyDescriptor> {
 
-  val allInjectedPropertyNames = mutableSetOf<Name>()
-
-  return getAllSuperClassifiers()
-    // no point in parsing android/androidx classes for injected params, so skip them
-    .filter { it.containingPackage()?.asString()?.startsWith("android") == false }
-    // the sequence of supers actually starts with itself, so for instance `class Impl : Base()`
-    // returns [ Impl, Base, kotlin.Any ]
-    // drop the first element since this function is supposed to return properties from supers.
-    .drop(1)
-    .map { it.fqNameSafe.requireClassDescriptor(module) }
-    // look for any @Inject-annotated members.
-    // Downstream properties are parsed before the properties they override.
-    // If a property has already been added from a downstream sub-class, then ignore it.
-    .flatMap { classDescriptor ->
-      classDescriptor
-        .unsubstitutedMemberScope
-        .memberInjectedPropertyDescriptors()
-        .mapNotNull { property ->
-          // Only parse the property if it hasn't been added already.
-          property.takeIf { allInjectedPropertyNames.add(property.name) }
-        }
-        .mapToMemberInjectParameters(module, classDescriptor.asClassName())
-    }
-    .toList()
-}
-
-fun MemberScope.memberInjectedPropertyDescriptors(): List<PropertyDescriptor> {
-
-  return getContributedDescriptors(DescriptorKindFilter.VARIABLES)
+  return unsubstitutedMemberScope
+    .getContributedDescriptors(DescriptorKindFilter.VARIABLES)
     .filterIsInstance<PropertyDescriptor>()
+    // only return properties which are directly declared (including overrides)
+    .filter { it.kind == Kind.DECLARATION }
     .filter { it.hasAnnotation(injectFqName) }
 }
 
@@ -85,10 +54,15 @@ fun KotlinType.fqName(): FqName = requireClassDescriptor().fqNameSafe
 
 internal fun List<CallableMemberDescriptor>.mapToMemberInjectParameters(
   module: ModuleDescriptor,
-  containingClassName: ClassName
+  containingClassName: ClassName,
+  superParameters: List<Parameter>
 ): List<MemberInjectParameter> {
 
-  return map { descriptor ->
+  return fold(listOf()) { acc, descriptor ->
+
+    val originalName = descriptor.name.asString()
+
+    val uniqueName = originalName.uniqueParameterName(superParameters, acc)
 
     val type = descriptor.safeAs<PropertyDescriptor>()?.type
       ?: descriptor.valueParameters.first().type
@@ -140,8 +114,6 @@ internal fun List<CallableMemberDescriptor>.mapToMemberInjectParameters(
       containingClassName.packageName, memberInjectorClassName
     )
 
-    val originalName = descriptor.name.asString()
-
     val isSetterInjected = descriptor.safeAs<PropertyDescriptor>()
       ?.isSetterInjected() == true
 
@@ -156,8 +128,9 @@ internal fun List<CallableMemberDescriptor>.mapToMemberInjectParameters(
       .filter { it.isQualifier() }
       .map { it.toAnnotationSpec(module) }
 
-    MemberInjectParameter(
-      name = originalName,
+    acc + MemberInjectParameter(
+      name = uniqueName,
+      originalName = originalName,
       typeName = typeName,
       providerTypeName = typeName.wrapInProvider(),
       lazyTypeName = typeName.wrapInLazy(),
@@ -167,7 +140,6 @@ internal fun List<CallableMemberDescriptor>.mapToMemberInjectParameters(
       isAssisted = assistedAnnotation != null,
       assistedIdentifier = assistedIdentifier,
       memberInjectorClassName = memberInjectorClass,
-      originalName = originalName,
       isSetterInjected = isSetterInjected,
       accessName = accessName,
       qualifierAnnotationSpecs = qualifierAnnotations,

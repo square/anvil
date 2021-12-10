@@ -141,7 +141,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                   .filter { it.memberInjectorClassName == memberInjectorClass }
                   .forEach { parameter ->
 
-                    val originalName = parameter.originalName
+                    val name = parameter.name
 
                     addFunction(
                       FunSpec.builder("inject${parameter.accessName.capitalize()}")
@@ -158,8 +158,8 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                         }
                         .addAnnotations(parameter.qualifierAnnotationSpecs)
                         .addParameter("instance", classType)
-                        .addParameter(originalName, parameter.originalTypeName)
-                        .addStatement("instance.$originalName = $originalName")
+                        .addParameter(name, parameter.originalTypeName)
+                        .addStatement("instance.${parameter.originalName} = $name")
                         .build()
                     )
                   }
