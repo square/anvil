@@ -651,7 +651,6 @@ public final class ParentClass_NestedInjectClass_MembersInjector implements Memb
       package com.squareup.test
       
       import javax.inject.Inject
-      import javax.inject.Named
       
       typealias StringList = List<String>
       
@@ -1228,7 +1227,6 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
 
       import javax.inject.Inject
       import javax.inject.Provider
-      import dagger.Lazy
 
       class InjectClass : Middle() {
 
@@ -1487,7 +1485,6 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       """
       package com.squareup.test
 
-      import com.squareup.test.Base
       import javax.inject.Inject
 
       class InjectClass : Base() {
@@ -1562,7 +1559,6 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       """
       package com.squareup.test
 
-      import com.squareup.test.Base
       import javax.inject.Inject
 
       abstract class Mid : Base() {

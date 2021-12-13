@@ -977,8 +977,6 @@ public class InjectClass_Factory(
       package com.squareup.test
 
       import javax.inject.Inject
-      import javax.inject.Provider
-      import dagger.Lazy
 
       class InjectClass @Inject constructor() : Middle() {
 
@@ -1074,10 +1072,7 @@ public class InjectClass_Factory(
       """
       package com.squareup.test
 
-      import com.squareup.test.Base
       import javax.inject.Inject
-      import javax.inject.Provider
-      import dagger.Lazy
 
       class InjectClass @Inject constructor() : Base() {
 
@@ -1149,10 +1144,7 @@ public class InjectClass_Factory(
       """
       package com.squareup.test
 
-      import com.squareup.test.Base
       import javax.inject.Inject
-      import javax.inject.Provider
-      import dagger.Lazy
 
       class InjectClass @Inject constructor() : Middle() {
 
