@@ -1627,6 +1627,272 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     }
   }
 
+  @Test
+  fun `a member injector is generated for a class with two super classes in another module`() {
+
+    val otherModuleResult = compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      abstract class Base1 {
+        @Inject lateinit var string: String
+      }
+
+      abstract class Base2 : Base1() {
+        @Inject lateinit var chars: List<Char>
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      abstract class Mid : Base2() {
+        @Inject lateinit var strings: List<String>
+      }
+
+      class InjectClass : Mid() {
+        @Inject lateinit var numbers: List<Int>
+     
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+     
+          if (numbers != other.numbers) return false
+          if (strings != other.strings) return false
+          if (string != other.string) return false
+     
+          return true
+        }
+      }
+      """,
+      previousCompilationResult = otherModuleResult
+    ) {
+
+      val base1MembersInjector = classLoader.loadClass("com.squareup.test.Base1")
+        .membersInjector()
+      val base2MembersInjector = classLoader.loadClass("com.squareup.test.Base2")
+        .membersInjector()
+      val midMembersInjector = classLoader.loadClass("com.squareup.test.Mid")
+        .membersInjector()
+
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val membersInjectorInstance = constructor
+        .newInstance(
+          Provider { "a" },
+          Provider { listOf('b', 'c') },
+          Provider { listOf("d") },
+          Provider { listOf(1, 2) }
+        ) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      injectClassMembersInjector.staticInjectMethod("numbers")
+        .invoke(null, injectInstanceStatic, listOf(1, 2))
+      midMembersInjector.staticInjectMethod("strings")
+        .invoke(null, injectInstanceStatic, listOf("d"))
+      base1MembersInjector.staticInjectMethod("string")
+        .invoke(null, injectInstanceStatic, "a")
+      base2MembersInjector.staticInjectMethod("chars")
+        .invoke(null, injectInstanceStatic, listOf('b', 'c'))
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
+  @Test
+  fun `a member injector is generated for a class with two super classes with an overridden property in another module`() {
+
+    val otherModuleResult = compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      abstract class Base1 {
+        @Inject open lateinit var string: String
+      }
+
+      abstract class Base2 : Base1() {
+        @Inject override lateinit var string: String
+      } 
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+ 
+      import javax.inject.Inject
+
+      abstract class Mid : Base2() {
+        @Inject lateinit var strings: List<String>
+      }
+
+      class InjectClass : Mid() {
+        @Inject lateinit var numbers: List<Int>
+     
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+     
+          if (numbers != other.numbers) return false
+          if (strings != other.strings) return false
+          if (string != other.string) return false
+     
+          return true
+        }
+      }
+      """,
+      previousCompilationResult = otherModuleResult
+    ) {
+
+      val base1MembersInjector = classLoader.loadClass("com.squareup.test.Base1")
+        .membersInjector()
+      val base2MembersInjector = classLoader.loadClass("com.squareup.test.Base2")
+        .membersInjector()
+      val midMembersInjector = classLoader.loadClass("com.squareup.test.Mid")
+        .membersInjector()
+
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val membersInjectorInstance = constructor
+        .newInstance(
+          Provider { "a" },
+          Provider { "b" },
+          Provider { listOf("b") },
+          Provider { listOf(1, 2) }
+        ) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      injectClassMembersInjector.staticInjectMethod("numbers")
+        .invoke(null, injectInstanceStatic, listOf(1, 2))
+      midMembersInjector.staticInjectMethod("strings")
+        .invoke(null, injectInstanceStatic, listOf("b"))
+      base1MembersInjector.staticInjectMethod("string")
+        .invoke(null, injectInstanceStatic, "a")
+      base2MembersInjector.staticInjectMethod("string")
+        .invoke(null, injectInstanceStatic, "b")
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
+  @Test
+  fun `a member injector is generated for a class with an overridden property in the same module`() {
+
+    compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      abstract class Base {
+        @Inject open lateinit var string: String
+      }
+
+      abstract class Mid : Base() {
+        @Inject override lateinit var string: String
+      }
+
+      class InjectClass : Mid() {
+        @Inject lateinit var numbers: List<Int>
+     
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+
+          if (string != other.string) return false
+          if (numbers != other.numbers) return false
+     
+          return true
+        }
+      }
+      """
+    ) {
+
+      val baseMembersInjector = classLoader.loadClass("com.squareup.test.Base")
+        .membersInjector()
+      val midMembersInjector = classLoader.loadClass("com.squareup.test.Mid")
+        .membersInjector()
+
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val membersInjectorInstance = constructor
+        .newInstance(
+          Provider { "a" },
+          Provider { "b" },
+          Provider { listOf(1, 2) }
+        ) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      baseMembersInjector.staticInjectMethod("string")
+        .invoke(null, injectInstanceStatic, "a")
+      midMembersInjector.staticInjectMethod("string")
+        .invoke(null, injectInstanceStatic, "b")
+      injectClassMembersInjector.staticInjectMethod("numbers")
+        .invoke(null, injectInstanceStatic, listOf(1, 2))
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
   private fun Class<*>.staticInjectMethod(memberName: String): Method {
     // We can't check the @InjectedFieldSignature annotation unfortunately, because it has class
     // retention.
