@@ -1,16 +1,21 @@
 package com.squareup.anvil.compiler
 
-import com.squareup.anvil.compiler.internal.annotationOrNull
+import com.squareup.anvil.compiler.GeneratedProperty.ReferenceProperty
+import com.squareup.anvil.compiler.GeneratedProperty.ScopeProperty
+import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.internal.annotations
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
+import com.squareup.anvil.compiler.internal.singleOrEmpty
+import com.squareup.anvil.compiler.internal.takeIfNotEmpty
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
-import kotlin.LazyThreadSafetyMode.NONE
 
 internal class ClassScanner {
 
@@ -18,56 +23,65 @@ internal class ClassScanner {
    * Returns a sequence of contributed classes from the dependency graph. Note that the result
    * includes inner classes already.
    */
+  @Deprecated("Repeatable")
   fun findContributedClasses(
     module: ModuleDescriptor,
     packageName: String,
     annotation: FqName,
     scope: FqName?
   ): Sequence<ClassDescriptor> {
-    val packageDescriptor = module.getPackage(FqName(packageName))
-    return generateSequence(listOf(packageDescriptor)) { subPackages ->
-      subPackages
-        .flatMap { it.subPackages() }
-        .ifEmpty { null }
-    }
-      .flatMap { it.asSequence() }
-      .flatMap {
-        it.memberScope.getContributedDescriptors(DescriptorKindFilter.VALUES)
-          .asSequence()
-      }
-      .filterIsInstance<PropertyDescriptor>()
-      .groupBy { property ->
-        // For each contributed hint there are several properties, e.g. the reference itself
-        // and the scope. Group them by their common name without the suffix.
-        val name = property.name.asString()
-        val suffix = propertySuffixes.firstOrNull { name.endsWith(it) } ?: return@groupBy name
-        name.substringBeforeLast(suffix)
-      }
-      .values
-      .asSequence()
-      .filter { properties ->
-        // Double check that the number of properties matches how many suffixes we have and how
-        // many properties we expect.
-        properties.size == propertySuffixes.size
-      }
-      .map { ContributedHint(it) }
+    return findContributedHints(module, annotation)
       .let { sequence ->
         if (scope != null) {
           sequence
             .filter { hint ->
               // The scope must match what we're looking for.
-              hint.scope.fqNameSafe == scope
+              hint.contributedAnnotationOrNull(scope) != null
             }
         } else {
           sequence
         }
       }
-      .map { hint -> hint.reference }
+      .map { it.descriptor }
       .filter {
         // Check that the annotation really is present. It should always be the case, but it's
         // a safetynet in case the generated properties are out of sync.
-        it.annotationOrNull(annotation, scope) != null
+        it.annotations(annotation, scope).isNotEmpty()
       }
+  }
+
+  /**
+   * Returns a sequence of contributed hints from the dependency graph. Note that the result
+   * already includes inner classes.
+   */
+  fun findContributedHints(
+    module: ModuleDescriptor,
+    annotation: FqName
+  ): Sequence<ContributedHint> {
+    val packageName = when (annotation) {
+      contributesToFqName -> HINT_CONTRIBUTES_PACKAGE_PREFIX
+      contributesBindingFqName -> HINT_BINDING_PACKAGE_PREFIX
+      contributesMultibindingFqName -> HINT_MULTIBINDING_PACKAGE_PREFIX
+      contributesSubcomponentFqName -> HINT_SUBCOMPONENTS_PACKAGE_PREFIX
+      else -> throw AnvilCompilationException(message = "Cannot find hints for $annotation.")
+    }
+
+    val packageDescriptor = module.getPackage(FqName(packageName))
+    return generateSequence(listOf(packageDescriptor)) { subPackages ->
+      subPackages
+        .flatMap { it.subPackages() }
+        .takeIfNotEmpty()
+    }
+      .flatMap { it.asSequence() }
+      .flatMap {
+        it.memberScope.getContributedDescriptors(DescriptorKindFilter.VALUES)
+      }
+      .filterIsInstance<PropertyDescriptor>()
+      .mapNotNull { GeneratedProperty.fromDescriptor(it) }
+      .groupBy { property -> property.baseName }
+      .values
+      .asSequence()
+      .map { ContributedHint(it, annotation) }
   }
 }
 
@@ -75,24 +89,90 @@ private fun PackageViewDescriptor.subPackages(): List<PackageViewDescriptor> = m
   .getContributedDescriptors(DescriptorKindFilter.PACKAGES)
   .filterIsInstance<PackageViewDescriptor>()
 
-private class ContributedHint(properties: List<PropertyDescriptor>) {
-  val reference by lazy(NONE) {
-    properties
-      .bySuffix(REFERENCE_SUFFIX)
-      .toClassDescriptor()
-  }
+sealed class GeneratedProperty(
+  val descriptor: PropertyDescriptor,
+  val baseName: String
+) {
+  class ReferenceProperty(
+    descriptor: PropertyDescriptor,
+    baseName: String
+  ) : GeneratedProperty(descriptor, baseName)
 
-  val scope by lazy(NONE) {
-    properties
-      .bySuffix(SCOPE_SUFFIX)
-      .toClassDescriptor()
-  }
+  class ScopeProperty(
+    descriptor: PropertyDescriptor,
+    baseName: String
+  ) : GeneratedProperty(descriptor, baseName)
 
-  private fun List<PropertyDescriptor>.bySuffix(suffix: String): PropertyDescriptor = first {
-    it.name.asString()
-      .endsWith(suffix)
-  }
+  companion object {
+    fun fromDescriptor(descriptor: PropertyDescriptor): GeneratedProperty? {
+      // For each contributed hint there are several properties, e.g. the reference itself
+      // and the scopes. Group them by their common name without the suffix.
+      val name = descriptor.name.asString()
 
-  private fun PropertyDescriptor.toClassDescriptor(): ClassDescriptor =
-    type.argumentType().requireClassDescriptor()
+      return when {
+        name.endsWith(REFERENCE_SUFFIX) ->
+          ReferenceProperty(descriptor, name.substringBeforeLast(REFERENCE_SUFFIX))
+        name.contains(SCOPE_SUFFIX) -> {
+          // The old scope hint didn't have a number. Now that there can be multiple scopes
+          // we append a number for all scopes, but we still need to support the old format.
+          val indexString = name.substringAfterLast(SCOPE_SUFFIX)
+          if (indexString.toIntOrNull() != null || indexString.isEmpty()) {
+            ScopeProperty(descriptor, name.substringBeforeLast(SCOPE_SUFFIX))
+          } else {
+            null
+          }
+        }
+        else -> null
+      }
+    }
+  }
+}
+
+// TODO Repeatable: Cleanup this class with what's actually required.
+internal class ContributedHint(
+  // We know that the properties list is not empty.
+  properties: List<GeneratedProperty>,
+  val annotationFqName: FqName
+) {
+  private val reference = properties.filterIsInstance<ReferenceProperty>().singleOrEmpty()
+    ?: throw AnvilCompilationException(
+      message = "Couldn't find the reference for a generated hint: ${properties[0].baseName}."
+    )
+
+  val scopes = properties
+    .filterIsInstance<ScopeProperty>()
+    .ifEmpty {
+      throw AnvilCompilationException(
+        message = "Couldn't find any scope for a generated hint: ${properties[0].baseName}."
+      )
+    }
+    .map { it.descriptor.toClassDescriptor().fqNameSafe }
+
+  val descriptor = reference.descriptor.toClassDescriptor()
+  val fqName = descriptor.fqNameSafe
+
+  // TODO Repeatable: check if cache is necessary.
+  private val contributedAnnotationCache = mutableMapOf<FqName, AnnotationDescriptor?>()
+
+  fun contributedAnnotations(scope: FqName? = null): List<AnnotationDescriptor> =
+    descriptor.annotations(annotationFqName, scope)
+
+  fun isContributedToScope(scope: FqName): Boolean = scopes.any { it == scope }
+
+  // There must only one annotation, because we only allow one contribution to the same scope.
+  fun contributedAnnotationOrNull(scope: FqName): AnnotationDescriptor? =
+    contributedAnnotationCache.getOrPut(scope) {
+      contributedAnnotations(scope).singleOrEmpty()
+    }
+
+  fun contributedAnnotation(scope: FqName): AnnotationDescriptor =
+    contributedAnnotationOrNull(scope) ?: throw AnvilCompilationException(
+      classDescriptor = descriptor,
+      message = "Couldn't find $annotationFqName with scope $scope."
+    )
+
+  companion object {
+    private fun PropertyDescriptor.toClassDescriptor(): ClassDescriptor =
+      type.argumentType().requireClassDescriptor()
+  }
 }

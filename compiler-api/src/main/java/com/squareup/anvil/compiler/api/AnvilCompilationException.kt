@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.source.KotlinSourceElement
 import org.jetbrains.kotlin.resolve.source.getPsi
 import org.jetbrains.kotlin.util.getExceptionMessage
@@ -41,10 +42,16 @@ public class AnvilCompilationException(
       message: String,
       cause: Throwable? = null
     ): AnvilCompilationException {
+      val psiElement = classDescriptor.identifier
+
       return AnvilCompilationException(
-        message = message,
+        message = if (psiElement == null) {
+          message + " | Descriptor: ${classDescriptor.fqNameSafe}"
+        } else {
+          message
+        },
         cause = cause,
-        element = classDescriptor.identifier
+        element = psiElement
       )
     }
 

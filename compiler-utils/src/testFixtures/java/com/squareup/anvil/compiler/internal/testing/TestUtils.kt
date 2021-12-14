@@ -33,6 +33,7 @@ public class AnvilCompilation internal constructor(
 
   private var isCompiled = false
   private var anvilConfigured = false
+  private var anvilEnabled = true
   private var swapClassLoader = false
 
   /** Configures this the Anvil behavior of this compilation. */
@@ -46,6 +47,9 @@ public class AnvilCompilation internal constructor(
     enableExperimentalAnvilApis: Boolean = true,
   ) = apply {
     checkNotCompiled()
+    check(!anvilConfigured) { "Anvil should not be configured twice." }
+    check(anvilEnabled) { "Anvil must be enabled." }
+
     anvilConfigured = true
     kotlinCompilation.apply {
       compilerPlugins = listOf(AnvilComponentRegistrar())
@@ -86,6 +90,14 @@ public class AnvilCompilation internal constructor(
         )
       }
     }
+  }
+
+  public fun enableAnvil(enable: Boolean) = apply {
+    checkNotCompiled()
+    if (!enable) {
+      check(!anvilConfigured) { "You cannot disable Anvil after it has been configured." }
+    }
+    anvilEnabled = enable
   }
 
   /**
@@ -174,7 +186,7 @@ public class AnvilCompilation internal constructor(
     block: Result.() -> Unit = {}
   ): Result {
     checkNotCompiled()
-    if (!anvilConfigured) {
+    if (!anvilConfigured && anvilEnabled) {
       // Configure with default behaviors
       configureAnvil()
     }

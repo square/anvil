@@ -73,6 +73,19 @@ internal fun KtClassOrObject.boundTypeOrNull(
     ?.requireFqName(module)
 }
 
+fun KtAnnotationEntry.replaces(module: ModuleDescriptor): List<FqName> {
+  val index = when (val annotationFqName = requireFqName(module)) {
+    contributesToFqName -> 1
+    contributesBindingFqName, contributesMultibindingFqName -> 2
+    else -> throw IllegalArgumentException("$annotationFqName has no replaces field.")
+  }
+
+  return findAnnotationArgument<KtCollectionLiteralExpression>(name = "replaces", index = index)
+    ?.toFqNames(module)
+    ?: emptyList()
+}
+
+@Deprecated("Repeatable")
 internal fun KtClassOrObject.replaces(
   annotationFqName: FqName,
   module: ModuleDescriptor
@@ -84,8 +97,7 @@ internal fun KtClassOrObject.replaces(
   }
 
   return findAnnotation(annotationFqName, module)
-    ?.findAnnotationArgument<KtCollectionLiteralExpression>(name = "replaces", index = index)
-    ?.toFqNames(module)
+    ?.replaces(module)
     ?: emptyList()
 }
 

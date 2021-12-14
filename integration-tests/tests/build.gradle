@@ -41,3 +41,8 @@ gradle.taskGraph.afterTask { Task task ->
     }
   }
 }
+
+// TODO: remove with Kotlin 1.6.
+if (rootProject.ext.kotlinVersion.startsWith("1.6")) {
+  sourceSets.test.java.srcDirs += ['src/test/kotlin-1-6']
+}

@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.internal.AnvilModuleDescriptor
+import com.squareup.anvil.compiler.internal.takeIfNotEmpty
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
@@ -66,6 +67,6 @@ private fun KtFile.classesAndInnerClasses(): List<KtClassOrObject> {
       .flatMap {
         it.declarations.filterIsInstance<KtClassOrObject>()
       }
-      .ifEmpty { null }
+      .takeIfNotEmpty()
   }.flatten().toList()
 }

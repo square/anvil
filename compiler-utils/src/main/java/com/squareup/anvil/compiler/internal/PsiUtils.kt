@@ -78,10 +78,11 @@ public fun KtAnnotated.hasAnnotation(
   fqName: FqName,
   module: ModuleDescriptor
 ): Boolean {
-  return findAnnotation(fqName, module) != null
+  return findAnnotations(fqName, module).isNotEmpty()
 }
 
 @ExperimentalAnvilApi
+@Deprecated("Repeatable")
 public fun KtAnnotated.requireAnnotation(
   fqName: FqName,
   module: ModuleDescriptor
@@ -93,40 +94,63 @@ public fun KtAnnotated.requireAnnotation(
 }
 
 @ExperimentalAnvilApi
+public fun KtAnnotated.requireAnnotations(
+  fqName: FqName,
+  module: ModuleDescriptor
+): List<KtAnnotationEntry> {
+  return findAnnotations(fqName, module)
+    .takeIfNotEmpty()
+    ?: throw AnvilCompilationException(
+      element = this,
+      message = "Couldn't find the annotation $fqName."
+    )
+}
+
+@ExperimentalAnvilApi
+@Deprecated("Repeatable")
 public fun KtAnnotated.findAnnotation(
   fqName: FqName,
   module: ModuleDescriptor
-): KtAnnotationEntry? {
-  val annotationEntries = annotationEntries
-  if (annotationEntries.isEmpty()) return null
+): KtAnnotationEntry? = findAnnotations(fqName, module).singleOrEmpty()
+
+@ExperimentalAnvilApi
+public fun KtAnnotated.findAnnotations(
+  fqName: FqName,
+  module: ModuleDescriptor
+): List<KtAnnotationEntry> {
+  val annotationEntries = annotationEntries.takeIfNotEmpty()
+    ?: return emptyList()
 
   // Look first if it's a Kotlin annotation. These annotations are usually not imported and the
-  // remaining checks would fail.
+  // remaining checks would fail. Return the result eagerly and assume that Kotlin annotations
+  // aren't repeatable.
   if (fqName in kotlinAnnotations) {
-    annotationEntries.firstOrNull { annotation ->
-      val text = annotation.text
-      text.startsWith("@${fqName.shortName()}") || text.startsWith("@$fqName")
-    }?.let { return it }
+    annotationEntries
+      .filter { annotation ->
+        val text = annotation.text
+        text.startsWith("@${fqName.shortName()}") || text.startsWith("@$fqName")
+      }
+      .takeIf { it.isNotEmpty() }
+      ?.let { return it }
   }
 
   // Check if the fully qualified name is used, e.g. `@dagger.Module`.
-  val annotationEntry = annotationEntries.firstOrNull {
-    it.text.startsWith("@${fqName.asString()}")
-  }
-  if (annotationEntry != null) return annotationEntry
+  val fullyQualifiedAnnotations = annotationEntries
+    .filter {
+      it.text.startsWith("@${fqName.asString()}")
+    }
 
   // Check if the simple name is used, e.g. `@Module`.
-  val annotationEntryShort = annotationEntries
-    .firstOrNull {
-      it.shortName == fqName.shortName()
-    }
-    ?: return null
+  val shortNameAnnotations = annotationEntries
+    .filter { it.shortName == fqName.shortName() && it !in fullyQualifiedAnnotations }
+    .takeIf { it.isNotEmpty() }
+    ?: return fullyQualifiedAnnotations
 
   val importPaths = containingKtFile.importDirectives.mapNotNull { it.importPath }
 
   // If the simple name is used, check that the annotation is imported.
   val hasImport = importPaths.any { it.fqName == fqName }
-  if (hasImport) return annotationEntryShort
+  if (hasImport) return shortNameAnnotations + fullyQualifiedAnnotations
 
   // Look for star imports and make a guess.
   val hasStarImport = importPaths
@@ -134,21 +158,21 @@ public fun KtAnnotated.findAnnotation(
     .any {
       fqName.asString().startsWith(it.fqName.asString())
     }
-  if (hasStarImport) return annotationEntryShort
+  if (hasStarImport) return shortNameAnnotations + fullyQualifiedAnnotations
 
   // At this point we know that the class is annotated with an annotation that has the same simple
   // name as fqName. We couldn't find any imports, so the annotation is likely part of the same
   // package or Kotlin namespace. Leverage our existing utility function and to find the FqName
   // and then compare the result.
-  val fqNameOfShort = annotationEntryShort.fqNameOrNull(module)
-  if (fqName == fqNameOfShort) {
-    return annotationEntryShort
+  val resolvedMatchingAnnotations = shortNameAnnotations.filter {
+    fqName == it.fqNameOrNull(module)
   }
 
-  return null
+  return resolvedMatchingAnnotations + fullyQualifiedAnnotations
 }
 
 @ExperimentalAnvilApi
+@Deprecated("Repeatable")
 public fun KtClassOrObject.scope(
   annotationFqName: FqName,
   module: ModuleDescriptor
@@ -161,16 +185,57 @@ public fun KtClassOrObject.scope(
 }
 
 @ExperimentalAnvilApi
+@Deprecated("Repeatable")
 public fun KtClassOrObject.scopeOrNull(
   annotationFqName: FqName,
   module: ModuleDescriptor
 ): FqName? {
-  return findAnnotation(annotationFqName, module)
-    ?.findAnnotationArgument<KtClassLiteralExpression>(name = "scope", index = 0)
+  return scopes(annotationFqName, module).singleOrEmpty()
+}
+
+@ExperimentalAnvilApi
+public fun KtAnnotationEntry.scope(module: ModuleDescriptor): FqName {
+  return scopeOrNull(module) ?: throw AnvilCompilationException(
+    "Couldn't find scope for ${requireFqName(module)}.",
+    element = this
+  )
+}
+
+@ExperimentalAnvilApi
+public fun KtAnnotationEntry.scopeOrNull(module: ModuleDescriptor): FqName? {
+  return findAnnotationArgument<KtClassLiteralExpression>(name = "scope", index = 0)
     ?.requireFqName(module)
 }
 
 @ExperimentalAnvilApi
+public fun KtClassOrObject.scopes(
+  annotationFqName: FqName,
+  module: ModuleDescriptor
+): List<FqName> {
+  return requireAnnotations(annotationFqName, module)
+    .map { it.scope(module) }
+    .also { scopes ->
+      // Exit early to avoid allocating additional collections.
+      if (scopes.size < 2) return@also
+      if (scopes.size == 2 && scopes[0] != scopes[1]) return@also
+
+      // Check for duplicate scopes. Multiple contributions to the same scope are forbidden.
+      val duplicates: Map<FqName, List<FqName>> = scopes.groupBy { it }
+        .filterValues { it.size > 1 }
+
+      if (duplicates.isNotEmpty()) {
+        throw AnvilCompilationException(
+          "${requireFqName()} contributes multiple times to the same scope: " +
+            "${duplicates.keys.joinToString()}. Contributing multiple times to the same scope " +
+            "is forbidden and all scopes must be distinct.",
+          element = this
+        )
+      }
+    }
+}
+
+@ExperimentalAnvilApi
+// TODO Repeatable: deprecate and add other function.
 public fun KtClassOrObject.parentScope(
   annotationFqName: FqName,
   module: ModuleDescriptor

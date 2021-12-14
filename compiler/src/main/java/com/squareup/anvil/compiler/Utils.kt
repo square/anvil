@@ -79,7 +79,6 @@ internal const val SUBCOMPONENT_FACTORY = "SubcomponentFactory"
 
 internal const val REFERENCE_SUFFIX = "_reference"
 internal const val SCOPE_SUFFIX = "_scope"
-internal val propertySuffixes = arrayOf(REFERENCE_SUFFIX, SCOPE_SUFFIX)
 
 internal fun FqName.isAnvilModule(): Boolean {
   val name = asString()

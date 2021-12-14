@@ -20,3 +20,9 @@ kotlin {
 dependencies {
   api deps.dagger2.dagger
 }
+
+// TODO: remove with Kotlin 1.6.
+if (rootProject.ext.kotlinVersion.startsWith("1.6")) {
+  sourceSets.main.java.srcDirs += ['src/main/kotlin-1-6']
+}
+

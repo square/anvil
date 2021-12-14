@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler
 
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.jvm.codegen.AnnotationCodegen.Companion.annotationClass
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
@@ -28,6 +29,27 @@ internal fun IrPluginContext.requireReferenceClass(fqName: FqName): IrClassSymbo
   )
 }
 
+internal fun IrAnnotationContainer.annotations(
+  annotationFqName: FqName,
+  scope: FqName? = null
+): List<IrConstructorCall> {
+  return annotations
+    .filter {
+      it.annotationClass.fqName == annotationFqName
+    }
+    .let { constructorCalls ->
+      if (scope == null) {
+        constructorCalls
+      } else {
+        constructorCalls
+          .filter {
+            it.scope() == scope
+          }
+      }
+    }
+}
+
+@Deprecated("Repeatable")
 internal fun IrAnnotationContainer.annotationOrNull(
   annotationFqName: FqName,
   scope: FqName? = null
@@ -37,6 +59,7 @@ internal fun IrAnnotationContainer.annotationOrNull(
   }
 }
 
+@Deprecated("Repeatable")
 internal fun IrAnnotationContainer.annotation(
   annotationFqName: FqName,
   scope: FqName? = null

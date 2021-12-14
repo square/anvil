@@ -19,7 +19,7 @@ import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.anvil.compiler.internal.scope
+import com.squareup.anvil.compiler.internal.scopes
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
@@ -79,7 +79,8 @@ internal class ContributesToGenerator : CodeGenerator {
         val className = clazz.asClassName()
         val classFqName = clazz.requireFqName().toString()
         val propertyName = classFqName.replace('.', '_')
-        val scope = clazz.scope(contributesToFqName, module).asClassName(module)
+        val scopes = clazz.scopes(contributesToFqName, module)
+          .map { it.asClassName(module) }
 
         val content =
           FileSpec.buildFile(generatedPackage, propertyName) {
@@ -94,16 +95,18 @@ internal class ContributesToGenerator : CodeGenerator {
                 .build()
             )
 
-            addProperty(
-              PropertySpec
-                .builder(
-                  name = propertyName + SCOPE_SUFFIX,
-                  type = KClass::class.asClassName().parameterizedBy(scope)
-                )
-                .initializer("%T::class", scope)
-                .addModifiers(PUBLIC)
-                .build()
-            )
+            scopes.forEachIndexed { index, scope ->
+              addProperty(
+                PropertySpec
+                  .builder(
+                    name = propertyName + SCOPE_SUFFIX + index,
+                    type = KClass::class.asClassName().parameterizedBy(scope)
+                  )
+                  .initializer("%T::class", scope)
+                  .addModifiers(PUBLIC)
+                  .build()
+              )
+            }
           }
 
         createGeneratedFile(

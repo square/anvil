@@ -25,6 +25,7 @@ import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.decapitalize
 import com.squareup.anvil.compiler.internal.findAnnotation
+import com.squareup.anvil.compiler.internal.findAnnotations
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.requireClassReference
@@ -169,10 +170,13 @@ internal class BindingModuleGenerator(
       // and types can be an expensive operation, so avoid doing it twice.
       val bindingsReplacedInDaggerModules = contributedModuleClasses
         .asSequence()
-        .filter { it.scope(contributesToFqName, module) == scope }
         // Ignore replaced bindings specified by excluded modules for this scope.
         .filter { it.fqName !in excludedNames }
-        .flatMap { it.replaces(contributesToFqName, module) }
+        .flatMap { clazz ->
+          clazz.findAnnotations(contributesToFqName, module)
+            .filter { scope == it.scope(module) }
+            .flatMap { it.replaces(module) }
+        }
         .plus(
           classScanner
             .findContributedClasses(

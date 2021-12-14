@@ -5,14 +5,14 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.annotation
-import com.squareup.anvil.compiler.internal.annotationOrNull
+import com.squareup.anvil.compiler.internal.annotations
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
+import com.squareup.anvil.compiler.internal.singleOrEmpty
 import com.squareup.anvil.compiler.internal.toType
 import dagger.Component
 import dagger.Module
@@ -50,7 +50,7 @@ internal class ModuleMerger(
     val holder = AnnotationHolder.create(codegen.descriptor) ?: return
     val (mergeAnnotation, annotationClass, daggerClass, daggerFqName, modulesKeyword) = holder
 
-    if (codegen.descriptor.annotationOrNull(daggerFqName) != null) {
+    if (codegen.descriptor.annotations(daggerFqName).isNotEmpty()) {
       throw AnvilCompilationException(
         codegen.descriptor,
         "When using @${annotationClass.simpleName} it's not allowed to annotate the same " +
@@ -70,11 +70,9 @@ internal class ModuleMerger(
     val anvilModuleName = createAnvilModuleName(codegen.descriptor)
 
     val modules = classScanner
-      .findContributedClasses(
+      .findContributedHints(
         module = module,
-        packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
         annotation = contributesToFqName,
-        scope = scopeFqName
       )
       .filter {
         // We generate a Dagger module for each merged component. We use Anvil itself to
@@ -84,37 +82,34 @@ internal class ModuleMerger(
         // modules contain the same bindings and are contributed to the same scope. To avoid this
         // issue we filter all generated Anvil modules except for the one that was generated for
         // this specific class.
-        val fqName = it.fqNameSafe
+        val fqName = it.fqName
         !fqName.isAnvilModule() || fqName == anvilModuleName
       }
-      .mapNotNull {
-        val contributesAnnotation =
-          it.annotationOrNull(contributesToFqName, scope = scopeFqName)
-            ?: return@mapNotNull null
-        it to contributesAnnotation
-      }
-      .filter { (classDescriptor, _) ->
-        val moduleAnnotation = classDescriptor.annotationOrNull(daggerModuleFqName)
-        val mergeModulesAnnotation = classDescriptor.annotationOrNull(mergeModulesFqName)
-        if (!DescriptorUtils.isInterface(classDescriptor) &&
+      .filter { it.isContributedToScope(scopeFqName) }
+      .filter { hint ->
+        val moduleAnnotation = hint.descriptor.annotations(daggerModuleFqName).singleOrEmpty()
+        val mergeModulesAnnotation = hint.descriptor
+          .annotations(mergeModulesFqName).singleOrEmpty()
+
+        if (!DescriptorUtils.isInterface(hint.descriptor) &&
           moduleAnnotation == null &&
           mergeModulesAnnotation == null
         ) {
           throw AnvilCompilationException(
-            classDescriptor,
-            "${classDescriptor.fqNameSafe} is annotated with " +
+            classDescriptor = hint.descriptor,
+            message = "${hint.fqName} is annotated with " +
               "@${ContributesTo::class.simpleName}, but this class is neither an interface " +
-              "nor a Dagger module. Did you forget to add @${Module::class.simpleName}?"
+              "nor a Dagger module. Did you forget to add @${Module::class.simpleName}?",
           )
         }
 
         moduleAnnotation != null || mergeModulesAnnotation != null
       }
-      .onEach { (classDescriptor, _) ->
-        if (classDescriptor.effectiveVisibility() !is Public) {
+      .onEach { hint ->
+        if (hint.descriptor.effectiveVisibility() !is Public) {
           throw AnvilCompilationException(
-            classDescriptor,
-            "${classDescriptor.fqNameSafe} is contributed to the Dagger graph, but the " +
+            classDescriptor = hint.descriptor,
+            message = "${hint.fqName} is contributed to the Dagger graph, but the " +
               "module is not public. Only public modules are supported."
           )
         }
@@ -125,36 +120,24 @@ internal class ModuleMerger(
 
     val excludedModules = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)
       ?.value
-      ?.map {
-        val argumentType = it.argumentType(module)
-        val classDescriptorForExclusion = argumentType.requireClassDescriptor()
+      ?.map { constantValue ->
+        val argumentType = constantValue.argumentType(module)
+        val excludedClass = argumentType.requireClassDescriptor()
 
-        val contributesToAnnotation = classDescriptorForExclusion
-          .annotationOrNull(contributesToFqName)
-        val contributesBindingAnnotation = classDescriptorForExclusion
-          .annotationOrNull(contributesBindingFqName)
-        val contributesMultibindingAnnotation = classDescriptorForExclusion
-          .annotationOrNull(contributesMultibindingFqName)
-        val contributesSubcomponentAnnotation = classDescriptorForExclusion
-          .annotationOrNull(contributesSubcomponentFqName)
+        val scopes = excludedClass.annotations(contributesToFqName).map { it.scope(module) } +
+          excludedClass.annotations(contributesBindingFqName).map { it.scope(module) } +
+          excludedClass.annotations(contributesMultibindingFqName).map { it.scope(module) } +
+          excludedClass.annotations(contributesSubcomponentFqName).map { it.parentScope(module) }
 
         // Verify that the replaced classes use the same scope.
-        val scopeOfExclusion = contributesToAnnotation?.scope(module)
-          ?: contributesBindingAnnotation?.scope(module)
-          ?: contributesMultibindingAnnotation?.scope(module)
-          ?: contributesSubcomponentAnnotation?.parentScope(module)
-          ?: throw AnvilCompilationException(
-            codegen.descriptor,
-            "Could not determine the scope of the excluded class " +
-              "${classDescriptorForExclusion.fqNameSafe}."
-          )
+        val contributesToOurScope = scopes.any { it.fqNameSafe == scopeFqName }
 
-        if (scopeOfExclusion.fqNameSafe != scopeFqName) {
+        if (!contributesToOurScope) {
           throw AnvilCompilationException(
-            codegen.descriptor,
-            "${codegen.descriptor.fqNameSafe} with scope $scopeFqName wants to exclude " +
-              "${classDescriptorForExclusion.fqNameSafe} with scope " +
-              "${scopeOfExclusion.fqNameSafe}. The exclusion must use the same scope."
+            message = "${codegen.descriptor.fqNameSafe} with scope $scopeFqName wants to exclude " +
+              "${excludedClass.fqNameSafe}, but the excluded class isn't contributed to the " +
+              "same scope.",
+            classDescriptor = codegen.descriptor
           )
         }
 
@@ -163,71 +146,58 @@ internal class ModuleMerger(
       ?: emptyList()
 
     val replacedModules = modules
-      .filter { (classDescriptor, _) ->
+      .filter { hint ->
         // Ignore replaced modules or bindings specified by excluded modules.
-        classDescriptor.defaultType.asmType(codegen.typeMapper) !in excludedModules
+        hint.descriptor.defaultType.asmType(codegen.typeMapper) !in excludedModules
       }
-      .flatMap { (classDescriptor, contributeAnnotation) ->
-        contributeAnnotation.replaces(module)
+      .flatMap { hint ->
+        hint.contributedAnnotation(scopeFqName).replaces(module)
           .map { classDescriptorForReplacement ->
             // Verify has @Module annotation. It doesn't make sense for a Dagger module to
             // replace a non-Dagger module.
-            if (classDescriptorForReplacement.annotationOrNull(daggerModuleFqName) == null &&
-              classDescriptorForReplacement.annotationOrNull(contributesBindingFqName) == null &&
-              classDescriptorForReplacement.annotationOrNull(contributesMultibindingFqName) == null
+            if (classDescriptorForReplacement.annotations(daggerModuleFqName).isEmpty() &&
+              classDescriptorForReplacement.annotations(contributesBindingFqName).isEmpty() &&
+              classDescriptorForReplacement.annotations(contributesMultibindingFqName).isEmpty()
             ) {
               throw AnvilCompilationException(
-                classDescriptor,
-                "${classDescriptor.fqNameSafe} wants to replace " +
+                message = "${hint.fqName} wants to replace " +
                   "${classDescriptorForReplacement.fqNameSafe}, but the class being " +
-                  "replaced is not a Dagger module."
+                  "replaced is not a Dagger module or binding.",
+                classDescriptor = hint.descriptor
               )
             }
 
-            checkSameScope(classDescriptor, classDescriptorForReplacement, module, scopeFqName)
+            checkSameScope(hint, classDescriptorForReplacement, module, scopeFqName)
 
             classDescriptorForReplacement.defaultType.asmType(codegen.typeMapper)
           }
       }
 
     fun replacedModulesByContributedBinding(
-      annotationFqName: FqName,
-      hintPackagePrefix: String
+      annotationFqName: FqName
     ): Sequence<Type> {
       return classScanner
-        .findContributedClasses(
+        .findContributedHints(
           module = module,
-          packageName = hintPackagePrefix,
           annotation = annotationFqName,
-          scope = scopeFqName
         )
-        .flatMap { contributedClass ->
-          val annotation = contributedClass.annotation(annotationFqName)
-          if (scopeFqName == annotation.scope(module).fqNameSafe) {
-            annotation.replaces(module)
-              .map { classDescriptorForReplacement ->
-                checkSameScope(
-                  contributedClass,
-                  classDescriptorForReplacement,
-                  module,
-                  scopeFqName
-                )
-                classDescriptorForReplacement.defaultType.asmType(codegen.typeMapper)
-              }
-          } else {
-            emptyList()
-          }
+        .flatMap { hint ->
+          hint.contributedAnnotations()
+            .filter { it.scope(module) == scope }
+            .flatMap { it.replaces(module) }
+            .map { classDescriptorForReplacement ->
+              checkSameScope(hint, classDescriptorForReplacement, module, scopeFqName)
+              classDescriptorForReplacement.defaultType.asmType(codegen.typeMapper)
+            }
         }
     }
 
     val replacedModulesByContributedBindings = replacedModulesByContributedBinding(
-      annotationFqName = contributesBindingFqName,
-      hintPackagePrefix = HINT_BINDING_PACKAGE_PREFIX
+      annotationFqName = contributesBindingFqName
     )
 
     val replacedModulesByContributedMultibindings = replacedModulesByContributedBinding(
-      annotationFqName = contributesMultibindingFqName,
-      hintPackagePrefix = HINT_MULTIBINDING_PACKAGE_PREFIX
+      annotationFqName = contributesMultibindingFqName
     )
 
     if (predefinedModules != null) {
@@ -243,7 +213,7 @@ internal class ModuleMerger(
 
     val contributedModules = modules
       .asSequence()
-      .map { codegen.typeMapper.mapType(it.first) }
+      .map { codegen.typeMapper.mapType(it.descriptor) }
       .minus(replacedModules.toSet())
       .minus(replacedModulesByContributedBindings.toSet())
       .minus(replacedModulesByContributedMultibindings.toSet())
@@ -309,34 +279,23 @@ internal class ModuleMerger(
   }
 
   private fun checkSameScope(
-    contributedClass: ClassDescriptor,
-    classDescriptorForReplacement: ClassDescriptor,
+    hint: ContributedHint,
+    classForReplacement: ClassDescriptor,
     module: ModuleDescriptor,
     scopeFqName: FqName
   ) {
-    val contributesToAnnotation = classDescriptorForReplacement
-      .annotationOrNull(contributesToFqName)
-    val contributesBindingAnnotation = classDescriptorForReplacement
-      .annotationOrNull(contributesBindingFqName)
-    val contributesMultibindingAnnotation = classDescriptorForReplacement
-      .annotationOrNull(contributesMultibindingFqName)
+    val scopes = classForReplacement.annotations(contributesToFqName).map { it.scope(module) } +
+      classForReplacement.annotations(contributesBindingFqName).map { it.scope(module) } +
+      classForReplacement.annotations(contributesMultibindingFqName).map { it.scope(module) }
 
-    // Verify that the replaced classes use the same scope.
-    val scopeOfReplacement = contributesToAnnotation?.scope(module)
-      ?: contributesBindingAnnotation?.scope(module)
-      ?: contributesMultibindingAnnotation?.scope(module)
-      ?: throw AnvilCompilationException(
-        contributedClass,
-        "Could not determine the scope of the replaced class " +
-          "${classDescriptorForReplacement.fqNameSafe}."
-      )
+    val contributesToOurScope = scopes.any { it.fqNameSafe == scopeFqName }
 
-    if (scopeOfReplacement.fqNameSafe != scopeFqName) {
+    if (!contributesToOurScope) {
       throw AnvilCompilationException(
-        contributedClass,
-        "${contributedClass.fqNameSafe} with scope $scopeFqName wants to replace " +
-          "${classDescriptorForReplacement.fqNameSafe} with scope " +
-          "${scopeOfReplacement.fqNameSafe}. The replacement must use the same scope."
+        classDescriptor = hint.descriptor,
+        message = "${hint.fqName} with scope $scopeFqName wants to replace " +
+          "${classForReplacement.fqNameSafe}, but the replaced class isn't " +
+          "contributed to the same scope."
       )
     }
   }
@@ -355,7 +314,7 @@ private data class AnnotationHolder private constructor(
 
   companion object {
     fun create(descriptor: ClassDescriptor): AnnotationHolder? {
-      descriptor.annotationOrNull(mergeComponentFqName)
+      descriptor.annotations(mergeComponentFqName).singleOrEmpty()
         ?.let {
           return AnnotationHolder(
             it,
@@ -365,7 +324,7 @@ private data class AnnotationHolder private constructor(
             "modules"
           )
         }
-      descriptor.annotationOrNull(mergeSubcomponentFqName)
+      descriptor.annotations(mergeSubcomponentFqName).singleOrEmpty()
         ?.let {
           return AnnotationHolder(
             it,
@@ -375,7 +334,7 @@ private data class AnnotationHolder private constructor(
             "modules"
           )
         }
-      descriptor.annotationOrNull(mergeModulesFqName)
+      descriptor.annotations(mergeModulesFqName).singleOrEmpty()
         ?.let {
           return AnnotationHolder(
             it,
