@@ -20,7 +20,7 @@ buildscript {
 println "Versions: " + [
     "Kotlin": ext.kotlinVersion,
     "Gradle": gradle.gradleVersion,
-    "Kotlin use IR": ext.kotlinUseIR
+    "Kotlin use IR in tests": ext.kotlinUseIR
 ]
 
 allprojects {
@@ -70,19 +70,6 @@ subprojects {
   tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
     kotlinOptions {
       jvmTarget = JavaVersion.VERSION_1_8
-
-      // TODO: remove with Kotlin 1.6.
-      if (rootProject.ext.kotlinVersion.startsWith('1.5')) {
-        useIR = rootProject.ext.kotlinUseIR
-      } else {
-        // The old backend only supports 1.5 as language level and newer language features are no
-        // longer supported. By being explicit we suppress a warning that language version 1.5 is
-        // inferred.
-        if (!rootProject.ext.kotlinUseIR) {
-          languageVersion = "1.5"
-        }
-      }
-      useOldBackend = !rootProject.ext.kotlinUseIR
 
       allWarningsAsErrors = rootProject.ext.makeWarningsErrors
       freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
