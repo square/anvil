@@ -8,12 +8,12 @@ import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
+import com.tschuchort.compiletesting.addPreviousResultToClasspath
 import dagger.internal.codegen.ComponentProcessor
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.config.JvmTarget
 import java.io.File
 import java.io.OutputStream
-import java.net.URLClassLoader
 import java.nio.file.Files
 
 /**
@@ -26,7 +26,6 @@ public class AnvilCompilation internal constructor(
 
   private var isCompiled = false
   private var anvilConfigured = false
-  private var swapClassLoader = false
 
   /** Configures this the Anvil behavior of this compilation. */
   @Suppress("SuspiciousCollectionReassignment")
@@ -129,8 +128,7 @@ public class AnvilCompilation internal constructor(
 
   public fun addPreviousCompilationResult(result: Result) = apply {
     checkNotCompiled()
-    kotlinCompilation.classpaths += result.outputDirectory
-    swapClassLoader = true
+    kotlinCompilation.addPreviousResultToClasspath(result)
   }
 
   /**
@@ -176,24 +174,8 @@ public class AnvilCompilation internal constructor(
     }
     addSources(*sources)
     isCompiled = true
-    return kotlinCompilation.compile()
-      .apply(block)
-      .apply { swapClassLoaderIfNecessary() }
-  }
 
-  // This workaround is needed until this issue is resolved:
-  // https://github.com/tschuchortdev/kotlin-compile-testing/issues/216
-  private fun Result.swapClassLoaderIfNecessary() {
-    if (!swapClassLoader) return
-
-    val newClassLoader = URLClassLoader(
-      kotlinCompilation.classpaths.plus(outputDirectory).map { it.toURI().toURL() }.toTypedArray(),
-      this::class.java.classLoader
-    )
-
-    Result::class.java.declaredFields
-      .single { it.name == "classLoader" }
-      .use { it.set(this, newClassLoader) }
+    return kotlinCompilation.compile().apply(block)
   }
 
   companion object {
@@ -214,7 +196,8 @@ public class AnvilCompilation internal constructor(
  * Helpful for testing code generators in unit tests end to end.
  *
  * This covers common cases, but is built upon reusable logic in [AnvilCompilation] and
- * [configureForAnvil]. Consider using those APIs if more advanced configuration is needed.
+ * [AnvilCompilation.configureAnvil]. Consider using those APIs if more advanced configuration
+ * is needed.
  */
 @ExperimentalAnvilApi
 public fun compileAnvil(
