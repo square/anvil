@@ -20,7 +20,8 @@ ext {
       project.getProperty('square.generateDaggerFactoriesWithAnvil') : 'true').toBoolean()
 
   // TODO: Remove when we remove the old backend.
-  makeWarningsErrors = ci && (kotlinVersion.startsWith('1.5') || kotlinUseIR)
+  // TODO Repeatable: After cleaning up all deprecated methods remove the `&& false`.
+  makeWarningsErrors = ci && (kotlinVersion.startsWith('1.5') || kotlinUseIR) && false
 
   ktlintVersion = "0.41.0"
 
