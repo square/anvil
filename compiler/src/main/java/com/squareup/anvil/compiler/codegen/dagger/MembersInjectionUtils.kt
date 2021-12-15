@@ -14,6 +14,7 @@ import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.hasAnnotation
+import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.toClassReference
 import com.squareup.kotlinpoet.FunSpec
 import dagger.internal.ProviderOfLazy
@@ -79,13 +80,17 @@ internal fun FunSpec.Builder.addMemberInjection(
  * Impl -> Middle -> Base
  * The order of dependencies in `Impl_Factory`'s constructor should be:
  * Base -> Middle -> Impl
+ *
+ * @param inheritedOnly If true, only returns the injected properties declared in superclasses.
+ *   If false, the injected properties of the receiver class will be included.
  */
 internal fun KtClassOrObject.memberInjectParameters(
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
+  inheritedOnly: Boolean = false
 ): List<MemberInjectParameter> {
-
   return toClassReference()
-    .allSuperTypeClassReferences(module, includeSelf = true)
+    .allSuperTypeClassReferences(module, includeSelf = !inheritedOnly)
+    .filterNot { it.isInterface() }
     .toList()
     .foldRight(listOf()) { classReference, acc ->
 

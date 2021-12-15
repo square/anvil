@@ -1047,6 +1047,59 @@ public class InjectClass_Factory(
     }
   }
 
+  @Test
+  fun `a factory class performs member injection when the only fields are in a super class`() {
+
+    compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      class InjectClass @Inject constructor() : Base() 
+
+      abstract class Base {
+
+        @Inject
+        lateinit var base1: List<Int>
+
+        @Inject
+        lateinit var base2: List<String>
+      }
+      """
+    ) {
+
+      val factoryClass = injectClass.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val base1 = listOf(3)
+      val base2 = listOf("base2")
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = factoryClass.createInstance(
+        Provider { base1 },
+        Provider { base2 }
+      )
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null)
+      assertThat(newInstance).isNotNull()
+
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(getInstance.getPropertyValue("base1")).isEqualTo(base1)
+      assertThat(getInstance.getPropertyValue("base2")).isEqualTo(base2)
+    }
+  }
+
   @Test fun `a factory class performs member injection on a super class from another module`() {
 
     val otherModuleResult = compile(

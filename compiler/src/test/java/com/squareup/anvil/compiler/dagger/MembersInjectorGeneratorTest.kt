@@ -26,6 +26,7 @@ import java.lang.reflect.Method
 import javax.inject.Named
 import javax.inject.Provider
 import kotlin.reflect.KClass
+import kotlin.test.assertFailsWith
 
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
@@ -2172,6 +2173,44 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
       assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
       assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
+  @Test
+  fun `a member injector is not generated when field injected properties are only in a super class`() {
+
+    compile(
+      """
+      package com.squareup.test
+ 
+      import javax.inject.Inject
+
+      abstract class Base {
+        @Inject lateinit var string: String
+      }
+
+      class InjectClass : Base() {
+     
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+     
+          if (string != other.string) return false
+     
+          return true
+        }
+
+        override fun hashCode(): Int = string.hashCode()
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+
+      assertFailsWith<ClassNotFoundException> {
+        injectClass.membersInjector()
+      }
     }
   }
 

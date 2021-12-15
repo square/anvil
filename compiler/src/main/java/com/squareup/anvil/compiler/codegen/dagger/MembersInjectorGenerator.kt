@@ -7,12 +7,14 @@ import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.MemberInjectParameter
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
+import com.squareup.anvil.compiler.codegen.mapToMemberInjectParameters
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.isGenericClass
+import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -45,9 +47,18 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
   ) {
     projectFiles
       .classesAndInnerClass(module)
+      .filterNot { it.isInterface() }
       .forEach { clazz ->
-        val parameters = clazz.memberInjectParameters(module)
+
+        // Only generate a MembersInjector if the target class declares its own member-injected
+        // properties. If it does, then any properties from superclasses must be added as well.
+        val declaredInjectedProperties = clazz.injectedMembers(module)
           .ifEmpty { return@forEach }
+
+        val parameters = clazz.memberInjectParameters(module, inheritedOnly = true)
+          .let { inherited ->
+            inherited + declaredInjectedProperties.mapToMemberInjectParameters(module, inherited)
+          }
 
         generateMembersInjectorClass(
           codeGenDir = codeGenDir,
