@@ -699,6 +699,85 @@ public final class ParentClass_NestedInjectClass_MembersInjector implements Memb
     }
   }
 
+  @Test
+  fun `a member injector is generated for a class which is nested inside a custom Error type`() {
+
+    // https://github.com/square/anvil/issues/445#issuecomment-992952286
+    // InjectedClass is nested so that there are no imports
+
+    compile(
+      """
+      package com.squareup.test
+ 
+      import javax.inject.Inject
+
+      sealed class Base {
+        sealed class Error : Base() {
+          @Inject lateinit var string: String
+          
+          class InjectClass : Error() {
+            @Inject lateinit var numbers: List<Int>
+
+            
+            override fun equals(other: Any?): Boolean {
+              if (this === other) return true
+              if (javaClass != other?.javaClass) return false
+        
+              other as InjectClass
+        
+              if (string != other.string) return false
+              if (numbers != other.numbers) return false
+        
+              return true
+            }
+
+            override fun hashCode(): Int {
+              var result = numbers.hashCode()
+              result = 31 * result + string.hashCode()
+              return result
+            }
+          }
+        }
+      }
+      """
+    ) {
+
+      val errorMembersInjector = classLoader.loadClass("com.squareup.test.Base\$Error")
+        .membersInjector()
+
+      val injectClass = classLoader
+        .loadClass("com.squareup.test.Base\$Error\$InjectClass")
+
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val membersInjectorInstance = constructor
+        .newInstance(
+          Provider { "a" },
+          Provider { listOf(1, 2) }
+        ) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      injectClassMembersInjector.staticInjectMethod("numbers")
+        .invoke(null, injectInstanceStatic, listOf(1, 2))
+      errorMembersInjector.staticInjectMethod("string")
+        .invoke(null, injectInstanceStatic, "a")
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
   @Test fun `a factory class is generated for a field injection with Lazy and Provider`() {
     /*
 package com.squareup.test;
