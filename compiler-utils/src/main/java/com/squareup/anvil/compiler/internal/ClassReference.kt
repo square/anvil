@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.internal.ClassReference.Psi
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -184,3 +185,9 @@ public fun ClassReference.daggerScopes(
 
 @ExperimentalAnvilApi
 public fun ClassReference.asClassName(): ClassName = classId.asClassName()
+
+@ExperimentalAnvilApi
+public fun ClassReference.isInterface(): Boolean = when (this) {
+  is Descriptor -> clazz.kind == ClassKind.INTERFACE
+  is Psi -> clazz.isInterface()
+}
