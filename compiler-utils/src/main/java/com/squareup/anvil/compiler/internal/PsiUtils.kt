@@ -9,6 +9,7 @@ import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation.FROM_BACKEND
@@ -768,6 +769,8 @@ public fun FqName.requireClassDescriptor(module: ModuleDescriptor): ClassDescrip
 @ExperimentalAnvilApi
 public fun FqName.classDescriptorOrNull(module: ModuleDescriptor): ClassDescriptor? {
   return module.resolveClassByFqName(this, FROM_BACKEND)
+    // In the case of a typealias, we need to look up the original reference instead.
+    ?: module.findTypeAliasAcrossModuleDependencies(classIdBestGuess())?.classDescriptor
 }
 
 @ExperimentalAnvilApi

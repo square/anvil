@@ -1889,6 +1889,213 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     }
   }
 
+  @Test
+  fun `a member injector is generated for a class with a typealias injected parameter`() {
+
+    compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+      
+      typealias StringList = List<String>
+
+      class InjectClass {
+        @Inject lateinit var stringList: StringList
+     
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+     
+          if (stringList != other.stringList) return false
+     
+          return true
+        }
+        
+        override fun hashCode() = stringList.hashCode()
+      }
+      """
+    ) {
+
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
+
+      val membersInjectorInstance = constructor
+        .newInstance(Provider { listOf("a") }) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      injectClassMembersInjector.staticInjectMethod("stringList")
+        .invoke(null, injectInstanceStatic, listOf("a"))
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
+  @Test
+  fun `a member injector is generated for a class with a typealias superclass`() {
+
+    compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      abstract class ActualBase {
+        @Inject lateinit var string: String
+      }
+      
+      typealias Base = ActualBase
+
+      class InjectClass : Base() {
+        @Inject lateinit var numbers: List<Int>
+     
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+     
+          if (numbers != other.numbers) return false
+          if (string != other.string) return false
+     
+          return true
+        }
+
+        override fun hashCode(): Int {
+          var result = numbers.hashCode()
+          result = 31 * result + string.hashCode()
+          return result
+        }
+      }
+      """
+    ) {
+
+      val actualBaseMembersInjector = classLoader.loadClass("com.squareup.test.ActualBase")
+        .membersInjector()
+
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val membersInjectorInstance = constructor
+        .newInstance(
+          Provider { "a" },
+          Provider { listOf(1, 2) }
+        ) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      injectClassMembersInjector.staticInjectMethod("numbers")
+        .invoke(null, injectInstanceStatic, listOf(1, 2))
+      actualBaseMembersInjector.staticInjectMethod("string")
+        .invoke(null, injectInstanceStatic, "a")
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
+  @Test
+  fun `a member injector is generated for a class with a typealias superclass in another module`() {
+
+    val otherModuleResult = compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      abstract class ActualBase {
+        @Inject lateinit var string: String
+      }
+      
+      typealias Base = ActualBase
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+ 
+      import javax.inject.Inject
+
+      class InjectClass : Base() {
+        @Inject lateinit var numbers: List<Int>
+     
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+     
+          if (numbers != other.numbers) return false
+          if (string != other.string) return false
+     
+          return true
+        }
+
+        override fun hashCode(): Int {
+          var result = numbers.hashCode()
+          result = 31 * result + string.hashCode()
+          return result
+        }
+      }
+      """,
+      previousCompilationResult = otherModuleResult
+    ) {
+
+      val actualBaseMembersInjector = classLoader.loadClass("com.squareup.test.ActualBase")
+        .membersInjector()
+
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val membersInjectorInstance = constructor
+        .newInstance(
+          Provider { "a" },
+          Provider { listOf(1, 2) }
+        ) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      injectClassMembersInjector.staticInjectMethod("numbers")
+        .invoke(null, injectInstanceStatic, listOf(1, 2))
+      actualBaseMembersInjector.staticInjectMethod("string")
+        .invoke(null, injectInstanceStatic, "a")
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
   private fun Class<*>.staticInjectMethod(memberName: String): Method {
     // We can't check the @InjectedFieldSignature annotation unfortunately, because it has class
     // retention.
