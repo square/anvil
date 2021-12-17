@@ -11,12 +11,15 @@ import kotlin.reflect.KClass
  *
  * Imagine this module dependency tree:
  * ```
- * :app -> :lib-a
- *     \-> :lib-b
+ *        :app
+ *       /     \
+ *      v       v
+ *   :lib-a   :lib-b
  * ```
  * `:app` creates the component with `@MergeComponent`, `:lib-a` creates a subcomponent with
  * `@MergeSubcomponent` and `:lib-b` contributes a module to the scope of the subcomponent. This
  * module won't be included in the subcomponent without adding the dependency `:lib-a -> :lib-b`.
+ * See [MergeSubcomponent] for further explanation.
  *
  * On the other hand, if `:lib-a` uses `@ContributesSubcomponent` with a parent scope of the main
  * component from `:app`, then the actual subcomponent will be generated in the `:app` module and
