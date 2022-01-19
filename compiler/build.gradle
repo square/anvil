@@ -1,6 +1,6 @@
 apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'org.jetbrains.kotlin.kapt'
-apply plugin: 'com.vanniktech.maven.publish'
+apply from: rootProject.file('publishing.gradle')
 
 apply from: project.file('generate_build_properties.gradle')
 

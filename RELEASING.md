@@ -10,7 +10,7 @@
    ```
 1. Push the artifacts to Maven Central and the Gradle Plugin Portal.
    ```
-   ./gradlew clean uploadArchives --no-daemon --no-parallel --no-build-cache && cd gradle-plugin && ./gradlew clean uploadArchives publishPlugins --no-daemon --no-parallel --no-build-cache && cd ..
+   ./gradlew clean publish --no-daemon --no-parallel --no-build-cache && cd gradle-plugin && ./gradlew clean publish publishPlugins --no-daemon --no-parallel --no-build-cache && cd ..
    ```
 1. Close and release the staging repository at [Sonatype](https://oss.sonatype.org).
 1. Update the version in `gradle.properties` and add the `-SNAPSHOT` suffix.
