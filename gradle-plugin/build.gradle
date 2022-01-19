@@ -25,11 +25,11 @@ apply from: rootProject.file('copy_properties.gradle')
 
 apply plugin: 'java-gradle-plugin'
 apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'com.vanniktech.maven.publish'
 apply plugin: 'com.gradle.plugin-publish'
 apply plugin: 'org.jlleitschuh.gradle.ktlint'
 
 apply from: rootProject.file('generate_build_properties.gradle')
+apply from: rootProject.file('../publishing.gradle')
 
 gradlePlugin {
   plugins {

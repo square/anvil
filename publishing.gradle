@@ -1,0 +1,8 @@
+apply plugin: 'com.vanniktech.maven.publish'
+apply plugin: 'org.jetbrains.dokka'
+
+plugins.withId("com.vanniktech.maven.publish") {
+  mavenPublish {
+    sonatypeHost = "S01"
+  }
+}

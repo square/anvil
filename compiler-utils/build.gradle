@@ -1,6 +1,6 @@
 apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'java-test-fixtures'
-apply plugin: 'com.vanniktech.maven.publish'
+apply from: rootProject.file('publishing.gradle')
 
 kotlin {
   explicitApi()

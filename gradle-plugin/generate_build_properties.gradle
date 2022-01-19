@@ -35,19 +35,29 @@ compileKotlin {
   dependsOn generateBuildProperties
 }
 
-// Add the task dependencies to enforce correct ordering when depending out outputs. Requires a
-// afterEvaluate block, because sourcesJar seems to be registered in a later lifecycle.
-afterEvaluate {
-  def taskNames = [
-      'dokkaHtml',
-      'publishPluginJar',
-      'runKtlintCheckOverMainSourceSet',
-      'sourcesJar',
-  ]
+// Add the task dependencies to enforce correct ordering when depending out outputs. Requires to be
+// lazy, because *SourcesJar seems to be registered in a later lifecycle.
+def taskNames = [
+    'dokkaHtml',
+    'publishPluginJar',
+    'runKtlintCheckOverMainSourceSet',
+    'javaSourcesJar',
+    'kotlinSourcesJar',
+]
 
+afterEvaluate {
   taskNames.each { taskName ->
-    tasks.named(taskName).configure {
-      it.dependsOn(generateBuildProperties)
+    try {
+      tasks.named(taskName).configure {
+        it.dependsOn(generateBuildProperties)
+      }
+    } catch (UnknownTaskException ignored) { }
+  }
+
+  // javaSourcesJar is registered even later. Gradle is love.
+  tasks.whenTaskAdded { Task task ->
+    if (taskNames.contains(task.name)) {
+      task.dependsOn(generateBuildProperties)
     }
   }
 }
