@@ -370,6 +370,9 @@ private fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBi
   val bindings = groupBy { it.priority }
     .toSortedMap()
     .let { it.getValue(it.lastKey()) }
+    // In some very rare cases we can see a binding for the same type twice. Just in case filter
+    // them, see https://github.com/square/anvil/issues/460.
+    .distinctBy { it.contributedFqName }
 
   if (bindings.size > 1) {
     throw AnvilCompilationException(
