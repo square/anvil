@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.hintBinding
 import com.squareup.anvil.compiler.hintBindingScope
 import com.squareup.anvil.compiler.isError
 import org.junit.Test
+import java.io.File
 
 class ContributesBindingGeneratorTest {
 
@@ -25,6 +26,12 @@ class ContributesBindingGeneratorTest {
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
+
+      val generatedFile = File(outputDirectory.parent, "build/anvil")
+        .walk()
+        .single { it.isFile && it.extension == "kt" }
+
+      assertThat(generatedFile.name).isEqualTo("ContributingInterface.kt")
     }
   }
 
@@ -122,6 +129,12 @@ class ContributesBindingGeneratorTest {
         classLoader.loadClass("com.squareup.test.Abc\$ContributingClass")
       assertThat(contributingClass.hintBinding?.java).isEqualTo(contributingClass)
       assertThat(contributingClass.hintBindingScope).isEqualTo(Any::class)
+
+      val generatedFile = File(outputDirectory.parent, "build/anvil")
+        .walk()
+        .single { it.isFile && it.extension == "kt" }
+
+      assertThat(generatedFile.name).isEqualTo("Abc_ContributingClass.kt")
     }
   }
 

@@ -15,6 +15,7 @@ import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
+import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.requireFqName
@@ -74,6 +75,7 @@ internal class ContributesToGenerator : CodeGenerator {
         }
       }
       .map { clazz ->
+        val fileName = clazz.generateClassName()
         val generatedPackage = HINT_CONTRIBUTES_PACKAGE_PREFIX +
           clazz.containingKtFile.packageFqName.safePackageString(dotPrefix = true)
         val className = clazz.asClassName()
@@ -82,7 +84,7 @@ internal class ContributesToGenerator : CodeGenerator {
         val scope = clazz.scope(contributesToFqName, module).asClassName(module)
 
         val content =
-          FileSpec.buildFile(generatedPackage, propertyName) {
+          FileSpec.buildFile(generatedPackage, fileName) {
             addProperty(
               PropertySpec
                 .builder(
@@ -109,7 +111,7 @@ internal class ContributesToGenerator : CodeGenerator {
         createGeneratedFile(
           codeGenDir = codeGenDir,
           packageName = generatedPackage,
-          fileName = propertyName,
+          fileName = fileName,
           content = content
         )
       }

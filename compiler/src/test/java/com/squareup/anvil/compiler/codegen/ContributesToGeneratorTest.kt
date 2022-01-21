@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.innerInterface
 import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.isError
 import org.junit.Test
+import java.io.File
 
 class ContributesToGeneratorTest {
 
@@ -58,6 +59,12 @@ class ContributesToGeneratorTest {
     ) {
       assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
       assertThat(daggerModule1.hintContributesScope).isEqualTo(Any::class)
+
+      val generatedFile = File(outputDirectory.parent, "build/anvil")
+        .walk()
+        .single { it.isFile && it.extension == "kt" }
+
+      assertThat(generatedFile.name).isEqualTo("DaggerModule1.kt")
     }
   }
 
@@ -130,6 +137,12 @@ class ContributesToGeneratorTest {
     ) {
       assertThat(innerModule.hintContributes?.java).isEqualTo(innerModule)
       assertThat(innerModule.hintContributesScope).isEqualTo(Any::class)
+
+      val generatedFile = File(outputDirectory.parent, "build/anvil")
+        .walk()
+        .single { it.isFile && it.extension == "kt" }
+
+      assertThat(generatedFile.name).isEqualTo("ComponentInterface_InnerModule.kt")
     }
   }
 
