@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.hintSubcomponentParentScope
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.subcomponentInterface
 import org.junit.Test
+import java.io.File
 
 class ContributesSubcomponentGeneratorTest {
 
@@ -24,6 +25,12 @@ class ContributesSubcomponentGeneratorTest {
     ) {
       assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
       assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
+
+      val generatedFile = File(outputDirectory.parent, "build/anvil")
+        .walk()
+        .single { it.isFile && it.extension == "kt" }
+
+      assertThat(generatedFile.name).isEqualTo("SubcomponentInterface.kt")
     }
   }
 
@@ -76,6 +83,12 @@ class ContributesSubcomponentGeneratorTest {
         .loadClass("com.squareup.test.Outer\$SubcomponentInterface")
       assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
       assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
+
+      val generatedFile = File(outputDirectory.parent, "build/anvil")
+        .walk()
+        .single { it.isFile && it.extension == "kt" }
+
+      assertThat(generatedFile.name).isEqualTo("Outer_SubcomponentInterface.kt")
     }
   }
 

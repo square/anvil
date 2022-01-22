@@ -183,7 +183,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
     val newContributions = contributions
       .flatMap { contribution ->
-        triggers
+        newTriggers
           .filter { trigger ->
             trigger.scope == contribution.parentScope &&
               contribution.clazzFqName !in trigger.exclusions

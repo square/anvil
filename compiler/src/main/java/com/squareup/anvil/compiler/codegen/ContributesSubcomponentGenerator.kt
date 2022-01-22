@@ -19,6 +19,7 @@ import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.fqNameOrNull
+import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.parentScope
@@ -78,6 +79,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
         }
       }
       .map { clazz ->
+        val fileName = clazz.generateClassName()
         val generatedPackage = HINT_SUBCOMPONENTS_PACKAGE_PREFIX +
           clazz.containingKtFile.packageFqName.safePackageString(dotPrefix = true)
         val className = clazz.asClassName()
@@ -91,7 +93,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
         clazz.checkFactory(innerClasses, module)
 
         val content =
-          FileSpec.buildFile(generatedPackage, propertyName) {
+          FileSpec.buildFile(generatedPackage, fileName) {
             addProperty(
               PropertySpec
                 .builder(
@@ -118,7 +120,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
         createGeneratedFile(
           codeGenDir = codeGenDir,
           packageName = generatedPackage,
-          fileName = propertyName,
+          fileName = fileName,
           content = content
         )
       }

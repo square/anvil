@@ -125,7 +125,10 @@ private fun Class<*>.getHintScope(prefix: String): KClass<*>? =
 private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*>>? {
   // The capitalize() doesn't make sense, I don't know where this is coming from. Maybe it's a
   // bug in the compile testing library?
-  val className = canonicalName.replace('.', '_')
+  val className = generateSequence(this) { it.enclosingClass }
+    .toList()
+    .reversed()
+    .joinToString(separator = "_") { it.simpleName }
     .capitalize() + "Kt"
 
   val clazz = try {

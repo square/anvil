@@ -13,6 +13,7 @@ import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
+import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireFqName
@@ -56,6 +57,7 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
         clazz.checkClassExtendsBoundType(module, contributesMultibindingFqName)
       }
       .map { clazz ->
+        val fileName = clazz.generateClassName()
         val generatedPackage = HINT_MULTIBINDING_PACKAGE_PREFIX +
           clazz.containingKtFile.packageFqName.safePackageString(dotPrefix = true)
         val className = clazz.asClassName()
@@ -64,7 +66,7 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
         val scope = clazz.scope(contributesMultibindingFqName, module).asClassName(module)
 
         val content =
-          FileSpec.buildFile(generatedPackage, propertyName) {
+          FileSpec.buildFile(generatedPackage, fileName) {
             addProperty(
               PropertySpec
                 .builder(
@@ -91,7 +93,7 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
         createGeneratedFile(
           codeGenDir = codeGenDir,
           packageName = generatedPackage,
-          fileName = propertyName,
+          fileName = fileName,
           content = content
         )
       }

@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.hintMultibinding
 import com.squareup.anvil.compiler.hintMultibindingScope
 import com.squareup.anvil.compiler.isError
 import org.junit.Test
+import java.io.File
 
 class ContributesMultibindingGeneratorTest {
 
@@ -25,6 +26,12 @@ class ContributesMultibindingGeneratorTest {
     ) {
       assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintMultibindingScope).isEqualTo(Any::class)
+
+      val generatedFile = File(outputDirectory.parent, "build/anvil")
+        .walk()
+        .single { it.isFile && it.extension == "kt" }
+
+      assertThat(generatedFile.name).isEqualTo("ContributingInterface.kt")
     }
   }
 
@@ -122,6 +129,12 @@ class ContributesMultibindingGeneratorTest {
         classLoader.loadClass("com.squareup.test.Abc\$ContributingClass")
       assertThat(contributingClass.hintMultibinding?.java).isEqualTo(contributingClass)
       assertThat(contributingClass.hintMultibindingScope).isEqualTo(Any::class)
+
+      val generatedFile = File(outputDirectory.parent, "build/anvil")
+        .walk()
+        .single { it.isFile && it.extension == "kt" }
+
+      assertThat(generatedFile.name).isEqualTo("Abc_ContributingClass.kt")
     }
   }
 
