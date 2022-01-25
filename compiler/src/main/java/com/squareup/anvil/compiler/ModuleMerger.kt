@@ -5,12 +5,15 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
 import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
+import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
+import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.toType
@@ -27,6 +30,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.effectiveVisibility
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
@@ -47,18 +51,19 @@ internal class ModuleMerger(
 ) : ExpressionCodegenExtension {
 
   override fun generateClassSyntheticParts(codegen: ImplementationBodyCodegen) {
-    val holder = AnnotationHolder.create(codegen.descriptor) ?: return
+    val thisDescriptor = codegen.descriptor
+    val holder = AnnotationHolder.create(thisDescriptor) ?: return
     val (mergeAnnotation, annotationClass, daggerClass, daggerFqName, modulesKeyword) = holder
 
-    if (codegen.descriptor.annotationOrNull(daggerFqName) != null) {
+    if (thisDescriptor.annotationOrNull(daggerFqName) != null) {
       throw AnvilCompilationException(
-        codegen.descriptor,
+        thisDescriptor,
         "When using @${annotationClass.simpleName} it's not allowed to annotate the same " +
           "class with @${daggerClass.simpleName}. The Dagger annotation will be generated."
       )
     }
 
-    val module = codegen.descriptor.module
+    val module = thisDescriptor.module
     val scope = mergeAnnotation.scope(module)
     val scopeFqName = scope.fqNameSafe
 
@@ -67,7 +72,7 @@ internal class ModuleMerger(
         ?.value
         ?.map { it.toType(codegen) }
 
-    val anvilModuleName = createAnvilModuleName(codegen.descriptor)
+    val anvilModuleName = createAnvilModuleName(thisDescriptor)
 
     val modules = classScanner
       .findContributedClasses(
@@ -144,15 +149,15 @@ internal class ModuleMerger(
           ?: contributesMultibindingAnnotation?.scope(module)
           ?: contributesSubcomponentAnnotation?.parentScope(module)
           ?: throw AnvilCompilationException(
-            codegen.descriptor,
+            thisDescriptor,
             "Could not determine the scope of the excluded class " +
               "${classDescriptorForExclusion.fqNameSafe}."
           )
 
         if (scopeOfExclusion.fqNameSafe != scopeFqName) {
           throw AnvilCompilationException(
-            codegen.descriptor,
-            "${codegen.descriptor.fqNameSafe} with scope $scopeFqName wants to exclude " +
+            thisDescriptor,
+            "${thisDescriptor.fqNameSafe} with scope $scopeFqName wants to exclude " +
               "${classDescriptorForExclusion.fqNameSafe} with scope " +
               "${scopeOfExclusion.fqNameSafe}. The exclusion must use the same scope."
           )
@@ -234,12 +239,16 @@ internal class ModuleMerger(
       val intersect = predefinedModules.intersect(excludedModules.toSet())
       if (intersect.isNotEmpty()) {
         throw AnvilCompilationException(
-          codegen.descriptor,
-          "${codegen.descriptor.name} includes and excludes modules " +
+          thisDescriptor,
+          "${thisDescriptor.name} includes and excludes modules " +
             "at the same time: ${intersect.joinToString { it.className }}"
         )
       }
     }
+
+    val contributedSubcomponentModules =
+      findContributedSubcomponentModules(thisDescriptor, scopeFqName, module)
+        .map { codegen.typeMapper.mapType(it) }
 
     val contributedModules = modules
       .asSequence()
@@ -248,6 +257,7 @@ internal class ModuleMerger(
       .minus(replacedModulesByContributedBindings.toSet())
       .minus(replacedModulesByContributedMultibindings.toSet())
       .minus(excludedModules.toSet())
+      .plus(contributedSubcomponentModules)
       .distinct()
 
     codegen.v
@@ -339,6 +349,29 @@ internal class ModuleMerger(
           "${scopeOfReplacement.fqNameSafe}. The replacement must use the same scope."
       )
     }
+  }
+
+  private fun findContributedSubcomponentModules(
+    descriptor: ClassDescriptor,
+    scope: FqName,
+    module: ModuleDescriptor
+  ): Sequence<ClassDescriptor> {
+    return classScanner
+      .findContributedClasses(
+        module = module,
+        packageName = HINT_SUBCOMPONENTS_PACKAGE_PREFIX,
+        annotation = contributesSubcomponentFqName,
+        scope = null
+      )
+      .filter {
+        it.annotation(contributesSubcomponentFqName).parentScope(module).fqNameSafe == scope
+      }
+      .mapNotNull { contributedSubcomponent ->
+        contributedSubcomponent.requireClassId()
+          .generatedAnvilSubcomponent(descriptor.requireClassId())
+          .createNestedClassId(Name.identifier(SUBCOMPONENT_MODULE))
+          .classDescriptorOrNull(module)
+      }
   }
 }
 

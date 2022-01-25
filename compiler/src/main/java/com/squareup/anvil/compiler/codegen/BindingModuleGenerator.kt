@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.HINT_CONTRIBUTES_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.HINT_MULTIBINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.GeneratedFile
@@ -290,6 +291,9 @@ internal class BindingModuleGenerator(
         it.findChildrenByClass(KtProperty::class.java).toList()
       }
       .mapNotNull { ktProperty ->
+        // We can safely ignore scopes, we only care about the reference classes.
+        if (ktProperty.name?.endsWith(REFERENCE_SUFFIX) != true) return@mapNotNull null
+
         (ktProperty.initializer as? KtClassLiteralExpression)
           ?.firstChild
           ?.requireFqName(module)

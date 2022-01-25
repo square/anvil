@@ -15,7 +15,7 @@ internal fun ClassScanner.findContributedClasses(
   moduleFragment: IrModuleFragment,
   packageName: String,
   annotation: FqName,
-  scope: FqName
+  scope: FqName?
 ): Sequence<IrClassSymbol> {
   return findContributedClasses(moduleFragment.descriptor, packageName, annotation, scope)
     .map {
