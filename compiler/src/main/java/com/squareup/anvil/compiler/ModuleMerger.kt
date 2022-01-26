@@ -12,10 +12,13 @@ import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.parentScope
+import com.squareup.anvil.compiler.internal.replaces
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireClassId
+import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
+import com.squareup.anvil.compiler.internal.toClassReference
 import com.squareup.anvil.compiler.internal.toType
 import dagger.Component
 import dagger.Module
@@ -173,7 +176,9 @@ internal class ModuleMerger(
         classDescriptor.defaultType.asmType(codegen.typeMapper) !in excludedModules
       }
       .flatMap { (classDescriptor, contributeAnnotation) ->
-        contributeAnnotation.replaces(module)
+        classDescriptor.toClassReference()
+          .replaces(module, contributeAnnotation.requireFqName())
+          .map { it.requireClassDescriptor(module) }
           .map { classDescriptorForReplacement ->
             // Verify has @Module annotation. It doesn't make sense for a Dagger module to
             // replace a non-Dagger module.
@@ -209,7 +214,9 @@ internal class ModuleMerger(
         .flatMap { contributedClass ->
           val annotation = contributedClass.annotation(annotationFqName)
           if (scopeFqName == annotation.scope(module).fqNameSafe) {
-            annotation.replaces(module)
+            contributedClass.toClassReference()
+              .replaces(module, annotationFqName)
+              .map { it.requireClassDescriptor(module) }
               .map { classDescriptorForReplacement ->
                 checkSameScope(
                   contributedClass,

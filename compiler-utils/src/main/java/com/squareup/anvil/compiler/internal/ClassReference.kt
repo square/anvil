@@ -12,7 +12,9 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtEnumEntry
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 /**
@@ -159,6 +161,39 @@ public fun ClassReference.scopeOrNull(
     is Psi -> clazz.scopeOrNull(annotationFqName, module)
   }
 }
+
+private fun replacesIndex(annotationFqName: FqName): Int {
+  return when (annotationFqName) {
+    contributesToFqName -> 1
+    contributesBindingFqName, contributesMultibindingFqName -> 2
+    else -> throw NotImplementedError(
+      "Couldn't find index of replaces argument for $annotationFqName."
+    )
+  }
+}
+
+@ExperimentalAnvilApi
+public fun ClassReference.replaces(
+  module: ModuleDescriptor,
+  annotationFqName: FqName,
+  index: Int = replacesIndex(annotationFqName)
+): List<ClassReference> =
+  when (this) {
+    is Descriptor -> {
+      val replacesValue = clazz.annotationOrNull(annotationFqName)
+        ?.getAnnotationValue("replaces") as? ArrayValue
+
+      replacesValue
+        ?.value
+        ?.map { it.argumentType(module).requireClassDescriptor().toClassReference() }
+    }
+    is Psi ->
+      clazz
+        .findAnnotation(annotationFqName, module)
+        ?.findAnnotationArgument<KtCollectionLiteralExpression>(name = "replaces", index = index)
+        ?.toFqNames(module)
+        ?.mapNotNull { it.toClassReference(module) }
+  }.orEmpty()
 
 @ExperimentalAnvilApi
 public fun ClassReference.qualifiers(

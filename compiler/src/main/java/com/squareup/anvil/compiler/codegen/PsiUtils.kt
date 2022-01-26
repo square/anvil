@@ -6,9 +6,7 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
-import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.injectFqName
-import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.hasAnnotation
@@ -73,22 +71,6 @@ internal fun KtClassOrObject.boundTypeOrNull(
     ?.requireFqName(module)
 }
 
-internal fun KtClassOrObject.replaces(
-  annotationFqName: FqName,
-  module: ModuleDescriptor
-): List<FqName> {
-  val index = when (annotationFqName) {
-    contributesToFqName -> 1
-    contributesBindingFqName, contributesMultibindingFqName -> 2
-    else -> throw IllegalArgumentException("$annotationFqName has no replaces field.")
-  }
-
-  return findAnnotation(annotationFqName, module)
-    ?.findAnnotationArgument<KtCollectionLiteralExpression>(name = "replaces", index = index)
-    ?.toFqNames(module)
-    ?: emptyList()
-}
-
 internal fun KtClassOrObject.ignoreQualifier(
   module: ModuleDescriptor,
   annotationFqName: FqName
@@ -140,9 +122,3 @@ internal fun KtAnnotationEntry.priority(): ContributesBinding.Priority {
   val enumValue = findAnnotationArgument<KtNameReferenceExpression>("priority", 4) ?: return NORMAL
   return ContributesBinding.Priority.valueOf(enumValue.text)
 }
-
-internal fun KtCollectionLiteralExpression.toFqNames(
-  module: ModuleDescriptor
-): List<FqName> = children
-  .filterIsInstance<KtClassLiteralExpression>()
-  .map { it.requireFqName(module) }

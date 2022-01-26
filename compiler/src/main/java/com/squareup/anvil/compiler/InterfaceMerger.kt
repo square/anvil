@@ -9,9 +9,12 @@ import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.getAllSuperTypes
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.parentScope
+import com.squareup.anvil.compiler.internal.replaces
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireClassId
+import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.scope
+import com.squareup.anvil.compiler.internal.toClassReference
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -85,7 +88,9 @@ internal class InterfaceMerger(
 
     val replacedClasses = classes
       .flatMap { (classDescriptor, contributeAnnotation) ->
-        contributeAnnotation.replaces(classDescriptor.module)
+        classDescriptor.toClassReference()
+          .replaces(module, contributeAnnotation.requireFqName())
+          .map { it.requireClassDescriptor(module) }
           .onEach { classDescriptorForReplacement ->
             // Verify the other class is an interface. It doesn't make sense for a contributed
             // interface to replace a class that is not an interface.
