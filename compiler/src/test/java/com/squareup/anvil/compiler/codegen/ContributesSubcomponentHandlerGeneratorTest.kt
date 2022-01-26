@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.ANVIL_SUBCOMPONENT_SUFFIX
 import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
+import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
@@ -18,6 +19,7 @@ import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
+import dagger.Component
 import org.junit.Test
 import javax.inject.Singleton
 import kotlin.test.assertFailsWith
@@ -1045,6 +1047,268 @@ class ContributesSubcomponentHandlerGeneratorTest {
         .use { it.invoke(subcomponent) as Int }
 
       assertThat(int).isEqualTo(5)
+    }
+  }
+
+  @Test
+  fun `the generated factory can be injected in a nested subcomponent`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.BindsInstance
+        import javax.inject.Inject 
+
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Factory
+          interface ComponentFactory {
+            fun createComponent(
+              @BindsInstance integer: Int
+            ): SubcomponentInterface
+          }
+          
+          fun integer(): Int
+        } 
+
+        @ContributesSubcomponent(Unit::class, parentScope = Int::class)
+        interface ComponentInterface1 {
+          fun testClass(): TestClass
+        }
+        
+        @MergeComponent(Int::class)
+        interface ComponentInterface2
+
+        class TestClass @Inject constructor(val factory: SubcomponentInterface.ComponentFactory)
+      """,
+      enableDaggerAnnotationProcessor = true
+    ) {
+      val daggerComponent = componentInterface2.daggerComponent.declaredMethods
+        .single { it.name == "create" }
+        .invoke(null)
+
+      val subcomponent1 = componentInterface2.methods
+        .single()
+        .invoke(daggerComponent)
+
+      val testClassInstance = componentInterface1.declaredMethods
+        .single { it.name == "testClass" }
+        .invoke(subcomponent1)
+
+      val factory = testClassInstance::class.java.declaredMethods
+        .single { it.name == "getFactory" }
+        .invoke(testClassInstance)
+
+      val subcomponent2 = factory::class.java.declaredMethods
+        .single { it.returnType == subcomponentInterface }
+        .use { it.invoke(factory, 5) }
+
+      val int = subcomponent2::class.java.declaredMethods
+        .single { it.name == "integer" }
+        .use { it.invoke(subcomponent2) as Int }
+
+      assertThat(int).isEqualTo(5)
+    }
+  }
+
+  @Test
+  fun `the generated factory can be injected with multiple compilations`() {
+    val firstCompilationResult = compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.BindsInstance
+
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Unit::class
+        )
+        interface SubcomponentInterface {
+          fun integer(): Int
+
+          @Factory
+          interface ComponentFactory {
+            fun createComponent(@BindsInstance integer: Int): SubcomponentInterface
+          }
+
+          @ContributesTo(Unit::class)
+          interface AnyParentComponent {
+            fun createFactory(): ComponentFactory
+          }
+        }
+
+        @MergeComponent(Unit::class)
+        interface ComponentInterface1
+      """.trimIndent(),
+      enableDaggerAnnotationProcessor = true
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+
+      assertThat(
+        componentInterface1 extends subcomponentInterface.anyParentComponentInterface
+      ).isTrue()
+    }
+
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.MergeComponent
+
+        @MergeComponent(Unit::class)
+        interface ComponentInterface2
+      """.trimIndent(),
+      previousCompilationResult = firstCompilationResult,
+      enableDaggerAnnotationProcessor = true
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+
+      val daggerComponent = componentInterface2.daggerComponent.declaredMethods
+        .single { it.name == "create" }
+        .invoke(null)
+
+      val factory = componentInterface2.methods
+        .first { it.name == "createFactory" }
+        .invoke(daggerComponent)
+
+      val subcomponent = factory::class.java.declaredMethods
+        .single { it.returnType == subcomponentInterface }
+        .use { it.invoke(factory, 5) }
+
+      val int = subcomponent::class.java.declaredMethods
+        .single { it.name == "integer" }
+        .use { it.invoke(subcomponent) as Int }
+
+      assertThat(int).isEqualTo(5)
+    }
+  }
+
+  @Test
+  fun `the correct generated factory is bound`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.BindsInstance
+        import javax.inject.Inject 
+
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Factory
+          interface ComponentFactory {
+            fun createComponent(
+              @BindsInstance integer: Int
+            ): SubcomponentInterface
+          }
+        }
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface1
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface2
+      """
+    ) {
+      val modules1 = componentInterface1.getAnnotation(Component::class.java).modules.toList()
+      val modules2 = componentInterface2.getAnnotation(Component::class.java).modules.toList()
+
+      val subcomponentModule1 = subcomponentInterface
+        .anvilComponent(componentInterface1)
+        .declaredClasses
+        .single { it.simpleName == SUBCOMPONENT_MODULE }
+        .kotlin
+
+      val subcomponentModule2 = subcomponentInterface
+        .anvilComponent(componentInterface2)
+        .declaredClasses
+        .single { it.simpleName == SUBCOMPONENT_MODULE }
+        .kotlin
+
+      assertThat(modules1).contains(subcomponentModule1)
+      assertThat(modules1).doesNotContain(subcomponentModule2)
+
+      assertThat(modules2).contains(subcomponentModule2)
+      assertThat(modules2).doesNotContain(subcomponentModule1)
+    }
+  }
+
+  @Test
+  fun `the correct generated factory is bound - with Dagger`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.BindsInstance
+        import javax.inject.Inject 
+
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @Factory
+          interface ComponentFactory {
+            fun createComponent(
+              @BindsInstance integer: Int
+            ): SubcomponentInterface
+          }
+          
+          fun integer(): Int
+        }
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface1 {
+          fun testClass(): TestClass
+        }
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface2 {
+          fun testClass(): TestClass
+        }
+
+        class TestClass @Inject constructor(val factory: SubcomponentInterface.ComponentFactory)
+      """,
+      enableDaggerAnnotationProcessor = true
+    ) {
+      val daggerComponent1 = componentInterface1.daggerComponent.declaredMethods
+        .single { it.name == "create" }
+        .invoke(null)
+
+      val testClassInstance1 = componentInterface1.declaredMethods
+        .single { it.name == "testClass" }
+        .invoke(daggerComponent1)
+
+      val factory1 = testClassInstance1::class.java.declaredMethods
+        .single { it.name == "getFactory" }
+        .invoke(testClassInstance1)
+
+      assertThat(factory1::class.java.name)
+        .isEqualTo("com.squareup.test.DaggerComponentInterface1\$SubcomponentInterfaceAFactory")
+
+      val daggerComponent2 = componentInterface2.daggerComponent.declaredMethods
+        .single { it.name == "create" }
+        .invoke(null)
+
+      val testClassInstance2 = componentInterface2.declaredMethods
+        .single { it.name == "testClass" }
+        .invoke(daggerComponent2)
+
+      val factory2 = testClassInstance2::class.java.declaredMethods
+        .single { it.name == "getFactory" }
+        .invoke(testClassInstance2)
+
+      assertThat(factory2::class.java.name)
+        .isEqualTo("com.squareup.test.DaggerComponentInterface2\$SubcomponentInterfaceAFactory")
     }
   }
 

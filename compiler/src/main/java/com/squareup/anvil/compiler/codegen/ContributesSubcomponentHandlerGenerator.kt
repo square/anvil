@@ -1,6 +1,5 @@
 package com.squareup.anvil.compiler.codegen
 
-import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.ANVIL_SUBCOMPONENT_SUFFIX
 import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
@@ -8,6 +7,7 @@ import com.squareup.anvil.compiler.ClassScanner
 import com.squareup.anvil.compiler.HINT_SUBCOMPONENTS_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
+import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
@@ -45,6 +45,8 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.ABSTRACT
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.TypeSpec
+import dagger.Binds
+import dagger.Module
 import dagger.Subcomponent
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities.PUBLIC
@@ -235,7 +237,8 @@ internal class ContributesSubcomponentHandlerGenerator(
             .addAnnotations(contribution.classReference.daggerScopes(module))
             .apply {
               if (factoryClass != null) {
-                addType(generateFactory(factoryClass.originalDescriptor, contribution, module))
+                addType(generateFactory(factoryClass.originalDescriptor))
+                addType(generateDaggerModule(factoryClass.originalDescriptor))
               }
             }
             .addType(
@@ -258,9 +261,7 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private fun generateFactory(
-    factoryDescriptor: ClassDescriptor,
-    contribution: Contribution,
-    module: ModuleDescriptor
+    factoryDescriptor: ClassDescriptor
   ): TypeSpec {
     val superclass = factoryDescriptor.asClassName()
 
@@ -277,12 +278,24 @@ internal class ContributesSubcomponentHandlerGenerator(
 
     return builder
       .addAnnotation(Subcomponent.Factory::class)
-      .addAnnotation(
-        // This will allow injecting the factory instance.
-        AnnotationSpec
-          .builder(ContributesBinding::class)
-          .addMember("scope = %T::class", contribution.parentScope.asClassName(module))
-          .addMember("boundType = %T::class", superclass)
+      .build()
+  }
+
+  private fun generateDaggerModule(
+    factoryDescriptor: ClassDescriptor
+  ): TypeSpec {
+    // This Dagger module will allow injecting the factory instance.
+    return TypeSpec
+      .classBuilder(SUBCOMPONENT_MODULE)
+      .addModifiers(ABSTRACT)
+      .addAnnotation(Module::class)
+      .addFunction(
+        FunSpec
+          .builder("bindSubcomponentFactory")
+          .addAnnotation(Binds::class.java)
+          .addModifiers(ABSTRACT)
+          .addParameter("factory", ClassName.bestGuess(SUBCOMPONENT_FACTORY))
+          .returns(factoryDescriptor.asClassName())
           .build()
       )
       .build()

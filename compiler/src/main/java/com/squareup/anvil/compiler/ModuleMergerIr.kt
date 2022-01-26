@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler
 
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
 import com.squareup.anvil.compiler.internal.safePackageString
 import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -24,6 +25,7 @@ import org.jetbrains.kotlin.ir.util.isInterface
 import org.jetbrains.kotlin.ir.util.packageFqName
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.Variance.INVARIANT
 
 internal class ModuleMergerIr(
@@ -223,6 +225,9 @@ internal class ModuleMergerIr(
       }
     }
 
+    val contributedSubcomponentModules =
+      findContributedSubcomponentModules(declaration, scope, pluginContext, moduleFragment)
+
     val contributedModules = modules
       .asSequence()
       .map { it.first.owner }
@@ -231,6 +236,7 @@ internal class ModuleMergerIr(
       .minus(replacedModulesByContributedMultibindings.toSet())
       .minus(excludedModules.toSet())
       .plus(predefinedModules)
+      .plus(contributedSubcomponentModules)
       .distinct()
 
     val annotationConstructorCall = IrConstructorCallImpl
@@ -329,6 +335,32 @@ internal class ModuleMergerIr(
         element = contributedClass
       )
     }
+  }
+
+  private fun findContributedSubcomponentModules(
+    declaration: IrClass,
+    scope: FqName,
+    pluginContext: IrPluginContext,
+    moduleFragment: IrModuleFragment
+  ): Sequence<IrClass> {
+    return classScanner
+      .findContributedClasses(
+        pluginContext = pluginContext,
+        moduleFragment = moduleFragment,
+        packageName = HINT_SUBCOMPONENTS_PACKAGE_PREFIX,
+        annotation = contributesSubcomponentFqName,
+        scope = null
+      )
+      .filter {
+        it.owner.annotation(contributesSubcomponentFqName).parentScope() == scope
+      }
+      .mapNotNull { contributedSubcomponent ->
+        contributedSubcomponent.requireClassId()
+          .generatedAnvilSubcomponent(declaration.requireClassId())
+          .createNestedClassId(Name.identifier(SUBCOMPONENT_MODULE))
+          .irClassOrNull(pluginContext)
+          ?.owner
+      }
   }
 }
 

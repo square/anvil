@@ -17,9 +17,11 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.util.classId
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
 import org.jetbrains.kotlin.ir.util.getAnnotation
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 
 internal fun IrPluginContext.requireReferenceClass(fqName: FqName): IrClassSymbol {
@@ -27,6 +29,21 @@ internal fun IrPluginContext.requireReferenceClass(fqName: FqName): IrClassSymbo
     message = "Couldn't resolve reference for $fqName"
   )
 }
+
+internal fun ClassId.irClass(context: IrPluginContext): IrClassSymbol =
+  context.requireReferenceClass(asSingleFqName())
+
+internal fun ClassId.irClassOrNull(context: IrPluginContext): IrClassSymbol? =
+  context.referenceClass(asSingleFqName())
+
+internal fun IrClass.requireClassId(): ClassId {
+  return classId ?: throw AnvilCompilationException(
+    element = this,
+    message = "Couldn't find a ClassId for $fqName."
+  )
+}
+
+internal fun IrClassSymbol.requireClassId(): ClassId = owner.requireClassId()
 
 internal fun IrAnnotationContainer.annotationOrNull(
   annotationFqName: FqName,

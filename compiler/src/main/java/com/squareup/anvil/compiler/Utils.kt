@@ -76,6 +76,7 @@ internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
 internal const val ANVIL_SUBCOMPONENT_SUFFIX = "A"
 internal const val PARENT_COMPONENT = "ParentComponent"
 internal const val SUBCOMPONENT_FACTORY = "SubcomponentFactory"
+internal const val SUBCOMPONENT_MODULE = "SubcomponentModule"
 
 internal const val REFERENCE_SUFFIX = "_reference"
 internal const val SCOPE_SUFFIX = "_scope"
