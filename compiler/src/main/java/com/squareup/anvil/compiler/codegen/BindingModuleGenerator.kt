@@ -28,7 +28,6 @@ import com.squareup.anvil.compiler.internal.decapitalize
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.anvil.compiler.internal.requireClassReference
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
@@ -213,7 +212,7 @@ internal class BindingModuleGenerator(
         ).map { it.toClassReference() }
 
         val allContributedClasses = collectedClasses
-          .map { name -> module.requireClassReference(name) }
+          .map { name -> name.toClassReference(module) }
           .plus(contributedBindingsDependencies)
 
         val replacedBindings = allContributedClasses
