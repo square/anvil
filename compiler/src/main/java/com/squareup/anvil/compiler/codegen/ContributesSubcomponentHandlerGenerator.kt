@@ -8,7 +8,6 @@ import com.squareup.anvil.compiler.HINT_SUBCOMPONENTS_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
-import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
@@ -16,9 +15,11 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesSubcomponentFactoryFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
+import com.squareup.anvil.compiler.internal.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.ClassReference
+import com.squareup.anvil.compiler.internal.FunctionReference
 import com.squareup.anvil.compiler.internal.annotation
-import com.squareup.anvil.compiler.internal.annotationOrNull
+import com.squareup.anvil.compiler.internal.annotations
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
@@ -26,11 +27,17 @@ import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.daggerScopes
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
+import com.squareup.anvil.compiler.internal.functions
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.hasAnnotation
+import com.squareup.anvil.compiler.internal.innerClasses
+import com.squareup.anvil.compiler.internal.isAbstract
+import com.squareup.anvil.compiler.internal.isAbstractClass
+import com.squareup.anvil.compiler.internal.isInterface
+import com.squareup.anvil.compiler.internal.isPublic
 import com.squareup.anvil.compiler.internal.parentScope
-import com.squareup.anvil.compiler.internal.requireClassDescriptor
+import com.squareup.anvil.compiler.internal.returnType
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.toClassId
@@ -49,10 +56,6 @@ import com.squareup.kotlinpoet.TypeSpec
 import dagger.Binds
 import dagger.Module
 import dagger.Subcomponent
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities.PUBLIC
-import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -60,11 +63,8 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter.Companion.CLASSIFIERS
-import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter.Companion.FUNCTIONS
 import java.io.File
 
 /**
@@ -186,7 +186,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
     val newContributions = contributions
       .flatMap { contribution ->
-        newTriggers
+        triggers
           .filter { trigger ->
             trigger.scope == contribution.parentScope &&
               contribution.clazzFqName !in trigger.exclusions
@@ -238,8 +238,8 @@ internal class ContributesSubcomponentHandlerGenerator(
             .addAnnotations(contribution.classReference.daggerScopes(module))
             .apply {
               if (factoryClass != null) {
-                addType(generateFactory(factoryClass.originalDescriptor))
-                addType(generateDaggerModule(factoryClass.originalDescriptor))
+                addType(generateFactory(factoryClass.originalReference))
+                addType(generateDaggerModule(factoryClass.originalReference))
               }
             }
             .addType(
@@ -258,15 +258,14 @@ internal class ContributesSubcomponentHandlerGenerator(
           content = content
         )
       }
-      .toList()
   }
 
   private fun generateFactory(
-    factoryDescriptor: ClassDescriptor
+    factoryReference: ClassReference
   ): TypeSpec {
-    val superclass = factoryDescriptor.asClassName()
+    val superclass = factoryReference.asClassName()
 
-    val builder = if (DescriptorUtils.isInterface(factoryDescriptor)) {
+    val builder = if (factoryReference.isInterface()) {
       TypeSpec
         .interfaceBuilder(SUBCOMPONENT_FACTORY)
         .addSuperinterface(superclass)
@@ -283,7 +282,7 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private fun generateDaggerModule(
-    factoryDescriptor: ClassDescriptor
+    factoryReference: ClassReference
   ): TypeSpec {
     // This Dagger module will allow injecting the factory instance.
     return TypeSpec
@@ -296,7 +295,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           .addAnnotation(Binds::class.java)
           .addModifiers(ABSTRACT)
           .addParameter("factory", ClassName.bestGuess(SUBCOMPONENT_FACTORY))
-          .returns(factoryDescriptor.asClassName())
+          .returns(factoryReference.asClassName())
           .build()
       )
       .build()
@@ -309,7 +308,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     factoryClass: FactoryClassHolder?,
   ): TypeSpec {
     val parentComponentInterface = findParentComponentInterface(
-      contribution, module, factoryClass?.originalDescriptor?.fqNameSafe
+      contribution, module, factoryClass?.originalReference?.fqName
     )
 
     return TypeSpec
@@ -324,7 +323,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           .builder(
             name = parentComponentInterface
               ?.functionName
-              ?: factoryClass?.let { "create${it.originalDescriptor.name}" }
+              ?: factoryClass?.let { "create${it.originalReference.fqName.shortName()}" }
               ?: "create${generatedAnvilSubcomponent.relativeClassName}"
           )
           .addModifiers(ABSTRACT)
@@ -350,41 +349,40 @@ internal class ContributesSubcomponentHandlerGenerator(
     factoryClass: FqName?
   ): ParentComponentInterfaceHolder? {
     val contributionFqName = contribution.clazzFqName
-    val contributionDescriptor = contributionFqName.requireClassDescriptor(module)
 
-    val contributedInnerComponentInterfaces = contributionDescriptor.unsubstitutedMemberScope
-      .getContributedDescriptors(kindFilter = CLASSIFIERS)
-      .filterIsInstance<ClassDescriptor>()
-      .filter { DescriptorUtils.isInterface(it) }
-      .filter {
-        val annotation = it.annotationOrNull(contributesToFqName, contribution.parentScope)
-        annotation != null
+    val contributedInnerComponentInterfaces = contribution.classReference
+      .innerClasses()
+      .filter { it.isInterface() }
+      .filter { classReference ->
+        classReference.annotations(module)
+          .any {
+            it.fqName == contributesToFqName && it.scope(module).fqName == contribution.parentScope
+          }
       }
+      .toList()
 
     val componentInterface = when (contributedInnerComponentInterfaces.size) {
       0 -> return null
       1 -> contributedInnerComponentInterfaces[0]
-      else -> throw AnvilCompilationException(
-        classDescriptor = contributionDescriptor,
+      else -> throw AnvilCompilationExceptionClassReference(
+        classReference = contribution.classReference,
         message = "Expected zero or one parent component interface within " +
-          "${contributionDescriptor.fqNameSafe} being contributed to the parent scope."
+          "$contributionFqName being contributed to the parent scope."
       )
     }
 
-    val functions = componentInterface.unsubstitutedMemberScope
-      .getContributedDescriptors(kindFilter = FUNCTIONS)
-      .filterIsInstance<FunctionDescriptor>()
-      .filter { it.modality == Modality.ABSTRACT && it.visibility == PUBLIC }
+    val functions = componentInterface.functions()
+      .filter { it.isAbstract() && it.isPublic() }
       .filter {
-        val returnType = it.returnType?.fqNameOrNull() ?: return@filter false
+        val returnType = it.returnType(module).fqName
         returnType == contributionFqName || (factoryClass != null && returnType == factoryClass)
       }
 
     val function = when (functions.size) {
       0 -> return null
       1 -> functions[0]
-      else -> throw AnvilCompilationException(
-        classDescriptor = componentInterface,
+      else -> throw AnvilCompilationExceptionClassReference(
+        classReference = contribution.classReference,
         message = "Expected zero or one function returning the subcomponent $contributionFqName."
       )
     }
@@ -398,46 +396,45 @@ internal class ContributesSubcomponentHandlerGenerator(
     module: ModuleDescriptor
   ): FactoryClassHolder? {
     val contributionFqName = contribution.clazzFqName
-    val contributionDescriptor = contributionFqName.requireClassDescriptor(module)
 
-    val contributedFactories = contributionDescriptor.unsubstitutedMemberScope
-      .getContributedDescriptors(kindFilter = CLASSIFIERS)
-      .filterIsInstance<ClassDescriptor>()
-      .filter { it.annotations.hasAnnotation(contributesSubcomponentFactoryFqName) }
+    val contributedFactories = contribution.classReference
+      .innerClasses()
+      .filter { classReference ->
+        classReference.annotations(module).any { it.fqName == contributesSubcomponentFactoryFqName }
+      }
       .onEach { factory ->
-        if (!DescriptorUtils.isInterface(factory) && factory.modality != Modality.ABSTRACT) {
-          throw AnvilCompilationException(
-            classDescriptor = factory,
+        if (!factory.isInterface() && !factory.isAbstractClass()) {
+          throw AnvilCompilationExceptionClassReference(
+            classReference = factory,
             message = "A factory must be an interface or an abstract class."
           )
         }
 
-        val createComponentFunctions = factory.unsubstitutedMemberScope
-          .getContributedDescriptors(kindFilter = FUNCTIONS)
-          .filterIsInstance<FunctionDescriptor>()
-          .filter { it.modality == Modality.ABSTRACT }
-          .filter { it.returnType?.fqNameOrNull() == contributionFqName }
+        val createComponentFunctions = factory.functions()
+          .filter { it.isAbstract() }
+          .filter { it.returnType(module).fqName == contributionFqName }
 
         if (createComponentFunctions.size != 1) {
-          throw AnvilCompilationException(
-            classDescriptor = factory,
+          throw AnvilCompilationExceptionClassReference(
+            classReference = factory,
             message = "A factory must have exactly one abstract function returning the " +
               "subcomponent $contributionFqName."
           )
         }
       }
+      .toList()
 
-    val descriptor = when (contributedFactories.size) {
+    val classReference = when (contributedFactories.size) {
       0 -> return null
       1 -> contributedFactories[0]
-      else -> throw AnvilCompilationException(
-        classDescriptor = contributionDescriptor,
-        message = "Expected zero or one factory within ${contributionDescriptor.fqNameSafe}."
+      else -> throw AnvilCompilationExceptionClassReference(
+        classReference = contribution.classReference,
+        message = "Expected zero or one factory within $contributionFqName."
       )
     }
 
     return FactoryClassHolder(
-      originalDescriptor = descriptor,
+      originalReference = classReference,
       generatedFactoryName = generatedAnvilSubcomponent
         .createNestedClassId(Name.identifier(SUBCOMPONENT_FACTORY))
         .asClassName()
@@ -488,15 +485,15 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private class ParentComponentInterfaceHolder(
-    componentInterface: ClassDescriptor,
-    function: FunctionDescriptor
+    componentInterface: ClassReference,
+    function: FunctionReference
   ) {
     val componentInterface = componentInterface.asClassName()
-    val functionName = function.name.asString()
+    val functionName = function.fqName.shortName().asString()
   }
 
   private class FactoryClassHolder(
-    val originalDescriptor: ClassDescriptor,
+    val originalReference: ClassReference,
     val generatedFactoryName: ClassName
   )
 }

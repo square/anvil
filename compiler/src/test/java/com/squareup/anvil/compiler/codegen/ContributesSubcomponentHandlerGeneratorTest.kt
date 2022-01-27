@@ -7,20 +7,31 @@ import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
+import com.squareup.anvil.compiler.api.AnvilContext
+import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule1
+import com.squareup.anvil.compiler.internal.classesAndInnerClass
+import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.testing.extends
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Component
+import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.psi.KtFile
 import org.junit.Test
+import java.io.File
 import javax.inject.Singleton
 import kotlin.test.assertFailsWith
 
@@ -1547,6 +1558,76 @@ class ContributesSubcomponentHandlerGeneratorTest {
     }
   }
 
+  @Test fun `an @ContributeSubcomponent class can be generated`() {
+    val codeGenerator = object : CodeGenerator {
+      override fun isApplicable(context: AnvilContext): Boolean = true
+
+      override fun generateCode(
+        codeGenDir: File,
+        module: ModuleDescriptor,
+        projectFiles: Collection<KtFile>
+      ): Collection<GeneratedFile> {
+        return projectFiles
+          .classesAndInnerClass(module)
+          .filter { it.hasAnnotation(mergeComponentFqName, module) }
+          .map { _ ->
+            val generatedPackage = "com.squareup.test"
+
+            @Language("kotlin")
+            val content = """
+                package $generatedPackage
+                
+                import com.squareup.anvil.annotations.ContributesSubcomponent
+                import com.squareup.test.SubcomponentInterface1
+      
+                @ContributesSubcomponent(
+                  scope = Any::class, 
+                  parentScope = Unit::class,
+                )
+                interface SubcomponentInterface2
+              """
+
+            createGeneratedFile(
+              codeGenDir = codeGenDir,
+              packageName = generatedPackage,
+              fileName = "SubcomponentInterface2",
+              content = content
+            )
+          }
+          .toList()
+      }
+    }
+
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.MergeComponent
+  
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Unit::class
+        )
+        interface SubcomponentInterface1
+  
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """,
+      codeGenerators = listOf(codeGenerator)
+    ) {
+      val parentComponentInterface1 = subcomponentInterface1
+        .anvilComponent(componentInterface)
+        .parentComponentInterface
+      val parentComponentInterface2 = subcomponentInterface2
+        .anvilComponent(componentInterface)
+        .parentComponentInterface
+
+      assertThat(componentInterface extends parentComponentInterface1).isTrue()
+      assertThat(componentInterface extends parentComponentInterface2).isTrue()
+    }
+  }
+
   // E.g. anvil.component.com.squareup.test.componentinterface.SubcomponentInterfaceA
   private fun Class<*>.anvilComponent(parent: Class<*>): Class<*> {
     val packageName = parent.packageName()
@@ -1593,4 +1674,10 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
   private val Result.componentInterface2: Class<*>
     get() = classLoader.loadClass("com.squareup.test.ComponentInterface2")
+
+  private val Result.subcomponentInterface1: Class<*>
+    get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface1")
+
+  private val Result.subcomponentInterface2: Class<*>
+    get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface2")
 }

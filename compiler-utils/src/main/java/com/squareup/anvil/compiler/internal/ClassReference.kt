@@ -8,7 +8,10 @@ import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -16,6 +19,7 @@ import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtEnumEntry
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 
 /**
  * Used to create a common type between [KtClassOrObject] class references and [ClassDescriptor]
@@ -133,6 +137,25 @@ public fun ClassReference.directSuperClassReferences(
   }
 }
 
+@ExperimentalAnvilApi
+public fun ClassReference.innerClasses(): Sequence<ClassReference> {
+  return when (this) {
+    is Descriptor ->
+      clazz.unsubstitutedMemberScope
+        .getContributedDescriptors(kindFilter = DescriptorKindFilter.CLASSIFIERS)
+        .asSequence()
+        .filterIsInstance<ClassDescriptor>()
+        .map { it.toClassReference() }
+    is Psi ->
+      generateSequence(clazz.declarations.filterIsInstance<KtClassOrObject>()) { classes ->
+        classes
+          .flatMap { it.declarations }
+          .filterIsInstance<KtClassOrObject>()
+          .ifEmpty { null }
+      }.flatten().map { it.toClassReference() }
+  }
+}
+
 /**
  * @param parameterName The name of the parameter to be found, not including any variance modifiers.
  * @return The 0-based index of a declared generic type.
@@ -192,7 +215,7 @@ public fun ClassReference.replaces(
         .findAnnotation(annotationFqName, module)
         ?.findAnnotationArgument<KtCollectionLiteralExpression>(name = "replaces", index = index)
         ?.toFqNames(module)
-        ?.mapNotNull { it.toClassReference(module) }
+        ?.map { it.toClassReference(module) }
   }.orEmpty()
 
 @ExperimentalAnvilApi
@@ -224,4 +247,49 @@ public fun ClassReference.asClassName(): ClassName = classId.asClassName()
 public fun ClassReference.isInterface(): Boolean = when (this) {
   is Descriptor -> clazz.kind == ClassKind.INTERFACE
   is Psi -> clazz.isInterface()
+}
+
+@ExperimentalAnvilApi
+public fun ClassReference.isAbstractClass(): Boolean = when (this) {
+  is Descriptor -> clazz.modality == ABSTRACT
+  is Psi -> clazz.hasModifier(ABSTRACT_KEYWORD)
+}
+
+@ExperimentalAnvilApi
+public fun ClassReference.annotations(module: ModuleDescriptor): List<AnnotationReference> =
+  when (this) {
+    is Psi -> clazz.annotationEntries.map { it.toAnnotationReference(module) }
+    is Descriptor -> clazz.annotations.map { it.toAnnotationReference() }
+  }
+
+@ExperimentalAnvilApi
+public fun ClassReference.functions(): List<FunctionReference> =
+  when (this) {
+    is Psi ->
+      clazz
+        .functions(includeCompanionObjects = false)
+        .map { it.toFunctionReference(clazz) }
+    is Descriptor ->
+      clazz.unsubstitutedMemberScope
+        .getContributedDescriptors(kindFilter = DescriptorKindFilter.FUNCTIONS)
+        .filterIsInstance<FunctionDescriptor>()
+        .map { it.toFunctionReference() }
+  }
+
+@ExperimentalAnvilApi
+public fun AnvilCompilationExceptionClassReference(
+  classReference: ClassReference,
+  message: String,
+  cause: Throwable? = null
+): AnvilCompilationException = when (classReference) {
+  is Psi -> AnvilCompilationException(
+    element = classReference.clazz,
+    message = message,
+    cause = cause
+  )
+  is Descriptor -> AnvilCompilationException(
+    classDescriptor = classReference.clazz,
+    message = message,
+    cause = cause
+  )
 }
