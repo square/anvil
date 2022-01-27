@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtEnumEntry
 import org.jetbrains.kotlin.psi.KtFunction
@@ -864,3 +865,10 @@ public fun KtTypeReference.requireContainingClassReference(): ClassReference {
       element = this
     )
 }
+
+@ExperimentalAnvilApi
+public fun KtCollectionLiteralExpression.toFqNames(
+  module: ModuleDescriptor
+): List<FqName> = children
+  .filterIsInstance<KtClassLiteralExpression>()
+  .map { it.requireFqName(module) }

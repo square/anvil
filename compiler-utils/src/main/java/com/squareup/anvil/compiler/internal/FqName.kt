@@ -1,5 +1,9 @@
 package com.squareup.anvil.compiler.internal
 
+import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.annotations.ContributesMultibinding
+import com.squareup.anvil.annotations.ContributesSubcomponent
+import com.squareup.anvil.annotations.ContributesTo
 import dagger.Lazy
 import dagger.MapKey
 import dagger.Provides
@@ -15,3 +19,8 @@ internal val daggerProvidesFqName = Provides::class.fqName
 internal val daggerLazyFqName = Lazy::class.fqName
 internal val daggerScopeFqName = Scope::class.fqName
 internal val injectFqName = Inject::class.fqName
+
+internal val contributesToFqName = ContributesTo::class.fqName
+internal val contributesBindingFqName = ContributesBinding::class.fqName
+internal val contributesMultibindingFqName = ContributesMultibinding::class.fqName
+internal val contributesSubcomponentFqName = ContributesSubcomponent::class.fqName

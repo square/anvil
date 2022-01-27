@@ -12,7 +12,9 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtEnumEntry
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 /**
@@ -20,7 +22,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
  * references, to streamline parsing.
  *
  * @see allSuperTypeClassReferences
- * @see requireClassReference
+ * @see toClassReference
  */
 @ExperimentalAnvilApi
 public sealed class ClassReference {
@@ -60,17 +62,6 @@ public sealed class ClassReference {
   }
 }
 
-/**
- * Attempts to resolve the [fqName] to a [ClassDescriptor] first, then falls back to a
- * [KtClassOrObject] if the descriptor resolution fails. This will happen if the code being parsed
- * was generated as part of the compilation round for this module.
- */
-@ExperimentalAnvilApi
-public fun ModuleDescriptor.classReferenceOrNull(fqName: FqName): ClassReference? {
-  return fqName.classDescriptorOrNull(this)?.toClassReference()
-    ?: getKtClassOrObjectOrNull(fqName)?.toClassReference()
-}
-
 @ExperimentalAnvilApi
 public fun ClassDescriptor.toClassReference(): Descriptor {
   return Descriptor(this, this.requireClassId())
@@ -81,10 +72,21 @@ public fun KtClassOrObject.toClassReference(): Psi {
   return Psi(this, toClassId())
 }
 
+/**
+ * Attempts to resolve the [fqName] to a [ClassDescriptor] first, then falls back to a
+ * [KtClassOrObject] if the descriptor resolution fails. This will happen if the code being parsed
+ * was generated as part of the compilation round for this module.
+ */
 @ExperimentalAnvilApi
-public fun ModuleDescriptor.requireClassReference(fqName: FqName): ClassReference {
-  return classReferenceOrNull(fqName)
-    ?: throw AnvilCompilationException("Couldn't resolve ClassReference for $fqName")
+public fun FqName.toClassReferenceOrNull(module: ModuleDescriptor): ClassReference? {
+  return classDescriptorOrNull(module)?.toClassReference()
+    ?: module.getKtClassOrObjectOrNull(this)?.toClassReference()
+}
+
+@ExperimentalAnvilApi
+public fun FqName.toClassReference(module: ModuleDescriptor): ClassReference {
+  return toClassReferenceOrNull(module)
+    ?: throw AnvilCompilationException("Couldn't resolve ClassReference for $this.")
 }
 
 /**
@@ -120,14 +122,13 @@ public fun ClassReference.directSuperClassReferences(
   return when (this) {
     is Descriptor -> clazz.directSuperClassAndInterfaces()
       .asSequence()
-      .map { module.requireClassReference(it.fqNameSafe) }
+      .map { it.fqNameSafe.toClassReference(module) }
     is Psi -> if (clazz is KtEnumEntry) {
       emptySequence()
     } else {
       clazz.superTypeListEntries
         .asSequence()
-        .map { it.requireFqName(module) }
-        .map { module.requireClassReference(it) }
+        .map { it.requireFqName(module).toClassReference(module) }
     }
   }
 }
@@ -160,6 +161,39 @@ public fun ClassReference.scopeOrNull(
     is Psi -> clazz.scopeOrNull(annotationFqName, module)
   }
 }
+
+private fun replacesIndex(annotationFqName: FqName): Int {
+  return when (annotationFqName) {
+    contributesToFqName -> 1
+    contributesBindingFqName, contributesMultibindingFqName -> 2
+    else -> throw NotImplementedError(
+      "Couldn't find index of replaces argument for $annotationFqName."
+    )
+  }
+}
+
+@ExperimentalAnvilApi
+public fun ClassReference.replaces(
+  module: ModuleDescriptor,
+  annotationFqName: FqName,
+  index: Int = replacesIndex(annotationFqName)
+): List<ClassReference> =
+  when (this) {
+    is Descriptor -> {
+      val replacesValue = clazz.annotationOrNull(annotationFqName)
+        ?.getAnnotationValue("replaces") as? ArrayValue
+
+      replacesValue
+        ?.value
+        ?.map { it.argumentType(module).requireClassDescriptor().toClassReference() }
+    }
+    is Psi ->
+      clazz
+        .findAnnotation(annotationFqName, module)
+        ?.findAnnotationArgument<KtCollectionLiteralExpression>(name = "replaces", index = index)
+        ?.toFqNames(module)
+        ?.mapNotNull { it.toClassReference(module) }
+  }.orEmpty()
 
 @ExperimentalAnvilApi
 public fun ClassReference.qualifiers(

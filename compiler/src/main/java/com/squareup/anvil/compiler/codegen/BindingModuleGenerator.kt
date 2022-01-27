@@ -17,8 +17,6 @@ import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
-import com.squareup.anvil.compiler.internal.ClassReference.Descriptor
-import com.squareup.anvil.compiler.internal.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
@@ -28,7 +26,7 @@ import com.squareup.anvil.compiler.internal.decapitalize
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.anvil.compiler.internal.requireClassReference
+import com.squareup.anvil.compiler.internal.replaces
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
@@ -37,7 +35,6 @@ import com.squareup.anvil.compiler.internal.toClassReference
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
-import com.squareup.anvil.compiler.replaces
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -173,7 +170,9 @@ internal class BindingModuleGenerator(
         .filter { it.scope(contributesToFqName, module) == scope }
         // Ignore replaced bindings specified by excluded modules for this scope.
         .filter { it.fqName !in excludedNames }
-        .flatMap { it.replaces(contributesToFqName, module) }
+        .flatMap { clazz ->
+          clazz.toClassReference().replaces(module, contributesToFqName).map { it.fqName }
+        }
         .plus(
           classScanner
             .findContributedClasses(
@@ -186,11 +185,9 @@ internal class BindingModuleGenerator(
             // Ignore replaced bindings specified by excluded modules for this scope.
             .filter { it.fqNameSafe !in excludedNames }
             .flatMap {
-              it.annotationOrNull(contributesToFqName, scope)
-                ?.replaces(module)
-                ?: emptyList()
+              it.toClassReference().replaces(module, contributesToFqName)
             }
-            .map { it.fqNameSafe }
+            .map { it.fqName }
         )
         .toList()
 
@@ -213,19 +210,12 @@ internal class BindingModuleGenerator(
         ).map { it.toClassReference() }
 
         val allContributedClasses = collectedClasses
-          .map { name -> module.requireClassReference(name) }
+          .map { name -> name.toClassReference(module) }
           .plus(contributedBindingsDependencies)
 
         val replacedBindings = allContributedClasses
           .flatMap { classReference ->
-
-            when (classReference) {
-              is Descriptor -> classReference.clazz.annotationOrNull(annotationFqName, scope)
-                ?.replaces(module)
-                ?.map { it.fqNameSafe }
-              is Psi -> classReference.clazz.replaces(annotationFqName, module)
-            }
-              .orEmpty()
+            classReference.replaces(module, annotationFqName).map { it.fqName }
           }
 
         return allContributedClasses

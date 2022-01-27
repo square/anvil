@@ -9,6 +9,9 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.compiler.internal.ClassReference
+import com.squareup.anvil.compiler.internal.ClassReference.Descriptor
+import com.squareup.anvil.compiler.internal.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.getAnnotationValue
@@ -27,7 +30,6 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
@@ -93,13 +95,6 @@ internal fun AnnotationDescriptor.boundTypeOrNull(module: ModuleDescriptor): Cla
     ?.requireClassDescriptor()
 }
 
-internal fun AnnotationDescriptor.replaces(module: ModuleDescriptor): List<ClassDescriptor> {
-  return (getAnnotationValue("replaces") as? ArrayValue)
-    ?.value
-    ?.map { it.argumentType(module).requireClassDescriptor() }
-    ?: emptyList()
-}
-
 internal fun AnnotationDescriptor.priority(): ContributesBinding.Priority {
   val enumValue = getAnnotationValue("priority") as? EnumValue ?: return NORMAL
   return ContributesBinding.Priority.valueOf(enumValue.enumEntryName.asString())
@@ -112,3 +107,9 @@ internal fun AnnotationDescriptor.ignoreQualifier(): Boolean {
 internal fun AnnotationDescriptor.isMapKey(): Boolean {
   return annotationClass?.annotations?.hasAnnotation(mapKeyFqName) ?: false
 }
+
+internal fun ClassReference.requireClassDescriptor(module: ModuleDescriptor): ClassDescriptor =
+  when (this) {
+    is Descriptor -> clazz
+    is Psi -> fqName.requireClassDescriptor(module)
+  }

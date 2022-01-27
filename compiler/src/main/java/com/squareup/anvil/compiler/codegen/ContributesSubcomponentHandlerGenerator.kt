@@ -35,6 +35,7 @@ import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.toClassId
 import com.squareup.anvil.compiler.internal.toClassReference
+import com.squareup.anvil.compiler.internal.toFqNames
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeInterfacesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
