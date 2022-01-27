@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
+import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
@@ -23,6 +24,9 @@ import java.util.ServiceLoader
  */
 @AutoService(ComponentRegistrar::class)
 class AnvilComponentRegistrar : ComponentRegistrar {
+
+  private val manuallyAddedCodeGenerators = mutableListOf<CodeGenerator>()
+
   override fun registerProjectComponents(
     project: MockProject,
     configuration: CompilerConfiguration
@@ -39,6 +43,7 @@ class AnvilComponentRegistrar : ComponentRegistrar {
       disableComponentMerging
     )
     val codeGenerators = loadCodeGenerators()
+      .plus(manuallyAddedCodeGenerators)
       .filter { it.isApplicable(context) }
       .toMutableList()
 
@@ -93,5 +98,11 @@ class AnvilComponentRegistrar : ComponentRegistrar {
   private fun loadCodeGenerators(): List<CodeGenerator> {
     return ServiceLoader.load(CodeGenerator::class.java, CodeGenerator::class.java.classLoader)
       .toList()
+  }
+
+  // This function is used in tests. It must be called before the test code is being compiled.
+  @ExperimentalAnvilApi
+  fun addCodeGenerators(codeGenerators: List<CodeGenerator>) {
+    manuallyAddedCodeGenerators += codeGenerators
   }
 }

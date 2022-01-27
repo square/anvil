@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler.internal.testing
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
+import com.squareup.anvil.compiler.api.CodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import com.tschuchort.compiletesting.PluginOption
@@ -36,11 +37,14 @@ public class AnvilCompilation internal constructor(
     generateDaggerFactoriesOnly: Boolean = false,
     disableComponentMerging: Boolean = false,
     enableExperimentalAnvilApis: Boolean = true,
+    codeGenerators: List<CodeGenerator> = emptyList(),
   ) = apply {
     checkNotCompiled()
     anvilConfigured = true
     kotlinCompilation.apply {
-      compilerPlugins = listOf(AnvilComponentRegistrar())
+      compilerPlugins = listOf(
+        AnvilComponentRegistrar().also { it.addCodeGenerators(codeGenerators) }
+      )
       if (enableDaggerAnnotationProcessor) {
         annotationProcessors = listOf(ComponentProcessor())
       }
@@ -225,6 +229,7 @@ public fun compileAnvil(
   workingDir: File? = null,
   enableExperimentalAnvilApis: Boolean = true,
   previousCompilationResult: Result? = null,
+  codeGenerators: List<CodeGenerator> = emptyList(),
   block: Result.() -> Unit = { }
 ): Result {
   return AnvilCompilation()
@@ -247,6 +252,7 @@ public fun compileAnvil(
       generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
       disableComponentMerging = disableComponentMerging,
       enableExperimentalAnvilApis = enableExperimentalAnvilApis,
+      codeGenerators = codeGenerators,
     )
     .useIR(useIR)
     .compile(*sources)
