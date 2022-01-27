@@ -71,7 +71,6 @@ import kotlin.reflect.KClass
  */
 @Target(CLASS)
 @Retention(RUNTIME)
-@ExperimentalAnvilApi
 public annotation class ContributesSubcomponent(
   /**
    * The scope used to find all contributed bindings, multibindings, modules and component
