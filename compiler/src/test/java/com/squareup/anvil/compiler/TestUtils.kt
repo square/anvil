@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler
 import com.google.common.truth.ComparableSubject
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
+import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
@@ -19,6 +20,7 @@ internal fun compile(
   @Language("kotlin") vararg sources: String,
   previousCompilationResult: Result? = null,
   enableDaggerAnnotationProcessor: Boolean = false,
+  codeGenerators: List<CodeGenerator> = emptyList(),
   block: Result.() -> Unit = { }
 ): Result = compileAnvil(
   sources = sources,
@@ -26,6 +28,7 @@ internal fun compile(
   allWarningsAsErrors = WARNINGS_AS_ERRORS,
   previousCompilationResult = previousCompilationResult,
   enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+  codeGenerators = codeGenerators,
   block = block
 )
 
