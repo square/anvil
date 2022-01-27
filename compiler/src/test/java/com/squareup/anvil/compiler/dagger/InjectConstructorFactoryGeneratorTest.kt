@@ -566,6 +566,29 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
+  @Test fun `a factory class is generated for an inject constructor with star imports - 2`() {
+    compile(
+      """
+        package a
+  
+        class A {
+          abstract class AA
+        }
+      """,
+      """
+        package b
+
+        import a.A
+        import a.A.*
+        import javax.inject.Inject
+        
+        public class B @Inject constructor(): A.AA()
+      """
+    ) {
+      assertThat(classLoader.loadClass("b.B").factoryClass()).isNotNull()
+    }
+  }
+
   @Test fun `a factory class is generated for an inject constructor with generic arguments`() {
     /*
 package com.squareup.test;

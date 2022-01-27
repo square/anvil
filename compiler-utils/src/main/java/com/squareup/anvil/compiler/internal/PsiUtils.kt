@@ -392,7 +392,10 @@ public fun PsiElement.requireFqName(
           return FqName("${matchingImportPaths[0].fqName.parent()}.$classReference")
         matchingImportPaths.size > 1 ->
           return matchingImportPaths.first { importPath ->
-            module.canResolveFqName(importPath.fqName, classReference)
+            // Note that we must use the parent of the import FqName. An import is `com.abc.A` and
+            // the classReference `A.Inner`, so we must try to resolve `com.abc.A.Inner` and not
+            // `com.abc.A.A.Inner`.
+            module.canResolveFqName(importPath.fqName.parent(), classReference)
           }.fqName
       }
     }
