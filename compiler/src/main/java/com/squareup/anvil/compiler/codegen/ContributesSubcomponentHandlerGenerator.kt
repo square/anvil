@@ -92,7 +92,8 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private val triggers = mutableListOf<Trigger>()
   private val contributions = mutableSetOf<Contribution>()
-  private val replacedContributions = mutableSetOf<ClassReference>()
+  private val replacedReferences = mutableSetOf<ClassReference>()
+  private val generatedContributions = mutableSetOf<Contribution>()
 
   private var isFirstRound = true
 
@@ -108,45 +109,7 @@ internal class ContributesSubcomponentHandlerGenerator(
   ): Collection<GeneratedFile> {
     if (isFirstRound) {
       isFirstRound = false
-
-      // Find all contributed subcomponents from precompiled dependencies and generate the
-      // necessary code eventually if there's a trigger.
-      contributions += classScanner
-        .findContributedClasses(
-          module = module,
-          packageName = HINT_SUBCOMPONENTS_PACKAGE_PREFIX,
-          annotation = contributesSubcomponentFqName,
-          // Don't use trigger.scope, because it refers to the parent scope of the
-          // @ContributesSubcomponent annotation.
-          scope = null
-        )
-        .map { descriptor ->
-          val annotation = descriptor.annotation(contributesSubcomponentFqName)
-
-          val modules = (annotation.getAnnotationValue("modules") as? ArrayValue)
-            ?.value
-            ?.map { it.argumentType(module).fqName() }
-            ?: emptyList()
-
-          val exclude = (annotation.getAnnotationValue("exclude") as? ArrayValue)
-            ?.value
-            ?.map { it.argumentType(module).fqName() }
-            ?: emptyList()
-
-          Contribution(
-            classReference = descriptor.toClassReference(),
-            scope = annotation.scope(module).fqNameSafe,
-            parentScope = annotation.parentScope(module).fqNameSafe,
-            modules = modules,
-            exclude = exclude
-          )
-        }
-
-      // Find all replaced subcomponents from precompiled dependencies.
-      replacedContributions += contributions
-        .flatMap {
-          it.classReference.replaces(module, contributesSubcomponentFqName)
-        }
+      populateInitialContributions(module)
     }
 
     // Find new @MergeComponent (and similar triggers) that would cause generating new code.
@@ -191,14 +154,17 @@ internal class ContributesSubcomponentHandlerGenerator(
       .toList()
       .also { contributions ->
         // Find all replaced subcomponents and remember them.
-        replacedContributions += contributions.flatMap {
-          it.classReference.replaces(module, contributesSubcomponentFqName)
+        replacedReferences += contributions.flatMap { contribution ->
+          contribution.classReference.replaces(module, contributesSubcomponentFqName)
+            .also {
+              checkReplacedSubcomponentWasNotAlreadyGenerated(contribution.classReference, it)
+            }
         }
       }
 
     // Remove any contribution, if it was replaced by another contribution.
     contributions.removeAll { contribution ->
-      contribution.classReference in replacedContributions
+      contribution.classReference in replacedReferences
     }
 
     val newContributions = contributions
@@ -211,6 +177,9 @@ internal class ContributesSubcomponentHandlerGenerator(
           .map { trigger ->
             GenerateCodeEvent(trigger, contribution)
           }
+      }
+      .also {
+        generatedContributions += it.map { generateCodeEvent -> generateCodeEvent.contribution }
       }
 
     contributions -= newContributions.mapTo(mutableSetOf()) { it.contribution }
@@ -456,6 +425,63 @@ internal class ContributesSubcomponentHandlerGenerator(
         .createNestedClassId(Name.identifier(SUBCOMPONENT_FACTORY))
         .asClassName()
     )
+  }
+
+  private fun checkReplacedSubcomponentWasNotAlreadyGenerated(
+    contributedReference: ClassReference,
+    replacedReferences: List<ClassReference>
+  ) {
+    replacedReferences.forEach { replacedReference ->
+      if (generatedContributions.any { it.classReference == replacedReference }) {
+        throw AnvilCompilationExceptionClassReference(
+          classReference = contributedReference,
+          message = "${contributedReference.fqName} tries to replace " +
+            "${replacedReference.fqName}, but the code for ${replacedReference.fqName} was " +
+            "already generated. This is not supported."
+        )
+      }
+    }
+  }
+
+  private fun populateInitialContributions(
+    module: ModuleDescriptor
+  ) {
+    // Find all contributed subcomponents from precompiled dependencies and generate the
+    // necessary code eventually if there's a trigger.
+    contributions += classScanner
+      .findContributedClasses(
+        module = module,
+        packageName = HINT_SUBCOMPONENTS_PACKAGE_PREFIX,
+        annotation = contributesSubcomponentFqName,
+        scope = null
+      )
+      .map { descriptor ->
+        val annotation = descriptor.annotation(contributesSubcomponentFqName)
+
+        val modules = (annotation.getAnnotationValue("modules") as? ArrayValue)
+          ?.value
+          ?.map { it.argumentType(module).fqName() }
+          ?: emptyList()
+
+        val exclude = (annotation.getAnnotationValue("exclude") as? ArrayValue)
+          ?.value
+          ?.map { it.argumentType(module).fqName() }
+          ?: emptyList()
+
+        Contribution(
+          classReference = descriptor.toClassReference(),
+          scope = annotation.scope(module).fqNameSafe,
+          parentScope = annotation.parentScope(module).fqNameSafe,
+          modules = modules,
+          exclude = exclude
+        )
+      }
+
+    // Find all replaced subcomponents from precompiled dependencies.
+    replacedReferences += contributions
+      .flatMap {
+        it.classReference.replaces(module, contributesSubcomponentFqName)
+      }
   }
 
   private companion object {
