@@ -1628,6 +1628,151 @@ class ContributesSubcomponentHandlerGeneratorTest {
     }
   }
 
+  @Test fun `a contributed subcomponent can be replaced`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.MergeComponent
+  
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Unit::class
+        )
+        interface SubcomponentInterface1
+  
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Unit::class,
+          replaces = [SubcomponentInterface1::class]
+        )
+        interface SubcomponentInterface2
+  
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """
+    ) {
+      val parentComponentInterface2 = subcomponentInterface2
+        .anvilComponent(componentInterface)
+        .parentComponentInterface
+
+      assertThat(componentInterface extends parentComponentInterface2).isTrue()
+
+      assertFailsWith<ClassNotFoundException> {
+        subcomponentInterface1.anvilComponent(componentInterface)
+      }
+    }
+  }
+
+  @Test
+  fun `a replaced subcomponent's exclusions for Dagger modules, component interfaces and bindings are ignored`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.Module
+
+        @Module
+        @ContributesTo(Any::class)
+        object DaggerModule1
+
+        @ContributesTo(Any::class)
+        interface ContributingInterface
+  
+        @ContributesBinding(Any::class)
+        interface SecondContributingInterface : CharSequence
+  
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Unit::class,
+          exclude = [
+            DaggerModule1::class, 
+            ContributingInterface::class, 
+            SecondContributingInterface::class
+          ]
+        )
+        interface SubcomponentInterface1
+        
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Unit::class,
+          replaces = [SubcomponentInterface1::class]
+        )
+        interface SubcomponentInterface2
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """
+    ) {
+      val annotation = subcomponentInterface2.anvilComponent(componentInterface)
+        .getAnnotation(MergeSubcomponent::class.java)
+
+      assertThat(annotation.exclude).isEmpty()
+    }
+  }
+
+  @Test
+  fun `a subcomponent can replace another subcomponent with a different parent scope`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.MergeComponent
+  
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Long::class
+        )
+        interface SubcomponentInterface1
+  
+        @ContributesSubcomponent(
+          scope = Long::class, 
+          parentScope = Unit::class
+        )
+        interface SubcomponentInterface2
+  
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Unit::class,
+          replaces = [SubcomponentInterface1::class]
+        )
+        interface SubcomponentInterface3
+  
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """
+    ) {
+      val parentComponentInterface2 = subcomponentInterface2
+        .anvilComponent(componentInterface)
+        .parentComponentInterface
+
+      val parentComponentInterface3 = subcomponentInterface3
+        .anvilComponent(componentInterface)
+        .parentComponentInterface
+
+      assertThat(componentInterface extends parentComponentInterface2).isTrue()
+      assertThat(componentInterface extends parentComponentInterface3).isTrue()
+
+      assertFailsWith<ClassNotFoundException> {
+        subcomponentInterface1.anvilComponent(componentInterface)
+      }
+
+      // It does not contain the parent interface for subcomponentInterface1.
+      assertThat(
+        subcomponentInterface2
+          .anvilComponent(componentInterface)
+          .interfaces
+          .toList()
+      ).containsExactly(subcomponentInterface2)
+    }
+  }
+
   // E.g. anvil.component.com.squareup.test.componentinterface.SubcomponentInterfaceA
   private fun Class<*>.anvilComponent(parent: Class<*>): Class<*> {
     val packageName = parent.packageName()
@@ -1680,4 +1825,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
   private val Result.subcomponentInterface2: Class<*>
     get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface2")
+
+  private val Result.subcomponentInterface3: Class<*>
+    get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface3")
 }

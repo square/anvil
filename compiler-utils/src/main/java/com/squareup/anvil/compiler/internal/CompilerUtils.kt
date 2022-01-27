@@ -108,13 +108,17 @@ public fun AnnotationDescriptor.getAnnotationValue(key: String): ConstantValue<*
 
 @ExperimentalAnvilApi
 public fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescriptor {
-  val annotationValue = getAnnotationValue("scope") as? KClassValue
+  return scopeOrNull(module)
     ?: throw AnvilCompilationException(
       annotationDescriptor = this,
       message = "Couldn't find scope for $fqName."
     )
+}
 
-  return annotationValue.argumentType(module).requireClassDescriptor()
+@ExperimentalAnvilApi
+public fun AnnotationDescriptor.scopeOrNull(module: ModuleDescriptor): ClassDescriptor? {
+  val annotationValue = getAnnotationValue("scope") as? KClassValue
+  return annotationValue?.argumentType(module)?.requireClassDescriptor()
 }
 
 @ExperimentalAnvilApi

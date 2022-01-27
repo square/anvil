@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.hintSubcomponent
 import com.squareup.anvil.compiler.hintSubcomponentParentScope
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.subcomponentInterface
+import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.junit.Test
 import java.io.File
 
@@ -463,6 +464,72 @@ class ContributesSubcomponentGeneratorTest {
     }
   }
 
+  @Test fun `a contributed subcomponent can be configured to replace another subcomponent`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesSubcomponent
+
+      @ContributesSubcomponent(
+        scope = Any::class, 
+        parentScope = Unit::class
+      )
+      interface SubcomponentInterface1
+
+      @ContributesSubcomponent(
+        scope = Any::class, 
+        parentScope = Int::class,
+        replaces = [SubcomponentInterface1::class]
+      )
+      interface SubcomponentInterface2
+      """
+    ) {
+      assertThat(subcomponentInterface1.hintSubcomponent?.java).isEqualTo(subcomponentInterface1)
+      assertThat(subcomponentInterface1.hintSubcomponentParentScope).isEqualTo(Unit::class)
+
+      assertThat(subcomponentInterface2.hintSubcomponent?.java).isEqualTo(subcomponentInterface2)
+      assertThat(subcomponentInterface2.hintSubcomponentParentScope).isEqualTo(Int::class)
+    }
+  }
+
+  @Test fun `a replaced subcomponent must use the same scope`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesSubcomponent
+
+      @ContributesSubcomponent(
+        scope = Long::class, 
+        parentScope = Unit::class
+      )
+      interface SubcomponentInterface1
+
+      @ContributesSubcomponent(
+        scope = Any::class, 
+        parentScope = Int::class,
+        replaces = [SubcomponentInterface1::class]
+      )
+      interface SubcomponentInterface2
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("Source0.kt: (11, 1)")
+      assertThat(messages).contains(
+        "com.squareup.test.SubcomponentInterface2 with scope kotlin.Any wants to replace " +
+          "com.squareup.test.SubcomponentInterface1 with scope kotlin.Long. The replacement " +
+          "must use the same scope."
+      )
+    }
+  }
+
   private val Class<*>.parentComponentInterface: Class<*>
     get() = classLoader.loadClass("$canonicalName\$AnyParentComponent")
+
+  private val Result.subcomponentInterface1: Class<*>
+    get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface1")
+
+  private val Result.subcomponentInterface2: Class<*>
+    get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface2")
 }

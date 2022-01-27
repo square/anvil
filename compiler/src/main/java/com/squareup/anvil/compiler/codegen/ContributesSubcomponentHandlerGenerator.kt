@@ -37,6 +37,8 @@ import com.squareup.anvil.compiler.internal.isAbstractClass
 import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.isPublic
 import com.squareup.anvil.compiler.internal.parentScope
+import com.squareup.anvil.compiler.internal.replaces
+import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.returnType
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
@@ -89,7 +91,10 @@ internal class ContributesSubcomponentHandlerGenerator(
 ) : CodeGenerator {
 
   private val triggers = mutableListOf<Trigger>()
-  private val contributions = mutableListOf<Contribution>()
+  private val contributions = mutableSetOf<Contribution>()
+  private val replacedContributions = mutableSetOf<ClassReference>()
+
+  private var isFirstRound = true
 
   override fun isApplicable(context: AnvilContext): Boolean =
     throw NotImplementedError(
@@ -101,9 +106,51 @@ internal class ContributesSubcomponentHandlerGenerator(
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>
   ): Collection<GeneratedFile> {
+    if (isFirstRound) {
+      isFirstRound = false
+
+      // Find all contributed subcomponents from precompiled dependencies and generate the
+      // necessary code eventually if there's a trigger.
+      contributions += classScanner
+        .findContributedClasses(
+          module = module,
+          packageName = HINT_SUBCOMPONENTS_PACKAGE_PREFIX,
+          annotation = contributesSubcomponentFqName,
+          // Don't use trigger.scope, because it refers to the parent scope of the
+          // @ContributesSubcomponent annotation.
+          scope = null
+        )
+        .map { descriptor ->
+          val annotation = descriptor.annotation(contributesSubcomponentFqName)
+
+          val modules = (annotation.getAnnotationValue("modules") as? ArrayValue)
+            ?.value
+            ?.map { it.argumentType(module).fqName() }
+            ?: emptyList()
+
+          val exclude = (annotation.getAnnotationValue("exclude") as? ArrayValue)
+            ?.value
+            ?.map { it.argumentType(module).fqName() }
+            ?: emptyList()
+
+          Contribution(
+            classReference = descriptor.toClassReference(),
+            scope = annotation.scope(module).fqNameSafe,
+            parentScope = annotation.parentScope(module).fqNameSafe,
+            modules = modules,
+            exclude = exclude
+          )
+        }
+
+      // Find all replaced subcomponents from precompiled dependencies.
+      replacedContributions += contributions
+        .flatMap {
+          it.classReference.replaces(module, contributesSubcomponentFqName)
+        }
+    }
 
     // Find new @MergeComponent (and similar triggers) that would cause generating new code.
-    val newTriggers = projectFiles
+    triggers += projectFiles
       .classesAndInnerClass(module)
       .mapNotNull { clazz ->
         val annotation = generationTrigger.firstOrNull { trigger ->
@@ -114,51 +161,9 @@ internal class ContributesSubcomponentHandlerGenerator(
 
         Trigger(clazz, clazz.scope(annotation, module), exclusions)
       }
-      .also {
-        triggers += it
-      }
-
-    // If there is a new trigger, then find all contributed subcomponents from precompiled
-    // dependencies for this scope and generate the necessary code.
-    contributions += newTriggers
-      .flatMap { trigger ->
-        classScanner
-          .findContributedClasses(
-            module = module,
-            packageName = HINT_SUBCOMPONENTS_PACKAGE_PREFIX,
-            annotation = contributesSubcomponentFqName,
-            // Don't use trigger.scope, because it refers to the parent scope of the
-            // @ContributesSubcomponent annotation.
-            scope = null
-          )
-          .mapNotNull { descriptor ->
-            val annotation = descriptor.annotation(contributesSubcomponentFqName)
-
-            val parentScope = annotation.parentScope(module).fqNameSafe
-            if (parentScope != trigger.scope) return@mapNotNull null
-
-            val modules = (annotation.getAnnotationValue("modules") as? ArrayValue)
-              ?.value
-              ?.map { it.argumentType(module).fqName() }
-              ?: emptyList()
-
-            val exclude = (annotation.getAnnotationValue("exclude") as? ArrayValue)
-              ?.value
-              ?.map { it.argumentType(module).fqName() }
-              ?: emptyList()
-
-            Contribution(
-              classReference = descriptor.toClassReference(),
-              scope = annotation.scope(module).fqNameSafe,
-              parentScope = parentScope,
-              modules = modules,
-              exclude = exclude
-            )
-          }
-      }
 
     // Find new contributed subcomponents in this module. If there's a trigger for them, then we
-    // also need to generate code for them.
+    // also need to generate code for them later.
     contributions += projectFiles
       .classesAndInnerClass(module)
       .mapNotNull { clazz ->
@@ -183,6 +188,18 @@ internal class ContributesSubcomponentHandlerGenerator(
           exclude = exclude
         )
       }
+      .toList()
+      .also { contributions ->
+        // Find all replaced subcomponents and remember them.
+        replacedContributions += contributions.flatMap {
+          it.classReference.replaces(module, contributesSubcomponentFqName)
+        }
+      }
+
+    // Remove any contribution, if it was replaced by another contribution.
+    contributions.removeAll { contribution ->
+      contribution.classReference in replacedContributions
+    }
 
     val newContributions = contributions
       .flatMap { contribution ->
@@ -457,8 +474,28 @@ internal class ContributesSubcomponentHandlerGenerator(
     val scope: FqName,
     val exclusions: List<FqName>
   ) {
+    val clazzFqName = clazz.requireFqName()
+
     override fun toString(): String {
-      return "Trigger(clazz=$clazz, scope=$scope)"
+      return "Trigger(clazz=$clazzFqName, scope=$scope)"
+    }
+
+    override fun equals(other: Any?): Boolean {
+      if (this === other) return true
+      if (javaClass != other?.javaClass) return false
+
+      other as Trigger
+
+      if (scope != other.scope) return false
+      if (clazzFqName != other.clazzFqName) return false
+
+      return true
+    }
+
+    override fun hashCode(): Int {
+      var result = scope.hashCode()
+      result = 31 * result + clazzFqName.hashCode()
+      return result
     }
   }
 
@@ -472,7 +509,27 @@ internal class ContributesSubcomponentHandlerGenerator(
     val clazzFqName = classReference.fqName
 
     override fun toString(): String {
-      return "Contribution(class=$classReference, parentScope=$parentScope)"
+      return "Contribution(class=$classReference, scope=$scope, parentScope=$parentScope)"
+    }
+
+    override fun equals(other: Any?): Boolean {
+      if (this === other) return true
+      if (javaClass != other?.javaClass) return false
+
+      other as Contribution
+
+      if (scope != other.scope) return false
+      if (parentScope != other.parentScope) return false
+      if (clazzFqName != other.clazzFqName) return false
+
+      return true
+    }
+
+    override fun hashCode(): Int {
+      var result = scope.hashCode()
+      result = 31 * result + parentScope.hashCode()
+      result = 31 * result + clazzFqName.hashCode()
+      return result
     }
   }
 
