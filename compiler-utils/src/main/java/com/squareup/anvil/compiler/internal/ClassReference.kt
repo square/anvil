@@ -278,6 +278,7 @@ public fun ClassReference.functions(): List<FunctionReference> =
   }
 
 @ExperimentalAnvilApi
+@Suppress("FunctionName")
 public fun AnvilCompilationExceptionClassReference(
   classReference: ClassReference,
   message: String,
