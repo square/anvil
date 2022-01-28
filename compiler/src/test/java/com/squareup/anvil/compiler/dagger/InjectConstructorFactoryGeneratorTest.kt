@@ -675,6 +675,22 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
+  @Test fun `a factory class is generated for an inject constructor with a lambda as super type`() {
+    compile(
+      """
+        package com.squareup.test
+
+        import javax.inject.Inject
+  
+        class InjectClass @Inject constructor() : (Int) -> Unit {
+          override fun invoke(integer: Int) = Unit
+        }
+      """,
+    ) {
+      assertThat(injectClass.factoryClass()).isNotNull()
+    }
+  }
+
   @Test fun `a factory class is generated for an inject constructor inner class`() {
     /*
 package com.squareup.test;
