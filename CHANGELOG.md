@@ -1,5 +1,18 @@
 # Changelog
 
+## 2.3.11 (2022-01-28)
+
+* Promote `@ContributesSubcomponent` to stable, see #474.
+* Support replacing `@ContributesSubcomponent` through a new `replaces` attribute, see #466.
+* Avoid duplicate bindings when a `@ContributesSubcomponent` uses a factory and is used in multiple parent components, see #459.
+* Fix rare duplicate bindings error for the same type with incremental compilation, see #460.
+* Support member injection for super types from different modules, see #438, #439 and #442.
+* Support custom `CodeGenerator`s for `AnvilCompilation`. This makes it easier to unit-test specific scenarios, see #470. 
+* Detect duplicated generated files (helpful for custom `CodeGenerator`s), see #467.
+* Fix the import resolver for wildcard imports and inner classes, see #468.
+* **Attention:** This is the last release to simultaneously support Kotlin 1.5 and 1.6. The next release will only support Kotlin 1.5. 
+  * Use Anvil version `2.3.11-1-6-10` if you use Kotlin `1.6.10`. Until Anvil hasn't adopted Kotlin `1.6` I'll publish additional versions that are required due to compiler API incompatibilities.
+
 ## 2.3.10 (2021-11-24)
 
 * New experimental annotation [`@ContributesSubcomponent`](https://github.com/square/anvil/blob/main/annotations/src/main/java/com/squareup/anvil/annotations/ContributesSubcomponent.kt) to delay merging contributions until the parent component is created, see #160.
