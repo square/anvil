@@ -10,8 +10,8 @@
 * Support custom `CodeGenerator`s for `AnvilCompilation`. This makes it easier to unit-test specific scenarios, see #470. 
 * Detect duplicated generated files (helpful for custom `CodeGenerator`s), see #467.
 * Fix the import resolver for wildcard imports and inner classes, see #468.
-* **Attention:** This is the last release to simultaneously support Kotlin 1.5 and 1.6. The next release will only support Kotlin 1.5. 
-  * Use Anvil version `2.3.11-1-6-10` if you use Kotlin `1.6.10`. Until Anvil hasn't adopted Kotlin `1.6` I'll publish additional versions that are required due to compiler API incompatibilities.
+* Use Anvil version `2.3.11-1-6-10` if you use Kotlin `1.6.10`. Until Anvil hasn't adopted Kotlin `1.6` I'll publish additional versions that are required due to compiler API incompatibilities.
+  * **Attention:** This is the last release to simultaneously support Kotlin 1.5 and 1.6. The next release will only support Kotlin 1.6.
 
 ## 2.3.10 (2021-11-24)
 
