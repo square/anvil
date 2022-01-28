@@ -11,7 +11,7 @@ ext {
       project.getProperty('square.agpVersion') : '4.2.2'
 
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
-      project.getProperty('square.kotlinVersion') : '1.5.31'
+      project.getProperty('square.kotlinVersion') : '1.6.10'
 
   kotlinUseIR = (project.hasProperty('square.useIR') ?
       project.getProperty('square.useIR') : 'true').toBoolean()
@@ -20,7 +20,7 @@ ext {
       project.getProperty('square.generateDaggerFactoriesWithAnvil') : 'true').toBoolean()
 
   // TODO: Remove when we remove the old backend.
-  makeWarningsErrors = ci && (kotlinVersion.startsWith('1.5') || kotlinUseIR)
+  makeWarningsErrors = ci && kotlinUseIR
 
   ktlintVersion = "0.41.0"
 
@@ -70,7 +70,7 @@ ext {
           annotation_processing_embeddable: "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable:$kotlinVersion",
           compile_testing: "com.github.tschuchortdev:kotlin-compile-testing:1.4.5",
           compiler: "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion",
-          dokka: "org.jetbrains.dokka:dokka-gradle-plugin:1.5.31",
+          dokka: "org.jetbrains.dokka:dokka-gradle-plugin:1.6.10",
           gradle_plugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
           gradle_plugin_api: "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$kotlinVersion",
           metadata: "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.3.0",

@@ -92,11 +92,9 @@ subprojects {
     }
 
     // TODO: check if this is needed with newer Kotlin versions.
-    if (rootProject.ext.kotlinVersion.startsWith("1.6")) {
-      resolutionStrategy {
-        // Needed for Kotlin 1.6.
-        force deps.kotlin.metadata
-      }
+    resolutionStrategy {
+      // Needed for Kotlin 1.6.
+      force deps.kotlin.metadata
     }
   }
 
