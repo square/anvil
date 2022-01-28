@@ -361,6 +361,19 @@ public fun PsiElement.requireFqName(
       return element.requireFqName(module)
     }
     is KtSuperTypeListEntry -> return typeReference?.requireFqName(module) ?: failTypeHandling()
+    is KtFunctionType -> {
+      // KtFunctionType is a lambda. The compiler will translate lambdas to one of the function
+      // interfaces. More details are available here:
+      // https://github.com/JetBrains/kotlin/blob/master/spec-docs/function-types.md
+      val parameterCount = parameters.size
+      if (parameterCount !in 0..22) {
+        throw AnvilCompilationException(
+          element = this,
+          message = "Couldn't find function type for $parameterCount parameters."
+        )
+      }
+      return FqName("kotlin.jvm.functions.Function$parameterCount")
+    }
     else -> failTypeHandling()
   }
 
