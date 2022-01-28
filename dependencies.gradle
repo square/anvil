@@ -4,7 +4,7 @@ ext {
   ci = (System.getenv('CI') ?: 'false').toBoolean()
 
   autoServiceVersion = '1.0.1'
-  daggerVersion = '2.36'
+  daggerVersion = '2.39.1'
   espressoVersion = '3.2.0'
 
   agpVersion = project.hasProperty('square.agpVersion') ?
