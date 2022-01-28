@@ -68,7 +68,7 @@ ext {
 
       kotlin: [
           annotation_processing_embeddable: "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable:$kotlinVersion",
-          compile_testing: "com.github.tschuchortdev:kotlin-compile-testing:1.4.5",
+          compile_testing: "com.github.tschuchortdev:kotlin-compile-testing:1.4.7",
           compiler: "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion",
           dokka: "org.jetbrains.dokka:dokka-gradle-plugin:1.6.10",
           gradle_plugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
