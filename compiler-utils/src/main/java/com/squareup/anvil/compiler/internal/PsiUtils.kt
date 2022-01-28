@@ -167,8 +167,23 @@ public fun KtClassOrObject.scopeOrNull(
   module: ModuleDescriptor
 ): FqName? {
   return findAnnotation(annotationFqName, module)
-    ?.findAnnotationArgument<KtClassLiteralExpression>(name = "scope", index = 0)
+    ?.scopeOrNull(module)
+}
+
+public fun KtAnnotationEntry.scopeOrNull(
+  module: ModuleDescriptor
+): FqName? {
+  return findAnnotationArgument<KtClassLiteralExpression>(name = "scope", index = 0)
     ?.requireFqName(module)
+}
+
+public fun KtAnnotationEntry.scope(
+  module: ModuleDescriptor
+): FqName {
+  return scopeOrNull(module) ?: throw AnvilCompilationException(
+    "Couldn't find scope for ${fqNameOrNull(module)}.",
+    element = this
+  )
 }
 
 @ExperimentalAnvilApi

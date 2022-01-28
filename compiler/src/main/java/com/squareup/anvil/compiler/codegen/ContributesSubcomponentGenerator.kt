@@ -15,6 +15,8 @@ import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerSubcomponentBuilderFqName
 import com.squareup.anvil.compiler.daggerSubcomponentFactoryFqName
+import com.squareup.anvil.compiler.internal.ClassReference
+import com.squareup.anvil.compiler.internal.annotations
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classesAndInnerClass
@@ -23,9 +25,11 @@ import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.parentScope
+import com.squareup.anvil.compiler.internal.replaces
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
+import com.squareup.anvil.compiler.internal.toClassReference
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -77,6 +81,14 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
             element = clazz.identifyingElement
           )
         }
+
+        val scope = clazz.scope(contributesSubcomponentFqName, module)
+
+        clazz.toClassReference()
+          .replaces(module, contributesSubcomponentFqName)
+          .onEach {
+            it.checkUsesSameScope(scope, clazz, module)
+          }
       }
       .map { clazz ->
         val fileName = clazz.generateClassName()
@@ -226,6 +238,31 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
           "subcomponent $fqName."
       )
     }
+  }
+
+  private fun ClassReference.checkUsesSameScope(
+    scope: FqName,
+    subcomponent: KtClassOrObject,
+    module: ModuleDescriptor
+  ) {
+    annotations(module)
+      .filter { it.fqName == contributesSubcomponentFqName }
+      .ifEmpty {
+        throw AnvilCompilationException(
+          element = subcomponent,
+          message = "Couldn't find the annotation @ContributesSubcomponent for $fqName."
+        )
+      }
+      .forEach { annotation ->
+        val otherScope = annotation.scope(module).fqName
+        if (otherScope != scope) {
+          throw AnvilCompilationException(
+            element = subcomponent,
+            message = "${subcomponent.requireFqName()} with scope $scope wants to replace " +
+              "$fqName with scope $otherScope. The replacement must use the same scope."
+          )
+        }
+      }
   }
 
   private val KtClassOrObject.childrenInBody: List<PsiElement>

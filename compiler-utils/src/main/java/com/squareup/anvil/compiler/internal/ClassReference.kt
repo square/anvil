@@ -189,6 +189,7 @@ private fun replacesIndex(annotationFqName: FqName): Int {
   return when (annotationFqName) {
     contributesToFqName -> 1
     contributesBindingFqName, contributesMultibindingFqName -> 2
+    contributesSubcomponentFqName -> 4
     else -> throw NotImplementedError(
       "Couldn't find index of replaces argument for $annotationFqName."
     )

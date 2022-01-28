@@ -93,7 +93,12 @@ public annotation class ContributesSubcomponent(
    * List of bindings, multibindings, modules and component interfaces that are contributed to the
    * same scope, but should be excluded from the subcomponent.
    */
-  val exclude: Array<KClass<*>> = []
+  val exclude: Array<KClass<*>> = [],
+  /**
+   * This contributed subcomponent will replace these contributed subcomponents. All replaced
+   * subcomponents must use the same scope.
+   */
+  val replaces: Array<KClass<*>> = []
 ) {
   /**
    * A factory for a contributed subcomponent.
