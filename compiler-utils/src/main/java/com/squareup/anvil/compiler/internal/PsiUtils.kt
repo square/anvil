@@ -41,9 +41,9 @@ import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.KtValueArgumentName
+import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
-import org.jetbrains.kotlin.psi.psiUtil.isTopLevelKtOrJavaMember
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.types.DefinitelyNotNullType
@@ -454,13 +454,11 @@ public fun PsiElement.requireFqName(
     ?.let { return it }
 
   // If the referenced type is declared within the same scope, it doesn't need to be imported.
-  declarationsWithinScope()
-    // Top-level declarations are already handled by "$packageName.$classReference", so skip those.
-    .filterNot { it.isTopLevelKtOrJavaMember() }
-    .mapNotNull { it.fqName }
-    .filter { it.asString().endsWith(classReference) }
-    .firstNotNullOfOrNull { module.resolveFqNameOrNull(it) }
-    ?.let { return it }
+  parents
+    .filterIsInstance<KtClassOrObject>()
+    .flatMap { it.collectDescendantsOfType<KtClassOrObject>() }
+    .firstOrNull { it.nameAsSafeName.asString() == classReference }
+    ?.let { return it.requireFqName() }
 
   // If this doesn't work, then maybe a class from the Kotlin package is used.
   module.resolveFqNameOrNull(FqName("kotlin.$classReference"))
@@ -492,20 +490,6 @@ public fun PsiElement.requireFqName(
     "Couldn't resolve FqName $classReference for Psi element: $text",
     element = this
   )
-}
-
-/**
- * Returns a sequence of all named declarations (anything with an fqName) which are declared at a
- * level between the receiver [PsiElement] and the top level of the file (inclusive).
- *
- * In practice, the returned sequence represents all declarations which can be referenced by the
- * receiver without needing an import statement or qualified name.
- */
-@ExperimentalAnvilApi
-public fun PsiElement.declarationsWithinScope(): Sequence<KtNamedDeclaration> {
-  return parents.filterIsInstance<KtNamedDeclaration>()
-    .flatMap { it.children.filterIsInstance<KtNamedDeclaration>() + it }
-    .distinct()
 }
 
 private fun PsiElement.findFqNameInSuperTypes(
