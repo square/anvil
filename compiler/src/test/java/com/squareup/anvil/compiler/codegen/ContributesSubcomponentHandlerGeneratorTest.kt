@@ -673,6 +673,67 @@ class ContributesSubcomponentHandlerGeneratorTest {
     }
   }
 
+  @Test
+  fun `the parent interface of a contributed subcomponent is picked up by components and other contributed subcomponents`() {
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.Module
+        import dagger.Provides
+
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface1 {
+          @ContributesTo(Unit::class)
+          interface AnyParentComponent {
+            fun createComponent(): SubcomponentInterface1
+          }
+        }
+
+        @ContributesSubcomponent(Unit::class, parentScope = Int::class)
+        interface SubcomponentInterface2 {
+          @ContributesTo(Int::class)
+          interface AnyParentComponent {
+            fun createComponent(): SubcomponentInterface2
+          }
+        }
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface1
+        
+        @MergeComponent(Int::class)
+        interface ComponentInterface2
+      """,
+      // Keep Dagger enabled, because it complained initially.
+      enableDaggerAnnotationProcessor = true
+    ) {
+      assertThat(componentInterface1 extends subcomponentInterface1.anyParentComponentInterface)
+      assertThat(
+        componentInterface1 extends
+          subcomponentInterface1.anvilComponent(componentInterface1).parentComponentInterface
+      )
+
+      assertThat(componentInterface2 extends subcomponentInterface2.anyParentComponentInterface)
+      assertThat(
+        componentInterface2 extends
+          subcomponentInterface2.anvilComponent(componentInterface2).parentComponentInterface
+      )
+
+      // Note that NOT subcomponentInterface2 extends these parent component interface, but its
+      // generated @MergeSubcomponent extends them.
+      assertThat(subcomponentInterface2 extends subcomponentInterface1.anyParentComponentInterface)
+      assertThat(
+        subcomponentInterface2.anvilComponent(componentInterface2) extends
+          subcomponentInterface1.anvilComponent(
+            subcomponentInterface2.anvilComponent(componentInterface2)
+          ).parentComponentInterface
+      )
+    }
+  }
+
   @Test fun `contributed subcomponents can be excluded with @MergeComponent`() {
     compile(
       """

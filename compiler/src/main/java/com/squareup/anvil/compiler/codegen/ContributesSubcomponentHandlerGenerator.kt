@@ -93,7 +93,7 @@ internal class ContributesSubcomponentHandlerGenerator(
   private val triggers = mutableListOf<Trigger>()
   private val contributions = mutableSetOf<Contribution>()
   private val replacedReferences = mutableSetOf<ClassReference>()
-  private val generatedContributions = mutableSetOf<Contribution>()
+  private val processedEvents = mutableSetOf<GenerateCodeEvent>()
 
   private var isFirstRound = true
 
@@ -167,7 +167,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       contribution.classReference in replacedReferences
     }
 
-    val newContributions = contributions
+    return contributions
       .flatMap { contribution ->
         triggers
           .filter { trigger ->
@@ -178,13 +178,11 @@ internal class ContributesSubcomponentHandlerGenerator(
             GenerateCodeEvent(trigger, contribution)
           }
       }
+      // Don't generate code for the same event twice.
+      .minus(processedEvents)
       .also {
-        generatedContributions += it.map { generateCodeEvent -> generateCodeEvent.contribution }
+        processedEvents += it
       }
-
-    contributions -= newContributions.mapTo(mutableSetOf()) { it.contribution }
-
-    return newContributions
       .map { generateCodeEvent ->
         val contribution = generateCodeEvent.contribution
         val generatedAnvilSubcomponent = generateCodeEvent.generatedAnvilSubcomponent
@@ -432,7 +430,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     replacedReferences: List<ClassReference>
   ) {
     replacedReferences.forEach { replacedReference ->
-      if (generatedContributions.any { it.classReference == replacedReference }) {
+      if (processedEvents.any { it.contribution.classReference == replacedReference }) {
         throw AnvilCompilationExceptionClassReference(
           classReference = contributedReference,
           message = "${contributedReference.fqName} tries to replace " +
