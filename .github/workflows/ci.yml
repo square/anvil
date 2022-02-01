@@ -150,14 +150,8 @@ jobs:
 
   publish-snapshot:
     runs-on: ubuntu-latest
-    if: github.repository == 'square/anvil' && github.ref == 'refs/heads/main'
+    if: github.repository == 'square/anvil'
     timeout-minutes: 25
-    needs:
-      - test-ubuntu
-      - test-ubuntu-old-backend
-      - build-gradle-plugin
-      - gradle-wrapper-validation
-      - publish-maven-local
 
     steps:
       - uses: actions/checkout@v2
@@ -172,6 +166,7 @@ jobs:
         env :
           ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.ARTIFACT_SIGNING_PRIVATE_KEY }}
 
   build-gradle-plugin:
     runs-on: ubuntu-latest
