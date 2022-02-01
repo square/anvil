@@ -1628,6 +1628,87 @@ class ContributesSubcomponentHandlerGeneratorTest {
     }
   }
 
+  @Test fun `an @ContributeSubcomponent class can be generated with a custom factory`() {
+    val codeGenerator = object : CodeGenerator {
+      override fun isApplicable(context: AnvilContext): Boolean = true
+
+      override fun generateCode(
+        codeGenDir: File,
+        module: ModuleDescriptor,
+        projectFiles: Collection<KtFile>
+      ): Collection<GeneratedFile> {
+        return projectFiles
+          .classesAndInnerClass(module)
+          .filter { it.hasAnnotation(mergeComponentFqName, module) }
+          .map { _ ->
+            val generatedPackage = "com.squareup.test"
+
+            @Language("kotlin")
+            val content = """
+                package $generatedPackage
+                
+                import com.squareup.anvil.annotations.ContributesSubcomponent
+                import com.squareup.anvil.annotations.ContributesTo
+                import com.squareup.test.SubcomponentInterface1
+      
+                @ContributesSubcomponent(
+                  scope = Any::class, 
+                  parentScope = Unit::class,
+                )
+                interface SubcomponentInterface2 {
+                  @ContributesSubcomponent.Factory
+                  interface Factory {
+                    fun create(): SubcomponentInterface2
+                  }
+
+                  @ContributesTo(Unit::class)
+                  interface ParentComponent {
+                    fun createFactory(): Factory
+                  }
+                }
+              """
+
+            createGeneratedFile(
+              codeGenDir = codeGenDir,
+              packageName = generatedPackage,
+              fileName = "SubcomponentInterface2",
+              content = content
+            )
+          }
+          .toList()
+      }
+    }
+
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.MergeComponent
+  
+        @ContributesSubcomponent(
+          scope = Any::class, 
+          parentScope = Unit::class
+        )
+        interface SubcomponentInterface1
+  
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """,
+      codeGenerators = listOf(codeGenerator)
+    ) {
+      val parentComponentInterface1 = subcomponentInterface1
+        .anvilComponent(componentInterface)
+        .parentComponentInterface
+
+      val parentComponentInterface2 = subcomponentInterface2
+        .parentComponentInterface
+
+      assertThat(componentInterface extends parentComponentInterface1).isTrue()
+      assertThat(componentInterface extends parentComponentInterface2).isTrue()
+    }
+  }
+
   @Test fun `a contributed subcomponent can be replaced`() {
     compile(
       """
