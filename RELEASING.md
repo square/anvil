@@ -1,46 +1,37 @@
 # Production Releases
 
 1. Checkout `origin/main`.
-1. Update the `CHANGELOG.md` file with the changes of this release.
+1. Update the `CHANGELOG.md` file with the changes of this release (the format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 1. Update the version in `gradle.properties` and remove the `-SNAPSHOT` suffix.
 1. Commit the changes and create a tag:
    ```
    git commit -am "Releasing v0.1.0."
    git tag v1.0.0
    ```
-1. Push the artifacts to Maven Central and the Gradle Plugin Portal.
-   ```
-   ./gradlew clean publish --no-daemon --no-parallel --no-build-cache && cd gradle-plugin && ./gradlew clean publish publishPlugins --no-daemon --no-parallel --no-build-cache && cd ..
-   ```
-1. Close and release the staging repository at [Sonatype](https://oss.sonatype.org).
 1. Update the version in `gradle.properties` and add the `-SNAPSHOT` suffix.
 1. Commit the change:
    ```
    git commit -am "Prepare next development version."
    ```
-1. Push git changes:
+1. Push the two commits. This will start a Github action that publishes the release to Maven Central and creates a new release on Github.   
    ```
    git push && git push --tags
    ```
-1. Create the release on GitHub:
-   1. Go to the [Releases](https://github.com/square/anvil/releases) page for the GitHub project.
-   1. Click "Draft a new release".
-   1. Enter the tag name you just pushed.
-   1. Title the release with the same name as the tag.
-   1. Copy & paste the changelog entry for this release into the description.
-   1. If this is a pre-release version, check the pre-release box.
-   1. Hit "Publish release".
+1. Close and release the staging repository at [Sonatype](https://s01.oss.sonatype.org).
+
+# Snapshot Releases
+
+Snapshot releases are automatically created whenever a commit to the `main` is pushed.  
+
+# Manually uploading a release
+
+Depending on the version in the `gradle.properties` file it will be either a production or snapshot release.
+```
+./gradlew clean publish --no-daemon --no-parallel --no-build-cache && cd gradle-plugin && ./gradlew clean publish publishPlugins --no-daemon --no-parallel --no-build-cache && cd ..
+```
 
 # Installing in Maven Local
 
 ```
-./gradlew clean publishToMavenLocal --no-build-cache && cd gradle-plugin && ./gradlew clean publishToMavenLocal --no-build-cache && cd ..
+./gradlew publishToMavenLocal && cd gradle-plugin && ./gradlew publishToMavenLocal && cd ..
 ```
-
-# Notes
-
-## Snapshot Releases
-
-Snapshot releases are similar to production releases. Only make sure that the version contains the
-`-SNAPSHOT` suffix. Closing and releasing the staging repository on Sonatype is not necessary for
-snapshot releases. You can verify the release [here](https://oss.sonatype.org/content/repositories/snapshots/com/squareup/anvil/).
