@@ -23,7 +23,6 @@ import com.squareup.anvil.compiler.internal.annotations
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.daggerScopes
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
@@ -37,6 +36,7 @@ import com.squareup.anvil.compiler.internal.isAbstractClass
 import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.isPublic
 import com.squareup.anvil.compiler.internal.parentScope
+import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.replaces
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.returnType
@@ -114,7 +114,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
     // Find new @MergeComponent (and similar triggers) that would cause generating new code.
     triggers += projectFiles
-      .classesAndInnerClass(module)
+      .classesAndInnerClasses(module)
       .mapNotNull { clazz ->
         val annotation = generationTrigger.firstOrNull { trigger ->
           clazz.hasAnnotation(trigger, module)
@@ -128,7 +128,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     // Find new contributed subcomponents in this module. If there's a trigger for them, then we
     // also need to generate code for them later.
     contributions += projectFiles
-      .classesAndInnerClass(module)
+      .classesAndInnerClasses(module)
       .mapNotNull { clazz ->
         val annotation = clazz.findAnnotation(contributesSubcomponentFqName, module)
           ?: return@mapNotNull null

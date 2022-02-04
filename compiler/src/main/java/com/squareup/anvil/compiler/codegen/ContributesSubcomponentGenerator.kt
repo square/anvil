@@ -19,12 +19,12 @@ import com.squareup.anvil.compiler.internal.ClassReference
 import com.squareup.anvil.compiler.internal.annotations
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.parentScope
+import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.replaces
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
@@ -63,7 +63,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
     projectFiles: Collection<KtFile>
   ): Collection<GeneratedFile> {
     return projectFiles
-      .classesAndInnerClass(module)
+      .classesAndInnerClasses(module)
       .filter { it.hasAnnotation(contributesSubcomponentFqName, module) }
       .onEach { clazz ->
         if (!clazz.isInterface() && !clazz.hasModifier(ABSTRACT_KEYWORD)) {

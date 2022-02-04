@@ -5,6 +5,8 @@ package com.squareup.anvil.compiler.internal
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.ClassReference.Psi
+import com.squareup.anvil.compiler.internal.reference.canResolveFqName
+import com.squareup.anvil.compiler.internal.reference.getKtClassOrObjectOrNull
 import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -270,8 +272,7 @@ public fun KtClassOrObject.allPsiSuperClasses(
 
   val superOrNull = superTypeListEntries
     .asSequence()
-    .mapNotNull { it.typeReference?.fqNameOrNull(module) }
-    .mapNotNull { module.getKtClassOrObjectOrNull(it) }
+    .mapNotNull { it.typeReference?.fqNameOrNull(module)?.getKtClassOrObjectOrNull(module) }
     .firstOrNull { !it.isInterface() }
     ?: return emptyList()
 
@@ -310,7 +311,7 @@ public fun PsiElement.requireFqName(
     // An inner class reference like Abc.Inner is also considered a KtDotQualifiedExpression in
     // some cases.
     is KtDotQualifiedExpression -> {
-      module.resolveFqNameOrNull(FqName(text))
+      FqName(text).takeIf { it.canResolveFqName(module) }
         ?.let { return it }
         ?: text
     }
@@ -328,7 +329,8 @@ public fun PsiElement.requireFqName(
         if (qualifierText != null) {
 
           // The generic might be fully qualified. Try to resolve it and return early.
-          module.resolveFqNameOrNull(FqName("$qualifierText.$className"))
+          FqName("$qualifierText.$className")
+            .takeIf { it.canResolveFqName(module) }
             ?.let { return it }
 
           // If the name isn't fully qualified, then it's something like "Outer.Inner".
@@ -342,7 +344,7 @@ public fun PsiElement.requireFqName(
 
         // Sometimes a KtUserType is a fully qualified name. Give it a try and return early.
         if (text.contains(".") && text[0].isLowerCase()) {
-          module.resolveFqNameOrNull(FqName(text))
+          FqName(text).takeIf { it.canResolveFqName(module) }
             ?.let { return it }
         }
 
@@ -407,7 +409,7 @@ public fun PsiElement.requireFqName(
           return matchingImportPaths[0].fqName
         matchingImportPaths.size > 1 ->
           return matchingImportPaths.first { importPath ->
-            module.canResolveFqName(importPath.fqName)
+            importPath.fqName.canResolveFqName(module)
           }.fqName
       }
     }
@@ -423,7 +425,9 @@ public fun PsiElement.requireFqName(
             // Note that we must use the parent of the import FqName. An import is `com.abc.A` and
             // the classReference `A.Inner`, so we must try to resolve `com.abc.A.Inner` and not
             // `com.abc.A.A.Inner`.
-            module.canResolveFqName(importPath.fqName.parent(), classReference)
+            importPath.fqName.parent()
+              .descendant(classReference)
+              .canResolveFqName(module)
           }.fqName
       }
     }
@@ -440,17 +444,19 @@ public fun PsiElement.requireFqName(
       if (importFqName.asString() == "java.util") {
         // If there's a star import for java.util.* and the import is a Collection type, then
         // the Kotlin compiler overrides these with Kotlin types.
-        module
-          .resolveFqNameOrNull(FqName("kotlin.collections.$classReference"))
+        FqName("kotlin.collections.$classReference")
+          .takeIf { it.canResolveFqName(module) }
           ?.let { return it }
       }
 
-      module.resolveFqNameOrNull(importFqName, classReference)
+      importFqName.descendant(classReference)
+        .takeIf { it.canResolveFqName(module) }
         ?.let { return it }
     }
 
   // If there is no import, then try to resolve the class with the same package as this file.
-  module.resolveFqNameOrNull(containingKtFile.packageFqName, classReference)
+  containingKtFile.packageFqName.descendant(classReference)
+    .takeIf { it.canResolveFqName(module) }
     ?.let { return it }
 
   // If the referenced type is declared within the same scope, it doesn't need to be imported.
@@ -461,19 +467,23 @@ public fun PsiElement.requireFqName(
     ?.let { return it.requireFqName() }
 
   // If this doesn't work, then maybe a class from the Kotlin package is used.
-  module.resolveFqNameOrNull(FqName("kotlin.$classReference"))
+  FqName("kotlin.$classReference")
+    .takeIf { it.canResolveFqName(module) }
     ?.let { return it }
 
   // If this doesn't work, then maybe a class from the Kotlin collection package is used.
-  module.resolveFqNameOrNull(FqName("kotlin.collections.$classReference"))
+  FqName("kotlin.collections.$classReference")
+    .takeIf { it.canResolveFqName(module) }
     ?.let { return it }
 
   // If this doesn't work, then maybe a class from the Kotlin jvm package is used.
-  module.resolveFqNameOrNull(FqName("kotlin.jvm.$classReference"))
+  FqName("kotlin.jvm.$classReference")
+    .takeIf { it.canResolveFqName(module) }
     ?.let { return it }
 
   // Or java.lang.
-  module.resolveFqNameOrNull(FqName("java.lang.$classReference"))
+  FqName("java.lang.$classReference")
+    .takeIf { it.canResolveFqName(module) }
     ?.let { return it }
 
   findFqNameInSuperTypes(module, classReference)
@@ -497,7 +507,7 @@ private fun PsiElement.findFqNameInSuperTypes(
   classReference: String
 ): FqName? {
   fun tryToResolveClassFqName(outerClass: FqName): FqName? =
-    module.resolveFqNameOrNull(FqName("$outerClass.$classReference"))
+    outerClass.descendant(classReference).takeIf { it.canResolveFqName(module) }
 
   return parents.filterIsInstance<KtClassOrObject>()
     .flatMap { clazz ->

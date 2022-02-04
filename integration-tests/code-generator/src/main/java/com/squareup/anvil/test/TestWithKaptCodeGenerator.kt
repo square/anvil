@@ -5,8 +5,8 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
-import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.hasAnnotation
+import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.safePackageString
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -29,7 +29,7 @@ class TestWithKaptCodeGenerator : CodeGenerator {
     projectFiles: Collection<KtFile>
   ): Collection<GeneratedFile> {
     return projectFiles
-      .classesAndInnerClass(module)
+      .classesAndInnerClasses(module)
       .filter { it.hasAnnotation(FqName("com.squareup.anvil.test.TriggerWithKapt"), module) }
       .flatMap { clazz ->
         val generatedPackage = "generated.test" + clazz.containingKtFile.packageFqName

@@ -1,11 +1,11 @@
-package com.squareup.anvil.compiler.internal
+package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.internal.classIdBestGuess
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 
@@ -21,38 +21,20 @@ private inline fun ModuleDescriptor.asAnvilModuleDescriptor(): AnvilModuleDescri
   this as AnvilModuleDescriptor
 
 @ExperimentalAnvilApi
-public fun ModuleDescriptor.resolveFqNameOrNull(
-  fqName: FqName
-): FqName? = asAnvilModuleDescriptor().resolveClassIdOrNull(fqName.classIdBestGuess())
+public fun FqName.getKtClassOrObjectOrNull(
+  module: ModuleDescriptor
+): KtClassOrObject? = module.asAnvilModuleDescriptor().getKtClassOrObjectOrNull(this)
 
 @ExperimentalAnvilApi
-public fun ModuleDescriptor.getKtClassOrObjectOrNull(
-  fqName: FqName
-): KtClassOrObject? = asAnvilModuleDescriptor().getKtClassOrObjectOrNull(fqName)
+public fun FqName.getKtClassOrObject(
+  module: ModuleDescriptor
+): KtClassOrObject = getKtClassOrObjectOrNull(module)
+  ?: throw AnvilCompilationException("Couldn't resolve KtClassOrObject for ${asString()}")
 
 @ExperimentalAnvilApi
-public fun ModuleDescriptor.requireKtClassOrObject(
-  fqName: FqName
-): KtClassOrObject = getKtClassOrObjectOrNull(fqName)
-  ?: throw AnvilCompilationException("Couldn't resolve KtClassOrObject for ${fqName.asString()}")
-
-@ExperimentalAnvilApi
-public fun ModuleDescriptor.canResolveFqName(
-  fqName: FqName
-): Boolean = resolveFqNameOrNull(fqName) != null
-
-@ExperimentalAnvilApi
-public fun ModuleDescriptor.resolveFqNameOrNull(
-  packageName: FqName,
-  className: String
-): FqName? = asAnvilModuleDescriptor()
-  .resolveClassIdOrNull(ClassId(packageName, Name.identifier(className)))
-
-@ExperimentalAnvilApi
-public fun ModuleDescriptor.canResolveFqName(
-  packageName: FqName,
-  className: String
-): Boolean = resolveFqNameOrNull(packageName, className) != null
+public fun FqName.canResolveFqName(
+  module: ModuleDescriptor
+): Boolean = module.asAnvilModuleDescriptor().resolveClassIdOrNull(classIdBestGuess()) != null
 
 @ExperimentalAnvilApi
 public fun KtFile.classesAndInnerClasses(
@@ -62,7 +44,7 @@ public fun KtFile.classesAndInnerClasses(
 }
 
 @ExperimentalAnvilApi
-public fun Collection<KtFile>.classesAndInnerClass(
+public fun Collection<KtFile>.classesAndInnerClasses(
   module: ModuleDescriptor
 ): Sequence<KtClassOrObject> {
   return asSequence().flatMap { it.classesAndInnerClasses(module) }

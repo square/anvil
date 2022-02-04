@@ -4,6 +4,8 @@ package com.squareup.anvil.compiler.internal
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.internal.reference.canResolveFqName
+import com.squareup.anvil.compiler.internal.reference.getKtClassOrObjectOrNull
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -107,10 +109,8 @@ private fun FqName.asClassNameOrNull(module: ModuleDescriptor): ClassName? {
     val packageSegments = segments.subList(0, index)
     val classSegments = segments.subList(index, segments.size)
 
-    val validFqName = module.canResolveFqName(
-      packageName = FqName.fromSegments(packageSegments),
-      className = classSegments.joinToString(separator = ".")
-    )
+    val validFqName = FqName.fromSegments(packageSegments + classSegments)
+      .canResolveFqName(module)
 
     if (validFqName) {
       return ClassName(
@@ -130,7 +130,7 @@ public fun FqName.asMemberName(module: ModuleDescriptor): MemberName {
   val simpleName = segments.last()
   val prefixFqName = FqName.fromSegments(segments.dropLast(1))
   return prefixFqName.asClassNameOrNull(module)?.let {
-    val classOrObj = module.getKtClassOrObjectOrNull(prefixFqName)
+    val classOrObj = prefixFqName.getKtClassOrObjectOrNull(module)
     val imported = if (classOrObj is KtClass) {
       // Must be in a companion, check its name
       // We do this because accessors could be just Foo.CONSTANT but to member import it we need
@@ -457,7 +457,7 @@ private fun KtExpression.codeBlock(module: ModuleDescriptor): CodeBlock {
         }
       }
       if (fqName != null) {
-        if (module.canResolveFqName(fqName)) {
+        if (fqName.canResolveFqName(module)) {
           CodeBlock.of("%T", fqName.asClassName(module))
         } else {
           CodeBlock.of("%M", fqName.asMemberName(module))

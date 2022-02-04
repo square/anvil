@@ -23,15 +23,15 @@ import com.squareup.anvil.compiler.internal.asTypeName
 import com.squareup.anvil.compiler.internal.asTypeNameOrNull
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
-import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.functions
 import com.squareup.anvil.compiler.internal.generateClassName
-import com.squareup.anvil.compiler.internal.getKtClassOrObjectOrNull
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isInterface
+import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.reference.getKtClassOrObjectOrNull
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.resolveGenericKotlinType
@@ -88,7 +88,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     projectFiles
-      .classesAndInnerClass(module)
+      .classesAndInnerClasses(module)
       .filter { it.hasAnnotation(assistedFactoryFqName, module) }
       .forEach { clazz ->
         generateFactoryClass(codeGenDir, module, clazz)
@@ -110,7 +110,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     val returnTypeFqName = function.returnTypeLazy.value
 
     // The return type of the function must have an @AssistedInject constructor.
-    val injectedClass = module.getKtClassOrObjectOrNull(returnTypeFqName)
+    val injectedClass = returnTypeFqName.getKtClassOrObjectOrNull(module)
     val constructor = injectedClass
       ?.injectConstructor(assistedInjectFqName, module)
       ?: throw AnvilCompilationException(

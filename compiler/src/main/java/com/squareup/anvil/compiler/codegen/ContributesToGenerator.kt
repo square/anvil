@@ -14,10 +14,10 @@ import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isInterface
+import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
@@ -51,7 +51,7 @@ internal class ContributesToGenerator : CodeGenerator {
     projectFiles: Collection<KtFile>
   ): Collection<GeneratedFile> {
     return projectFiles
-      .classesAndInnerClass(module)
+      .classesAndInnerClasses(module)
       .filter { it.hasAnnotation(contributesToFqName, module) }
       .onEach { clazz ->
         if (!clazz.isInterface() &&

@@ -11,10 +11,10 @@ import com.squareup.anvil.compiler.codegen.mapToMemberInjectParameters
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.isGenericClass
 import com.squareup.anvil.compiler.internal.isInterface
+import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -46,7 +46,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     projectFiles
-      .classesAndInnerClass(module)
+      .classesAndInnerClasses(module)
       .filterNot { it.isInterface() }
       .forEach { clazz ->
 
