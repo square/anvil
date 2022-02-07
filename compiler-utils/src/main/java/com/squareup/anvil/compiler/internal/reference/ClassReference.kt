@@ -1,10 +1,33 @@
-package com.squareup.anvil.compiler.internal
+package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.ClassReference.Descriptor
-import com.squareup.anvil.compiler.internal.ClassReference.Psi
-import com.squareup.anvil.compiler.internal.reference.getKtClassOrObjectOrNull
+import com.squareup.anvil.compiler.internal.annotationOrNull
+import com.squareup.anvil.compiler.internal.argumentType
+import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.classDescriptorOrNull
+import com.squareup.anvil.compiler.internal.contributesBindingFqName
+import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
+import com.squareup.anvil.compiler.internal.contributesSubcomponentFqName
+import com.squareup.anvil.compiler.internal.contributesToFqName
+import com.squareup.anvil.compiler.internal.directSuperClassAndInterfaces
+import com.squareup.anvil.compiler.internal.findAnnotation
+import com.squareup.anvil.compiler.internal.findAnnotationArgument
+import com.squareup.anvil.compiler.internal.functions
+import com.squareup.anvil.compiler.internal.getAnnotationValue
+import com.squareup.anvil.compiler.internal.isDaggerScope
+import com.squareup.anvil.compiler.internal.isInterface
+import com.squareup.anvil.compiler.internal.isQualifier
+import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
+import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
+import com.squareup.anvil.compiler.internal.requireClassDescriptor
+import com.squareup.anvil.compiler.internal.requireClassId
+import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.scope
+import com.squareup.anvil.compiler.internal.scopeOrNull
+import com.squareup.anvil.compiler.internal.toAnnotationSpec
+import com.squareup.anvil.compiler.internal.toClassId
+import com.squareup.anvil.compiler.internal.toFqNames
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -26,7 +49,6 @@ import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
  * Used to create a common type between [KtClassOrObject] class references and [ClassDescriptor]
  * references, to streamline parsing.
  *
- * @see allSuperTypeClassReferences
  * @see toClassReference
  */
 @ExperimentalAnvilApi
@@ -34,20 +56,6 @@ public sealed class ClassReference {
 
   public abstract val classId: ClassId
   public abstract val fqName: FqName
-
-  public class Psi internal constructor(
-    public val clazz: KtClassOrObject,
-    override val classId: ClassId
-  ) : ClassReference() {
-    override val fqName: FqName = classId.asSingleFqName()
-  }
-
-  public class Descriptor internal constructor(
-    public val clazz: ClassDescriptor,
-    override val classId: ClassId
-  ) : ClassReference() {
-    override val fqName: FqName = classId.asSingleFqName()
-  }
 
   override fun toString(): String {
     return "${this::class.qualifiedName}($fqName)"
@@ -64,6 +72,20 @@ public sealed class ClassReference {
 
   override fun hashCode(): Int {
     return fqName.hashCode()
+  }
+
+  public class Psi internal constructor(
+    public val clazz: KtClassOrObject,
+    override val classId: ClassId
+  ) : ClassReference() {
+    override val fqName: FqName = classId.asSingleFqName()
+  }
+
+  public class Descriptor internal constructor(
+    public val clazz: ClassDescriptor,
+    override val classId: ClassId
+  ) : ClassReference() {
+    override val fqName: FqName = classId.asSingleFqName()
   }
 }
 

@@ -4,9 +4,13 @@ package com.squareup.anvil.compiler.internal
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.ClassReference.Psi
+import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
+import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
 import com.squareup.anvil.compiler.internal.reference.getKtClassOrObjectOrNull
+import com.squareup.anvil.compiler.internal.reference.indexOfTypeParameter
+import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor

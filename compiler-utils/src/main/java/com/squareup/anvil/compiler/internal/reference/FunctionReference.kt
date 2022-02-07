@@ -1,9 +1,14 @@
-package com.squareup.anvil.compiler.internal
+package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.FunctionReference.Descriptor
-import com.squareup.anvil.compiler.internal.FunctionReference.Psi
+import com.squareup.anvil.compiler.internal.isInterface
+import com.squareup.anvil.compiler.internal.reference.FunctionReference.Descriptor
+import com.squareup.anvil.compiler.internal.reference.FunctionReference.Psi
+import com.squareup.anvil.compiler.internal.requireClassDescriptor
+import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.requireTypeReference
+import com.squareup.anvil.compiler.internal.resolveTypeReference
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT

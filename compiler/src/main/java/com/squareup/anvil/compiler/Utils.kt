@@ -9,12 +9,12 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
-import com.squareup.anvil.compiler.internal.ClassReference
-import com.squareup.anvil.compiler.internal.ClassReference.Descriptor
-import com.squareup.anvil.compiler.internal.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.getAnnotationValue
+import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
+import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import dagger.Component
 import dagger.Lazy
