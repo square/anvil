@@ -14,7 +14,6 @@ import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.functions
 import com.squareup.anvil.compiler.internal.generateClassName
@@ -22,6 +21,7 @@ import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.isNullable
 import com.squareup.anvil.compiler.internal.properties
+import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.requireTypeReference
@@ -64,7 +64,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     projectFiles
-      .classesAndInnerClass(module)
+      .classesAndInnerClasses(module)
       .filter { it.hasAnnotation(daggerModuleFqName, module) }
       .forEach { clazz ->
         clazz

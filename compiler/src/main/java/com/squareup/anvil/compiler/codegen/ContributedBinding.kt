@@ -17,10 +17,10 @@ import com.squareup.anvil.compiler.internal.isMapKey
 import com.squareup.anvil.compiler.internal.isObject
 import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.qualifiers
+import com.squareup.anvil.compiler.internal.reference.getKtClassOrObject
 import com.squareup.anvil.compiler.internal.requireAnnotation
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireFqName
-import com.squareup.anvil.compiler.internal.requireKtClassOrObject
 import com.squareup.anvil.compiler.internal.toAnnotationSpec
 import com.squareup.anvil.compiler.isMapKey
 import com.squareup.anvil.compiler.priority
@@ -118,7 +118,7 @@ private fun ClassReference.requireBoundType(
         "specify the bound type. This is only allowed with exactly one direct super type. " +
         "If there are multiple or none, then the bound type must be explicitly defined in " +
         "the @${annotationFqName.shortName()} annotation.",
-      element = module.requireKtClassOrObject(fqName)
+      element = fqName.getKtClassOrObject(module)
     )
 
   boundType.checkNotGeneric(contributedFqName = fqName)

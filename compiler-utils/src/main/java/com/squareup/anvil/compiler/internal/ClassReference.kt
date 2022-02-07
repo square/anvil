@@ -4,6 +4,7 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.ClassReference.Psi
+import com.squareup.anvil.compiler.internal.reference.getKtClassOrObjectOrNull
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -84,7 +85,7 @@ public fun KtClassOrObject.toClassReference(): Psi {
 @ExperimentalAnvilApi
 public fun FqName.toClassReferenceOrNull(module: ModuleDescriptor): ClassReference? {
   return classDescriptorOrNull(module)?.toClassReference()
-    ?: module.getKtClassOrObjectOrNull(this)?.toClassReference()
+    ?: getKtClassOrObjectOrNull(module)?.toClassReference()
 }
 
 @ExperimentalAnvilApi

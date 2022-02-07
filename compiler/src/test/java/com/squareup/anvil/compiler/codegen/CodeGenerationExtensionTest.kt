@@ -6,8 +6,8 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.compile
-import com.squareup.anvil.compiler.internal.classesAndInnerClass
 import com.squareup.anvil.compiler.internal.isInterface
+import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
@@ -28,7 +28,7 @@ class CodeGenerationExtensionTest {
         projectFiles: Collection<KtFile>
       ): Collection<GeneratedFile> {
         return projectFiles
-          .classesAndInnerClass(module)
+          .classesAndInnerClasses(module)
           .filter { it.isInterface() }
           .map { clazz ->
             val generatedPackage = "generated.com.squareup.test"
@@ -85,7 +85,7 @@ class CodeGenerationExtensionTest {
         projectFiles: Collection<KtFile>
       ): Collection<GeneratedFile> {
         return projectFiles
-          .classesAndInnerClass(module)
+          .classesAndInnerClasses(module)
           .filter { it.isInterface() }
           .map { _ ->
             val generatedPackage = "generated.com.squareup.test"

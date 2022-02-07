@@ -1,6 +1,6 @@
-package com.squareup.anvil.compiler.codegen
+package com.squareup.anvil.compiler.codegen.reference
 
-import com.squareup.anvil.compiler.internal.AnvilModuleDescriptor
+import com.squareup.anvil.compiler.internal.reference.AnvilModuleDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
