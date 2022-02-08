@@ -1,39 +1,39 @@
-name: Release
+name : Release
 
-on:
-  push:
-    tags:
+on :
+  push :
+    tags :
       - 'v*.*.*'
 
-jobs:
-  publish-release:
-    runs-on: ubuntu-latest
-    if: github.repository == 'square/anvil'
-    timeout-minutes: 25
+jobs :
+  publish-release :
+    runs-on : ubuntu-latest
+    if : github.repository == 'square/anvil'
+    timeout-minutes : 25
 
-    steps:
-      - uses: actions/checkout@v2
-      - uses: gradle/wrapper-validation-action@v1
+    steps :
+      - uses : actions/checkout@v2
+      - uses : gradle/wrapper-validation-action@v1
       - uses : actions/setup-java@v2
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
-      - name: Publish Release
-        run: ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace && cd ..
+      - name : Publish Release
+        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace && cd ..
         env :
           ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingKey: ${{ secrets.ARTIFACT_SIGNING_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingKey : ${{ secrets.ARTIFACT_SIGNING_PRIVATE_KEY }}
 
-      - name: Extract release notes
-        id: release_notes
-        uses: ffurrer2/extract-release-notes@v1
+      - name : Extract release notes
+        id : release_notes
+        uses : ffurrer2/extract-release-notes@v1
 
-      - name: Create release
-        uses: softprops/action-gh-release@v1
-        with:
-          body: ${{ steps.release_notes.outputs.release_notes }}
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name : Create release
+        uses : softprops/action-gh-release@v1
+        with :
+          body : ${{ steps.release_notes.outputs.release_notes }}
+        env :
+          GITHUB_TOKEN : ${{ secrets.GITHUB_TOKEN }}

@@ -1,79 +1,79 @@
-name: CI
+name : CI
 
-on:
-  push:
-    branches:
+on :
+  push :
+    branches :
       - main
-    tags-ignore:
+    tags-ignore :
       - '**'
-  pull_request:
+  pull_request :
 
-jobs:
-  test-ubuntu-old-backend:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+jobs :
+  test-ubuntu-old-backend :
+    runs-on : ubuntu-latest
+    timeout-minutes : 25
 
-    strategy:
+    strategy :
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
       # which is expected. If they need to share their outputs, then we need a proper caching
       # solution.
-      fail-fast: false
-      matrix:
+      fail-fast : false
+      matrix :
         kotlin-version : [ 1.6.10 ]
 
-    steps:
-      - uses: actions/checkout@v2
+    steps :
+      - uses : actions/checkout@v2
       - uses : actions/setup-java@v2
         with :
           distribution : 'adopt'
           java-version : '11'
           check-latest : true
 
-      - name: Test on Ubuntu
-        run: ./gradlew assemble test -Psquare.useIR=false --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+      - name : Test on Ubuntu
+        run : ./gradlew assemble test -Psquare.useIR=false --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
 
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() }}
-        with:
+      - name : Upload Test Results
+        uses : actions/upload-artifact@v2
+        if : ${{ failure() }}
+        with :
           # Use the Kotlin version to prevent overrides.
-          name: test-results-old-backend-${{ matrix.kotlin-version }}
-          path: ./**/build/reports/tests/
+          name : test-results-old-backend-${{ matrix.kotlin-version }}
+          path : ./**/build/reports/tests/
 
-  test-ubuntu:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+  test-ubuntu :
+    runs-on : ubuntu-latest
+    timeout-minutes : 25
 
     strategy :
       fail-fast : false
       matrix :
         kotlin-version : [ 1.6.10 ]
 
-    steps:
-      - uses: actions/checkout@v2
+    steps :
+      - uses : actions/checkout@v2
       - uses : actions/setup-java@v2
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
-      - name: Test on Ubuntu
-        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+      - name : Test on Ubuntu
+        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
 
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() }}
-        with:
-          name: test-results-${{ matrix.kotlin-version }}
-          path: ./**/build/reports/tests/
+      - name : Upload Test Results
+        uses : actions/upload-artifact@v2
+        if : ${{ failure() }}
+        with :
+          name : test-results-${{ matrix.kotlin-version }}
+          path : ./**/build/reports/tests/
 
 
-  test-windows:
-    runs-on: windows-latest
-    timeout-minutes: 25
+  test-windows :
+    runs-on : windows-latest
+    timeout-minutes : 25
 
-    steps:
-      - uses: actions/checkout@v2
+    steps :
+      - uses : actions/checkout@v2
       - uses : actions/setup-java@v2
         with :
           distribution : 'temurin'
@@ -86,220 +86,220 @@ jobs:
       #
       # Expressions in Github actions are limited. If there would be an if expression, then we
       # wouldn't need to duplicate the next step and depending on the OS enable / disable them.
-      - name: Test on Windows
-        run: ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace
+      - name : Test on Windows
+        run : ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace
 
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() }}
-        with:
-          name: test-results-windows
-          path: ./**/build/reports/tests/
+      - name : Upload Test Results
+        uses : actions/upload-artifact@v2
+        if : ${{ failure() }}
+        with :
+          name : test-results-windows
+          path : ./**/build/reports/tests/
 
-  ktlint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  ktlint :
+    runs-on : ubuntu-latest
+    timeout-minutes : 15
 
-    steps:
-      - uses: actions/checkout@v2
+    steps :
+      - uses : actions/checkout@v2
       - uses : actions/setup-java@v2
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
-      - name: KtLint
-        run: ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace
+      - name : KtLint
+        run : ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace
 
-  lint:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  lint :
+    runs-on : ubuntu-latest
+    timeout-minutes : 15
 
-    steps:
-      - uses: actions/checkout@v2
+    steps :
+      - uses : actions/checkout@v2
       - uses : actions/setup-java@v2
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
-      - name: Android Lint
-        run: ./gradlew lint --no-build-cache --no-daemon --stacktrace
+      - name : Android Lint
+        run : ./gradlew lint --no-build-cache --no-daemon --stacktrace
 
-      - name: Upload Lint Results
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() }}
-        with:
-          name: lint-results
-          path: ./**/build/reports/lint-results.html
+      - name : Upload Lint Results
+        uses : actions/upload-artifact@v2
+        if : ${{ failure() }}
+        with :
+          name : lint-results
+          path : ./**/build/reports/lint-results.html
 
-  publish-maven-local:
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
+  publish-maven-local :
+    runs-on : ubuntu-latest
+    timeout-minutes : 15
 
-    steps:
-      - uses: actions/checkout@v2
+    steps :
+      - uses : actions/checkout@v2
       - uses : actions/setup-java@v2
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
-      - name: Publish to Maven Local
-        run: ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd ..
+      - name : Publish to Maven Local
+        run : ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd ..
 
-  publish-snapshot:
-    runs-on: ubuntu-latest
-    if: github.repository == 'square/anvil' && github.ref == 'refs/heads/main'
-    timeout-minutes: 25
-    needs:
+  publish-snapshot :
+    runs-on : ubuntu-latest
+    if : github.repository == 'square/anvil' && github.ref == 'refs/heads/main'
+    timeout-minutes : 25
+    needs :
       - test-ubuntu
       - test-ubuntu-old-backend
       - build-gradle-plugin
       - gradle-wrapper-validation
       - publish-maven-local
 
-    steps:
-      - uses: actions/checkout@v2
+    steps :
+      - uses : actions/checkout@v2
       - uses : actions/setup-java@v2
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
-      - name: Publish Snapshots
-        run: ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace && cd ..
+      - name : Publish Snapshots
+        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace && cd ..
         env :
           ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
 
-  build-gradle-plugin:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: gradle-plugin
+  build-gradle-plugin :
+    runs-on : ubuntu-latest
+    defaults :
+      run :
+        working-directory : gradle-plugin
 
-    timeout-minutes: 15
+    timeout-minutes : 15
 
-    strategy:
+    strategy :
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
       # which is expected. If they need to share their outputs, then we need a proper caching
       # solution.
-      fail-fast: false
-      matrix:
-        kotlin-version: [ 1.6.10 ]
-        agp-version: [ 4.2.2, 7.0.3, 7.1.0-beta02 ]
+      fail-fast : false
+      matrix :
+        kotlin-version : [ 1.6.10 ]
+        agp-version : [ 4.2.2, 7.0.4, 7.1.1, 7.2.0-beta01, 7.3.0-alpha01 ]
 
-    steps:
-      - uses: actions/checkout@v2
+    steps :
+      - uses : actions/checkout@v2
       - uses : actions/setup-java@v2
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
-      - name: Test Gradle Plugin
-        run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }} -Psquare.agpVersion=${{ matrix.agp-version }}
+      - name : Test Gradle Plugin
+        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }} -Psquare.agpVersion=${{ matrix.agp-version }}
 
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() }}
-        with:
+      - name : Upload Test Results
+        uses : actions/upload-artifact@v2
+        if : ${{ failure() }}
+        with :
           # Use the Kotlin version to prevent overrides.
-          name: test-results-gradle-plugin-${{ matrix.kotlin-version }}-${{ matrix.agp-version }}
-          path: ./**/build/reports/tests/
+          name : test-results-gradle-plugin-${{ matrix.kotlin-version }}-${{ matrix.agp-version }}
+          path : ./**/build/reports/tests/
 
-  ktlint-gradle-plugin:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: gradle-plugin
+  ktlint-gradle-plugin :
+    runs-on : ubuntu-latest
+    defaults :
+      run :
+        working-directory : gradle-plugin
 
-    timeout-minutes: 15
+    timeout-minutes : 15
 
-    steps:
-      - uses: actions/checkout@v2
+    steps :
+      - uses : actions/checkout@v2
       - uses : actions/setup-java@v2
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
-      - name: KtLint Gradle Plugin
-        run: ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace
+      - name : KtLint Gradle Plugin
+        run : ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace
 
-  kapt-for-dagger-factories:
-    runs-on: ubuntu-latest
-    timeout-minutes: 25
+  kapt-for-dagger-factories :
+    runs-on : ubuntu-latest
+    timeout-minutes : 25
 
-    strategy:
+    strategy :
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
       # which is expected. If they need to share their outputs, then we need a proper caching
       # solution.
-      fail-fast: false
-      matrix:
+      fail-fast : false
+      matrix :
         kotlin-version : [ 1.6.10 ]
 
-    steps:
-      - uses: actions/checkout@v2
+    steps :
+      - uses : actions/checkout@v2
       - uses : actions/setup-java@v2
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
-      - name: Run integration tests
-        run: ./gradlew -p integration-tests test -Psquare.generateDaggerFactoriesWithAnvil=false --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+      - name : Run integration tests
+        run : ./gradlew -p integration-tests test -Psquare.generateDaggerFactoriesWithAnvil=false --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
 
-      - name: Build the sample
-        run: ./gradlew :sample:app:assembleDebug -Psquare.generateDaggerFactoriesWithAnvil=false --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+      - name : Build the sample
+        run : ./gradlew :sample:app:assembleDebug -Psquare.generateDaggerFactoriesWithAnvil=false --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
 
-      - name: Upload Test Results
-        uses: actions/upload-artifact@v2
-        if: ${{ failure() }}
-        with:
+      - name : Upload Test Results
+        uses : actions/upload-artifact@v2
+        if : ${{ failure() }}
+        with :
           # Use the Kotlin version to prevent overrides.
-          name: test-results-kapt-${{ matrix.kotlin-version }}
-          path: ./**/build/reports/tests/
+          name : test-results-kapt-${{ matrix.kotlin-version }}
+          path : ./**/build/reports/tests/
 
-  instrumentation-tests:
-    name: Instrumentation tests
-    runs-on: macos-latest
-    timeout-minutes: 20
-    strategy:
+  instrumentation-tests :
+    name : Instrumentation tests
+    runs-on : macos-latest
+    timeout-minutes : 20
+    strategy :
       # Allow tests to continue on other devices if they fail on one device.
-      fail-fast: false
-      matrix:
-        api-level:
+      fail-fast : false
+      matrix :
+        api-level :
           # Consider other devices in case it's needed.
           #- 24
           - 29
-    steps:
-      - uses: actions/checkout@v2
+    steps :
+      - uses : actions/checkout@v2
       - uses : actions/setup-java@v2
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
-      - name: Instrumentation Tests
-        uses: reactivecircus/android-emulator-runner@v2
-        with:
-          api-level: ${{ matrix.api-level }}
-          target: default
-          arch: x86_64
-          script: ./gradlew connectedCheck --no-build-cache --no-daemon --stacktrace
+      - name : Instrumentation Tests
+        uses : reactivecircus/android-emulator-runner@v2
+        with :
+          api-level : ${{ matrix.api-level }}
+          target : default
+          arch : x86_64
+          script : ./gradlew connectedCheck --no-build-cache --no-daemon --stacktrace
 
-      - name: Upload results
-        uses: actions/upload-artifact@v2
-        with:
-          name: insrumentation-test-results
-          path: ./**/build/reports/androidTests/connected/**
+      - name : Upload results
+        uses : actions/upload-artifact@v2
+        with :
+          name : insrumentation-test-results
+          path : ./**/build/reports/androidTests/connected/**
 
-  gradle-wrapper-validation:
-    name: "Validate the Gradle Wrapper"
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v2
-      - uses: gradle/wrapper-validation-action@v1
+  gradle-wrapper-validation :
+    name : "Validate the Gradle Wrapper"
+    runs-on : ubuntu-latest
+    timeout-minutes : 15
+    steps :
+      - uses : actions/checkout@v2
+      - uses : gradle/wrapper-validation-action@v1
