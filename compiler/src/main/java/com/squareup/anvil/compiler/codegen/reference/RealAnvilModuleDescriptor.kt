@@ -21,6 +21,8 @@ class RealAnvilModuleDescriptor(
   private val allClasses: Sequence<KtClassOrObject>
     get() = classesMap.values.asSequence().flatMap { it }
 
+  private val resolveClassIdCache = mutableMapOf<ClassId, FqName?>()
+
   fun addFiles(files: Collection<KtFile>) {
     allFiles += files
 
@@ -35,23 +37,17 @@ class RealAnvilModuleDescriptor(
     }
   }
 
-  override fun resolveClassIdOrNull(classId: ClassId): FqName? {
-    val fqName = classId.asSingleFqName()
+  override fun resolveClassIdOrNull(classId: ClassId): FqName? =
+    resolveClassIdCache.computeIfAbsent(classId) {
+      val fqName = classId.asSingleFqName()
 
-    resolveClassByFqName(fqName, FROM_BACKEND)
-      ?.let { return it.fqNameSafe }
-
-    findTypeAliasAcrossModuleDependencies(classId)
-      ?.let { return it.fqNameSafe }
-
-    return allClasses
-      .firstOrNull { it.fqName == fqName }
-      ?.fqName
-  }
+      resolveClassByFqName(fqName, FROM_BACKEND)?.fqNameSafe
+        ?: findTypeAliasAcrossModuleDependencies(classId)?.fqNameSafe
+        ?: allClasses.firstOrNull { it.fqName == fqName }?.fqName
+    }
 
   override fun getKtClassOrObjectOrNull(fqName: FqName): KtClassOrObject? {
-    return allClasses
-      .firstOrNull { it.fqName == fqName }
+    return allClasses.firstOrNull { it.fqName == fqName }
   }
 
   private val KtFile.identifier: String
