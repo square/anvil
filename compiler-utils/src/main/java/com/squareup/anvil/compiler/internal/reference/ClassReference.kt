@@ -41,6 +41,7 @@ import org.jetbrains.kotlin.psi.KtEnumEntry
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
+import kotlin.LazyThreadSafetyMode.NONE
 
 /**
  * Used to create a common type between [KtClassOrObject] class references and [ClassDescriptor]
@@ -54,6 +55,9 @@ public sealed class ClassReference {
   public abstract val classId: ClassId
   public abstract val fqName: FqName
   public abstract val module: AnvilModuleDescriptor
+
+  public abstract val functions: List<FunctionReference>
+  public abstract val annotations: List<AnnotationReference>
 
   override fun toString(): String {
     return "${this::class.qualifiedName}($fqName)"
@@ -78,6 +82,16 @@ public sealed class ClassReference {
     override val module: AnvilModuleDescriptor
   ) : ClassReference() {
     override val fqName: FqName = classId.asSingleFqName()
+
+    override val functions: List<FunctionReference.Psi> by lazy(NONE) {
+      clazz
+        .functions(includeCompanionObjects = false)
+        .map { it.toFunctionReference(this) }
+    }
+
+    override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
+      clazz.annotationEntries.map { it.toAnnotationReference(module) }
+    }
   }
 
   public class Descriptor(
@@ -86,6 +100,17 @@ public sealed class ClassReference {
     override val module: AnvilModuleDescriptor
   ) : ClassReference() {
     override val fqName: FqName = classId.asSingleFqName()
+
+    override val functions: List<FunctionReference> by lazy(NONE) {
+      clazz.unsubstitutedMemberScope
+        .getContributedDescriptors(kindFilter = DescriptorKindFilter.FUNCTIONS)
+        .filterIsInstance<FunctionDescriptor>()
+        .map { it.toFunctionReference(this) }
+    }
+
+    override val annotations: List<AnnotationReference> by lazy(NONE) {
+      clazz.annotations.map { it.toAnnotationReference(module) }
+    }
   }
 }
 
@@ -265,27 +290,6 @@ public fun ClassReference.isAbstractClass(): Boolean = when (this) {
   is Descriptor -> clazz.modality == ABSTRACT
   is Psi -> clazz.hasModifier(ABSTRACT_KEYWORD)
 }
-
-@ExperimentalAnvilApi
-public fun ClassReference.annotations(): List<AnnotationReference> =
-  when (this) {
-    is Psi -> clazz.annotationEntries.map { it.toAnnotationReference(module) }
-    is Descriptor -> clazz.annotations.map { it.toAnnotationReference(module) }
-  }
-
-@ExperimentalAnvilApi
-public fun ClassReference.functions(): List<FunctionReference> =
-  when (this) {
-    is Psi ->
-      clazz
-        .functions(includeCompanionObjects = false)
-        .map { it.toFunctionReference(this) }
-    is Descriptor ->
-      clazz.unsubstitutedMemberScope
-        .getContributedDescriptors(kindFilter = DescriptorKindFilter.FUNCTIONS)
-        .filterIsInstance<FunctionDescriptor>()
-        .map { it.toFunctionReference(this) }
-  }
 
 @ExperimentalAnvilApi
 @Suppress("FunctionName")

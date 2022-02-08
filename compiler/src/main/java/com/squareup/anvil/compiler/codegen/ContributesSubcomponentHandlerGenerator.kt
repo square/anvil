@@ -28,11 +28,9 @@ import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.FunctionReference
-import com.squareup.anvil.compiler.internal.reference.annotations
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.reference.daggerScopes
-import com.squareup.anvil.compiler.internal.reference.functions
 import com.squareup.anvil.compiler.internal.reference.innerClasses
 import com.squareup.anvil.compiler.internal.reference.isAbstract
 import com.squareup.anvil.compiler.internal.reference.isAbstractClass
@@ -338,7 +336,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       .innerClasses()
       .filter { it.isInterface() }
       .filter { classReference ->
-        classReference.annotations()
+        classReference.annotations
           .any {
             it.fqName == contributesToFqName && it.scope().fqName == contribution.parentScope
           }
@@ -355,7 +353,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       )
     }
 
-    val functions = componentInterface.functions()
+    val functions = componentInterface.functions
       .filter { it.isAbstract() && it.isPublic() }
       .filter {
         val returnType = it.returnType().fqName
@@ -383,7 +381,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     val contributedFactories = contribution.classReference
       .innerClasses()
       .filter { classReference ->
-        classReference.annotations().any { it.fqName == contributesSubcomponentFactoryFqName }
+        classReference.annotations.any { it.fqName == contributesSubcomponentFactoryFqName }
       }
       .onEach { factory ->
         if (!factory.isInterface() && !factory.isAbstractClass()) {
@@ -393,7 +391,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           )
         }
 
-        val createComponentFunctions = factory.functions()
+        val createComponentFunctions = factory.functions
           .filter { it.isAbstract() }
           .filter { it.returnType().fqName == contributionFqName }
 

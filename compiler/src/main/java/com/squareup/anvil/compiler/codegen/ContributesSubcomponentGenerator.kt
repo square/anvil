@@ -23,7 +23,6 @@ import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.annotations
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.reference.replaces
 import com.squareup.anvil.compiler.internal.reference.scope
@@ -245,7 +244,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
     scope: FqName,
     subcomponent: KtClassOrObject
   ) {
-    annotations()
+    annotations
       .filter { it.fqName == contributesSubcomponentFqName }
       .ifEmpty {
         throw AnvilCompilationException(
