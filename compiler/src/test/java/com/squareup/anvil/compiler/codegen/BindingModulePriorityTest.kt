@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.secondContributingInterface
 import org.junit.Test
@@ -28,7 +29,13 @@ class BindingModulePriorityTest(
   companion object {
     @Parameters(name = "{0}")
     @JvmStatic fun annotationClasses(): Collection<Any> {
-      return listOf(MergeComponent::class, MergeSubcomponent::class, MergeModules::class)
+      return buildList {
+        add(MergeComponent::class)
+        if (isFullTestRun()) {
+          add(MergeSubcomponent::class)
+          add(MergeModules::class)
+        }
+      }
     }
   }
 

@@ -8,6 +8,7 @@ def generateBuildProperties = project.tasks.register('generateBuildProperties') 
   File buildPropertiesFile = new File(new File(project.buildDir, generatedDirPath), 'BuildProperties.kt')
 
   inputs.property 'useIR', rootProject.ext.kotlinUseIR
+  inputs.property 'useIR', rootProject.ext.fullTestRun
 
   outputs.file buildPropertiesFile
 
@@ -21,6 +22,8 @@ def generateBuildProperties = project.tasks.register('generateBuildProperties') 
 
       // With Kotlin 1.6 the old backend triggers deprecation warnings.
       internal const val WARNINGS_AS_ERRORS = ${rootProject.ext.kotlinUseIR && rootProject.ext.kotlinVersion.startsWith("1.6")}
+     
+      internal const val FULL_TEST_RUN = ${rootProject.ext.fullTestRun}
     """.stripIndent()
   }
 }
