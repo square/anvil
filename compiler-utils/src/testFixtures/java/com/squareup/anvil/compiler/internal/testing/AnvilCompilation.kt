@@ -75,10 +75,18 @@ public class AnvilCompilation internal constructor(
       )
 
       if (enableExperimentalAnvilApis) {
-        kotlincArguments += listOf(
-          "-Xopt-in=kotlin.RequiresOptIn",
-          "-Xopt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
-        )
+        // TODO: remove this property with Kotlin 1.6.20.
+        kotlincArguments += if (KotlinVersion.CURRENT > KotlinVersion(1, 6, 10)) {
+          listOf(
+            "-opt-in=kotlin.RequiresOptIn",
+            "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
+          )
+        } else {
+          listOf(
+            "-Xopt-in=kotlin.RequiresOptIn",
+            "-Xopt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
+          )
+        }
       }
     }
   }
