@@ -3,7 +3,10 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.classIdBestGuess
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.incremental.components.LookupLocation
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation.FROM_BACKEND
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -12,12 +15,19 @@ import org.jetbrains.kotlin.psi.KtFile
 @ExperimentalAnvilApi
 public interface AnvilModuleDescriptor : ModuleDescriptor {
   public fun resolveClassIdOrNull(classId: ClassId): FqName?
+
+  public fun resolveFqNameOrNull(
+    fqName: FqName,
+    lookupLocation: LookupLocation = FROM_BACKEND
+  ): ClassDescriptor?
+
   public fun getClassesAndInnerClasses(ktFile: KtFile): List<KtClassOrObject>
+
   public fun getKtClassOrObjectOrNull(fqName: FqName): KtClassOrObject?
 }
 
 @Suppress("NOTHING_TO_INLINE")
-private inline fun ModuleDescriptor.asAnvilModuleDescriptor(): AnvilModuleDescriptor =
+internal inline fun ModuleDescriptor.asAnvilModuleDescriptor(): AnvilModuleDescriptor =
   this as AnvilModuleDescriptor
 
 @ExperimentalAnvilApi

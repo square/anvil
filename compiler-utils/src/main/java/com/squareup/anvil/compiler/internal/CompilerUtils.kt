@@ -95,7 +95,7 @@ public fun KotlinType.classDescriptorOrNull(): ClassDescriptor? {
 }
 
 @ExperimentalAnvilApi
-public fun KotlinType.requireClassDescriptor(): ClassDescriptor {
+public fun KotlinType.classDescriptor(): ClassDescriptor {
   return classDescriptorOrNull()
     ?: throw AnvilCompilationException(
       "Unable to resolve type for ${this.asTypeName()}"
@@ -118,7 +118,7 @@ public fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescriptor
 @ExperimentalAnvilApi
 public fun AnnotationDescriptor.scopeOrNull(module: ModuleDescriptor): ClassDescriptor? {
   val annotationValue = getAnnotationValue("scope") as? KClassValue
-  return annotationValue?.argumentType(module)?.requireClassDescriptor()
+  return annotationValue?.argumentType(module)?.classDescriptor()
 }
 
 @ExperimentalAnvilApi
@@ -129,7 +129,7 @@ public fun AnnotationDescriptor.parentScope(module: ModuleDescriptor): ClassDesc
       message = "Couldn't find parentScope for $fqName."
     )
 
-  return annotationValue.argumentType(module).requireClassDescriptor()
+  return annotationValue.argumentType(module).classDescriptor()
 }
 
 @ExperimentalAnvilApi
@@ -165,7 +165,7 @@ public fun List<KotlinType>.getAllSuperTypes(): Sequence<FqName> =
     kotlinTypes.ifEmpty { null }?.flatMap { it.supertypes() }
   }
     .flatMap { it.asSequence() }
-    .map { it.requireClassDescriptor().fqNameSafe }
+    .map { it.classDescriptor().fqNameSafe }
 
 @ExperimentalAnvilApi
 public fun AnnotationDescriptor.isQualifier(): Boolean {

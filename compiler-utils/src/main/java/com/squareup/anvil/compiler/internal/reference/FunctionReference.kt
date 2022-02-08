@@ -2,10 +2,10 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.reference.FunctionReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.FunctionReference.Psi
-import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeReference
 import com.squareup.anvil.compiler.internal.resolveTypeReference
@@ -91,6 +91,6 @@ public fun FunctionReference.returnType(module: ModuleDescriptor): ClassReferenc
     is Psi -> declaringClass.resolveTypeReference(module, function.requireTypeReference(module))
       ?.requireFqName(module)
       ?.toClassReference(module)
-    is Descriptor -> function.returnType?.requireClassDescriptor()?.toClassReference()
+    is Descriptor -> function.returnType?.classDescriptor()?.toClassReference()
   } ?: throw AnvilCompilationException(message = "Couldn't find return type for $fqName.")
 }

@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler
 
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
-import com.squareup.anvil.compiler.internal.requireClassDescriptor
+import com.squareup.anvil.compiler.internal.classDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
@@ -94,5 +94,5 @@ private class ContributedHint(properties: List<PropertyDescriptor>) {
   }
 
   private fun PropertyDescriptor.toClassDescriptor(): ClassDescriptor =
-    type.argumentType().requireClassDescriptor()
+    type.argumentType().classDescriptor()
 }

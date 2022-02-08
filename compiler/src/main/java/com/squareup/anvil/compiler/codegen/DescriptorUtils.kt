@@ -6,9 +6,9 @@ import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asTypeName
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.isQualifier
-import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.toAnnotationSpec
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.providerFqName
@@ -50,7 +50,7 @@ fun PropertyDescriptor.isSetterInjected(): Boolean {
 
 fun KotlinType.fqNameOrNull(): FqName? = classDescriptorOrNull()?.fqNameOrNull()
 
-fun KotlinType.fqName(): FqName = requireClassDescriptor().fqNameSafe
+fun KotlinType.fqName(): FqName = classDescriptor().fqNameSafe
 
 internal fun List<CallableMemberDescriptor>.mapToMemberInjectParameters(
   module: ModuleDescriptor,
