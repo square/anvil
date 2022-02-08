@@ -1,9 +1,13 @@
-package com.squareup.anvil.compiler.internal
+package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.AnnotationReference.Descriptor
-import com.squareup.anvil.compiler.internal.AnnotationReference.Psi
+import com.squareup.anvil.compiler.internal.findAnnotationArgument
+import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Descriptor
+import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Psi
+import com.squareup.anvil.compiler.internal.requireClass
+import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.scope
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName

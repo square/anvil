@@ -12,13 +12,14 @@ import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.parentScope
-import com.squareup.anvil.compiler.internal.replaces
+import com.squareup.anvil.compiler.internal.reference.replaces
+import com.squareup.anvil.compiler.internal.reference.scope
+import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
-import com.squareup.anvil.compiler.internal.toClassReference
 import com.squareup.anvil.compiler.internal.toType
 import dagger.Component
 import dagger.Module
