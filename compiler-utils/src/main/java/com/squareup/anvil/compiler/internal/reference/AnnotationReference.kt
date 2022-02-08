@@ -23,16 +23,7 @@ public sealed class AnnotationReference {
 
   public abstract val classReference: ClassReference
   public val fqName: FqName get() = classReference.fqName
-
-  public class Psi internal constructor(
-    public val annotation: KtAnnotationEntry,
-    override val classReference: ClassReference
-  ) : AnnotationReference()
-
-  public class Descriptor internal constructor(
-    public val annotation: AnnotationDescriptor,
-    override val classReference: ClassReference
-  ) : AnnotationReference()
+  public val module: AnvilModuleDescriptor get() = classReference.module
 
   override fun toString(): String = "@$fqName"
 
@@ -46,6 +37,16 @@ public sealed class AnnotationReference {
   }
 
   override fun hashCode(): Int = fqName.hashCode()
+
+  public class Psi internal constructor(
+    public val annotation: KtAnnotationEntry,
+    override val classReference: ClassReference
+  ) : AnnotationReference()
+
+  public class Descriptor internal constructor(
+    public val annotation: AnnotationDescriptor,
+    override val classReference: ClassReference
+  ) : AnnotationReference()
 }
 
 @ExperimentalAnvilApi
@@ -54,13 +55,12 @@ public fun KtAnnotationEntry.toAnnotationReference(module: ModuleDescriptor): Ps
 }
 
 @ExperimentalAnvilApi
-public fun AnnotationDescriptor.toAnnotationReference(): Descriptor {
-  return Descriptor(this, requireClass().toClassReference())
+public fun AnnotationDescriptor.toAnnotationReference(module: ModuleDescriptor): Descriptor {
+  return Descriptor(this, requireClass().toClassReference(module))
 }
 
 @ExperimentalAnvilApi
 public fun AnnotationReference.scope(
-  module: ModuleDescriptor,
   parameterIndex: Int = 0
 ): ClassReference {
   return when (this) {
@@ -69,6 +69,6 @@ public fun AnnotationReference.scope(
         .findAnnotationArgument<KtClassLiteralExpression>(name = "scope", index = parameterIndex)
         ?.requireFqName(module)
         ?.toClassReference(module)
-    is Descriptor -> annotation.scope(module).toClassReference()
+    is Descriptor -> annotation.scope(module).toClassReference(module)
   } ?: throw AnvilCompilationException(message = "Couldn't find scope for $fqName.")
 }

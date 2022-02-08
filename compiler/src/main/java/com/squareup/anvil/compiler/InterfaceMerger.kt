@@ -89,8 +89,8 @@ internal class InterfaceMerger(
 
     val replacedClasses = classes
       .flatMap { (classDescriptor, contributeAnnotation) ->
-        classDescriptor.toClassReference()
-          .replaces(module, contributeAnnotation.requireFqName())
+        classDescriptor.toClassReference(module)
+          .replaces(contributeAnnotation.requireFqName())
           .map { it.requireClassDescriptor(module) }
           .onEach { classDescriptorForReplacement ->
             // Verify the other class is an interface. It doesn't make sense for a contributed

@@ -6,7 +6,6 @@ import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.classDescriptor
-import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.contributesSubcomponentFqName
@@ -21,12 +20,10 @@ import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
-import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.scopeOrNull
 import com.squareup.anvil.compiler.internal.toAnnotationSpec
-import com.squareup.anvil.compiler.internal.toClassId
 import com.squareup.anvil.compiler.internal.toFqNames
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -56,6 +53,7 @@ public sealed class ClassReference {
 
   public abstract val classId: ClassId
   public abstract val fqName: FqName
+  public abstract val module: AnvilModuleDescriptor
 
   override fun toString(): String {
     return "${this::class.qualifiedName}($fqName)"
@@ -74,41 +72,39 @@ public sealed class ClassReference {
     return fqName.hashCode()
   }
 
-  public class Psi internal constructor(
+  public class Psi(
     public val clazz: KtClassOrObject,
-    override val classId: ClassId
+    override val classId: ClassId,
+    override val module: AnvilModuleDescriptor
   ) : ClassReference() {
     override val fqName: FqName = classId.asSingleFqName()
   }
 
-  public class Descriptor internal constructor(
+  public class Descriptor(
     public val clazz: ClassDescriptor,
-    override val classId: ClassId
+    override val classId: ClassId,
+    override val module: AnvilModuleDescriptor
   ) : ClassReference() {
     override val fqName: FqName = classId.asSingleFqName()
   }
 }
 
 @ExperimentalAnvilApi
-public fun ClassDescriptor.toClassReference(): Descriptor {
-  return Descriptor(this, this.requireClassId())
-}
+public fun ClassDescriptor.toClassReference(module: ModuleDescriptor): Descriptor =
+  module.asAnvilModuleDescriptor().getClassReference(this)
 
 @ExperimentalAnvilApi
-public fun KtClassOrObject.toClassReference(): Psi {
-  return Psi(this, toClassId())
-}
+public fun KtClassOrObject.toClassReference(module: ModuleDescriptor): Psi =
+  module.asAnvilModuleDescriptor().getClassReference(this)
 
 /**
- * Attempts to resolve the [fqName] to a [ClassDescriptor] first, then falls back to a
+ * Attempts to resolve the [FqName] to a [ClassDescriptor] first, then falls back to a
  * [KtClassOrObject] if the descriptor resolution fails. This will happen if the code being parsed
  * was generated as part of the compilation round for this module.
  */
 @ExperimentalAnvilApi
-public fun FqName.toClassReferenceOrNull(module: ModuleDescriptor): ClassReference? {
-  return classDescriptorOrNull(module)?.toClassReference()
-    ?: getKtClassOrObjectOrNull(module)?.toClassReference()
-}
+public fun FqName.toClassReferenceOrNull(module: ModuleDescriptor): ClassReference? =
+  module.asAnvilModuleDescriptor().getClassReferenceOrNull(this)
 
 @ExperimentalAnvilApi
 public fun FqName.toClassReference(module: ModuleDescriptor): ClassReference {
@@ -128,12 +124,11 @@ public fun FqName.toClassReference(module: ModuleDescriptor): ClassReference {
  */
 @ExperimentalAnvilApi
 public fun ClassReference.allSuperTypeClassReferences(
-  module: ModuleDescriptor,
   includeSelf: Boolean = false
 ): Sequence<ClassReference> {
   return generateSequence(sequenceOf(this)) { superTypes ->
     superTypes
-      .map { classRef -> classRef.directSuperClassReferences(module) }
+      .map { classRef -> classRef.directSuperClassReferences() }
       .flatten()
       .takeIf { it.firstOrNull() != null }
   }
@@ -143,9 +138,7 @@ public fun ClassReference.allSuperTypeClassReferences(
 }
 
 @ExperimentalAnvilApi
-public fun ClassReference.directSuperClassReferences(
-  module: ModuleDescriptor
-): Sequence<ClassReference> {
+public fun ClassReference.directSuperClassReferences(): Sequence<ClassReference> {
   return when (this) {
     is Descriptor -> clazz.directSuperClassAndInterfaces()
       .asSequence()
@@ -168,14 +161,14 @@ public fun ClassReference.innerClasses(): Sequence<ClassReference> {
         .getContributedDescriptors(kindFilter = DescriptorKindFilter.CLASSIFIERS)
         .asSequence()
         .filterIsInstance<ClassDescriptor>()
-        .map { it.toClassReference() }
+        .map { it.toClassReference(module) }
     is Psi ->
       generateSequence(clazz.declarations.filterIsInstance<KtClassOrObject>()) { classes ->
         classes
           .flatMap { it.declarations }
           .filterIsInstance<KtClassOrObject>()
           .ifEmpty { null }
-      }.flatten().map { it.toClassReference() }
+      }.flatten().map { it.toClassReference(module) }
   }
 }
 
@@ -197,7 +190,6 @@ public fun ClassReference.indexOfTypeParameter(parameterName: String): Int {
 
 @ExperimentalAnvilApi
 public fun ClassReference.scopeOrNull(
-  module: ModuleDescriptor,
   annotationFqName: FqName
 ): FqName? {
   return when (this) {
@@ -221,7 +213,6 @@ private fun replacesIndex(annotationFqName: FqName): Int {
 
 @ExperimentalAnvilApi
 public fun ClassReference.replaces(
-  module: ModuleDescriptor,
   annotationFqName: FqName,
   index: Int = replacesIndex(annotationFqName)
 ): List<ClassReference> =
@@ -232,7 +223,7 @@ public fun ClassReference.replaces(
 
       replacesValue
         ?.value
-        ?.map { it.argumentType(module).classDescriptor().toClassReference() }
+        ?.map { it.argumentType(module).classDescriptor().toClassReference(module) }
     }
     is Psi ->
       clazz
@@ -243,9 +234,7 @@ public fun ClassReference.replaces(
   }.orEmpty()
 
 @ExperimentalAnvilApi
-public fun ClassReference.qualifiers(
-  module: ModuleDescriptor
-): List<AnnotationSpec> {
+public fun ClassReference.qualifiers(): List<AnnotationSpec> {
   return when (this) {
     is Descriptor -> clazz.annotations.filter { it.isQualifier() }
       .map { it.toAnnotationSpec(module) }
@@ -255,9 +244,7 @@ public fun ClassReference.qualifiers(
 }
 
 @ExperimentalAnvilApi
-public fun ClassReference.daggerScopes(
-  module: ModuleDescriptor
-): List<AnnotationSpec> = when (this) {
+public fun ClassReference.daggerScopes(): List<AnnotationSpec> = when (this) {
   is Descriptor -> clazz.annotations.filter { it.isDaggerScope() }
     .map { it.toAnnotationSpec(module) }
   is Psi -> clazz.annotationEntries.filter { it.isDaggerScope(module) }
@@ -280,10 +267,10 @@ public fun ClassReference.isAbstractClass(): Boolean = when (this) {
 }
 
 @ExperimentalAnvilApi
-public fun ClassReference.annotations(module: ModuleDescriptor): List<AnnotationReference> =
+public fun ClassReference.annotations(): List<AnnotationReference> =
   when (this) {
     is Psi -> clazz.annotationEntries.map { it.toAnnotationReference(module) }
-    is Descriptor -> clazz.annotations.map { it.toAnnotationReference() }
+    is Descriptor -> clazz.annotations.map { it.toAnnotationReference(module) }
   }
 
 @ExperimentalAnvilApi
@@ -292,12 +279,12 @@ public fun ClassReference.functions(): List<FunctionReference> =
     is Psi ->
       clazz
         .functions(includeCompanionObjects = false)
-        .map { it.toFunctionReference(clazz) }
+        .map { it.toFunctionReference(this) }
     is Descriptor ->
       clazz.unsubstitutedMemberScope
         .getContributedDescriptors(kindFilter = DescriptorKindFilter.FUNCTIONS)
         .filterIsInstance<FunctionDescriptor>()
-        .map { it.toFunctionReference() }
+        .map { it.toFunctionReference(this) }
   }
 
 @ExperimentalAnvilApi

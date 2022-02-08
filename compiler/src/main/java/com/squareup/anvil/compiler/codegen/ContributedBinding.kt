@@ -68,7 +68,7 @@ internal fun ClassReference.toContributedBinding(
   val qualifiers = if (ignoreQualifier) {
     emptyList()
   } else {
-    qualifiers(module)
+    qualifiers()
   }
 
   val boundTypeClassName = when (boundType) {
@@ -100,7 +100,7 @@ private fun ClassReference.requireBoundType(
 
   if (boundFromAnnotation != null) {
     // ensure that the bound type is actually a supertype of the contributing class
-    val boundType = allSuperTypeClassReferences(module)
+    val boundType = allSuperTypeClassReferences()
       .firstOrNull { it.fqName == boundFromAnnotation }
       ?: throw AnvilCompilationException(
         "$fqName contributes a binding for $boundFromAnnotation, but doesn't extend this type."
@@ -112,7 +112,7 @@ private fun ClassReference.requireBoundType(
 
   // If there's no bound type in the annotation,
   // it must be the only supertype of the contributing class
-  val boundType = directSuperClassReferences(module).singleOrNull()
+  val boundType = directSuperClassReferences().singleOrNull()
     ?: throw AnvilCompilationException(
       message = "$annotationFqName contributes a binding, but does not " +
         "specify the bound type. This is only allowed with exactly one direct super type. " +

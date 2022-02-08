@@ -177,8 +177,8 @@ internal class ModuleMerger(
         classDescriptor.defaultType.asmType(codegen.typeMapper) !in excludedModules
       }
       .flatMap { (classDescriptor, contributeAnnotation) ->
-        classDescriptor.toClassReference()
-          .replaces(module, contributeAnnotation.requireFqName())
+        classDescriptor.toClassReference(module)
+          .replaces(contributeAnnotation.requireFqName())
           .map { it.requireClassDescriptor(module) }
           .map { classDescriptorForReplacement ->
             // Verify has @Module annotation. It doesn't make sense for a Dagger module to
@@ -215,8 +215,8 @@ internal class ModuleMerger(
         .flatMap { contributedClass ->
           val annotation = contributedClass.annotation(annotationFqName)
           if (scopeFqName == annotation.scope(module).fqNameSafe) {
-            contributedClass.toClassReference()
-              .replaces(module, annotationFqName)
+            contributedClass.toClassReference(module)
+              .replaces(annotationFqName)
               .map { it.requireClassDescriptor(module) }
               .map { classDescriptorForReplacement ->
                 checkSameScope(

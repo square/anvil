@@ -639,7 +639,7 @@ public fun KtClassOrObject.resolveTypeReference(
   typeReference.typeElement?.fqNameOrNull(module)
     ?.let { return typeReference }
 
-  val declaringClass = typeReference.requireContainingClassReference()
+  val declaringClass = typeReference.requireContainingClassReference(module)
   val parameterName = typeReference.text
 
   return resolveGenericTypeReference(module, declaringClass, parameterName)
@@ -754,8 +754,8 @@ public fun KtClassOrObject.superTypeListEntryOrNull(
   module: ModuleDescriptor,
   superTypeFqName: FqName
 ): KtSuperTypeListEntry? {
-  return toClassReference()
-    .allSuperTypeClassReferences(module, includeSelf = true)
+  return toClassReference(module)
+    .allSuperTypeClassReferences(includeSelf = true)
     .filterIsInstance<Psi>()
     .firstNotNullOfOrNull { classReference ->
       classReference.clazz
@@ -877,15 +877,19 @@ public fun KtClassOrObject.generateClassName(
     }
 
 @ExperimentalAnvilApi
-public fun KtTypeReference.containingClassReferenceOrNull(): ClassReference? {
+public fun KtTypeReference.containingClassReferenceOrNull(
+  module: ModuleDescriptor
+): ClassReference? {
   return typeElement
     ?.containingClass()
-    ?.toClassReference()
+    ?.toClassReference(module)
 }
 
 @ExperimentalAnvilApi
-public fun KtTypeReference.requireContainingClassReference(): ClassReference {
-  return containingClassReferenceOrNull()
+public fun KtTypeReference.requireContainingClassReference(
+  module: ModuleDescriptor
+): ClassReference {
+  return containingClassReferenceOrNull(module)
     ?: throw AnvilCompilationException(
       "Unable to find a containing class.",
       element = this

@@ -146,7 +146,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           ?: emptyList()
 
         Contribution(
-          classReference = clazz.toClassReference(),
+          classReference = clazz.toClassReference(module),
           scope = clazz.scope(contributesSubcomponentFqName, module),
           parentScope = clazz.parentScope(contributesSubcomponentFqName, module),
           modules = modules,
@@ -157,7 +157,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       .also { contributions ->
         // Find all replaced subcomponents and remember them.
         replacedReferences += contributions.flatMap { contribution ->
-          contribution.classReference.replaces(module, contributesSubcomponentFqName)
+          contribution.classReference.replaces(contributesSubcomponentFqName)
             .also {
               checkReplacedSubcomponentWasNotAlreadyGenerated(contribution.classReference, it)
             }
@@ -192,7 +192,7 @@ internal class ContributesSubcomponentHandlerGenerator(
         val generatedPackage = generatedAnvilSubcomponent.packageFqName.asString()
         val componentClassName = generatedAnvilSubcomponent.relativeClassName.asString()
 
-        val factoryClass = findFactoryClass(contribution, generatedAnvilSubcomponent, module)
+        val factoryClass = findFactoryClass(contribution, generatedAnvilSubcomponent)
 
         val content = FileSpec.buildFile(generatedPackage, componentClassName) {
           TypeSpec
@@ -221,7 +221,7 @@ internal class ContributesSubcomponentHandlerGenerator(
                 }
                 .build()
             )
-            .addAnnotations(contribution.classReference.daggerScopes(module))
+            .addAnnotations(contribution.classReference.daggerScopes())
             .apply {
               if (factoryClass != null) {
                 addType(generateFactory(factoryClass.originalReference))
@@ -230,7 +230,7 @@ internal class ContributesSubcomponentHandlerGenerator(
             }
             .addType(
               generateParentComponent(
-                contribution, generatedAnvilSubcomponent, module, factoryClass
+                contribution, generatedAnvilSubcomponent, factoryClass
               )
             )
             .build()
@@ -290,11 +290,10 @@ internal class ContributesSubcomponentHandlerGenerator(
   private fun generateParentComponent(
     contribution: Contribution,
     generatedAnvilSubcomponent: ClassId,
-    module: ModuleDescriptor,
     factoryClass: FactoryClassHolder?,
   ): TypeSpec {
     val parentComponentInterface = findParentComponentInterface(
-      contribution, module, factoryClass?.originalReference?.fqName
+      contribution, factoryClass?.originalReference?.fqName
     )
 
     return TypeSpec
@@ -331,7 +330,6 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private fun findParentComponentInterface(
     contribution: Contribution,
-    module: ModuleDescriptor,
     factoryClass: FqName?
   ): ParentComponentInterfaceHolder? {
     val contributionFqName = contribution.clazzFqName
@@ -340,9 +338,9 @@ internal class ContributesSubcomponentHandlerGenerator(
       .innerClasses()
       .filter { it.isInterface() }
       .filter { classReference ->
-        classReference.annotations(module)
+        classReference.annotations()
           .any {
-            it.fqName == contributesToFqName && it.scope(module).fqName == contribution.parentScope
+            it.fqName == contributesToFqName && it.scope().fqName == contribution.parentScope
           }
       }
       .toList()
@@ -360,7 +358,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     val functions = componentInterface.functions()
       .filter { it.isAbstract() && it.isPublic() }
       .filter {
-        val returnType = it.returnType(module).fqName
+        val returnType = it.returnType().fqName
         returnType == contributionFqName || (factoryClass != null && returnType == factoryClass)
       }
 
@@ -378,15 +376,14 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private fun findFactoryClass(
     contribution: Contribution,
-    generatedAnvilSubcomponent: ClassId,
-    module: ModuleDescriptor
+    generatedAnvilSubcomponent: ClassId
   ): FactoryClassHolder? {
     val contributionFqName = contribution.clazzFqName
 
     val contributedFactories = contribution.classReference
       .innerClasses()
       .filter { classReference ->
-        classReference.annotations(module).any { it.fqName == contributesSubcomponentFactoryFqName }
+        classReference.annotations().any { it.fqName == contributesSubcomponentFactoryFqName }
       }
       .onEach { factory ->
         if (!factory.isInterface() && !factory.isAbstractClass()) {
@@ -398,7 +395,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
         val createComponentFunctions = factory.functions()
           .filter { it.isAbstract() }
-          .filter { it.returnType(module).fqName == contributionFqName }
+          .filter { it.returnType().fqName == contributionFqName }
 
         if (createComponentFunctions.size != 1) {
           throw AnvilCompilationExceptionClassReference(
@@ -469,7 +466,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           ?: emptyList()
 
         Contribution(
-          classReference = descriptor.toClassReference(),
+          classReference = descriptor.toClassReference(module),
           scope = annotation.scope(module).fqNameSafe,
           parentScope = annotation.parentScope(module).fqNameSafe,
           modules = modules,
@@ -480,7 +477,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     // Find all replaced subcomponents from precompiled dependencies.
     replacedReferences += contributions
       .flatMap {
-        it.classReference.replaces(module, contributesSubcomponentFqName)
+        it.classReference.replaces(contributesSubcomponentFqName)
       }
   }
 
