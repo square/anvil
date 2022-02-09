@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
-import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.classIdBestGuess
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
@@ -23,15 +22,23 @@ public interface AnvilModuleDescriptor : ModuleDescriptor {
     lookupLocation: LookupLocation = FROM_BACKEND
   ): ClassDescriptor?
 
-  public fun getClassesAndInnerClasses(ktFile: KtFile): List<KtClassOrObject>
-
-  public fun getKtClassOrObjectOrNull(fqName: FqName): KtClassOrObject?
+  public fun getClassAndInnerClassReferences(ktFile: KtFile): List<Psi>
 
   public fun getClassReference(clazz: KtClassOrObject): Psi
 
   public fun getClassReference(descriptor: ClassDescriptor): Descriptor
 
-  public fun getClassReferenceOrNull(fqName: FqName): ClassReference?
+  /**
+   * Attempts to resolve the [FqName] to a [ClassDescriptor] first, then falls back to a
+   * [KtClassOrObject] if the descriptor resolution fails. This will happen if the code being
+   * parsed was generated as part of the compilation round for this module.
+   *
+   * If [preferDescriptor] is `false`, then the order of resolution is reverted.
+   */
+  public fun getClassReferenceOrNull(
+    fqName: FqName,
+    preferDescriptor: Boolean = true
+  ): ClassReference?
 }
 
 @Suppress("NOTHING_TO_INLINE")
@@ -39,31 +46,26 @@ internal inline fun ModuleDescriptor.asAnvilModuleDescriptor(): AnvilModuleDescr
   this as AnvilModuleDescriptor
 
 @ExperimentalAnvilApi
-public fun FqName.getKtClassOrObjectOrNull(
-  module: ModuleDescriptor
-): KtClassOrObject? = module.asAnvilModuleDescriptor().getKtClassOrObjectOrNull(this)
-
-@ExperimentalAnvilApi
-public fun FqName.getKtClassOrObject(
-  module: ModuleDescriptor
-): KtClassOrObject = getKtClassOrObjectOrNull(module)
-  ?: throw AnvilCompilationException("Couldn't resolve KtClassOrObject for ${asString()}")
-
-@ExperimentalAnvilApi
 public fun FqName.canResolveFqName(
   module: ModuleDescriptor
 ): Boolean = module.asAnvilModuleDescriptor().resolveClassIdOrNull(classIdBestGuess()) != null
 
 @ExperimentalAnvilApi
-public fun KtFile.classesAndInnerClasses(
-  module: ModuleDescriptor
-): List<KtClassOrObject> {
-  return module.asAnvilModuleDescriptor().getClassesAndInnerClasses(this)
-}
-
-@ExperimentalAnvilApi
+@Deprecated(
+  message = "Use ClassReference instead.",
+  replaceWith = ReplaceWith("classAndInnerClassReferences(module)")
+)
 public fun Collection<KtFile>.classesAndInnerClasses(
   module: ModuleDescriptor
 ): Sequence<KtClassOrObject> {
-  return asSequence().flatMap { it.classesAndInnerClasses(module) }
+  return classAndInnerClassReferences(module).map { it.clazz }
+}
+
+@ExperimentalAnvilApi
+public fun Collection<KtFile>.classAndInnerClassReferences(
+  module: ModuleDescriptor
+): Sequence<Psi> {
+  return asSequence().flatMap {
+    module.asAnvilModuleDescriptor().getClassAndInnerClassReferences(it)
+  }
 }

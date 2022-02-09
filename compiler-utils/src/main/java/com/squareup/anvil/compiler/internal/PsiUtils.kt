@@ -9,9 +9,10 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.asAnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
-import com.squareup.anvil.compiler.internal.reference.getKtClassOrObjectOrNull
 import com.squareup.anvil.compiler.internal.reference.indexOfTypeParameter
+import com.squareup.anvil.compiler.internal.reference.isInterface
 import com.squareup.anvil.compiler.internal.reference.toClassReference
+import com.squareup.anvil.compiler.internal.reference.toClassReferencePsiOrNull
 import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -274,8 +275,9 @@ public fun KtClassOrObject.allPsiSuperClasses(
 
   val superOrNull = superTypeListEntries
     .asSequence()
-    .mapNotNull { it.typeReference?.fqNameOrNull(module)?.getKtClassOrObjectOrNull(module) }
+    .mapNotNull { it.typeReference?.fqNameOrNull(module)?.toClassReferencePsiOrNull(module) }
     .firstOrNull { !it.isInterface() }
+    ?.clazz
     ?: return emptyList()
 
   return listOf(superOrNull) + superOrNull.allPsiSuperClasses(module)

@@ -141,7 +141,7 @@ internal class CodeGenerationExtension(
 
     // PrivateCodeGenerators don't impact other code generators. Therefore, they can be called a
     // single time at the end.
-    privateCodeGenerators.generateCode(anvilModule.allFiles)
+    privateCodeGenerators.generateCode(anvilModule.allFiles.toList())
 
     // This restarts the analysis phase and will include our files.
     return RetryWithAdditionalRoots(
