@@ -5,13 +5,17 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.reference.FunctionReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.FunctionReference.Psi
+import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
+import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
+import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
+import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeReference
 import com.squareup.anvil.compiler.internal.resolveTypeReference
-import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
-import org.jetbrains.kotlin.descriptors.effectiveVisibility
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
 import org.jetbrains.kotlin.lexer.KtTokens.PUBLIC_KEYWORD
 import org.jetbrains.kotlin.name.FqName
@@ -30,6 +34,8 @@ public sealed class FunctionReference {
   public abstract val declaringClass: ClassReference
 
   public val module: AnvilModuleDescriptor get() = declaringClass.module
+
+  public abstract fun visibility(): Visibility
 
   override fun toString(): String = "$fqName()"
 
@@ -50,13 +56,39 @@ public sealed class FunctionReference {
     public val function: KtNamedFunction,
     override val declaringClass: ClassReference.Psi,
     override val fqName: FqName = function.requireFqName()
-  ) : FunctionReference()
+  ) : FunctionReference() {
+    override fun visibility(): Visibility {
+      return when (val visibility = function.visibilityModifierTypeOrDefault()) {
+        PUBLIC_KEYWORD -> PUBLIC
+        KtTokens.INTERNAL_KEYWORD -> INTERNAL
+        KtTokens.PROTECTED_KEYWORD -> PROTECTED
+        KtTokens.PRIVATE_KEYWORD -> PRIVATE
+        else -> throw AnvilCompilationExceptionClassReference(
+          classReference = declaringClass,
+          message = "Couldn't get visibility $visibility for function $fqName."
+        )
+      }
+    }
+  }
 
   public class Descriptor internal constructor(
     public val function: FunctionDescriptor,
     override val declaringClass: ClassReference.Descriptor,
     override val fqName: FqName = function.fqNameSafe
-  ) : FunctionReference()
+  ) : FunctionReference() {
+    override fun visibility(): Visibility {
+      return when (val visibility = function.visibility) {
+        DescriptorVisibilities.PUBLIC -> PUBLIC
+        DescriptorVisibilities.INTERNAL -> INTERNAL
+        DescriptorVisibilities.PROTECTED -> PROTECTED
+        DescriptorVisibilities.PRIVATE -> PRIVATE
+        else -> throw AnvilCompilationExceptionClassReference(
+          classReference = declaringClass,
+          message = "Couldn't get visibility $visibility for function $fqName."
+        )
+      }
+    }
+  }
 }
 
 @ExperimentalAnvilApi
@@ -78,14 +110,6 @@ public fun FunctionReference.isAbstract(): Boolean {
   return when (this) {
     is Psi -> function.hasModifier(ABSTRACT_KEYWORD) || declaringClass.isInterface()
     is Descriptor -> function.modality == ABSTRACT
-  }
-}
-
-@ExperimentalAnvilApi
-public fun FunctionReference.isPublic(): Boolean {
-  return when (this) {
-    is Psi -> function.visibilityModifierTypeOrDefault() == PUBLIC_KEYWORD
-    is Descriptor -> function.effectiveVisibility() is Public
   }
 }
 

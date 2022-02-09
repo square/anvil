@@ -73,7 +73,9 @@ public fun KtClassOrObject.toClassId(): ClassId {
   return ClassId(containingKtFile.packageFqName, FqName(className), false)
 }
 
+@Suppress("DeprecatedCallableAddReplaceWith")
 @ExperimentalAnvilApi
+@Deprecated("Don't rely on PSI and make the code agnostic to the underlying implementation.")
 public fun KtAnnotated.isInterface(): Boolean = this is KtClass && this.isInterface()
 
 @ExperimentalAnvilApi
@@ -441,6 +443,11 @@ public fun PsiElement.requireFqName(
 
   // If this doesn't work, then maybe a class from the Kotlin collection package is used.
   FqName("kotlin.collections.$classReference")
+    .takeIf { it.canResolveFqName(module) }
+    ?.let { return it }
+
+  // If this doesn't work, then maybe a class from the Kotlin annotation package is used.
+  FqName("kotlin.annotation.$classReference")
     .takeIf { it.canResolveFqName(module) }
     ?.let { return it }
 
