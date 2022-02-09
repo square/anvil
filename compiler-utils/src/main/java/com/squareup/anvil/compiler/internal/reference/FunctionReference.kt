@@ -3,7 +3,6 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.classDescriptor
-import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.reference.FunctionReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.FunctionReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
@@ -12,12 +11,10 @@ import com.squareup.anvil.compiler.internal.resolveTypeReference
 import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.effectiveVisibility
 import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
 import org.jetbrains.kotlin.lexer.KtTokens.PUBLIC_KEYWORD
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -30,17 +27,9 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 public sealed class FunctionReference {
 
   public abstract val fqName: FqName
+  public abstract val declaringClass: ClassReference
 
-  public class Psi internal constructor(
-    public val function: KtNamedFunction,
-    internal val declaringClass: KtClassOrObject,
-    override val fqName: FqName = function.requireFqName()
-  ) : FunctionReference()
-
-  public class Descriptor internal constructor(
-    public val function: FunctionDescriptor,
-    override val fqName: FqName = function.fqNameSafe
-  ) : FunctionReference()
+  public val module: AnvilModuleDescriptor get() = declaringClass.module
 
   override fun toString(): String = "$fqName()"
 
@@ -56,18 +45,32 @@ public sealed class FunctionReference {
   override fun hashCode(): Int {
     return fqName.hashCode()
   }
+
+  public class Psi internal constructor(
+    public val function: KtNamedFunction,
+    override val declaringClass: ClassReference.Psi,
+    override val fqName: FqName = function.requireFqName()
+  ) : FunctionReference()
+
+  public class Descriptor internal constructor(
+    public val function: FunctionDescriptor,
+    override val declaringClass: ClassReference.Descriptor,
+    override val fqName: FqName = function.fqNameSafe
+  ) : FunctionReference()
 }
 
 @ExperimentalAnvilApi
 public fun KtNamedFunction.toFunctionReference(
-  declaringClass: KtClassOrObject
+  declaringClass: ClassReference.Psi
 ): Psi {
   return Psi(this, declaringClass)
 }
 
 @ExperimentalAnvilApi
-public fun FunctionDescriptor.toFunctionReference(): Descriptor {
-  return Descriptor(this)
+public fun FunctionDescriptor.toFunctionReference(
+  declaringClass: ClassReference.Descriptor,
+): Descriptor {
+  return Descriptor(this, declaringClass)
 }
 
 @ExperimentalAnvilApi
@@ -86,11 +89,13 @@ public fun FunctionReference.isPublic(): Boolean {
   }
 }
 
-public fun FunctionReference.returnType(module: ModuleDescriptor): ClassReference {
+public fun FunctionReference.returnType(): ClassReference {
   return when (this) {
-    is Psi -> declaringClass.resolveTypeReference(module, function.requireTypeReference(module))
-      ?.requireFqName(module)
-      ?.toClassReference(module)
-    is Descriptor -> function.returnType?.classDescriptor()?.toClassReference()
+    is Psi ->
+      declaringClass.clazz
+        .resolveTypeReference(module, function.requireTypeReference(module))
+        ?.requireFqName(module)
+        ?.toClassReference(module)
+    is Descriptor -> function.returnType?.classDescriptor()?.toClassReference(module)
   } ?: throw AnvilCompilationException(message = "Couldn't find return type for $fqName.")
 }

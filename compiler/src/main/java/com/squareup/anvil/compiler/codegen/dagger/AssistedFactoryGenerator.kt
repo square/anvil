@@ -311,7 +311,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
             ?.fqNameSafe
             ?: factoryClass.resolveGenericKotlinType(
               module,
-              containingClass.toClassReference(),
+              containingClass.toClassReference(module),
               returnType ?: fail()
             )?.fqNameOrNull(module)
             ?: fail()
@@ -326,7 +326,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
               ?.asTypeName()
               ?: factoryClass.resolveGenericKotlinType(
                 module,
-                containingClass.toClassReference(),
+                containingClass.toClassReference(module),
                 param.type
               )?.requireTypeName(module)
               ?: throw AnvilCompilationException(
@@ -426,8 +426,8 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     // `clazz` must be first in the list because of `distinctBy { ... }`, which keeps the first
     // matched element.  If the function's inherited, it can be overridden as well.  Prioritizing
     // the version from the file we're parsing ensures the correct variance of the referenced types.
-    val assistedFunctions = toClassReference()
-      .allSuperTypeClassReferences(module, includeSelf = true)
+    val assistedFunctions = toClassReference(module)
+      .allSuperTypeClassReferences(includeSelf = true)
       .distinctBy { it.fqName }
       .flatMap { it.assistedFunctions() }
       .distinctBy { it.name }
@@ -483,7 +483,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
             ?.asTypeNameOrNull()
             ?: factoryClass.resolveGenericKotlinType(
               module = module,
-              declaringClass = containingClass.toClassReference(),
+              declaringClass = containingClass.toClassReference(module),
               typeToResolve = descriptor.type
             )?.requireTypeName(module)
             ?: throw AnvilCompilationException(

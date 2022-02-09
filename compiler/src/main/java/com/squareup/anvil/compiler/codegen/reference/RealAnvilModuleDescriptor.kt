@@ -1,7 +1,15 @@
 package com.squareup.anvil.compiler.codegen.reference
 
+import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor.ClassReferenceCacheKey.Type.DESCRIPTOR
+import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor.ClassReferenceCacheKey.Type.PSI
 import com.squareup.anvil.compiler.internal.classIdBestGuess
 import com.squareup.anvil.compiler.internal.reference.AnvilModuleDescriptor
+import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
+import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
+import com.squareup.anvil.compiler.internal.requireClassId
+import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.toClassId
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
@@ -25,6 +33,7 @@ class RealAnvilModuleDescriptor(
 
   private val resolveDescriptorCache = mutableMapOf<FqName, ClassDescriptor?>()
   private val resolveClassIdCache = mutableMapOf<ClassId, FqName?>()
+  private val classReferenceCache = mutableMapOf<ClassReferenceCacheKey, ClassReference>()
 
   fun addFiles(files: Collection<KtFile>) {
     allFiles += files
@@ -63,8 +72,37 @@ class RealAnvilModuleDescriptor(
     return allClasses.firstOrNull { it.fqName == fqName }
   }
 
+  override fun getClassReference(clazz: KtClassOrObject): Psi {
+    return classReferenceCache.getOrPut(ClassReferenceCacheKey(clazz.requireFqName(), PSI)) {
+      Psi(clazz, clazz.toClassId(), this)
+    } as Psi
+  }
+
+  override fun getClassReference(descriptor: ClassDescriptor): Descriptor {
+    return classReferenceCache.getOrPut(ClassReferenceCacheKey(descriptor.fqNameSafe, DESCRIPTOR)) {
+      Descriptor(descriptor, descriptor.requireClassId(), this)
+    } as Descriptor
+  }
+
+  override fun getClassReferenceOrNull(fqName: FqName): ClassReference? {
+    // Note that we don't cache the result, because all function calls get objects from caches.
+    // There's no need to optimize that.
+    return resolveFqNameOrNull(fqName)?.let { getClassReference(it) }
+      ?: getKtClassOrObjectOrNull(fqName)?.let { getClassReference(it) }
+  }
+
   private val KtFile.identifier: String
     get() = packageFqName.asString() + name
+
+  private data class ClassReferenceCacheKey(
+    private val fqName: FqName,
+    private val type: Type
+  ) {
+    enum class Type {
+      PSI,
+      DESCRIPTOR,
+    }
+  }
 }
 
 private fun KtFile.classesAndInnerClasses(): List<KtClassOrObject> {

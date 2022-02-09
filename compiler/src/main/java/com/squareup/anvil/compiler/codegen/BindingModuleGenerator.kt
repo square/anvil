@@ -171,7 +171,7 @@ internal class BindingModuleGenerator(
         // Ignore replaced bindings specified by excluded modules for this scope.
         .filter { it.fqName !in excludedNames }
         .flatMap { clazz ->
-          clazz.toClassReference().replaces(module, contributesToFqName).map { it.fqName }
+          clazz.toClassReference(module).replaces(contributesToFqName).map { it.fqName }
         }
         .plus(
           classScanner
@@ -185,7 +185,7 @@ internal class BindingModuleGenerator(
             // Ignore replaced bindings specified by excluded modules for this scope.
             .filter { it.fqNameSafe !in excludedNames }
             .flatMap {
-              it.toClassReference().replaces(module, contributesToFqName)
+              it.toClassReference(module).replaces(contributesToFqName)
             }
             .map { it.fqName }
         )
@@ -207,7 +207,7 @@ internal class BindingModuleGenerator(
           packageName = hintPackagePrefix,
           annotation = annotationFqName,
           scope = scope
-        ).map { it.toClassReference() }
+        ).map { it.toClassReference(module) }
 
         val allContributedClasses = collectedClasses
           .map { name -> name.toClassReference(module) }
@@ -215,7 +215,7 @@ internal class BindingModuleGenerator(
 
         val replacedBindings = allContributedClasses
           .flatMap { classReference ->
-            classReference.replaces(module, annotationFqName).map { it.fqName }
+            classReference.replaces(annotationFqName).map { it.fqName }
           }
 
         return allContributedClasses
@@ -223,7 +223,7 @@ internal class BindingModuleGenerator(
           .filterNot { it.fqName in replacedBindings }
           .filterNot { it.fqName in bindingsReplacedInDaggerModules }
           .filterNot { it.fqName in excludedNames }
-          .filter { scope == it.scopeOrNull(module, annotationFqName) }
+          .filter { scope == it.scopeOrNull(annotationFqName) }
           .map {
             it.toContributedBinding(
               module = module,

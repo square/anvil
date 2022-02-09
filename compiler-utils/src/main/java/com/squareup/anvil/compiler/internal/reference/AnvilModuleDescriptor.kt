@@ -3,6 +3,8 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.classIdBestGuess
+import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
+import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
@@ -24,6 +26,12 @@ public interface AnvilModuleDescriptor : ModuleDescriptor {
   public fun getClassesAndInnerClasses(ktFile: KtFile): List<KtClassOrObject>
 
   public fun getKtClassOrObjectOrNull(fqName: FqName): KtClassOrObject?
+
+  public fun getClassReference(clazz: KtClassOrObject): Psi
+
+  public fun getClassReference(descriptor: ClassDescriptor): Descriptor
+
+  public fun getClassReferenceOrNull(fqName: FqName): ClassReference?
 }
 
 @Suppress("NOTHING_TO_INLINE")

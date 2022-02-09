@@ -88,8 +88,8 @@ internal fun KtClassOrObject.memberInjectParameters(
   module: ModuleDescriptor,
   inheritedOnly: Boolean = false
 ): List<MemberInjectParameter> {
-  return toClassReference()
-    .allSuperTypeClassReferences(module, includeSelf = !inheritedOnly)
+  return toClassReference(module)
+    .allSuperTypeClassReferences(includeSelf = !inheritedOnly)
     .filterNot { it.isInterface() }
     .toList()
     .foldRight(listOf()) { classReference, acc ->

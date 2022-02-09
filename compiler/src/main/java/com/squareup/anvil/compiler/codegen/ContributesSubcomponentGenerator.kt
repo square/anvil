@@ -23,7 +23,6 @@ import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.annotations
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.reference.replaces
 import com.squareup.anvil.compiler.internal.reference.scope
@@ -85,10 +84,10 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
 
         val scope = clazz.scope(contributesSubcomponentFqName, module)
 
-        clazz.toClassReference()
-          .replaces(module, contributesSubcomponentFqName)
+        clazz.toClassReference(module)
+          .replaces(contributesSubcomponentFqName)
           .onEach {
-            it.checkUsesSameScope(scope, clazz, module)
+            it.checkUsesSameScope(scope, clazz)
           }
       }
       .map { clazz ->
@@ -243,10 +242,9 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
 
   private fun ClassReference.checkUsesSameScope(
     scope: FqName,
-    subcomponent: KtClassOrObject,
-    module: ModuleDescriptor
+    subcomponent: KtClassOrObject
   ) {
-    annotations(module)
+    annotations
       .filter { it.fqName == contributesSubcomponentFqName }
       .ifEmpty {
         throw AnvilCompilationException(
@@ -255,7 +253,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
         )
       }
       .forEach { annotation ->
-        val otherScope = annotation.scope(module).fqName
+        val otherScope = annotation.scope().fqName
         if (otherScope != scope) {
           throw AnvilCompilationException(
             element = subcomponent,
