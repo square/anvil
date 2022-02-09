@@ -12,12 +12,10 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
-import com.squareup.anvil.compiler.internal.reference.scope
-import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
@@ -110,7 +108,7 @@ private fun KtClassOrObject.checkNotMoreThanOneMapKey(
   // annotations, then there can't be more than two map keys.
   if (annotationEntries.size <= 2) return
 
-  val mapKeys = requireClassDescriptor(module).annotations.filter { it.isMapKey() }
+  val mapKeys = classDescriptor(module).annotations.filter { it.isMapKey() }
 
   if (mapKeys.size > 1) {
     throw AnvilCompilationException(

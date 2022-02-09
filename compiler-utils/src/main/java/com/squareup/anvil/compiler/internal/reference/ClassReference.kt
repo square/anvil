@@ -5,6 +5,7 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
@@ -20,7 +21,6 @@ import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
-import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.scope
@@ -232,7 +232,7 @@ public fun ClassReference.replaces(
 
       replacesValue
         ?.value
-        ?.map { it.argumentType(module).requireClassDescriptor().toClassReference() }
+        ?.map { it.argumentType(module).classDescriptor().toClassReference() }
     }
     is Psi ->
       clazz

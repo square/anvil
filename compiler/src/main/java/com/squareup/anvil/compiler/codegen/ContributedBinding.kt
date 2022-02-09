@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.isMapKey
 import com.squareup.anvil.compiler.internal.isObject
 import com.squareup.anvil.compiler.internal.isQualifier
@@ -19,7 +20,6 @@ import com.squareup.anvil.compiler.internal.reference.directSuperClassReferences
 import com.squareup.anvil.compiler.internal.reference.getKtClassOrObject
 import com.squareup.anvil.compiler.internal.reference.qualifiers
 import com.squareup.anvil.compiler.internal.requireAnnotation
-import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.toAnnotationSpec
 import com.squareup.anvil.compiler.isMapKey
@@ -237,7 +237,7 @@ private fun KtClassOrObject.qualifiersKey(
       val descriptor = annotationEntry.typeReference
         ?.requireFqName(module)
         ?.takeIf { it != injectFqName }
-        ?.requireClassDescriptor(module)
+        ?.classDescriptor(module)
         ?.takeIf { it.annotations.hasAnnotation(qualifierFqName) }
         ?: return@mapNotNull null
       annotationEntry to descriptor
@@ -297,7 +297,7 @@ private fun ClassDescriptor.qualifiersKey(
         .map { (name, value) ->
           val valueString = when (value) {
             is KClassValue -> value.argumentType(module)
-              .requireClassDescriptor().fqNameSafe.asString()
+              .classDescriptor().fqNameSafe.asString()
             is EnumValue -> value.enumEntryName.asString()
             // String, int, long, ... other primitives.
             else -> value.toString()

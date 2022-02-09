@@ -12,14 +12,12 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isQualifier
-import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
-import com.squareup.anvil.compiler.internal.reference.scope
-import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
@@ -172,7 +170,7 @@ internal fun KtClassOrObject.checkClassExtendsBoundType(
   val hasSuperTypePsi = superTypeListEntries.any { it.fqNameOrNull(module) == boundType }
   if (hasSuperTypePsi) return
 
-  val descriptor = requireClassDescriptor(module)
+  val descriptor = classDescriptor(module)
   val hasSuperType = descriptor.getAllSuperClassifiers()
     .any { it.fqNameSafe == boundType }
 

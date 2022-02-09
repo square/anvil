@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
+import com.squareup.anvil.compiler.internal.reference.asAnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
 import com.squareup.anvil.compiler.internal.reference.getKtClassOrObjectOrNull
 import com.squareup.anvil.compiler.internal.reference.indexOfTypeParameter
@@ -15,10 +16,7 @@ import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
-import org.jetbrains.kotlin.descriptors.resolveClassByFqName
 import org.jetbrains.kotlin.incremental.KotlinLookupLocation
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation.FROM_BACKEND
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotated
@@ -519,7 +517,7 @@ private fun PsiElement.findFqNameInSuperTypes(
 
       // At this point we can't work with Psi APIs anymore. We need to resolve the super types
       // and try to find inner class in them.
-      val descriptor = clazz.requireClassDescriptor(module)
+      val descriptor = clazz.classDescriptor(module)
       listOf(descriptor.defaultType).getAllSuperTypes()
         .mapNotNull { tryToResolveClassFqName(it) }
     }
@@ -801,7 +799,7 @@ public fun KtUserType.findExtendsBound(): List<FqName> {
 }
 
 @ExperimentalAnvilApi
-public fun KtClassOrObject.requireClassDescriptor(module: ModuleDescriptor): ClassDescriptor {
+public fun KtClassOrObject.classDescriptor(module: ModuleDescriptor): ClassDescriptor {
   return classDescriptorOrNull(module)
     ?: throw AnvilCompilationException(
       "Couldn't resolve class for ${requireFqName()}.",
@@ -811,20 +809,19 @@ public fun KtClassOrObject.requireClassDescriptor(module: ModuleDescriptor): Cla
 
 @ExperimentalAnvilApi
 public fun KtClassOrObject.classDescriptorOrNull(module: ModuleDescriptor): ClassDescriptor? {
-  return module.resolveClassByFqName(requireFqName(), KotlinLookupLocation(this))
+  return module.asAnvilModuleDescriptor()
+    .resolveFqNameOrNull(requireFqName(), KotlinLookupLocation(this))
 }
 
 @ExperimentalAnvilApi
-public fun FqName.requireClassDescriptor(module: ModuleDescriptor): ClassDescriptor {
+public fun FqName.classDescriptor(module: ModuleDescriptor): ClassDescriptor {
   return classDescriptorOrNull(module)
     ?: throw AnvilCompilationException("Couldn't resolve class for $this.")
 }
 
 @ExperimentalAnvilApi
 public fun FqName.classDescriptorOrNull(module: ModuleDescriptor): ClassDescriptor? {
-  return module.resolveClassByFqName(this, FROM_BACKEND)
-    // In the case of a typealias, we need to look up the original reference instead.
-    ?: module.findTypeAliasAcrossModuleDependencies(classIdBestGuess())?.classDescriptor
+  return module.asAnvilModuleDescriptor().resolveFqNameOrNull(this)
 }
 
 @ExperimentalAnvilApi
@@ -838,7 +835,7 @@ public fun KtAnnotationEntry.isQualifier(module: ModuleDescriptor): Boolean {
     // Often entries are annotated with @Inject, in this case we know it's not a qualifier and we
     // can stop early.
     ?.takeIf { it != injectFqName }
-    ?.requireClassDescriptor(module)
+    ?.classDescriptor(module)
     ?.annotations
     ?.hasAnnotation(qualifierFqName)
     ?: false
@@ -848,7 +845,7 @@ public fun KtAnnotationEntry.isQualifier(module: ModuleDescriptor): Boolean {
 public fun KtAnnotationEntry.isDaggerScope(module: ModuleDescriptor): Boolean {
   return typeReference
     ?.requireFqName(module)
-    ?.requireClassDescriptor(module)
+    ?.classDescriptor(module)
     ?.annotations
     ?.hasAnnotation(daggerScopeFqName)
     ?: false
@@ -859,7 +856,7 @@ public fun KtAnnotationEntry.isMapKey(module: ModuleDescriptor): Boolean {
   return typeReference
     ?.requireFqName(module)
     ?.takeIf { it != injectFqName }
-    ?.requireClassDescriptor(module)
+    ?.classDescriptor(module)
     ?.annotations
     ?.hasAnnotation(mapKeyFqName)
     ?: false

@@ -1,10 +1,12 @@
 package com.squareup.anvil.compiler.codegen.reference
 
+import com.squareup.anvil.compiler.internal.classIdBestGuess
 import com.squareup.anvil.compiler.internal.reference.AnvilModuleDescriptor
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
-import org.jetbrains.kotlin.incremental.components.NoLookupLocation.FROM_BACKEND
+import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -21,6 +23,9 @@ class RealAnvilModuleDescriptor(
   private val allClasses: Sequence<KtClassOrObject>
     get() = classesMap.values.asSequence().flatMap { it }
 
+  private val resolveDescriptorCache = mutableMapOf<FqName, ClassDescriptor?>()
+  private val resolveClassIdCache = mutableMapOf<ClassId, FqName?>()
+
   fun addFiles(files: Collection<KtFile>) {
     allFiles += files
 
@@ -35,23 +40,27 @@ class RealAnvilModuleDescriptor(
     }
   }
 
-  override fun resolveClassIdOrNull(classId: ClassId): FqName? {
-    val fqName = classId.asSingleFqName()
+  override fun resolveClassIdOrNull(classId: ClassId): FqName? =
+    resolveClassIdCache.computeIfAbsent(classId) {
+      val fqName = classId.asSingleFqName()
 
-    resolveClassByFqName(fqName, FROM_BACKEND)
-      ?.let { return it.fqNameSafe }
+      resolveFqNameOrNull(fqName)?.fqNameSafe
+        ?: allClasses.firstOrNull { it.fqName == fqName }?.fqName
+    }
 
-    findTypeAliasAcrossModuleDependencies(classId)
-      ?.let { return it.fqNameSafe }
-
-    return allClasses
-      .firstOrNull { it.fqName == fqName }
-      ?.fqName
+  override fun resolveFqNameOrNull(
+    fqName: FqName,
+    lookupLocation: LookupLocation
+  ): ClassDescriptor? {
+    return resolveDescriptorCache.computeIfAbsent(fqName) {
+      // In the case of a typealias, we need to look up the original reference instead.
+      resolveClassByFqName(fqName, lookupLocation)
+        ?: findTypeAliasAcrossModuleDependencies(fqName.classIdBestGuess())?.classDescriptor
+    }
   }
 
   override fun getKtClassOrObjectOrNull(fqName: FqName): KtClassOrObject? {
-    return allClasses
-      .firstOrNull { it.fqName == fqName }
+    return allClasses.firstOrNull { it.fqName == fqName }
   }
 
   private val KtFile.identifier: String

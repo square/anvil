@@ -6,16 +6,16 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
+import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
+import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.reference.replaces
-import com.squareup.anvil.compiler.internal.reference.scope
 import com.squareup.anvil.compiler.internal.reference.toClassReference
-import com.squareup.anvil.compiler.internal.requireClassDescriptor
 import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
@@ -67,7 +67,7 @@ internal class ModuleMerger(
       )
     }
 
-    val module = thisDescriptor.module
+    val module = RealAnvilModuleDescriptor(thisDescriptor.module)
     val scope = mergeAnnotation.scope(module)
     val scopeFqName = scope.fqNameSafe
 
@@ -136,7 +136,7 @@ internal class ModuleMerger(
       ?.value
       ?.map {
         val argumentType = it.argumentType(module)
-        val classDescriptorForExclusion = argumentType.requireClassDescriptor()
+        val classDescriptorForExclusion = argumentType.classDescriptor()
 
         val contributesToAnnotation = classDescriptorForExclusion
           .annotationOrNull(contributesToFqName)
