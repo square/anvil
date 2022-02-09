@@ -4,7 +4,6 @@ import org.gradle.api.Action
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import javax.inject.Inject
-import kotlin.DeprecationLevel.HIDDEN
 
 public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory) {
   /**
@@ -61,72 +60,4 @@ public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory)
   public fun variantFilter(action: Action<VariantFilter>) {
     _variantFilter = action
   }
-
-  /*
-   * The below properties are legacy former properties. We do a bit of Kotlin sugar to preserve
-   * binary compatibility but not Kotlin source compatibility.
-   *
-   * @get:JvmName("getGenerateDaggerFactories") preserves the get signature with the old name. Even
-   * though this has the same name as the new property, it returns a Boolean instead of a Property.
-   * This is not legal in source but it _is_ legal in the JVM at runtime, so they are
-   * binary-compatible.
-   *
-   * @set:JvmName("setGenerateDaggerFactories") preserves the set signature with the old name. Since
-   * there is no setter for the new property, this has no overload ambiguity. We do hide it anyway
-   * with JvmSynthetic just to keep the API lean and simple.
-   *
-   * @JvmSynthetic hides this from non-Kotlin callers to avoid overload ambiguity.
-   *
-   * DeprecationLevel.HIDDEN further hides this from Kotlin users (since it's a source-breaking
-   * change anyway). Kotlin previously compiled against this will still work at runtime, but new
-   * sources will now point to the new property and require using `.set()` and `.get()`
-   */
-
-  @get:[JvmName("getGenerateDaggerFactories") JvmSynthetic]
-  @set:[JvmName("setGenerateDaggerFactories") JvmSynthetic]
-  public var generateDaggerFactoriesLegacy: Boolean
-    @Deprecated(
-      "Use generateDaggerFactories property",
-      ReplaceWith("generateDaggerFactories.get()"),
-      level = HIDDEN
-    )
-    get() = generateDaggerFactories.get()
-    @Deprecated(
-      "Use generateDaggerFactories property",
-      ReplaceWith("generateDaggerFactories.set(value)"),
-      level = HIDDEN
-    )
-    set(value) = generateDaggerFactories.set(value)
-
-  @get:[JvmName("getDaggerFactoriesOnly") JvmSynthetic]
-  @set:[JvmName("setDaggerFactoriesOnly") JvmSynthetic]
-  public var generateDaggerFactoriesOnlyLegacy: Boolean
-    @Deprecated(
-      "Use generateDaggerFactoriesOnly property",
-      ReplaceWith("generateDaggerFactoriesOnly.get()"),
-      level = HIDDEN
-    )
-    get() = generateDaggerFactoriesOnly.get()
-    @Deprecated(
-      "Use generateDaggerFactoriesOnly property",
-      ReplaceWith("generateDaggerFactoriesOnly.set(value)"),
-      level = HIDDEN
-    )
-    set(value) = generateDaggerFactoriesOnly.set(value)
-
-  @get:[JvmName("getDisableComponentMerging") JvmSynthetic]
-  @set:[JvmName("setDisableComponentMerging") JvmSynthetic]
-  public var disableComponentMergingLegacy: Boolean
-    @Deprecated(
-      "Use disableComponentMerging property",
-      ReplaceWith("disableComponentMerging.get()"),
-      level = HIDDEN
-    )
-    get() = disableComponentMerging.get()
-    @Deprecated(
-      "Use disableComponentMerging property",
-      ReplaceWith("disableComponentMerging.set(value)"),
-      level = HIDDEN
-    )
-    set(value) = disableComponentMerging.set(value)
 }
