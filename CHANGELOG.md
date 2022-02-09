@@ -4,13 +4,22 @@
 
 ### Added
 
+- Automatically publish snapshot for the `main` branch.
+- Documented Anvil's internal, see [here](https://github.com/square/anvil/blob/main/docs/INTERNALS.md).
+
 ### Changed
 
 ### Deprecated
 
 ### Removed
 
+- Removed support for Kotlin `1.5`.
+- Removed deprecated APIs from the `AnvilExtension` in the gradle plugin.
+
 ### Fixed
+
+- Generate code for `@ContributedSubcomponent`s when the trigger is created AFTER the contribution, see #478.
+- Properly parse the `FqName` if the type reference is an inner class, see #479.
 
 ### Security
 
