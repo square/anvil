@@ -97,10 +97,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private var isFirstRound = true
 
-  override fun isApplicable(context: AnvilContext): Boolean =
-    throw NotImplementedError(
-      "This should not actually be checked as we instantiate this class manually."
-    )
+  override fun isApplicable(context: AnvilContext): Boolean = !context.generateFactoriesOnly
 
   override fun generateCode(
     codeGenDir: File,

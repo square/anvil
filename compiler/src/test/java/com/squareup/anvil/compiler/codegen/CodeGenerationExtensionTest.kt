@@ -122,4 +122,38 @@ class CodeGenerationExtensionTest {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
+
+  @Test fun `a code generator that is not applicable is never called`() {
+    var isApplicableCalled = false
+    var generateCodeCalled = false
+
+    val codeGenerator = object : CodeGenerator {
+      override fun isApplicable(context: AnvilContext): Boolean {
+        isApplicableCalled = true
+        return false
+      }
+
+      override fun generateCode(
+        codeGenDir: File,
+        module: ModuleDescriptor,
+        projectFiles: Collection<KtFile>
+      ): Collection<GeneratedFile> {
+        generateCodeCalled = true
+        return emptyList()
+      }
+    }
+
+    compile(
+      """
+      package com.squareup.test
+
+      interface ComponentInterface1
+      """,
+      codeGenerators = listOf(codeGenerator)
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+      assertThat(isApplicableCalled).isTrue()
+      assertThat(generateCodeCalled).isFalse()
+    }
+  }
 }

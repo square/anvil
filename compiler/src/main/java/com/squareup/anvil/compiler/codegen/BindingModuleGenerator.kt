@@ -64,9 +64,7 @@ internal class BindingModuleGenerator(
   private val classScanner: ClassScanner
 ) : FlushingCodeGenerator {
 
-  override fun isApplicable(context: AnvilContext): Boolean {
-    throw NotImplementedError("This should not actually be checked as we instantiate this manually")
-  }
+  override fun isApplicable(context: AnvilContext): Boolean = !context.generateFactoriesOnly
 
   // Keeps track of for which scopes which files were generated. Usually there is only one file,
   // but technically there can be multiple.

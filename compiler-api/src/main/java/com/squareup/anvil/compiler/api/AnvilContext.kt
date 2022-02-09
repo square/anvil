@@ -1,5 +1,7 @@
 package com.squareup.anvil.compiler.api
 
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+
 /**
  * Contains context about the given Anvil compiler invocation. Considered a read-only API.
  *
@@ -40,4 +42,9 @@ public interface AnvilContext {
    * incremental compilation in kapt stub generation tasks.
    */
   public val disableComponentMerging: Boolean
+
+  /**
+   * The module of the current compilation.
+   */
+  public val module: ModuleDescriptor
 }
