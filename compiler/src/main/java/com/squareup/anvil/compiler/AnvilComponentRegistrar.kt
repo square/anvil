@@ -2,11 +2,11 @@ package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
+import com.squareup.anvil.compiler.CommandLineOptions.Companion.commandLineOptions
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
-import com.squareup.anvil.compiler.codegen.RealAnvilContext
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -33,25 +33,13 @@ class AnvilComponentRegistrar : ComponentRegistrar {
   ) {
     val sourceGenFolder = File(configuration.getNotNull(srcGenDirKey))
     val scanner = ClassScanner()
+    val commandLineOptions = configuration.commandLineOptions
 
-    val generateDaggerFactories = configuration.get(generateDaggerFactoriesKey, false)
-    val generateDaggerFactoriesOnly = configuration.get(generateDaggerFactoriesOnlyKey, false)
-    val disableComponentMerging = configuration.get(disableComponentMergingKey, false)
-    val context = RealAnvilContext(
-      generateDaggerFactories,
-      generateDaggerFactoriesOnly,
-      disableComponentMerging
-    )
-    val codeGenerators = loadCodeGenerators()
-      .plus(manuallyAddedCodeGenerators)
-      .filter { it.isApplicable(context) }
-      .toMutableList()
-
-    if (!generateDaggerFactoriesOnly) {
+    val codeGenerators = loadCodeGenerators() +
+      manuallyAddedCodeGenerators +
       // We special case these due to the ClassScanner requirement.
-      codeGenerators += BindingModuleGenerator(scanner)
-      codeGenerators += ContributesSubcomponentHandlerGenerator(scanner)
-    }
+      BindingModuleGenerator(scanner) +
+      ContributesSubcomponentHandlerGenerator(scanner)
 
     // It's important to register our extension at the first position. The compiler calls each
     // extension one by one. If an extension returns a result, then the compiler won't call any
@@ -65,11 +53,12 @@ class AnvilComponentRegistrar : ComponentRegistrar {
       project,
       CodeGenerationExtension(
         codeGenDir = sourceGenFolder,
-        codeGenerators = codeGenerators
+        codeGenerators = codeGenerators,
+        commandLineOptions = commandLineOptions
       )
     )
 
-    if (!generateDaggerFactoriesOnly && !disableComponentMerging) {
+    if (!commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging) {
       SyntheticResolveExtension.registerExtension(
         project,
         InterfaceMerger(scanner)

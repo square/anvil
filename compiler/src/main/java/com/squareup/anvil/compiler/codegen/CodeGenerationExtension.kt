@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.squareup.anvil.compiler.CommandLineOptions
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
@@ -20,7 +21,8 @@ import java.io.File
 
 internal class CodeGenerationExtension(
   private val codeGenDir: File,
-  codeGenerators: List<CodeGenerator>
+  codeGenerators: List<CodeGenerator>,
+  private val commandLineOptions: CommandLineOptions
 ) : AnalysisHandlerExtension {
 
   private var didRecompile = false
@@ -47,7 +49,7 @@ internal class CodeGenerationExtension(
   ): AnalysisResult? {
     // Tell the compiler that we have something to do in the analysisCompleted() method if
     // necessary.
-    return if (!didRecompile && codeGenerators.isNotEmpty()) AnalysisResult.EMPTY else null
+    return if (!didRecompile) AnalysisResult.EMPTY else null
   }
 
   override fun analysisCompleted(
@@ -56,7 +58,7 @@ internal class CodeGenerationExtension(
     bindingTrace: BindingTrace,
     files: Collection<KtFile>
   ): AnalysisResult? {
-    if (didRecompile || codeGenerators.isEmpty()) return null
+    if (didRecompile) return null
     didRecompile = true
 
     // It's important to resolve types before clearing the output directory
@@ -64,6 +66,8 @@ internal class CodeGenerationExtension(
     val psiManager = PsiManager.getInstance(project)
     val anvilModule = RealAnvilModuleDescriptor(module)
     anvilModule.addFiles(files)
+
+    val anvilContext = commandLineOptions.toAnvilContext(anvilModule)
 
     codeGenDir.listFiles()
       ?.forEach {
@@ -75,7 +79,9 @@ internal class CodeGenerationExtension(
     val generatedFiles = mutableMapOf<String, GeneratedFile>()
 
     val (privateCodeGenerators, nonPrivateCodeGenerators) =
-      codeGenerators.partition { it is PrivateCodeGenerator }
+      codeGenerators
+        .filter { it.isApplicable(anvilContext) }
+        .partition { it is PrivateCodeGenerator }
 
     fun Collection<GeneratedFile>.toKtFile(): Collection<KtFile> {
       return this
