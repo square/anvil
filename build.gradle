@@ -113,3 +113,7 @@ task clean(type: Delete) {
 def getProperty(String name, String defaultValue) {
   return project.hasProperty(name) ? project.getProperty(name) : defaultValue
 }
+
+// Register the task that can create the benchmark project.
+//noinspection UnnecessaryQualifiedReference
+tasks.register("createBenchmarkProject", com.squareup.anvil.benchmark.CreateBenchmarkProjectTask)

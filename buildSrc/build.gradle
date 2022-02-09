@@ -1,0 +1,32 @@
+buildscript {
+  apply from: rootProject.file('../dependencies.gradle')
+
+  repositories {
+    google()
+    mavenCentral()
+    gradlePluginPortal()
+  }
+
+  dependencies {
+    classpath deps.kotlin.gradle_plugin
+    classpath deps.ktlint_plugin
+  }
+}
+
+repositories {
+  google()
+  mavenCentral()
+}
+
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'org.jlleitschuh.gradle.ktlint'
+
+dependencies {
+  compileOnly(gradleApi())
+
+  implementation deps.kotlinpoet
+}
+
+ktlint {
+  version = rootProject.ext.ktlintVersion
+}

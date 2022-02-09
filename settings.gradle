@@ -19,3 +19,9 @@ includeBuild('gradle-plugin') {
     substitute module('com.squareup.anvil:gradle-plugin') using project(':')
   }
 }
+
+// Include the benchmark modules if they exist.
+def benchmarkSettingsFile = file('benchmark/settings.gradle')
+if (benchmarkSettingsFile.exists()) {
+  apply from: benchmarkSettingsFile
+}
