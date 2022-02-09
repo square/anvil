@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.isFullTestRun
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
@@ -31,7 +32,7 @@ class InjectConstructorFactoryGeneratorTest(
   companion object {
     @Parameters(name = "Use Dagger: {0}")
     @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(true, false)
+      return listOf(isFullTestRun(), false).distinct()
     }
   }
 

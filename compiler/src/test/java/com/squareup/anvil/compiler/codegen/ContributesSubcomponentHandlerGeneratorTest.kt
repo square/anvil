@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
+import com.squareup.anvil.compiler.checkFullTestRun
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
@@ -621,6 +622,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
   @Test
   fun `Dagger generates the real component and subcomponent and they can be instantiated through the component interfaces`() {
+    checkFullTestRun()
+
     compile(
       """
         package com.squareup.test
@@ -1008,6 +1011,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
   }
 
   @Test fun `Dagger generates the real component and subcomponent with a factory`() {
+    checkFullTestRun()
+
     compile(
       """
         package com.squareup.test
@@ -1067,6 +1072,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
   @Test
   fun `the generated factory can be injected`() {
+    checkFullTestRun()
+
     compile(
       """
         package com.squareup.test
@@ -1124,6 +1131,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
   @Test
   fun `the generated factory can be injected in a nested subcomponent`() {
+    checkFullTestRun()
+
     compile(
       """
         package com.squareup.test
@@ -1188,6 +1197,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
   @Test
   fun `the generated factory can be injected with multiple compilations`() {
+    checkFullTestRun()
+
     val firstCompilationResult = compile(
       """
         package com.squareup.test
@@ -1316,6 +1327,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
   @Test
   fun `the correct generated factory is bound - with Dagger`() {
+    checkFullTestRun()
+
     compile(
       """
         package com.squareup.test
@@ -1449,6 +1462,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
   }
 
   @Test fun `subcomponent can be contributed and bindings replaced in a 2nd compilation`() {
+    checkFullTestRun()
+
     // This test simulates a compilation in the main source set and test/androidTest source set,
     // where contributed subcomponents are generated a second time for the test components. This
     // test ensures that there are no duplicate generated classes.
@@ -1588,6 +1603,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
   }
 
   @Test fun `contributed subcomponent class names are compacted`() {
+    checkFullTestRun()
+
     // This test would fail when javac runs during annotation processing with the class names we
     // originally generated. We now encode the parent class name in the package rather than the
     // class name. Then Dagger won't create too long nested class names for subcomponents. See

@@ -14,6 +14,7 @@ import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.isAbstract
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
@@ -36,7 +37,13 @@ class BindingModuleGeneratorTest(
   companion object {
     @Parameters(name = "{0}")
     @JvmStatic fun annotationClasses(): Collection<Any> {
-      return listOf(MergeComponent::class, MergeSubcomponent::class, MergeModules::class)
+      return buildList {
+        add(MergeComponent::class)
+        if (isFullTestRun()) {
+          add(MergeSubcomponent::class)
+          add(MergeModules::class)
+        }
+      }
     }
   }
 

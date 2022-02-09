@@ -13,7 +13,7 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERRO
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
-import org.junit.Assume
+import org.junit.Assume.assumeTrue
 import kotlin.reflect.KClass
 
 internal fun compile(
@@ -149,9 +149,12 @@ private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*
 }
 
 internal fun assumeMergeComponent(annotationClass: KClass<*>) {
-  Assume.assumeTrue(annotationClass == MergeComponent::class)
+  assumeTrue(annotationClass == MergeComponent::class)
 }
 
 internal fun ComparableSubject<ExitCode>.isError() {
   isIn(setOf(COMPILATION_ERROR, INTERNAL_ERROR))
 }
+
+internal fun isFullTestRun(): Boolean = FULL_TEST_RUN
+internal fun checkFullTestRun() = assumeTrue(isFullTestRun())

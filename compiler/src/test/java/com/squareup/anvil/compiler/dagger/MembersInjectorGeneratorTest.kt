@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.membersInjector
+import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.nestedInjectClass
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
@@ -37,7 +38,7 @@ class MembersInjectorGeneratorTest(
   companion object {
     @Parameters(name = "Use Dagger: {0}")
     @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(true, false)
+      return listOf(isFullTestRun(), false).distinct()
     }
   }
 

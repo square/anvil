@@ -28,7 +28,12 @@ class ModuleMergerTest(
   companion object {
     @Parameters(name = "{0}")
     @JvmStatic fun annotationClasses(): Collection<Any> {
-      return listOf(MergeComponent::class, MergeSubcomponent::class)
+      return buildList {
+        add(MergeComponent::class)
+        if (isFullTestRun()) {
+          add(MergeSubcomponent::class)
+        }
+      }
     }
   }
 

@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.isFullTestRun
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -25,7 +26,7 @@ class AssistedInjectGeneratorTest(
   companion object {
     @Parameters(name = "Use Dagger: {0}")
     @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(true, false)
+      return listOf(isFullTestRun(), false).distinct()
     }
   }
 
