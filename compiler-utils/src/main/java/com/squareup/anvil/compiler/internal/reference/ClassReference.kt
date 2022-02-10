@@ -16,10 +16,13 @@ import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.functions
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.isDaggerScope
-import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
+import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
+import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
+import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
+import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.scopeOrNull
@@ -29,17 +32,26 @@ import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
+import org.jetbrains.kotlin.lexer.KtTokens.INTERNAL_KEYWORD
+import org.jetbrains.kotlin.lexer.KtTokens.PRIVATE_KEYWORD
+import org.jetbrains.kotlin.lexer.KtTokens.PROTECTED_KEYWORD
+import org.jetbrains.kotlin.lexer.KtTokens.PUBLIC_KEYWORD
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtEnumEntry
+import org.jetbrains.kotlin.psi.psiUtil.parents
+import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import kotlin.LazyThreadSafetyMode.NONE
 
@@ -56,8 +68,21 @@ public sealed class ClassReference {
   public abstract val fqName: FqName
   public abstract val module: AnvilModuleDescriptor
 
+  public val shortName: String get() = fqName.shortName().asString()
+  public val packageFqName: FqName get() = classId.packageFqName
+
   public abstract val functions: List<FunctionReference>
   public abstract val annotations: List<AnnotationReference>
+
+  public abstract fun isInterface(): Boolean
+  public abstract fun isAbstract(): Boolean
+  public abstract fun visibility(): Visibility
+
+  /**
+   * Returns all outer classes including this class. Imagine the inner class `Outer.Middle.Inner`,
+   * then the returned list would contain `[Outer, Middle, Inner]` in that order.
+   */
+  public abstract fun enclosingClassesWithSelf(): List<ClassReference>
 
   override fun toString(): String {
     return "${this::class.qualifiedName}($fqName)"
@@ -92,6 +117,34 @@ public sealed class ClassReference {
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
       clazz.annotationEntries.map { it.toAnnotationReference(module) }
     }
+
+    private val enclosingClassesWithSelf by lazy(NONE) {
+      clazz.parents
+        .filterIsInstance<KtClassOrObject>()
+        .map { it.toClassReference(module) }
+        .toList()
+        .reversed()
+        .plus(this)
+    }
+
+    override fun isInterface(): Boolean = clazz is KtClass && clazz.isInterface()
+
+    override fun isAbstract(): Boolean = clazz.hasModifier(ABSTRACT_KEYWORD)
+
+    override fun visibility(): Visibility {
+      return when (val visibility = clazz.visibilityModifierTypeOrDefault()) {
+        PUBLIC_KEYWORD -> PUBLIC
+        INTERNAL_KEYWORD -> INTERNAL
+        PROTECTED_KEYWORD -> PROTECTED
+        PRIVATE_KEYWORD -> PRIVATE
+        else -> throw AnvilCompilationExceptionClassReference(
+          classReference = this,
+          message = "Couldn't get visibility $visibility for class $fqName."
+        )
+      }
+    }
+
+    override fun enclosingClassesWithSelf(): List<Psi> = enclosingClassesWithSelf
   }
 
   public class Descriptor(
@@ -111,6 +164,34 @@ public sealed class ClassReference {
     override val annotations: List<AnnotationReference> by lazy(NONE) {
       clazz.annotations.map { it.toAnnotationReference(module) }
     }
+
+    private val enclosingClassesWithSelf by lazy(NONE) {
+      clazz.parents
+        .filterIsInstance<ClassDescriptor>()
+        .map { it.toClassReference(module) }
+        .toList()
+        .reversed()
+        .plus(this)
+    }
+
+    override fun isInterface(): Boolean = clazz.kind == ClassKind.INTERFACE
+
+    override fun isAbstract(): Boolean = clazz.modality == ABSTRACT
+
+    override fun visibility(): Visibility {
+      return when (val visibility = clazz.visibility) {
+        DescriptorVisibilities.PUBLIC -> PUBLIC
+        DescriptorVisibilities.INTERNAL -> INTERNAL
+        DescriptorVisibilities.PROTECTED -> PROTECTED
+        DescriptorVisibilities.PRIVATE -> PRIVATE
+        else -> throw AnvilCompilationExceptionClassReference(
+          classReference = this,
+          message = "Couldn't get visibility $visibility for class $fqName."
+        )
+      }
+    }
+
+    override fun enclosingClassesWithSelf(): List<Descriptor> = enclosingClassesWithSelf
   }
 }
 
@@ -143,6 +224,22 @@ public fun FqName.toClassReference(module: ModuleDescriptor): ClassReference {
   return toClassReferenceOrNull(module)
     ?: throw AnvilCompilationException("Couldn't resolve ClassReference for $this.")
 }
+
+@ExperimentalAnvilApi
+public fun ClassReference.isAnnotatedWith(fqName: FqName): Boolean =
+  annotations.any { it.fqName == fqName }
+
+@ExperimentalAnvilApi
+public fun ClassReference.generateClassName(
+  separator: String = "_"
+): String {
+  return enclosingClassesWithSelf().joinToString(separator = separator) {
+    it.shortName
+  }
+}
+
+@ExperimentalAnvilApi
+public fun ClassReference.asClassName(): ClassName = classId.asClassName()
 
 /**
  * This will return all super types as [ClassReference], whether they're parsed as [KtClassOrObject]
@@ -284,21 +381,6 @@ public fun ClassReference.daggerScopes(): List<AnnotationSpec> = when (this) {
 }
 
 @ExperimentalAnvilApi
-public fun ClassReference.asClassName(): ClassName = classId.asClassName()
-
-@ExperimentalAnvilApi
-public fun ClassReference.isInterface(): Boolean = when (this) {
-  is Descriptor -> clazz.kind == ClassKind.INTERFACE
-  is Psi -> clazz.isInterface()
-}
-
-@ExperimentalAnvilApi
-public fun ClassReference.isAbstractClass(): Boolean = when (this) {
-  is Descriptor -> clazz.modality == ABSTRACT
-  is Psi -> clazz.hasModifier(ABSTRACT_KEYWORD)
-}
-
-@ExperimentalAnvilApi
 @Suppress("FunctionName")
 public fun AnvilCompilationExceptionClassReference(
   classReference: ClassReference,
@@ -306,7 +388,7 @@ public fun AnvilCompilationExceptionClassReference(
   cause: Throwable? = null
 ): AnvilCompilationException = when (classReference) {
   is Psi -> AnvilCompilationException(
-    element = classReference.clazz,
+    element = classReference.clazz.identifyingElement ?: classReference.clazz,
     message = message,
     cause = cause
   )

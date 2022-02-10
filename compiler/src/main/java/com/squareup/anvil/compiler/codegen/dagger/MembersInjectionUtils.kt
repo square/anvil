@@ -14,7 +14,6 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
-import com.squareup.anvil.compiler.internal.reference.isInterface
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.kotlinpoet.FunSpec
 import dagger.internal.ProviderOfLazy

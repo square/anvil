@@ -5,22 +5,21 @@ import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.HINT_CONTRIBUTES_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
-import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
-import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.generateClassName
-import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.anvil.compiler.internal.isInterface
-import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
-import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
+import com.squareup.anvil.compiler.internal.reference.Visibility
+import com.squareup.anvil.compiler.internal.reference.asClassName
+import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.generateClassName
+import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
+import com.squareup.anvil.compiler.internal.reference.scope
 import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
@@ -29,9 +28,7 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
 import dagger.Module
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import java.io.File
 import kotlin.reflect.KClass
 
@@ -51,37 +48,38 @@ internal class ContributesToGenerator : CodeGenerator {
     projectFiles: Collection<KtFile>
   ): Collection<GeneratedFile> {
     return projectFiles
-      .classesAndInnerClasses(module)
-      .filter { it.hasAnnotation(contributesToFqName, module) }
+      .classAndInnerClassReferences(module)
+      .filter { it.isAnnotatedWith(contributesToFqName) }
       .onEach { clazz ->
         if (!clazz.isInterface() &&
-          !clazz.hasAnnotation(daggerModuleFqName, module) &&
-          !clazz.hasAnnotation(mergeModulesFqName, module)
+          !clazz.isAnnotatedWith(daggerModuleFqName) &&
+          !clazz.isAnnotatedWith(mergeModulesFqName)
         ) {
-          throw AnvilCompilationException(
-            "${clazz.requireFqName()} is annotated with " +
+          throw AnvilCompilationExceptionClassReference(
+            classReference = clazz,
+            message = "${clazz.fqName} is annotated with " +
               "@${ContributesTo::class.simpleName}, but this class is neither an interface " +
               "nor a Dagger module. Did you forget to add @${Module::class.simpleName}?",
-            element = clazz.identifyingElement
           )
         }
 
-        if (clazz.visibilityModifierTypeOrDefault().value != KtTokens.PUBLIC_KEYWORD.value) {
-          throw AnvilCompilationException(
-            "${clazz.requireFqName()} is contributed to the Dagger graph, but the " +
+        if (clazz.visibility() != Visibility.PUBLIC) {
+          throw AnvilCompilationExceptionClassReference(
+            classReference = clazz,
+            message = "${clazz.fqName} is contributed to the Dagger graph, but the " +
               "module is not public. Only public modules are supported.",
-            element = clazz.identifyingElement
           )
         }
       }
       .map { clazz ->
         val fileName = clazz.generateClassName()
         val generatedPackage = HINT_CONTRIBUTES_PACKAGE_PREFIX +
-          clazz.containingKtFile.packageFqName.safePackageString(dotPrefix = true)
+          clazz.packageFqName.safePackageString(dotPrefix = true)
         val className = clazz.asClassName()
-        val classFqName = clazz.requireFqName().toString()
+        val classFqName = clazz.fqName.toString()
         val propertyName = classFqName.replace('.', '_')
-        val scope = clazz.scope(contributesToFqName, module).asClassName(module)
+        val scope = clazz.annotations.single { it.fqName == contributesToFqName }
+          .scope().asClassName()
 
         val content =
           FileSpec.buildFile(generatedPackage, fileName) {

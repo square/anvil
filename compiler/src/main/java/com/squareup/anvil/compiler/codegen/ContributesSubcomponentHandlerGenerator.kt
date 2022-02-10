@@ -28,14 +28,13 @@ import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.FunctionReference
+import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.reference.daggerScopes
 import com.squareup.anvil.compiler.internal.reference.innerClasses
 import com.squareup.anvil.compiler.internal.reference.isAbstract
-import com.squareup.anvil.compiler.internal.reference.isAbstractClass
-import com.squareup.anvil.compiler.internal.reference.isInterface
-import com.squareup.anvil.compiler.internal.reference.isPublic
+import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import com.squareup.anvil.compiler.internal.reference.replaces
 import com.squareup.anvil.compiler.internal.reference.returnType
 import com.squareup.anvil.compiler.internal.reference.scope
@@ -351,7 +350,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     }
 
     val functions = componentInterface.functions
-      .filter { it.isAbstract() && it.isPublic() }
+      .filter { it.isAbstract() && it.visibility() == PUBLIC }
       .filter {
         val returnType = it.returnType().fqName
         returnType == contributionFqName || (factoryClass != null && returnType == factoryClass)
@@ -378,10 +377,10 @@ internal class ContributesSubcomponentHandlerGenerator(
     val contributedFactories = contribution.classReference
       .innerClasses()
       .filter { classReference ->
-        classReference.annotations.any { it.fqName == contributesSubcomponentFactoryFqName }
+        classReference.isAnnotatedWith(contributesSubcomponentFactoryFqName)
       }
       .onEach { factory ->
-        if (!factory.isInterface() && !factory.isAbstractClass()) {
+        if (!factory.isInterface() && !factory.isAbstract()) {
           throw AnvilCompilationExceptionClassReference(
             classReference = factory,
             message = "A factory must be an interface or an abstract class."
