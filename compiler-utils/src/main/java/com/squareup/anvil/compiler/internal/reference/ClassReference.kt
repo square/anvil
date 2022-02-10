@@ -131,6 +131,13 @@ public fun KtClassOrObject.toClassReference(module: ModuleDescriptor): Psi =
 public fun FqName.toClassReferenceOrNull(module: ModuleDescriptor): ClassReference? =
   module.asAnvilModuleDescriptor().getClassReferenceOrNull(this)
 
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated("Don't rely on PSI and make the code agnostic to the underlying implementation.")
+@ExperimentalAnvilApi
+public fun FqName.toClassReferencePsiOrNull(module: ModuleDescriptor): Psi? =
+  module.asAnvilModuleDescriptor()
+    .getClassReferenceOrNull(this, preferDescriptor = false) as? Psi
+
 @ExperimentalAnvilApi
 public fun FqName.toClassReference(module: ModuleDescriptor): ClassReference {
   return toClassReferenceOrNull(module)

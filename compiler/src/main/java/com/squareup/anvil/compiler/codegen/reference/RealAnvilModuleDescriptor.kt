@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.codegen.reference
 
+import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor.ClassReferenceCacheKey.Companion.toClassReferenceCacheKey
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor.ClassReferenceCacheKey.Type.DESCRIPTOR
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor.ClassReferenceCacheKey.Type.PSI
 import com.squareup.anvil.compiler.internal.classIdBestGuess
@@ -25,70 +26,90 @@ class RealAnvilModuleDescriptor(
   delegate: ModuleDescriptor
 ) : AnvilModuleDescriptor, ModuleDescriptor by delegate {
 
-  internal val allFiles = mutableListOf<KtFile>()
-
-  private val classesMap = mutableMapOf<String, List<KtClassOrObject>>()
-  private val allClasses: Sequence<KtClassOrObject>
-    get() = classesMap.values.asSequence().flatMap { it }
+  private val ktFileToClassReferenceMap = mutableMapOf<String, List<Psi>>()
+  private val allPsiClassReferences: Sequence<Psi>
+    get() = ktFileToClassReferenceMap.values.asSequence().flatten()
 
   private val resolveDescriptorCache = mutableMapOf<FqName, ClassDescriptor?>()
   private val resolveClassIdCache = mutableMapOf<ClassId, FqName?>()
   private val classReferenceCache = mutableMapOf<ClassReferenceCacheKey, ClassReference>()
 
-  fun addFiles(files: Collection<KtFile>) {
-    allFiles += files
+  internal val allFiles: Sequence<KtFile>
+    get() = allPsiClassReferences
+      .map { it.clazz.containingKtFile }
+      .distinctBy { it.identifier }
 
+  fun addFiles(files: Collection<KtFile>) {
     files.forEach { ktFile ->
-      classesMap[ktFile.identifier] = ktFile.classesAndInnerClasses()
+      val classReferences = ktFile.classesAndInnerClasses().map { ktClass ->
+        Psi(ktClass, ktClass.toClassId(), this)
+      }
+
+      classReferences.forEach { classReference ->
+        // A `FlushingCodeGenerator` can generate new KtFiles for already generated KtFiles.
+        // This can be problematic, because we might have ClassReferences for the old files and
+        // KtClassOrObject instances cached. We need to override the entries in the caches for
+        // these new files and classes.
+        classReferenceCache[classReference.clazz.toClassReferenceCacheKey()] = classReference
+        resolveClassIdCache[classReference.classId] = classReference.fqName
+      }
+
+      ktFileToClassReferenceMap[ktFile.identifier] = classReferences
     }
   }
 
-  override fun getClassesAndInnerClasses(ktFile: KtFile): List<KtClassOrObject> {
-    return classesMap.getOrPut(ktFile.identifier) {
-      ktFile.classesAndInnerClasses()
+  override fun getClassAndInnerClassReferences(ktFile: KtFile): List<Psi> {
+    return ktFileToClassReferenceMap.getOrPut(ktFile.identifier) {
+      ktFile.classesAndInnerClasses().map { getClassReference(it) }
     }
   }
 
   override fun resolveClassIdOrNull(classId: ClassId): FqName? =
-    resolveClassIdCache.computeIfAbsent(classId) {
+    resolveClassIdCache.getOrPut(classId) {
       val fqName = classId.asSingleFqName()
 
       resolveFqNameOrNull(fqName)?.fqNameSafe
-        ?: allClasses.firstOrNull { it.fqName == fqName }?.fqName
+        ?: allPsiClassReferences.firstOrNull { it.fqName == fqName }?.fqName
     }
 
   override fun resolveFqNameOrNull(
     fqName: FqName,
     lookupLocation: LookupLocation
   ): ClassDescriptor? {
-    return resolveDescriptorCache.computeIfAbsent(fqName) {
+    return resolveDescriptorCache.getOrPut(fqName) {
       // In the case of a typealias, we need to look up the original reference instead.
       resolveClassByFqName(fqName, lookupLocation)
         ?: findTypeAliasAcrossModuleDependencies(fqName.classIdBestGuess())?.classDescriptor
     }
   }
 
-  override fun getKtClassOrObjectOrNull(fqName: FqName): KtClassOrObject? {
-    return allClasses.firstOrNull { it.fqName == fqName }
-  }
-
   override fun getClassReference(clazz: KtClassOrObject): Psi {
-    return classReferenceCache.getOrPut(ClassReferenceCacheKey(clazz.requireFqName(), PSI)) {
+    return classReferenceCache.getOrPut(clazz.toClassReferenceCacheKey()) {
       Psi(clazz, clazz.toClassId(), this)
     } as Psi
   }
 
   override fun getClassReference(descriptor: ClassDescriptor): Descriptor {
-    return classReferenceCache.getOrPut(ClassReferenceCacheKey(descriptor.fqNameSafe, DESCRIPTOR)) {
+    return classReferenceCache.getOrPut(descriptor.toClassReferenceCacheKey()) {
       Descriptor(descriptor, descriptor.requireClassId(), this)
     } as Descriptor
   }
 
-  override fun getClassReferenceOrNull(fqName: FqName): ClassReference? {
+  override fun getClassReferenceOrNull(
+    fqName: FqName,
+    preferDescriptor: Boolean
+  ): ClassReference? {
     // Note that we don't cache the result, because all function calls get objects from caches.
     // There's no need to optimize that.
-    return resolveFqNameOrNull(fqName)?.let { getClassReference(it) }
-      ?: getKtClassOrObjectOrNull(fqName)?.let { getClassReference(it) }
+    fun psiClassReference(): Psi? = allPsiClassReferences.firstOrNull { it.fqName == fqName }
+    fun descriptorClassReference(): Descriptor? =
+      resolveFqNameOrNull(fqName)?.let { getClassReference(it) }
+
+    return if (preferDescriptor) {
+      descriptorClassReference() ?: psiClassReference()
+    } else {
+      psiClassReference() ?: descriptorClassReference()
+    }
   }
 
   private val KtFile.identifier: String
@@ -101,6 +122,14 @@ class RealAnvilModuleDescriptor(
     enum class Type {
       PSI,
       DESCRIPTOR,
+    }
+
+    companion object {
+      fun KtClassOrObject.toClassReferenceCacheKey(): ClassReferenceCacheKey =
+        ClassReferenceCacheKey(requireFqName(), PSI)
+
+      fun ClassDescriptor.toClassReferenceCacheKey(): ClassReferenceCacheKey =
+        ClassReferenceCacheKey(fqNameSafe, DESCRIPTOR)
     }
   }
 }

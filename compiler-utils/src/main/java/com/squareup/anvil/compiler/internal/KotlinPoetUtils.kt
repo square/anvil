@@ -5,7 +5,7 @@ package com.squareup.anvil.compiler.internal
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
-import com.squareup.anvil.compiler.internal.reference.getKtClassOrObjectOrNull
+import com.squareup.anvil.compiler.internal.reference.toClassReferencePsiOrNull
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -130,7 +130,7 @@ public fun FqName.asMemberName(module: ModuleDescriptor): MemberName {
   val simpleName = segments.last()
   val prefixFqName = FqName.fromSegments(segments.dropLast(1))
   return prefixFqName.asClassNameOrNull(module)?.let {
-    val classOrObj = prefixFqName.getKtClassOrObjectOrNull(module)
+    val classOrObj = prefixFqName.toClassReferencePsiOrNull(module)?.clazz
     val imported = if (classOrObj is KtClass) {
       // Must be in a companion, check its name
       // We do this because accessors could be just Foo.CONSTANT but to member import it we need

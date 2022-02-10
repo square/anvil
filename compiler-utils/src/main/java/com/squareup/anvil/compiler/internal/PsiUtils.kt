@@ -9,7 +9,6 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.asAnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
-import com.squareup.anvil.compiler.internal.reference.getKtClassOrObjectOrNull
 import com.squareup.anvil.compiler.internal.reference.indexOfTypeParameter
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.kotlinpoet.TypeVariableName
@@ -28,7 +27,6 @@ import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
-import org.jetbrains.kotlin.psi.KtEnumEntry
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
@@ -247,38 +245,6 @@ public inline fun <reified T> KtAnnotationEntry.findAnnotationArgument(
     ?.let { valueArgument ->
       valueArgument.children.firstOrNull() as? T
     }
-}
-
-/**
- * This will return all super classes which are parsed as PSI, which means anything defined in this
- * module. This will include generated code, assuming it has already been generated. It **will not**
- * include any classes from other modules or external dependencies.
- *
- * The first element in the returned list represents the direct superclass to the receiver. The last
- * element represents the class which is furthest up-stream.
- *
- * If you have a class hierarchy which extends into dependencies, and you need to reference those
- * super classes, you'll need to take the last class in this list and resolve its `ClassDescriptor`,
- * then resolve its super-classes that way. Note that this will only work if the last class
- * in the list is not generated, so that it's parsed and part of the plain ModuleDescriptor.
- *
- * **Note** This function only returns classes. See [KtClassOrObject.allPsiSuperClasses] for a
- * version which also returns interfaces.
- */
-@ExperimentalAnvilApi
-public fun KtClassOrObject.allPsiSuperClasses(
-  module: ModuleDescriptor
-): List<KtClassOrObject> {
-
-  if (this is KtEnumEntry) return emptyList()
-
-  val superOrNull = superTypeListEntries
-    .asSequence()
-    .mapNotNull { it.typeReference?.fqNameOrNull(module)?.getKtClassOrObjectOrNull(module) }
-    .firstOrNull { !it.isInterface() }
-    ?: return emptyList()
-
-  return listOf(superOrNull) + superOrNull.allPsiSuperClasses(module)
 }
 
 @ExperimentalAnvilApi

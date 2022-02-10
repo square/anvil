@@ -31,8 +31,8 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
-import com.squareup.anvil.compiler.internal.reference.getKtClassOrObjectOrNull
 import com.squareup.anvil.compiler.internal.reference.toClassReference
+import com.squareup.anvil.compiler.internal.reference.toClassReferencePsiOrNull
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.resolveGenericKotlinType
@@ -110,7 +110,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     val returnTypeFqName = function.returnTypeLazy.value
 
     // The return type of the function must have an @AssistedInject constructor.
-    val injectedClass = returnTypeFqName.getKtClassOrObjectOrNull(module)
+    val injectedClass = returnTypeFqName.toClassReferencePsiOrNull(module)?.clazz
     val constructor = injectedClass
       ?.injectConstructor(assistedInjectFqName, module)
       ?: throw AnvilCompilationException(

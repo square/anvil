@@ -17,7 +17,6 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.directSuperClassReferences
-import com.squareup.anvil.compiler.internal.reference.getKtClassOrObject
 import com.squareup.anvil.compiler.internal.reference.qualifiers
 import com.squareup.anvil.compiler.internal.requireAnnotation
 import com.squareup.anvil.compiler.internal.requireFqName
@@ -117,8 +116,7 @@ private fun ClassReference.requireBoundType(
       message = "$annotationFqName contributes a binding, but does not " +
         "specify the bound type. This is only allowed with exactly one direct super type. " +
         "If there are multiple or none, then the bound type must be explicitly defined in " +
-        "the @${annotationFqName.shortName()} annotation.",
-      element = fqName.getKtClassOrObject(module)
+        "the @${annotationFqName.shortName()} annotation."
     )
 
   boundType.checkNotGeneric(contributedFqName = fqName)
