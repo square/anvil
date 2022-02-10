@@ -27,6 +27,11 @@ allprojects {
   repositories {
     google()
     mavenCentral()
+    if (rootProject.ext.kotlinPreview) {
+      maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap' }
+      maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
+      maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    }
   }
 }
 
@@ -72,13 +77,21 @@ subprojects {
       jvmTarget = JavaVersion.VERSION_1_8
 
       allWarningsAsErrors = rootProject.ext.makeWarningsErrors
-      freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
+      if (rootProject.ext.kotlinPreview) {
+        freeCompilerArgs += ["-opt-in=kotlin.RequiresOptIn"]
+      } else {
+        freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
+      }
 
       boolean optInExperimental = project.name != "annotations"
           && project.name != "scopes"
           && project.name != "dagger-factories-only"
       if (optInExperimental) {
-        freeCompilerArgs += "-Xopt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
+        if (rootProject.ext.kotlinPreview) {
+          freeCompilerArgs += "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
+        } else {
+          freeCompilerArgs += "-Xopt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
+        }
       }
     }
   }
