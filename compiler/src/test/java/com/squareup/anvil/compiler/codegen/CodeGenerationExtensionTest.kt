@@ -154,4 +154,31 @@ class CodeGenerationExtensionTest {
       assertThat(generateCodeCalled).isFalse()
     }
   }
+
+  @Test fun `errors that require an opt-in annotation are suppressed in generated code`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+      import javax.inject.Inject
+
+      @Retention(AnnotationRetention.BINARY)
+      @RequiresOptIn(
+          message = "",
+          level = RequiresOptIn.Level.ERROR
+      )
+      @MustBeDocumented
+      annotation class InternalApi
+
+      interface Type
+
+      @InternalApi
+      @ContributesBinding(Unit::class)
+      class SomeClass @Inject constructor() : Type 
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
 }
