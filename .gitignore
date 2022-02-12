@@ -39,3 +39,6 @@ out
 
 # Steve Jobs
 .DS_Store
+
+# Ignore the generated project.
+/benchmark/
