@@ -4,7 +4,6 @@ import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.HINT_MULTIBINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
-import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
@@ -12,21 +11,18 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.generateClassName
-import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
-import com.squareup.anvil.compiler.isMapKey
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 import kotlin.reflect.KClass
@@ -47,12 +43,16 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
     projectFiles: Collection<KtFile>
   ): Collection<GeneratedFile> {
     return projectFiles
-      .classesAndInnerClasses(module)
-      .filter { it.hasAnnotation(contributesMultibindingFqName, module) }
+      .classAndInnerClassReferences(module)
+      .filter { it.isAnnotatedWith(contributesMultibindingFqName) }
       .onEach { clazz ->
         clazz.checkClassIsPublic()
-        clazz.checkNotMoreThanOneQualifier(module, contributesMultibindingFqName)
-        clazz.checkNotMoreThanOneMapKey(module)
+        clazz.checkNotMoreThanOneQualifier(contributesMultibindingFqName)
+        clazz.checkNotMoreThanOneMapKey()
+      }
+      // TODO: Continue migrating the rest of operations to use ClassReference instead of PSI/Descriptors
+      .map { it.clazz }
+      .onEach { clazz ->
         clazz.checkSingleSuperType(module, contributesMultibindingFqName)
         clazz.checkClassExtendsBoundType(module, contributesMultibindingFqName)
       }
@@ -98,23 +98,5 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
         )
       }
       .toList()
-  }
-}
-
-private fun KtClassOrObject.checkNotMoreThanOneMapKey(
-  module: ModuleDescriptor
-) {
-  // The class is annotated with @ContributesMultibinding. If there is less than 2 further
-  // annotations, then there can't be more than two map keys.
-  if (annotationEntries.size <= 2) return
-
-  val mapKeys = classDescriptor(module).annotations.filter { it.isMapKey() }
-
-  if (mapKeys.size > 1) {
-    throw AnvilCompilationException(
-      message = "Classes annotated with @${contributesMultibindingFqName.shortName()} may not " +
-        "use more than one @MapKey.",
-      element = this
-    )
   }
 }

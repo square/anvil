@@ -84,6 +84,16 @@ public sealed class ClassReference {
    */
   public abstract fun enclosingClassesWithSelf(): List<ClassReference>
 
+  /**
+   * @param failedMessage The message included in the thrown Exception when this [ClassReference]
+   * doesn't have the expected visibility.
+   */
+  public fun checkHasVisibility(visibility: Visibility, failedMessage: String) {
+    if (visibility() != visibility) {
+      throw AnvilCompilationExceptionClassReference(classReference = this, message = failedMessage)
+    }
+  }
+
   override fun toString(): String {
     return "${this::class.qualifiedName}($fqName)"
   }

@@ -74,6 +74,7 @@ internal const val MODULE_PACKAGE_PREFIX = "anvil.module"
 internal const val COMPONENT_PACKAGE_PREFIX = "anvil.component"
 
 internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
+
 // The suffix is a letter by design. Class names for subcomponents must be kept short.
 internal const val ANVIL_SUBCOMPONENT_SUFFIX = "A"
 internal const val PARENT_COMPONENT = "ParentComponent"
@@ -104,6 +105,11 @@ internal fun AnnotationDescriptor.ignoreQualifier(): Boolean {
   return (getAnnotationValue("ignoreQualifier") as? BooleanValue)?.value ?: false
 }
 
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on descriptors and make the code agnostic to the underlying implementation. " +
+    "See [AnnotationReference#isMapKey]"
+)
 internal fun AnnotationDescriptor.isMapKey(): Boolean {
   return annotationClass?.annotations?.hasAnnotation(mapKeyFqName) ?: false
 }
