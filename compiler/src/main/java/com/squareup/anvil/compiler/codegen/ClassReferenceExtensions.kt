@@ -5,7 +5,6 @@ import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionC
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.util.capitalizeDecapitalize.toLowerCaseAsciiOnly
 
 internal fun ClassReference.checkNotMoreThanOneQualifier(
   annotationFqName: FqName
@@ -26,13 +25,15 @@ internal fun ClassReference.checkNotMoreThanOneQualifier(
 
 internal fun ClassReference.checkClassIsPublic() {
   val requiredVisibility = Visibility.PUBLIC
-  val visibilityName = requiredVisibility.name.toLowerCaseAsciiOnly()
+  val visibilityName = requiredVisibility.name.lowercase()
 
-  checkHasVisibility(
-    requiredVisibility,
-    "$fqName is binding a type, but the class is not $visibilityName. " +
-      "Only $visibilityName types are supported."
-  )
+  if (visibility() != requiredVisibility) {
+    throw AnvilCompilationExceptionClassReference(
+      classReference = this,
+      message = "$fqName is binding a type, but the class is not $visibilityName. " +
+        "Only $visibilityName types are supported."
+    )
+  }
 }
 
 internal fun ClassReference.checkNotMoreThanOneMapKey() {
