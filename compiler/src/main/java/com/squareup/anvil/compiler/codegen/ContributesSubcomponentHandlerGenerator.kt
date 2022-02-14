@@ -32,7 +32,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.reference.daggerScopes
-import com.squareup.anvil.compiler.internal.reference.innerClasses
 import com.squareup.anvil.compiler.internal.reference.isAbstract
 import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import com.squareup.anvil.compiler.internal.reference.returnType

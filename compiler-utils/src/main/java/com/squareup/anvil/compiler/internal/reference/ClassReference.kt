@@ -78,6 +78,8 @@ public sealed class ClassReference {
    */
   public abstract fun enclosingClassesWithSelf(): List<ClassReference>
 
+  public abstract fun innerClasses(): List<ClassReference>
+
   override fun toString(): String {
     return "${this::class.qualifiedName}($fqName)"
   }
@@ -125,6 +127,18 @@ public sealed class ClassReference {
         .plus(this)
     }
 
+    private val innerClasses by lazy(NONE) {
+      generateSequence(clazz.declarations.filterIsInstance<KtClassOrObject>()) { classes ->
+        classes
+          .flatMap { it.declarations }
+          .filterIsInstance<KtClassOrObject>()
+          .ifEmpty { null }
+      }
+        .flatten()
+        .map { it.toClassReference(module) }
+        .toList()
+    }
+
     override fun isInterface(): Boolean = clazz is KtClass && clazz.isInterface()
 
     override fun isAbstract(): Boolean = clazz.hasModifier(ABSTRACT_KEYWORD)
@@ -145,6 +159,8 @@ public sealed class ClassReference {
     override fun directSuperClassReferences(): List<ClassReference> = directSuperClassReferences
 
     override fun enclosingClassesWithSelf(): List<Psi> = enclosingClassesWithSelf
+
+    override fun innerClasses(): List<Psi> = innerClasses
   }
 
   public class Descriptor(
@@ -180,6 +196,13 @@ public sealed class ClassReference {
         .plus(this)
     }
 
+    private val innerClasses by lazy(NONE) {
+      clazz.unsubstitutedMemberScope
+        .getContributedDescriptors(kindFilter = DescriptorKindFilter.CLASSIFIERS)
+        .filterIsInstance<ClassDescriptor>()
+        .map { it.toClassReference(module) }
+    }
+
     override fun isInterface(): Boolean = clazz.kind == ClassKind.INTERFACE
 
     override fun isAbstract(): Boolean = clazz.modality == ABSTRACT
@@ -200,6 +223,8 @@ public sealed class ClassReference {
     override fun directSuperClassReferences(): List<ClassReference> = directSuperClassReferences
 
     override fun enclosingClassesWithSelf(): List<Descriptor> = enclosingClassesWithSelf
+
+    override fun innerClasses(): List<Descriptor> = innerClasses
   }
 }
 
@@ -272,25 +297,6 @@ public fun ClassReference.allSuperTypeClassReferences(
     .drop(if (includeSelf) 0 else 1)
     .flatten()
     .distinctBy { it.fqName }
-}
-
-@ExperimentalAnvilApi
-public fun ClassReference.innerClasses(): Sequence<ClassReference> {
-  return when (this) {
-    is Descriptor ->
-      clazz.unsubstitutedMemberScope
-        .getContributedDescriptors(kindFilter = DescriptorKindFilter.CLASSIFIERS)
-        .asSequence()
-        .filterIsInstance<ClassDescriptor>()
-        .map { it.toClassReference(module) }
-    is Psi ->
-      generateSequence(clazz.declarations.filterIsInstance<KtClassOrObject>()) { classes ->
-        classes
-          .flatMap { it.declarations }
-          .filterIsInstance<KtClassOrObject>()
-          .ifEmpty { null }
-      }.flatten().map { it.toClassReference(module) }
-  }
 }
 
 /**
