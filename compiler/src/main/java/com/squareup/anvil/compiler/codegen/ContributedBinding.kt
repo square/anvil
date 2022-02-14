@@ -92,9 +92,10 @@ private fun ClassReference.requireBoundType(
   if (boundFromAnnotation != null) {
     // ensure that the bound type is actually a supertype of the contributing class
     val boundType = allSuperTypeClassReferences()
-      .firstOrNull { it.fqName == boundFromAnnotation }
+      .firstOrNull { it.fqName == boundFromAnnotation.fqName }
       ?: throw AnvilCompilationException(
-        "$fqName contributes a binding for $boundFromAnnotation, but doesn't extend this type."
+        "$fqName contributes a binding for ${boundFromAnnotation.fqName}, " +
+          "but doesn't extend this type."
       )
 
     boundType.checkNotGeneric(contributedFqName = fqName)

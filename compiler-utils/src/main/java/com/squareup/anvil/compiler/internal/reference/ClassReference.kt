@@ -45,7 +45,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
-import org.jetbrains.kotlin.psi.KtEnumEntry
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -83,7 +82,7 @@ public sealed class ClassReference {
    * Returns only the super class (excluding [Any]) and implemented interfaces declared directly by
    * this class.
    */
-  public abstract fun directSuperClassReferences(): Sequence<ClassReference>
+  public abstract fun directSuperClassReferences(): List<ClassReference>
 
   /**
    * Returns all outer classes including this class. Imagine the inner class `Outer.Middle.Inner`,
@@ -125,14 +124,8 @@ public sealed class ClassReference {
       clazz.annotationEntries.map { it.toAnnotationReference(module) }
     }
 
-    private val directSuperClassReferences: Sequence<ClassReference> by lazy(NONE) {
-      if (clazz is KtEnumEntry) {
-        emptySequence()
-      } else {
-        clazz.superTypeListEntries
-          .asSequence()
-          .map { it.requireFqName(module).toClassReference(module) }
-      }
+    private val directSuperClassReferences: List<ClassReference> by lazy(NONE) {
+      clazz.superTypeListEntries.map { it.requireFqName(module).toClassReference(module) }
     }
 
     private val enclosingClassesWithSelf by lazy(NONE) {
@@ -161,7 +154,7 @@ public sealed class ClassReference {
       }
     }
 
-    override fun directSuperClassReferences(): Sequence<ClassReference> = directSuperClassReferences
+    override fun directSuperClassReferences(): List<ClassReference> = directSuperClassReferences
 
     override fun enclosingClassesWithSelf(): List<Psi> = enclosingClassesWithSelf
   }
@@ -184,10 +177,9 @@ public sealed class ClassReference {
       clazz.annotations.map { it.toAnnotationReference(module) }
     }
 
-    private val directSuperClassReferences: Sequence<ClassReference> by lazy(NONE) {
+    private val directSuperClassReferences: List<ClassReference> by lazy(NONE) {
       listOfNotNull(clazz.getSuperClassNotAny())
         .plus(clazz.getSuperInterfaces())
-        .asSequence()
         .map { it.toClassReference(module) }
     }
 
@@ -217,7 +209,7 @@ public sealed class ClassReference {
       }
     }
 
-    override fun directSuperClassReferences(): Sequence<ClassReference> = directSuperClassReferences
+    override fun directSuperClassReferences(): List<ClassReference> = directSuperClassReferences
 
     override fun enclosingClassesWithSelf(): List<Descriptor> = enclosingClassesWithSelf
   }

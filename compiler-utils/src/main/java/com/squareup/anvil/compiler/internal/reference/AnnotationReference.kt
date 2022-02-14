@@ -32,7 +32,7 @@ public sealed class AnnotationReference {
   public val fqName: FqName get() = classReference.fqName
   public val module: AnvilModuleDescriptor get() = classReference.module
 
-  public abstract fun boundTypeOrNull(): FqName?
+  public abstract fun boundTypeOrNull(): ClassReference?
 
   public fun isQualifier(): Boolean = classReference.isAnnotatedWith(qualifierFqName)
 
@@ -55,11 +55,11 @@ public sealed class AnnotationReference {
     public val annotation: KtAnnotationEntry,
     override val classReference: ClassReference
   ) : AnnotationReference() {
-    override fun boundTypeOrNull(): FqName? {
+    override fun boundTypeOrNull(): ClassReference? {
       return annotation.findAnnotationArgument<KtClassLiteralExpression>(
         name = "boundType",
         index = 1
-      )?.requireFqName(module)
+      )?.requireFqName(module)?.toClassReference(module)
     }
   }
 
@@ -67,11 +67,12 @@ public sealed class AnnotationReference {
     public val annotation: AnnotationDescriptor,
     override val classReference: ClassReference
   ) : AnnotationReference() {
-    override fun boundTypeOrNull(): FqName? {
+    override fun boundTypeOrNull(): ClassReference? {
       return (annotation.getAnnotationValue("boundType") as? KClassValue)
         ?.argumentType(module)
         ?.classDescriptor()
         ?.fqNameSafe
+        ?.toClassReference(module)
     }
   }
 }
