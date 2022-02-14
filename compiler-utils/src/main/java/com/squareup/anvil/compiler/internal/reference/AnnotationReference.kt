@@ -2,7 +2,10 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.internal.argumentType
+import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
+import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.mapKeyFqName
 import com.squareup.anvil.compiler.internal.qualifierFqName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Descriptor
@@ -15,6 +18,8 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
+import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 /**
  * Used to create a common type between [KtAnnotationEntry] class references and
@@ -26,6 +31,8 @@ public sealed class AnnotationReference {
   public abstract val classReference: ClassReference
   public val fqName: FqName get() = classReference.fqName
   public val module: AnvilModuleDescriptor get() = classReference.module
+
+  public abstract fun boundTypeOrNull(): FqName?
 
   public fun isQualifier(): Boolean = classReference.isAnnotatedWith(qualifierFqName)
 
@@ -47,12 +54,26 @@ public sealed class AnnotationReference {
   public class Psi internal constructor(
     public val annotation: KtAnnotationEntry,
     override val classReference: ClassReference
-  ) : AnnotationReference()
+  ) : AnnotationReference() {
+    override fun boundTypeOrNull(): FqName? {
+      return annotation.findAnnotationArgument<KtClassLiteralExpression>(
+        name = "boundType",
+        index = 1
+      )?.requireFqName(module)
+    }
+  }
 
   public class Descriptor internal constructor(
     public val annotation: AnnotationDescriptor,
     override val classReference: ClassReference
-  ) : AnnotationReference()
+  ) : AnnotationReference() {
+    override fun boundTypeOrNull(): FqName? {
+      return (annotation.getAnnotationValue("boundType") as? KClassValue)
+        ?.argumentType(module)
+        ?.classDescriptor()
+        ?.fqNameSafe
+    }
+  }
 }
 
 @ExperimentalAnvilApi

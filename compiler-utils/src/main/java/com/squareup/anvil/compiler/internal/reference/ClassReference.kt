@@ -10,7 +10,6 @@ import com.squareup.anvil.compiler.internal.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.internal.contributesToFqName
-import com.squareup.anvil.compiler.internal.directSuperClassAndInterfaces
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.functions
@@ -51,6 +50,8 @@ import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
+import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import kotlin.LazyThreadSafetyMode.NONE
@@ -77,6 +78,12 @@ public sealed class ClassReference {
   public abstract fun isInterface(): Boolean
   public abstract fun isAbstract(): Boolean
   public abstract fun visibility(): Visibility
+
+  /**
+   * Returns only the super class (excluding [Any]) and implemented interfaces declared directly by
+   * this class.
+   */
+  public abstract fun directSuperClassReferences(): Sequence<ClassReference>
 
   /**
    * Returns all outer classes including this class. Imagine the inner class `Outer.Middle.Inner`,
@@ -118,6 +125,16 @@ public sealed class ClassReference {
       clazz.annotationEntries.map { it.toAnnotationReference(module) }
     }
 
+    private val directSuperClassReferences: Sequence<ClassReference> by lazy(NONE) {
+      if (clazz is KtEnumEntry) {
+        emptySequence()
+      } else {
+        clazz.superTypeListEntries
+          .asSequence()
+          .map { it.requireFqName(module).toClassReference(module) }
+      }
+    }
+
     private val enclosingClassesWithSelf by lazy(NONE) {
       clazz.parents
         .filterIsInstance<KtClassOrObject>()
@@ -144,6 +161,8 @@ public sealed class ClassReference {
       }
     }
 
+    override fun directSuperClassReferences(): Sequence<ClassReference> = directSuperClassReferences
+
     override fun enclosingClassesWithSelf(): List<Psi> = enclosingClassesWithSelf
   }
 
@@ -163,6 +182,13 @@ public sealed class ClassReference {
 
     override val annotations: List<AnnotationReference> by lazy(NONE) {
       clazz.annotations.map { it.toAnnotationReference(module) }
+    }
+
+    private val directSuperClassReferences: Sequence<ClassReference> by lazy(NONE) {
+      listOfNotNull(clazz.getSuperClassNotAny())
+        .plus(clazz.getSuperInterfaces())
+        .asSequence()
+        .map { it.toClassReference(module) }
     }
 
     private val enclosingClassesWithSelf by lazy(NONE) {
@@ -190,6 +216,8 @@ public sealed class ClassReference {
         )
       }
     }
+
+    override fun directSuperClassReferences(): Sequence<ClassReference> = directSuperClassReferences
 
     override fun enclosingClassesWithSelf(): List<Descriptor> = enclosingClassesWithSelf
   }
@@ -264,22 +292,6 @@ public fun ClassReference.allSuperTypeClassReferences(
     .drop(if (includeSelf) 0 else 1)
     .flatten()
     .distinctBy { it.fqName }
-}
-
-@ExperimentalAnvilApi
-public fun ClassReference.directSuperClassReferences(): Sequence<ClassReference> {
-  return when (this) {
-    is Descriptor -> clazz.directSuperClassAndInterfaces()
-      .asSequence()
-      .map { it.fqNameSafe.toClassReference(module) }
-    is Psi -> if (clazz is KtEnumEntry) {
-      emptySequence()
-    } else {
-      clazz.superTypeListEntries
-        .asSequence()
-        .map { it.requireFqName(module).toClassReference(module) }
-    }
-  }
 }
 
 @ExperimentalAnvilApi
