@@ -1,13 +1,13 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
-import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.daggerComponentFqName
-import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
+import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -23,16 +23,16 @@ internal class ComponentDetectorCheck : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     val component = projectFiles
-      .classesAndInnerClasses(module)
-      .firstOrNull { it.hasAnnotation(daggerComponentFqName, module) }
+      .classAndInnerClassReferences(module)
+      .firstOrNull { it.isAnnotatedWith(daggerComponentFqName) }
 
     if (component != null) {
-      throw AnvilCompilationException(
+      throw AnvilCompilationExceptionClassReference(
         message = "Anvil cannot generate the code for Dagger components or subcomponents. In " +
           "these cases the Dagger annotation processor is required. Enabling the Dagger " +
           "annotation processor and turning on Anvil to generate Dagger factories is " +
           "redundant. Set 'generateDaggerFactories' to false.",
-        element = component
+        classReference = component
       )
     }
   }

@@ -132,7 +132,7 @@ class AnvilAnnotationDetectorCheckTest {
 
   private fun Result.assertError() {
     assertThat(exitCode).isError()
-    assertThat(messages).contains("Source0.kt: (5, 1")
+    assertThat(messages).contains("Source0.kt: (6, 7")
     assertThat(messages).contains(
       "This Gradle module is configured to ONLY generate Dagger factories with the " +
         "`generateDaggerFactoriesOnly` flag. However, this module contains code that uses " +

@@ -16,8 +16,8 @@ import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule1
-import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import com.squareup.anvil.compiler.internal.testing.extends
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
@@ -1646,9 +1646,9 @@ class ContributesSubcomponentHandlerGeneratorTest {
         projectFiles: Collection<KtFile>
       ): Collection<GeneratedFile> {
         return projectFiles
-          .classesAndInnerClasses(module)
-          .filter { it.hasAnnotation(mergeComponentFqName, module) }
-          .map { _ ->
+          .classAndInnerClassReferences(module)
+          .filter { it.isAnnotatedWith(mergeComponentFqName) }
+          .map {
             val generatedPackage = "com.squareup.test"
 
             @Language("kotlin")
@@ -1716,9 +1716,9 @@ class ContributesSubcomponentHandlerGeneratorTest {
         projectFiles: Collection<KtFile>
       ): Collection<GeneratedFile> {
         return projectFiles
-          .classesAndInnerClasses(module)
-          .filter { it.hasAnnotation(mergeComponentFqName, module) }
-          .map { _ ->
+          .classAndInnerClassReferences(module)
+          .filter { it.isAnnotatedWith(mergeComponentFqName) }
+          .map {
             val generatedPackage = "com.squareup.test"
 
             @Language("kotlin")
@@ -1947,8 +1947,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
         projectFiles: Collection<KtFile>
       ): Collection<GeneratedFile> {
         return projectFiles
-          .classesAndInnerClasses(module)
-          .filter { it.hasAnnotation(mergeComponentFqName, module) }
+          .classAndInnerClassReferences(module)
+          .filter { it.isAnnotatedWith(mergeComponentFqName) }
           .map {
             val generatedPackage = "com.squareup.test"
 
