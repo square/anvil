@@ -94,6 +94,11 @@ public fun AnnotationDescriptor.getAnnotationValue(key: String): ConstantValue<*
   allValueArguments[Name.identifier(key)]
 
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on descriptors and make the code agnostic to the underlying implementation. " +
+    "See [AnnotationReference#scope]"
+)
 public fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescriptor {
   return scopeOrNull(module)
     ?: throw AnvilCompilationException(
@@ -103,6 +108,11 @@ public fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescriptor
 }
 
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on descriptors and make the code agnostic to the underlying implementation. " +
+    "See [AnnotationReference#scopeOrNull]"
+)
 public fun AnnotationDescriptor.scopeOrNull(module: ModuleDescriptor): ClassDescriptor? {
   val annotationValue = getAnnotationValue("scope") as? KClassValue
   return annotationValue?.argumentType(module)?.classDescriptor()
