@@ -14,7 +14,6 @@ import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.parentScope
-import com.squareup.anvil.compiler.internal.reference.replaces
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.requireFqName
@@ -178,7 +177,8 @@ internal class ModuleMerger(
       }
       .flatMap { (classDescriptor, contributeAnnotation) ->
         classDescriptor.toClassReference(module)
-          .replaces(contributeAnnotation.requireFqName())
+          .annotations.single { it.fqName == contributeAnnotation.requireFqName() }
+          .replaces()
           .map { it.requireClassDescriptor(module) }
           .map { classDescriptorForReplacement ->
             // Verify has @Module annotation. It doesn't make sense for a Dagger module to
@@ -216,7 +216,8 @@ internal class ModuleMerger(
           val annotation = contributedClass.annotation(annotationFqName)
           if (scopeFqName == annotation.scope(module).fqNameSafe) {
             contributedClass.toClassReference(module)
-              .replaces(annotationFqName)
+              .annotations.single { it.fqName == annotationFqName }
+              .replaces()
               .map { it.requireClassDescriptor(module) }
               .map { classDescriptorForReplacement ->
                 checkSameScope(

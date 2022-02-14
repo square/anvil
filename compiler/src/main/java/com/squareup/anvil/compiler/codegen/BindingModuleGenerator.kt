@@ -26,7 +26,6 @@ import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
-import com.squareup.anvil.compiler.internal.reference.replaces
 import com.squareup.anvil.compiler.internal.reference.scopeOrNull
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.requireFqName
@@ -169,7 +168,10 @@ internal class BindingModuleGenerator(
         // Ignore replaced bindings specified by excluded modules for this scope.
         .filter { it.fqName !in excludedNames }
         .flatMap { clazz ->
-          clazz.toClassReference(module).replaces(contributesToFqName).map { it.fqName }
+          clazz.toClassReference(module)
+            .annotations.single { it.fqName == contributesToFqName }
+            .replaces()
+            .map { it.fqName }
         }
         .plus(
           classScanner
@@ -182,8 +184,10 @@ internal class BindingModuleGenerator(
             .filter { it.annotationOrNull(daggerModuleFqName) != null }
             // Ignore replaced bindings specified by excluded modules for this scope.
             .filter { it.fqNameSafe !in excludedNames }
-            .flatMap {
-              it.toClassReference(module).replaces(contributesToFqName)
+            .flatMap { classDescriptor ->
+              classDescriptor.toClassReference(module)
+                .annotations.single { it.fqName == contributesToFqName }
+                .replaces()
             }
             .map { it.fqName }
         )
@@ -213,7 +217,10 @@ internal class BindingModuleGenerator(
 
         val replacedBindings = allContributedClasses
           .flatMap { classReference ->
-            classReference.replaces(annotationFqName).map { it.fqName }
+            classReference.annotations
+              .single { it.fqName == annotationFqName }
+              .replaces()
+              .map { it.fqName }
           }
 
         return allContributedClasses

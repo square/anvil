@@ -3,17 +3,8 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.annotationOrNull
-import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
-import com.squareup.anvil.compiler.internal.classDescriptor
-import com.squareup.anvil.compiler.internal.contributesBindingFqName
-import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
-import com.squareup.anvil.compiler.internal.contributesSubcomponentFqName
-import com.squareup.anvil.compiler.internal.contributesToFqName
-import com.squareup.anvil.compiler.internal.findAnnotation
-import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.functions
-import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.isDaggerScope
 import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
@@ -26,7 +17,6 @@ import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.scopeOrNull
 import com.squareup.anvil.compiler.internal.toAnnotationSpec
-import com.squareup.anvil.compiler.internal.toFqNames
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -44,10 +34,8 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
@@ -332,39 +320,6 @@ public fun ClassReference.scopeOrNull(
     is Psi -> clazz.scopeOrNull(annotationFqName, module)
   }
 }
-
-private fun replacesIndex(annotationFqName: FqName): Int {
-  return when (annotationFqName) {
-    contributesToFqName -> 1
-    contributesBindingFqName, contributesMultibindingFqName -> 2
-    contributesSubcomponentFqName -> 4
-    else -> throw NotImplementedError(
-      "Couldn't find index of replaces argument for $annotationFqName."
-    )
-  }
-}
-
-@ExperimentalAnvilApi
-public fun ClassReference.replaces(
-  annotationFqName: FqName,
-  index: Int = replacesIndex(annotationFqName)
-): List<ClassReference> =
-  when (this) {
-    is Descriptor -> {
-      val replacesValue = clazz.annotationOrNull(annotationFqName)
-        ?.getAnnotationValue("replaces") as? ArrayValue
-
-      replacesValue
-        ?.value
-        ?.map { it.argumentType(module).classDescriptor().toClassReference(module) }
-    }
-    is Psi ->
-      clazz
-        .findAnnotation(annotationFqName, module)
-        ?.findAnnotationArgument<KtCollectionLiteralExpression>(name = "replaces", index = index)
-        ?.toFqNames(module)
-        ?.map { it.toClassReference(module) }
-  }.orEmpty()
 
 @ExperimentalAnvilApi
 public fun ClassReference.qualifiers(): List<AnnotationSpec> {

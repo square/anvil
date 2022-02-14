@@ -4,6 +4,10 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.classDescriptor
+import com.squareup.anvil.compiler.internal.contributesBindingFqName
+import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
+import com.squareup.anvil.compiler.internal.contributesSubcomponentFqName
+import com.squareup.anvil.compiler.internal.contributesToFqName
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.mapKeyFqName
@@ -12,11 +16,14 @@ import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Descri
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Psi
 import com.squareup.anvil.compiler.internal.requireClass
 import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.toFqNames
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
+import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import kotlin.LazyThreadSafetyMode.NONE
 
@@ -42,6 +49,8 @@ public sealed class AnnotationReference {
       )
 
   public abstract fun boundTypeOrNull(): ClassReference?
+
+  public abstract fun replaces(parameterIndex: Int = replacesIndex(fqName)): List<ClassReference>
 
   public fun isQualifier(): Boolean = classReference.isAnnotatedWith(qualifierFqName)
   public fun isMapKey(): Boolean = classReference.isAnnotatedWith(mapKeyFqName)
@@ -82,6 +91,17 @@ public sealed class AnnotationReference {
         index = 1
       )?.requireFqName(module)?.toClassReference(module)
     }
+
+    override fun replaces(parameterIndex: Int): List<ClassReference> {
+      return annotation
+        .findAnnotationArgument<KtCollectionLiteralExpression>(
+          name = "replaces",
+          index = parameterIndex
+        )
+        ?.toFqNames(module)
+        ?.map { it.toClassReference(module) }
+        .orEmpty()
+    }
   }
 
   public class Descriptor internal constructor(
@@ -100,6 +120,14 @@ public sealed class AnnotationReference {
         ?.argumentType(module)
         ?.classDescriptor()
         ?.toClassReference(module)
+    }
+
+    override fun replaces(parameterIndex: Int): List<ClassReference> {
+      val replacesValue = annotation.getAnnotationValue("replaces") as? ArrayValue
+      return replacesValue
+        ?.value
+        ?.map { it.argumentType(module).classDescriptor().toClassReference(module) }
+        .orEmpty()
     }
   }
 }
@@ -131,4 +159,15 @@ public fun AnvilCompilationExceptionAnnotationReference(
     message = message,
     cause = cause
   )
+}
+
+private fun replacesIndex(annotationFqName: FqName): Int {
+  return when (annotationFqName) {
+    contributesToFqName -> 1
+    contributesBindingFqName, contributesMultibindingFqName -> 2
+    contributesSubcomponentFqName -> 4
+    else -> throw NotImplementedError(
+      "Couldn't find index of replaces argument for $annotationFqName."
+    )
+  }
 }

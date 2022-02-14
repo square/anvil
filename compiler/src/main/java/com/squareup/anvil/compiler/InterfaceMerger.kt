@@ -11,7 +11,6 @@ import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.getAllSuperTypes
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.parentScope
-import com.squareup.anvil.compiler.internal.reference.replaces
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.requireFqName
@@ -90,7 +89,8 @@ internal class InterfaceMerger(
     val replacedClasses = classes
       .flatMap { (classDescriptor, contributeAnnotation) ->
         classDescriptor.toClassReference(module)
-          .replaces(contributeAnnotation.requireFqName())
+          .annotations.single { it.fqName == contributeAnnotation.requireFqName() }
+          .replaces()
           .map { it.requireClassDescriptor(module) }
           .onEach { classDescriptorForReplacement ->
             // Verify the other class is an interface. It doesn't make sense for a contributed
