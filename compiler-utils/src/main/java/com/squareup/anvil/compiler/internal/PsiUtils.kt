@@ -191,6 +191,11 @@ public fun KtAnnotationEntry.scope(
 }
 
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
+    "See [AnnotationReference#parentScope]"
+)
 public fun KtClassOrObject.parentScope(
   annotationFqName: FqName,
   module: ModuleDescriptor

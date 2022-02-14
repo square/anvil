@@ -119,6 +119,11 @@ public fun AnnotationDescriptor.scopeOrNull(module: ModuleDescriptor): ClassDesc
 }
 
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on descriptors and make the code agnostic to the underlying implementation. " +
+    "See [AnnotationReference#parentScope]"
+)
 public fun AnnotationDescriptor.parentScope(module: ModuleDescriptor): ClassDescriptor {
   val annotationValue = getAnnotationValue("parentScope") as? KClassValue
     ?: throw AnvilCompilationException(
