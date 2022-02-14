@@ -19,7 +19,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.resolve.constants.KClassValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 /**
  * Used to create a common type between [KtAnnotationEntry] class references and
@@ -71,7 +70,6 @@ public sealed class AnnotationReference {
       return (annotation.getAnnotationValue("boundType") as? KClassValue)
         ?.argumentType(module)
         ?.classDescriptor()
-        ?.fqNameSafe
         ?.toClassReference(module)
     }
   }
