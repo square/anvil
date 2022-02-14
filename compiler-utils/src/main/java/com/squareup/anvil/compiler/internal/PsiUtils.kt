@@ -802,6 +802,11 @@ public fun ClassId.classDescriptorOrNull(module: ModuleDescriptor): ClassDescrip
   asSingleFqName().classDescriptorOrNull(module)
 
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
+    "See [AnnotationReference#isQualifier]"
+)
 public fun KtAnnotationEntry.isQualifier(module: ModuleDescriptor): Boolean {
   return typeReference
     ?.requireFqName(module)
@@ -825,6 +830,11 @@ public fun KtAnnotationEntry.isDaggerScope(module: ModuleDescriptor): Boolean {
 }
 
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
+    "See [AnnotationReference#isMapKey]"
+)
 public fun KtAnnotationEntry.isMapKey(module: ModuleDescriptor): Boolean {
   return typeReference
     ?.requireFqName(module)

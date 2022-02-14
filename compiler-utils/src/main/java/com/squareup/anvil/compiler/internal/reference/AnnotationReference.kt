@@ -3,6 +3,8 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
+import com.squareup.anvil.compiler.internal.mapKeyFqName
+import com.squareup.anvil.compiler.internal.qualifierFqName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Psi
 import com.squareup.anvil.compiler.internal.requireClass
@@ -24,6 +26,10 @@ public sealed class AnnotationReference {
   public abstract val classReference: ClassReference
   public val fqName: FqName get() = classReference.fqName
   public val module: AnvilModuleDescriptor get() = classReference.module
+
+  public fun isQualifier(): Boolean = classReference.isAnnotatedWith(qualifierFqName)
+
+  public fun isMapKey(): Boolean = classReference.isAnnotatedWith(mapKeyFqName)
 
   override fun toString(): String = "@$fqName"
 

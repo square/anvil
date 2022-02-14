@@ -168,6 +168,11 @@ public fun List<KotlinType>.getAllSuperTypes(): Sequence<FqName> =
     .map { it.classDescriptor().fqNameSafe }
 
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on descriptors and make the code agnostic to the underlying implementation. " +
+    "See [AnnotationReference#isQualifier]"
+)
 public fun AnnotationDescriptor.isQualifier(): Boolean {
   return annotationClass?.annotations?.hasAnnotation(qualifierFqName) ?: false
 }

@@ -106,6 +106,11 @@ internal class ContributesBindingGenerator : CodeGenerator {
   }
 }
 
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
+    "See [ClassReference#checkNotMoreThanOneQualifier]"
+)
 internal fun KtClassOrObject.checkNotMoreThanOneQualifier(
   module: ModuleDescriptor,
   annotationFqName: FqName
@@ -125,6 +130,11 @@ internal fun KtClassOrObject.checkNotMoreThanOneQualifier(
   }
 }
 
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
+    "See [ClassReference#checkHasVisibility]"
+)
 internal fun KtClassOrObject.checkClassIsPublic() {
   if (visibilityModifierTypeOrDefault().value != KtTokens.PUBLIC_KEYWORD.value) {
     throw AnvilCompilationException(
