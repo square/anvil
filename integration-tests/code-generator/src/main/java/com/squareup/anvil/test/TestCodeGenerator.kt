@@ -5,8 +5,8 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
-import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import com.squareup.anvil.compiler.internal.safePackageString
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -31,10 +31,10 @@ class TestCodeGenerator : CodeGenerator {
     projectFiles: Collection<KtFile>
   ): Collection<GeneratedFile> {
     return projectFiles
-      .classesAndInnerClasses(module)
-      .filter { it.hasAnnotation(FqName("com.squareup.anvil.test.Trigger"), module) }
+      .classAndInnerClassReferences(module)
+      .filter { it.isAnnotatedWith(FqName("com.squareup.anvil.test.Trigger")) }
       .flatMap { clazz ->
-        val generatedPackage = "generated.test" + clazz.containingKtFile.packageFqName
+        val generatedPackage = "generated.test" + clazz.packageFqName
           .safePackageString(dotPrefix = true, dotSuffix = false)
 
         @Language("kotlin")

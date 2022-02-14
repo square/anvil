@@ -25,7 +25,7 @@ class ComponentDetectorCheckTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      assertThat(messages).contains("Source0.kt: (5, 1")
+      assertThat(messages).contains("Source0.kt: (6, 11")
       assertThat(messages).contains(
         "Anvil cannot generate the code for Dagger components or subcomponents. In these " +
           "cases the Dagger annotation processor is required. Enabling the Dagger " +
@@ -65,7 +65,7 @@ class ComponentDetectorCheckTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      assertThat(messages).contains("Source0.kt: (6, 3")
+      assertThat(messages).contains("Source0.kt: (7, 13")
       assertThat(messages).contains(
         "Anvil cannot generate the code for Dagger components or subcomponents. In these " +
           "cases the Dagger annotation processor is required. Enabling the Dagger " +
