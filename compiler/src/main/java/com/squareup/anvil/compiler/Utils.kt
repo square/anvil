@@ -9,7 +9,6 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
-import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.getAnnotationValue
@@ -32,7 +31,6 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.constants.EnumValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import javax.inject.Inject
 import javax.inject.Provider
@@ -88,12 +86,6 @@ internal val propertySuffixes = arrayOf(REFERENCE_SUFFIX, SCOPE_SUFFIX)
 internal fun FqName.isAnvilModule(): Boolean {
   val name = asString()
   return name.startsWith(MODULE_PACKAGE_PREFIX) && name.endsWith(ANVIL_MODULE_SUFFIX)
-}
-
-internal fun AnnotationDescriptor.boundTypeOrNull(module: ModuleDescriptor): ClassDescriptor? {
-  return (getAnnotationValue("boundType") as? KClassValue)
-    ?.argumentType(module)
-    ?.classDescriptor()
 }
 
 internal fun AnnotationDescriptor.priority(): ContributesBinding.Priority {

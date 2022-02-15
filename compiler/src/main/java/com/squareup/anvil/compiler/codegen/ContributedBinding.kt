@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.annotations.ContributesBinding.Priority
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.boundTypeOrNull
 import com.squareup.anvil.compiler.ignoreQualifier
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.annotation
@@ -16,7 +15,6 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
-import com.squareup.anvil.compiler.internal.reference.directSuperClassReferences
 import com.squareup.anvil.compiler.internal.reference.qualifiers
 import com.squareup.anvil.compiler.internal.requireAnnotation
 import com.squareup.anvil.compiler.internal.requireFqName
@@ -55,7 +53,7 @@ internal fun ClassReference.toContributedBinding(
   isMultibinding: Boolean
 ): ContributedBinding {
 
-  val boundType = requireBoundType(module, annotationFqName)
+  val boundType = requireBoundType(annotationFqName)
 
   val mapKeys = if (isMultibinding) {
     mapKeys(module)
@@ -87,22 +85,17 @@ internal fun ClassReference.toContributedBinding(
 }
 
 private fun ClassReference.requireBoundType(
-  module: ModuleDescriptor,
   annotationFqName: FqName
 ): ClassReference {
-  val boundFromAnnotation = when (this) {
-    is Descriptor -> clazz.annotation(annotationFqName)
-      .boundTypeOrNull(module)
-      ?.fqNameSafe
-    is Psi -> clazz.boundTypeOrNull(annotationFqName, module)
-  }
+  val boundFromAnnotation = annotations.find { it.fqName == annotationFqName }?.boundTypeOrNull()
 
   if (boundFromAnnotation != null) {
     // ensure that the bound type is actually a supertype of the contributing class
     val boundType = allSuperTypeClassReferences()
-      .firstOrNull { it.fqName == boundFromAnnotation }
+      .firstOrNull { it.fqName == boundFromAnnotation.fqName }
       ?: throw AnvilCompilationException(
-        "$fqName contributes a binding for $boundFromAnnotation, but doesn't extend this type."
+        "$fqName contributes a binding for ${boundFromAnnotation.fqName}, " +
+          "but doesn't extend this type."
       )
 
     boundType.checkNotGeneric(contributedFqName = fqName)

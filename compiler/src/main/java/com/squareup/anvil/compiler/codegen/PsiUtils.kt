@@ -11,7 +11,6 @@ import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.requireAnnotation
-import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeInterfacesFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
@@ -60,15 +59,6 @@ internal fun KtClassOrObject.injectConstructor(
       element = this
     )
   }
-}
-
-internal fun KtClassOrObject.boundTypeOrNull(
-  annotationFqName: FqName,
-  module: ModuleDescriptor
-): FqName? {
-  return requireAnnotation(annotationFqName, module)
-    .findAnnotationArgument<KtClassLiteralExpression>(name = "boundType", index = 1)
-    ?.requireFqName(module)
 }
 
 internal fun KtClassOrObject.ignoreQualifier(

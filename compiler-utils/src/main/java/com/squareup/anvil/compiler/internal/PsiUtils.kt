@@ -860,6 +860,21 @@ public fun KtClassOrObject.generateClassName(
     }
 
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
+    "See [AnnotationReference#boundTypeOrNull]"
+)
+public fun KtClassOrObject.boundTypeOrNull(
+  annotationFqName: FqName,
+  module: ModuleDescriptor
+): FqName? {
+  return requireAnnotation(annotationFqName, module)
+    .findAnnotationArgument<KtClassLiteralExpression>(name = "boundType", index = 1)
+    ?.requireFqName(module)
+}
+
+@ExperimentalAnvilApi
 public fun KtTypeReference.containingClassReferenceOrNull(
   module: ModuleDescriptor
 ): ClassReference? {

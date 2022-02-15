@@ -21,9 +21,6 @@ import org.jetbrains.kotlin.resolve.constants.KClassValue.Value.NormalClass
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.getAllSuperClassifiers
-import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
-import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.ErrorType
 import org.jetbrains.kotlin.types.KotlinType
@@ -64,16 +61,6 @@ public fun ClassDescriptor.annotation(
   scope: FqName? = null
 ): AnnotationDescriptor = requireNotNull(annotationOrNull(annotationFqName, scope)) {
   "Couldn't find $annotationFqName with scope $scope for $fqNameSafe."
-}
-
-/**
- * Returns only the super class (excluding [Any]) and implemented interfaces declared directly by
- * this class. This is different from [getAllSuperClassifiers] in that the latter returns the entire
- * hierarchy.
- */
-public fun ClassDescriptor.directSuperClassAndInterfaces(): List<ClassDescriptor> {
-  return listOfNotNull(getSuperClassNotAny())
-    .plus(getSuperInterfaces())
 }
 
 @ExperimentalAnvilApi

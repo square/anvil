@@ -49,11 +49,11 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
         clazz.checkClassIsPublic()
         clazz.checkNotMoreThanOneQualifier(contributesMultibindingFqName)
         clazz.checkNotMoreThanOneMapKey()
+        clazz.checkSingleSuperType(contributesMultibindingFqName)
       }
       // TODO: Continue migrating the rest of operations to use ClassReference instead of PSI/Descriptors
       .map { it.clazz }
       .onEach { clazz ->
-        clazz.checkSingleSuperType(module, contributesMultibindingFqName)
         clazz.checkClassExtendsBoundType(module, contributesMultibindingFqName)
       }
       .map { clazz ->

@@ -51,3 +51,21 @@ internal fun ClassReference.checkNotMoreThanOneMapKey() {
     )
   }
 }
+
+internal fun ClassReference.checkSingleSuperType(
+  annotationFqName: FqName
+) {
+  // If the bound type exists, then you're allowed to have multiple super types. Without the bound
+  // type there must be exactly one super type.
+  if (annotations.find { it.fqName == annotationFqName }?.boundTypeOrNull() != null) return
+
+  if (directSuperClassReferences().count() != 1) {
+    throw AnvilCompilationExceptionClassReference(
+      message = "$fqName contributes a binding, but does not " +
+        "specify the bound type. This is only allowed with exactly one direct super type. " +
+        "If there are multiple or none, then the bound type must be explicitly defined in " +
+        "the @${annotationFqName.shortName()} annotation.",
+      classReference = this
+    )
+  }
+}

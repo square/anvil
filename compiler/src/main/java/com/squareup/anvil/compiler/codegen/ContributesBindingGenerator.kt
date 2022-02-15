@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.boundTypeOrNull
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.fqNameOrNull
@@ -145,6 +146,11 @@ internal fun KtClassOrObject.checkClassIsPublic() {
   }
 }
 
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
+    "See [ClassReference#checkSingleSuperType]"
+)
 internal fun KtClassOrObject.checkSingleSuperType(
   module: ModuleDescriptor,
   annotationFqName: FqName
