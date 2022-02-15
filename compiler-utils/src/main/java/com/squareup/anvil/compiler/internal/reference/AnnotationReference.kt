@@ -5,7 +5,6 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.classDescriptor
-import com.squareup.anvil.compiler.internal.codeBlock
 import com.squareup.anvil.compiler.internal.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.contributesSubcomponentFqName
