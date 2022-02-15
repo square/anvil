@@ -5,7 +5,6 @@ import com.squareup.anvil.annotations.ContributesSubcomponent
 import com.squareup.anvil.compiler.HINT_SUBCOMPONENTS_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
-import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
@@ -15,34 +14,24 @@ import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerSubcomponentBuilderFqName
 import com.squareup.anvil.compiler.daggerSubcomponentFactoryFqName
-import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.fqNameOrNull
-import com.squareup.anvil.compiler.internal.generateClassName
-import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.anvil.compiler.internal.isInterface
-import com.squareup.anvil.compiler.internal.parentScope
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
-import com.squareup.anvil.compiler.internal.reference.toClassReference
-import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.reference.Visibility
+import com.squareup.anvil.compiler.internal.reference.asClassName
+import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.generateClassName
+import com.squareup.anvil.compiler.internal.reference.isAbstract
+import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
+import com.squareup.anvil.compiler.internal.reference.returnType
 import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.anvil.compiler.internal.scope
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtClassBody
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import java.io.File
 import kotlin.reflect.KClass
 
@@ -61,47 +50,47 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
     projectFiles: Collection<KtFile>
   ): Collection<GeneratedFile> {
     return projectFiles
-      .classesAndInnerClasses(module)
-      .filter { it.hasAnnotation(contributesSubcomponentFqName, module) }
+      .classAndInnerClassReferences(module)
+      .filter { it.isAnnotatedWith(contributesSubcomponentFqName) }
       .onEach { clazz ->
-        if (!clazz.isInterface() && !clazz.hasModifier(ABSTRACT_KEYWORD)) {
-          throw AnvilCompilationException(
-            "${clazz.requireFqName()} is annotated with " +
+        if (!clazz.isInterface() && !clazz.isAbstract()) {
+          throw AnvilCompilationExceptionClassReference(
+            message = "${clazz.fqName} is annotated with " +
               "@${ContributesSubcomponent::class.simpleName}, but this class is not an interface.",
-            element = clazz.identifyingElement
+            classReference = clazz
           )
         }
 
-        if (clazz.visibilityModifierTypeOrDefault().value != KtTokens.PUBLIC_KEYWORD.value) {
-          throw AnvilCompilationException(
-            "${clazz.requireFqName()} is contributed to the Dagger graph, but the " +
+        if (clazz.visibility() != Visibility.PUBLIC) {
+          throw AnvilCompilationExceptionClassReference(
+            message = "${clazz.fqName} is contributed to the Dagger graph, but the " +
               "interface is not public. Only public interfaces are supported.",
-            element = clazz.identifyingElement
+            classReference = clazz
           )
         }
 
-        val scope = clazz.scope(contributesSubcomponentFqName, module)
-
-        clazz.toClassReference(module)
-          .annotations.single { it.fqName == contributesSubcomponentFqName }
-          .replaces()
-          .onEach {
-            it.checkUsesSameScope(scope, clazz)
+        clazz.annotations
+          .filter { it.fqName == contributesSubcomponentFqName }
+          .forEach { annotation ->
+            annotation.replaces().forEach {
+              it.checkUsesSameScope(annotation.scope(), clazz)
+            }
           }
       }
       .map { clazz ->
         val fileName = clazz.generateClassName()
         val generatedPackage = HINT_SUBCOMPONENTS_PACKAGE_PREFIX +
-          clazz.containingKtFile.packageFqName.safePackageString(dotPrefix = true)
+          clazz.packageFqName.safePackageString(dotPrefix = true)
         val className = clazz.asClassName()
-        val classFqName = clazz.requireFqName().toString()
+        val classFqName = clazz.fqName.toString()
         val propertyName = classFqName.replace('.', '_')
-        val parentScopeFqName = clazz.parentScope(contributesSubcomponentFqName, module)
-        val parentScope = parentScopeFqName.asClassName(module)
+        val parentScopeReference = clazz.annotations
+          .single { it.fqName == contributesSubcomponentFqName }
+          .parentScope()
+        val parentScope = parentScopeReference.asClassName()
 
-        val innerClasses = clazz.childrenInBody.filterIsInstance<KtClassOrObject>()
-        clazz.checkParentComponentInterface(innerClasses, module, parentScopeFqName)
-        clazz.checkFactory(innerClasses, module)
+        clazz.checkParentComponentInterface(clazz.innerClasses(), parentScopeReference)
+        clazz.checkFactory(clazz.innerClasses())
 
         val content =
           FileSpec.buildFile(generatedPackage, fileName) {
@@ -138,52 +127,44 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
       .toList()
   }
 
-  private fun KtClassOrObject.checkParentComponentInterface(
-    innerClasses: List<KtClassOrObject>,
-    module: ModuleDescriptor,
-    parentScope: FqName
+  private fun ClassReference.checkParentComponentInterface(
+    innerClasses: List<ClassReference>,
+    parentScope: ClassReference
   ) {
-    val fqName = requireFqName()
-
     val parentComponents = innerClasses
       .filter {
-        if (!it.hasAnnotation(contributesToFqName, module)) return@filter false
-        it.scope(contributesToFqName, module) == parentScope
+        it.annotations.any { annotation ->
+          annotation.fqName == contributesToFqName && annotation.scope() == parentScope
+        }
       }
 
     val componentInterface = when (parentComponents.size) {
       0 -> return
       1 -> parentComponents[0]
-      else -> throw AnvilCompilationException(
-        element = this,
+      else -> throw AnvilCompilationExceptionClassReference(
+        classReference = this,
         message = "Expected zero or one parent component interface within " +
-          "${requireFqName()} being contributed to the parent scope."
+          "$fqName being contributed to the parent scope."
       )
     }
 
-    val functions = componentInterface.childrenInBody
-      .filterIsInstance<KtFunction>()
-      .filter { it.typeReference?.fqNameOrNull(module) == fqName }
+    val functions = componentInterface.functions
+      .filter { it.returnType() == this }
 
     if (functions.size >= 2) {
-      throw AnvilCompilationException(
-        element = this,
+      throw AnvilCompilationExceptionClassReference(
+        classReference = componentInterface,
         message = "Expected zero or one function returning the subcomponent $fqName."
       )
     }
   }
 
-  private fun KtClassOrObject.checkFactory(
-    innerClasses: List<KtClassOrObject>,
-    module: ModuleDescriptor
-  ) {
-    val fqName = requireFqName()
-
+  private fun ClassReference.checkFactory(innerClasses: List<ClassReference>) {
     innerClasses
-      .firstOrNull { it.hasAnnotation(daggerSubcomponentFactoryFqName, module) }
+      .firstOrNull { it.isAnnotatedWith(daggerSubcomponentFactoryFqName) }
       ?.let { factoryClass ->
-        throw AnvilCompilationException(
-          element = factoryClass,
+        throw AnvilCompilationExceptionClassReference(
+          classReference = factoryClass,
           message = "Within a class using @${ContributesSubcomponent::class.simpleName} you " +
             "must use $contributesSubcomponentFactoryFqName and not " +
             "$daggerSubcomponentFactoryFqName."
@@ -191,10 +172,10 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
       }
 
     innerClasses
-      .firstOrNull { it.hasAnnotation(daggerSubcomponentBuilderFqName, module) }
+      .firstOrNull { it.isAnnotatedWith(daggerSubcomponentBuilderFqName) }
       ?.let { factoryClass ->
-        throw AnvilCompilationException(
-          element = factoryClass,
+        throw AnvilCompilationExceptionClassReference(
+          classReference = factoryClass,
           message = "Within a class using @${ContributesSubcomponent::class.simpleName} you " +
             "must use $contributesSubcomponentFactoryFqName and not " +
             "$daggerSubcomponentBuilderFqName. Builders aren't supported."
@@ -202,37 +183,36 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
       }
 
     val factories = innerClasses
-      .filter { it.hasAnnotation(contributesSubcomponentFactoryFqName, module) }
+      .filter { it.isAnnotatedWith(contributesSubcomponentFactoryFqName) }
 
     val factory = when (factories.size) {
       0 -> return
       1 -> factories[0]
-      else -> throw AnvilCompilationException(
-        element = this,
-        message = "Expected zero or one factory within ${requireFqName()}."
+      else -> throw AnvilCompilationExceptionClassReference(
+        classReference = this,
+        message = "Expected zero or one factory within $fqName."
       )
     }
 
-    if (!factory.isInterface() && !factory.hasModifier(ABSTRACT_KEYWORD)) {
-      throw AnvilCompilationException(
-        element = factory,
+    if (!factory.isInterface() && !factory.isAbstract()) {
+      throw AnvilCompilationExceptionClassReference(
+        classReference = factory,
         message = "A factory must be an interface or an abstract class."
       )
     }
 
-    val functions = factory.childrenInBody
-      .filterIsInstance<KtFunction>()
+    val functions = factory.functions
       .let { functions ->
         if (factory.isInterface()) {
           functions
         } else {
-          functions.filter { it.hasModifier(ABSTRACT_KEYWORD) }
+          functions.filter { it.isAbstract() }
         }
       }
 
-    if (functions.size != 1 || functions[0].typeReference?.fqNameOrNull(module) != fqName) {
-      throw AnvilCompilationException(
-        element = factory,
+    if (functions.size != 1 || functions[0].returnType() != this) {
+      throw AnvilCompilationExceptionClassReference(
+        classReference = factory,
         message = "A factory must have exactly one abstract function returning the " +
           "subcomponent $fqName."
       )
@@ -240,30 +220,26 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
   }
 
   private fun ClassReference.checkUsesSameScope(
-    scope: FqName,
-    subcomponent: KtClassOrObject
+    scope: ClassReference,
+    subcomponent: ClassReference
   ) {
     annotations
       .filter { it.fqName == contributesSubcomponentFqName }
       .ifEmpty {
-        throw AnvilCompilationException(
-          element = subcomponent,
+        throw AnvilCompilationExceptionClassReference(
+          classReference = subcomponent,
           message = "Couldn't find the annotation @ContributesSubcomponent for $fqName."
         )
       }
       .forEach { annotation ->
-        val otherScope = annotation.scope().fqName
+        val otherScope = annotation.scope()
         if (otherScope != scope) {
-          throw AnvilCompilationException(
-            element = subcomponent,
-            message = "${subcomponent.requireFqName()} with scope $scope wants to replace " +
-              "$fqName with scope $otherScope. The replacement must use the same scope."
+          throw AnvilCompilationExceptionClassReference(
+            classReference = subcomponent,
+            message = "${subcomponent.fqName} with scope ${scope.fqName} wants to replace " +
+              "$fqName with scope ${otherScope.fqName}. The replacement must use the same scope."
           )
         }
       }
   }
-
-  private val KtClassOrObject.childrenInBody: List<PsiElement>
-    get() = children.filterIsInstance<KtClassBody>().singleOrNull()?.children?.toList()
-      ?: emptyList()
 }
