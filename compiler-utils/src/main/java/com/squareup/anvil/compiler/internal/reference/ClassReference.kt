@@ -32,8 +32,10 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
+import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
@@ -64,6 +66,7 @@ public sealed class ClassReference {
 
   public abstract fun isInterface(): Boolean
   public abstract fun isAbstract(): Boolean
+  public abstract fun isCompanion(): Boolean
   public abstract fun visibility(): Visibility
 
   /**
@@ -78,7 +81,17 @@ public sealed class ClassReference {
    */
   public abstract fun enclosingClassesWithSelf(): List<ClassReference>
 
+  public fun enclosingClass(): ClassReference? {
+    val classes = enclosingClassesWithSelf()
+    val index = classes.indexOf(this)
+    return if (index == 0) null else classes[index - 1]
+  }
+
   public abstract fun innerClasses(): List<ClassReference>
+
+  public fun companionObjects(): List<ClassReference> {
+    return innerClasses().filter { it.isCompanion() && it.enclosingClass() == this }
+  }
 
   override fun toString(): String {
     return "${this::class.qualifiedName}($fqName)"
@@ -148,6 +161,8 @@ public sealed class ClassReference {
     override fun isInterface(): Boolean = clazz is KtClass && clazz.isInterface()
 
     override fun isAbstract(): Boolean = clazz.hasModifier(ABSTRACT_KEYWORD)
+
+    override fun isCompanion(): Boolean = clazz is KtObjectDeclaration && clazz.isCompanion()
 
     override fun visibility(): Visibility {
       return when (val visibility = clazz.visibilityModifierTypeOrDefault()) {
@@ -219,6 +234,8 @@ public sealed class ClassReference {
     override fun isInterface(): Boolean = clazz.kind == ClassKind.INTERFACE
 
     override fun isAbstract(): Boolean = clazz.modality == ABSTRACT
+
+    override fun isCompanion(): Boolean = DescriptorUtils.isCompanionObject(clazz)
 
     override fun visibility(): Visibility {
       return when (val visibility = clazz.visibility) {
