@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.asClassName
-import com.squareup.anvil.compiler.internal.asClassNameOrNull
 import com.squareup.anvil.compiler.internal.properties
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.kotlinpoet.CodeBlock
@@ -76,22 +75,20 @@ internal fun KtExpression.codeBlock(module: ModuleDescriptor): CodeBlock {
 }
 
 private fun FqName.asMemberName(module: ModuleDescriptor): MemberName {
-  val segments = pathSegments().map { it.asString() }
-  val simpleName = segments.last()
-  val prefixFqName = FqName.fromSegments(segments.dropLast(1))
-  return prefixFqName.asClassNameOrNull(module)?.let {
-    val classOrObj = prefixFqName.toClassReferencePsiOrNull(module)?.clazz
-    val imported = if (classOrObj is KtClass) {
-      // Must be in a companion, check its name
-      // We do this because accessors could be just Foo.CONSTANT but to member import it we need
-      // to include the companion path
-      val companionName = classOrObj.companionObjects.first().name ?: "Companion"
-      it.nestedClass(companionName)
-    } else {
-      it
+  fun default() = MemberName(parent().asString(), shortName().asString())
+
+  val classReference = parent().toClassReferenceOrNull(module) ?: return default()
+  val classPlusCompanions = listOf(classReference) + classReference.companionObjects()
+
+  return classPlusCompanions
+    .flatMap { it.properties }
+    .firstOrNull {
+      // The 2nd condition is necessary for accessors of properties in companions, which can be
+      // Foo.CONSTANT instead of Foo.Companion.CONSTANT.
+      it.fqName == this || it.fqName.parent().parent().child(shortName()) == this
     }
-    MemberName(imported, simpleName)
-  } ?: MemberName(prefixFqName.pathSegments().joinToString("."), simpleName)
+    ?.memberName
+    ?: default()
 }
 
 private fun List<KtProperty>.containsConstPropertyWithName(name: String): Boolean {
