@@ -32,7 +32,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
-import com.squareup.anvil.compiler.internal.reference.daggerScopes
 import com.squareup.anvil.compiler.internal.reference.isAbstract
 import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import com.squareup.anvil.compiler.internal.reference.returnType
@@ -206,7 +205,12 @@ internal class ContributesSubcomponentHandlerGenerator(
                 }
                 .build()
             )
-            .addAnnotations(contribution.classReference.daggerScopes())
+            .addAnnotations(
+              contribution.classReference
+                .annotations
+                .filter { it.isDaggerScope() }
+                .map { it.toAnnotationSpec() }
+            )
             .apply {
               if (factoryClass != null) {
                 addType(generateFactory(factoryClass.originalReference))

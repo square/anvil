@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.fir.lightTree.converter.nameAsSafeName
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.ClassId
@@ -55,8 +54,6 @@ import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
-import org.jetbrains.kotlin.resolve.constants.EnumValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
 import org.jetbrains.kotlin.types.KotlinType
@@ -377,51 +374,12 @@ public fun FileSpec.Companion.buildFile(
     .build()
     .writeToString()
 
-@ExperimentalAnvilApi
-public fun AnnotationDescriptor.toAnnotationSpec(module: ModuleDescriptor): AnnotationSpec {
-  return AnnotationSpec
-    .builder(requireClass().asClassName())
-    .apply {
-      allValueArguments.forEach { (name, value) ->
-        when (value) {
-          is KClassValue -> {
-            val className = value.argumentType(module).classDescriptor()
-              .asClassName()
-            addMember("${name.asString()} = %T::class", className)
-          }
-          is EnumValue -> {
-            val enumMember = MemberName(
-              enclosingClassName = value.enumClassId.asSingleFqName()
-                .asClassName(module),
-              simpleName = value.enumEntryName.asString()
-            )
-            addMember("${name.asString()} = %M", enumMember)
-          }
-          // String, int, long, ... other primitives.
-          else -> addMember("${name.asString()} = $value")
-        }
-      }
-    }
-    .build()
-}
-
-/**
- * Returns a filtered list of [javax.inject.Qualifier]-annotated [entries][KtAnnotationEntry] as
- * a [AnnotationSpecs][AnnotationSpec].
- */
-@ExperimentalAnvilApi
-public fun List<KtAnnotationEntry>.qualifierAnnotationSpecs(
-  module: ModuleDescriptor
-): List<AnnotationSpec> = mapNotNull { annotationEntry ->
-  if (!annotationEntry.isQualifier(module)) {
-    null
-  } else {
-    annotationEntry.toAnnotationSpec(module)
-  }
-}
-
 /** Returns an [AnnotationSpec] representation of this [KtAnnotationEntry]. */
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on PSI and make the code agnostic to the underlying implementation."
+)
 public fun KtAnnotationEntry.toAnnotationSpec(
   module: ModuleDescriptor
 ): AnnotationSpec {
@@ -438,7 +396,7 @@ public fun KtAnnotationEntry.toAnnotationSpec(
     .build()
 }
 
-private fun KtExpression.codeBlock(module: ModuleDescriptor): CodeBlock {
+internal fun KtExpression.codeBlock(module: ModuleDescriptor): CodeBlock {
   return when (this) {
     // MyClass::class
     is KtClassLiteralExpression -> {

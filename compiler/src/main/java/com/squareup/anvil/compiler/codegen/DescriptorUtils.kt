@@ -8,8 +8,7 @@ import com.squareup.anvil.compiler.internal.asTypeName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
-import com.squareup.anvil.compiler.internal.isQualifier
-import com.squareup.anvil.compiler.internal.toAnnotationSpec
+import com.squareup.anvil.compiler.internal.reference.toAnnotationReference
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.providerFqName
 import com.squareup.kotlinpoet.ClassName
@@ -125,8 +124,9 @@ internal fun List<CallableMemberDescriptor>.mapToMemberInjectParameters(
     }
 
     val qualifierAnnotations = descriptor.annotations
+      .map { it.toAnnotationReference(declaringClass = null, module) }
       .filter { it.isQualifier() }
-      .map { it.toAnnotationSpec(module) }
+      .map { it.toAnnotationSpec() }
 
     acc + MemberInjectParameter(
       name = uniqueName,

@@ -3,11 +3,14 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.argumentType
+import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.classDescriptor
+import com.squareup.anvil.compiler.internal.codeBlock
 import com.squareup.anvil.compiler.internal.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.internal.contributesToFqName
+import com.squareup.anvil.compiler.internal.daggerScopeFqName
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.mapKeyFqName
@@ -21,13 +24,17 @@ import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Psi
 import com.squareup.anvil.compiler.internal.requireClass
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.toFqNames
+import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.MemberName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
+import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
+import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import kotlin.LazyThreadSafetyMode.NONE
 
@@ -77,6 +84,9 @@ public sealed class AnnotationReference {
 
   public fun isQualifier(): Boolean = classReference.isAnnotatedWith(qualifierFqName)
   public fun isMapKey(): Boolean = classReference.isAnnotatedWith(mapKeyFqName)
+  public fun isDaggerScope(): Boolean = classReference.isAnnotatedWith(daggerScopeFqName)
+
+  public abstract fun toAnnotationSpec(): AnnotationSpec
 
   override fun toString(): String = "@$fqName"
 
@@ -132,6 +142,21 @@ public sealed class AnnotationReference {
         ?.map { it.toClassReference(module) }
         .orEmpty()
     }
+
+    override fun toAnnotationSpec(): AnnotationSpec {
+      return AnnotationSpec.builder(classReference.asClassName())
+        .apply {
+          annotation.valueArguments
+            .filterIsInstance<KtValueArgument>()
+            .mapNotNull { valueArgument ->
+              valueArgument.getArgumentExpression()?.codeBlock(module)
+            }
+            .forEach {
+              addMember(it)
+            }
+        }
+        .build()
+    }
   }
 
   public class Descriptor internal constructor(
@@ -164,6 +189,33 @@ public sealed class AnnotationReference {
         ?.value
         ?.map { it.argumentType(module).classDescriptor().toClassReference(module) }
         .orEmpty()
+    }
+
+    override fun toAnnotationSpec(): AnnotationSpec {
+      return AnnotationSpec
+        .builder(classReference.asClassName())
+        .apply {
+          annotation.allValueArguments.forEach { (name, value) ->
+            when (value) {
+              is KClassValue -> {
+                val className = value.argumentType(module).classDescriptor()
+                  .asClassName()
+                addMember("${name.asString()} = %T::class", className)
+              }
+              is EnumValue -> {
+                val enumMember = MemberName(
+                  enclosingClassName = value.enumClassId.asSingleFqName()
+                    .asClassName(module),
+                  simpleName = value.enumEntryName.asString()
+                )
+                addMember("${name.asString()} = %M", enumMember)
+              }
+              // String, int, long, ... other primitives.
+              else -> addMember("${name.asString()} = $value")
+            }
+          }
+        }
+        .build()
     }
   }
 }

@@ -5,8 +5,6 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.functions
-import com.squareup.anvil.compiler.internal.isDaggerScope
-import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
@@ -16,8 +14,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.scopeOrNull
-import com.squareup.anvil.compiler.internal.toAnnotationSpec
-import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -325,24 +321,6 @@ public fun ClassReference.scopeOrNull(
       ?.fqNameSafe
     is Psi -> clazz.scopeOrNull(annotationFqName, module)
   }
-}
-
-@ExperimentalAnvilApi
-public fun ClassReference.qualifiers(): List<AnnotationSpec> {
-  return when (this) {
-    is Descriptor -> clazz.annotations.filter { it.isQualifier() }
-      .map { it.toAnnotationSpec(module) }
-    is Psi -> clazz.annotationEntries.filter { it.isQualifier(module) }
-      .map { it.toAnnotationSpec(module) }
-  }
-}
-
-@ExperimentalAnvilApi
-public fun ClassReference.daggerScopes(): List<AnnotationSpec> = when (this) {
-  is Descriptor -> clazz.annotations.filter { it.isDaggerScope() }
-    .map { it.toAnnotationSpec(module) }
-  is Psi -> clazz.annotationEntries.filter { it.isDaggerScope(module) }
-    .map { it.toAnnotationSpec(module) }
 }
 
 @ExperimentalAnvilApi
