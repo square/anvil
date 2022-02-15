@@ -23,23 +23,22 @@ import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.getAnnotationValue
-import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.parentScope
+import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.FunctionReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.reference.asClassName
+import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.reference.daggerScopes
 import com.squareup.anvil.compiler.internal.reference.isAbstract
 import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import com.squareup.anvil.compiler.internal.reference.returnType
 import com.squareup.anvil.compiler.internal.reference.toClassReference
-import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.scope
-import com.squareup.anvil.compiler.internal.toClassId
 import com.squareup.anvil.compiler.internal.toFqNames
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeInterfacesFqName
@@ -58,7 +57,6 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
@@ -107,16 +105,10 @@ internal class ContributesSubcomponentHandlerGenerator(
 
     // Find new @MergeComponent (and similar triggers) that would cause generating new code.
     triggers += projectFiles
-      .classesAndInnerClasses(module)
-      .mapNotNull { clazz ->
-        val annotation = generationTrigger.firstOrNull { trigger ->
-          clazz.hasAnnotation(trigger, module)
-        } ?: return@mapNotNull null
-
-        val exclusions = clazz.excludeOrNull(module, annotation) ?: emptyList()
-
-        Trigger(clazz, clazz.scope(annotation, module), exclusions)
-      }
+      .classAndInnerClassReferences(module)
+      .flatMap { it.annotations }
+      .filter { it.fqName in generationTrigger }
+      .map { Trigger(it) }
 
     // Find new contributed subcomponents in this module. If there's a trigger for them, then we
     // also need to generate code for them later.
@@ -166,8 +158,8 @@ internal class ContributesSubcomponentHandlerGenerator(
       .flatMap { contribution ->
         triggers
           .filter { trigger ->
-            trigger.scope == contribution.parentScope &&
-              contribution.clazzFqName !in trigger.exclusions
+            trigger.scope.fqName == contribution.parentScope &&
+              contribution.classReference !in trigger.exclusions
           }
           .map { trigger ->
             GenerateCodeEvent(trigger, contribution)
@@ -488,11 +480,12 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private class Trigger(
-    val clazz: KtClassOrObject,
-    val scope: FqName,
-    val exclusions: List<FqName>
+    annotation: AnnotationReference
   ) {
-    val clazzFqName = clazz.requireFqName()
+    val clazz = annotation.declaringClass()
+    val scope = annotation.scope()
+    val exclusions = annotation.exclude()
+    val clazzFqName = clazz.fqName
 
     override fun toString(): String {
       return "Trigger(clazz=$clazzFqName, scope=$scope)"
@@ -556,7 +549,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     val contribution: Contribution
   ) {
     val generatedAnvilSubcomponent = contribution.classReference.classId
-      .generatedAnvilSubcomponent(trigger.clazz.toClassId())
+      .generatedAnvilSubcomponent(trigger.clazz.classId)
   }
 
   private class ParentComponentInterfaceHolder(

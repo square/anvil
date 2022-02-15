@@ -11,6 +11,10 @@ import com.squareup.anvil.compiler.internal.contributesToFqName
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.mapKeyFqName
+import com.squareup.anvil.compiler.internal.mergeComponentFqName
+import com.squareup.anvil.compiler.internal.mergeInterfacesFqName
+import com.squareup.anvil.compiler.internal.mergeModulesFqName
+import com.squareup.anvil.compiler.internal.mergeSubcomponentFqName
 import com.squareup.anvil.compiler.internal.qualifierFqName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Psi
@@ -69,6 +73,7 @@ public sealed class AnnotationReference {
   public abstract fun boundTypeOrNull(): ClassReference?
 
   public abstract fun replaces(parameterIndex: Int = replacesIndex(fqName)): List<ClassReference>
+  public abstract fun exclude(parameterIndex: Int = excludeIndex(fqName)): List<ClassReference>
 
   public fun isQualifier(): Boolean = classReference.isAnnotatedWith(qualifierFqName)
   public fun isMapKey(): Boolean = classReference.isAnnotatedWith(mapKeyFqName)
@@ -111,12 +116,18 @@ public sealed class AnnotationReference {
       )?.requireFqName(module)?.toClassReference(module)
     }
 
-    override fun replaces(parameterIndex: Int): List<ClassReference> {
+    override fun replaces(parameterIndex: Int): List<ClassReference> =
+      findClassArrayAnnotationArgument("replaces", parameterIndex)
+
+    override fun exclude(parameterIndex: Int): List<ClassReference> =
+      findClassArrayAnnotationArgument("exclude", parameterIndex)
+
+    private fun findClassArrayAnnotationArgument(
+      name: String,
+      parameterIndex: Int
+    ): List<ClassReference> {
       return annotation
-        .findAnnotationArgument<KtCollectionLiteralExpression>(
-          name = "replaces",
-          index = parameterIndex
-        )
+        .findAnnotationArgument<KtCollectionLiteralExpression>(name, parameterIndex)
         ?.toFqNames(module)
         ?.map { it.toClassReference(module) }
         .orEmpty()
@@ -142,9 +153,14 @@ public sealed class AnnotationReference {
         ?.toClassReference(module)
     }
 
-    override fun replaces(parameterIndex: Int): List<ClassReference> {
-      val replacesValue = annotation.getAnnotationValue("replaces") as? ArrayValue
-      return replacesValue
+    override fun replaces(parameterIndex: Int): List<ClassReference> =
+      getClassArrayAnnotationValue("replaces")
+
+    override fun exclude(parameterIndex: Int): List<ClassReference> =
+      getClassArrayAnnotationValue("exclude")
+
+    private fun getClassArrayAnnotationValue(name: String): List<ClassReference> {
+      return (annotation.getAnnotationValue(name) as? ArrayValue)
         ?.value
         ?.map { it.argumentType(module).classDescriptor().toClassReference(module) }
         .orEmpty()
@@ -202,6 +218,17 @@ private fun replacesIndex(annotationFqName: FqName): Int {
     contributesSubcomponentFqName -> 4
     else -> throw NotImplementedError(
       "Couldn't find index of replaces argument for $annotationFqName."
+    )
+  }
+}
+
+private fun excludeIndex(annotationFqName: FqName): Int {
+  return when (annotationFqName) {
+    mergeInterfacesFqName -> 1
+    mergeSubcomponentFqName -> 2
+    mergeComponentFqName, mergeModulesFqName -> 3
+    else -> throw NotImplementedError(
+      "Couldn't find index of exclude argument for $annotationFqName."
     )
   }
 }
