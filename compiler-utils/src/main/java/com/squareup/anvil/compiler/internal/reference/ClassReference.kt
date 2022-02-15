@@ -3,17 +3,8 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.annotationOrNull
-import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
-import com.squareup.anvil.compiler.internal.classDescriptor
-import com.squareup.anvil.compiler.internal.contributesBindingFqName
-import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
-import com.squareup.anvil.compiler.internal.contributesSubcomponentFqName
-import com.squareup.anvil.compiler.internal.contributesToFqName
-import com.squareup.anvil.compiler.internal.findAnnotation
-import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.functions
-import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.isDaggerScope
 import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
@@ -26,7 +17,6 @@ import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.scopeOrNull
 import com.squareup.anvil.compiler.internal.toAnnotationSpec
-import com.squareup.anvil.compiler.internal.toFqNames
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -44,10 +34,8 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
@@ -89,6 +77,8 @@ public sealed class ClassReference {
    * then the returned list would contain `[Outer, Middle, Inner]` in that order.
    */
   public abstract fun enclosingClassesWithSelf(): List<ClassReference>
+
+  public abstract fun innerClasses(): List<ClassReference>
 
   override fun toString(): String {
     return "${this::class.qualifiedName}($fqName)"
@@ -137,6 +127,18 @@ public sealed class ClassReference {
         .plus(this)
     }
 
+    private val innerClasses by lazy(NONE) {
+      generateSequence(clazz.declarations.filterIsInstance<KtClassOrObject>()) { classes ->
+        classes
+          .flatMap { it.declarations }
+          .filterIsInstance<KtClassOrObject>()
+          .ifEmpty { null }
+      }
+        .flatten()
+        .map { it.toClassReference(module) }
+        .toList()
+    }
+
     override fun isInterface(): Boolean = clazz is KtClass && clazz.isInterface()
 
     override fun isAbstract(): Boolean = clazz.hasModifier(ABSTRACT_KEYWORD)
@@ -157,6 +159,8 @@ public sealed class ClassReference {
     override fun directSuperClassReferences(): List<ClassReference> = directSuperClassReferences
 
     override fun enclosingClassesWithSelf(): List<Psi> = enclosingClassesWithSelf
+
+    override fun innerClasses(): List<Psi> = innerClasses
   }
 
   public class Descriptor(
@@ -192,6 +196,13 @@ public sealed class ClassReference {
         .plus(this)
     }
 
+    private val innerClasses by lazy(NONE) {
+      clazz.unsubstitutedMemberScope
+        .getContributedDescriptors(kindFilter = DescriptorKindFilter.CLASSIFIERS)
+        .filterIsInstance<ClassDescriptor>()
+        .map { it.toClassReference(module) }
+    }
+
     override fun isInterface(): Boolean = clazz.kind == ClassKind.INTERFACE
 
     override fun isAbstract(): Boolean = clazz.modality == ABSTRACT
@@ -212,6 +223,8 @@ public sealed class ClassReference {
     override fun directSuperClassReferences(): List<ClassReference> = directSuperClassReferences
 
     override fun enclosingClassesWithSelf(): List<Descriptor> = enclosingClassesWithSelf
+
+    override fun innerClasses(): List<Descriptor> = innerClasses
   }
 }
 
@@ -286,25 +299,6 @@ public fun ClassReference.allSuperTypeClassReferences(
     .distinctBy { it.fqName }
 }
 
-@ExperimentalAnvilApi
-public fun ClassReference.innerClasses(): Sequence<ClassReference> {
-  return when (this) {
-    is Descriptor ->
-      clazz.unsubstitutedMemberScope
-        .getContributedDescriptors(kindFilter = DescriptorKindFilter.CLASSIFIERS)
-        .asSequence()
-        .filterIsInstance<ClassDescriptor>()
-        .map { it.toClassReference(module) }
-    is Psi ->
-      generateSequence(clazz.declarations.filterIsInstance<KtClassOrObject>()) { classes ->
-        classes
-          .flatMap { it.declarations }
-          .filterIsInstance<KtClassOrObject>()
-          .ifEmpty { null }
-      }.flatten().map { it.toClassReference(module) }
-  }
-}
-
 /**
  * @param parameterName The name of the parameter to be found, not including any variance modifiers.
  * @return The 0-based index of a declared generic type.
@@ -332,39 +326,6 @@ public fun ClassReference.scopeOrNull(
     is Psi -> clazz.scopeOrNull(annotationFqName, module)
   }
 }
-
-private fun replacesIndex(annotationFqName: FqName): Int {
-  return when (annotationFqName) {
-    contributesToFqName -> 1
-    contributesBindingFqName, contributesMultibindingFqName -> 2
-    contributesSubcomponentFqName -> 4
-    else -> throw NotImplementedError(
-      "Couldn't find index of replaces argument for $annotationFqName."
-    )
-  }
-}
-
-@ExperimentalAnvilApi
-public fun ClassReference.replaces(
-  annotationFqName: FqName,
-  index: Int = replacesIndex(annotationFqName)
-): List<ClassReference> =
-  when (this) {
-    is Descriptor -> {
-      val replacesValue = clazz.annotationOrNull(annotationFqName)
-        ?.getAnnotationValue("replaces") as? ArrayValue
-
-      replacesValue
-        ?.value
-        ?.map { it.argumentType(module).classDescriptor().toClassReference(module) }
-    }
-    is Psi ->
-      clazz
-        .findAnnotation(annotationFqName, module)
-        ?.findAnnotationArgument<KtCollectionLiteralExpression>(name = "replaces", index = index)
-        ?.toFqNames(module)
-        ?.map { it.toClassReference(module) }
-  }.orEmpty()
 
 @ExperimentalAnvilApi
 public fun ClassReference.qualifiers(): List<AnnotationSpec> {

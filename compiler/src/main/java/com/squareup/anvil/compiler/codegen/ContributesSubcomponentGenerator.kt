@@ -24,8 +24,6 @@ import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
-import com.squareup.anvil.compiler.internal.reference.replaces
-import com.squareup.anvil.compiler.internal.reference.scope
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
@@ -85,7 +83,8 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
         val scope = clazz.scope(contributesSubcomponentFqName, module)
 
         clazz.toClassReference(module)
-          .replaces(contributesSubcomponentFqName)
+          .annotations.single { it.fqName == contributesSubcomponentFqName }
+          .replaces()
           .onEach {
             it.checkUsesSameScope(scope, clazz)
           }

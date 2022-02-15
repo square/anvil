@@ -32,12 +32,9 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.reference.daggerScopes
-import com.squareup.anvil.compiler.internal.reference.innerClasses
 import com.squareup.anvil.compiler.internal.reference.isAbstract
 import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
-import com.squareup.anvil.compiler.internal.reference.replaces
 import com.squareup.anvil.compiler.internal.reference.returnType
-import com.squareup.anvil.compiler.internal.reference.scope
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
@@ -151,7 +148,9 @@ internal class ContributesSubcomponentHandlerGenerator(
       .also { contributions ->
         // Find all replaced subcomponents and remember them.
         replacedReferences += contributions.flatMap { contribution ->
-          contribution.classReference.replaces(contributesSubcomponentFqName)
+          contribution.classReference
+            .annotations.single { it.fqName == contributesSubcomponentFqName }
+            .replaces()
             .also {
               checkReplacedSubcomponentWasNotAlreadyGenerated(contribution.classReference, it)
             }
@@ -470,8 +469,10 @@ internal class ContributesSubcomponentHandlerGenerator(
 
     // Find all replaced subcomponents from precompiled dependencies.
     replacedReferences += contributions
-      .flatMap {
-        it.classReference.replaces(contributesSubcomponentFqName)
+      .flatMap { contribution ->
+        contribution.classReference
+          .annotations.single { it.fqName == contributesSubcomponentFqName }
+          .replaces()
       }
   }
 
