@@ -50,12 +50,10 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
         clazz.checkNotMoreThanOneQualifier(contributesMultibindingFqName)
         clazz.checkNotMoreThanOneMapKey()
         clazz.checkSingleSuperType(contributesMultibindingFqName)
+        clazz.checkClassExtendsBoundType(contributesMultibindingFqName)
       }
       // TODO: Continue migrating the rest of operations to use ClassReference instead of PSI/Descriptors
       .map { it.clazz }
-      .onEach { clazz ->
-        clazz.checkClassExtendsBoundType(module, contributesMultibindingFqName)
-      }
       .map { clazz ->
         val fileName = clazz.generateClassName()
         val generatedPackage = HINT_MULTIBINDING_PACKAGE_PREFIX +

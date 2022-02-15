@@ -4,6 +4,7 @@ import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
+import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import org.jetbrains.kotlin.name.FqName
 
 internal fun ClassReference.checkNotMoreThanOneQualifier(
@@ -65,6 +66,25 @@ internal fun ClassReference.checkSingleSuperType(
         "specify the bound type. This is only allowed with exactly one direct super type. " +
         "If there are multiple or none, then the bound type must be explicitly defined in " +
         "the @${annotationFqName.shortName()} annotation.",
+      classReference = this
+    )
+  }
+}
+
+internal fun ClassReference.checkClassExtendsBoundType(
+  annotationFqName: FqName
+) {
+  val boundType = annotations.find { it.fqName == annotationFqName }?.boundTypeOrNull()
+    ?: directSuperClassReferences().singleOrNull()
+    ?: throw AnvilCompilationExceptionClassReference(
+      message = "Couldn't find the bound type.",
+      classReference = this
+    )
+
+  if (allSuperTypeClassReferences().none { it.fqName == boundType.fqName }) {
+    throw AnvilCompilationExceptionClassReference(
+      message = "${this.fqName} contributes a binding for ${boundType.fqName}, but doesn't " +
+        "extend this type.",
       classReference = this
     )
   }
