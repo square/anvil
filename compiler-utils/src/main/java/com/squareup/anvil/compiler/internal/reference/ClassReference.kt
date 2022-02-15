@@ -5,6 +5,7 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.functions
+import com.squareup.anvil.compiler.internal.properties
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
@@ -21,6 +22,7 @@ import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
 import org.jetbrains.kotlin.lexer.KtTokens.INTERNAL_KEYWORD
 import org.jetbrains.kotlin.lexer.KtTokens.PRIVATE_KEYWORD
@@ -37,6 +39,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
+import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
 import kotlin.LazyThreadSafetyMode.NONE
 
 /**
@@ -57,6 +60,7 @@ public sealed class ClassReference {
 
   public abstract val functions: List<FunctionReference>
   public abstract val annotations: List<AnnotationReference>
+  public abstract val properties: List<PropertyReference>
 
   public abstract fun isInterface(): Boolean
   public abstract fun isAbstract(): Boolean
@@ -108,6 +112,12 @@ public sealed class ClassReference {
 
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
       clazz.annotationEntries.map { it.toAnnotationReference(this, module) }
+    }
+
+    override val properties: List<PropertyReference.Psi> by lazy(NONE) {
+      clazz
+        .properties(includeCompanionObjects = false)
+        .map { it.toPropertyReference(this) }
     }
 
     private val directSuperClassReferences: List<ClassReference> by lazy(NONE) {
@@ -175,6 +185,13 @@ public sealed class ClassReference {
 
     override val annotations: List<AnnotationReference> by lazy(NONE) {
       clazz.annotations.map { it.toAnnotationReference(this, module) }
+    }
+
+    override val properties: List<PropertyReference.Descriptor> by lazy(NONE) {
+      clazz.unsubstitutedMemberScope
+        .getDescriptorsFiltered(kindFilter = DescriptorKindFilter.VALUES)
+        .filterIsInstance<PropertyDescriptor>()
+        .map { it.toPropertyReference(this) }
     }
 
     private val directSuperClassReferences: List<ClassReference> by lazy(NONE) {
