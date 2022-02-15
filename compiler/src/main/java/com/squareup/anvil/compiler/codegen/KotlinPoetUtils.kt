@@ -9,7 +9,7 @@ import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.isNullable
-import com.squareup.anvil.compiler.internal.qualifierAnnotationSpecs
+import com.squareup.anvil.compiler.internal.reference.toAnnotationReference
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.requireTypeReference
@@ -140,7 +140,11 @@ private fun KtProperty.toMemberInjectParameter(
   val memberInjectorClassName = "${containingClass.generateClassName()}_MembersInjector"
   val memberInjectorClass = ClassName(packageName, memberInjectorClassName)
 
-  val qualifierAnnotations = annotationEntries.qualifierAnnotationSpecs(module)
+  val qualifierAnnotations = annotationEntries
+    .map { it.toAnnotationReference(declaringClass = null, module = module) }
+    .filter { it.isQualifier() }
+    .map { it.toAnnotationSpec() }
+
   val isSetterInjected = isSetterInjected(module)
 
   val originalName = constructorParameter.originalName

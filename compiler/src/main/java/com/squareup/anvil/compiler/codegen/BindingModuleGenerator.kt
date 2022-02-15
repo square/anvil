@@ -116,8 +116,13 @@ internal class BindingModuleGenerator(
 
         // Remember for which scopes which types were excluded so that we later don't generate
         // a binding method for these types.
-        psiClass.excludeOrNull(module, annotationFqName)
-          ?.let { excludedTypesForClass[mergedClassKey] = it }
+        // TODO: work with ClassReference everywhere.
+        psiClass.toClassReference(module).annotations.single { it.fqName == annotationFqName }
+          .exclude()
+          .takeIf { it.isNotEmpty() }
+          ?.let { excludedReferences ->
+            excludedTypesForClass[mergedClassKey] = excludedReferences.map { it.fqName }
+          }
 
         val packageName = generatePackageName(psiClass)
         val className = psiClass.generateClassName()

@@ -8,18 +8,14 @@ import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.classDescriptor
-import com.squareup.anvil.compiler.internal.isMapKey
 import com.squareup.anvil.compiler.internal.isObject
 import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
-import com.squareup.anvil.compiler.internal.reference.qualifiers
 import com.squareup.anvil.compiler.internal.requireAnnotation
 import com.squareup.anvil.compiler.internal.requireFqName
-import com.squareup.anvil.compiler.internal.toAnnotationSpec
-import com.squareup.anvil.compiler.isMapKey
 import com.squareup.anvil.compiler.priority
 import com.squareup.anvil.compiler.qualifierFqName
 import com.squareup.kotlinpoet.AnnotationSpec
@@ -56,7 +52,7 @@ internal fun ClassReference.toContributedBinding(
   val boundType = requireBoundType(annotationFqName)
 
   val mapKeys = if (isMultibinding) {
-    mapKeys(module)
+    annotations.filter { it.isMapKey() }.map { it.toAnnotationSpec() }
   } else {
     emptyList()
   }
@@ -65,7 +61,7 @@ internal fun ClassReference.toContributedBinding(
   val qualifiers = if (ignoreQualifier) {
     emptyList()
   } else {
-    qualifiers()
+    annotations.filter { it.isQualifier() }.map { it.toAnnotationSpec() }
   }
 
   val boundTypeClassName = when (boundType) {
@@ -163,21 +159,6 @@ private fun ClassReference.ignoreQualifier(
   return when (this) {
     is Descriptor -> clazz.annotation(annotationFqName).ignoreQualifier()
     is Psi -> clazz.ignoreQualifier(module, annotationFqName)
-  }
-}
-
-private fun ClassReference.mapKeys(
-  module: ModuleDescriptor
-): List<AnnotationSpec> {
-  return when (this) {
-    is Descriptor ->
-      clazz.annotations
-        .filter { it.isMapKey() }
-        .map { it.toAnnotationSpec(module) }
-    is Psi ->
-      clazz.annotationEntries
-        .filter { it.isMapKey(module) }
-        .map { it.toAnnotationSpec(module) }
   }
 }
 

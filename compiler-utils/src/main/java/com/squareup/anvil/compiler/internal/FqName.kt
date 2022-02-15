@@ -5,6 +5,10 @@ import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesSubcomponent
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
+import com.squareup.anvil.annotations.MergeComponent
+import com.squareup.anvil.annotations.MergeSubcomponent
+import com.squareup.anvil.annotations.compat.MergeInterfaces
+import com.squareup.anvil.annotations.compat.MergeModules
 import dagger.Lazy
 import dagger.MapKey
 import dagger.Provides
@@ -26,6 +30,10 @@ internal val contributesToFqName = ContributesTo::class.fqName
 internal val contributesBindingFqName = ContributesBinding::class.fqName
 internal val contributesMultibindingFqName = ContributesMultibinding::class.fqName
 internal val contributesSubcomponentFqName = ContributesSubcomponent::class.fqName
+internal val mergeComponentFqName = MergeComponent::class.fqName
+internal val mergeSubcomponentFqName = MergeSubcomponent::class.fqName
+internal val mergeInterfacesFqName = MergeInterfaces::class.fqName
+internal val mergeModulesFqName = MergeModules::class.fqName
 
 @ExperimentalAnvilApi
 public fun FqName.descendant(segments: String): FqName =
