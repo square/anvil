@@ -111,7 +111,7 @@ public sealed class ClassReference {
     }
 
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
-      clazz.annotationEntries.map { it.toAnnotationReference(module) }
+      clazz.annotationEntries.map { it.toAnnotationReference(this, module) }
     }
 
     private val directSuperClassReferences: List<ClassReference> by lazy(NONE) {
@@ -178,7 +178,7 @@ public sealed class ClassReference {
     }
 
     override val annotations: List<AnnotationReference> by lazy(NONE) {
-      clazz.annotations.map { it.toAnnotationReference(module) }
+      clazz.annotations.map { it.toAnnotationReference(this, module) }
     }
 
     private val directSuperClassReferences: List<ClassReference> by lazy(NONE) {

@@ -36,9 +36,27 @@ private const val DEFAULT_SCOPE_INDEX = 0
 @ExperimentalAnvilApi
 public sealed class AnnotationReference {
 
+  /**
+   * Refers to the annotation class itself and not the annotated class.
+   */
   public abstract val classReference: ClassReference
+
+  /**
+   * Refers to the class that is annotated with this annotation reference. Note that annotations
+   * can be used at different places, e.g. properties, constructors, functions, etc., therefore
+   * this field must be nullable.
+   */
+  protected abstract val declaringClass: ClassReference?
+
   public val fqName: FqName get() = classReference.fqName
   public val module: AnvilModuleDescriptor get() = classReference.module
+
+  public fun declaringClassOrNull(): ClassReference? = declaringClass
+  public fun declaringClass(): ClassReference = declaringClass
+    ?: throw AnvilCompilationExceptionAnnotationReference(
+      annotationReference = this,
+      message = "The declaring class was null, this means the annotation wasn't used on a class."
+    )
 
   public abstract fun scopeOrNull(parameterIndex: Int = DEFAULT_SCOPE_INDEX): ClassReference?
   public fun scope(parameterIndex: Int = DEFAULT_SCOPE_INDEX): ClassReference =
@@ -70,7 +88,8 @@ public sealed class AnnotationReference {
 
   public class Psi internal constructor(
     public val annotation: KtAnnotationEntry,
-    override val classReference: ClassReference
+    override val classReference: ClassReference,
+    override val declaringClass: ClassReference.Psi?,
   ) : AnnotationReference() {
     private val scope by lazy(NONE) { computeScope(DEFAULT_SCOPE_INDEX) }
 
@@ -106,7 +125,8 @@ public sealed class AnnotationReference {
 
   public class Descriptor internal constructor(
     public val annotation: AnnotationDescriptor,
-    override val classReference: ClassReference
+    override val classReference: ClassReference,
+    override val declaringClass: ClassReference.Descriptor?,
   ) : AnnotationReference() {
     private val scope by lazy(NONE) {
       val annotationValue = annotation.getAnnotationValue("scope") as? KClassValue
@@ -133,13 +153,27 @@ public sealed class AnnotationReference {
 }
 
 @ExperimentalAnvilApi
-public fun KtAnnotationEntry.toAnnotationReference(module: ModuleDescriptor): Psi {
-  return Psi(this, requireFqName(module).toClassReference(module))
+public fun KtAnnotationEntry.toAnnotationReference(
+  declaringClass: ClassReference.Psi?,
+  module: ModuleDescriptor
+): Psi {
+  return Psi(
+    annotation = this,
+    classReference = requireFqName(module).toClassReference(module),
+    declaringClass = declaringClass
+  )
 }
 
 @ExperimentalAnvilApi
-public fun AnnotationDescriptor.toAnnotationReference(module: ModuleDescriptor): Descriptor {
-  return Descriptor(this, requireClass().toClassReference(module))
+public fun AnnotationDescriptor.toAnnotationReference(
+  declaringClass: ClassReference.Descriptor?,
+  module: ModuleDescriptor
+): Descriptor {
+  return Descriptor(
+    annotation = this,
+    classReference = requireClass().toClassReference(module),
+    declaringClass = declaringClass
+  )
 }
 
 @ExperimentalAnvilApi
