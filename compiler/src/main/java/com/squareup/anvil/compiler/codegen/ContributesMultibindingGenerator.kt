@@ -9,14 +9,12 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesMultibindingFqName
-import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.generateClassName
+import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
-import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.anvil.compiler.internal.scope
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
@@ -52,16 +50,16 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
         clazz.checkSingleSuperType(contributesMultibindingFqName)
         clazz.checkClassExtendsBoundType(contributesMultibindingFqName)
       }
-      // TODO: Continue migrating the rest of operations to use ClassReference instead of PSI/Descriptors
-      .map { it.clazz }
       .map { clazz ->
         val fileName = clazz.generateClassName()
         val generatedPackage = HINT_MULTIBINDING_PACKAGE_PREFIX +
-          clazz.containingKtFile.packageFqName.safePackageString(dotPrefix = true)
+          clazz.packageFqName.safePackageString(dotPrefix = true)
         val className = clazz.asClassName()
-        val classFqName = clazz.requireFqName().toString()
+        val classFqName = clazz.fqName.toString()
         val propertyName = classFqName.replace('.', '_')
-        val scope = clazz.scope(contributesMultibindingFqName, module).asClassName(module)
+        val scope = clazz.annotations.single { it.fqName == contributesMultibindingFqName }
+          .scope()
+          .asClassName()
 
         val content =
           FileSpec.buildFile(generatedPackage, fileName) {
