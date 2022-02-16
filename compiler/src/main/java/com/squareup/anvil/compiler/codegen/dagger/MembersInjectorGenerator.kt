@@ -7,7 +7,6 @@ import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.MemberInjectParameter
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
-import com.squareup.anvil.compiler.codegen.mapToMemberInjectParameters
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
@@ -15,6 +14,7 @@ import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.isGenericClass
 import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -55,7 +55,9 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
         val declaredInjectedProperties = clazz.injectedMembers(module)
           .ifEmpty { return@forEach }
 
-        val parameters = clazz.memberInjectParameters(module, inheritedOnly = true)
+        // TODO: use ClassReference from the beginning
+        val parameters = clazz.toClassReference(module)
+          .memberInjectParameters(module, inheritedOnly = true)
           .let { inherited ->
             inherited + declaredInjectedProperties.mapToMemberInjectParameters(module, inherited)
           }

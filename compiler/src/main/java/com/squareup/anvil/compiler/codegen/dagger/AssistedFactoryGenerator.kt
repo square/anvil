@@ -12,7 +12,6 @@ import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.AssistedFactoryFunction.Companion.toAssistedFactoryFunction
 import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.AssistedParameterKey.Companion.toKeysList
-import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.asFunctionType
 import com.squareup.anvil.compiler.internal.asTypeName
@@ -38,7 +37,6 @@ import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.resolveGenericKotlinType
 import com.squareup.anvil.compiler.internal.resolveTypeReference
 import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.anvil.compiler.internal.typeVariableNames
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
