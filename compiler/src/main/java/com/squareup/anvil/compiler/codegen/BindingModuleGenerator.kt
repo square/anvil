@@ -18,13 +18,13 @@ import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.internal.annotationOrNull
-import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.decapitalize
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
+import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.reference.scopeOrNull
 import com.squareup.anvil.compiler.internal.reference.toClassReference
@@ -234,13 +234,12 @@ internal class BindingModuleGenerator(
           .filterNot { it.fqName in bindingsReplacedInDaggerModules }
           .filterNot { it.fqName in excludedNames }
           .filter { scope == it.scopeOrNull(annotationFqName) }
-          .map {
-            it.toContributedBinding(
-              module = module,
-              annotationFqName = annotationFqName,
-              isMultibinding = isMultibinding
-            )
+          .map { clazz ->
+            clazz.annotations
+              .filter { it.fqName == annotationFqName }
+              .map { it.toContributedBinding(isMultibinding) }
           }
+          .flatten()
           .let { bindings ->
             if (isMultibinding) {
               bindings
@@ -376,7 +375,7 @@ private fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBi
     .let { it.getValue(it.lastKey()) }
     // In some very rare cases we can see a binding for the same type twice. Just in case filter
     // them, see https://github.com/square/anvil/issues/460.
-    .distinctBy { it.contributedFqName }
+    .distinctBy { it.contributedClass }
 
   if (bindings.size > 1) {
     throw AnvilCompilationException(
@@ -385,7 +384,7 @@ private fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBi
         bindings.joinToString(
           prefix = "[",
           postfix = "]"
-        ) { it.contributedFqName.asString() }
+        ) { it.contributedClass.fqName.asString() }
     )
   }
 
@@ -399,10 +398,10 @@ private fun ContributedBinding.toGeneratedMethod(
 
   val isMapMultibinding = mapKeys.isNotEmpty()
 
-  return if (contributedClassIsObject) {
+  return if (contributedClass.isObject()) {
     ProviderMethod(
       FunSpec.builder(
-        name = contributedFqName.asString()
+        name = contributedClass.fqName.asString()
           .split(".")
           .joinToString(
             separator = "",
@@ -422,13 +421,13 @@ private fun ContributedBinding.toGeneratedMethod(
         .addAnnotations(qualifiers)
         .addAnnotations(mapKeys)
         .returns(boundTypeClassName)
-        .addStatement("return %T", contributedFqName.asClassName(module))
+        .addStatement("return %T", contributedClass.asClassName())
         .build()
     )
   } else {
     BindingMethod(
       FunSpec.builder(
-        name = contributedFqName.asString()
+        name = contributedClass.fqName.asString()
           .split(".")
           .joinToString(
             separator = "",
@@ -449,8 +448,8 @@ private fun ContributedBinding.toGeneratedMethod(
         .addAnnotations(mapKeys)
         .addModifiers(ABSTRACT)
         .addParameter(
-          name = contributedFqName.shortName().asString().decapitalize(),
-          type = contributedFqName.asClassName(module)
+          name = contributedClass.shortName.decapitalize(),
+          type = contributedClass.asClassName()
         )
         .returns(boundTypeClassName)
         .build()

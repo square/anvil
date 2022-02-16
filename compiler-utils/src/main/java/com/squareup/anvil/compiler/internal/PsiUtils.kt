@@ -32,7 +32,6 @@ import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtNullableType
-import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPureElement
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
@@ -510,9 +509,6 @@ public fun KtClassOrObject.functions(
 public fun KtClassOrObject.properties(
   includeCompanionObjects: Boolean
 ): List<KtProperty> = classBodies(includeCompanionObjects).flatMap { it.properties }
-
-@ExperimentalAnvilApi
-public fun KtClassOrObject.isObject(): Boolean = this is KtObjectDeclaration
 
 private fun KtClassOrObject.classBodies(includeCompanionObjects: Boolean): List<KtClassBody> {
   val elements = children.toMutableList()

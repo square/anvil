@@ -66,6 +66,7 @@ public sealed class ClassReference {
 
   public abstract fun isInterface(): Boolean
   public abstract fun isAbstract(): Boolean
+  public abstract fun isObject(): Boolean
   public abstract fun isCompanion(): Boolean
   public abstract fun visibility(): Visibility
 
@@ -162,6 +163,8 @@ public sealed class ClassReference {
 
     override fun isAbstract(): Boolean = clazz.hasModifier(ABSTRACT_KEYWORD)
 
+    override fun isObject(): Boolean = clazz is KtObjectDeclaration
+
     override fun isCompanion(): Boolean = clazz is KtObjectDeclaration && clazz.isCompanion()
 
     override fun visibility(): Visibility {
@@ -234,6 +237,8 @@ public sealed class ClassReference {
     override fun isInterface(): Boolean = clazz.kind == ClassKind.INTERFACE
 
     override fun isAbstract(): Boolean = clazz.modality == ABSTRACT
+
+    override fun isObject(): Boolean = DescriptorUtils.isObject(clazz)
 
     override fun isCompanion(): Boolean = DescriptorUtils.isCompanionObject(clazz)
 
