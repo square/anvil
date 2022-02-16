@@ -11,7 +11,10 @@ import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionA
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.toFqNames
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
+import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
+import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 
 internal fun AnnotationReference.parentScope(): ClassReference {
@@ -34,4 +37,20 @@ internal fun AnnotationReference.parentScope(): ClassReference {
     message = "Couldn't find parentScope for $fqName.",
     annotationReference = this
   )
+}
+
+internal fun AnnotationReference.modules(): List<ClassReference> {
+  return when (this) {
+    is Psi ->
+      annotation
+        .findAnnotationArgument<KtCollectionLiteralExpression>("modules", 2)
+        ?.toFqNames(module)
+        ?.map { it.toClassReference(module) }
+        .orEmpty()
+    is Descriptor ->
+      (annotation.getAnnotationValue("modules") as? ArrayValue)
+        ?.value
+        ?.map { it.argumentType(module).classDescriptor().toClassReference(module) }
+        .orEmpty()
+  }
 }

@@ -277,7 +277,7 @@ private fun excludeIndex(annotationFqName: FqName): Int {
   return when (annotationFqName) {
     mergeInterfacesFqName -> 1
     mergeSubcomponentFqName -> 2
-    mergeComponentFqName, mergeModulesFqName -> 3
+    mergeComponentFqName, mergeModulesFqName, contributesSubcomponentFqName -> 3
     else -> throw NotImplementedError(
       "Couldn't find index of exclude argument for $annotationFqName."
     )

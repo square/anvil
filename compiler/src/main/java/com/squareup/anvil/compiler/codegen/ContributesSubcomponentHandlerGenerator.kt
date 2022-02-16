@@ -15,15 +15,9 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesSubcomponentFactoryFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
-import com.squareup.anvil.compiler.internal.annotation
-import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.findAnnotation
-import com.squareup.anvil.compiler.internal.findAnnotationArgument
 import com.squareup.anvil.compiler.internal.generateClassName
-import com.squareup.anvil.compiler.internal.getAnnotationValue
-import com.squareup.anvil.compiler.internal.parentScope
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -31,14 +25,11 @@ import com.squareup.anvil.compiler.internal.reference.FunctionReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
 import com.squareup.anvil.compiler.internal.reference.isAbstract
 import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import com.squareup.anvil.compiler.internal.reference.returnType
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.anvil.compiler.internal.scope
-import com.squareup.anvil.compiler.internal.toFqNames
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeInterfacesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
@@ -56,10 +47,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import java.io.File
 
 /**
@@ -112,53 +100,32 @@ internal class ContributesSubcomponentHandlerGenerator(
     // Find new contributed subcomponents in this module. If there's a trigger for them, then we
     // also need to generate code for them later.
     contributions += projectFiles
-      .classesAndInnerClasses(module)
-      .mapNotNull { clazz ->
-        val annotation = clazz.findAnnotation(contributesSubcomponentFqName, module)
-          ?: return@mapNotNull null
-
-        val modules = annotation
-          .findAnnotationArgument<KtCollectionLiteralExpression>("modules", 2)
-          ?.toFqNames(module)
-          ?: emptyList()
-
-        val exclude = annotation
-          .findAnnotationArgument<KtCollectionLiteralExpression>("exclude", 3)
-          ?.toFqNames(module)
-          ?: emptyList()
-
-        Contribution(
-          classReference = clazz.toClassReference(module),
-          scope = clazz.scope(contributesSubcomponentFqName, module),
-          parentScope = clazz.parentScope(contributesSubcomponentFqName, module),
-          modules = modules,
-          exclude = exclude
-        )
-      }
+      .classAndInnerClassReferences(module)
+      .flatMap { it.annotations }
+      .filter { it.fqName == contributesSubcomponentFqName }
+      .map { Contribution(it) }
       .toList()
       .also { contributions ->
         // Find all replaced subcomponents and remember them.
         replacedReferences += contributions.flatMap { contribution ->
-          contribution.classReference
-            .annotations.single { it.fqName == contributesSubcomponentFqName }
+          contribution.annotation
             .replaces()
             .also {
-              checkReplacedSubcomponentWasNotAlreadyGenerated(contribution.classReference, it)
+              checkReplacedSubcomponentWasNotAlreadyGenerated(contribution.clazz, it)
             }
         }
       }
 
     // Remove any contribution, if it was replaced by another contribution.
     contributions.removeAll { contribution ->
-      contribution.classReference in replacedReferences
+      contribution.clazz in replacedReferences
     }
 
     return contributions
       .flatMap { contribution ->
         triggers
           .filter { trigger ->
-            trigger.scope.fqName == contribution.parentScope &&
-              contribution.classReference !in trigger.exclusions
+            trigger.scope == contribution.parentScope && contribution.clazz !in trigger.exclusions
           }
           .map { trigger ->
             GenerateCodeEvent(trigger, contribution)
@@ -181,18 +148,18 @@ internal class ContributesSubcomponentHandlerGenerator(
         val content = FileSpec.buildFile(generatedPackage, componentClassName) {
           TypeSpec
             .interfaceBuilder(componentClassName)
-            .addSuperinterface(contribution.classReference.asClassName())
+            .addSuperinterface(contribution.clazz.asClassName())
             .addAnnotation(
               AnnotationSpec
                 .builder(MergeSubcomponent::class)
-                .addMember("scope = %T::class", contribution.scope.asClassName(module))
+                .addMember("scope = %T::class", contribution.scope.asClassName())
                 .apply {
                   fun addClassArrayMember(
                     name: String,
-                    fqNames: List<FqName>
+                    references: List<ClassReference>
                   ) {
-                    if (fqNames.isNotEmpty()) {
-                      val classes = fqNames.map { it.asClassName(module) }
+                    if (references.isNotEmpty()) {
+                      val classes = references.map { it.asClassName() }
                       val template = classes
                         .joinToString(prefix = "[", postfix = "]") { "%T::class" }
 
@@ -200,14 +167,13 @@ internal class ContributesSubcomponentHandlerGenerator(
                     }
                   }
 
-                  addClassArrayMember("modules", contribution.modules)
-                  addClassArrayMember("exclude", contribution.exclude)
+                  addClassArrayMember("modules", contribution.annotation.modules())
+                  addClassArrayMember("exclude", contribution.annotation.exclude())
                 }
                 .build()
             )
             .addAnnotations(
-              contribution.classReference
-                .annotations
+              contribution.clazz.annotations
                 .filter { it.isDaggerScope() }
                 .map { it.toAnnotationSpec() }
             )
@@ -282,7 +248,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     factoryClass: FactoryClassHolder?,
   ): TypeSpec {
     val parentComponentInterface = findParentComponentInterface(
-      contribution, factoryClass?.originalReference?.fqName
+      contribution, factoryClass?.originalReference
     )
 
     return TypeSpec
@@ -319,17 +285,15 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private fun findParentComponentInterface(
     contribution: Contribution,
-    factoryClass: FqName?
+    factoryClass: ClassReference?
   ): ParentComponentInterfaceHolder? {
-    val contributionFqName = contribution.clazzFqName
-
-    val contributedInnerComponentInterfaces = contribution.classReference
+    val contributedInnerComponentInterfaces = contribution.clazz
       .innerClasses()
       .filter { it.isInterface() }
       .filter { classReference ->
         classReference.annotations
           .any {
-            it.fqName == contributesToFqName && it.scope().fqName == contribution.parentScope
+            it.fqName == contributesToFqName && it.scope() == contribution.parentScope
           }
       }
       .toList()
@@ -338,25 +302,26 @@ internal class ContributesSubcomponentHandlerGenerator(
       0 -> return null
       1 -> contributedInnerComponentInterfaces[0]
       else -> throw AnvilCompilationExceptionClassReference(
-        classReference = contribution.classReference,
+        classReference = contribution.clazz,
         message = "Expected zero or one parent component interface within " +
-          "$contributionFqName being contributed to the parent scope."
+          "${contribution.clazz.fqName} being contributed to the parent scope."
       )
     }
 
     val functions = componentInterface.functions
       .filter { it.isAbstract() && it.visibility() == PUBLIC }
       .filter {
-        val returnType = it.returnType().fqName
-        returnType == contributionFqName || (factoryClass != null && returnType == factoryClass)
+        val returnType = it.returnType()
+        returnType == contribution.clazz || (factoryClass != null && returnType == factoryClass)
       }
 
     val function = when (functions.size) {
       0 -> return null
       1 -> functions[0]
       else -> throw AnvilCompilationExceptionClassReference(
-        classReference = contribution.classReference,
-        message = "Expected zero or one function returning the subcomponent $contributionFqName."
+        classReference = contribution.clazz,
+        message = "Expected zero or one function returning the " +
+          "subcomponent ${contribution.clazz.fqName}."
       )
     }
 
@@ -367,9 +332,9 @@ internal class ContributesSubcomponentHandlerGenerator(
     contribution: Contribution,
     generatedAnvilSubcomponent: ClassId
   ): FactoryClassHolder? {
-    val contributionFqName = contribution.clazzFqName
+    val contributionFqName = contribution.clazz.fqName
 
-    val contributedFactories = contribution.classReference
+    val contributedFactories = contribution.clazz
       .innerClasses()
       .filter { classReference ->
         classReference.isAnnotatedWith(contributesSubcomponentFactoryFqName)
@@ -400,7 +365,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       0 -> return null
       1 -> contributedFactories[0]
       else -> throw AnvilCompilationExceptionClassReference(
-        classReference = contribution.classReference,
+        classReference = contribution.clazz,
         message = "Expected zero or one factory within $contributionFqName."
       )
     }
@@ -418,7 +383,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     replacedReferences: List<ClassReference>
   ) {
     replacedReferences.forEach { replacedReference ->
-      if (processedEvents.any { it.contribution.classReference == replacedReference }) {
+      if (processedEvents.any { it.contribution.clazz == replacedReference }) {
         throw AnvilCompilationExceptionClassReference(
           classReference = contributedReference,
           message = "${contributedReference.fqName} tries to replace " +
@@ -442,31 +407,17 @@ internal class ContributesSubcomponentHandlerGenerator(
         scope = null
       )
       .map { descriptor ->
-        val annotation = descriptor.annotation(contributesSubcomponentFqName)
+        val annotation = descriptor.toClassReference(module)
+          .annotations
+          .single { it.fqName == contributesSubcomponentFqName }
 
-        val modules = (annotation.getAnnotationValue("modules") as? ArrayValue)
-          ?.value
-          ?.map { it.argumentType(module).fqName() }
-          ?: emptyList()
-
-        val exclude = (annotation.getAnnotationValue("exclude") as? ArrayValue)
-          ?.value
-          ?.map { it.argumentType(module).fqName() }
-          ?: emptyList()
-
-        Contribution(
-          classReference = descriptor.toClassReference(module),
-          scope = annotation.scope(module).fqNameSafe,
-          parentScope = annotation.parentScope(module).fqNameSafe,
-          modules = modules,
-          exclude = exclude
-        )
+        Contribution(annotation)
       }
 
     // Find all replaced subcomponents from precompiled dependencies.
     replacedReferences += contributions
       .flatMap { contribution ->
-        contribution.classReference
+        contribution.clazz
           .annotations.single { it.fqName == contributesSubcomponentFqName }
           .replaces()
       }
@@ -515,16 +466,14 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private class Contribution(
-    val classReference: ClassReference,
-    val scope: FqName,
-    val parentScope: FqName,
-    val modules: List<FqName>,
-    val exclude: List<FqName>
+    val annotation: AnnotationReference
   ) {
-    val clazzFqName = classReference.fqName
+    val clazz = annotation.declaringClass()
+    val scope = annotation.scope()
+    val parentScope = annotation.parentScope()
 
     override fun toString(): String {
-      return "Contribution(class=$classReference, scope=$scope, parentScope=$parentScope)"
+      return "Contribution(class=$clazz, scope=$scope, parentScope=$parentScope)"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -535,7 +484,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
       if (scope != other.scope) return false
       if (parentScope != other.parentScope) return false
-      if (clazzFqName != other.clazzFqName) return false
+      if (clazz != other.clazz) return false
 
       return true
     }
@@ -543,7 +492,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     override fun hashCode(): Int {
       var result = scope.hashCode()
       result = 31 * result + parentScope.hashCode()
-      result = 31 * result + clazzFqName.hashCode()
+      result = 31 * result + clazz.hashCode()
       return result
     }
   }
@@ -552,7 +501,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     val trigger: Trigger,
     val contribution: Contribution
   ) {
-    val generatedAnvilSubcomponent = contribution.classReference.classId
+    val generatedAnvilSubcomponent = contribution.clazz.classId
       .generatedAnvilSubcomponent(trigger.clazz.classId)
   }
 
