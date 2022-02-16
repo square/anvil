@@ -171,6 +171,11 @@ internal fun KtClassOrObject.checkSingleSuperType(
   }
 }
 
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
+    "See [ClassReference#checkClassExtendsBoundType]"
+)
 internal fun KtClassOrObject.checkClassExtendsBoundType(
   module: ModuleDescriptor,
   annotationFqName: FqName
