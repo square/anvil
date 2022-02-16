@@ -825,16 +825,6 @@ public fun KtAnnotationEntry.isQualifier(module: ModuleDescriptor): Boolean {
 }
 
 @ExperimentalAnvilApi
-public fun KtAnnotationEntry.isDaggerScope(module: ModuleDescriptor): Boolean {
-  return typeReference
-    ?.requireFqName(module)
-    ?.classDescriptor(module)
-    ?.annotations
-    ?.hasAnnotation(daggerScopeFqName)
-    ?: false
-}
-
-@ExperimentalAnvilApi
 @Suppress("DeprecatedCallableAddReplaceWith")
 @Deprecated(
   "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
