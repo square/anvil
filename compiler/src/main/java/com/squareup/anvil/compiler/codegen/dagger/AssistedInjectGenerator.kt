@@ -10,14 +10,12 @@ import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.codegen.Parameter
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.asArgumentList
-import com.squareup.anvil.compiler.codegen.injectConstructor
-import com.squareup.anvil.compiler.codegen.mapToConstructorParameters
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.anvil.compiler.internal.typeVariableNames
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -74,7 +72,9 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
     val constructorParameters = constructor.valueParameters
       .mapToConstructorParameters(module)
 
-    val memberInjectParameters = clazz.memberInjectParameters(module)
+    // TODO: use ClassReference from the beginning
+    val memberInjectParameters = clazz.toClassReference(module)
+      .memberInjectParameters(module)
 
     val parameters = constructorParameters + memberInjectParameters
 

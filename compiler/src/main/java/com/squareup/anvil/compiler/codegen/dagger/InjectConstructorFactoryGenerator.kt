@@ -7,15 +7,13 @@ import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.asArgumentList
-import com.squareup.anvil.compiler.codegen.injectConstructor
-import com.squareup.anvil.compiler.codegen.mapToConstructorParameters
 import com.squareup.anvil.compiler.injectFqName
-import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.generateClassName
-import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
+import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.asClassName
+import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.anvil.compiler.internal.typeVariableNames
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -28,7 +26,6 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.internal.Factory
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -44,9 +41,9 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     projectFiles
-      .classesAndInnerClasses(module)
+      .classAndInnerClassReferences(module)
       .forEach { clazz ->
-        clazz.injectConstructor(injectFqName, module)
+        clazz.clazz.injectConstructor(injectFqName, module)
           ?.let {
             generateFactoryClass(codeGenDir, module, clazz, it)
           }
@@ -56,10 +53,10 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
   private fun generateFactoryClass(
     codeGenDir: File,
     module: ModuleDescriptor,
-    clazz: KtClassOrObject,
+    clazz: ClassReference.Psi,
     constructor: KtConstructor<*>
   ): GeneratedFile {
-    val packageName = clazz.containingKtFile.packageFqName.safePackageString()
+    val packageName = clazz.packageFqName.safePackageString()
     val className = "${clazz.generateClassName()}_Factory"
 
     val constructorParameters = constructor.valueParameters
@@ -69,7 +66,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
 
     val allParameters = constructorParameters + memberInjectParameters
 
-    val typeParameters = clazz.typeVariableNames(module)
+    val typeParameters = clazz.clazz.typeVariableNames(module)
 
     val factoryClass = ClassName(packageName, className)
     val factoryClassParameterized =

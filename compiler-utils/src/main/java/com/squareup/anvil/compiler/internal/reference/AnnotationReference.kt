@@ -59,6 +59,7 @@ public sealed class AnnotationReference {
   protected abstract val declaringClass: ClassReference?
 
   public val fqName: FqName get() = classReference.fqName
+  public val shortName: String get() = fqName.shortName().asString()
   public val module: AnvilModuleDescriptor get() = classReference.module
 
   public fun declaringClassOrNull(): ClassReference? = declaringClass

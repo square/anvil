@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler
 
 import com.squareup.anvil.annotations.ContributesBinding
-import com.squareup.anvil.annotations.ContributesBinding.Priority.NORMAL
 import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesSubcomponent
 import com.squareup.anvil.annotations.ContributesTo
@@ -11,7 +10,6 @@ import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.fqName
-import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
@@ -29,8 +27,6 @@ import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.constants.BooleanValue
-import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import javax.inject.Inject
 import javax.inject.Provider
@@ -86,15 +82,6 @@ internal val propertySuffixes = arrayOf(REFERENCE_SUFFIX, SCOPE_SUFFIX)
 internal fun FqName.isAnvilModule(): Boolean {
   val name = asString()
   return name.startsWith(MODULE_PACKAGE_PREFIX) && name.endsWith(ANVIL_MODULE_SUFFIX)
-}
-
-internal fun AnnotationDescriptor.priority(): ContributesBinding.Priority {
-  val enumValue = getAnnotationValue("priority") as? EnumValue ?: return NORMAL
-  return ContributesBinding.Priority.valueOf(enumValue.enumEntryName.asString())
-}
-
-internal fun AnnotationDescriptor.ignoreQualifier(): Boolean {
-  return (getAnnotationValue("ignoreQualifier") as? BooleanValue)?.value ?: false
 }
 
 @Suppress("DeprecatedCallableAddReplaceWith")

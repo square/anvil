@@ -2,21 +2,17 @@ package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.annotations.ContributesBinding.Priority
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.ignoreQualifier
 import com.squareup.anvil.compiler.injectFqName
-import com.squareup.anvil.compiler.internal.annotation
 import com.squareup.anvil.compiler.internal.argumentType
-import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.classDescriptor
-import com.squareup.anvil.compiler.internal.isObject
 import com.squareup.anvil.compiler.internal.isQualifier
+import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
-import com.squareup.anvil.compiler.internal.requireAnnotation
+import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.requireFqName
-import com.squareup.anvil.compiler.priority
 import com.squareup.anvil.compiler.qualifierFqName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.TypeName
@@ -27,15 +23,13 @@ import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtExpression
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
-import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 
 internal data class ContributedBinding(
-  val contributedFqName: FqName,
-  val contributedClassIsObject: Boolean,
+  val contributedClass: ClassReference,
   val mapKeys: List<AnnotationSpec>,
   val qualifiers: List<AnnotationSpec>,
   val boundTypeClassName: TypeName,
@@ -43,80 +37,70 @@ internal data class ContributedBinding(
   val qualifiersKeyLazy: Lazy<String>
 )
 
-internal fun ClassReference.toContributedBinding(
-  module: ModuleDescriptor,
-  annotationFqName: FqName,
+internal fun AnnotationReference.toContributedBinding(
   isMultibinding: Boolean
 ): ContributedBinding {
-
-  val boundType = requireBoundType(annotationFqName)
+  val boundType = requireBoundType()
 
   val mapKeys = if (isMultibinding) {
-    annotations.filter { it.isMapKey() }.map { it.toAnnotationSpec() }
+    declaringClass().annotations.filter { it.isMapKey() }.map { it.toAnnotationSpec() }
   } else {
     emptyList()
   }
 
-  val ignoreQualifier = ignoreQualifier(module, annotationFqName)
+  val ignoreQualifier = ignoreQualifier()
   val qualifiers = if (ignoreQualifier) {
     emptyList()
   } else {
-    annotations.filter { it.isQualifier() }.map { it.toAnnotationSpec() }
-  }
-
-  val boundTypeClassName = when (boundType) {
-    is Descriptor -> boundType.clazz.asClassName()
-    is Psi -> boundType.clazz.asClassName()
+    declaringClass().annotations.filter { it.isQualifier() }.map { it.toAnnotationSpec() }
   }
 
   return ContributedBinding(
-    contributedFqName = fqName,
-    contributedClassIsObject = isObject(),
+    contributedClass = declaringClass(),
     mapKeys = mapKeys,
     qualifiers = qualifiers,
-    boundTypeClassName = boundTypeClassName,
-    priority = priority(module, annotationFqName),
-    qualifiersKeyLazy = qualifiersKeyLazy(module, boundType.fqName, ignoreQualifier)
+    boundTypeClassName = boundType.asClassName(),
+    priority = priority(),
+    qualifiersKeyLazy = declaringClass()
+      .qualifiersKeyLazy(module, boundType.fqName, ignoreQualifier)
   )
 }
 
-private fun ClassReference.requireBoundType(
-  annotationFqName: FqName
-): ClassReference {
-  val boundFromAnnotation = annotations.find { it.fqName == annotationFqName }?.boundTypeOrNull()
+private fun AnnotationReference.requireBoundType(): ClassReference {
+  val boundFromAnnotation = boundTypeOrNull()
 
   if (boundFromAnnotation != null) {
     // ensure that the bound type is actually a supertype of the contributing class
-    val boundType = allSuperTypeClassReferences()
+    val boundType = declaringClass().allSuperTypeClassReferences()
       .firstOrNull { it.fqName == boundFromAnnotation.fqName }
       ?: throw AnvilCompilationException(
         "$fqName contributes a binding for ${boundFromAnnotation.fqName}, " +
           "but doesn't extend this type."
       )
 
-    boundType.checkNotGeneric(contributedFqName = fqName)
+    boundType.checkNotGeneric(contributedClass = declaringClass())
     return boundType
   }
 
   // If there's no bound type in the annotation,
   // it must be the only supertype of the contributing class
-  val boundType = directSuperClassReferences().singleOrNull()
+  val boundType = declaringClass().directSuperClassReferences().singleOrNull()
     ?: throw AnvilCompilationException(
-      message = "$annotationFqName contributes a binding, but does not " +
+      message = "$fqName contributes a binding, but does not " +
         "specify the bound type. This is only allowed with exactly one direct super type. " +
         "If there are multiple or none, then the bound type must be explicitly defined in " +
-        "the @${annotationFqName.shortName()} annotation."
+        "the @$shortName annotation."
     )
 
-  boundType.checkNotGeneric(contributedFqName = fqName)
+  boundType.checkNotGeneric(contributedClass = declaringClass())
   return boundType
 }
 
 private fun ClassReference.checkNotGeneric(
-  contributedFqName: FqName
+  contributedClass: ClassReference
 ) {
   fun exceptionText(typeString: String): String {
-    return "Class $contributedFqName binds $fqName," +
+    return "Class ${contributedClass.fqName} binds $fqName," +
       " but the bound type contains type parameter(s) $typeString." +
       " Type parameters in bindings are not supported. This binding needs" +
       " to be contributed in a Dagger module manually."
@@ -152,33 +136,7 @@ private fun ClassReference.checkNotGeneric(
   }
 }
 
-private fun ClassReference.ignoreQualifier(
-  module: ModuleDescriptor,
-  annotationFqName: FqName
-): Boolean {
-  return when (this) {
-    is Descriptor -> clazz.annotation(annotationFqName).ignoreQualifier()
-    is Psi -> clazz.ignoreQualifier(module, annotationFqName)
-  }
-}
-
-private fun ClassReference.isObject(): Boolean {
-  return when (this) {
-    is Descriptor -> DescriptorUtils.isObject(clazz)
-    is Psi -> clazz.isObject()
-  }
-}
-
-private fun ClassReference.priority(
-  module: ModuleDescriptor,
-  annotationFqName: FqName
-): Priority {
-  return when (this) {
-    is Descriptor -> clazz.annotation(annotationFqName).priority()
-    is Psi -> clazz.requireAnnotation(annotationFqName, module).priority()
-  }
-}
-
+// TODO: clean this up more. Can we use ClassReference?
 private fun ClassReference.qualifiersKeyLazy(
   module: ModuleDescriptor,
   boundTypeFqName: FqName,

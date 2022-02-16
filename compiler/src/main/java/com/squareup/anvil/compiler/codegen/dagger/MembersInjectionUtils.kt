@@ -14,7 +14,6 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
-import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.kotlinpoet.FunSpec
 import dagger.internal.ProviderOfLazy
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -83,12 +82,11 @@ internal fun FunSpec.Builder.addMemberInjection(
  * @param inheritedOnly If true, only returns the injected properties declared in superclasses.
  *   If false, the injected properties of the receiver class will be included.
  */
-internal fun KtClassOrObject.memberInjectParameters(
+internal fun ClassReference.memberInjectParameters(
   module: ModuleDescriptor,
   inheritedOnly: Boolean = false
 ): List<MemberInjectParameter> {
-  return toClassReference(module)
-    .allSuperTypeClassReferences(includeSelf = !inheritedOnly)
+  return allSuperTypeClassReferences(includeSelf = !inheritedOnly)
     .filterNot { it.isInterface() }
     .toList()
     .foldRight(listOf()) { classReference, acc ->

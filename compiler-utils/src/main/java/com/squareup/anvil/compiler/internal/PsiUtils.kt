@@ -11,7 +11,6 @@ import com.squareup.anvil.compiler.internal.reference.asAnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
 import com.squareup.anvil.compiler.internal.reference.indexOfTypeParameter
 import com.squareup.anvil.compiler.internal.reference.toClassReference
-import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -33,7 +32,6 @@ import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtNullableType
-import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPureElement
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
@@ -503,44 +501,6 @@ private fun PsiElement.findFqNameInSuperTypes(
 }
 
 @ExperimentalAnvilApi
-public fun KtClassOrObject.typeVariableNames(
-  module: ModuleDescriptor
-): List<TypeVariableName> {
-  // Any type which is constrained in a `where` clause is also defined as a type parameter.
-  // It's also technically possible to have one constraint in the type parameter spot, like this:
-  // class MyClass<T : Any> where T : Set<*>, T : MutableCollection<*>
-  // Merge both groups of type parameters in order to get the full list of bounds.
-  val boundsByVariableName = typeParameterList
-    ?.parameters
-    ?.filter { it.fqNameOrNull(module) == null }
-    ?.associateTo(mutableMapOf()) { parameter ->
-      val variableName = parameter.nameAsSafeName.asString()
-      val extendsBound = parameter.extendsBound?.requireTypeName(module)
-
-      variableName to mutableListOf(extendsBound)
-    } ?: mutableMapOf()
-
-  typeConstraintList
-    ?.constraints
-    ?.filter { it.fqNameOrNull(module) == null }
-    ?.forEach { constraint ->
-      val variableName = constraint.subjectTypeParameterName
-        ?.getReferencedName()
-        ?: return@forEach
-      val extendsBound = constraint.boundTypeReference?.requireTypeName(module)
-
-      boundsByVariableName
-        .getValue(variableName)
-        .add(extendsBound)
-    }
-
-  return boundsByVariableName
-    .map { (variableName, bounds) ->
-      TypeVariableName(variableName, bounds.filterNotNull())
-    }
-}
-
-@ExperimentalAnvilApi
 public fun KtClassOrObject.functions(
   includeCompanionObjects: Boolean
 ): List<KtNamedFunction> = classBodies(includeCompanionObjects).flatMap { it.functions }
@@ -549,9 +509,6 @@ public fun KtClassOrObject.functions(
 public fun KtClassOrObject.properties(
   includeCompanionObjects: Boolean
 ): List<KtProperty> = classBodies(includeCompanionObjects).flatMap { it.properties }
-
-@ExperimentalAnvilApi
-public fun KtClassOrObject.isObject(): Boolean = this is KtObjectDeclaration
 
 private fun KtClassOrObject.classBodies(includeCompanionObjects: Boolean): List<KtClassBody> {
   val elements = children.toMutableList()
