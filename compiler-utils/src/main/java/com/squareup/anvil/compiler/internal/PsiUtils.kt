@@ -851,6 +851,11 @@ public fun KtAnnotationEntry.isMapKey(module: ModuleDescriptor): Boolean {
 }
 
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
+    "See [ClassReference#generateClassName]"
+)
 public fun KtClassOrObject.generateClassName(
   separator: String = "_"
 ): String =
