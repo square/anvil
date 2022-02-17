@@ -74,7 +74,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
 
     // TODO: use ClassReference from the beginning
     val memberInjectParameters = clazz.toClassReference(module)
-      .memberInjectParameters(module)
+      .memberInjectParameters()
 
     val parameters = constructorParameters + memberInjectParameters
 

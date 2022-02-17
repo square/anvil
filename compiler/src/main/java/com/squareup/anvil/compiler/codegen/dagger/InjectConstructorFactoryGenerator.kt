@@ -62,7 +62,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     val constructorParameters = constructor.valueParameters
       .mapToConstructorParameters(module)
 
-    val memberInjectParameters = clazz.memberInjectParameters(module)
+    val memberInjectParameters = clazz.memberInjectParameters()
 
     val allParameters = constructorParameters + memberInjectParameters
 
