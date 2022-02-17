@@ -38,6 +38,7 @@ public sealed class FunctionReference {
 
   public abstract val annotations: List<AnnotationReference>
 
+  public abstract fun isAbstract(): Boolean
   public abstract fun visibility(): Visibility
 
   override fun toString(): String = "$fqName()"
@@ -67,6 +68,9 @@ public sealed class FunctionReference {
       }
     }
 
+    override fun isAbstract(): Boolean =
+      function.hasModifier(ABSTRACT_KEYWORD) || declaringClass.isInterface()
+
     override fun visibility(): Visibility {
       return when (val visibility = function.visibilityModifierTypeOrDefault()) {
         PUBLIC_KEYWORD -> PUBLIC
@@ -93,6 +97,8 @@ public sealed class FunctionReference {
       }
     }
 
+    override fun isAbstract(): Boolean = function.modality == ABSTRACT
+
     override fun visibility(): Visibility {
       return when (val visibility = function.visibility) {
         DescriptorVisibilities.PUBLIC -> PUBLIC
@@ -109,6 +115,10 @@ public sealed class FunctionReference {
 }
 
 @ExperimentalAnvilApi
+public fun FunctionReference.isAnnotatedWith(fqName: FqName): Boolean =
+  annotations.any { it.fqName == fqName }
+
+@ExperimentalAnvilApi
 public fun KtNamedFunction.toFunctionReference(
   declaringClass: ClassReference.Psi
 ): Psi {
@@ -120,15 +130,6 @@ public fun FunctionDescriptor.toFunctionReference(
   declaringClass: ClassReference.Descriptor,
 ): Descriptor {
   return Descriptor(this, declaringClass)
-}
-
-@ExperimentalAnvilApi
-// TODO: to member function
-public fun FunctionReference.isAbstract(): Boolean {
-  return when (this) {
-    is Psi -> function.hasModifier(ABSTRACT_KEYWORD) || declaringClass.isInterface()
-    is Descriptor -> function.modality == ABSTRACT
-  }
 }
 
 // TODO: to member function
