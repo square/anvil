@@ -2,7 +2,8 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.classDescriptor
+import com.squareup.anvil.compiler.internal.classDescriptorOrNull
+import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.reference.FunctionReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.FunctionReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
@@ -10,8 +11,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.requireFqName
-import com.squareup.anvil.compiler.internal.requireTypeReference
-import com.squareup.anvil.compiler.internal.resolveTypeReference
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
@@ -19,6 +18,7 @@ import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
 import org.jetbrains.kotlin.lexer.KtTokens.PUBLIC_KEYWORD
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -33,13 +33,39 @@ public sealed class FunctionReference {
 
   public abstract val fqName: FqName
   public abstract val declaringClass: ClassReference
+  public val name: String get() = fqName.shortName().asString()
 
   public val module: AnvilModuleDescriptor get() = declaringClass.module
 
   public abstract val annotations: List<AnnotationReference>
+  public abstract val parameters: List<ParameterReference>
 
   public abstract fun isAbstract(): Boolean
   public abstract fun visibility(): Visibility
+
+  /**
+   * The return type can be null for generic types like `T`. In this case try to resolve the
+   * return type with [resolveGenericReturnOrNull].
+   */
+  public abstract fun returnTypeOrNull(): ClassReference?
+
+  public fun returnType(): ClassReference = returnTypeOrNull()
+    ?: throw AnvilCompilationExceptionFunctionReference(
+      functionReference = this,
+      message = "Unable to get the return type for function $fqName."
+    )
+
+  public abstract fun resolveGenericReturnOrNull(
+    implementingClass: ClassReference.Psi
+  ): ClassReference?
+
+  public fun resolveGenericReturnType(implementingClass: ClassReference.Psi): ClassReference =
+    resolveGenericReturnOrNull(implementingClass)
+      ?: throw AnvilCompilationExceptionFunctionReference(
+        functionReference = this,
+        message = "Unable to resolve return type for function $fqName with the implementing " +
+          "class ${implementingClass.fqName}."
+      )
 
   override fun toString(): String = "$fqName()"
 
@@ -57,9 +83,9 @@ public sealed class FunctionReference {
   }
 
   public class Psi internal constructor(
-    public val function: KtNamedFunction,
+    public val function: KtFunction,
     override val declaringClass: ClassReference.Psi,
-    override val fqName: FqName = function.requireFqName()
+    override val fqName: FqName = function.fqName ?: declaringClass.fqName
   ) : FunctionReference() {
 
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
@@ -68,8 +94,13 @@ public sealed class FunctionReference {
       }
     }
 
+    override val parameters: List<ParameterReference.Psi> by lazy(NONE) {
+      function.valueParameters.map { it.toParameterReference(this) }
+    }
+
     override fun isAbstract(): Boolean =
-      function.hasModifier(ABSTRACT_KEYWORD) || declaringClass.isInterface()
+      function.hasModifier(ABSTRACT_KEYWORD) ||
+        (declaringClass.isInterface() && !function.hasBody())
 
     override fun visibility(): Visibility {
       return when (val visibility = function.visibilityModifierTypeOrDefault()) {
@@ -83,6 +114,29 @@ public sealed class FunctionReference {
         )
       }
     }
+
+    override fun returnTypeOrNull(): ClassReference? {
+      return function.typeReference
+        ?.let {
+          declaringClass.resolveTypeReference(it)
+        }
+        ?.requireFqName(module)
+        ?.toClassReference(module)
+    }
+
+    override fun resolveGenericReturnOrNull(
+      implementingClass: ClassReference.Psi
+    ): ClassReference? {
+      returnTypeOrNull()?.let { return it }
+
+      val typeReference = function.typeReference
+        ?.let { typeReference ->
+          implementingClass.resolveTypeReference(typeReference)
+        }
+        ?: function.typeReference
+
+      return typeReference?.fqNameOrNull(module)?.toClassReference(module)
+    }
   }
 
   public class Descriptor internal constructor(
@@ -95,6 +149,10 @@ public sealed class FunctionReference {
       function.annotations.map {
         it.toAnnotationReference(declaringClass = null, module)
       }
+    }
+
+    override val parameters: List<ParameterReference.Descriptor> by lazy(NONE) {
+      function.valueParameters.map { it.toParameterReference(this) }
     }
 
     override fun isAbstract(): Boolean = function.modality == ABSTRACT
@@ -111,6 +169,23 @@ public sealed class FunctionReference {
         )
       }
     }
+
+    override fun returnTypeOrNull(): ClassReference? {
+      return function.returnType?.classDescriptorOrNull()?.toClassReference(module)
+    }
+
+    override fun resolveGenericReturnOrNull(
+      implementingClass: ClassReference.Psi
+    ): ClassReference? {
+      returnTypeOrNull()?.let { return it }
+
+      return function.returnType?.let {
+        implementingClass
+          .resolveGenericKotlinTypeOrNull(declaringClass, it)
+          ?.fqNameOrNull(module)
+          ?.toClassReferenceOrNull(module)
+      }
+    }
   }
 }
 
@@ -119,7 +194,7 @@ public fun FunctionReference.isAnnotatedWith(fqName: FqName): Boolean =
   annotations.any { it.fqName == fqName }
 
 @ExperimentalAnvilApi
-public fun KtNamedFunction.toFunctionReference(
+public fun KtFunction.toFunctionReference(
   declaringClass: ClassReference.Psi
 ): Psi {
   return Psi(this, declaringClass)
@@ -130,18 +205,6 @@ public fun FunctionDescriptor.toFunctionReference(
   declaringClass: ClassReference.Descriptor,
 ): Descriptor {
   return Descriptor(this, declaringClass)
-}
-
-// TODO: to member function
-public fun FunctionReference.returnType(): ClassReference {
-  return when (this) {
-    is Psi ->
-      declaringClass.clazz
-        .resolveTypeReference(module, function.requireTypeReference(module))
-        ?.requireFqName(module)
-        ?.toClassReference(module)
-    is Descriptor -> function.returnType?.classDescriptor()?.toClassReference(module)
-  } ?: throw AnvilCompilationException(message = "Couldn't find return type for $fqName.")
 }
 
 @ExperimentalAnvilApi

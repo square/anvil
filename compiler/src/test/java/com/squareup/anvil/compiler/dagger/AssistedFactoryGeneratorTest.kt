@@ -255,7 +255,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       )
       
       interface Base<R: CharSequence, T> {
-        fun create(r :R): T
+        fun create(r : R): T
       }
       
       interface Mid<T> : Base<String, T>

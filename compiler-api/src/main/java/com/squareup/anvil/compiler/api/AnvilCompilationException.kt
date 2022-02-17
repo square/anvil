@@ -4,7 +4,9 @@ import org.jetbrains.kotlin.codegen.CompilationException
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.com.intellij.psi.PsiNameIdentifierOwner
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
+import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithSource
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -46,6 +48,18 @@ public class AnvilCompilationException(
         message = message,
         cause = cause,
         element = functionDescriptor.identifier
+      )
+    }
+
+    public operator fun invoke(
+      parameterDescriptor: ValueParameterDescriptor,
+      message: String,
+      cause: Throwable? = null
+    ): AnvilCompilationException {
+      return AnvilCompilationException(
+        message = message,
+        cause = cause,
+        element = parameterDescriptor.identifier
       )
     }
 
@@ -102,7 +116,7 @@ private val ClassDescriptor.identifier: PsiElement?
 private val AnnotationDescriptor.identifier: PsiElement?
   get() = (source as? KotlinSourceElement)?.psi
 
-private val FunctionDescriptor.identifier: PsiElement?
+private val DeclarationDescriptorWithSource.identifier: PsiElement?
   get() = (source as? KotlinSourceElement)?.psi
 
 private val IrElement.psi: PsiElement?

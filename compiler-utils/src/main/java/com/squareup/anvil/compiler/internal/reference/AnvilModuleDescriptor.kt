@@ -51,17 +51,6 @@ public fun FqName.canResolveFqName(
 ): Boolean = module.asAnvilModuleDescriptor().resolveClassIdOrNull(classIdBestGuess()) != null
 
 @ExperimentalAnvilApi
-@Deprecated(
-  message = "Use ClassReference instead.",
-  replaceWith = ReplaceWith("classAndInnerClassReferences(module)")
-)
-public fun Collection<KtFile>.classesAndInnerClasses(
-  module: ModuleDescriptor
-): Sequence<KtClassOrObject> {
-  return classAndInnerClassReferences(module).map { it.clazz }
-}
-
-@ExperimentalAnvilApi
 public fun Collection<KtFile>.classAndInnerClassReferences(
   module: ModuleDescriptor
 ): Sequence<Psi> {
