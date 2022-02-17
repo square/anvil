@@ -90,6 +90,9 @@ public sealed class AnnotationReference {
 
   override fun toString(): String = "@$fqName"
 
+  // TODO: equals() and hashcode() are wrong actually. To compare AnnotationReference instances we
+  //  also need to consider the annotation values and not just the FqName. Otherwise we'll have
+  //  many problems with repeatable annotations.
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
     if (other !is ClassReference) return false
