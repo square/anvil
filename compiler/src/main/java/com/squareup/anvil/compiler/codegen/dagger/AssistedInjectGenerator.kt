@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
-import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
@@ -10,11 +9,12 @@ import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.codegen.Parameter
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.asArgumentList
-import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.generateClassName
-import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
-import com.squareup.anvil.compiler.internal.reference.toClassReference
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
+import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.asClassName
+import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -25,7 +25,6 @@ import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -51,9 +50,9 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     projectFiles
-      .classesAndInnerClasses(module)
+      .classAndInnerClassReferences(module)
       .forEach { clazz ->
-        clazz.injectConstructor(assistedInjectFqName, module)
+        clazz.clazz.injectConstructor(assistedInjectFqName, module)
           ?.let {
             generateFactoryClass(codeGenDir, module, clazz, it)
           }
@@ -63,27 +62,24 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
   private fun generateFactoryClass(
     codeGenDir: File,
     module: ModuleDescriptor,
-    clazz: KtClassOrObject,
+    clazz: ClassReference.Psi,
     constructor: KtConstructor<*>
   ): GeneratedFile {
-    val packageName = clazz.containingKtFile.packageFqName.safePackageString()
+    val packageName = clazz.packageFqName.safePackageString()
     val className = "${clazz.generateClassName()}_Factory"
 
     val constructorParameters = constructor.valueParameters
       .mapToConstructorParameters(module)
 
-    // TODO: use ClassReference from the beginning
-    val memberInjectParameters = clazz.toClassReference(module)
-      .memberInjectParameters()
+    val memberInjectParameters = clazz.memberInjectParameters()
 
     val parameters = constructorParameters + memberInjectParameters
-
     val parametersAssisted = parameters.filter { it.isAssisted }
     val parametersNotAssisted = parameters.filterNot { it.isAssisted }
 
     checkAssistedParametersAreDistinct(clazz, parametersAssisted)
 
-    val typeParameters = clazz.typeVariableNames(module)
+    val typeParameters = clazz.clazz.typeVariableNames(module)
 
     val factoryClass = ClassName(packageName, className)
     val factoryClassParameterized =
@@ -200,7 +196,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
   }
 
   private fun checkAssistedParametersAreDistinct(
-    clazz: KtClassOrObject,
+    clazz: ClassReference,
     parameters: List<Parameter>
   ) {
     // Parameters are identical, if there types and identifier match.
@@ -229,6 +225,6 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
       append(parameter.typeName)
     }
 
-    throw AnvilCompilationException(errorMessage, element = clazz)
+    throw AnvilCompilationExceptionClassReference(message = errorMessage, classReference = clazz)
   }
 }
