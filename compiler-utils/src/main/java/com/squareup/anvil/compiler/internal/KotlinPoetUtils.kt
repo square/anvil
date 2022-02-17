@@ -315,7 +315,23 @@ private fun FileSpec.writeToString(): String {
 }
 
 private fun FileSpec.Builder.suppressWarnings() {
-  addAnnotation(AnnotationSpec.builder(Suppress::class).addMember("\"DEPRECATION\"").build())
+  addAnnotation(
+    AnnotationSpec
+      .builder(Suppress::class)
+      // Suppress deprecation warnings.
+      .addMember("\"DEPRECATION\"")
+      // Suppress errors for experimental features in generated code.
+      .apply {
+        if (KotlinVersion.CURRENT > KotlinVersion(1, 6, 10)) {
+          addMember("\"OPT_IN_USAGE\"")
+          addMember("\"OPT_IN_USAGE_ERROR\"")
+        } else {
+          addMember("\"EXPERIMENTAL_API_USAGE_ERROR\"")
+          addMember("\"EXPERIMENTAL_API_USAGE\"")
+        }
+      }
+      .build()
+  )
 }
 
 @ExperimentalAnvilApi
