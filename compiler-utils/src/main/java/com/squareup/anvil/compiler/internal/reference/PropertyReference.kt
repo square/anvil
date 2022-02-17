@@ -3,11 +3,18 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.internal.reference.PropertyReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.PropertyReference.Psi
+import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
+import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
+import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
+import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.kotlinpoet.MemberName
+import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import kotlin.LazyThreadSafetyMode.NONE
 
@@ -23,6 +30,8 @@ public sealed class PropertyReference {
   public val memberName: MemberName get() = MemberName(declaringClass.asClassName(), name)
 
   public abstract val annotations: List<AnnotationReference>
+
+  public abstract fun visibility(): Visibility
 
   override fun toString(): String = "$fqName()"
 
@@ -50,6 +59,19 @@ public sealed class PropertyReference {
         it.toAnnotationReference(declaringClass = null, module)
       }
     }
+
+    override fun visibility(): Visibility {
+      return when (val visibility = property.visibilityModifierTypeOrDefault()) {
+        KtTokens.PUBLIC_KEYWORD -> PUBLIC
+        KtTokens.INTERNAL_KEYWORD -> INTERNAL
+        KtTokens.PROTECTED_KEYWORD -> PROTECTED
+        KtTokens.PRIVATE_KEYWORD -> PRIVATE
+        else -> throw AnvilCompilationExceptionClassReference(
+          classReference = declaringClass,
+          message = "Couldn't get visibility $visibility for property $fqName."
+        )
+      }
+    }
   }
 
   public class Descriptor internal constructor(
@@ -63,8 +85,25 @@ public sealed class PropertyReference {
         it.toAnnotationReference(declaringClass = null, module)
       }
     }
+
+    override fun visibility(): Visibility {
+      return when (val visibility = property.visibility) {
+        DescriptorVisibilities.PUBLIC -> PUBLIC
+        DescriptorVisibilities.INTERNAL -> INTERNAL
+        DescriptorVisibilities.PROTECTED -> PROTECTED
+        DescriptorVisibilities.PRIVATE -> PRIVATE
+        else -> throw AnvilCompilationExceptionClassReference(
+          classReference = declaringClass,
+          message = "Couldn't get visibility $visibility for property $fqName."
+        )
+      }
+    }
   }
 }
+
+@ExperimentalAnvilApi
+public fun PropertyReference.isAnnotatedWith(fqName: FqName): Boolean =
+  annotations.any { it.fqName == fqName }
 
 @ExperimentalAnvilApi
 public fun KtProperty.toPropertyReference(

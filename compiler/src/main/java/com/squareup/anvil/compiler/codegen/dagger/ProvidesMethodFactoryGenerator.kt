@@ -9,18 +9,19 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
-import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.findAnnotation
-import com.squareup.anvil.compiler.internal.functions
-import com.squareup.anvil.compiler.internal.generateClassName
-import com.squareup.anvil.compiler.internal.hasAnnotation
-import com.squareup.anvil.compiler.internal.isInterface
 import com.squareup.anvil.compiler.internal.isNullable
-import com.squareup.anvil.compiler.internal.properties
-import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
-import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
+import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.FunctionReference
+import com.squareup.anvil.compiler.internal.reference.PropertyReference
+import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
+import com.squareup.anvil.compiler.internal.reference.asClassName
+import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.generateClassName
+import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.requireTypeReference
 import com.squareup.anvil.compiler.internal.safePackageString
@@ -39,16 +40,9 @@ import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.internal.Factory
 import dagger.internal.Preconditions
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
-import org.jetbrains.kotlin.lexer.KtTokens.INTERNAL_KEYWORD
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtObjectDeclaration
-import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.psi.psiUtil.parents
-import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import java.io.File
 
 @AutoService(CodeGenerator::class)
@@ -62,43 +56,55 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     projectFiles
-      .classesAndInnerClasses(module)
-      .filter { it.hasAnnotation(daggerModuleFqName, module) }
+      .classAndInnerClassReferences(module)
+      .filter { it.isAnnotatedWith(daggerModuleFqName) }
       .forEach { clazz ->
-        clazz
-          .functions(includeCompanionObjects = true)
+        (clazz.companionObjects() + clazz)
           .asSequence()
-          .filter { it.hasAnnotation(daggerProvidesFqName, module) }
+          .flatMap { it.functions }
+          .filter { it.isAnnotatedWith(daggerProvidesFqName) }
           .onEach { function ->
             checkFunctionIsNotAbstract(clazz, function)
           }
           .also { functions ->
             // Check for duplicate function names.
             val duplicateFunctions = functions
-              .groupBy { it.requireFqName() }
+              .groupBy { it.fqName }
               .filterValues { it.size > 1 }
 
             if (duplicateFunctions.isNotEmpty()) {
-              throw AnvilCompilationException(
-                element = clazz,
+              throw AnvilCompilationExceptionClassReference(
+                classReference = clazz,
                 message = "Cannot have more than one binding method with the same name in " +
                   "a single module: ${duplicateFunctions.keys.joinToString()}"
               )
             }
           }
           .forEach { function ->
-            generateFactoryClass(codeGenDir, module, clazz, function)
+            generateFactoryClass(
+              codeGenDir,
+              module,
+              clazz,
+              CallableReference(function = function)
+            )
           }
 
-        clazz
-          .properties(includeCompanionObjects = true)
+        (clazz.companionObjects() + clazz)
           .asSequence()
+          .flatMap { it.properties }
           .filter { property ->
             // Must be '@get:Provides'.
-            property.findAnnotation(daggerProvidesFqName, module)?.useSiteTarget?.text == "get"
+            property.annotations.singleOrNull {
+              it.fqName == daggerProvidesFqName
+            }?.annotation?.useSiteTarget?.text == "get"
           }
           .forEach { property ->
-            generateFactoryClass(codeGenDir, module, clazz, property)
+            generateFactoryClass(
+              codeGenDir,
+              module,
+              clazz,
+              CallableReference(property = property)
+            )
           }
       }
   }
@@ -106,23 +112,19 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
   private fun generateFactoryClass(
     codeGenDir: File,
     module: ModuleDescriptor,
-    clazz: KtClassOrObject,
-    declaration: KtCallableDeclaration
+    clazz: ClassReference.Psi,
+    declaration: CallableReference
   ): GeneratedFile {
-    val isCompanionObject = declaration.parents
-      .filterIsInstance<KtObjectDeclaration>()
-      .firstOrNull()
-      ?.isCompanion()
-      ?: false
-    val isObject = isCompanionObject || clazz is KtObjectDeclaration
+    val isCompanionObject = declaration.declaringClass.isCompanion()
+    val isObject = isCompanionObject || clazz.isObject()
 
-    val isProperty = declaration is KtProperty
+    val isProperty = declaration.isProperty
 
     val isMangled = !isProperty &&
-      declaration.visibilityModifierTypeOrDefault() == INTERNAL_KEYWORD &&
-      !declaration.hasAnnotation(publishedApiFqName, module)
+      declaration.visibility == INTERNAL &&
+      !declaration.isAnnotatedWith(publishedApiFqName)
 
-    val packageName = clazz.containingKtFile.packageFqName.safePackageString()
+    val packageName = clazz.packageFqName.safePackageString()
     val className = buildString {
       append(clazz.generateClassName())
       append('_')
@@ -132,21 +134,21 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
       if (isProperty) {
         append("Get")
       }
-      append(declaration.requireFqName().shortName().asString().capitalize())
+      append(declaration.fqName.shortName().asString().capitalize())
       if (isMangled) {
         append("\$${module.mangledNameSuffix()}")
       }
       append("Factory")
     }
 
-    val callableName = declaration.nameAsSafeName.asString()
+    val callableName = declaration.rawType.nameAsSafeName.asString()
 
-    val parameters = declaration.valueParameters
+    val parameters = declaration.rawType.valueParameters
       .mapToConstructorParameters(module)
 
-    val returnType = declaration.requireTypeReference(module).requireTypeName(module)
-      .withJvmSuppressWildcardsIfNeeded(declaration, module)
-    val returnTypeIsNullable = declaration.typeReference?.isNullable() ?: false
+    val returnType = declaration.rawType.requireTypeReference(module).requireTypeName(module)
+      .withJvmSuppressWildcardsIfNeeded(declaration.rawType, module)
+    val returnTypeIsNullable = declaration.rawType.typeReference?.isNullable() ?: false
 
     val factoryClass = ClassName(packageName, className)
     val moduleClass = clazz.asClassName()
@@ -307,16 +309,16 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
   }
 
   private fun checkFunctionIsNotAbstract(
-    clazz: KtClassOrObject,
-    function: KtFunction
+    clazz: ClassReference.Psi,
+    function: FunctionReference.Psi
   ) {
-    fun fail(): Nothing = throw AnvilCompilationException(
-      "@Provides methods cannot be abstract",
-      element = function
+    fun fail(): Nothing = throw AnvilCompilationExceptionFunctionReference(
+      message = "@Provides methods cannot be abstract",
+      functionReference = function
     )
 
     // If the function is abstract, then it's an error.
-    if (function.hasModifier(ABSTRACT_KEYWORD)) fail()
+    if (function.isAbstract()) fail()
 
     // If the class is not an interface and doesn't use the abstract keyword, then there is
     // no issue.
@@ -324,8 +326,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
     // If the parent of the function is a companion object, then the function inside of the
     // interface is not abstract.
-    val parentClass = function.parents.filterIsInstance<KtClassOrObject>().firstOrNull() ?: return
-    if (parentClass is KtObjectDeclaration && parentClass.isCompanion()) return
+    if (function.declaringClass.isCompanion()) return
 
     fail()
   }
@@ -336,6 +337,38 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
       name.substring(1, name.length - 1)
     } else {
       name
+    }
+  }
+
+  // TODO: May be worth extracting some of this to an interface to actually apply to the Reference
+  // classes if we think it would be useful in other use-cases
+  private class CallableReference(
+    private val function: FunctionReference.Psi? = null,
+    private val property: PropertyReference.Psi? = null
+  ) {
+
+    init {
+      if (function == null && property == null) {
+        throw AnvilCompilationException(
+          "Cannot create a CallableReference wrapper without a " +
+            "function OR a property"
+        )
+      }
+    }
+
+    val declaringClass = function?.declaringClass ?: property!!.declaringClass
+
+    val visibility
+      get() = function?.visibility() ?: property!!.visibility()
+
+    val fqName = function?.fqName ?: property!!.fqName
+
+    val isProperty = property != null
+
+    val rawType: KtCallableDeclaration = function?.function ?: property!!.property
+
+    fun isAnnotatedWith(fqName: FqName): Boolean {
+      return function?.isAnnotatedWith(fqName) ?: property!!.isAnnotatedWith(fqName)
     }
   }
 }

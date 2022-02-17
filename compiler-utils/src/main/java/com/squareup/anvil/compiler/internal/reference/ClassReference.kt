@@ -42,6 +42,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import kotlin.LazyThreadSafetyMode.NONE
 
 /**
@@ -90,7 +91,7 @@ public sealed class ClassReference {
 
   public abstract fun innerClasses(): List<ClassReference>
 
-  public fun companionObjects(): List<ClassReference> {
+  public open fun companionObjects(): List<ClassReference> {
     return innerClasses().filter { it.isCompanion() && it.enclosingClass() == this }
   }
 
@@ -185,6 +186,10 @@ public sealed class ClassReference {
     override fun enclosingClassesWithSelf(): List<Psi> = enclosingClassesWithSelf
 
     override fun innerClasses(): List<Psi> = innerClasses
+
+    override fun companionObjects(): List<Psi> {
+      return super.companionObjects().cast()
+    }
   }
 
   public class Descriptor(
@@ -260,6 +265,10 @@ public sealed class ClassReference {
     override fun enclosingClassesWithSelf(): List<Descriptor> = enclosingClassesWithSelf
 
     override fun innerClasses(): List<Descriptor> = innerClasses
+
+    override fun companionObjects(): List<Descriptor> {
+      return super.companionObjects().cast()
+    }
   }
 }
 
