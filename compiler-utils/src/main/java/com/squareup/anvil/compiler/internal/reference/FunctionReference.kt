@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import kotlin.LazyThreadSafetyMode.NONE
 
 /**
  * Used to create a common type between [KtNamedFunction] class references and
@@ -34,6 +35,8 @@ public sealed class FunctionReference {
   public abstract val declaringClass: ClassReference
 
   public val module: AnvilModuleDescriptor get() = declaringClass.module
+
+  public abstract val annotations: List<AnnotationReference>
 
   public abstract fun visibility(): Visibility
 
@@ -57,6 +60,13 @@ public sealed class FunctionReference {
     override val declaringClass: ClassReference.Psi,
     override val fqName: FqName = function.requireFqName()
   ) : FunctionReference() {
+
+    override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
+      function.annotationEntries.map {
+        it.toAnnotationReference(declaringClass = null, module)
+      }
+    }
+
     override fun visibility(): Visibility {
       return when (val visibility = function.visibilityModifierTypeOrDefault()) {
         PUBLIC_KEYWORD -> PUBLIC
@@ -76,6 +86,13 @@ public sealed class FunctionReference {
     override val declaringClass: ClassReference.Descriptor,
     override val fqName: FqName = function.fqNameSafe
   ) : FunctionReference() {
+
+    override val annotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
+      function.annotations.map {
+        it.toAnnotationReference(declaringClass = null, module)
+      }
+    }
+
     override fun visibility(): Visibility {
       return when (val visibility = function.visibility) {
         DescriptorVisibilities.PUBLIC -> PUBLIC
@@ -106,6 +123,7 @@ public fun FunctionDescriptor.toFunctionReference(
 }
 
 @ExperimentalAnvilApi
+// TODO: to member function
 public fun FunctionReference.isAbstract(): Boolean {
   return when (this) {
     is Psi -> function.hasModifier(ABSTRACT_KEYWORD) || declaringClass.isInterface()
@@ -113,6 +131,7 @@ public fun FunctionReference.isAbstract(): Boolean {
   }
 }
 
+// TODO: to member function
 public fun FunctionReference.returnType(): ClassReference {
   return when (this) {
     is Psi ->
@@ -122,4 +141,23 @@ public fun FunctionReference.returnType(): ClassReference {
         ?.toClassReference(module)
     is Descriptor -> function.returnType?.classDescriptor()?.toClassReference(module)
   } ?: throw AnvilCompilationException(message = "Couldn't find return type for $fqName.")
+}
+
+@ExperimentalAnvilApi
+@Suppress("FunctionName")
+public fun AnvilCompilationExceptionFunctionReference(
+  functionReference: FunctionReference,
+  message: String,
+  cause: Throwable? = null
+): AnvilCompilationException = when (functionReference) {
+  is Psi -> AnvilCompilationException(
+    element = functionReference.function,
+    message = message,
+    cause = cause
+  )
+  is Descriptor -> AnvilCompilationException(
+    functionDescriptor = functionReference.function,
+    message = message,
+    cause = cause
+  )
 }
