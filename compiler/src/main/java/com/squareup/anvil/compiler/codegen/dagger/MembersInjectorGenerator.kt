@@ -7,14 +7,13 @@ import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.MemberInjectParameter
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
-import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.isGenericClass
-import com.squareup.anvil.compiler.internal.isInterface
-import com.squareup.anvil.compiler.internal.reference.classesAndInnerClasses
-import com.squareup.anvil.compiler.internal.reference.toClassReference
+import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.asClassName
+import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -31,7 +30,6 @@ import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.MembersInjector
 import dagger.internal.InjectedFieldSignature
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
@@ -46,18 +44,17 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
     projectFiles: Collection<KtFile>
   ) {
     projectFiles
-      .classesAndInnerClasses(module)
+      .classAndInnerClassReferences(module)
       .filterNot { it.isInterface() }
       .forEach { clazz ->
 
         // Only generate a MembersInjector if the target class declares its own member-injected
         // properties. If it does, then any properties from superclasses must be added as well.
-        val declaredInjectedProperties = clazz.injectedMembers(module)
+        val declaredInjectedProperties = clazz.clazz.injectedMembers(module)
           .ifEmpty { return@forEach }
 
-        // TODO: use ClassReference from the beginning
-        val parameters = clazz.toClassReference(module)
-          .memberInjectParameters(module, inheritedOnly = true)
+        val parameters = clazz
+          .memberInjectParameters(inheritedOnly = true)
           .let { inherited ->
             inherited + declaredInjectedProperties.mapToMemberInjectParameters(module, inherited)
           }
@@ -72,15 +69,15 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
 
   private fun generateMembersInjectorClass(
     codeGenDir: File,
-    clazz: KtClassOrObject,
+    clazz: ClassReference.Psi,
     parameters: List<MemberInjectParameter>
   ): GeneratedFile {
-    val packageName = clazz.containingKtFile.packageFqName.safePackageString()
+    val packageName = clazz.packageFqName.safePackageString()
     val className = "${clazz.generateClassName()}_MembersInjector"
     val classType = clazz.asClassName()
       .let {
-        if (clazz.isGenericClass()) {
-          it.parameterizedBy(List(size = clazz.typeParameters.size) { STAR })
+        if (clazz.clazz.isGenericClass()) {
+          it.parameterizedBy(List(size = clazz.clazz.typeParameters.size) { STAR })
         } else {
           it
         }
