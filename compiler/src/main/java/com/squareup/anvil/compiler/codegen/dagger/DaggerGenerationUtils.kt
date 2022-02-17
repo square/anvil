@@ -3,19 +3,14 @@ package com.squareup.anvil.compiler.codegen.dagger
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.assistedInjectFqName
-import com.squareup.anvil.compiler.codegen.ConstructorParameter
-import com.squareup.anvil.compiler.codegen.MemberInjectParameter
-import com.squareup.anvil.compiler.codegen.Parameter
-import com.squareup.anvil.compiler.codegen.mapToMemberInjectParameters
-import com.squareup.anvil.compiler.codegen.memberInjectedPropertyDescriptors
-import com.squareup.anvil.compiler.codegen.uniqueParameterName
-import com.squareup.anvil.compiler.codegen.wrapInLazy
-import com.squareup.anvil.compiler.codegen.wrapInProvider
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.injectFqName
+import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.asTypeName
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.generateClassName
@@ -33,9 +28,18 @@ import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.providerFqName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
+import com.squareup.kotlinpoet.asClassName
+import dagger.Lazy
 import dagger.internal.ProviderOfLazy
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
@@ -53,6 +57,21 @@ import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.allConstructors
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
+import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.isNullable
+import org.jetbrains.kotlin.utils.addToStdlib.safeAs
+import javax.inject.Provider
+
+internal fun TypeName.wrapInProvider(): ParameterizedTypeName {
+  return Provider::class.asClassName().parameterizedBy(this)
+}
+
+internal fun TypeName.wrapInLazy(): ParameterizedTypeName {
+  return Lazy::class.asClassName().parameterizedBy(this)
+}
 
 /**
  * Returns the with [injectAnnotationFqName] annotated constructor for this class.
@@ -136,7 +155,7 @@ internal fun List<KtCallableDeclaration>.mapToConstructorParameters(
     acc + ktCallableDeclaration.toConstructorParameter(module = module, uniqueName = uniqueName)
   }
 
-private fun KtCallableDeclaration.toConstructorParameter(
+internal fun KtCallableDeclaration.toConstructorParameter(
   module: ModuleDescriptor,
   uniqueName: String
 ): ConstructorParameter {
@@ -193,64 +212,6 @@ private fun KtCallableDeclaration.toConstructorParameter(
     isLazyWrappedInProvider = isLazyWrappedInProvider,
     isAssisted = assistedAnnotation != null,
     assistedIdentifier = assistedIdentifier
-  )
-}
-
-internal fun List<KtProperty>.mapToMemberInjectParameters(
-  module: ModuleDescriptor,
-  superParameters: List<Parameter>
-): List<MemberInjectParameter> = fold(listOf()) { acc, ktProperty ->
-
-  val uniqueName = ktProperty.nameAsSafeName.asString()
-    .uniqueParameterName(superParameters, acc)
-
-  acc + ktProperty.toMemberInjectParameter(module = module, uniqueName = uniqueName)
-}
-
-private fun KtProperty.toMemberInjectParameter(
-  module: ModuleDescriptor,
-  uniqueName: String
-): MemberInjectParameter {
-
-  val constructorParameter = toConstructorParameter(module, uniqueName)
-
-  val containingClass = containingClass()!!
-  val packageName = containingClass.containingKtFile.packageFqName.asString()
-
-  val memberInjectorClassName = "${containingClass.generateClassName()}_MembersInjector"
-  val memberInjectorClass = ClassName(packageName, memberInjectorClassName)
-
-  val qualifierAnnotations = annotationEntries
-    .map { it.toAnnotationReference(declaringClass = null, module = module) }
-    .filter { it.isQualifier() }
-    .map { it.toAnnotationSpec() }
-
-  val isSetterInjected = isSetterInjected(module)
-
-  val originalName = constructorParameter.originalName
-
-  // setter delegates require a "set" prefix for their inject function
-  val accessName = if (isSetterInjected) {
-    "set${originalName.capitalize()}"
-  } else {
-    originalName
-  }
-  return MemberInjectParameter(
-    name = constructorParameter.name,
-    typeName = constructorParameter.typeName,
-    providerTypeName = constructorParameter.providerTypeName,
-    lazyTypeName = constructorParameter.lazyTypeName,
-    isWrappedInProvider = constructorParameter.isWrappedInProvider,
-    isWrappedInLazy = constructorParameter.isWrappedInLazy,
-    isLazyWrappedInProvider = constructorParameter.isLazyWrappedInProvider,
-    isAssisted = constructorParameter.isAssisted,
-    assistedIdentifier = constructorParameter.assistedIdentifier,
-    memberInjectorClassName = memberInjectorClass,
-    originalName = originalName,
-    isSetterInjected = isSetterInjected,
-    accessName = accessName,
-    qualifierAnnotationSpecs = qualifierAnnotations,
-    injectedFieldSignature = requireFqName()
   )
 }
 
@@ -347,4 +308,236 @@ private fun ClassReference.declaredMemberInjectParameters(
     is Psi -> clazz.injectedMembers(module)
       .mapToMemberInjectParameters(module, superParameters)
   }
+}
+
+/**
+ * Converts the parameter list to comma separated argument list that can be used to call other
+ * functions, e.g.
+ * ```
+ * [param0: String, param1: Int] -> "param0, param1"
+ * ```
+ * [asProvider] allows you to decide if each parameter is wrapped in a `Provider` interface. If
+ * true, then the `get()` function will be called for the provider parameter. If false, then
+ * then always only the parameter name will used in the argument list:
+ * ```
+ * "param0.get()" vs "param0"
+ * ```
+ * Set [includeModule] to true if a Dagger module instance is part of the argument list.
+ */
+internal fun List<Parameter>.asArgumentList(
+  asProvider: Boolean,
+  includeModule: Boolean
+): String {
+  return this
+    .let { list ->
+      if (asProvider) {
+        list.map { parameter ->
+          when {
+            parameter.isLazyWrappedInProvider ->
+              "${ProviderOfLazy::class.qualifiedName}.create(${parameter.name})"
+            parameter.isWrappedInProvider -> parameter.name
+            // Normally Dagger changes Lazy<Type> parameters to a Provider<Type> (usually the
+            // container is a joined type), therefore we use `.lazy(..)` to convert the Provider
+            // to a Lazy. Assisted parameters behave differently and the Lazy type is not changed
+            // to a Provider and we can simply use the parameter name in the argument list.
+            parameter.isWrappedInLazy && parameter.isAssisted -> parameter.name
+            parameter.isWrappedInLazy -> "$daggerDoubleCheckFqNameString.lazy(${parameter.name})"
+            parameter.isAssisted -> parameter.name
+            else -> "${parameter.name}.get()"
+          }
+        }
+      } else list.map { it.name }
+    }
+    .let {
+      if (includeModule) {
+        val result = it.toMutableList()
+        result.add(0, "module")
+        result.toList()
+      } else {
+        it
+      }
+    }
+    .joinToString()
+}
+
+private fun ClassDescriptor.memberInjectedPropertyDescriptors(): List<PropertyDescriptor> {
+  // TODO: clean up
+  return unsubstitutedMemberScope
+    .getContributedDescriptors(DescriptorKindFilter.VARIABLES)
+    .filterIsInstance<PropertyDescriptor>()
+    // only return properties which are directly declared (including overrides)
+    .filter { it.kind == Kind.DECLARATION }
+    .filter { it.hasAnnotation(injectFqName) }
+}
+
+// TODO: use PropertyReference
+internal fun PropertyDescriptor.hasAnnotation(annotationFqName: FqName): Boolean {
+  // `@Inject lateinit var` is really `@field:Inject lateinit var`, which needs `backingField`
+  return backingField?.annotations?.hasAnnotation(annotationFqName) == true ||
+    setter?.annotations?.hasAnnotation(annotationFqName) == true ||
+    annotations.hasAnnotation(annotationFqName)
+}
+
+// TODO: Move to PropertyReference
+internal fun PropertyDescriptor.isSetterInjected(): Boolean {
+  return setter?.annotations?.hasAnnotation(injectFqName) == true
+}
+
+// TODO: Return ClassReference
+internal fun KotlinType.fqNameOrNull(): FqName? = classDescriptorOrNull()?.fqNameOrNull()
+
+private fun List<CallableMemberDescriptor>.mapToMemberInjectParameters(
+  module: ModuleDescriptor,
+  containingClassName: ClassName,
+  superParameters: List<Parameter>
+): List<MemberInjectParameter> {
+
+  return fold(listOf()) { acc, descriptor ->
+
+    val originalName = descriptor.name.asString()
+
+    val uniqueName = originalName.uniqueParameterName(superParameters, acc)
+
+    val type = descriptor.safeAs<PropertyDescriptor>()?.type
+      ?: descriptor.valueParameters.first().type
+
+    val typeFqName = type.fqNameOrNull()
+
+    val isWrappedInProvider = typeFqName == providerFqName
+    val isWrappedInLazy = typeFqName == daggerLazyFqName
+
+    var isLazyWrappedInProvider = false
+
+    val typeName = when {
+      type.isNullable() -> type.asTypeName()
+        .copy(nullable = true)
+
+      isWrappedInLazy || isWrappedInProvider -> {
+        val singleTypeParamType = type.arguments
+          .singleOrNull()
+          ?.type
+
+        if (isWrappedInProvider && singleTypeParamType?.fqNameOrNull() == daggerLazyFqName) {
+
+          // This is a super rare case when someone injects Provider<Lazy<Type>> that requires
+          // special care.
+          isLazyWrappedInProvider = true
+          singleTypeParamType.asTypeName()
+        } else {
+          type.argumentType().asTypeName()
+        }
+      }
+
+      else -> type.asTypeName()
+    }.withJvmSuppressWildcardsIfNeeded(descriptor)
+
+    val assistedAnnotation = descriptor.annotations
+      .findAnnotation(assistedFqName)
+
+    val assistedIdentifier = assistedAnnotation
+      ?.allValueArguments
+      ?.values
+      ?.firstOrNull()
+      ?.value as? String
+      ?: ""
+
+    val memberInjectorClassName = containingClassName.simpleNames
+      .joinToString("_") + "_MembersInjector"
+
+    val memberInjectorClass = ClassName(
+      containingClassName.packageName, memberInjectorClassName
+    )
+
+    val isSetterInjected = descriptor.safeAs<PropertyDescriptor>()
+      ?.isSetterInjected() == true
+
+    // setter delegates require a "set" prefix for their inject function
+    val accessName = if (isSetterInjected) {
+      "set${originalName.capitalize()}"
+    } else {
+      originalName
+    }
+
+    val qualifierAnnotations = descriptor.annotations
+      .map { it.toAnnotationReference(declaringClass = null, module) }
+      .filter { it.isQualifier() }
+      .map { it.toAnnotationSpec() }
+
+    acc + MemberInjectParameter(
+      name = uniqueName,
+      originalName = originalName,
+      typeName = typeName,
+      providerTypeName = typeName.wrapInProvider(),
+      lazyTypeName = typeName.wrapInLazy(),
+      isWrappedInProvider = isWrappedInProvider,
+      isWrappedInLazy = isWrappedInLazy,
+      isLazyWrappedInProvider = isLazyWrappedInProvider,
+      isAssisted = assistedAnnotation != null,
+      assistedIdentifier = assistedIdentifier,
+      memberInjectorClassName = memberInjectorClass,
+      isSetterInjected = isSetterInjected,
+      accessName = accessName,
+      qualifierAnnotationSpecs = qualifierAnnotations,
+      injectedFieldSignature = descriptor.fqNameSafe
+    )
+  }
+}
+
+internal fun List<KtProperty>.mapToMemberInjectParameters(
+  module: ModuleDescriptor,
+  superParameters: List<Parameter>
+): List<MemberInjectParameter> = fold(listOf()) { acc, ktProperty ->
+
+  val uniqueName = ktProperty.nameAsSafeName.asString()
+    .uniqueParameterName(superParameters, acc)
+
+  acc + ktProperty.toMemberInjectParameter(module = module, uniqueName = uniqueName)
+}
+
+private fun KtProperty.toMemberInjectParameter(
+  module: ModuleDescriptor,
+  uniqueName: String
+): MemberInjectParameter {
+
+  val constructorParameter = toConstructorParameter(module, uniqueName)
+
+  val containingClass = containingClass()!!
+  val packageName = containingClass.containingKtFile.packageFqName.asString()
+
+  // TODO: remove deprecated function call
+  val memberInjectorClassName = "${containingClass.generateClassName()}_MembersInjector"
+  val memberInjectorClass = ClassName(packageName, memberInjectorClassName)
+
+  val qualifierAnnotations = annotationEntries
+    .map { it.toAnnotationReference(declaringClass = null, module = module) }
+    .filter { it.isQualifier() }
+    .map { it.toAnnotationSpec() }
+
+  val isSetterInjected = isSetterInjected(module)
+
+  val originalName = constructorParameter.originalName
+
+  // setter delegates require a "set" prefix for their inject function
+  val accessName = if (isSetterInjected) {
+    "set${originalName.capitalize()}"
+  } else {
+    originalName
+  }
+  return MemberInjectParameter(
+    name = constructorParameter.name,
+    typeName = constructorParameter.typeName,
+    providerTypeName = constructorParameter.providerTypeName,
+    lazyTypeName = constructorParameter.lazyTypeName,
+    isWrappedInProvider = constructorParameter.isWrappedInProvider,
+    isWrappedInLazy = constructorParameter.isWrappedInLazy,
+    isLazyWrappedInProvider = constructorParameter.isLazyWrappedInProvider,
+    isAssisted = constructorParameter.isAssisted,
+    assistedIdentifier = constructorParameter.assistedIdentifier,
+    memberInjectorClassName = memberInjectorClass,
+    originalName = originalName,
+    isSetterInjected = isSetterInjected,
+    accessName = accessName,
+    qualifierAnnotationSpecs = qualifierAnnotations,
+    injectedFieldSignature = requireFqName()
+  )
 }

@@ -1,6 +1,6 @@
-package com.squareup.anvil.compiler.codegen
+package com.squareup.anvil.compiler.codegen.dagger
 
-import com.squareup.anvil.compiler.codegen.Parameter.AssistedParameterKey
+import com.squareup.anvil.compiler.codegen.dagger.Parameter.AssistedParameterKey
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName
