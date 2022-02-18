@@ -1,22 +1,15 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.api.AnvilContext
-import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
-import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.hintMultibinding
 import com.squareup.anvil.compiler.hintMultibindingScope
-import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
+import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import org.intellij.lang.annotations.Language
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.psi.KtFile
 import org.junit.Test
 import java.io.File
 
@@ -322,43 +315,24 @@ class ContributesMultibindingGeneratorTest {
   }
 
   @Test fun `a contributed multibinding can be generated`() {
-    val codeGenerator = object : CodeGenerator {
-      override fun isApplicable(context: AnvilContext): Boolean = true
-
-      override fun generateCode(
-        codeGenDir: File,
-        module: ModuleDescriptor,
-        projectFiles: Collection<KtFile>
-      ): Collection<GeneratedFile> {
-        return projectFiles
-          .classAndInnerClassReferences(module)
-          .filter { it.isAnnotatedWith(mergeComponentFqName) }
-          .map {
-            val generatedPackage = "com.squareup.test"
-
-            @Language("kotlin")
-            val content = """
-                package $generatedPackage
+    val codeGenerator = simpleCodeGenerator { clazz ->
+      clazz
+        .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
+        ?.let {
+          //language=kotlin
+          """
+            package com.squareup.test
                 
-                import com.squareup.anvil.annotations.ContributesMultibinding
-                import dagger.MapKey
-                import javax.inject.Singleton
+            import com.squareup.anvil.annotations.ContributesMultibinding
+            import dagger.MapKey
+            import javax.inject.Singleton
 
-                @ContributesMultibinding(Any::class)
-                @BindingKey("abc")
-                @Singleton
-                interface ContributingInterface : ParentInterface
-              """
-
-            createGeneratedFile(
-              codeGenDir = codeGenDir,
-              packageName = generatedPackage,
-              fileName = "SubcomponentInterface2",
-              content = content
-            )
-          }
-          .toList()
-      }
+            @ContributesMultibinding(Any::class)
+            @BindingKey("abc")
+            @Singleton
+            interface ContributingInterface : ParentInterface
+          """.trimIndent()
+        }
     }
 
     compile(
@@ -384,48 +358,29 @@ class ContributesMultibindingGeneratorTest {
   }
 
   @Test fun `a contributed multibinding can be generated with map keys being generated`() {
-    val codeGenerator = object : CodeGenerator {
-      override fun isApplicable(context: AnvilContext): Boolean = true
-
-      override fun generateCode(
-        codeGenDir: File,
-        module: ModuleDescriptor,
-        projectFiles: Collection<KtFile>
-      ): Collection<GeneratedFile> {
-        return projectFiles
-          .classAndInnerClassReferences(module)
-          .filter { it.isAnnotatedWith(mergeComponentFqName) }
-          .map {
-            val generatedPackage = "com.squareup.test"
-
-            @Language("kotlin")
-            val content = """
-                package $generatedPackage
+    val codeGenerator = simpleCodeGenerator { clazz ->
+      clazz
+        .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
+        ?.let {
+          //language=kotlin
+          """
+            package com.squareup.test
                 
-                import com.squareup.anvil.annotations.ContributesMultibinding
-                import dagger.MapKey
-                import javax.inject.Singleton
+            import com.squareup.anvil.annotations.ContributesMultibinding
+            import dagger.MapKey
+            import javax.inject.Singleton
 
-                interface ParentInterface
+            interface ParentInterface
 
-                @MapKey
-                annotation class BindingKey1(val value: String)
+            @MapKey
+            annotation class BindingKey1(val value: String)
       
-                @ContributesMultibinding(Any::class)
-                @BindingKey1("abc")
-                @Singleton
-                interface ContributingInterface : ParentInterface
-              """
-
-            createGeneratedFile(
-              codeGenDir = codeGenDir,
-              packageName = generatedPackage,
-              fileName = "SubcomponentInterface2",
-              content = content
-            )
-          }
-          .toList()
-      }
+            @ContributesMultibinding(Any::class)
+            @BindingKey1("abc")
+            @Singleton
+            interface ContributingInterface : ParentInterface
+          """.trimIndent()
+        }
     }
 
     compile(
