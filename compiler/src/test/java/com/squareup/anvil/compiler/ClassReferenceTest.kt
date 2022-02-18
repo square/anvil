@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
@@ -229,21 +230,17 @@ class ClassReferenceTest {
                 descriptorFunction.resolveGenericReturnType(implementingClass2).fqName
               ).isEqualTo(FqName("kotlin.String"))
 
-              // TODO: This is currently failing, but should work in theory. The problem is a mix
-              //  of ClassReferences in the super types being PSI and Descriptor implementations.
-              //  We need to implement resolving types for Descriptors as well. That it's only
-              //  supported for PSI is a smell.
-              // val implementingClass3 = FqName("com.squareup.test.SomeClass3")
-              //   .toClassReference(psiRef.module)
-              //   .toPsiReference()
-              //
-              // assertThat(
-              //   psiFunction.resolveGenericReturnType(implementingClass3).fqName
-              // ).isEqualTo(FqName("kotlin.String"))
-              //
-              // assertThat(
-              //   descriptorFunction.resolveGenericReturnType(implementingClass3).fqName
-              // ).isEqualTo(FqName("kotlin.String"))
+              val implementingClass3 = FqName("com.squareup.test.SomeClass3")
+                .toClassReference(psiRef.module)
+                .toPsiReference()
+
+              assertThat(
+                psiFunction.resolveGenericReturnType(implementingClass3).fqName
+              ).isEqualTo(FqName("kotlin.String"))
+
+              assertThat(
+                descriptorFunction.resolveGenericReturnType(implementingClass3).fqName
+              ).isEqualTo(FqName("kotlin.String"))
             }
             "GenericInterface2" -> {
               assertThat(psiRef.functions).hasSize(0)
@@ -275,7 +272,7 @@ class ClassReferenceTest {
     // Using the FqName will resolve a descriptor of source files from the main source set. On the
     // other hand, generated source code from code generators will always be the PSI
     // implementation.
-    val descriptorClassReference = fqName.toClassReference(module)
+    val descriptorClassReference = fqName.classDescriptor(module).toClassReference(module)
     assertThat(descriptorClassReference).isInstanceOf(ClassReference.Descriptor::class.java)
 
     assertThat(this).isEqualTo(descriptorClassReference)

@@ -29,9 +29,9 @@ public interface AnvilModuleDescriptor : ModuleDescriptor {
   public fun getClassReference(descriptor: ClassDescriptor): Descriptor
 
   /**
-   * Attempts to resolve the [FqName] to a [ClassDescriptor] first, then falls back to a
-   * [KtClassOrObject] if the descriptor resolution fails. This will happen if the code being
-   * parsed was generated as part of the compilation round for this module.
+   * Attempts to find the [KtClassOrObject] for the [FqName] first, then falls back to the
+   * [ClassDescriptor] if the Psi element cannot be found. This will happen if the class for
+   * [FqName] is not part of this compilation unit.
    */
   public fun getClassReferenceOrNull(fqName: FqName): ClassReference?
 }

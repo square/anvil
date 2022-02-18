@@ -102,7 +102,14 @@ class RealAnvilModuleDescriptor(
     fun descriptorClassReference(): Descriptor? =
       resolveFqNameOrNull(fqName)?.let { getClassReference(it) }
 
-    return descriptorClassReference() ?: psiClassReference()
+    // Prefer Psi to have consistent results. If the class is part of the compilation unit: it'll
+    // be a Psi implementation. If the class comes from a pre-compiled dependency, then it'll be a
+    // descriptor implementation.
+    //
+    // Otherwise, there are inconsistencies. If source code was written manually in this module,
+    // then we could use the descriptor or Psi implementation. If the source code was generated,
+    // then only Psi works.
+    return psiClassReference() ?: descriptorClassReference()
   }
 
   private val KtFile.identifier: String
