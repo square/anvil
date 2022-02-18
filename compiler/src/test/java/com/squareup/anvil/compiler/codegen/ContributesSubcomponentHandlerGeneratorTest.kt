@@ -7,19 +7,15 @@ import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
-import com.squareup.anvil.compiler.api.AnvilContext
-import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
-import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.checkFullTestRun
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule1
-import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import com.squareup.anvil.compiler.internal.testing.extends
 import com.squareup.anvil.compiler.internal.testing.packageName
+import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.mergeComponentFqName
@@ -28,11 +24,7 @@ import com.squareup.anvil.compiler.subcomponentInterface
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Component
-import org.intellij.lang.annotations.Language
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.psi.KtFile
 import org.junit.Test
-import java.io.File
 import javax.inject.Singleton
 import kotlin.test.assertFailsWith
 
@@ -1637,43 +1629,24 @@ class ContributesSubcomponentHandlerGeneratorTest {
   }
 
   @Test fun `an @ContributeSubcomponent class can be generated`() {
-    val codeGenerator = object : CodeGenerator {
-      override fun isApplicable(context: AnvilContext): Boolean = true
-
-      override fun generateCode(
-        codeGenDir: File,
-        module: ModuleDescriptor,
-        projectFiles: Collection<KtFile>
-      ): Collection<GeneratedFile> {
-        return projectFiles
-          .classAndInnerClassReferences(module)
-          .filter { it.isAnnotatedWith(mergeComponentFqName) }
-          .map {
-            val generatedPackage = "com.squareup.test"
-
-            @Language("kotlin")
-            val content = """
-                package $generatedPackage
+    val codeGenerator = simpleCodeGenerator { clazz ->
+      clazz
+        .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
+        ?.let {
+          //language=kotlin
+          """
+            package com.squareup.test
                 
-                import com.squareup.anvil.annotations.ContributesSubcomponent
-                import com.squareup.test.SubcomponentInterface1
+            import com.squareup.anvil.annotations.ContributesSubcomponent
+            import com.squareup.test.SubcomponentInterface1
       
-                @ContributesSubcomponent(
-                  scope = Any::class, 
-                  parentScope = Unit::class,
-                )
-                interface SubcomponentInterface2
-              """
-
-            createGeneratedFile(
-              codeGenDir = codeGenDir,
-              packageName = generatedPackage,
-              fileName = "SubcomponentInterface2",
-              content = content
+            @ContributesSubcomponent(
+              scope = Any::class, 
+              parentScope = Unit::class,
             )
-          }
-          .toList()
-      }
+            interface SubcomponentInterface2
+          """.trimIndent()
+        }
     }
 
     compile(
@@ -1707,54 +1680,35 @@ class ContributesSubcomponentHandlerGeneratorTest {
   }
 
   @Test fun `an @ContributeSubcomponent class can be generated with a custom factory`() {
-    val codeGenerator = object : CodeGenerator {
-      override fun isApplicable(context: AnvilContext): Boolean = true
-
-      override fun generateCode(
-        codeGenDir: File,
-        module: ModuleDescriptor,
-        projectFiles: Collection<KtFile>
-      ): Collection<GeneratedFile> {
-        return projectFiles
-          .classAndInnerClassReferences(module)
-          .filter { it.isAnnotatedWith(mergeComponentFqName) }
-          .map {
-            val generatedPackage = "com.squareup.test"
-
-            @Language("kotlin")
-            val content = """
-                package $generatedPackage
-                
-                import com.squareup.anvil.annotations.ContributesSubcomponent
-                import com.squareup.anvil.annotations.ContributesTo
-                import com.squareup.test.SubcomponentInterface1
-      
-                @ContributesSubcomponent(
-                  scope = Any::class, 
-                  parentScope = Unit::class,
-                )
-                interface SubcomponentInterface2 {
-                  @ContributesSubcomponent.Factory
-                  interface Factory {
-                    fun create(): SubcomponentInterface2
-                  }
-
-                  @ContributesTo(Unit::class)
-                  interface ParentComponent {
-                    fun createFactory(): Factory
-                  }
-                }
-              """
-
-            createGeneratedFile(
-              codeGenDir = codeGenDir,
-              packageName = generatedPackage,
-              fileName = "SubcomponentInterface2",
-              content = content
+    val codeGenerator = simpleCodeGenerator { clazz ->
+      clazz
+        .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
+        ?.let {
+          //language=kotlin
+          """
+            package com.squareup.test
+                  
+            import com.squareup.anvil.annotations.ContributesSubcomponent
+            import com.squareup.anvil.annotations.ContributesTo
+            import com.squareup.test.SubcomponentInterface1
+        
+            @ContributesSubcomponent(
+              scope = Any::class, 
+              parentScope = Unit::class,
             )
-          }
-          .toList()
-      }
+            interface SubcomponentInterface2 {
+              @ContributesSubcomponent.Factory
+              interface Factory {
+                fun create(): SubcomponentInterface2
+              }
+    
+              @ContributesTo(Unit::class)
+              interface ParentComponent {
+                fun createFactory(): Factory
+              }
+            }
+          """.trimIndent()
+        }
     }
 
     compile(
@@ -1938,44 +1892,25 @@ class ContributesSubcomponentHandlerGeneratorTest {
     // but then later in a new code generation round another code generator generates code that
     // is supposed to replace the already generated subcomponent. We can't revert the code and
     // don't want to support that use case.
-    val codeGenerator = object : CodeGenerator {
-      override fun isApplicable(context: AnvilContext): Boolean = true
-
-      override fun generateCode(
-        codeGenDir: File,
-        module: ModuleDescriptor,
-        projectFiles: Collection<KtFile>
-      ): Collection<GeneratedFile> {
-        return projectFiles
-          .classAndInnerClassReferences(module)
-          .filter { it.isAnnotatedWith(mergeComponentFqName) }
-          .map {
-            val generatedPackage = "com.squareup.test"
-
-            @Language("kotlin")
-            val content = """
-                package $generatedPackage
+    val codeGenerator = simpleCodeGenerator { clazz ->
+      clazz
+        .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
+        ?.let {
+          //language=kotlin
+          """
+            package com.squareup.test
                 
-                import com.squareup.anvil.annotations.ContributesSubcomponent
-                import com.squareup.test.SubcomponentInterface1
+            import com.squareup.anvil.annotations.ContributesSubcomponent
+            import com.squareup.test.SubcomponentInterface1
       
-                @ContributesSubcomponent(
-                  scope = Any::class, 
-                  parentScope = Unit::class,
-                  replaces = [SubcomponentInterface1::class]
-                )
-                interface SubcomponentInterface2
-              """
-
-            createGeneratedFile(
-              codeGenDir = codeGenDir,
-              packageName = generatedPackage,
-              fileName = "SubcomponentInterface2",
-              content = content
+            @ContributesSubcomponent(
+              scope = Any::class, 
+              parentScope = Unit::class,
+              replaces = [SubcomponentInterface1::class]
             )
-          }
-          .toList()
-      }
+            interface SubcomponentInterface2
+          """.trimIndent()
+        }
     }
 
     compile(
