@@ -9,7 +9,6 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.asAnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
-import com.squareup.anvil.compiler.internal.reference.indexOfTypeParameter
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -43,12 +42,8 @@ import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.KtValueArgumentName
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
-import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
-import org.jetbrains.kotlin.types.DefinitelyNotNullType
-import org.jetbrains.kotlin.types.FlexibleType
-import org.jetbrains.kotlin.types.KotlinType
 import kotlin.reflect.KClass
 
 private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName, publishedApiFqName)
@@ -541,128 +536,6 @@ public fun KtTypeParameter.requireIdentifier(): String = nameIdentifier?.text
   ?: throw AnvilCompilationException(
     "unable to determine the name of this type parameter.", element = this
   )
-
-/**
- * Safely resolves a PSI [KtTypeReference], when that type reference may be a generic expressed by a
- * type variable name. This is done by inspecting the class hierarchy to find where the generic type
- * is declared, then resolving *that* reference.
- *
- * For instance, given:
- *
- * ```
- * interface Factory<T> {
- *   fun create(): T
- * }
- *
- * interface ServiceFactory : Factory<Service>
- * ```
- *
- * The KtTypeReference `T` will fail to resolve, since it isn't a type. This function will instead
- * look to the `ServiceFactory` interface, then look at the supertype declaration in order to
- * determine the type.
- *
- * @receiver The class which actually references the type. In the above example, this would be
- *   `ServiceFactory`.
- */
-@ExperimentalAnvilApi
-public fun KtClassOrObject.resolveTypeReference(
-  module: ModuleDescriptor,
-  typeReference: KtTypeReference
-): KtTypeReference? {
-
-  // if the element isn't a type variable name like `T`, it can be resolved through imports.
-  typeReference.typeElement?.fqNameOrNull(module)
-    ?.let { return typeReference }
-
-  val declaringClass = typeReference.requireContainingClassReference(module)
-  val parameterName = typeReference.text
-
-  return resolveGenericTypeReference(module, declaringClass, parameterName)
-}
-
-/**
- * Safely resolves a [KotlinType], when that type reference is a generic expressed by a type
- * variable name. This is done by inspecting the class hierarchy to find where the generic type is
- * declared, then resolving *that* reference.
- *
- * For instance, given:
- *
- * ```
- * interface SomeFactory : Function1<String, SomeClass>
- * ```
- *
- * There's an invisible `fun invoke(p1: P1): R`. If `SomeFactory` is parsed using PSI (such as if
- * it's generated), then the function can only be parsed to have the projected types of `P1` and `R`
- *
- * @receiver The class which actually references the type. In the above example, this would be
- *   `SomeFactory`.
- * @param declaringClass The class which declares the generic type name. In the above example, this
- *   would be `Function1`.
- * @param typeToResolve The generic reference to be resolved. In the above example, this is the `T`
- *   **return type**.
- */
-@ExperimentalAnvilApi
-public fun KtClassOrObject.resolveGenericKotlinType(
-  module: ModuleDescriptor,
-  declaringClass: ClassReference,
-  typeToResolve: KotlinType
-): KtTypeReference? {
-  val parameterKotlinType = when (typeToResolve) {
-    is FlexibleType -> {
-      // A FlexibleType comes from Java code where the compiler doesn't know whether it's a nullable
-      // or non-nullable type. toString() returns something like "(T..T?)". To get proper results
-      // we use the type that's not nullable, "T" in this example.
-      if (typeToResolve.lowerBound.isMarkedNullable) {
-        typeToResolve.upperBound
-      } else {
-        typeToResolve.lowerBound
-      }
-    }
-    is DefinitelyNotNullType -> {
-      // This is known to be not null in Java, such as something annotated `@NotNull` or controlled
-      // by a JSR305 or jSpecify annotation.
-      // This is a special type and this logic appears to match how kotlinc is handling it here
-      // https://github.com/JetBrains/kotlin/blob/9ee0d6b60ac4f0ea0ccc5dd01146bab92fabcdf2/core/descriptors/src/org/jetbrains/kotlin/types/TypeUtils.java#L455-L458
-      typeToResolve.original
-    }
-    else -> {
-      typeToResolve
-    }
-  }
-
-  return resolveGenericTypeReference(module, declaringClass, parameterKotlinType.toString())
-}
-
-private fun KtClassOrObject.resolveGenericTypeReference(
-  module: ModuleDescriptor,
-  declaringClass: ClassReference,
-  parameterName: String
-): KtTypeReference? {
-  val declaringClassFqName = declaringClass.fqName
-
-  // If the class/interface declaring the generic is the receiver class,
-  // then the generic hasn't been set to a concrete type and can't be resolved.
-  if (requireFqName() == declaringClassFqName) {
-    return null
-  }
-
-  // Used to determine which parameter to look at in a KtTypeArgumentList
-  val indexOfType = declaringClass.indexOfTypeParameter(parameterName)
-
-  // Find where the supertype is actually declared by matching the FqName of the SuperTypeListEntry
-  // to the type which declares the generic we're trying to resolve.
-  // After finding the SuperTypeListEntry, just take the TypeReference from its type argument list
-  val resolvedTypeReference = superTypeListEntryOrNull(module, declaringClassFqName)
-    ?.typeReference
-    ?.typeElement
-    ?.getChildOfType<KtTypeArgumentList>()
-    ?.arguments
-    ?.get(indexOfType)
-    ?.typeReference
-
-  return resolvedTypeReference?.takeIf { it.fqNameOrNull(module) != null }
-    ?: resolvedTypeReference?.let { resolveTypeReference(module, it) }
-}
 
 /**
  * Find where a super type is extended/implemented by matching the FqName of a SuperTypeListEntry to
