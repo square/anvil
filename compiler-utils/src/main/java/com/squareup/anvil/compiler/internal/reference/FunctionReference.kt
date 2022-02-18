@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.requireFqName
+import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
 import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
@@ -18,6 +19,8 @@ import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
 import org.jetbrains.kotlin.lexer.KtTokens.PUBLIC_KEYWORD
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
@@ -41,6 +44,7 @@ public sealed class FunctionReference {
   public abstract val parameters: List<ParameterReference>
 
   public abstract fun isAbstract(): Boolean
+  public abstract fun isConstructor(): Boolean
   public abstract fun visibility(): Visibility
 
   /**
@@ -85,7 +89,7 @@ public sealed class FunctionReference {
   public class Psi internal constructor(
     public val function: KtFunction,
     override val declaringClass: ClassReference.Psi,
-    override val fqName: FqName = function.fqName ?: declaringClass.fqName
+    override val fqName: FqName
   ) : FunctionReference() {
 
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
@@ -101,6 +105,8 @@ public sealed class FunctionReference {
     override fun isAbstract(): Boolean =
       function.hasModifier(ABSTRACT_KEYWORD) ||
         (declaringClass.isInterface() && !function.hasBody())
+
+    override fun isConstructor(): Boolean = function is KtConstructor<*>
 
     override fun visibility(): Visibility {
       return when (val visibility = function.visibilityModifierTypeOrDefault()) {
@@ -157,6 +163,8 @@ public sealed class FunctionReference {
 
     override fun isAbstract(): Boolean = function.modality == ABSTRACT
 
+    override fun isConstructor(): Boolean = function is ClassConstructorDescriptor
+
     override fun visibility(): Visibility {
       return when (val visibility = function.visibility) {
         DescriptorVisibilities.PUBLIC -> PUBLIC
@@ -197,7 +205,13 @@ public fun FunctionReference.isAnnotatedWith(fqName: FqName): Boolean =
 public fun KtFunction.toFunctionReference(
   declaringClass: ClassReference.Psi
 ): Psi {
-  return Psi(this, declaringClass)
+  val fqName = if (this is KtConstructor<*>) {
+    declaringClass.fqName.child(Name.identifier("<init>"))
+  } else {
+    requireFqName()
+  }
+
+  return Psi(this, declaringClass, fqName)
 }
 
 @ExperimentalAnvilApi
