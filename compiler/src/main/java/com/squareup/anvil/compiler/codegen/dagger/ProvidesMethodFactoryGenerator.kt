@@ -126,7 +126,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
     val packageName = clazz.packageFqName.safePackageString()
     val className = buildString {
-      append(clazz.generateClassName())
+      append(clazz.generateClassName().relativeClassName.asString())
       append('_')
       if (isCompanionObject) {
         append("Companion_")

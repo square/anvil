@@ -71,7 +71,7 @@ internal class ContributesToGenerator : CodeGenerator {
         }
       }
       .map { clazz ->
-        val fileName = clazz.generateClassName()
+        val fileName = clazz.generateClassName().relativeClassName.asString()
         val generatedPackage = HINT_CONTRIBUTES_PACKAGE_PREFIX +
           clazz.packageFqName.safePackageString(dotPrefix = true)
         val className = clazz.asClassName()

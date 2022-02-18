@@ -50,7 +50,7 @@ internal class ContributesBindingGenerator : CodeGenerator {
         clazz.checkClassExtendsBoundType(contributesBindingFqName)
       }
       .map { clazz ->
-        val fileName = clazz.generateClassName()
+        val fileName = clazz.generateClassName().relativeClassName.asString()
         val generatedPackage = HINT_BINDING_PACKAGE_PREFIX +
           clazz.packageFqName.safePackageString(dotPrefix = true)
         val className = clazz.asClassName()

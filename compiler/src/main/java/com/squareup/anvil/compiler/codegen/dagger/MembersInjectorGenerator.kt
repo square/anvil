@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
+import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.isGenericClass
@@ -15,7 +16,6 @@ import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferenc
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
@@ -71,8 +71,10 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
     clazz: ClassReference.Psi,
     parameters: List<MemberInjectParameter>
   ): GeneratedFile {
-    val packageName = clazz.packageFqName.safePackageString()
-    val className = "${clazz.generateClassName()}_MembersInjector"
+    val classId = clazz.generateClassName(suffix = "_MembersInjector")
+    val packageName = classId.packageFqName.safePackageString()
+    val className = classId.relativeClassName.asString()
+
     val classType = clazz.asClassName()
       .let {
         if (clazz.clazz.isGenericClass()) {
@@ -91,7 +93,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
         .joinToString()
     }
 
-    val memberInjectorClass = ClassName(packageName, className)
+    val memberInjectorClass = classId.asClassName()
 
     val content = FileSpec.buildFile(packageName, className) {
       addType(

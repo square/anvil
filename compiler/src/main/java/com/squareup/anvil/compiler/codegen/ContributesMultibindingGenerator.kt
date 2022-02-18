@@ -51,7 +51,7 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
         clazz.checkClassExtendsBoundType(contributesMultibindingFqName)
       }
       .map { clazz ->
-        val fileName = clazz.generateClassName()
+        val fileName = clazz.generateClassName().relativeClassName.asString()
         val generatedPackage = HINT_MULTIBINDING_PACKAGE_PREFIX +
           clazz.packageFqName.safePackageString(dotPrefix = true)
         val className = clazz.asClassName()
