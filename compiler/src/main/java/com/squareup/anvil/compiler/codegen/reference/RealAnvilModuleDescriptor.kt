@@ -95,21 +95,14 @@ class RealAnvilModuleDescriptor(
     } as Descriptor
   }
 
-  override fun getClassReferenceOrNull(
-    fqName: FqName,
-    preferDescriptor: Boolean
-  ): ClassReference? {
+  override fun getClassReferenceOrNull(fqName: FqName): ClassReference? {
     // Note that we don't cache the result, because all function calls get objects from caches.
     // There's no need to optimize that.
     fun psiClassReference(): Psi? = allPsiClassReferences.firstOrNull { it.fqName == fqName }
     fun descriptorClassReference(): Descriptor? =
       resolveFqNameOrNull(fqName)?.let { getClassReference(it) }
 
-    return if (preferDescriptor) {
-      descriptorClassReference() ?: psiClassReference()
-    } else {
-      psiClassReference() ?: descriptorClassReference()
-    }
+    return descriptorClassReference() ?: psiClassReference()
   }
 
   private val KtFile.identifier: String

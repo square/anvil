@@ -32,13 +32,8 @@ public interface AnvilModuleDescriptor : ModuleDescriptor {
    * Attempts to resolve the [FqName] to a [ClassDescriptor] first, then falls back to a
    * [KtClassOrObject] if the descriptor resolution fails. This will happen if the code being
    * parsed was generated as part of the compilation round for this module.
-   *
-   * If [preferDescriptor] is `false`, then the order of resolution is reverted.
    */
-  public fun getClassReferenceOrNull(
-    fqName: FqName,
-    preferDescriptor: Boolean = true
-  ): ClassReference?
+  public fun getClassReferenceOrNull(fqName: FqName): ClassReference?
 }
 
 @Suppress("NOTHING_TO_INLINE")
