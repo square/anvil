@@ -220,10 +220,16 @@ class ClassReferenceTest {
 
               val implementingClass2 = FqName("com.squareup.test.SomeClass2")
                 .toClassReference(psiRef.module)
-                .toPsiReference()
 
               assertThat(
-                psiFunction.resolveGenericReturnType(implementingClass2).fqName
+                psiFunction
+                  .resolveGenericReturnType(implementingClass2.toPsiReference())
+                  .fqName
+              ).isEqualTo(FqName("kotlin.String"))
+              assertThat(
+                psiFunction
+                  .resolveGenericReturnType(implementingClass2.toDescriptorReference())
+                  .fqName
               ).isEqualTo(FqName("kotlin.String"))
 
               assertThat(
@@ -232,14 +238,25 @@ class ClassReferenceTest {
 
               val implementingClass3 = FqName("com.squareup.test.SomeClass3")
                 .toClassReference(psiRef.module)
-                .toPsiReference()
 
               assertThat(
-                psiFunction.resolveGenericReturnType(implementingClass3).fqName
+                psiFunction.resolveGenericReturnType(implementingClass3.toPsiReference())
+                  .fqName
+              ).isEqualTo(FqName("kotlin.String"))
+              assertThat(
+                psiFunction.resolveGenericReturnType(implementingClass3.toDescriptorReference())
+                  .fqName
               ).isEqualTo(FqName("kotlin.String"))
 
               assertThat(
-                descriptorFunction.resolveGenericReturnType(implementingClass3).fqName
+                descriptorFunction
+                  .resolveGenericReturnType(implementingClass3.toPsiReference())
+                  .fqName
+              ).isEqualTo(FqName("kotlin.String"))
+              assertThat(
+                descriptorFunction
+                  .resolveGenericReturnType(implementingClass3.toDescriptorReference())
+                  .fqName
               ).isEqualTo(FqName("kotlin.String"))
             }
             "GenericInterface2" -> {
@@ -251,10 +268,16 @@ class ClassReferenceTest {
 
               val implementingClass = FqName("com.squareup.test.SomeClass3")
                 .toClassReference(psiRef.module)
-                .toPsiReference()
 
               assertThat(
-                descriptorFunction.resolveGenericReturnType(implementingClass).fqName
+                descriptorFunction
+                  .resolveGenericReturnType(implementingClass.toPsiReference())
+                  .fqName
+              ).isEqualTo(FqName("kotlin.String"))
+              assertThat(
+                descriptorFunction
+                  .resolveGenericReturnType(implementingClass.toDescriptorReference())
+                  .fqName
               ).isEqualTo(FqName("kotlin.String"))
             }
             else -> throw NotImplementedError()
@@ -268,25 +291,35 @@ class ClassReferenceTest {
     }
   }
 
-  private fun ClassReference.Psi.toDescriptorReference(): ClassReference.Descriptor {
-    // Using the FqName will resolve a descriptor of source files from the main source set. On the
-    // other hand, generated source code from code generators will always be the PSI
-    // implementation.
-    val descriptorClassReference = fqName.classDescriptor(module).toClassReference(module)
-    assertThat(descriptorClassReference).isInstanceOf(ClassReference.Descriptor::class.java)
+  private fun ClassReference.toDescriptorReference(): ClassReference.Descriptor {
+    return when (this) {
+      is ClassReference.Descriptor -> this
+      is ClassReference.Psi -> {
+        // Force using the descriptor.
+        fqName.classDescriptor(module).toClassReference(module)
+          .also { descriptorReference ->
+            assertThat(descriptorReference).isInstanceOf(ClassReference.Descriptor::class.java)
 
-    assertThat(this).isEqualTo(descriptorClassReference)
-    assertThat(this.fqName).isEqualTo(descriptorClassReference.fqName)
-
-    return descriptorClassReference as ClassReference.Descriptor
+            assertThat(this).isEqualTo(descriptorReference)
+            assertThat(this.fqName).isEqualTo(descriptorReference.fqName)
+          }
+      }
+    }
   }
 
   private fun ClassReference.toPsiReference(): ClassReference.Psi {
     return when (this) {
       is ClassReference.Psi -> this
-      is ClassReference.Descriptor -> (clazz.source.getPsi() as? KtClassOrObject)
-        ?.toClassReference(module)
-        ?: throw UnsupportedOperationException()
+      is ClassReference.Descriptor -> {
+        // Force using Psi.
+        (clazz.source.getPsi() as KtClassOrObject).toClassReference(module)
+          .also { psiReference ->
+            assertThat(psiReference).isInstanceOf(ClassReference.Psi::class.java)
+
+            assertThat(this).isEqualTo(psiReference)
+            assertThat(this.fqName).isEqualTo(psiReference.fqName)
+          }
+      }
     }
   }
 }
