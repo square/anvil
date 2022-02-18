@@ -214,6 +214,10 @@ public fun KtClassOrObject.parentScope(
  * index 0. If you look for the bound type, then [name] would be "boundType" and the index 1.
  */
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on PSI and make the code agnostic to the underlying implementation."
+)
 public inline fun <reified T> KtAnnotationEntry.findAnnotationArgument(
   name: String,
   index: Int
@@ -688,21 +692,6 @@ public fun KtClassOrObject.generateClassName(
         .shortName()
         .asString()
     }
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#boundTypeOrNull]"
-)
-public fun KtClassOrObject.boundTypeOrNull(
-  annotationFqName: FqName,
-  module: ModuleDescriptor
-): FqName? {
-  return requireAnnotation(annotationFqName, module)
-    .findAnnotationArgument<KtClassLiteralExpression>(name = "boundType", index = 1)
-    ?.requireFqName(module)
-}
 
 @ExperimentalAnvilApi
 public fun KtTypeReference.containingClassReferenceOrNull(

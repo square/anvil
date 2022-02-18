@@ -10,8 +10,6 @@ import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.internal.contributesToFqName
 import com.squareup.anvil.compiler.internal.daggerScopeFqName
-import com.squareup.anvil.compiler.internal.findAnnotationArgument
-import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.mapKeyFqName
 import com.squareup.anvil.compiler.internal.mergeComponentFqName
 import com.squareup.anvil.compiler.internal.mergeInterfacesFqName
@@ -22,17 +20,13 @@ import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Descri
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Psi
 import com.squareup.anvil.compiler.internal.requireClass
 import com.squareup.anvil.compiler.internal.requireFqName
-import com.squareup.anvil.compiler.internal.toFqNames
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.MemberName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
-import org.jetbrains.kotlin.psi.KtClassLiteralExpression
-import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtValueArgument
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import kotlin.LazyThreadSafetyMode.NONE
@@ -62,6 +56,8 @@ public sealed class AnnotationReference {
   public val shortName: String get() = fqName.shortName().asString()
   public val module: AnvilModuleDescriptor get() = classReference.module
 
+  public abstract val arguments: List<AnnotationArgumentReference>
+
   public fun declaringClassOrNull(): ClassReference? = declaringClass
   public fun declaringClass(): ClassReference = declaringClass
     ?: throw AnvilCompilationExceptionAnnotationReference(
@@ -77,10 +73,13 @@ public sealed class AnnotationReference {
         message = "Couldn't find scope for $fqName."
       )
 
-  public abstract fun boundTypeOrNull(): ClassReference?
+  public fun boundTypeOrNull(): ClassReference? = argumentAt("boundType", 1)?.value()
 
-  public abstract fun replaces(parameterIndex: Int = replacesIndex(fqName)): List<ClassReference>
-  public abstract fun exclude(parameterIndex: Int = excludeIndex(fqName)): List<ClassReference>
+  public fun replaces(parameterIndex: Int = replacesIndex(fqName)): List<ClassReference> =
+    argumentAt("replaces", parameterIndex)?.value<List<ClassReference>>().orEmpty()
+
+  public fun exclude(parameterIndex: Int = excludeIndex(fqName)): List<ClassReference> =
+    argumentAt("exclude", parameterIndex)?.value<List<ClassReference>>().orEmpty()
 
   public fun isQualifier(): Boolean = classReference.isAnnotatedWith(qualifierFqName)
   public fun isMapKey(): Boolean = classReference.isAnnotatedWith(mapKeyFqName)
@@ -109,41 +108,22 @@ public sealed class AnnotationReference {
     override val classReference: ClassReference,
     override val declaringClass: ClassReference.Psi?,
   ) : AnnotationReference() {
-    private val scope by lazy(NONE) { computeScope(DEFAULT_SCOPE_INDEX) }
+
+    override val arguments: List<AnnotationArgumentReference.Psi> by lazy(NONE) {
+      annotation.valueArguments
+        .filterIsInstance<KtValueArgument>()
+        .map { it.toAnnotationArgumentReference(this) }
+    }
+
+    private val defaultScope by lazy(NONE) { computeScope(DEFAULT_SCOPE_INDEX) }
 
     // We need the scope so often that it's better to cache the value. Since the index could be
     // potentially different, only cache the value for the default index.
     override fun scopeOrNull(parameterIndex: Int): ClassReference? =
-      if (parameterIndex == DEFAULT_SCOPE_INDEX) scope else computeScope(parameterIndex)
+      if (parameterIndex == DEFAULT_SCOPE_INDEX) defaultScope else computeScope(parameterIndex)
 
-    private fun computeScope(parameterIndex: Int): ClassReference? =
-      annotation
-        .findAnnotationArgument<KtClassLiteralExpression>(name = "scope", index = parameterIndex)
-        ?.requireFqName(module)
-        ?.toClassReference(module)
-
-    override fun boundTypeOrNull(): ClassReference? {
-      return annotation.findAnnotationArgument<KtClassLiteralExpression>(
-        name = "boundType",
-        index = 1
-      )?.requireFqName(module)?.toClassReference(module)
-    }
-
-    override fun replaces(parameterIndex: Int): List<ClassReference> =
-      findClassArrayAnnotationArgument("replaces", parameterIndex)
-
-    override fun exclude(parameterIndex: Int): List<ClassReference> =
-      findClassArrayAnnotationArgument("exclude", parameterIndex)
-
-    private fun findClassArrayAnnotationArgument(
-      name: String,
-      parameterIndex: Int
-    ): List<ClassReference> {
-      return annotation
-        .findAnnotationArgument<KtCollectionLiteralExpression>(name, parameterIndex)
-        ?.toFqNames(module)
-        ?.map { it.toClassReference(module) }
-        .orEmpty()
+    private fun computeScope(parameterIndex: Int): ClassReference? {
+      return argumentAt("scope", parameterIndex)?.value()
     }
 
     override fun toAnnotationSpec(): AnnotationSpec {
@@ -167,32 +147,16 @@ public sealed class AnnotationReference {
     override val classReference: ClassReference,
     override val declaringClass: ClassReference.Descriptor?,
   ) : AnnotationReference() {
+
+    override val arguments: List<AnnotationArgumentReference.Descriptor> by lazy(NONE) {
+      annotation.allValueArguments.toList().map { it.toAnnotationArgumentReference(this) }
+    }
+
     private val scope by lazy(NONE) {
-      val annotationValue = annotation.getAnnotationValue("scope") as? KClassValue
-      annotationValue?.argumentType(module)?.classDescriptor()?.toClassReference(module)
+      arguments.singleOrNull { it.name == "scope" }?.value<ClassReference>()
     }
 
     override fun scopeOrNull(parameterIndex: Int): ClassReference? = scope
-
-    override fun boundTypeOrNull(): ClassReference? {
-      return (annotation.getAnnotationValue("boundType") as? KClassValue)
-        ?.argumentType(module)
-        ?.classDescriptor()
-        ?.toClassReference(module)
-    }
-
-    override fun replaces(parameterIndex: Int): List<ClassReference> =
-      getClassArrayAnnotationValue("replaces")
-
-    override fun exclude(parameterIndex: Int): List<ClassReference> =
-      getClassArrayAnnotationValue("exclude")
-
-    private fun getClassArrayAnnotationValue(name: String): List<ClassReference> {
-      return (annotation.getAnnotationValue(name) as? ArrayValue)
-        ?.value
-        ?.map { it.argumentType(module).classDescriptor().toClassReference(module) }
-        .orEmpty()
-    }
 
     override fun toAnnotationSpec(): AnnotationSpec {
       return AnnotationSpec
@@ -245,6 +209,15 @@ public fun AnnotationDescriptor.toAnnotationReference(
     classReference = requireClass().toClassReference(module),
     declaringClass = declaringClass
   )
+}
+
+@ExperimentalAnvilApi
+public fun AnnotationReference.argumentAt(
+  name: String,
+  index: Int
+): AnnotationArgumentReference? {
+  return arguments.singleOrNull { it.name == name }
+    ?: arguments.elementAtOrNull(index)?.takeIf { it.name == null }
 }
 
 @ExperimentalAnvilApi
