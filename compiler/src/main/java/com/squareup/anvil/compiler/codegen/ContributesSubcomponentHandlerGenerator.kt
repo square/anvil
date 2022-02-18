@@ -17,7 +17,6 @@ import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -546,7 +545,8 @@ internal fun ClassId.generatedAnvilSubcomponent(parentClass: ClassId): ClassId {
     "$COMPONENT_PACKAGE_PREFIX.$parentPackageName"
   }
 
-  val relativeClassName = relativeClassName.generateClassName(suffix = ANVIL_SUBCOMPONENT_SUFFIX)
+  val relativeClassName = relativeClassName.pathSegments()
+    .joinToString(separator = "_", postfix = ANVIL_SUBCOMPONENT_SUFFIX)
 
-  return ClassId(FqName(packageFqName), relativeClassName.relativeClassName, false)
+  return ClassId(FqName(packageFqName), FqName(relativeClassName), false)
 }

@@ -232,21 +232,6 @@ public fun String.capitalize(): String = replaceFirstChar(Char::uppercaseChar)
 public fun String.decapitalize(): String = replaceFirstChar(Char::lowercaseChar)
 
 @ExperimentalAnvilApi
-public fun FqName.generateClassName(
-  separator: String = "_",
-  suffix: String = ""
-): ClassId = classIdBestGuess().generateClassName(separator = separator, suffix = suffix)
-
-@ExperimentalAnvilApi
-public fun ClassId.generateClassName(
-  separator: String = "_",
-  suffix: String = ""
-): ClassId {
-  val className = relativeClassName.asString().replace(".", separator)
-  return ClassId(packageFqName, FqName(className + suffix), false)
-}
-
-@ExperimentalAnvilApi
 public fun ClassDescriptor.requireClassId(): ClassId {
   return classId ?: throw AnvilCompilationException(
     classDescriptor = this,

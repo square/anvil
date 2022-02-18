@@ -446,11 +446,11 @@ public fun ClassReference.isAnnotatedWith(fqName: FqName): Boolean =
 
 @ExperimentalAnvilApi
 public fun ClassReference.generateClassName(
-  separator: String = "_"
-): String {
-  return enclosingClassesWithSelf().joinToString(separator = separator) {
-    it.shortName
-  }
+  separator: String = "_",
+  suffix: String = ""
+): ClassId {
+  val className = enclosingClassesWithSelf().joinToString(separator = separator) { it.shortName }
+  return ClassId(packageFqName, FqName(className + suffix), false)
 }
 
 @ExperimentalAnvilApi

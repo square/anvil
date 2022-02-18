@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
+import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -14,7 +15,6 @@ import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.PRIVATE
@@ -64,7 +64,8 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
     constructor: KtConstructor<*>
   ): GeneratedFile {
     val packageName = clazz.packageFqName.safePackageString()
-    val className = "${clazz.generateClassName()}_Factory"
+    val classIdName = clazz.generateClassName(suffix = "_Factory")
+    val className = classIdName.relativeClassName.asString()
 
     val constructorParameters = constructor.valueParameters
       .mapToConstructorParameters(module)
@@ -79,7 +80,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
 
     val typeParameters = clazz.clazz.typeVariableNames(module)
 
-    val factoryClass = ClassName(packageName, className)
+    val factoryClass = classIdName.asClassName()
     val factoryClassParameterized =
       if (typeParameters.isEmpty()) factoryClass else factoryClass.parameterizedBy(typeParameters)
 

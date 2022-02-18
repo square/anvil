@@ -121,7 +121,7 @@ internal class BindingModuleGenerator(
           }
 
         val packageName = generatePackageName(clazz)
-        val className = clazz.generateClassName()
+        val className = clazz.generateClassName().relativeClassName.asString()
 
         val directory = File(codeGenDir, packageName.replace('.', File.separatorChar))
         val file = File(directory, "$className.kt")
@@ -311,7 +311,9 @@ internal class BindingModuleGenerator(
     clazz: ClassReference,
     generatedMethods: List<GeneratedMethod>
   ): String {
-    val className = clazz.generateClassName(separator = "") + ANVIL_MODULE_SUFFIX
+    val className = clazz.generateClassName(separator = "", suffix = ANVIL_MODULE_SUFFIX)
+      .relativeClassName
+      .asString()
 
     val bindingMethods = generatedMethods.filterIsInstance<BindingMethod>()
     val providerMethods = generatedMethods.filterIsInstance<ProviderMethod>()

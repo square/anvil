@@ -15,7 +15,6 @@ import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.Assis
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.findAnnotationArgument
-import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
@@ -163,8 +162,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
       return if (typeParameters.isEmpty()) this else parameterizedBy(typeParameters)
     }
 
-    // TODO: ClassReference
-    val generatedFactoryTypeName = returnType.fqName.generateClassName(suffix = "_Factory")
+    val generatedFactoryTypeName = returnType.generateClassName(suffix = "_Factory")
       .asClassName()
       .parameterized()
 
@@ -172,7 +170,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
 
     val returnTypeName = returnType.asClassName().parameterized()
 
-    val implClassName = ClassName(packageName, "${clazz.generateClassName()}_Impl")
+    val implClassName = clazz.generateClassName(suffix = "_Impl").asClassName()
     val implParameterizedTypeName = implClassName.parameterized()
     val functionName = function.function.name
     val baseFactoryIsInterface = clazz.isInterface()
