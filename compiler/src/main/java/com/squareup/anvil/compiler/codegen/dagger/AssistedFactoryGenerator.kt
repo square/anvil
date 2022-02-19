@@ -14,8 +14,6 @@ import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.Assis
 import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.AssistedParameterKey.Companion.toAssistedParameterKey
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
-import com.squareup.anvil.compiler.internal.findAnnotationArgument
-import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -23,6 +21,7 @@ import com.squareup.anvil.compiler.internal.reference.FunctionReference
 import com.squareup.anvil.compiler.internal.reference.ParameterReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
+import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
@@ -42,10 +41,6 @@ import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.internal.InstanceFactory
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtStringTemplateEntry
-import org.jetbrains.kotlin.psi.KtStringTemplateExpression
-import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
-import org.jetbrains.kotlin.resolve.annotations.argumentValue
 import java.io.File
 import javax.inject.Provider
 
@@ -341,18 +336,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
           identifier = annotations
             .singleOrNull { it.fqName == assistedFqName }
             ?.let { annotation ->
-              when (annotation) {
-                is AnnotationReference.Psi ->
-                  annotation.annotation
-                    .findAnnotationArgument<KtStringTemplateExpression>("value", 0)
-                    ?.getChildOfType<KtStringTemplateEntry>()
-                    ?.text
-
-                is AnnotationReference.Descriptor ->
-                  annotation.annotation.argumentValue("value")
-                    ?.value
-                    ?.toString()
-              }
+              annotation.argumentAt("value", index = 0)?.value<String>()
             }
             .orEmpty()
         )

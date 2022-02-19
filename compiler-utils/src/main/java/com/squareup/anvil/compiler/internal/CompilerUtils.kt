@@ -90,6 +90,10 @@ public fun KotlinType.classDescriptor(): ClassDescriptor {
 }
 
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on descriptors and make the code agnostic to the underlying implementation."
+)
 public fun AnnotationDescriptor.getAnnotationValue(key: String): ConstantValue<*>? =
   allValueArguments[Name.identifier(key)]
 
