@@ -49,7 +49,7 @@ public sealed class FunctionReference {
 
   /**
    * The return type can be null for generic types like `T`. In this case try to resolve the
-   * return type with [resolveGenericReturnTypeOrNull].
+   * return type with [resolveGenericReturnTypeOrNullPsi].
    */
   public abstract fun returnTypeOrNull(): ClassReference?
 
@@ -59,11 +59,42 @@ public sealed class FunctionReference {
       message = "Unable to get the return type for function $fqName."
     )
 
-  public abstract fun resolveGenericReturnTypeOrNull(
+  protected abstract fun resolveGenericReturnTypeOrNullPsi(
     implementingClass: ClassReference.Psi
   ): ClassReference?
 
-  public fun resolveGenericReturnType(implementingClass: ClassReference.Psi): ClassReference =
+  public fun resolveGenericReturnTypeOrNull(
+    implementingClass: ClassReference
+  ): ClassReference? {
+    return when (implementingClass) {
+      // For Psi classes the implementation is different depending on whether this function is a
+      // Psi or Descriptor function, so let each concrete class implement it.
+      is ClassReference.Psi -> resolveGenericReturnTypeOrNullPsi(implementingClass)
+      is ClassReference.Descriptor -> {
+        // If the implementing class is a Descriptor, then the function keeps track of all
+        // functions it's overriding in the hierarchy. We use that information to find the function
+        // in the implementing that implements THIS function reference for which we're trying to
+        // resolve the generic return type. Once we found the function in the implementing class,
+        // we can take its return, because that's what we're looking for.
+        val implementingFunction = implementingClass.functions
+          .singleOrNull { function ->
+            val allOverriddenFunctions = generateSequence(
+              function.function.overriddenDescriptors
+            ) { overriddenFunctions ->
+              overriddenFunctions
+                .flatMap { it.overriddenDescriptors }
+                .takeIf { it.isNotEmpty() }
+            }.flatten()
+
+            allOverriddenFunctions.any { it.fqNameSafe == fqName }
+          }
+
+        implementingFunction?.returnTypeOrNull()
+      }
+    }
+  }
+
+  public fun resolveGenericReturnType(implementingClass: ClassReference): ClassReference =
     resolveGenericReturnTypeOrNull(implementingClass)
       ?: throw AnvilCompilationExceptionFunctionReference(
         functionReference = this,
@@ -130,7 +161,7 @@ public sealed class FunctionReference {
         ?.toClassReference(module)
     }
 
-    override fun resolveGenericReturnTypeOrNull(
+    protected override fun resolveGenericReturnTypeOrNullPsi(
       implementingClass: ClassReference.Psi
     ): ClassReference? {
       returnTypeOrNull()?.let { return it }
@@ -182,7 +213,7 @@ public sealed class FunctionReference {
       return function.returnType?.classDescriptorOrNull()?.toClassReference(module)
     }
 
-    override fun resolveGenericReturnTypeOrNull(
+    protected override fun resolveGenericReturnTypeOrNullPsi(
       implementingClass: ClassReference.Psi
     ): ClassReference? {
       returnTypeOrNull()?.let { return it }

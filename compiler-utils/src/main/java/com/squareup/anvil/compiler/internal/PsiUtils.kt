@@ -5,8 +5,6 @@ package com.squareup.anvil.compiler.internal
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
-import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.asAnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
 import com.squareup.anvil.compiler.internal.reference.toClassReference
@@ -35,7 +33,6 @@ import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPureElement
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
-import org.jetbrains.kotlin.psi.KtTypeParameter
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.KtValueArgument
@@ -534,47 +531,6 @@ public fun KtTypeReference.isFunctionType(): Boolean = typeElement is KtFunction
 
 @ExperimentalAnvilApi
 public fun KtClassOrObject.isGenericClass(): Boolean = typeParameterList != null
-
-@ExperimentalAnvilApi
-public fun KtTypeParameter.requireIdentifier(): String = nameIdentifier?.text
-  ?: throw AnvilCompilationException(
-    "unable to determine the name of this type parameter.", element = this
-  )
-
-/**
- * Find where a super type is extended/implemented by matching the FqName of a SuperTypeListEntry to
- * the FqName of the target super type.
- *
- * For instance, given:
- *
- * ```
- * interface Base<T> {
- *   fun create(): T
- * }
- *
- * abstract class Middle : Comparable<MyClass>, Provider<Something>, Base<Something>
- *
- * class InjectClass : Middle()
- * ```
- *
- * We start at the declaration of `InjectClass`, looking for a super declaration of `Base<___>`.
- * Since `InjectClass` doesn't declare it, we look through the supers of `Middle` and find it, then
- * resolve `T` to `Something`.
- */
-@ExperimentalAnvilApi
-public fun KtClassOrObject.superTypeListEntryOrNull(
-  module: ModuleDescriptor,
-  superTypeFqName: FqName
-): KtSuperTypeListEntry? {
-  return toClassReference(module)
-    .allSuperTypeClassReferences(includeSelf = true)
-    .filterIsInstance<Psi>()
-    .firstNotNullOfOrNull { classReference ->
-      classReference.clazz
-        .superTypeListEntries
-        .firstOrNull { it.requireFqName(module) == superTypeFqName }
-    }
-}
 
 @ExperimentalAnvilApi
 public fun KtCallableDeclaration.requireTypeReference(module: ModuleDescriptor): KtTypeReference {

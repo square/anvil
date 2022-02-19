@@ -17,7 +17,6 @@ import com.squareup.anvil.compiler.internal.requireContainingClassReference
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.scope
 import com.squareup.anvil.compiler.internal.scopeOrNull
-import com.squareup.anvil.compiler.internal.superTypeListEntryOrNull
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -37,6 +36,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.allConstructors
@@ -256,7 +256,7 @@ public sealed class ClassReference {
         }
       }
 
-      return clazz.resolveGenericTypeReference(declaringClass, parameterKotlinType.toString())
+      return resolveGenericTypeReference(declaringClass, parameterKotlinType.toString())
     }
 
     /**
@@ -292,10 +292,10 @@ public sealed class ClassReference {
       val declaringClass = typeReference.requireContainingClassReference(module)
       val parameterName = typeReference.text
 
-      return clazz.resolveGenericTypeReference(declaringClass, parameterName)
+      return resolveGenericTypeReference(declaringClass, parameterName)
     }
 
-    private fun KtClassOrObject.resolveGenericTypeReference(
+    private fun resolveGenericTypeReference(
       declaringClass: ClassReference,
       parameterName: String
     ): KtTypeReference? {
@@ -303,7 +303,7 @@ public sealed class ClassReference {
 
       // If the class/interface declaring the generic is the receiver class,
       // then the generic hasn't been set to a concrete type and can't be resolved.
-      if (requireFqName() == declaringClassFqName) {
+      if (clazz.requireFqName() == declaringClassFqName) {
         return null
       }
 
@@ -329,6 +329,40 @@ public sealed class ClassReference {
       } else {
         null
       }
+    }
+
+    /**
+     * Find where a super type is extended/implemented by matching the FqName of a SuperTypeListEntry to
+     * the FqName of the target super type.
+     *
+     * For instance, given:
+     *
+     * ```
+     * interface Base<T> {
+     *   fun create(): T
+     * }
+     *
+     * abstract class Middle : Comparable<MyClass>, Provider<Something>, Base<Something>
+     *
+     * class InjectClass : Middle()
+     * ```
+     *
+     * We start at the declaration of `InjectClass`, looking for a super declaration of `Base<___>`.
+     * Since `InjectClass` doesn't declare it, we look through the supers of `Middle` and find it, then
+     * resolve `T` to `Something`.
+     */
+    private fun superTypeListEntryOrNull(
+      module: ModuleDescriptor,
+      superTypeFqName: FqName
+    ): KtSuperTypeListEntry? {
+      return clazz.toClassReference(module)
+        .allSuperTypeClassReferences(includeSelf = true)
+        .filterIsInstance<Psi>()
+        .firstNotNullOfOrNull { classReference ->
+          classReference.clazz
+            .superTypeListEntries
+            .firstOrNull { it.requireFqName(module) == superTypeFqName }
+        }
     }
   }
 
@@ -426,9 +460,9 @@ public fun KtClassOrObject.toClassReference(module: ModuleDescriptor): Psi =
   module.asAnvilModuleDescriptor().getClassReference(this)
 
 /**
- * Attempts to resolve the [FqName] to a [ClassDescriptor] first, then falls back to a
- * [KtClassOrObject] if the descriptor resolution fails. This will happen if the code being parsed
- * was generated as part of the compilation round for this module.
+ * Attempts to find the [KtClassOrObject] for the [FqName] first, then falls back to the
+ * [ClassDescriptor] if the Psi element cannot be found. This will happen if the class for
+ * [FqName] is not part of this compilation unit.
  */
 @ExperimentalAnvilApi
 public fun FqName.toClassReferenceOrNull(module: ModuleDescriptor): ClassReference? =
