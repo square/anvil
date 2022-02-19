@@ -29,6 +29,7 @@ import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.utils.addToStdlib.cast
 import kotlin.LazyThreadSafetyMode.NONE
 
 private const val DEFAULT_SCOPE_INDEX = 0
@@ -59,7 +60,7 @@ public sealed class AnnotationReference {
   public abstract val arguments: List<AnnotationArgumentReference>
 
   public fun declaringClassOrNull(): ClassReference? = declaringClass
-  public fun declaringClass(): ClassReference = declaringClass
+  public open fun declaringClass(): ClassReference = declaringClass
     ?: throw AnvilCompilationExceptionAnnotationReference(
       annotationReference = this,
       message = "The declaring class was null, this means the annotation wasn't used on a class."
@@ -154,6 +155,10 @@ public sealed class AnnotationReference {
 
     private val scope by lazy(NONE) {
       arguments.singleOrNull { it.name == "scope" }?.value<ClassReference>()
+    }
+
+    override fun declaringClass(): ClassReference.Descriptor {
+      return super.declaringClass().cast()
     }
 
     override fun scopeOrNull(parameterIndex: Int): ClassReference? = scope

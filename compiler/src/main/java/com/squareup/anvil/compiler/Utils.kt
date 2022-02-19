@@ -8,11 +8,9 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
-import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
-import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
+import com.squareup.anvil.compiler.internal.reference.toClassReferenceOrNull
 import dagger.Component
 import dagger.Lazy
 import dagger.MapKey
@@ -23,9 +21,9 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.internal.DoubleCheck
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import javax.inject.Inject
@@ -93,8 +91,7 @@ internal fun AnnotationDescriptor.isMapKey(): Boolean {
   return annotationClass?.annotations?.hasAnnotation(mapKeyFqName) ?: false
 }
 
-internal fun ClassReference.requireClassDescriptor(module: ModuleDescriptor): ClassDescriptor =
-  when (this) {
-    is Descriptor -> clazz
-    is Psi -> fqName.classDescriptor(module)
-  }
+internal inline fun <reified T : ClassReference> ClassId.classReferenceOrNull(
+  module: ModuleDescriptor
+): T? =
+  asSingleFqName().toClassReferenceOrNull(module) as T?

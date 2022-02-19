@@ -11,7 +11,6 @@ import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
 import com.squareup.anvil.compiler.codegen.modules
 import com.squareup.anvil.compiler.codegen.parentScope
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
-import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.getAnnotationValue
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
@@ -357,8 +356,7 @@ internal class ModuleMerger(
         contributedSubcomponent.classId
           .generatedAnvilSubcomponent(clazz.classId)
           .createNestedClassId(Name.identifier(SUBCOMPONENT_MODULE))
-          .classDescriptorOrNull(module)
-          ?.toClassReference(module)
+          .classReferenceOrNull(module)
       }
   }
 }

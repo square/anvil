@@ -1,29 +1,18 @@
 package com.squareup.anvil.compiler
 
-import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.codegen.atLeastOneAnnotation
+import com.squareup.anvil.compiler.codegen.find
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
+import com.squareup.anvil.compiler.codegen.parentScope
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
-import com.squareup.anvil.compiler.internal.annotation
-import com.squareup.anvil.compiler.internal.annotationOrNull
-import com.squareup.anvil.compiler.internal.argumentType
-import com.squareup.anvil.compiler.internal.classDescriptor
-import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.getAllSuperTypes
-import com.squareup.anvil.compiler.internal.getAnnotationValue
-import com.squareup.anvil.compiler.internal.parentScope
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
+import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.reference.toClassReference
-import com.squareup.anvil.compiler.internal.requireClassId
-import com.squareup.anvil.compiler.internal.requireFqName
-import com.squareup.anvil.compiler.internal.scope
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.EffectiveVisibility.Public
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.effectiveVisibility
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.constants.ArrayValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.types.KotlinType
@@ -39,22 +28,24 @@ internal class InterfaceMerger(
     thisDescriptor: ClassDescriptor,
     supertypes: MutableList<KotlinType>
   ) {
-    val mergeAnnotation = thisDescriptor.annotationOrNull(mergeComponentFqName)
-      ?: thisDescriptor.annotationOrNull(mergeSubcomponentFqName)
-      ?: thisDescriptor.annotationOrNull(mergeInterfacesFqName)
+    val module = RealAnvilModuleDescriptor(thisDescriptor.module)
+    val mergeAnnotatedClass = thisDescriptor.toClassReference(module)
+    val mergeAnnotation = mergeAnnotatedClass.annotations.find(mergeComponentFqName).singleOrNull()
+      ?: mergeAnnotatedClass.annotations.find(mergeSubcomponentFqName).singleOrNull()
+      ?: mergeAnnotatedClass.annotations.find(mergeInterfacesFqName).singleOrNull()
 
     if (mergeAnnotation == null) {
       super.addSyntheticSupertypes(thisDescriptor, supertypes)
       return
     }
 
-    val module = RealAnvilModuleDescriptor(thisDescriptor.module)
+    val mergeScope = mergeAnnotation.scope()
 
-    val scope = mergeAnnotation.scope(module)
-    val scopeFqName = scope.fqNameSafe
-
-    if (!DescriptorUtils.isInterface(thisDescriptor)) {
-      throw AnvilCompilationException(thisDescriptor, "Dagger components must be interfaces.")
+    if (!mergeAnnotatedClass.isInterface()) {
+      throw AnvilCompilationExceptionClassReference(
+        mergeAnnotatedClass,
+        "Dagger components must be interfaces."
+      )
     }
 
     val classes = classScanner
@@ -62,22 +53,23 @@ internal class InterfaceMerger(
         module = module,
         packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
         annotation = contributesToFqName,
-        scope = scopeFqName
+        scope = mergeScope.fqName
       )
+      .map { it.toClassReference(module) }
       .filter {
-        DescriptorUtils.isInterface(it) && it.annotationOrNull(daggerModuleFqName) == null
+        it.isInterface() && it.annotations.find(daggerModuleFqName).singleOrNull() == null
       }
       .mapNotNull {
-        val contributeAnnotation =
-          it.annotationOrNull(contributesToFqName, scope = scopeFqName)
-            ?: return@mapNotNull null
-        it to contributeAnnotation
+        it.annotations
+          .find(annotationName = contributesToFqName, scopeName = mergeScope.fqName)
+          .singleOrNull()
       }
-      .onEach { (classDescriptor, _) ->
-        if (classDescriptor.effectiveVisibility() !is Public) {
-          throw AnvilCompilationException(
-            classDescriptor,
-            "${classDescriptor.fqNameSafe} is contributed to the Dagger graph, but the " +
+      .onEach { contributeAnnotation ->
+        val contributedClass = contributeAnnotation.declaringClass()
+        if (contributedClass.visibility() != PUBLIC) {
+          throw AnvilCompilationExceptionClassReference(
+            contributedClass,
+            "${contributedClass.fqName} is contributed to the Dagger graph, but the " +
               "interface is not public. Only public interfaces are supported."
           )
         }
@@ -87,102 +79,97 @@ internal class InterfaceMerger(
       .toList()
 
     val replacedClasses = classes
-      .flatMap { (classDescriptor, contributeAnnotation) ->
-        classDescriptor.toClassReference(module)
-          .annotations.single { it.fqName == contributeAnnotation.requireFqName() }
+      .flatMap { contributeAnnotation ->
+        val contributedClass = contributeAnnotation.declaringClass()
+        contributedClass
+          .atLeastOneAnnotation(contributeAnnotation.fqName)
+          .single()
           .replaces()
-          .map { it.requireClassDescriptor(module) }
-          .onEach { classDescriptorForReplacement ->
+          .onEach { classToReplace ->
             // Verify the other class is an interface. It doesn't make sense for a contributed
             // interface to replace a class that is not an interface.
-            if (!DescriptorUtils.isInterface(classDescriptorForReplacement)) {
-              throw AnvilCompilationException(
-                classDescriptor,
-                "${classDescriptor.fqNameSafe} wants to replace " +
-                  "${classDescriptorForReplacement.fqNameSafe}, but the class being " +
+            if (!classToReplace.isInterface()) {
+              throw AnvilCompilationExceptionClassReference(
+                contributedClass,
+                "${contributedClass.fqName} wants to replace " +
+                  "${classToReplace.fqName}, but the class being " +
                   "replaced is not an interface."
               )
             }
 
-            val contributesToAnnotation = classDescriptorForReplacement
-              .annotationOrNull(contributesToFqName)
-            val contributesBindingAnnotation = classDescriptorForReplacement
-              .annotationOrNull(contributesBindingFqName)
-            val contributesMultibindingAnnotation = classDescriptorForReplacement
-              .annotationOrNull(contributesMultibindingFqName)
+            val contributesToAnnotation = classToReplace
+              .annotations.find(contributesToFqName).singleOrNull()
+            val contributesBindingAnnotation = classToReplace
+              .annotations.find(contributesBindingFqName).singleOrNull()
+            val contributesMultibindingAnnotation = classToReplace
+              .annotations.find(contributesMultibindingFqName).singleOrNull()
 
             // Verify that the replaced classes use the same scope.
-            val scopeOfReplacement = contributesToAnnotation?.scope(module)
-              ?: contributesBindingAnnotation?.scope(module)
-              ?: contributesMultibindingAnnotation?.scope(module)
-              ?: throw AnvilCompilationException(
-                classDescriptor,
+            val scopeOfReplacement = contributesToAnnotation?.scope()
+              ?: contributesBindingAnnotation?.scope()
+              ?: contributesMultibindingAnnotation?.scope()
+              ?: throw AnvilCompilationExceptionClassReference(
+                contributedClass,
                 "Could not determine the scope of the replaced class " +
-                  "${classDescriptorForReplacement.fqNameSafe}."
+                  "${classToReplace.fqName}."
               )
 
-            if (scopeOfReplacement.fqNameSafe != scopeFqName) {
-              throw AnvilCompilationException(
-                classDescriptor,
-                "${classDescriptor.fqNameSafe} with scope $scopeFqName wants to replace " +
-                  "${classDescriptorForReplacement.fqNameSafe} with scope " +
-                  "${scopeOfReplacement.fqNameSafe}. The replacement must use the same " +
+            if (scopeOfReplacement != mergeScope) {
+              throw AnvilCompilationExceptionClassReference(
+                contributedClass,
+                "${contributedClass.fqName} with scope ${mergeScope.fqName} wants to replace " +
+                  "${classToReplace.fqName} with scope " +
+                  "${scopeOfReplacement.fqName}. The replacement must use the same " +
                   "scope."
               )
             }
           }
-          .map { it.fqNameSafe }
       }
       .toSet()
 
-    val excludedClasses = (mergeAnnotation.getAnnotationValue("exclude") as? ArrayValue)
-      ?.value
-      ?.map { it.argumentType(module).classDescriptor() }
-      ?.filter { DescriptorUtils.isInterface(it) }
-      ?.map { classDescriptorForExclusion ->
-        val contributesToAnnotation = classDescriptorForExclusion
-          .annotationOrNull(contributesToFqName)
-        val contributesBindingAnnotation = classDescriptorForExclusion
-          .annotationOrNull(contributesBindingFqName)
-        val contributesMultibindingAnnotation = classDescriptorForExclusion
-          .annotationOrNull(contributesMultibindingFqName)
-        val contributesSubcomponentAnnotation = classDescriptorForExclusion
-          .annotationOrNull(contributesSubcomponentFqName)
+    val excludedClasses = mergeAnnotation.exclude()
+      .filter { it.isInterface() }
+      .onEach { excludedClass ->
+        val contributesToAnnotation = excludedClass
+          .annotations.find(contributesToFqName).singleOrNull()
+        val contributesBindingAnnotation = excludedClass
+          .annotations.find(contributesBindingFqName).singleOrNull()
+        val contributesMultibindingAnnotation = excludedClass
+          .annotations.find(contributesMultibindingFqName).singleOrNull()
+        val contributesSubcomponentAnnotation = excludedClass
+          .annotations.find(contributesSubcomponentFqName).singleOrNull()
 
         // Verify that the replaced classes use the same scope.
-        val scopeOfExclusion = contributesToAnnotation?.scope(module)
-          ?: contributesBindingAnnotation?.scope(module)
-          ?: contributesMultibindingAnnotation?.scope(module)
-          ?: contributesSubcomponentAnnotation?.parentScope(module)
-          ?: throw AnvilCompilationException(
-            thisDescriptor,
+        val scopeOfExclusion = contributesToAnnotation?.scope()
+          ?: contributesBindingAnnotation?.scope()
+          ?: contributesMultibindingAnnotation?.scope()
+          ?: contributesSubcomponentAnnotation?.parentScope()
+          ?: throw AnvilCompilationExceptionClassReference(
+            mergeAnnotatedClass,
             "Could not determine the scope of the excluded class " +
-              "${classDescriptorForExclusion.fqNameSafe}."
+              "${excludedClass.fqName}."
           )
 
-        if (scopeOfExclusion.fqNameSafe != scopeFqName) {
-          throw AnvilCompilationException(
-            thisDescriptor,
-            "${thisDescriptor.fqNameSafe} with scope $scopeFqName wants to exclude " +
-              "${classDescriptorForExclusion.fqNameSafe} with scope " +
-              "${scopeOfExclusion.fqNameSafe}. The exclusion must use the same scope."
+        if (scopeOfExclusion.fqName != mergeScope.fqName) {
+          throw AnvilCompilationExceptionClassReference(
+            mergeAnnotatedClass,
+            "${mergeAnnotatedClass.fqName} with scope ${mergeScope.fqName} wants to exclude " +
+              "${excludedClass.fqName} with scope " +
+              "${scopeOfExclusion.fqName}. The exclusion must use the same scope."
           )
         }
-
-        classDescriptorForExclusion.fqNameSafe
       }
-      ?: emptyList()
 
     if (excludedClasses.isNotEmpty()) {
       val intersect = supertypes.getAllSuperTypes()
         .toList()
-        .intersect(excludedClasses.toSet())
+        .intersect(excludedClasses.map { it.fqName }.toSet())
 
       if (intersect.isNotEmpty()) {
-        throw AnvilCompilationException(
-          classDescriptor = thisDescriptor,
-          message = "${thisDescriptor.name} excludes types that it implements or extends. " +
-            "These types cannot be excluded. Look at all the super types to find these " +
+        throw AnvilCompilationExceptionClassReference(
+          classReference = mergeAnnotatedClass,
+          message = "${mergeAnnotatedClass.clazz.name} excludes types that it implements or " +
+            "extends. These types cannot be excluded. Look at all the super types to find these " +
             "classes: ${intersect.joinToString()}"
         )
       }
@@ -190,25 +177,24 @@ internal class InterfaceMerger(
 
     @Suppress("ConvertCallChainIntoSequence")
     val contributedClasses = classes
-      .map { it.first }
+      .map { it.declaringClass() }
       .filterNot {
-        val fqName = it.fqNameSafe
-        replacedClasses.contains(fqName) || excludedClasses.contains(fqName)
+        replacedClasses.contains(it) || excludedClasses.contains(it)
       }
-      .plus(findContributedSubcomponentParentInterfaces(thisDescriptor, scopeFqName, module))
+      .plus(findContributedSubcomponentParentInterfaces(mergeAnnotatedClass, mergeScope, module))
       // Avoids an error for repeated interfaces.
-      .distinctBy { it.fqNameSafe }
-      .map { it.defaultType }
+      .distinctBy { it.fqName }
+      .map { it.clazz.defaultType }
 
     supertypes += contributedClasses
-    super.addSyntheticSupertypes(thisDescriptor, supertypes)
+    super.addSyntheticSupertypes(mergeAnnotatedClass.clazz, supertypes)
   }
 
   private fun findContributedSubcomponentParentInterfaces(
-    descriptor: ClassDescriptor,
-    scope: FqName,
+    clazz: ClassReference,
+    scope: ClassReference,
     module: ModuleDescriptor
-  ): Sequence<ClassDescriptor> {
+  ): Sequence<ClassReference.Descriptor> {
     return classScanner
       .findContributedClasses(
         module = module,
@@ -216,14 +202,15 @@ internal class InterfaceMerger(
         annotation = contributesSubcomponentFqName,
         scope = null
       )
+      .map { it.toClassReference(module) }
       .filter {
-        it.annotation(contributesSubcomponentFqName).parentScope(module).fqNameSafe == scope
+        it.atLeastOneAnnotation(contributesSubcomponentFqName).single().parentScope() == scope
       }
       .mapNotNull { contributedSubcomponent ->
-        contributedSubcomponent.requireClassId()
-          .generatedAnvilSubcomponent(descriptor.requireClassId())
+        contributedSubcomponent.classId
+          .generatedAnvilSubcomponent(clazz.classId)
           .createNestedClassId(Name.identifier(PARENT_COMPONENT))
-          .classDescriptorOrNull(module)
+          .classReferenceOrNull(module)
       }
   }
 }
