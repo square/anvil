@@ -87,7 +87,7 @@ jobs :
       # Expressions in Github actions are limited. If there would be an if expression, then we
       # wouldn't need to duplicate the next step and depending on the OS enable / disable them.
       - name : Test on Windows
-        run : ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace
+        run : ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace "-Psquare.fullTestRun=false"
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v2
