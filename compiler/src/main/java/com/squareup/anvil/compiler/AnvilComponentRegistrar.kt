@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
+import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -41,6 +42,8 @@ class AnvilComponentRegistrar : ComponentRegistrar {
       BindingModuleGenerator(scanner) +
       ContributesSubcomponentHandlerGenerator(scanner)
 
+    val moduleDescriptorFactory = RealAnvilModuleDescriptor.Factory()
+
     // It's important to register our extension at the first position. The compiler calls each
     // extension one by one. If an extension returns a result, then the compiler won't call any
     // other extension. That usually happens with Kapt in the stub generating task.
@@ -54,18 +57,19 @@ class AnvilComponentRegistrar : ComponentRegistrar {
       CodeGenerationExtension(
         codeGenDir = sourceGenFolder,
         codeGenerators = codeGenerators,
-        commandLineOptions = commandLineOptions
+        commandLineOptions = commandLineOptions,
+        moduleDescriptorFactory = moduleDescriptorFactory
       )
     )
 
     if (!commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging) {
       SyntheticResolveExtension.registerExtension(
         project,
-        InterfaceMerger(scanner)
+        InterfaceMerger(scanner, moduleDescriptorFactory)
       )
       ExpressionCodegenExtension.registerExtension(
         project,
-        ModuleMerger(scanner)
+        ModuleMerger(scanner, moduleDescriptorFactory)
       )
 
       IrGenerationExtension.registerExtension(
