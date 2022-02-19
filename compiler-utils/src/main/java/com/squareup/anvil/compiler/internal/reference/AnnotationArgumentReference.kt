@@ -38,6 +38,26 @@ public sealed class AnnotationArgumentReference {
   @Suppress("UNCHECKED_CAST")
   public fun <T : Any> value(): T = value as T
 
+  override fun toString(): String {
+    return "${AnnotationArgumentReference::class.simpleName}(name=$name, value=$value)"
+  }
+
+  override fun equals(other: Any?): Boolean {
+    if (this === other) return true
+    if (other !is AnnotationArgumentReference) return false
+
+    if (name != other.name) return false
+    if (value != other.value) return false
+
+    return true
+  }
+
+  override fun hashCode(): Int {
+    var result = name?.hashCode() ?: 0
+    result = 31 * result + value.hashCode()
+    return result
+  }
+
   public class Psi internal constructor(
     public val argument: KtValueArgument,
     override val annotation: AnnotationReference.Psi,
@@ -66,7 +86,7 @@ public sealed class AnnotationArgumentReference {
     }
   }
 
-  public class Descriptor(
+  public class Descriptor internal constructor(
     public val argument: ConstantValue<*>,
     override val annotation: AnnotationReference.Descriptor,
     override val name: String
