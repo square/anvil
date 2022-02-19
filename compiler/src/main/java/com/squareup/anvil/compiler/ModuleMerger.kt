@@ -41,11 +41,12 @@ import kotlin.reflect.KClass
  * `@Component` and `@Subcomponent` annotation required for Dagger.
  */
 internal class ModuleMerger(
-  private val classScanner: ClassScanner
+  private val classScanner: ClassScanner,
+  private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory
 ) : ExpressionCodegenExtension {
 
   override fun generateClassSyntheticParts(codegen: ImplementationBodyCodegen) {
-    val module = RealAnvilModuleDescriptor(codegen.descriptor.module)
+    val module = moduleDescriptorFactory.create(codegen.descriptor.module)
     val clazz = codegen.descriptor.toClassReference(module)
     val holder = AnnotationHolder.create(clazz) ?: return
     val (mergeAnnotation, annotationClass, daggerClass, daggerFqName, modulesKeyword) = holder

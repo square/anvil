@@ -22,13 +22,14 @@ import org.jetbrains.kotlin.types.KotlinType
  * annotated with `@MergeComponent` or `@MergeSubcomponent`.
  */
 internal class InterfaceMerger(
-  private val classScanner: ClassScanner
+  private val classScanner: ClassScanner,
+  private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory
 ) : SyntheticResolveExtension {
   override fun addSyntheticSupertypes(
     thisDescriptor: ClassDescriptor,
     supertypes: MutableList<KotlinType>
   ) {
-    val module = RealAnvilModuleDescriptor(thisDescriptor.module)
+    val module = moduleDescriptorFactory.create(thisDescriptor.module)
     val mergeAnnotatedClass = thisDescriptor.toClassReference(module)
     val mergeAnnotation = mergeAnnotatedClass.annotations.find(mergeComponentFqName).singleOrNull()
       ?: mergeAnnotatedClass.annotations.find(mergeSubcomponentFqName).singleOrNull()
