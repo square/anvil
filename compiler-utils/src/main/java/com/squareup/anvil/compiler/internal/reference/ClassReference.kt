@@ -385,7 +385,7 @@ public sealed class ClassReference {
         .map { it.toFunctionReference(this) }
     }
 
-    override val annotations: List<AnnotationReference> by lazy(NONE) {
+    override val annotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
       clazz.annotations.map { it.toAnnotationReference(this, module) }
     }
 

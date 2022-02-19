@@ -18,6 +18,7 @@ internal class ClassScanner {
    * Returns a sequence of contributed classes from the dependency graph. Note that the result
    * includes inner classes already.
    */
+  // TODO: Update to return [ClassReference]s
   fun findContributedClasses(
     module: ModuleDescriptor,
     packageName: String,
