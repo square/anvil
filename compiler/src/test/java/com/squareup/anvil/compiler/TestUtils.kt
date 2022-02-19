@@ -21,11 +21,12 @@ internal fun compile(
   previousCompilationResult: Result? = null,
   enableDaggerAnnotationProcessor: Boolean = false,
   codeGenerators: List<CodeGenerator> = emptyList(),
+  allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
   block: Result.() -> Unit = { }
 ): Result = compileAnvil(
   sources = sources,
   useIR = USE_IR,
-  allWarningsAsErrors = WARNINGS_AS_ERRORS,
+  allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
   enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
   codeGenerators = codeGenerators,

@@ -49,7 +49,7 @@ public sealed class FunctionReference {
 
   /**
    * The return type can be null for generic types like `T`. In this case try to resolve the
-   * return type with [resolveGenericReturnOrNull].
+   * return type with [resolveGenericReturnTypeOrNull].
    */
   public abstract fun returnTypeOrNull(): ClassReference?
 
@@ -59,12 +59,12 @@ public sealed class FunctionReference {
       message = "Unable to get the return type for function $fqName."
     )
 
-  public abstract fun resolveGenericReturnOrNull(
+  public abstract fun resolveGenericReturnTypeOrNull(
     implementingClass: ClassReference.Psi
   ): ClassReference?
 
   public fun resolveGenericReturnType(implementingClass: ClassReference.Psi): ClassReference =
-    resolveGenericReturnOrNull(implementingClass)
+    resolveGenericReturnTypeOrNull(implementingClass)
       ?: throw AnvilCompilationExceptionFunctionReference(
         functionReference = this,
         message = "Unable to resolve return type for function $fqName with the implementing " +
@@ -130,7 +130,7 @@ public sealed class FunctionReference {
         ?.toClassReference(module)
     }
 
-    override fun resolveGenericReturnOrNull(
+    override fun resolveGenericReturnTypeOrNull(
       implementingClass: ClassReference.Psi
     ): ClassReference? {
       returnTypeOrNull()?.let { return it }
@@ -182,7 +182,7 @@ public sealed class FunctionReference {
       return function.returnType?.classDescriptorOrNull()?.toClassReference(module)
     }
 
-    override fun resolveGenericReturnOrNull(
+    override fun resolveGenericReturnTypeOrNull(
       implementingClass: ClassReference.Psi
     ): ClassReference? {
       returnTypeOrNull()?.let { return it }
