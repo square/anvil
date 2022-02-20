@@ -115,7 +115,9 @@ public sealed class AnnotationReference {
     override val arguments: List<AnnotationArgumentReference.Psi> by lazy(NONE) {
       annotation.valueArguments
         .filterIsInstance<KtValueArgument>()
-        .map { it.toAnnotationArgumentReference(this) }
+        .mapIndexed { index, argument ->
+          argument.toAnnotationArgumentReference(this, index)
+        }
     }
 
     private val defaultScope by lazy(NONE) { computeScope(DEFAULT_SCOPE_INDEX) }

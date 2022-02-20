@@ -29,6 +29,7 @@ public sealed class AnnotationArgumentReference {
 
   public abstract val annotation: AnnotationReference
   public abstract val name: String?
+  public abstract val resolvedName: String
 
   public val module: AnvilModuleDescriptor get() = annotation.module
 
@@ -39,7 +40,8 @@ public sealed class AnnotationArgumentReference {
   public fun <T : Any> value(): T = value as T
 
   override fun toString(): String {
-    return "${AnnotationArgumentReference::class.simpleName}(name=$name, value=$value)"
+    return "${AnnotationArgumentReference::class.simpleName}(name=$name, value=$value, " +
+      "resolvedName=$resolvedName)"
   }
 
   override fun equals(other: Any?): Boolean {
@@ -48,13 +50,15 @@ public sealed class AnnotationArgumentReference {
 
     if (name != other.name) return false
     if (value != other.value) return false
+    if (resolvedName != other.resolvedName) return false
 
     return true
   }
 
   override fun hashCode(): Int {
-    var result = name?.hashCode() ?: 0
+    var result = name.hashCode()
     result = 31 * result + value.hashCode()
+    result = 31 * result + resolvedName.hashCode()
     return result
   }
 
@@ -62,6 +66,7 @@ public sealed class AnnotationArgumentReference {
     public val argument: KtValueArgument,
     override val annotation: AnnotationReference.Psi,
     override val name: String?,
+    override val resolvedName: String
   ) : AnnotationArgumentReference() {
     protected override val value: Any by lazy(NONE) {
       fun fail(): Nothing {
@@ -89,7 +94,8 @@ public sealed class AnnotationArgumentReference {
   public class Descriptor internal constructor(
     public val argument: ConstantValue<*>,
     override val annotation: AnnotationReference.Descriptor,
-    override val name: String
+    override val name: String,
+    override val resolvedName: String = name
   ) : AnnotationArgumentReference() {
 
     protected override val value: Any by lazy(NONE) {
@@ -114,17 +120,34 @@ public sealed class AnnotationArgumentReference {
 
 @ExperimentalAnvilApi
 public fun KtValueArgument.toAnnotationArgumentReference(
-  annotationReference: AnnotationReference.Psi
+  annotationReference: AnnotationReference.Psi,
+  indexOfArgument: Int
 ): Psi {
   val children = children
   val name = (children.firstOrNull() as? KtValueArgumentName)?.asName?.asString()
 
-  return Psi(this, annotationReference, name)
+  // If no name is specified, then look up the name in the annotation class.
+  val resolvedName = name ?: annotationReference.classReference
+    .constructors
+    .single()
+    .parameters[indexOfArgument]
+    .name
+
+  return Psi(
+    argument = this,
+    annotation = annotationReference,
+    name = name,
+    resolvedName = resolvedName
+  )
 }
 
 @ExperimentalAnvilApi
 public fun Pair<Name, ConstantValue<*>>.toAnnotationArgumentReference(
   annotationReference: AnnotationReference.Descriptor
 ): Descriptor {
-  return Descriptor(this.second, annotationReference, this.first.asString())
+  return Descriptor(
+    argument = second,
+    annotation = annotationReference,
+    name = first.asString()
+  )
 }
