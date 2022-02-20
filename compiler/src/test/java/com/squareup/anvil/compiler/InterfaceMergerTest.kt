@@ -491,11 +491,9 @@ class InterfaceMergerTest(
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(INTERNAL_ERROR)
-      // Position to the class.
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
-        "org.jetbrains.kotlin.util.KotlinFrontEndException: " +
-          "Exception while analyzing expression at (8,18)"
+        "Couldn't find the classId for <root>. Are we stuck in a loop while resolving super types?"
       )
     }
   }

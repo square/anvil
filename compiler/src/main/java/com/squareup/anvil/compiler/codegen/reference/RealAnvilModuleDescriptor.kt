@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.codegen.reference
 
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor.ClassReferenceCacheKey.Companion.toClassReferenceCacheKey
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor.ClassReferenceCacheKey.Type.DESCRIPTOR
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor.ClassReferenceCacheKey.Type.PSI
@@ -8,9 +9,7 @@ import com.squareup.anvil.compiler.internal.reference.AnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
-import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.requireFqName
-import com.squareup.anvil.compiler.internal.toClassId
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
@@ -20,6 +19,8 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
+import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class RealAnvilModuleDescriptor private constructor(
@@ -91,7 +92,12 @@ class RealAnvilModuleDescriptor private constructor(
 
   override fun getClassReference(descriptor: ClassDescriptor): Descriptor {
     return classReferenceCache.getOrPut(descriptor.toClassReferenceCacheKey()) {
-      Descriptor(descriptor, descriptor.requireClassId(), this)
+      val classId = descriptor.classId ?: throw AnvilCompilationException(
+        classDescriptor = descriptor,
+        message = "Couldn't find the classId for $fqNameSafe. Are we stuck in a loop while " +
+          "resolving super types?"
+      )
+      Descriptor(descriptor, classId, this)
     } as Descriptor
   }
 
@@ -152,4 +158,13 @@ private fun KtFile.classesAndInnerClasses(): List<KtClassOrObject> {
       }
       .ifEmpty { null }
   }.flatten().toList()
+}
+
+private fun KtClassOrObject.toClassId(): ClassId {
+  val className = parentsWithSelf.filterIsInstance<KtClassOrObject>()
+    .toList()
+    .reversed()
+    .joinToString(separator = ".") { it.nameAsSafeName.asString() }
+
+  return ClassId(containingKtFile.packageFqName, FqName(className), false)
 }

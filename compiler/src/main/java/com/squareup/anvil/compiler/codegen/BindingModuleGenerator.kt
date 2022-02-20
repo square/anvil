@@ -7,7 +7,6 @@ import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.HINT_CONTRIBUTES_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.HINT_MULTIBINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
-import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.GeneratedFile
@@ -17,7 +16,6 @@ import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
-import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.decapitalize
@@ -26,8 +24,6 @@ import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
-import com.squareup.anvil.compiler.internal.reference.toClassReference
-import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
@@ -44,10 +40,7 @@ import dagger.multibindings.IntoMap
 import dagger.multibindings.IntoSet
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import java.io.File
 
 private val supportedFqNames = listOf(
@@ -66,7 +59,7 @@ internal class BindingModuleGenerator(
   // but technically there can be multiple.
   private val mergedClasses = mutableMapOf<MergedClassKey, File>()
 
-  private val excludedTypesForClass = mutableMapOf<MergedClassKey, List<FqName>>()
+  private val excludedTypesForClass = mutableMapOf<MergedClassKey, List<ClassReference>>()
 
   private val contributedBindingClasses = mutableListOf<ClassReference>()
   private val contributedMultibindingClasses = mutableListOf<ClassReference>()
@@ -77,25 +70,23 @@ internal class BindingModuleGenerator(
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>
   ): Collection<GeneratedFile> {
+    val classes = projectFiles.classAndInnerClassReferences(module).toList()
+
     // Even though we support multiple rounds the Kotlin compiler let's us generate code only once.
     // It's possible that we use the @ContributesBinding annotation in the module in which we
     // merge components. Remember for which classes a hint was generated and generate a @Binds
     // method for them later.
-    contributedBindingClasses += findContributedBindingClasses(
-      module = module,
-      projectFiles = projectFiles,
-      hintPackagePrefix = HINT_BINDING_PACKAGE_PREFIX
-    )
-    contributedMultibindingClasses += findContributedBindingClasses(
-      module = module,
-      projectFiles = projectFiles,
-      hintPackagePrefix = HINT_MULTIBINDING_PACKAGE_PREFIX
-    )
-
-    val classes = projectFiles.classAndInnerClassReferences(module).toList()
+    contributedBindingClasses += classes.filter {
+      it.isAnnotatedWith(contributesBindingFqName)
+    }
+    contributedMultibindingClasses += classes.filter {
+      it.isAnnotatedWith(contributesMultibindingFqName)
+    }
 
     // Similar to the explanation above, we must track contributed modules.
-    populateContributedModules(classes)
+    contributedModuleClasses += classes.filter {
+      it.isAnnotatedWith(contributesToFqName) && it.isAnnotatedWith(daggerModuleFqName)
+    }
 
     // Generate a Dagger module for each @MergeComponent and friends.
     return classes
@@ -116,7 +107,7 @@ internal class BindingModuleGenerator(
           .exclude()
           .takeIf { it.isNotEmpty() }
           ?.let { excludedReferences ->
-            excludedTypesForClass[mergedClassKey] = excludedReferences.map { it.fqName }
+            excludedTypesForClass[mergedClassKey] = excludedReferences
           }
 
         val packageName = generatePackageName(clazz)
@@ -170,11 +161,9 @@ internal class BindingModuleGenerator(
             .fqName == scope
         }
         // Ignore replaced bindings specified by excluded modules for this scope.
-        .filter { clazz -> clazz.fqName !in excludedNames }
+        .filter { clazz -> clazz !in excludedNames }
         .flatMap { clazz ->
-          clazz.annotations.single { it.fqName == contributesToFqName }
-            .replaces()
-            .map { it.fqName }
+          clazz.annotations.single { it.fqName == contributesToFqName }.replaces()
         }
         .plus(
           classScanner
@@ -184,15 +173,12 @@ internal class BindingModuleGenerator(
               annotation = contributesToFqName,
               scope = scope
             )
-            .filter { it.annotationOrNull(daggerModuleFqName) != null }
+            .filter { it.isAnnotatedWith(daggerModuleFqName) }
             // Ignore replaced bindings specified by excluded modules for this scope.
-            .filter { it.fqNameSafe !in excludedNames }
-            .flatMap { classDescriptor ->
-              classDescriptor.toClassReference(module)
-                .annotations.single { it.fqName == contributesToFqName }
-                .replaces()
+            .filter { it !in excludedNames }
+            .flatMap { clazz ->
+              clazz.annotations.single { it.fqName == contributesToFqName }.replaces()
             }
-            .map { it.fqName }
         )
         .toList()
 
@@ -212,24 +198,21 @@ internal class BindingModuleGenerator(
           packageName = hintPackagePrefix,
           annotation = annotationFqName,
           scope = scope
-        ).map { it.toClassReference(module) }
+        )
 
         val allContributedClasses = collectedClasses
           .plus(contributedBindingsDependencies)
 
         val replacedBindings = allContributedClasses
           .flatMap { classReference ->
-            classReference.annotations
-              .single { it.fqName == annotationFqName }
-              .replaces()
-              .map { it.fqName }
+            classReference.annotations.single { it.fqName == annotationFqName }.replaces()
           }
 
         return allContributedClasses
           .asSequence()
-          .filterNot { it.fqName in replacedBindings }
-          .filterNot { it.fqName in bindingsReplacedInDaggerModules }
-          .filterNot { it.fqName in excludedNames }
+          .filterNot { it in replacedBindings }
+          .filterNot { it in bindingsReplacedInDaggerModules }
+          .filterNot { it in excludedNames }
           .filter { clazz ->
             clazz.annotations
               .find(annotationName = annotationFqName, scopeName = scope)
@@ -276,37 +259,6 @@ internal class BindingModuleGenerator(
 
       GeneratedFile(daggerModuleFile, content)
     }
-  }
-
-  private fun findContributedBindingClasses(
-    module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>,
-    hintPackagePrefix: String
-  ): List<ClassReference> {
-    return projectFiles
-      .filter {
-        it.packageFqName.asString().startsWith(hintPackagePrefix)
-      }
-      .flatMap {
-        it.findChildrenByClass(KtProperty::class.java).toList()
-      }
-      .mapNotNull { ktProperty ->
-        // We can safely ignore scopes, we only care about the reference classes.
-        if (ktProperty.name?.endsWith(REFERENCE_SUFFIX) != true) return@mapNotNull null
-
-        // TODO: Figure out how we can replecate this logic for descriptors to fully convert this method to use ClassReference
-        (ktProperty.initializer as? KtClassLiteralExpression)
-          ?.firstChild
-          ?.requireFqName(module)
-          ?.toClassReference(module)
-      }
-  }
-
-  private fun populateContributedModules(classes: List<ClassReference>) {
-    contributedModuleClasses += classes
-      .filter {
-        it.isAnnotatedWith(contributesToFqName) && it.isAnnotatedWith(daggerModuleFqName)
-      }
   }
 
   private fun daggerModuleContent(

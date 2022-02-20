@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.compile
-import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -294,7 +293,7 @@ class ClassReferenceTest {
       is ClassReference.Descriptor -> this
       is ClassReference.Psi -> {
         // Force using the descriptor.
-        fqName.classDescriptor(module).toClassReference(module)
+        module.resolveFqNameOrNull(fqName)!!.toClassReference(module)
           .also { descriptorReference ->
             assertThat(descriptorReference).isInstanceOf(ClassReference.Descriptor::class.java)
 

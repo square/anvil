@@ -1,8 +1,9 @@
 package com.squareup.anvil.compiler
 
-import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.classDescriptor
+import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.toClassReference
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor
@@ -18,13 +19,12 @@ internal class ClassScanner {
    * Returns a sequence of contributed classes from the dependency graph. Note that the result
    * includes inner classes already.
    */
-  // TODO: Update to return [ClassReference]s
   fun findContributedClasses(
     module: ModuleDescriptor,
     packageName: String,
     annotation: FqName,
     scope: FqName?
-  ): Sequence<ClassDescriptor> {
+  ): Sequence<ClassReference.Descriptor> {
     val packageDescriptor = module.getPackage(FqName(packageName))
     return generateSequence(listOf(packageDescriptor)) { subPackages ->
       subPackages
@@ -63,11 +63,13 @@ internal class ClassScanner {
           sequence
         }
       }
-      .map { hint -> hint.reference }
-      .filter {
+      .map { hint -> hint.reference.toClassReference(module) }
+      .filter { clazz ->
         // Check that the annotation really is present. It should always be the case, but it's
         // a safetynet in case the generated properties are out of sync.
-        it.annotationOrNull(annotation, scope) != null
+        clazz.annotations.any {
+          it.fqName == annotation && (scope == null || it.scope().fqName == scope)
+        }
       }
   }
 }

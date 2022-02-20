@@ -996,7 +996,9 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("File being compiled: (10,18)")
+      assertThat(messages).contains(
+        "Couldn't find the classId for <root>. Are we stuck in a loop while resolving super types?"
+      )
     }
   }
 

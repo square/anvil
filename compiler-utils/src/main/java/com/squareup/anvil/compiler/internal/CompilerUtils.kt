@@ -4,73 +4,16 @@ package com.squareup.anvil.compiler.internal
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import org.jetbrains.kotlin.codegen.asmType
-import org.jetbrains.kotlin.codegen.state.KotlinTypeMapper
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.platform.has
-import org.jetbrains.kotlin.platform.jvm.JvmPlatform
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue.Value.NormalClass
-import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
-import org.jetbrains.kotlin.resolve.descriptorUtil.classId
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.ErrorType
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
-import org.jetbrains.kotlin.types.typeUtil.supertypes
-import org.jetbrains.org.objectweb.asm.Type
-
-@ExperimentalAnvilApi
-public fun ClassDescriptor.annotationOrNull(
-  annotationFqName: FqName,
-  scope: FqName? = null
-): AnnotationDescriptor? {
-  // Must be JVM, we don't support anything else.
-  if (!module.platform.has<JvmPlatform>()) return null
-  val annotationDescriptor = try {
-    annotations.findAnnotation(annotationFqName)
-  } catch (e: IllegalStateException) {
-    // In some scenarios this exception is thrown. Throw a new exception with a better explanation.
-    // Caused by: java.lang.IllegalStateException: Should not be called!
-    // at org.jetbrains.kotlin.types.ErrorUtils$1.getPackage(ErrorUtils.java:95)
-    throw AnvilCompilationException(
-      this,
-      message = "It seems like you tried to contribute an inner class to its outer class. This " +
-        "is not supported and results in a compiler error.",
-      cause = e
-    )
-  }
-  return if (scope == null || annotationDescriptor == null) {
-    annotationDescriptor
-  } else {
-    annotationDescriptor.takeIf { scope == it.scope(module).fqNameSafe }
-  }
-}
-
-@ExperimentalAnvilApi
-public fun ClassDescriptor.annotation(
-  annotationFqName: FqName,
-  scope: FqName? = null
-): AnnotationDescriptor = requireNotNull(annotationOrNull(annotationFqName, scope)) {
-  "Couldn't find $annotationFqName with scope $scope for $fqNameSafe."
-}
-
-@ExperimentalAnvilApi
-public fun ConstantValue<*>.toType(
-  module: ModuleDescriptor,
-  typeMapper: KotlinTypeMapper
-): Type {
-  // This is a Kotlin class with the actual type as argument: KClass<OurType>
-  return argumentType(module).asmType(typeMapper)
-}
 
 // When the Kotlin type is of the form: KClass<OurType>.
 @ExperimentalAnvilApi
@@ -87,55 +30,6 @@ public fun KotlinType.classDescriptor(): ClassDescriptor {
     ?: throw AnvilCompilationException(
       "Unable to resolve type for ${this.asTypeName()}"
     )
-}
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on descriptors and make the code agnostic to the underlying implementation."
-)
-public fun AnnotationDescriptor.getAnnotationValue(key: String): ConstantValue<*>? =
-  allValueArguments[Name.identifier(key)]
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on descriptors and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#scope]"
-)
-public fun AnnotationDescriptor.scope(module: ModuleDescriptor): ClassDescriptor {
-  return scopeOrNull(module)
-    ?: throw AnvilCompilationException(
-      annotationDescriptor = this,
-      message = "Couldn't find scope for $fqName."
-    )
-}
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on descriptors and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#scopeOrNull]"
-)
-public fun AnnotationDescriptor.scopeOrNull(module: ModuleDescriptor): ClassDescriptor? {
-  val annotationValue = getAnnotationValue("scope") as? KClassValue
-  return annotationValue?.argumentType(module)?.classDescriptor()
-}
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on descriptors and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#parentScope]"
-)
-public fun AnnotationDescriptor.parentScope(module: ModuleDescriptor): ClassDescriptor {
-  val annotationValue = getAnnotationValue("parentScope") as? KClassValue
-    ?: throw AnvilCompilationException(
-      annotationDescriptor = this,
-      message = "Couldn't find parentScope for $fqName."
-    )
-
-  return annotationValue.argumentType(module).classDescriptor()
 }
 
 @ExperimentalAnvilApi
@@ -163,39 +57,6 @@ public fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType {
     ?: throw AnvilCompilationException(
       "Couldn't resolve class across module dependencies for class ID: $classId"
     )
-}
-
-@ExperimentalAnvilApi
-// TODO: Convert to return ClassReferences
-public fun List<KotlinType>.getAllSuperTypes(): Sequence<FqName> =
-  generateSequence(this) { kotlinTypes ->
-    kotlinTypes.ifEmpty { null }?.flatMap { it.supertypes() }
-  }
-    .flatMap { it.asSequence() }
-    .map { it.classDescriptor().fqNameSafe }
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on descriptors and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#isQualifier]"
-)
-public fun AnnotationDescriptor.isQualifier(): Boolean {
-  return annotationClass?.annotations?.hasAnnotation(qualifierFqName) ?: false
-}
-
-@ExperimentalAnvilApi
-public fun AnnotationDescriptor.requireClass(): ClassDescriptor {
-  return annotationClass ?: throw AnvilCompilationException(
-    message = "Couldn't find the annotation class for $fqName",
-  )
-}
-
-@ExperimentalAnvilApi
-public fun AnnotationDescriptor.requireFqName(): FqName {
-  return fqName ?: throw AnvilCompilationException(
-    message = "Couldn't find the fqName for $this",
-  )
 }
 
 /**
@@ -235,11 +96,3 @@ public fun String.capitalize(): String = replaceFirstChar(Char::uppercaseChar)
 
 @ExperimentalAnvilApi
 public fun String.decapitalize(): String = replaceFirstChar(Char::lowercaseChar)
-
-@ExperimentalAnvilApi
-public fun ClassDescriptor.requireClassId(): ClassId {
-  return classId ?: throw AnvilCompilationException(
-    classDescriptor = this,
-    message = "Couldn't find the classId for $fqNameSafe."
-  )
-}

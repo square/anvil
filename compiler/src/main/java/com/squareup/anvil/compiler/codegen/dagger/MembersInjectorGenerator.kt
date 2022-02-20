@@ -9,7 +9,6 @@ import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.isGenericClass
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
@@ -77,7 +76,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
 
     val classType = clazz.asClassName()
       .let {
-        if (clazz.clazz.isGenericClass()) {
+        if (clazz.isGenericClass()) {
           it.parameterizedBy(List(size = clazz.clazz.typeParameters.size) { STAR })
         } else {
           it

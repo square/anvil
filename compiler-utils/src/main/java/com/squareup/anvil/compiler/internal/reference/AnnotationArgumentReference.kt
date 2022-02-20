@@ -79,7 +79,28 @@ public sealed class AnnotationArgumentReference {
           psiElement.children
             .filterIsInstance<KtClassLiteralExpression>()
             .map { it.requireFqName(module).toClassReference(module) }
-        is KtConstantExpression -> psiElement.text.toBooleanStrictOrNull() ?: fail()
+        is KtConstantExpression -> {
+          // This could be any primitive type, so we need to check.
+          val parameterFqName = annotation.classReference
+            .constructors
+            .single()
+            .parameters
+            .single { it.name == resolvedName }
+            .type()
+            .fqName
+            .asString()
+
+          when (parameterFqName) {
+            Boolean::class.qualifiedName -> psiElement.text.toBooleanStrictOrNull()
+            Int::class.qualifiedName -> psiElement.text.toIntOrNull()
+            Long::class.qualifiedName -> psiElement.text.toLongOrNull()
+            Double::class.qualifiedName -> psiElement.text.toDoubleOrNull()
+            Byte::class.qualifiedName -> psiElement.text.toByteOrNull()
+            Short::class.qualifiedName -> psiElement.text.toShortOrNull()
+            Float::class.qualifiedName -> psiElement.text.toFloatOrNull()
+            else -> fail()
+          } ?: fail()
+        }
         is KtStringTemplateExpression ->
           psiElement
             .getChildOfType<KtStringTemplateEntry>()
