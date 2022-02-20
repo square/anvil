@@ -4,12 +4,13 @@ package com.squareup.anvil.compiler.internal
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.reference.asAnvilModuleDescriptor
+import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
+import com.squareup.anvil.compiler.internal.reference.toClassReference
+import com.squareup.anvil.compiler.internal.reference.toClassReferenceOrNull
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.incremental.KotlinLookupLocation
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotated
@@ -457,7 +458,7 @@ public fun PsiElement.requireFqName(
     ?.let { return it }
 
   findFqNameInSuperTypes(module, classReference)
-    ?.let { return it }
+    ?.let { return it.fqName }
 
   // Check if it's a named import.
   containingKtFile.importDirectives
@@ -474,20 +475,14 @@ public fun PsiElement.requireFqName(
 
 private fun PsiElement.findFqNameInSuperTypes(
   module: ModuleDescriptor,
-  classReference: String
-): FqName? {
-  fun tryToResolveClassFqName(outerClass: FqName): FqName? =
-    outerClass.descendant(classReference).takeIf { it.canResolveFqName(module) }
-
-  return parents.filterIsInstance<KtClassOrObject>()
-    .flatMap { clazz ->
-      tryToResolveClassFqName(clazz.requireFqName())?.let { return@flatMap sequenceOf(it) }
-
-      // At this point we can't work with Psi APIs anymore. We need to resolve the super types
-      // and try to find inner class in them.
-      val descriptor = clazz.classDescriptor(module)
-      listOf(descriptor.defaultType).getAllSuperTypes()
-        .mapNotNull { tryToResolveClassFqName(it) }
+  className: String
+): ClassReference? {
+  return parents
+    .filterIsInstance<KtClassOrObject>()
+    .map { it.toClassReference(module) }
+    .flatMap { it.allSuperTypeClassReferences(includeSelf = true) }
+    .mapNotNull { clazz ->
+      clazz.fqName.descendant(className).toClassReferenceOrNull(module)
     }
     .firstOrNull()
 }
@@ -560,30 +555,4 @@ public fun KtUserType.findExtendsBound(): List<FqName> {
     .first()
     .typeParameters
     .mapNotNull { it.fqName }
-}
-
-@ExperimentalAnvilApi
-public fun KtClassOrObject.classDescriptor(module: ModuleDescriptor): ClassDescriptor {
-  return classDescriptorOrNull(module)
-    ?: throw AnvilCompilationException(
-      "Couldn't resolve class for ${requireFqName()}.",
-      element = this
-    )
-}
-
-@ExperimentalAnvilApi
-public fun KtClassOrObject.classDescriptorOrNull(module: ModuleDescriptor): ClassDescriptor? {
-  return module.asAnvilModuleDescriptor()
-    .resolveFqNameOrNull(requireFqName(), KotlinLookupLocation(this))
-}
-
-@ExperimentalAnvilApi
-public fun FqName.classDescriptor(module: ModuleDescriptor): ClassDescriptor {
-  return classDescriptorOrNull(module)
-    ?: throw AnvilCompilationException("Couldn't resolve class for $this.")
-}
-
-@ExperimentalAnvilApi
-public fun FqName.classDescriptorOrNull(module: ModuleDescriptor): ClassDescriptor? {
-  return module.asAnvilModuleDescriptor().resolveFqNameOrNull(this)
 }

@@ -59,7 +59,7 @@ import kotlin.LazyThreadSafetyMode.NONE
  * @see toClassReference
  */
 @ExperimentalAnvilApi
-public sealed class ClassReference {
+public sealed class ClassReference : Comparable<ClassReference> {
 
   public abstract val classId: ClassId
   public abstract val fqName: FqName
@@ -124,6 +124,10 @@ public sealed class ClassReference {
 
   override fun hashCode(): Int {
     return fqName.hashCode()
+  }
+
+  override fun compareTo(other: ClassReference): Int {
+    return fqName.asString().compareTo(other.fqName.asString())
   }
 
   public class Psi(
