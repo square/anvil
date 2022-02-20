@@ -31,10 +31,6 @@ ext {
   fullTestRun = (project.hasProperty('square.fullTestRun') ?
       project.getProperty('square.fullTestRun') : 'true').toBoolean()
 
-  if (ci && !fullTestRun) {
-    throw GradleException("Don't disable fullTestRun in CI!")
-  }
-
   // TODO: Remove when we remove the old backend.
   // TODO Repeatable: After cleaning up all deprecated methods remove the `&& false`.
   makeWarningsErrors = ci && (kotlinVersion.startsWith('1.5') || kotlinUseIR) && false

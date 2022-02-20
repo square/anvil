@@ -1,11 +1,9 @@
-package com.squareup.anvil.compiler
+package com.squareup.anvil.compiler.internal.reference
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.fqName
-import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.Visibility
-import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.jetbrains.kotlin.name.FqName
