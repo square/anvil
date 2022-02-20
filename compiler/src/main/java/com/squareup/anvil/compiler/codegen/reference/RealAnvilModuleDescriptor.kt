@@ -10,7 +10,6 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.requireClassId
 import com.squareup.anvil.compiler.internal.requireFqName
-import com.squareup.anvil.compiler.internal.toClassId
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
@@ -20,6 +19,7 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class RealAnvilModuleDescriptor private constructor(
@@ -152,4 +152,13 @@ private fun KtFile.classesAndInnerClasses(): List<KtClassOrObject> {
       }
       .ifEmpty { null }
   }.flatten().toList()
+}
+
+private fun KtClassOrObject.toClassId(): ClassId {
+  val className = parentsWithSelf.filterIsInstance<KtClassOrObject>()
+    .toList()
+    .reversed()
+    .joinToString(separator = ".") { it.nameAsSafeName.asString() }
+
+  return ClassId(containingKtFile.packageFqName, FqName(className), false)
 }

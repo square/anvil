@@ -4,8 +4,6 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.fqNameOrNull
-import com.squareup.anvil.compiler.internal.functions
-import com.squareup.anvil.compiler.internal.properties
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
@@ -30,6 +28,7 @@ import org.jetbrains.kotlin.lexer.KtTokens.PUBLIC_KEYWORD
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
@@ -77,6 +76,7 @@ public sealed class ClassReference : Comparable<ClassReference> {
   public abstract fun isAbstract(): Boolean
   public abstract fun isObject(): Boolean
   public abstract fun isCompanion(): Boolean
+  public abstract fun isGenericClass(): Boolean
   public abstract fun visibility(): Visibility
 
   /**
@@ -143,7 +143,9 @@ public sealed class ClassReference : Comparable<ClassReference> {
 
     override val functions: List<FunctionReference.Psi> by lazy(NONE) {
       clazz
-        .functions(includeCompanionObjects = false)
+        .children
+        .filterIsInstance<KtClassBody>()
+        .flatMap { it.functions }
         .map { it.toFunctionReference(this) }
     }
 
@@ -153,7 +155,9 @@ public sealed class ClassReference : Comparable<ClassReference> {
 
     override val properties: List<PropertyReference.Psi> by lazy(NONE) {
       clazz
-        .properties(includeCompanionObjects = false)
+        .children
+        .filterIsInstance<KtClassBody>()
+        .flatMap { it.properties }
         .map { it.toPropertyReference(this) }
     }
 
@@ -189,6 +193,8 @@ public sealed class ClassReference : Comparable<ClassReference> {
     override fun isObject(): Boolean = clazz is KtObjectDeclaration
 
     override fun isCompanion(): Boolean = clazz is KtObjectDeclaration && clazz.isCompanion()
+
+    override fun isGenericClass(): Boolean = clazz.typeParameterList != null
 
     override fun visibility(): Visibility {
       return when (val visibility = clazz.visibilityModifierTypeOrDefault()) {
@@ -433,6 +439,8 @@ public sealed class ClassReference : Comparable<ClassReference> {
     override fun isObject(): Boolean = DescriptorUtils.isObject(clazz)
 
     override fun isCompanion(): Boolean = DescriptorUtils.isCompanionObject(clazz)
+
+    override fun isGenericClass(): Boolean = clazz.declaredTypeParameters.isNotEmpty()
 
     override fun visibility(): Visibility {
       return when (val visibility = clazz.visibility) {
