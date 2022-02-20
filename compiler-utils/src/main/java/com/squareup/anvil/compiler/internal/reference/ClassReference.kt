@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.functions
@@ -15,8 +14,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.requireContainingClassReference
 import com.squareup.anvil.compiler.internal.requireFqName
-import com.squareup.anvil.compiler.internal.scope
-import com.squareup.anvil.compiler.internal.scopeOrNull
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -44,7 +41,6 @@ import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
@@ -102,6 +98,12 @@ public sealed class ClassReference {
   }
 
   public abstract fun innerClasses(): List<ClassReference>
+
+  /**
+   * @param parameterName The name of the parameter to be found, not including any variance modifiers.
+   * @return The 0-based index of a declared generic type.
+   */
+  protected abstract fun indexOfTypeParameter(parameterName: String): Int
 
   public open fun companionObjects(): List<ClassReference> {
     return innerClasses().filter { it.isCompanion() && it.enclosingClass() == this }
@@ -364,6 +366,9 @@ public sealed class ClassReference {
             .firstOrNull { it.requireFqName(module) == superTypeFqName }
         }
     }
+
+    protected override fun indexOfTypeParameter(parameterName: String): Int =
+      clazz.typeParameters.indexOfFirst { it.identifyingElement?.text == parameterName }
   }
 
   public class Descriptor(
@@ -448,6 +453,9 @@ public sealed class ClassReference {
     override fun companionObjects(): List<Descriptor> {
       return super.companionObjects().cast()
     }
+
+    override fun indexOfTypeParameter(parameterName: String): Int =
+      clazz.declaredTypeParameters.indexOfFirst { it.name.asString() == parameterName }
   }
 }
 
@@ -504,43 +512,14 @@ public fun ClassReference.asClassName(): ClassName = classId.asClassName()
 public fun ClassReference.allSuperTypeClassReferences(
   includeSelf: Boolean = false
 ): Sequence<ClassReference> {
-  return generateSequence(sequenceOf(this)) { superTypes ->
+  return generateSequence(listOf(this)) { superTypes ->
     superTypes
-      .map { classRef -> classRef.directSuperClassReferences() }
-      .flatten()
-      .takeIf { it.firstOrNull() != null }
+      .flatMap { classRef -> classRef.directSuperClassReferences() }
+      .takeIf { it.isNotEmpty() }
   }
     .drop(if (includeSelf) 0 else 1)
     .flatten()
-    .distinctBy { it.fqName }
-}
-
-/**
- * @param parameterName The name of the parameter to be found, not including any variance modifiers.
- * @return The 0-based index of a declared generic type.
- */
-@ExperimentalAnvilApi
-public fun ClassReference.indexOfTypeParameter(parameterName: String): Int {
-  return when (this) {
-    is Descriptor ->
-      clazz.declaredTypeParameters
-        .indexOfFirst { it.name.asString() == parameterName }
-    is Psi ->
-      clazz.typeParameters
-        .indexOfFirst { it.identifyingElement?.text == parameterName }
-  }
-}
-
-@ExperimentalAnvilApi
-public fun ClassReference.scopeOrNull(
-  annotationFqName: FqName
-): FqName? {
-  return when (this) {
-    is Descriptor -> clazz.annotationOrNull(annotationFqName)
-      ?.scope(module)
-      ?.fqNameSafe
-    is Psi -> clazz.scopeOrNull(annotationFqName, module)
-  }
+    .distinct()
 }
 
 @ExperimentalAnvilApi

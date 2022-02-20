@@ -26,7 +26,6 @@ import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
-import com.squareup.anvil.compiler.internal.reference.scopeOrNull
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.safePackageString
@@ -231,7 +230,11 @@ internal class BindingModuleGenerator(
           .filterNot { it.fqName in replacedBindings }
           .filterNot { it.fqName in bindingsReplacedInDaggerModules }
           .filterNot { it.fqName in excludedNames }
-          .filter { scope == it.scopeOrNull(annotationFqName) }
+          .filter { clazz ->
+            clazz.annotations
+              .find(annotationName = annotationFqName, scopeName = scope)
+              .isNotEmpty()
+          }
           .map { clazz ->
             clazz.annotations
               .filter { it.fqName == annotationFqName }
