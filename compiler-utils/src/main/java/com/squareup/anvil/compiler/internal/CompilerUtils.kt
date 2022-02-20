@@ -18,14 +18,11 @@ import org.jetbrains.kotlin.platform.jvm.JvmPlatform
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue.Value.NormalClass
-import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
-import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.types.ErrorType
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
-import org.jetbrains.kotlin.types.typeUtil.supertypes
 import org.jetbrains.org.objectweb.asm.Type
 
 @ExperimentalAnvilApi
@@ -123,22 +120,6 @@ public fun AnnotationDescriptor.scopeOrNull(module: ModuleDescriptor): ClassDesc
 }
 
 @ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on descriptors and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#parentScope]"
-)
-public fun AnnotationDescriptor.parentScope(module: ModuleDescriptor): ClassDescriptor {
-  val annotationValue = getAnnotationValue("parentScope") as? KClassValue
-    ?: throw AnvilCompilationException(
-      annotationDescriptor = this,
-      message = "Couldn't find parentScope for $fqName."
-    )
-
-  return annotationValue.argumentType(module).classDescriptor()
-}
-
-@ExperimentalAnvilApi
 public fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType {
   val argumentType = getType(module).argumentType()
   if (argumentType !is ErrorType) return argumentType
@@ -163,38 +144,6 @@ public fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType {
     ?: throw AnvilCompilationException(
       "Couldn't resolve class across module dependencies for class ID: $classId"
     )
-}
-
-@ExperimentalAnvilApi
-public fun List<KotlinType>.getAllSuperTypes(): Sequence<FqName> =
-  generateSequence(this) { kotlinTypes ->
-    kotlinTypes.ifEmpty { null }?.flatMap { it.supertypes() }
-  }
-    .flatMap { it.asSequence() }
-    .map { it.classDescriptor().fqNameSafe }
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on descriptors and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#isQualifier]"
-)
-public fun AnnotationDescriptor.isQualifier(): Boolean {
-  return annotationClass?.annotations?.hasAnnotation(qualifierFqName) ?: false
-}
-
-@ExperimentalAnvilApi
-public fun AnnotationDescriptor.requireClass(): ClassDescriptor {
-  return annotationClass ?: throw AnvilCompilationException(
-    message = "Couldn't find the annotation class for $fqName",
-  )
-}
-
-@ExperimentalAnvilApi
-public fun AnnotationDescriptor.requireFqName(): FqName {
-  return fqName ?: throw AnvilCompilationException(
-    message = "Couldn't find the fqName for $this",
-  )
 }
 
 /**
@@ -234,11 +183,3 @@ public fun String.capitalize(): String = replaceFirstChar(Char::uppercaseChar)
 
 @ExperimentalAnvilApi
 public fun String.decapitalize(): String = replaceFirstChar(Char::lowercaseChar)
-
-@ExperimentalAnvilApi
-public fun ClassDescriptor.requireClassId(): ClassId {
-  return classId ?: throw AnvilCompilationException(
-    classDescriptor = this,
-    message = "Couldn't find the classId for $fqNameSafe."
-  )
-}
