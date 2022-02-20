@@ -12,7 +12,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
-import com.squareup.anvil.compiler.internal.requireContainingClassReference
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -37,6 +36,7 @@ import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.allConstructors
+import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
@@ -286,12 +286,12 @@ public sealed class ClassReference {
      * is `T`.
      */
     public fun resolveTypeReference(typeReference: KtTypeReference): KtTypeReference? {
-
-      // if the element isn't a type variable name like `T`, it can be resolved through imports.
+      // If the element isn't a type variable name like `T`, it can be resolved through imports.
       typeReference.typeElement?.fqNameOrNull(module)
         ?.let { return typeReference }
 
-      val declaringClass = typeReference.requireContainingClassReference(module)
+      val declaringClass = typeReference.containingClass()?.toClassReference(module)
+        ?: return null
       val parameterName = typeReference.text
 
       return resolveGenericTypeReference(declaringClass, parameterName)
@@ -309,7 +309,7 @@ public sealed class ClassReference {
         return null
       }
 
-      // Used to determine which parameter to look at in a KtTypeArgumentList
+      // Used to determine which parameter to look at in a KtTypeArgumentList.
       val indexOfType = declaringClass.indexOfTypeParameter(parameterName)
 
       // Find where the supertype is actually declared by matching the FqName of the
@@ -324,7 +324,6 @@ public sealed class ClassReference {
         ?.get(indexOfType)
         ?.typeReference
 
-      // TODO: check if the first line can be removed.
       return if (resolvedTypeReference != null) {
         // This will check that the type can be imported.
         resolveTypeReference(resolvedTypeReference)

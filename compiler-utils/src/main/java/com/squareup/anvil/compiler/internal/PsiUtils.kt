@@ -4,10 +4,8 @@ package com.squareup.anvil.compiler.internal
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.asAnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
-import com.squareup.anvil.compiler.internal.reference.toClassReference
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -21,7 +19,6 @@ import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtFunctionType
@@ -38,7 +35,6 @@ import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.KtValueArgumentName
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
-import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import kotlin.reflect.KClass
@@ -591,83 +587,3 @@ public fun FqName.classDescriptor(module: ModuleDescriptor): ClassDescriptor {
 public fun FqName.classDescriptorOrNull(module: ModuleDescriptor): ClassDescriptor? {
   return module.asAnvilModuleDescriptor().resolveFqNameOrNull(this)
 }
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#isQualifier]"
-)
-public fun KtAnnotationEntry.isQualifier(module: ModuleDescriptor): Boolean {
-  return typeReference
-    ?.requireFqName(module)
-    // Often entries are annotated with @Inject, in this case we know it's not a qualifier and we
-    // can stop early.
-    ?.takeIf { it != injectFqName }
-    ?.classDescriptor(module)
-    ?.annotations
-    ?.hasAnnotation(qualifierFqName)
-    ?: false
-}
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#isMapKey]"
-)
-public fun KtAnnotationEntry.isMapKey(module: ModuleDescriptor): Boolean {
-  return typeReference
-    ?.requireFqName(module)
-    ?.takeIf { it != injectFqName }
-    ?.classDescriptor(module)
-    ?.annotations
-    ?.hasAnnotation(mapKeyFqName)
-    ?: false
-}
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
-    "See [ClassReference#generateClassName]"
-)
-public fun KtClassOrObject.generateClassName(
-  separator: String = "_"
-): String =
-  parentsWithSelf
-    .filterIsInstance<KtClassOrObject>()
-    .toList()
-    .reversed()
-    .joinToString(separator = separator) {
-      it.requireFqName()
-        .shortName()
-        .asString()
-    }
-
-@ExperimentalAnvilApi
-public fun KtTypeReference.containingClassReferenceOrNull(
-  module: ModuleDescriptor
-): ClassReference? {
-  return typeElement
-    ?.containingClass()
-    ?.toClassReference(module)
-}
-
-@ExperimentalAnvilApi
-public fun KtTypeReference.requireContainingClassReference(
-  module: ModuleDescriptor
-): ClassReference {
-  return containingClassReferenceOrNull(module)
-    ?: throw AnvilCompilationException(
-      "Unable to find a containing class.",
-      element = this
-    )
-}
-
-@ExperimentalAnvilApi
-public fun KtCollectionLiteralExpression.toFqNames(
-  module: ModuleDescriptor
-): List<FqName> = children
-  .filterIsInstance<KtClassLiteralExpression>()
-  .map { it.requireFqName(module) }
