@@ -22,10 +22,8 @@ import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.internal.DoubleCheck
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Qualifier
@@ -80,15 +78,6 @@ internal val propertySuffixes = arrayOf(REFERENCE_SUFFIX, SCOPE_SUFFIX)
 internal fun FqName.isAnvilModule(): Boolean {
   val name = asString()
   return name.startsWith(MODULE_PACKAGE_PREFIX) && name.endsWith(ANVIL_MODULE_SUFFIX)
-}
-
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on descriptors and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#isMapKey]"
-)
-internal fun AnnotationDescriptor.isMapKey(): Boolean {
-  return annotationClass?.annotations?.hasAnnotation(mapKeyFqName) ?: false
 }
 
 internal inline fun <reified T : ClassReference> ClassId.classReferenceOrNull(

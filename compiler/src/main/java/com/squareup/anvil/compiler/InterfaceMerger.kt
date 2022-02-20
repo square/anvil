@@ -57,7 +57,6 @@ internal class InterfaceMerger(
         annotation = contributesToFqName,
         scope = mergeScope.fqName
       )
-      .map { it.toClassReference(module) }
       .filter {
         it.isInterface() && it.annotations.find(daggerModuleFqName).singleOrNull() == null
       }
@@ -205,7 +204,6 @@ internal class InterfaceMerger(
         annotation = contributesSubcomponentFqName,
         scope = null
       )
-      .map { it.toClassReference(module) }
       .filter {
         it.atLeastOneAnnotation(contributesSubcomponentFqName).single().parentScope() == scope
       }

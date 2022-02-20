@@ -25,7 +25,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
-import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeInterfacesFqName
@@ -403,12 +402,10 @@ internal class ContributesSubcomponentHandlerGenerator(
         annotation = contributesSubcomponentFqName,
         scope = null
       )
-      .map { descriptor ->
-        val annotation = descriptor.toClassReference(module)
-          .annotations
-          .single { it.fqName == contributesSubcomponentFqName }
-
-        Contribution(annotation)
+      .map { clazz ->
+        Contribution(
+          annotation = clazz.annotations.single { it.fqName == contributesSubcomponentFqName }
+        )
       }
 
     // Find all replaced subcomponents from precompiled dependencies.

@@ -94,7 +94,8 @@ class RealAnvilModuleDescriptor private constructor(
     return classReferenceCache.getOrPut(descriptor.toClassReferenceCacheKey()) {
       val classId = descriptor.classId ?: throw AnvilCompilationException(
         classDescriptor = descriptor,
-        message = "Couldn't find the classId for $fqNameSafe."
+        message = "Couldn't find the classId for $fqNameSafe. Are we stuck in a loop while " +
+          "resolving super types?"
       )
       Descriptor(descriptor, classId, this)
     } as Descriptor

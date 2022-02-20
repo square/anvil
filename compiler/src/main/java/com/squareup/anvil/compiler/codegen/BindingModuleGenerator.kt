@@ -17,7 +17,6 @@ import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
-import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.decapitalize
@@ -47,7 +46,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import java.io.File
 
 private val supportedFqNames = listOf(
@@ -66,7 +64,7 @@ internal class BindingModuleGenerator(
   // but technically there can be multiple.
   private val mergedClasses = mutableMapOf<MergedClassKey, File>()
 
-  private val excludedTypesForClass = mutableMapOf<MergedClassKey, List<FqName>>()
+  private val excludedTypesForClass = mutableMapOf<MergedClassKey, List<ClassReference>>()
 
   private val contributedBindingClasses = mutableListOf<ClassReference>()
   private val contributedMultibindingClasses = mutableListOf<ClassReference>()
@@ -116,7 +114,7 @@ internal class BindingModuleGenerator(
           .exclude()
           .takeIf { it.isNotEmpty() }
           ?.let { excludedReferences ->
-            excludedTypesForClass[mergedClassKey] = excludedReferences.map { it.fqName }
+            excludedTypesForClass[mergedClassKey] = excludedReferences
           }
 
         val packageName = generatePackageName(clazz)
@@ -170,11 +168,9 @@ internal class BindingModuleGenerator(
             .fqName == scope
         }
         // Ignore replaced bindings specified by excluded modules for this scope.
-        .filter { clazz -> clazz.fqName !in excludedNames }
+        .filter { clazz -> clazz !in excludedNames }
         .flatMap { clazz ->
-          clazz.annotations.single { it.fqName == contributesToFqName }
-            .replaces()
-            .map { it.fqName }
+          clazz.annotations.single { it.fqName == contributesToFqName }.replaces()
         }
         .plus(
           classScanner
@@ -184,15 +180,12 @@ internal class BindingModuleGenerator(
               annotation = contributesToFqName,
               scope = scope
             )
-            .filter { it.annotationOrNull(daggerModuleFqName) != null }
+            .filter { it.isAnnotatedWith(daggerModuleFqName) }
             // Ignore replaced bindings specified by excluded modules for this scope.
-            .filter { it.fqNameSafe !in excludedNames }
-            .flatMap { classDescriptor ->
-              classDescriptor.toClassReference(module)
-                .annotations.single { it.fqName == contributesToFqName }
-                .replaces()
+            .filter { it !in excludedNames }
+            .flatMap { clazz ->
+              clazz.annotations.single { it.fqName == contributesToFqName }.replaces()
             }
-            .map { it.fqName }
         )
         .toList()
 
@@ -212,24 +205,21 @@ internal class BindingModuleGenerator(
           packageName = hintPackagePrefix,
           annotation = annotationFqName,
           scope = scope
-        ).map { it.toClassReference(module) }
+        )
 
         val allContributedClasses = collectedClasses
           .plus(contributedBindingsDependencies)
 
         val replacedBindings = allContributedClasses
           .flatMap { classReference ->
-            classReference.annotations
-              .single { it.fqName == annotationFqName }
-              .replaces()
-              .map { it.fqName }
+            classReference.annotations.single { it.fqName == annotationFqName }.replaces()
           }
 
         return allContributedClasses
           .asSequence()
-          .filterNot { it.fqName in replacedBindings }
-          .filterNot { it.fqName in bindingsReplacedInDaggerModules }
-          .filterNot { it.fqName in excludedNames }
+          .filterNot { it in replacedBindings }
+          .filterNot { it in bindingsReplacedInDaggerModules }
+          .filterNot { it in excludedNames }
           .filter { clazz ->
             clazz.annotations
               .find(annotationName = annotationFqName, scopeName = scope)
