@@ -593,10 +593,6 @@ public fun FqName.classDescriptorOrNull(module: ModuleDescriptor): ClassDescript
 }
 
 @ExperimentalAnvilApi
-public fun ClassId.classDescriptorOrNull(module: ModuleDescriptor): ClassDescriptor? =
-  asSingleFqName().classDescriptorOrNull(module)
-
-@ExperimentalAnvilApi
 @Suppress("DeprecatedCallableAddReplaceWith")
 @Deprecated(
   "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
