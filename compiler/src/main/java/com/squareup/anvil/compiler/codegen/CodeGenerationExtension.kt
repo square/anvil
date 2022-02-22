@@ -22,7 +22,8 @@ import java.io.File
 internal class CodeGenerationExtension(
   private val codeGenDir: File,
   codeGenerators: List<CodeGenerator>,
-  private val commandLineOptions: CommandLineOptions
+  private val commandLineOptions: CommandLineOptions,
+  private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory
 ) : AnalysisHandlerExtension {
 
   private var didRecompile = false
@@ -64,7 +65,7 @@ internal class CodeGenerationExtension(
     // It's important to resolve types before clearing the output directory
     // to avoid https://youtrack.jetbrains.com/issue/KT-49340
     val psiManager = PsiManager.getInstance(project)
-    val anvilModule = RealAnvilModuleDescriptor(module)
+    val anvilModule = moduleDescriptorFactory.create(module)
     anvilModule.addFiles(files)
 
     val anvilContext = commandLineOptions.toAnvilContext(anvilModule)

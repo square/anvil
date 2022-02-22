@@ -22,7 +22,7 @@ import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class RealAnvilModuleDescriptor(
+class RealAnvilModuleDescriptor private constructor(
   delegate: ModuleDescriptor
 ) : AnvilModuleDescriptor, ModuleDescriptor by delegate {
 
@@ -114,6 +114,14 @@ class RealAnvilModuleDescriptor(
 
   private val KtFile.identifier: String
     get() = packageFqName.asString() + name
+
+  internal class Factory {
+    private val cache = mutableMapOf<ModuleDescriptor, RealAnvilModuleDescriptor>()
+
+    fun create(delegate: ModuleDescriptor): RealAnvilModuleDescriptor {
+      return cache.getOrPut(delegate) { RealAnvilModuleDescriptor(delegate) }
+    }
+  }
 
   private data class ClassReferenceCacheKey(
     private val fqName: FqName,
