@@ -44,7 +44,10 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
       .classAndInnerClassReferences(module)
       .filter { it.isAnnotatedWith(contributesMultibindingFqName) }
       .onEach { clazz ->
-        clazz.checkClassIsPublic()
+        clazz.checkClassIsPublic {
+          "${clazz.fqName} is binding a type, but the class is not public. " +
+            "Only public types are supported."
+        }
         clazz.checkNotMoreThanOneQualifier(contributesMultibindingFqName)
         clazz.checkNotMoreThanOneMapKey()
         clazz.checkSingleSuperType(contributesMultibindingFqName)
