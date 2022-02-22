@@ -166,6 +166,7 @@ public fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType {
 }
 
 @ExperimentalAnvilApi
+// TODO: Convert to return ClassReferences
 public fun List<KotlinType>.getAllSuperTypes(): Sequence<FqName> =
   generateSequence(this) { kotlinTypes ->
     kotlinTypes.ifEmpty { null }?.flatMap { it.supertypes() }
