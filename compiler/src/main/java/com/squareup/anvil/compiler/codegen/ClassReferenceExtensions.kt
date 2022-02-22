@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.contributesMultibindingFqName
+import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
@@ -24,15 +25,11 @@ internal fun ClassReference.checkNotMoreThanOneQualifier(
   }
 }
 
-internal fun ClassReference.checkClassIsPublic() {
-  val requiredVisibility = Visibility.PUBLIC
-  val visibilityName = requiredVisibility.name.lowercase()
-
-  if (visibility() != requiredVisibility) {
+internal inline fun ClassReference.checkClassIsPublic(message: () -> String) {
+  if (visibility() != Visibility.PUBLIC) {
     throw AnvilCompilationExceptionClassReference(
       classReference = this,
-      message = "$fqName is binding a type, but the class is not $visibilityName. " +
-        "Only $visibilityName types are supported."
+      message = message()
     )
   }
 }
@@ -88,4 +85,18 @@ internal fun ClassReference.checkClassExtendsBoundType(
       classReference = this
     )
   }
+}
+
+internal fun ClassReference.atLeastOneAnnotation(
+  annotationName: FqName,
+  scopeName: FqName? = null
+): List<AnnotationReference> {
+  return annotations.find(annotationName = annotationName, scopeName = scopeName)
+    .ifEmpty {
+      throw AnvilCompilationExceptionClassReference(
+        classReference = this,
+        message = "Class $fqName is not annotated with $annotationName" +
+          "${if (scopeName == null) "" else " with scope $scopeName"}."
+      )
+    }
 }

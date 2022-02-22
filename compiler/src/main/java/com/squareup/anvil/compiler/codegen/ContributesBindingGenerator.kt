@@ -44,7 +44,10 @@ internal class ContributesBindingGenerator : CodeGenerator {
       .classAndInnerClassReferences(module)
       .filter { it.isAnnotatedWith(contributesBindingFqName) }
       .onEach { clazz ->
-        clazz.checkClassIsPublic()
+        clazz.checkClassIsPublic {
+          "${clazz.fqName} is binding a type, but the class is not public. " +
+            "Only public types are supported."
+        }
         clazz.checkNotMoreThanOneQualifier(contributesBindingFqName)
         clazz.checkSingleSuperType(contributesBindingFqName)
         clazz.checkClassExtendsBoundType(contributesBindingFqName)
