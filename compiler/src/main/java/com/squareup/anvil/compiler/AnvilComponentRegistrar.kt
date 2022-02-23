@@ -74,7 +74,7 @@ class AnvilComponentRegistrar : ComponentRegistrar {
 
       IrGenerationExtension.registerExtension(
         project,
-        ModuleMergerIr(scanner)
+        ModuleMergerIr(scanner, moduleDescriptorFactory)
       )
     }
   }

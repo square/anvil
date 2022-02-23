@@ -11,7 +11,7 @@ import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
 import com.squareup.anvil.compiler.codegen.modules
 import com.squareup.anvil.compiler.codegen.parentScope
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
-import com.squareup.anvil.compiler.internal.getAnnotationValue
+import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -19,11 +19,11 @@ import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.anvil.compiler.internal.toType
 import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
 import org.jetbrains.kotlin.codegen.ImplementationBodyCodegen
+import org.jetbrains.kotlin.codegen.asmType
 import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
@@ -71,7 +71,6 @@ internal class ModuleMerger(
         annotation = contributesToFqName,
         scope = mergeScope.fqName
       )
-      .map { it.toClassReference(module) }
       .filter {
         // We generate a Dagger module for each merged component. We use Anvil itself to
         // contribute this generated module. It's possible that there are multiple components
@@ -189,7 +188,6 @@ internal class ModuleMerger(
           annotation = annotationFqName,
           scope = mergeScope.fqName
         )
-        .map { it.toClassReference(module) }
         .flatMap { contributedClass ->
           val annotation = contributedClass.atLeastOneAnnotation(annotationFqName).single()
           if (mergeScope == annotation.scope()) {
@@ -248,11 +246,11 @@ internal class ModuleMerger(
           }
 
         if (holder.isComponent) {
-          copyArrayValue(codegen, mergeAnnotation, "dependencies")
+          copyArrayValue(codegen, module, mergeAnnotation, "dependencies")
         }
 
         if (holder.isModule) {
-          copyArrayValue(codegen, mergeAnnotation, "subcomponents")
+          copyArrayValue(codegen, module, mergeAnnotation, "subcomponents")
         }
       }
   }
@@ -265,22 +263,24 @@ internal class ModuleMerger(
 
   private fun AnnotationVisitor.copyArrayValue(
     codegen: ImplementationBodyCodegen,
+    module: ModuleDescriptor,
     annotation: AnnotationReference.Descriptor,
     name: String
   ) {
     val predefinedValues =
-      (annotation.annotation.getAnnotationValue(name) as? ArrayValue)
+      (annotation.arguments.singleOrNull { it.name == name }?.argument as? ArrayValue)
         ?.value
-        ?.map { it.toType(codegen) }
+        ?.map { it.toType(codegen, module) }
 
     visitArray(name).use {
       predefinedValues?.forEach { visit(name, it) }
     }
   }
 
-  private fun ConstantValue<*>.toType(codegen: ImplementationBodyCodegen): Type {
-    return toType(codegen.descriptor.module, codegen.typeMapper)
-  }
+  private fun ConstantValue<*>.toType(
+    codegen: ImplementationBodyCodegen,
+    module: ModuleDescriptor
+  ): Type = argumentType(module).asmType(codegen.typeMapper)
 
   private inline fun AnnotationVisitor.use(block: AnnotationVisitor.() -> Unit) {
     block(this)
@@ -340,7 +340,6 @@ internal class ModuleMerger(
         annotation = contributesSubcomponentFqName,
         scope = null
       )
-      .map { it.toClassReference(module) }
       .filter {
         it.atLeastOneAnnotation(contributesSubcomponentFqName)
           .single()

@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
+import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.safePackageString
 import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
@@ -29,7 +30,8 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.types.Variance.INVARIANT
 
 internal class ModuleMergerIr(
-  private val classScanner: ClassScanner
+  private val classScanner: ClassScanner,
+  private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory
 ) : IrGenerationExtension {
   override fun generate(
     moduleFragment: IrModuleFragment,
@@ -74,7 +76,8 @@ internal class ModuleMergerIr(
         moduleFragment = moduleFragment,
         packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
         annotation = contributesToFqName,
-        scope = scope
+        scope = scope,
+        moduleDescriptorFactory = moduleDescriptorFactory
       )
       .filter {
         // We generate a Dagger module for each merged component. We use Anvil itself to
@@ -189,7 +192,8 @@ internal class ModuleMergerIr(
           moduleFragment = moduleFragment,
           packageName = hintPackagePrefix,
           annotation = annotationFqName,
-          scope = scope
+          scope = scope,
+          moduleDescriptorFactory = moduleDescriptorFactory
         )
         .flatMap { classSymbol ->
           val annotation = classSymbol.owner.annotation(annotationFqName)
@@ -349,7 +353,8 @@ internal class ModuleMergerIr(
         moduleFragment = moduleFragment,
         packageName = HINT_SUBCOMPONENTS_PACKAGE_PREFIX,
         annotation = contributesSubcomponentFqName,
-        scope = null
+        scope = null,
+        moduleDescriptorFactory = moduleDescriptorFactory
       )
       .filter {
         it.owner.annotation(contributesSubcomponentFqName).parentScope() == scope

@@ -2,31 +2,16 @@ package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.annotations.ContributesBinding.Priority
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.injectFqName
-import com.squareup.anvil.compiler.internal.argumentType
-import com.squareup.anvil.compiler.internal.classDescriptor
-import com.squareup.anvil.compiler.internal.isQualifier
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.asClassName
-import com.squareup.anvil.compiler.internal.requireFqName
-import com.squareup.anvil.compiler.qualifierFqName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.TypeName
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtClassLiteralExpression
-import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtExpression
-import org.jetbrains.kotlin.psi.KtNameReferenceExpression
-import org.jetbrains.kotlin.resolve.constants.EnumValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
+import kotlin.LazyThreadSafetyMode.NONE
 
 internal data class ContributedBinding(
   val contributedClass: ClassReference,
@@ -61,8 +46,7 @@ internal fun AnnotationReference.toContributedBinding(
     qualifiers = qualifiers,
     boundTypeClassName = boundType.asClassName(),
     priority = priority(),
-    qualifiersKeyLazy = declaringClass()
-      .qualifiersKeyLazy(module, boundType.fqName, ignoreQualifier)
+    qualifiersKeyLazy = declaringClass().qualifiersKeyLazy(boundType, ignoreQualifier)
   )
 }
 
@@ -136,108 +120,33 @@ private fun ClassReference.checkNotGeneric(
   }
 }
 
-// TODO: clean this up more. Can we use ClassReference?
 private fun ClassReference.qualifiersKeyLazy(
-  module: ModuleDescriptor,
-  boundTypeFqName: FqName,
+  boundType: ClassReference,
   ignoreQualifier: Boolean
 ): Lazy<String> {
-
   // Careful! If we ever decide to support generic types, then we might need to use the
   // Kotlin type and not just the FqName.
   if (ignoreQualifier) {
-    return lazy { boundTypeFqName.asString() }
+    return lazy { boundType.fqName.asString() }
   }
 
-  return when (this) {
-    is Descriptor -> lazy { clazz.qualifiersKey(module, boundTypeFqName) }
-    is Psi -> lazy { clazz.qualifiersKey(module, boundTypeFqName) }
-  }
+  return lazy(NONE) { boundType.fqName.asString() + qualifiersKey() }
 }
 
-private fun KtClassOrObject.qualifiersKey(
-  module: ModuleDescriptor,
-  boundTypeFqName: FqName
-): String {
-
-  // Note that we sort all elements. That's important for a stable string comparison.
-  val allArguments = annotationEntries
-    // filter out anything which isn't a qualifier
-    .mapNotNull { annotationEntry ->
-      val descriptor = annotationEntry.typeReference
-        ?.requireFqName(module)
-        ?.takeIf { it != injectFqName }
-        ?.classDescriptor(module)
-        ?.takeIf { it.annotations.hasAnnotation(qualifierFqName) }
-        ?: return@mapNotNull null
-      annotationEntry to descriptor
-    }
-    .sortedBy { it.second.fqNameSafe.hashCode() }
-    .joinToString(separator = "") { (entry, descriptor) ->
-
-      val annotationFqName = descriptor.fqNameSafe
-      val annotationFqNameString = annotationFqName.asString()
-
-      val valueParams = descriptor.constructors
-        .first()
-        .valueParameters
-
-      val argumentString = entry.valueArguments
-        .mapIndexed { index, valueArgument ->
-
-          // If arguments don't have names, then the name can be found at that index
-          val name = valueArgument.getArgumentName()?.asName?.identifier
-            ?: valueParams[index].name.identifier
-
-          fun KtExpression.valueString(): String {
-            return when (this) {
-              is KtClassLiteralExpression -> requireFqName(module).asString()
-              is KtNameReferenceExpression -> getReferencedName()
-              // primitives
-              else -> text
-            }
-          }
-
-          val valueString = valueArgument.getArgumentExpression()?.valueString()
-
-          name + valueString
-        }
-
-      annotationFqNameString + argumentString
-    }
-
-  return boundTypeFqName.asString() + allArguments
-}
-
-private fun ClassDescriptor.qualifiersKey(
-  module: ModuleDescriptor,
-  boundTypeName: FqName
-): String {
-
-  // Note that we sort all elements. That's important for a stable string comparison.
-  val allArguments = annotations
+private fun ClassReference.qualifiersKey(): String {
+  return annotations
     .filter { it.isQualifier() }
-    .sortedBy { it.requireFqName().hashCode() }
+    // Note that we sort all elements. That's important for a stable string comparison.
+    .sortedBy { it.classReference }
     .joinToString(separator = "") { annotation ->
-      val annotationFqName = annotation.requireFqName().asString()
-
-      val argumentString = annotation.allValueArguments
-        .toList()
-        .sortedBy { it.first }
-        .map { (name, value) ->
-          val valueString = when (value) {
-            is KClassValue -> value.argumentType(module)
-              .classDescriptor().fqNameSafe.asString()
-            is EnumValue -> value.enumEntryName.asString()
-            // String, int, long, ... other primitives.
+      annotation.fqName.asString() +
+        annotation.arguments.joinToString(separator = "") { argument ->
+          val valueString = when (val value = argument.value<Any>()) {
+            is ClassReference -> value.fqName.asString()
             else -> value.toString()
           }
 
-          name.asString() + valueString
+          argument.resolvedName + valueString
         }
-
-      annotationFqName + argumentString
     }
-
-  return boundTypeName.asString() + allArguments
 }

@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.asClassName
-import com.squareup.anvil.compiler.internal.properties
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.MemberName
@@ -53,7 +52,7 @@ internal fun KtExpression.codeBlock(module: ModuleDescriptor): CodeBlock {
       } else {
         // It's (hopefully) an in-scope constant, look up the hierarchy.
         val ref = (this as KtNameReferenceExpression).getReferencedName()
-        findConstantDefinitionInScope(ref)
+        findConstantDefinitionInScope(ref, module)
           ?.asMemberName(module)
           ?.let { memberRef ->
             CodeBlock.of("%M", memberRef)
@@ -97,15 +96,23 @@ private fun List<KtProperty>.containsConstPropertyWithName(name: String): Boolea
   }
 }
 
-private fun PsiElement.findConstantDefinitionInScope(name: String): FqName? {
+private fun PsiElement.findConstantDefinitionInScope(
+  name: String,
+  module: ModuleDescriptor
+): FqName? {
   when (this) {
     is KtProperty, is KtNamedFunction -> {
       // Function or Property, traverse up
-      return (this as KtElement).containingClass()?.findConstantDefinitionInScope(name)
-        ?: containingFile.findConstantDefinitionInScope(name)
+      return (this as KtElement).containingClass()?.findConstantDefinitionInScope(name, module)
+        ?: containingFile.findConstantDefinitionInScope(name, module)
     }
     is KtObjectDeclaration -> {
-      if (properties(includeCompanionObjects = false).containsConstPropertyWithName(name)) {
+      val containsConstPropertyWithName = toClassReference(module)
+        .properties
+        .map { it.property }
+        .containsConstPropertyWithName(name)
+
+      if (containsConstPropertyWithName) {
         return requireFqName().child(name.nameAsSafeName())
       } else if (isCompanion()) {
         // Nowhere else to look and don't try to traverse up because this is only looked at from a
@@ -121,12 +128,12 @@ private fun PsiElement.findConstantDefinitionInScope(name: String): FqName? {
     is KtClass -> {
       // Look in companion object or traverse up
       return companionObjects.asSequence()
-        .mapNotNull { it.findConstantDefinitionInScope(name) }
+        .mapNotNull { it.findConstantDefinitionInScope(name, module) }
         .firstOrNull()
-        ?: containingClass()?.findConstantDefinitionInScope(name)
-        ?: containingKtFile.findConstantDefinitionInScope(name)
+        ?: containingClass()?.findConstantDefinitionInScope(name, module)
+        ?: containingKtFile.findConstantDefinitionInScope(name, module)
     }
   }
 
-  return parent?.findConstantDefinitionInScope(name)
+  return parent?.findConstantDefinitionInScope(name, module)
 }

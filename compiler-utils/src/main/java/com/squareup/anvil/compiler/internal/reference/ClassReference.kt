@@ -2,21 +2,15 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.annotationOrNull
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.fqNameOrNull
-import com.squareup.anvil.compiler.internal.functions
-import com.squareup.anvil.compiler.internal.properties
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
-import com.squareup.anvil.compiler.internal.requireContainingClassReference
 import com.squareup.anvil.compiler.internal.requireFqName
-import com.squareup.anvil.compiler.internal.scope
-import com.squareup.anvil.compiler.internal.scopeOrNull
 import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -34,17 +28,18 @@ import org.jetbrains.kotlin.lexer.KtTokens.PUBLIC_KEYWORD
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClass
+import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.allConstructors
+import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
 import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
@@ -63,7 +58,7 @@ import kotlin.LazyThreadSafetyMode.NONE
  * @see toClassReference
  */
 @ExperimentalAnvilApi
-public sealed class ClassReference {
+public sealed class ClassReference : Comparable<ClassReference> {
 
   public abstract val classId: ClassId
   public abstract val fqName: FqName
@@ -81,6 +76,7 @@ public sealed class ClassReference {
   public abstract fun isAbstract(): Boolean
   public abstract fun isObject(): Boolean
   public abstract fun isCompanion(): Boolean
+  public abstract fun isGenericClass(): Boolean
   public abstract fun visibility(): Visibility
 
   /**
@@ -103,6 +99,12 @@ public sealed class ClassReference {
 
   public abstract fun innerClasses(): List<ClassReference>
 
+  /**
+   * @param parameterName The name of the parameter to be found, not including any variance modifiers.
+   * @return The 0-based index of a declared generic type.
+   */
+  protected abstract fun indexOfTypeParameter(parameterName: String): Int
+
   public open fun companionObjects(): List<ClassReference> {
     return innerClasses().filter { it.isCompanion() && it.enclosingClass() == this }
   }
@@ -124,6 +126,10 @@ public sealed class ClassReference {
     return fqName.hashCode()
   }
 
+  override fun compareTo(other: ClassReference): Int {
+    return fqName.asString().compareTo(other.fqName.asString())
+  }
+
   public class Psi(
     public val clazz: KtClassOrObject,
     override val classId: ClassId,
@@ -137,7 +143,9 @@ public sealed class ClassReference {
 
     override val functions: List<FunctionReference.Psi> by lazy(NONE) {
       clazz
-        .functions(includeCompanionObjects = false)
+        .children
+        .filterIsInstance<KtClassBody>()
+        .flatMap { it.functions }
         .map { it.toFunctionReference(this) }
     }
 
@@ -147,7 +155,9 @@ public sealed class ClassReference {
 
     override val properties: List<PropertyReference.Psi> by lazy(NONE) {
       clazz
-        .properties(includeCompanionObjects = false)
+        .children
+        .filterIsInstance<KtClassBody>()
+        .flatMap { it.properties }
         .map { it.toPropertyReference(this) }
     }
 
@@ -183,6 +193,8 @@ public sealed class ClassReference {
     override fun isObject(): Boolean = clazz is KtObjectDeclaration
 
     override fun isCompanion(): Boolean = clazz is KtObjectDeclaration && clazz.isCompanion()
+
+    override fun isGenericClass(): Boolean = clazz.typeParameterList != null
 
     override fun visibility(): Visibility {
       return when (val visibility = clazz.visibilityModifierTypeOrDefault()) {
@@ -284,12 +296,12 @@ public sealed class ClassReference {
      * is `T`.
      */
     public fun resolveTypeReference(typeReference: KtTypeReference): KtTypeReference? {
-
-      // if the element isn't a type variable name like `T`, it can be resolved through imports.
+      // If the element isn't a type variable name like `T`, it can be resolved through imports.
       typeReference.typeElement?.fqNameOrNull(module)
         ?.let { return typeReference }
 
-      val declaringClass = typeReference.requireContainingClassReference(module)
+      val declaringClass = typeReference.containingClass()?.toClassReference(module)
+        ?: return null
       val parameterName = typeReference.text
 
       return resolveGenericTypeReference(declaringClass, parameterName)
@@ -307,7 +319,7 @@ public sealed class ClassReference {
         return null
       }
 
-      // Used to determine which parameter to look at in a KtTypeArgumentList
+      // Used to determine which parameter to look at in a KtTypeArgumentList.
       val indexOfType = declaringClass.indexOfTypeParameter(parameterName)
 
       // Find where the supertype is actually declared by matching the FqName of the
@@ -322,7 +334,6 @@ public sealed class ClassReference {
         ?.get(indexOfType)
         ?.typeReference
 
-      // TODO: check if the first line can be removed.
       return if (resolvedTypeReference != null) {
         // This will check that the type can be imported.
         resolveTypeReference(resolvedTypeReference)
@@ -364,6 +375,9 @@ public sealed class ClassReference {
             .firstOrNull { it.requireFqName(module) == superTypeFqName }
         }
     }
+
+    protected override fun indexOfTypeParameter(parameterName: String): Int =
+      clazz.typeParameters.indexOfFirst { it.identifyingElement?.text == parameterName }
   }
 
   public class Descriptor(
@@ -426,6 +440,8 @@ public sealed class ClassReference {
 
     override fun isCompanion(): Boolean = DescriptorUtils.isCompanionObject(clazz)
 
+    override fun isGenericClass(): Boolean = clazz.declaredTypeParameters.isNotEmpty()
+
     override fun visibility(): Visibility {
       return when (val visibility = clazz.visibility) {
         DescriptorVisibilities.PUBLIC -> PUBLIC
@@ -448,6 +464,9 @@ public sealed class ClassReference {
     override fun companionObjects(): List<Descriptor> {
       return super.companionObjects().cast()
     }
+
+    override fun indexOfTypeParameter(parameterName: String): Int =
+      clazz.declaredTypeParameters.indexOfFirst { it.name.asString() == parameterName }
   }
 }
 
@@ -504,43 +523,14 @@ public fun ClassReference.asClassName(): ClassName = classId.asClassName()
 public fun ClassReference.allSuperTypeClassReferences(
   includeSelf: Boolean = false
 ): Sequence<ClassReference> {
-  return generateSequence(sequenceOf(this)) { superTypes ->
+  return generateSequence(listOf(this)) { superTypes ->
     superTypes
-      .map { classRef -> classRef.directSuperClassReferences() }
-      .flatten()
-      .takeIf { it.firstOrNull() != null }
+      .flatMap { classRef -> classRef.directSuperClassReferences() }
+      .takeIf { it.isNotEmpty() }
   }
     .drop(if (includeSelf) 0 else 1)
     .flatten()
-    .distinctBy { it.fqName }
-}
-
-/**
- * @param parameterName The name of the parameter to be found, not including any variance modifiers.
- * @return The 0-based index of a declared generic type.
- */
-@ExperimentalAnvilApi
-public fun ClassReference.indexOfTypeParameter(parameterName: String): Int {
-  return when (this) {
-    is Descriptor ->
-      clazz.declaredTypeParameters
-        .indexOfFirst { it.name.asString() == parameterName }
-    is Psi ->
-      clazz.typeParameters
-        .indexOfFirst { it.identifyingElement?.text == parameterName }
-  }
-}
-
-@ExperimentalAnvilApi
-public fun ClassReference.scopeOrNull(
-  annotationFqName: FqName
-): FqName? {
-  return when (this) {
-    is Descriptor -> clazz.annotationOrNull(annotationFqName)
-      ?.scope(module)
-      ?.fqNameSafe
-    is Psi -> clazz.scopeOrNull(annotationFqName, module)
-  }
+    .distinct()
 }
 
 @ExperimentalAnvilApi

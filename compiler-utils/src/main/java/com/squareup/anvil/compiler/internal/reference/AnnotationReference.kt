@@ -18,7 +18,6 @@ import com.squareup.anvil.compiler.internal.mergeSubcomponentFqName
 import com.squareup.anvil.compiler.internal.qualifierFqName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Psi
-import com.squareup.anvil.compiler.internal.requireClass
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.MemberName
@@ -29,6 +28,7 @@ import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.resolve.constants.EnumValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import kotlin.LazyThreadSafetyMode.NONE
 
 private const val DEFAULT_SCOPE_INDEX = 0
@@ -114,7 +114,9 @@ public sealed class AnnotationReference {
     override val arguments: List<AnnotationArgumentReference.Psi> by lazy(NONE) {
       annotation.valueArguments
         .filterIsInstance<KtValueArgument>()
-        .map { it.toAnnotationArgumentReference(this) }
+        .mapIndexed { index, argument ->
+          argument.toAnnotationArgumentReference(this, index)
+        }
     }
 
     private val defaultScope by lazy(NONE) { computeScope(DEFAULT_SCOPE_INDEX) }
@@ -210,9 +212,13 @@ public fun AnnotationDescriptor.toAnnotationReference(
   declaringClass: ClassReference.Descriptor?,
   module: ModuleDescriptor
 ): Descriptor {
+  val annotationClass = annotationClass ?: throw AnvilCompilationException(
+    message = "Couldn't find the annotation class for $fqName",
+  )
+
   return Descriptor(
     annotation = this,
-    classReference = requireClass().toClassReference(module),
+    classReference = annotationClass.toClassReference(module),
     declaringClass = declaringClass
   )
 }

@@ -5,40 +5,30 @@ package com.squareup.anvil.compiler.internal
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.asAnvilModuleDescriptor
+import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
 import com.squareup.anvil.compiler.internal.reference.toClassReference
+import com.squareup.anvil.compiler.internal.reference.toClassReferenceOrNull
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.incremental.KotlinLookupLocation
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
-import org.jetbrains.kotlin.psi.KtClass
-import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
-import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtNullableType
-import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtPureElement
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
-import org.jetbrains.kotlin.psi.KtValueArgument
-import org.jetbrains.kotlin.psi.KtValueArgumentName
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
-import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import kotlin.reflect.KClass
@@ -54,37 +44,11 @@ public fun KtNamedDeclaration.requireFqName(): FqName = requireNotNull(fqName) {
 }
 
 @ExperimentalAnvilApi
-public fun KtClassOrObject.toClassId(): ClassId {
-  val className = parentsWithSelf.filterIsInstance<KtClassOrObject>()
-    .toList()
-    .reversed()
-    .joinToString(separator = ".") { it.nameAsSafeName.asString() }
-
-  return ClassId(containingKtFile.packageFqName, FqName(className), false)
-}
-
-@Suppress("DeprecatedCallableAddReplaceWith")
-@ExperimentalAnvilApi
-@Deprecated("Don't rely on PSI and make the code agnostic to the underlying implementation.")
-public fun KtAnnotated.isInterface(): Boolean = this is KtClass && this.isInterface()
-
-@ExperimentalAnvilApi
 public fun KtAnnotated.hasAnnotation(
   fqName: FqName,
   module: ModuleDescriptor
 ): Boolean {
   return findAnnotation(fqName, module) != null
-}
-
-@ExperimentalAnvilApi
-public fun KtAnnotated.requireAnnotation(
-  fqName: FqName,
-  module: ModuleDescriptor
-): KtAnnotationEntry {
-  return findAnnotation(fqName, module) ?: throw AnvilCompilationException(
-    element = this,
-    message = "Couldn't find the annotation $fqName."
-  )
 }
 
 @ExperimentalAnvilApi
@@ -141,111 +105,6 @@ public fun KtAnnotated.findAnnotation(
   }
 
   return null
-}
-
-@ExperimentalAnvilApi
-public fun KtClassOrObject.scope(
-  annotationFqName: FqName,
-  module: ModuleDescriptor
-): FqName {
-  return scopeOrNull(annotationFqName, module)
-    ?: throw AnvilCompilationException(
-      "Couldn't find scope for $annotationFqName.",
-      element = this
-    )
-}
-
-@ExperimentalAnvilApi
-public fun KtClassOrObject.scopeOrNull(
-  annotationFqName: FqName,
-  module: ModuleDescriptor
-): FqName? {
-  return findAnnotation(annotationFqName, module)
-    ?.scopeOrNull(module)
-}
-
-public fun KtAnnotationEntry.scopeOrNull(
-  module: ModuleDescriptor
-): FqName? {
-  return findAnnotationArgument<KtClassLiteralExpression>(name = "scope", index = 0)
-    ?.requireFqName(module)
-}
-
-public fun KtAnnotationEntry.scope(
-  module: ModuleDescriptor
-): FqName {
-  return scopeOrNull(module) ?: throw AnvilCompilationException(
-    "Couldn't find scope for ${fqNameOrNull(module)}.",
-    element = this
-  )
-}
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#parentScope]"
-)
-public fun KtClassOrObject.parentScope(
-  annotationFqName: FqName,
-  module: ModuleDescriptor
-): FqName {
-  return requireAnnotation(annotationFqName, module)
-    .findAnnotationArgument<KtClassLiteralExpression>(name = "parentScope", index = 1)
-    .let { classLiteralExpression ->
-      if (classLiteralExpression == null) {
-        throw AnvilCompilationException(
-          "Couldn't find parentScope for $annotationFqName.",
-          element = this
-        )
-      }
-
-      classLiteralExpression.requireFqName(module)
-    }
-}
-
-/**
- * Finds the argument in the given annotation. [name] refers to the parameter name
- * in the annotation and [index] to the position of the argument, e.g. if you look for the scope in
- * `@ContributesBinding(Int::class, boundType = Unit::class)`, then [name] would be "scope" and the
- * index 0. If you look for the bound type, then [name] would be "boundType" and the index 1.
- */
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on PSI and make the code agnostic to the underlying implementation."
-)
-public inline fun <reified T> KtAnnotationEntry.findAnnotationArgument(
-  name: String,
-  index: Int
-): T? {
-  val annotationValues = valueArguments
-    .asSequence()
-    .filterIsInstance<KtValueArgument>()
-
-  // First check if the is any named parameter. Named parameters allow a different order of
-  // arguments.
-  annotationValues
-    .firstNotNullOfOrNull { valueArgument ->
-      val children = valueArgument.children
-      if (children.size == 2 && children[0] is KtValueArgumentName &&
-        (children[0] as KtValueArgumentName).asName.asString() == name &&
-        children[1] is T
-      ) {
-        children[1] as T
-      } else {
-        null
-      }
-    }
-    ?.let { return it }
-
-  // If there is no named argument, then take the first argument, which must be a class literal
-  // expression, e.g. @ContributesTo(Unit::class)
-  return annotationValues
-    .elementAtOrNull(index)
-    ?.let { valueArgument ->
-      valueArgument.children.firstOrNull() as? T
-    }
 }
 
 @ExperimentalAnvilApi
@@ -460,8 +319,8 @@ public fun PsiElement.requireFqName(
     .takeIf { it.canResolveFqName(module) }
     ?.let { return it }
 
-  findFqNameInSuperTypes(module, classReference)
-    ?.let { return it }
+  findClassReferenceInSuperTypes(module, classReference)
+    ?.let { return it.fqName }
 
   // Check if it's a named import.
   containingKtFile.importDirectives
@@ -476,42 +335,18 @@ public fun PsiElement.requireFqName(
   )
 }
 
-private fun PsiElement.findFqNameInSuperTypes(
+private fun PsiElement.findClassReferenceInSuperTypes(
   module: ModuleDescriptor,
-  classReference: String
-): FqName? {
-  fun tryToResolveClassFqName(outerClass: FqName): FqName? =
-    outerClass.descendant(classReference).takeIf { it.canResolveFqName(module) }
-
-  return parents.filterIsInstance<KtClassOrObject>()
-    .flatMap { clazz ->
-      tryToResolveClassFqName(clazz.requireFqName())?.let { return@flatMap sequenceOf(it) }
-
-      // At this point we can't work with Psi APIs anymore. We need to resolve the super types
-      // and try to find inner class in them.
-      val descriptor = clazz.classDescriptor(module)
-      listOf(descriptor.defaultType).getAllSuperTypes()
-        .mapNotNull { tryToResolveClassFqName(it) }
+  className: String
+): ClassReference? {
+  return parents
+    .filterIsInstance<KtClassOrObject>()
+    .map { it.toClassReference(module) }
+    .flatMap { it.allSuperTypeClassReferences(includeSelf = true) }
+    .mapNotNull { clazz ->
+      clazz.fqName.descendant(className).toClassReferenceOrNull(module)
     }
     .firstOrNull()
-}
-
-@ExperimentalAnvilApi
-public fun KtClassOrObject.functions(
-  includeCompanionObjects: Boolean
-): List<KtNamedFunction> = classBodies(includeCompanionObjects).flatMap { it.functions }
-
-@ExperimentalAnvilApi
-public fun KtClassOrObject.properties(
-  includeCompanionObjects: Boolean
-): List<KtProperty> = classBodies(includeCompanionObjects).flatMap { it.properties }
-
-private fun KtClassOrObject.classBodies(includeCompanionObjects: Boolean): List<KtClassBody> {
-  val elements = children.toMutableList()
-  if (includeCompanionObjects) {
-    elements += companionObjects.flatMap { it.children.toList() }
-  }
-  return elements.filterIsInstance<KtClassBody>()
 }
 
 @ExperimentalAnvilApi
@@ -528,9 +363,6 @@ public fun KtTypeReference.isGenericType(): Boolean {
 
 @ExperimentalAnvilApi
 public fun KtTypeReference.isFunctionType(): Boolean = typeElement is KtFunctionType
-
-@ExperimentalAnvilApi
-public fun KtClassOrObject.isGenericClass(): Boolean = typeParameterList != null
 
 @ExperimentalAnvilApi
 public fun KtCallableDeclaration.requireTypeReference(module: ModuleDescriptor): KtTypeReference {
@@ -565,109 +397,3 @@ public fun KtUserType.findExtendsBound(): List<FqName> {
     .typeParameters
     .mapNotNull { it.fqName }
 }
-
-@ExperimentalAnvilApi
-public fun KtClassOrObject.classDescriptor(module: ModuleDescriptor): ClassDescriptor {
-  return classDescriptorOrNull(module)
-    ?: throw AnvilCompilationException(
-      "Couldn't resolve class for ${requireFqName()}.",
-      element = this
-    )
-}
-
-@ExperimentalAnvilApi
-public fun KtClassOrObject.classDescriptorOrNull(module: ModuleDescriptor): ClassDescriptor? {
-  return module.asAnvilModuleDescriptor()
-    .resolveFqNameOrNull(requireFqName(), KotlinLookupLocation(this))
-}
-
-@ExperimentalAnvilApi
-public fun FqName.classDescriptor(module: ModuleDescriptor): ClassDescriptor {
-  return classDescriptorOrNull(module)
-    ?: throw AnvilCompilationException("Couldn't resolve class for $this.")
-}
-
-@ExperimentalAnvilApi
-public fun FqName.classDescriptorOrNull(module: ModuleDescriptor): ClassDescriptor? {
-  return module.asAnvilModuleDescriptor().resolveFqNameOrNull(this)
-}
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#isQualifier]"
-)
-public fun KtAnnotationEntry.isQualifier(module: ModuleDescriptor): Boolean {
-  return typeReference
-    ?.requireFqName(module)
-    // Often entries are annotated with @Inject, in this case we know it's not a qualifier and we
-    // can stop early.
-    ?.takeIf { it != injectFqName }
-    ?.classDescriptor(module)
-    ?.annotations
-    ?.hasAnnotation(qualifierFqName)
-    ?: false
-}
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
-    "See [AnnotationReference#isMapKey]"
-)
-public fun KtAnnotationEntry.isMapKey(module: ModuleDescriptor): Boolean {
-  return typeReference
-    ?.requireFqName(module)
-    ?.takeIf { it != injectFqName }
-    ?.classDescriptor(module)
-    ?.annotations
-    ?.hasAnnotation(mapKeyFqName)
-    ?: false
-}
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on PSI and make the code agnostic to the underlying implementation. " +
-    "See [ClassReference#generateClassName]"
-)
-public fun KtClassOrObject.generateClassName(
-  separator: String = "_"
-): String =
-  parentsWithSelf
-    .filterIsInstance<KtClassOrObject>()
-    .toList()
-    .reversed()
-    .joinToString(separator = separator) {
-      it.requireFqName()
-        .shortName()
-        .asString()
-    }
-
-@ExperimentalAnvilApi
-public fun KtTypeReference.containingClassReferenceOrNull(
-  module: ModuleDescriptor
-): ClassReference? {
-  return typeElement
-    ?.containingClass()
-    ?.toClassReference(module)
-}
-
-@ExperimentalAnvilApi
-public fun KtTypeReference.requireContainingClassReference(
-  module: ModuleDescriptor
-): ClassReference {
-  return containingClassReferenceOrNull(module)
-    ?: throw AnvilCompilationException(
-      "Unable to find a containing class.",
-      element = this
-    )
-}
-
-@ExperimentalAnvilApi
-public fun KtCollectionLiteralExpression.toFqNames(
-  module: ModuleDescriptor
-): List<FqName> = children
-  .filterIsInstance<KtClassLiteralExpression>()
-  .map { it.requireFqName(module) }

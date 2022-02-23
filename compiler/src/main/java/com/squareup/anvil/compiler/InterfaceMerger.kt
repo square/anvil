@@ -5,10 +5,11 @@ import com.squareup.anvil.compiler.codegen.find
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
 import com.squareup.anvil.compiler.codegen.parentScope
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
-import com.squareup.anvil.compiler.internal.getAllSuperTypes
+import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
+import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -56,7 +57,6 @@ internal class InterfaceMerger(
         annotation = contributesToFqName,
         scope = mergeScope.fqName
       )
-      .map { it.toClassReference(module) }
       .filter {
         it.isInterface() && it.annotations.find(daggerModuleFqName).singleOrNull() == null
       }
@@ -162,16 +162,17 @@ internal class InterfaceMerger(
       }
 
     if (excludedClasses.isNotEmpty()) {
-      val intersect = supertypes.getAllSuperTypes()
-        .toList()
-        .intersect(excludedClasses.map { it.fqName }.toSet())
+      val intersect = supertypes
+        .map { it.classDescriptor().toClassReference(module) }
+        .flatMap { it.allSuperTypeClassReferences(includeSelf = true) }
+        .intersect(excludedClasses.toSet())
 
       if (intersect.isNotEmpty()) {
         throw AnvilCompilationExceptionClassReference(
           classReference = mergeAnnotatedClass,
           message = "${mergeAnnotatedClass.clazz.name} excludes types that it implements or " +
             "extends. These types cannot be excluded. Look at all the super types to find these " +
-            "classes: ${intersect.joinToString()}"
+            "classes: ${intersect.joinToString { it.fqName.asString() }}"
         )
       }
     }
@@ -203,7 +204,6 @@ internal class InterfaceMerger(
         annotation = contributesSubcomponentFqName,
         scope = null
       )
-      .map { it.toClassReference(module) }
       .filter {
         it.atLeastOneAnnotation(contributesSubcomponentFqName).single().parentScope() == scope
       }

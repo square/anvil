@@ -13,14 +13,15 @@ import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.fqNameOrNull
-import com.squareup.anvil.compiler.internal.generateClassName
 import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isNullable
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
+import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.reference.toAnnotationReference
+import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.requireTypeReference
@@ -229,6 +230,8 @@ private fun KtTypeElement.singleTypeArgument(): KtTypeReference {
 
 // TODO
 //  Include methods: https://github.com/square/anvil/issues/339
+
+// TODO: Use ClassReference
 internal fun KtClassOrObject.injectedMembers(module: ModuleDescriptor) = children
   .asSequence()
   .filterIsInstance<KtClassBody>()
@@ -505,7 +508,9 @@ private fun KtProperty.toMemberInjectParameter(
   val packageName = containingClass.containingKtFile.packageFqName.asString()
 
   // TODO: remove deprecated function call
-  val memberInjectorClassName = "${containingClass.generateClassName()}_MembersInjector"
+  val memberInjectorClassName =
+    "${containingClass.toClassReference(module).generateClassName().relativeClassName}" +
+      "_MembersInjector"
   val memberInjectorClass = ClassName(packageName, memberInjectorClassName)
 
   val qualifierAnnotations = annotationEntries
