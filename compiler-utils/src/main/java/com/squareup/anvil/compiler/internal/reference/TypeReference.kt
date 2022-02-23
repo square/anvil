@@ -2,11 +2,14 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.internal.asTypeNameOrNull
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.reference.TypeReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.TypeReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.requireTypeName
+import com.squareup.kotlinpoet.TypeName
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.types.KotlinType
 import kotlin.LazyThreadSafetyMode.NONE
@@ -22,6 +25,8 @@ public sealed class TypeReference {
    */
   protected abstract val classReference: ClassReference?
 
+  protected abstract val typeName: TypeName?
+
   public val module: AnvilModuleDescriptor get() = declaringClass.module
 
   public fun asClassReferenceOrNull(): ClassReference? = classReference
@@ -29,6 +34,13 @@ public sealed class TypeReference {
     ?: throw AnvilCompilationExceptionTypReference(
       typeReference = this,
       message = "Unable to convert a type reference to a class reference."
+    )
+
+  public fun asTypeNameOrNull(): TypeName? = typeName
+  public fun asTypeName(): TypeName = typeName
+    ?: throw AnvilCompilationExceptionTypReference(
+      typeReference = this,
+      message = "Unable to convert a type reference to a type reference."
     )
 
   // Keep this internal, because we need help from other classes for the descriptor
@@ -52,6 +64,15 @@ public sealed class TypeReference {
         ?.toClassReference(module)
     }
 
+    override val typeName: TypeName? by lazy(NONE) {
+      try {
+        type.requireTypeName(module)
+      } catch (e: AnvilCompilationException) {
+        // The goal is to inline the function above and then stop throwing an exception.
+        null
+      }
+    }
+
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): ClassReference? {
       classReference?.let { return it }
 
@@ -66,6 +87,10 @@ public sealed class TypeReference {
   ) : TypeReference() {
     override val classReference: ClassReference? by lazy(NONE) {
       type.classDescriptorOrNull()?.toClassReference(module)
+    }
+
+    override val typeName: TypeName? by lazy(NONE) {
+      type.asTypeNameOrNull()
     }
 
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): ClassReference? {
