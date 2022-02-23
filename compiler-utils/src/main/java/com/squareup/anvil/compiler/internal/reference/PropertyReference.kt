@@ -19,7 +19,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import kotlin.LazyThreadSafetyMode.NONE
 
 @ExperimentalAnvilApi
-public sealed class PropertyReference {
+public sealed class PropertyReference : AnnotatedReference {
 
   public abstract val fqName: FqName
   public abstract val declaringClass: ClassReference
@@ -28,8 +28,6 @@ public sealed class PropertyReference {
 
   public val name: String get() = fqName.shortName().asString()
   public val memberName: MemberName get() = MemberName(declaringClass.asClassName(), name)
-
-  public abstract val annotations: List<AnnotationReference>
 
   public abstract fun visibility(): Visibility
 
@@ -100,10 +98,6 @@ public sealed class PropertyReference {
     }
   }
 }
-
-@ExperimentalAnvilApi
-public fun PropertyReference.isAnnotatedWith(fqName: FqName): Boolean =
-  annotations.any { it.fqName == fqName }
 
 @ExperimentalAnvilApi
 public fun KtProperty.toPropertyReference(
