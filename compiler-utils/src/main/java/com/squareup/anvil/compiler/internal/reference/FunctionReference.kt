@@ -53,7 +53,6 @@ public sealed class FunctionReference : AnnotatedReference {
   public abstract fun isConstructor(): Boolean
   public abstract fun visibility(): Visibility
 
-  // TODO: move or remove?
   public fun resolveGenericReturnTypeOrNull(
     implementingClass: ClassReference
   ): ClassReference? {
@@ -67,6 +66,14 @@ public sealed class FunctionReference : AnnotatedReference {
         // in the implementing that implements THIS function reference for which we're trying to
         // resolve the generic return type. Once we found the function in the implementing class,
         // we can take its return, because that's what we're looking for.
+        //
+        // The implementation for Psi is completely different. Imagine this class:
+        //
+        //   class Abc : Def<String>
+        //
+        // The Descriptor APIs don't allow us to query the generic type <String>, but we can get
+        // the type from the actual function as described above. Psi can't do this and has to walk
+        // the hierarchy of classes to make the connections.
         val implementingFunction = implementingClass.functions
           .singleOrNull { function ->
             val allOverriddenFunctions = generateSequence(
