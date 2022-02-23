@@ -5,10 +5,8 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.asFunctionType
 import com.squareup.anvil.compiler.internal.asTypeNameOrNull
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
-import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.reference.ParameterReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ParameterReference.Psi
-import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.TypeName
@@ -23,29 +21,19 @@ public sealed class ParameterReference : AnnotatedReference {
   public abstract val declaringFunction: FunctionReference
   public val module: AnvilModuleDescriptor get() = declaringFunction.module
 
+  protected abstract val type: TypeReference?
+
   /**
    * The type can be null for generic type parameters like `T`. In this case try to resolve the
-   * type with [resolveGenericTypeOrNull].
+   * type with [TypeReference.resolveGenericTypeOrNull].
    */
-  public abstract fun typeOrNull(): ClassReference?
-  public fun type(): ClassReference = typeOrNull()
+  public fun typeOrNull(): TypeReference? = type
+  public fun type(): TypeReference = type
     ?: throw AnvilCompilationExceptionParameterReference(
       parameterReference = this,
       message = "Unable to get type for the parameter with name $name of " +
         "function ${declaringFunction.fqName}"
     )
-
-  public abstract fun resolveGenericTypeOrNull(
-    implementingClass: ClassReference.Psi
-  ): ClassReference?
-
-  public fun resolveGenericType(implementingClass: ClassReference.Psi): ClassReference =
-    resolveGenericTypeOrNull(implementingClass)
-      ?: throw AnvilCompilationExceptionParameterReference(
-        parameterReference = this,
-        message = "Unable to resolve type for the parameter with name $name with the " +
-          "implementing class ${implementingClass.fqName}."
-      )
 
   public abstract fun resolveTypeNameOrNull(
     implementingClass: ClassReference.Psi
@@ -91,23 +79,8 @@ public sealed class ParameterReference : AnnotatedReference {
       }
     }
 
-    override fun typeOrNull(): ClassReference? {
-      return parameter.typeReference
-        ?.let { declaringFunction.declaringClass.resolveTypeReference(it) }
-        ?.requireFqName(module)
-        ?.toClassReference(module)
-    }
-
-    override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): ClassReference? {
-      typeOrNull()?.let { return it }
-
-      val typeReference = parameter.typeReference
-        ?.let { typeReference ->
-          implementingClass.resolveTypeReference(typeReference)
-        }
-        ?: parameter.typeReference
-
-      return typeReference?.fqNameOrNull(module)?.toClassReference(module)
+    override val type: TypeReference.Psi? by lazy(NONE) {
+      parameter.typeReference?.toTypeReference(declaringFunction.declaringClass)
     }
 
     override fun resolveTypeNameOrNull(implementingClass: ClassReference.Psi): TypeName? {
@@ -130,7 +103,7 @@ public sealed class ParameterReference : AnnotatedReference {
 
   public class Descriptor(
     public val parameter: ValueParameterDescriptor,
-    override val declaringFunction: FunctionReference
+    override val declaringFunction: FunctionReference.Descriptor
   ) : ParameterReference() {
     override val name: String = parameter.name.asString()
 
@@ -140,17 +113,8 @@ public sealed class ParameterReference : AnnotatedReference {
       }
     }
 
-    override fun typeOrNull(): ClassReference? {
-      return parameter.type.classDescriptorOrNull()?.toClassReference(declaringFunction.module)
-    }
-
-    override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): ClassReference? {
-      typeOrNull()?.let { return it }
-
-      return implementingClass
-        .resolveGenericKotlinTypeOrNull(declaringFunction.declaringClass, parameter.type)
-        ?.fqNameOrNull(module)
-        ?.toClassReferenceOrNull(module)
+    override val type: TypeReference.Descriptor? by lazy(NONE) {
+      parameter.type.toTypeReference(declaringFunction.declaringClass)
     }
 
     override fun resolveTypeNameOrNull(implementingClass: ClassReference.Psi): TypeName? {

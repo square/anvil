@@ -31,7 +31,9 @@ public sealed class TypeReference {
       message = "Unable to convert a type reference to a class reference."
     )
 
-  public abstract fun resolveGenericTypeOrNull(
+  // Keep this internal, because we need help from other classes for the descriptor
+  // implementation, e.g. FunctionReference resolves the return type or ParameterReference.
+  internal abstract fun resolveGenericTypeOrNull(
     implementingClass: ClassReference.Psi
   ): ClassReference?
 

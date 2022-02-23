@@ -87,6 +87,7 @@ public sealed class AnnotationArgumentReference {
             .parameters
             .single { it.name == resolvedName }
             .type()
+            .asClassReference()
             .fqName
             .asString()
 
