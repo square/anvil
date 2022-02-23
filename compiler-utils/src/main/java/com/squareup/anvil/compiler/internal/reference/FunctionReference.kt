@@ -32,7 +32,7 @@ import kotlin.LazyThreadSafetyMode.NONE
  * [FunctionDescriptor] references, to streamline parsing.
  */
 @ExperimentalAnvilApi
-public sealed class FunctionReference {
+public sealed class FunctionReference : AnnotatedReference {
 
   public abstract val fqName: FqName
   public abstract val declaringClass: ClassReference
@@ -40,7 +40,6 @@ public sealed class FunctionReference {
 
   public val module: AnvilModuleDescriptor get() = declaringClass.module
 
-  public abstract val annotations: List<AnnotationReference>
   public abstract val parameters: List<ParameterReference>
 
   public abstract fun isAbstract(): Boolean
@@ -227,10 +226,6 @@ public sealed class FunctionReference {
     }
   }
 }
-
-@ExperimentalAnvilApi
-public fun FunctionReference.isAnnotatedWith(fqName: FqName): Boolean =
-  annotations.any { it.fqName == fqName }
 
 @ExperimentalAnvilApi
 public fun KtFunction.toFunctionReference(

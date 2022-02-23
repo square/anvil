@@ -21,7 +21,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.reference.isAnnotatedWith
 import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.requireTypeReference
 import com.squareup.anvil.compiler.internal.safePackageString

@@ -17,13 +17,11 @@ import org.jetbrains.kotlin.psi.KtParameter
 import kotlin.LazyThreadSafetyMode.NONE
 
 @ExperimentalAnvilApi
-public sealed class ParameterReference {
+public sealed class ParameterReference : AnnotatedReference {
 
   public abstract val name: String
   public abstract val declaringFunction: FunctionReference
   public val module: AnvilModuleDescriptor get() = declaringFunction.module
-
-  public abstract val annotations: List<AnnotationReference>
 
   /**
    * The type can be null for generic type parameters like `T`. In this case try to resolve the

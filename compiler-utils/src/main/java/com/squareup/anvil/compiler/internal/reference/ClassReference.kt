@@ -58,7 +58,7 @@ import kotlin.LazyThreadSafetyMode.NONE
  * @see toClassReference
  */
 @ExperimentalAnvilApi
-public sealed class ClassReference : Comparable<ClassReference> {
+public sealed class ClassReference : Comparable<ClassReference>, AnnotatedReference {
 
   public abstract val classId: ClassId
   public abstract val fqName: FqName
@@ -69,7 +69,6 @@ public sealed class ClassReference : Comparable<ClassReference> {
 
   public abstract val constructors: List<FunctionReference>
   public abstract val functions: List<FunctionReference>
-  public abstract val annotations: List<AnnotationReference>
   public abstract val properties: List<PropertyReference>
 
   public abstract fun isInterface(): Boolean
@@ -492,10 +491,6 @@ public fun FqName.toClassReference(module: ModuleDescriptor): ClassReference {
   return toClassReferenceOrNull(module)
     ?: throw AnvilCompilationException("Couldn't resolve ClassReference for $this.")
 }
-
-@ExperimentalAnvilApi
-public fun ClassReference.isAnnotatedWith(fqName: FqName): Boolean =
-  annotations.any { it.fqName == fqName }
 
 @ExperimentalAnvilApi
 public fun ClassReference.generateClassName(
