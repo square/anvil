@@ -76,15 +76,7 @@ public sealed class FunctionReference : AnnotatedReference {
         // the hierarchy of classes to make the connections.
         val implementingFunction = implementingClass.functions
           .singleOrNull { function ->
-            val allOverriddenFunctions = generateSequence(
-              function.function.overriddenDescriptors
-            ) { overriddenFunctions ->
-              overriddenFunctions
-                .flatMap { it.overriddenDescriptors }
-                .takeIf { it.isNotEmpty() }
-            }.flatten()
-
-            allOverriddenFunctions.any { it.fqNameSafe == fqName }
+            function.overriddenFunctions.any { it.fqNameSafe == fqName }
           }
 
         implementingFunction?.returnTypeOrNull()?.asClassReference()
@@ -173,6 +165,16 @@ public sealed class FunctionReference : AnnotatedReference {
 
     override val returnType: TypeReference.Descriptor? by lazy(NONE) {
       function.returnType?.toTypeReference(declaringClass)
+    }
+
+    internal val overriddenFunctions by lazy(NONE) {
+      generateSequence(
+        function.overriddenDescriptors
+      ) { overriddenFunctions ->
+        overriddenFunctions
+          .flatMap { it.overriddenDescriptors }
+          .takeIf { it.isNotEmpty() }
+      }.flatten().toList()
     }
 
     override fun isAbstract(): Boolean = function.modality == ABSTRACT
