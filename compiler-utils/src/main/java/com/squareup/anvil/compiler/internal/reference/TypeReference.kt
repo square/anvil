@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.internal.asFunctionType
 import com.squareup.anvil.compiler.internal.asTypeNameOrNull
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.fqNameOrNull
@@ -9,6 +10,7 @@ import com.squareup.anvil.compiler.internal.reference.TypeReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.TypeReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeName
+import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.TypeName
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.types.KotlinType
@@ -49,6 +51,10 @@ public sealed class TypeReference {
     implementingClass: ClassReference.Psi
   ): ClassReference?
 
+  internal abstract fun resolveGenericTypeNameOrNull(
+    implementingClass: ClassReference.Psi
+  ): TypeName?
+
   override fun toString(): String {
     return "${this::class.qualifiedName}(declaringClass=$declaringClass, " +
       "classReference=$classReference)"
@@ -79,6 +85,23 @@ public sealed class TypeReference {
       val typeReference = implementingClass.resolveTypeReference(type) ?: type
       return typeReference.fqNameOrNull(module)?.toClassReference(module)
     }
+
+    override fun resolveGenericTypeNameOrNull(implementingClass: ClassReference.Psi): TypeName? {
+      val typeReference = implementingClass.resolveTypeReference(type) ?: type
+      return try {
+        typeReference.requireTypeName(module)
+          .let { typeName ->
+            // This is a special case when mixing parsing between descriptors and PSI.  Descriptors
+            // will always represent lambda types as kotlin.Function* types, so lambda arguments
+            // must be converted or their signatures won't match.
+            // see https://github.com/square/anvil/issues/400
+            (typeName as? LambdaTypeName)?.asFunctionType() ?: typeName
+          }
+      } catch (e: AnvilCompilationException) {
+        // The goal is to inline the function above and then stop throwing an exception.
+        null
+      } ?: typeName
+    }
   }
 
   public class Descriptor internal constructor(
@@ -100,6 +123,17 @@ public sealed class TypeReference {
         .resolveGenericKotlinTypeOrNull(declaringClass, type)
         ?.fqNameOrNull(module)
         ?.toClassReferenceOrNull(module)
+    }
+
+    override fun resolveGenericTypeNameOrNull(implementingClass: ClassReference.Psi): TypeName? {
+      classReference?.let {
+        // Then it's a normal type and not a generic type.
+        return asTypeName()
+      }
+
+      return implementingClass.resolveGenericKotlinTypeOrNull(declaringClass, type)
+        ?.requireTypeName(module)
+        ?: typeName
     }
   }
 }
