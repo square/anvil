@@ -103,7 +103,9 @@ internal fun FqName.asClassNameOrNull(module: ModuleDescriptor): ClassName? {
   return null
 }
 
+@Suppress("DeprecatedCallableAddReplaceWith")
 @ExperimentalAnvilApi
+@Deprecated("Don't rely on PSI and make the code agnostic to the underlying implementation.")
 public fun KtTypeReference.requireTypeName(
   module: ModuleDescriptor
 ): TypeName {
@@ -218,7 +220,9 @@ public fun ClassId.asClassName(): ClassName {
   )
 }
 
+@Suppress("DeprecatedCallableAddReplaceWith")
 @ExperimentalAnvilApi
+@Deprecated("Don't rely on PSI and make the code agnostic to the underlying implementation.")
 public fun KotlinType.asTypeName(): TypeName {
   return asTypeNameOrNull { true }!!
 }
@@ -229,6 +233,10 @@ public fun KotlinType.asTypeName(): TypeName {
  *                      resolve type arguments.
  */
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on descriptors and make the code agnostic to the underlying implementation."
+)
 public fun KotlinType.asTypeNameOrNull(
   rawTypeFilter: (ClassName) -> Boolean = { true }
 ): TypeName? {
