@@ -306,7 +306,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     val functions = componentInterface.functions
       .filter { it.isAbstract() && it.visibility() == PUBLIC }
       .filter {
-        val returnType = it.returnType()
+        val returnType = it.returnType().asClassReference()
         returnType == contribution.clazz || (factoryClass != null && returnType == factoryClass)
       }
 
@@ -344,7 +344,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
         val createComponentFunctions = factory.functions
           .filter { it.isAbstract() }
-          .filter { it.returnType().fqName == contributionFqName }
+          .filter { it.returnType().asClassReference().fqName == contributionFqName }
 
         if (createComponentFunctions.size != 1) {
           throw AnvilCompilationExceptionClassReference(

@@ -2,8 +2,6 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.classDescriptorOrNull
-import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.reference.FunctionReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.FunctionReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
@@ -42,33 +40,27 @@ public sealed class FunctionReference : AnnotatedReference {
 
   public abstract val parameters: List<ParameterReference>
 
-  public abstract fun isAbstract(): Boolean
-  public abstract fun isConstructor(): Boolean
-  public abstract fun visibility(): Visibility
+  protected abstract val returnType: TypeReference?
 
-  /**
-   * The return type can be null for generic types like `T`. In this case try to resolve the
-   * return type with [resolveGenericReturnTypeOrNullPsi].
-   */
-  public abstract fun returnTypeOrNull(): ClassReference?
-
-  public fun returnType(): ClassReference = returnTypeOrNull()
+  public fun returnTypeOrNull(): TypeReference? = returnType
+  public fun returnType(): TypeReference = returnType
     ?: throw AnvilCompilationExceptionFunctionReference(
       functionReference = this,
       message = "Unable to get the return type for function $fqName."
     )
 
-  protected abstract fun resolveGenericReturnTypeOrNullPsi(
-    implementingClass: ClassReference.Psi
-  ): ClassReference?
+  public abstract fun isAbstract(): Boolean
+  public abstract fun isConstructor(): Boolean
+  public abstract fun visibility(): Visibility
 
+  // TODO: move or remove?
   public fun resolveGenericReturnTypeOrNull(
     implementingClass: ClassReference
   ): ClassReference? {
     return when (implementingClass) {
       // For Psi classes the implementation is different depending on whether this function is a
       // Psi or Descriptor function, so let each concrete class implement it.
-      is ClassReference.Psi -> resolveGenericReturnTypeOrNullPsi(implementingClass)
+      is ClassReference.Psi -> returnType?.resolveGenericTypeOrNull(implementingClass)
       is ClassReference.Descriptor -> {
         // If the implementing class is a Descriptor, then the function keeps track of all
         // functions it's overriding in the hierarchy. We use that information to find the function
@@ -88,7 +80,7 @@ public sealed class FunctionReference : AnnotatedReference {
             allOverriddenFunctions.any { it.fqNameSafe == fqName }
           }
 
-        implementingFunction?.returnTypeOrNull()
+        implementingFunction?.returnTypeOrNull()?.asClassReference()
       }
     }
   }
@@ -128,6 +120,10 @@ public sealed class FunctionReference : AnnotatedReference {
       }
     }
 
+    override val returnType: TypeReference.Psi? by lazy(NONE) {
+      function.typeReference?.toTypeReference(declaringClass)
+    }
+
     override val parameters: List<ParameterReference.Psi> by lazy(NONE) {
       function.valueParameters.map { it.toParameterReference(this) }
     }
@@ -150,29 +146,6 @@ public sealed class FunctionReference : AnnotatedReference {
         )
       }
     }
-
-    override fun returnTypeOrNull(): ClassReference? {
-      return function.typeReference
-        ?.let {
-          declaringClass.resolveTypeReference(it)
-        }
-        ?.requireFqName(module)
-        ?.toClassReference(module)
-    }
-
-    protected override fun resolveGenericReturnTypeOrNullPsi(
-      implementingClass: ClassReference.Psi
-    ): ClassReference? {
-      returnTypeOrNull()?.let { return it }
-
-      val typeReference = function.typeReference
-        ?.let { typeReference ->
-          implementingClass.resolveTypeReference(typeReference)
-        }
-        ?: function.typeReference
-
-      return typeReference?.fqNameOrNull(module)?.toClassReference(module)
-    }
   }
 
   public class Descriptor internal constructor(
@@ -191,6 +164,10 @@ public sealed class FunctionReference : AnnotatedReference {
       function.valueParameters.map { it.toParameterReference(this) }
     }
 
+    override val returnType: TypeReference.Descriptor? by lazy(NONE) {
+      function.returnType?.toTypeReference(declaringClass)
+    }
+
     override fun isAbstract(): Boolean = function.modality == ABSTRACT
 
     override fun isConstructor(): Boolean = function is ClassConstructorDescriptor
@@ -205,23 +182,6 @@ public sealed class FunctionReference : AnnotatedReference {
           classReference = declaringClass,
           message = "Couldn't get visibility $visibility for function $fqName."
         )
-      }
-    }
-
-    override fun returnTypeOrNull(): ClassReference? {
-      return function.returnType?.classDescriptorOrNull()?.toClassReference(module)
-    }
-
-    protected override fun resolveGenericReturnTypeOrNullPsi(
-      implementingClass: ClassReference.Psi
-    ): ClassReference? {
-      returnTypeOrNull()?.let { return it }
-
-      return function.returnType?.let {
-        implementingClass
-          .resolveGenericKotlinTypeOrNull(declaringClass, it)
-          ?.fqNameOrNull(module)
-          ?.toClassReferenceOrNull(module)
       }
     }
   }
