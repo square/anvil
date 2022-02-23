@@ -59,7 +59,10 @@ public sealed class FunctionReference : AnnotatedReference {
     return when (implementingClass) {
       // For Psi classes the implementation is different depending on whether this function is a
       // Psi or Descriptor function, so let each concrete class implement it.
-      is ClassReference.Psi -> returnType?.resolveGenericTypeOrNull(implementingClass)
+      is ClassReference.Psi ->
+        returnType
+          ?.resolveGenericTypeOrNull(implementingClass)
+          ?.asClassReferenceOrNull()
       is ClassReference.Descriptor -> {
         // If the implementing class is a Descriptor, then the function keeps track of all
         // functions it's overriding in the hierarchy. We use that information to find the function
