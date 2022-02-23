@@ -3,7 +3,6 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.asClassName
-import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
@@ -31,12 +30,7 @@ import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
-import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
-import org.jetbrains.kotlin.psi.KtTypeArgumentList
-import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.allConstructors
-import org.jetbrains.kotlin.psi.psiUtil.containingClass
-import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.DescriptorUtils
@@ -45,9 +39,6 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
-import org.jetbrains.kotlin.types.DefinitelyNotNullType
-import org.jetbrains.kotlin.types.FlexibleType
-import org.jetbrains.kotlin.types.KotlinType
 import kotlin.LazyThreadSafetyMode.NONE
 
 /**
@@ -104,7 +95,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
    * @param parameterName The name of the parameter to be found, not including any variance modifiers.
    * @return The 0-based index of a declared generic type.
    */
-  protected abstract fun indexOfTypeParameter(parameterName: String): Int
+  internal abstract fun indexOfTypeParameter(parameterName: String): Int
 
   public open fun companionObjects(): List<ClassReference> =
     innerClassesAndObjects.filter { it.isCompanion() && it.enclosingClass() == this }
@@ -221,164 +212,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
     override fun companionObjects(): List<Psi> =
       super.companionObjects() as List<Psi>
 
-    /**
-     * Safely resolves a [KotlinType], when that type reference is a generic expressed by a type
-     * variable name. This is done by inspecting the class hierarchy to find where the generic
-     * type is declared, then resolving *that* reference.
-     *
-     * For instance, given:
-     *
-     * ```
-     * interface SomeFactory : Function1<String, SomeClass>
-     * ```
-     *
-     * There's an invisible `fun invoke(p1: P1): R`. If `SomeFactory` is parsed using PSI (such
-     * as if it's generated), then the function can only be parsed to have the projected types
-     * of `P1` and `R`
-     *
-     * @receiver The class which actually references the type. In the above example, this
-     * would be `SomeFactory`.
-     * @param declaringClass The class which declares the generic type name. In the above
-     * example, this would be `Function1`.
-     * @param typeToResolve The generic reference to be resolved. In the above example, this
-     * is the `T` **return type**.
-     */
-    public fun resolveGenericKotlinTypeOrNull(
-      declaringClass: ClassReference,
-      typeToResolve: KotlinType
-    ): KtTypeReference? {
-      val parameterKotlinType = when (typeToResolve) {
-        is FlexibleType -> {
-          // A FlexibleType comes from Java code where the compiler doesn't know whether it's a
-          // nullable or non-nullable type. toString() returns something like "(T..T?)". To get
-          // proper results we use the type that's not nullable, "T" in this example.
-          if (typeToResolve.lowerBound.isMarkedNullable) {
-            typeToResolve.upperBound
-          } else {
-            typeToResolve.lowerBound
-          }
-        }
-        is DefinitelyNotNullType -> {
-          // This is known to be not null in Java, such as something annotated `@NotNull` or
-          // controlled by a JSR305 or jSpecify annotation.
-          // This is a special type and this logic appears to match how kotlinc is handling it here
-          // https://github.com/JetBrains/kotlin/blob/9ee0d6b60ac4f0ea0ccc5dd01146bab92fabcdf2/core/descriptors/src/org/jetbrains/kotlin/types/TypeUtils.java#L455-L458
-          typeToResolve.original
-        }
-        else -> {
-          typeToResolve
-        }
-      }
-
-      return resolveGenericTypeReference(declaringClass, parameterKotlinType.toString())
-    }
-
-    /**
-     * Safely resolves a PSI [KtTypeReference], when that type reference may be a generic
-     * expressed by a type variable name. This is done by inspecting the class hierarchy to
-     * find where the generic type is declared, then resolving *that* reference.
-     *
-     * For instance, given:
-     *
-     * ```
-     * interface Factory<T> {
-     *   fun create(): T
-     * }
-     *
-     * interface ServiceFactory : Factory<Service>
-     * ```
-     *
-     * The KtTypeReference `T` will fail to resolve, since it isn't a type. This function will
-     * instead look to the `ServiceFactory` interface, then look at the supertype declaration
-     * in order to determine the type.
-     *
-     * @receiver The class which actually references the type. In the above example, this would
-     * be `ServiceFactory`.
-     * @param typeReference The generic reference to be resolved. In the above example, this
-     * is `T`.
-     */
-    public fun resolveTypeReference(typeReference: KtTypeReference): KtTypeReference? {
-      // If the element isn't a type variable name like `T`, it can be resolved through imports.
-      typeReference.typeElement?.fqNameOrNull(module)
-        ?.let { return typeReference }
-
-      val declaringClass = typeReference.containingClass()?.toClassReference(module)
-        ?: return null
-      val parameterName = typeReference.text
-
-      return resolveGenericTypeReference(declaringClass, parameterName)
-    }
-
-    private fun resolveGenericTypeReference(
-      declaringClass: ClassReference,
-      parameterName: String
-    ): KtTypeReference? {
-      val declaringClassFqName = declaringClass.fqName
-
-      // If the class/interface declaring the generic is the receiver class,
-      // then the generic hasn't been set to a concrete type and can't be resolved.
-      if (clazz.requireFqName() == declaringClassFqName) {
-        return null
-      }
-
-      // Used to determine which parameter to look at in a KtTypeArgumentList.
-      val indexOfType = declaringClass.indexOfTypeParameter(parameterName)
-
-      // Find where the supertype is actually declared by matching the FqName of the
-      // SuperTypeListEntry to the type which declares the generic we're trying to resolve.
-      // After finding the SuperTypeListEntry, just take the TypeReference from its type
-      // argument list.
-      val resolvedTypeReference = superTypeListEntryOrNull(module, declaringClassFqName)
-        ?.typeReference
-        ?.typeElement
-        ?.getChildOfType<KtTypeArgumentList>()
-        ?.arguments
-        ?.get(indexOfType)
-        ?.typeReference
-
-      return if (resolvedTypeReference != null) {
-        // This will check that the type can be imported.
-        resolveTypeReference(resolvedTypeReference)
-      } else {
-        null
-      }
-    }
-
-    /**
-     * Find where a super type is extended/implemented by matching the FqName of a SuperTypeListEntry to
-     * the FqName of the target super type.
-     *
-     * For instance, given:
-     *
-     * ```
-     * interface Base<T> {
-     *   fun create(): T
-     * }
-     *
-     * abstract class Middle : Comparable<MyClass>, Provider<Something>, Base<Something>
-     *
-     * class InjectClass : Middle()
-     * ```
-     *
-     * We start at the declaration of `InjectClass`, looking for a super declaration of `Base<___>`.
-     * Since `InjectClass` doesn't declare it, we look through the supers of `Middle` and find it, then
-     * resolve `T` to `Something`.
-     */
-    private fun superTypeListEntryOrNull(
-      module: ModuleDescriptor,
-      superTypeFqName: FqName
-    ): KtSuperTypeListEntry? {
-      return clazz.toClassReference(module)
-        .allSuperTypeClassReferences(includeSelf = true)
-        .filterIsInstance<Psi>()
-        .firstNotNullOfOrNull { classReference ->
-          classReference.clazz
-            .superTypeListEntries
-            .firstOrNull { it.requireFqName(module) == superTypeFqName }
-        }
-    }
-
-    protected override fun indexOfTypeParameter(parameterName: String): Int =
+    override fun indexOfTypeParameter(parameterName: String): Int =
       clazz.typeParameters.indexOfFirst { it.identifyingElement?.text == parameterName }
   }
 
