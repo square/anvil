@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
+import org.jetbrains.kotlin.psi.KtTypeProjection
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
@@ -38,6 +39,11 @@ public sealed class TypeReference {
   protected abstract val classReference: ClassReference?
 
   protected abstract val typeName: TypeName?
+
+  /**
+   * For `Lazy<String>` this will return `String`.
+   */
+  public abstract val unwrappedFirstType: TypeReference
 
   public val module: AnvilModuleDescriptor get() = declaringClass.module
 
@@ -89,7 +95,7 @@ public sealed class TypeReference {
     override val classReference: ClassReference? by lazy(NONE) {
       resolveGenericTypeOrNull(declaringClass)
         ?.type
-        ?.requireFqName(module)
+        ?.fqNameOrNull(module)
         ?.toClassReference(module)
     }
 
@@ -100,6 +106,19 @@ public sealed class TypeReference {
         // TODO: The goal is to inline the function above and then stop throwing an exception.
         null
       }
+    }
+
+    override val unwrappedFirstType: Psi by lazy(NONE) {
+      type.typeElement!!.children
+        .filterIsInstance<KtTypeArgumentList>()
+        .single()
+        .children
+        .filterIsInstance<KtTypeProjection>()
+        .first()
+        .children
+        .filterIsInstance<KtTypeReference>()
+        .single()
+        .toTypeReference(declaringClass)
     }
 
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): Psi? {
@@ -151,6 +170,13 @@ public sealed class TypeReference {
 
     override val typeName: TypeName? by lazy(NONE) {
       type.asTypeNameOrNull()?.lambdaFix()
+    }
+
+    override val unwrappedFirstType: Descriptor by lazy(NONE) {
+      type.arguments
+        .first()
+        .type
+        .toTypeReference(declaringClass)
     }
 
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): TypeReference? {
