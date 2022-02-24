@@ -45,6 +45,8 @@ internal fun IrClass.requireClassId(): ClassId {
 
 internal fun IrClassSymbol.requireClassId(): ClassId = owner.requireClassId()
 
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated("Use a Reference class instead of depending directly on IR")
 internal fun IrAnnotationContainer.annotationOrNull(
   annotationFqName: FqName,
   scope: FqName? = null
@@ -54,6 +56,8 @@ internal fun IrAnnotationContainer.annotationOrNull(
   }
 }
 
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated("Use a Reference class instead of depending directly on IR")
 internal fun IrAnnotationContainer.annotation(
   annotationFqName: FqName,
   scope: FqName? = null
@@ -70,6 +74,8 @@ internal val IrExpression.kclassUnwrapped: IrClassifierSymbol
       element = this
     )
 
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated("Use a Reference class instead of depending directly on IR")
 internal fun IrConstructorCall.scope(): FqName {
   val expression = argument("scope")?.second
     ?: throw AnvilCompilationException(
