@@ -48,7 +48,6 @@ import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
 import org.jetbrains.kotlin.types.DefinitelyNotNullType
 import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import kotlin.LazyThreadSafetyMode.NONE
 
 /**
@@ -70,6 +69,8 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
   public abstract val constructors: List<FunctionReference>
   public abstract val functions: List<FunctionReference>
   public abstract val properties: List<PropertyReference>
+
+  protected abstract val innerClassesAndObjects: List<ClassReference>
 
   public abstract fun isInterface(): Boolean
   public abstract fun isAbstract(): Boolean
@@ -96,7 +97,8 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
     return if (index == 0) null else classes[index - 1]
   }
 
-  public abstract fun innerClasses(): List<ClassReference>
+  public open fun innerClasses(): List<ClassReference> =
+    innerClassesAndObjects.filterNot { it.isCompanion() }
 
   /**
    * @param parameterName The name of the parameter to be found, not including any variance modifiers.
@@ -104,9 +106,8 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
    */
   protected abstract fun indexOfTypeParameter(parameterName: String): Int
 
-  public open fun companionObjects(): List<ClassReference> {
-    return innerClasses().filter { it.isCompanion() && it.enclosingClass() == this }
-  }
+  public open fun companionObjects(): List<ClassReference> =
+    innerClassesAndObjects.filter { it.isCompanion() && it.enclosingClass() == this }
 
   override fun toString(): String {
     return "${this::class.qualifiedName}($fqName)"
@@ -173,7 +174,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
         .plus(this)
     }
 
-    private val innerClasses by lazy(NONE) {
+    override val innerClassesAndObjects: List<Psi> by lazy(NONE) {
       generateSequence(clazz.declarations.filterIsInstance<KtClassOrObject>()) { classes ->
         classes
           .flatMap { it.declarations }
@@ -212,11 +213,13 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
 
     override fun enclosingClassesWithSelf(): List<Psi> = enclosingClassesWithSelf
 
-    override fun innerClasses(): List<Psi> = innerClasses
+    @Suppress("UNCHECKED_CAST")
+    override fun innerClasses(): List<Psi> =
+      super.innerClasses() as List<Psi>
 
-    override fun companionObjects(): List<Psi> {
-      return super.companionObjects().cast()
-    }
+    @Suppress("UNCHECKED_CAST")
+    override fun companionObjects(): List<Psi> =
+      super.companionObjects() as List<Psi>
 
     /**
      * Safely resolves a [KotlinType], when that type reference is a generic expressed by a type
@@ -424,7 +427,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
         .plus(this)
     }
 
-    private val innerClasses by lazy(NONE) {
+    override val innerClassesAndObjects: List<Descriptor> by lazy(NONE) {
       clazz.unsubstitutedMemberScope
         .getContributedDescriptors(kindFilter = DescriptorKindFilter.CLASSIFIERS)
         .filterIsInstance<ClassDescriptor>()
@@ -458,11 +461,13 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
 
     override fun enclosingClassesWithSelf(): List<Descriptor> = enclosingClassesWithSelf
 
-    override fun innerClasses(): List<Descriptor> = innerClasses
+    @Suppress("UNCHECKED_CAST")
+    override fun innerClasses(): List<Descriptor> =
+      super.innerClasses() as List<Descriptor>
 
-    override fun companionObjects(): List<Descriptor> {
-      return super.companionObjects().cast()
-    }
+    @Suppress("UNCHECKED_CAST")
+    override fun companionObjects(): List<Descriptor> =
+      super.companionObjects() as List<Descriptor>
 
     override fun indexOfTypeParameter(parameterName: String): Int =
       clazz.declaredTypeParameters.indexOfFirst { it.name.asString() == parameterName }

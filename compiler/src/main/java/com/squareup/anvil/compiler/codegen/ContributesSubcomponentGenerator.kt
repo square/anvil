@@ -146,7 +146,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
     }
 
     val functions = componentInterface.functions
-      .filter { it.returnType() == this }
+      .filter { it.returnType().asClassReference() == this }
 
     if (functions.size >= 2) {
       throw AnvilCompilationExceptionClassReference(
@@ -207,7 +207,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
         }
       }
 
-    if (functions.size != 1 || functions[0].returnType() != this) {
+    if (functions.size != 1 || functions[0].returnType().asClassReference() != this) {
       throw AnvilCompilationExceptionClassReference(
         classReference = factory,
         message = "A factory must have exactly one abstract function returning the " +
