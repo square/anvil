@@ -6,10 +6,12 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
+import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
@@ -45,22 +47,18 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
       .classAndInnerClassReferences(module)
       .filterNot { it.isInterface() }
       .forEach { clazz ->
-
         // Only generate a MembersInjector if the target class declares its own member-injected
-        // properties. If it does, then any properties from superclasses must be added as well.
-        val declaredInjectedProperties = clazz.clazz.injectedMembers(module)
+        // properties. If it does, then any properties from superclasses must be added as well
+        // (clazz.memberInjectParameters() will do this).
+        clazz.properties
+          .filter { it.visibility() != Visibility.PRIVATE }
+          .filter { it.isAnnotatedWith(injectFqName) }
           .ifEmpty { return@forEach }
-
-        val parameters = clazz
-          .memberInjectParameters(inheritedOnly = true)
-          .let { inherited ->
-            inherited + declaredInjectedProperties.mapToMemberInjectParameters(module, inherited)
-          }
 
         generateMembersInjectorClass(
           codeGenDir = codeGenDir,
           clazz = clazz,
-          parameters = parameters
+          parameters = clazz.memberInjectParameters()
         )
       }
   }

@@ -31,7 +31,7 @@ public sealed class PropertyReference : AnnotatedReference {
 
   public abstract fun visibility(): Visibility
 
-  override fun toString(): String = "$fqName()"
+  override fun toString(): String = "$fqName"
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
@@ -53,9 +53,12 @@ public sealed class PropertyReference : AnnotatedReference {
   ) : PropertyReference() {
 
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
-      property.annotationEntries.map {
-        it.toAnnotationReference(declaringClass = null, module)
-      }
+      property.annotationEntries
+        .plus(property.setter?.annotationEntries ?: emptyList())
+        .plus(property.getter?.annotationEntries ?: emptyList())
+        .map {
+          it.toAnnotationReference(declaringClass = null, module)
+        }
     }
 
     override fun visibility(): Visibility {
@@ -79,9 +82,13 @@ public sealed class PropertyReference : AnnotatedReference {
   ) : PropertyReference() {
 
     override val annotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
-      property.annotations.map {
-        it.toAnnotationReference(declaringClass = null, module)
-      }
+      property.annotations
+        .plus(property.setter?.annotations ?: emptyList())
+        .plus(property.getter?.annotations ?: emptyList())
+        .plus(property.backingField?.annotations ?: emptyList())
+        .map {
+          it.toAnnotationReference(declaringClass = null, module)
+        }
     }
 
     override fun visibility(): Visibility {

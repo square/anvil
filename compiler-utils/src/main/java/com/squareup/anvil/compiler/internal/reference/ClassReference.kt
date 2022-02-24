@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.kotlinpoet.ClassName
+import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.DECLARATION
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.ConstructorDescriptor
@@ -241,8 +242,12 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
 
     override val properties: List<PropertyReference.Descriptor> by lazy(NONE) {
       clazz.unsubstitutedMemberScope
-        .getDescriptorsFiltered(kindFilter = DescriptorKindFilter.VALUES)
+        .getDescriptorsFiltered(kindFilter = DescriptorKindFilter.VARIABLES)
         .filterIsInstance<PropertyDescriptor>()
+        .filter {
+          // Remove inherited properties that aren't overridden in this class.
+          it.kind == DECLARATION
+        }
         .map { it.toPropertyReference(this) }
     }
 
