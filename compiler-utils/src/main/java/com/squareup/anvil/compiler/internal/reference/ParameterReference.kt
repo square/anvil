@@ -2,16 +2,12 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.asFunctionType
-import com.squareup.anvil.compiler.internal.asTypeNameOrNull
-import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.reference.ParameterReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ParameterReference.Psi
-import com.squareup.anvil.compiler.internal.requireTypeName
-import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.TypeName
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.psi.KtParameter
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import kotlin.LazyThreadSafetyMode.NONE
 
 @ExperimentalAnvilApi
@@ -35,11 +31,31 @@ public sealed class ParameterReference : AnnotatedReference {
         "function ${declaringFunction.fqName}"
     )
 
-  public abstract fun resolveTypeNameOrNull(
-    implementingClass: ClassReference.Psi
-  ): TypeName?
+  public fun resolveTypeNameOrNull(
+    implementingClass: ClassReference
+  ): TypeName? {
+    return when (implementingClass) {
+      is ClassReference.Psi -> {
+        type?.resolveGenericTypeNameOrNull(implementingClass)
+      }
+      is ClassReference.Descriptor -> {
+        // This implementation is very similar to the return type implementation in
+        // FunctionReference.
 
-  public fun resolveTypeName(implementingClass: ClassReference.Psi): TypeName =
+        val implementingFunction = implementingClass.functions
+          .singleOrNull { function ->
+            function.overriddenFunctions.any { it.fqNameSafe == declaringFunction.fqName }
+          }
+
+        implementingFunction?.parameters
+          ?.singleOrNull { it.name == name }
+          ?.type()
+          ?.asTypeNameOrNull()
+      }
+    }
+  }
+
+  public fun resolveTypeName(implementingClass: ClassReference): TypeName =
     resolveTypeNameOrNull(implementingClass)
       ?: throw AnvilCompilationExceptionParameterReference(
         message = "Unable to resolve type name for parameter with name $name with the " +
@@ -82,23 +98,6 @@ public sealed class ParameterReference : AnnotatedReference {
     override val type: TypeReference.Psi? by lazy(NONE) {
       parameter.typeReference?.toTypeReference(declaringFunction.declaringClass)
     }
-
-    override fun resolveTypeNameOrNull(implementingClass: ClassReference.Psi): TypeName? {
-      return parameter.typeReference
-        ?.let { typeReference ->
-          implementingClass.resolveTypeReference(typeReference)
-            ?: typeReference
-        }
-        ?.requireTypeName(module)
-        ?.let { typeName ->
-          // This is a special case when mixing parsing between descriptors and PSI.  Descriptors
-          // will always represent lambda types as kotlin.Function* types, so lambda arguments
-          // must be converted or their signatures won't match.
-          // see https://github.com/square/anvil/issues/400
-          (typeName as? LambdaTypeName)?.asFunctionType()
-            ?: typeName
-        }
-    }
   }
 
   public class Descriptor(
@@ -115,23 +114,6 @@ public sealed class ParameterReference : AnnotatedReference {
 
     override val type: TypeReference.Descriptor? by lazy(NONE) {
       parameter.type.toTypeReference(declaringFunction.declaringClass)
-    }
-
-    override fun resolveTypeNameOrNull(implementingClass: ClassReference.Psi): TypeName? {
-      return parameter.type
-        .let {
-          if (it.classDescriptorOrNull() != null) {
-            // Then it's a normal type and not a generic type.
-            it.asTypeNameOrNull()
-          } else {
-            null
-          }
-        }
-        ?: implementingClass.resolveGenericKotlinTypeOrNull(
-          declaringClass = declaringFunction.declaringClass,
-          typeToResolve = parameter.type
-        )?.requireTypeName(module)
-        ?: parameter.type.asTypeNameOrNull()
     }
   }
 }

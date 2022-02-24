@@ -2,11 +2,16 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.internal.asFunctionType
+import com.squareup.anvil.compiler.internal.asTypeNameOrNull
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.reference.TypeReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.TypeReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.requireTypeName
+import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.TypeName
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.types.KotlinType
 import kotlin.LazyThreadSafetyMode.NONE
@@ -22,6 +27,8 @@ public sealed class TypeReference {
    */
   protected abstract val classReference: ClassReference?
 
+  protected abstract val typeName: TypeName?
+
   public val module: AnvilModuleDescriptor get() = declaringClass.module
 
   public fun asClassReferenceOrNull(): ClassReference? = classReference
@@ -31,11 +38,22 @@ public sealed class TypeReference {
       message = "Unable to convert a type reference to a class reference."
     )
 
+  public fun asTypeNameOrNull(): TypeName? = typeName
+  public fun asTypeName(): TypeName = typeName
+    ?: throw AnvilCompilationExceptionTypReference(
+      typeReference = this,
+      message = "Unable to convert a type reference to a type reference."
+    )
+
   // Keep this internal, because we need help from other classes for the descriptor
   // implementation, e.g. FunctionReference resolves the return type or ParameterReference.
   internal abstract fun resolveGenericTypeOrNull(
     implementingClass: ClassReference.Psi
   ): ClassReference?
+
+  internal abstract fun resolveGenericTypeNameOrNull(
+    implementingClass: ClassReference.Psi
+  ): TypeName?
 
   override fun toString(): String {
     return "${this::class.qualifiedName}(declaringClass=$declaringClass, " +
@@ -52,11 +70,37 @@ public sealed class TypeReference {
         ?.toClassReference(module)
     }
 
+    override val typeName: TypeName? by lazy(NONE) {
+      try {
+        type.requireTypeName(module)
+      } catch (e: AnvilCompilationException) {
+        // The goal is to inline the function above and then stop throwing an exception.
+        null
+      }
+    }
+
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): ClassReference? {
       classReference?.let { return it }
 
       val typeReference = implementingClass.resolveTypeReference(type) ?: type
       return typeReference.fqNameOrNull(module)?.toClassReference(module)
+    }
+
+    override fun resolveGenericTypeNameOrNull(implementingClass: ClassReference.Psi): TypeName? {
+      val typeReference = implementingClass.resolveTypeReference(type) ?: type
+      return try {
+        typeReference.requireTypeName(module)
+          .let { typeName ->
+            // This is a special case when mixing parsing between descriptors and PSI.  Descriptors
+            // will always represent lambda types as kotlin.Function* types, so lambda arguments
+            // must be converted or their signatures won't match.
+            // see https://github.com/square/anvil/issues/400
+            (typeName as? LambdaTypeName)?.asFunctionType() ?: typeName
+          }
+      } catch (e: AnvilCompilationException) {
+        // The goal is to inline the function above and then stop throwing an exception.
+        null
+      } ?: typeName
     }
   }
 
@@ -68,6 +112,10 @@ public sealed class TypeReference {
       type.classDescriptorOrNull()?.toClassReference(module)
     }
 
+    override val typeName: TypeName? by lazy(NONE) {
+      type.asTypeNameOrNull()
+    }
+
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): ClassReference? {
       classReference?.let { return it }
 
@@ -75,6 +123,17 @@ public sealed class TypeReference {
         .resolveGenericKotlinTypeOrNull(declaringClass, type)
         ?.fqNameOrNull(module)
         ?.toClassReferenceOrNull(module)
+    }
+
+    override fun resolveGenericTypeNameOrNull(implementingClass: ClassReference.Psi): TypeName? {
+      classReference?.let {
+        // Then it's a normal type and not a generic type.
+        return asTypeName()
+      }
+
+      return implementingClass.resolveGenericKotlinTypeOrNull(declaringClass, type)
+        ?.requireTypeName(module)
+        ?: typeName
     }
   }
 }

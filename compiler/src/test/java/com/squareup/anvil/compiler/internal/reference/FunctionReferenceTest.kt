@@ -233,7 +233,12 @@ class FunctionReferenceTest {
               ).isEqualTo(FqName("kotlin.String"))
 
               assertThat(
-                descriptorFunction.resolveGenericReturnType(implementingClass2).fqName
+                descriptorFunction
+                  .resolveGenericReturnType(implementingClass2.toPsiReference()).fqName
+              ).isEqualTo(FqName("kotlin.String"))
+              assertThat(
+                descriptorFunction
+                  .resolveGenericReturnType(implementingClass2.toDescriptorReference()).fqName
               ).isEqualTo(FqName("kotlin.String"))
 
               val implementingClass3 = FqName("com.squareup.test.SomeClass3")
@@ -279,6 +284,136 @@ class FunctionReferenceTest {
                   .resolveGenericReturnType(implementingClass.toDescriptorReference())
                   .fqName
               ).isEqualTo(FqName("kotlin.String"))
+            }
+            else -> throw NotImplementedError()
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test fun `the parameter type of a function can be resolved`() {
+    compile(
+      """
+      package com.squareup.test
+
+      interface GenericInterface1<T> {
+        fun hello(param: T)
+      }
+
+      interface GenericInterface2<S> : GenericInterface1<S>
+
+      class SomeClass1 : GenericInterface1<String> {
+        override fun hello(param: String) = Unit
+      }
+
+      class SomeClass2 : GenericInterface2<String> {
+        override fun hello(param: String) = Unit
+      }
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          when (psiRef.shortName) {
+            "SomeClass1", "SomeClass2" -> {
+              val psiFunction = psiRef.functions.single()
+              val descriptorFunction = descriptorRef.functions.single { it.name == "hello" }
+
+              assertThat(
+                psiFunction.parameters.single().typeOrNull()
+                  ?.asClassReferenceOrNull()
+                  ?.fqName
+              ).isEqualTo(FqName("kotlin.String"))
+              assertThat(
+                descriptorFunction.parameters.single().typeOrNull()
+                  ?.asClassReferenceOrNull()
+                  ?.fqName
+              ).isEqualTo(FqName("kotlin.String"))
+
+              assertThat(
+                psiFunction.parameters.single().typeOrNull()?.asTypeNameOrNull()
+              ).isNotNull()
+              assertThat(
+                descriptorFunction.parameters.single().typeOrNull()?.asTypeNameOrNull()
+              ).isNotNull()
+            }
+            "GenericInterface1" -> {
+              val psiFunction = psiRef.functions.single()
+              val descriptorFunction = descriptorRef.functions.single { it.name == "hello" }
+
+              assertThat(psiFunction.parameters.single().type().asClassReferenceOrNull())
+                .isNull()
+              assertThat(descriptorFunction.parameters.single().type().asClassReferenceOrNull())
+                .isNull()
+
+              val implementingClass1 = FqName("com.squareup.test.SomeClass1")
+                .toClassReference(psiRef.module)
+
+              assertThat(
+                psiFunction.parameters.single()
+                  .resolveTypeNameOrNull(implementingClass1.toPsiReference())
+              ).isNotNull()
+              assertThat(
+                psiFunction.parameters.single()
+                  .resolveTypeNameOrNull(implementingClass1.toDescriptorReference())
+              ).isNotNull()
+
+              assertThat(
+                descriptorFunction.parameters.single()
+                  .resolveTypeNameOrNull(implementingClass1.toPsiReference())
+              ).isNotNull()
+              assertThat(
+                descriptorFunction.parameters.single()
+                  .resolveTypeNameOrNull(implementingClass1.toDescriptorReference())
+              ).isNotNull()
+
+              val implementingClass2 = FqName("com.squareup.test.SomeClass2")
+                .toClassReference(psiRef.module)
+
+              assertThat(
+                psiFunction.parameters.single()
+                  .resolveTypeNameOrNull(implementingClass2.toPsiReference())
+              ).isNotNull()
+              assertThat(
+                psiFunction.parameters.single()
+                  .resolveTypeNameOrNull(implementingClass2.toDescriptorReference())
+              ).isNotNull()
+
+              assertThat(
+                descriptorFunction.parameters.single()
+                  .resolveTypeNameOrNull(implementingClass2.toPsiReference())
+              ).isNotNull()
+              assertThat(
+                descriptorFunction.parameters.single()
+                  .resolveTypeNameOrNull(implementingClass2.toDescriptorReference())
+              ).isNotNull()
+            }
+            "GenericInterface2" -> {
+              assertThat(psiRef.functions).hasSize(0)
+              assertThat(descriptorRef.functions).hasSize(4)
+
+              val descriptorFunction = descriptorRef.functions.single { it.name == "hello" }
+              assertThat(
+                descriptorFunction.parameters.single().type().asClassReferenceOrNull()
+              ).isNull()
+
+              val implementingClass = FqName("com.squareup.test.SomeClass2")
+                .toClassReference(psiRef.module)
+
+              assertThat(
+                descriptorFunction.parameters.single()
+                  .resolveTypeNameOrNull(implementingClass.toPsiReference())
+              ).isNotNull()
+              assertThat(
+                descriptorFunction.parameters.single()
+                  .resolveTypeNameOrNull(implementingClass.toDescriptorReference())
+              ).isNotNull()
             }
             else -> throw NotImplementedError()
           }
