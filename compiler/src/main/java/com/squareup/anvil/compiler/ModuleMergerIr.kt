@@ -3,13 +3,16 @@ package com.squareup.anvil.compiler
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
+import com.squareup.anvil.compiler.codegen.reference.AnvilCompilationExceptionClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
+import com.squareup.anvil.compiler.codegen.reference.find
+import com.squareup.anvil.compiler.codegen.reference.toClassReference
+import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.safePackageString
 import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.parentsWithSelf
-import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -22,7 +25,6 @@ import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrDynamicTypeImpl
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.isInterface
 import org.jetbrains.kotlin.ir.util.packageFqName
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
@@ -79,6 +81,7 @@ internal class ModuleMergerIr(
         scope = scope,
         moduleDescriptorFactory = moduleDescriptorFactory
       )
+      .map { it.toClassReference(pluginContext) }
       .filter {
         // We generate a Dagger module for each merged component. We use Anvil itself to
         // contribute this generated module. It's possible that there are multiple components
@@ -87,44 +90,46 @@ internal class ModuleMergerIr(
         // modules contain the same bindings and are contributed to the same scope. To avoid this
         // issue we filter all generated Anvil modules except for the one that was generated for
         // this specific class.
-        val fqName = it.fqName
-        !fqName.isAnvilModule() || fqName == anvilModuleName
+        !it.fqName.isAnvilModule() || it.fqName == anvilModuleName
       }
       .mapNotNull {
-        val contributesAnnotation =
-          it.owner.annotationOrNull(contributesToFqName, scope = scope)
-            ?: return@mapNotNull null
-        it to contributesAnnotation
+        it.annotations.find(annotationName = contributesToFqName, scopeName = scope).singleOrNull()
       }
-      .filter { (classSymbol, _) ->
-        val moduleAnnotation = classSymbol.owner.annotationOrNull(daggerModuleFqName)
-        val mergeModulesAnnotation = classSymbol.owner.annotationOrNull(mergeModulesFqName)
-        if (!classSymbol.owner.isInterface &&
+      .filter { contributesAnnotation ->
+        val classReference = contributesAnnotation.declaringClass
+        val moduleAnnotation = classReference.annotations.find(daggerModuleFqName).singleOrNull()
+        val mergeModulesAnnotation =
+          classReference.annotations.find(mergeModulesFqName).singleOrNull()
+
+        if (!classReference.isInterface &&
           moduleAnnotation == null &&
           mergeModulesAnnotation == null
         ) {
-          throw AnvilCompilationException(
-            message = "${classSymbol.fqName} is annotated with " +
+          throw AnvilCompilationExceptionClassReferenceIr(
+            message = "${classReference.fqName} is annotated with " +
               "@${ContributesTo::class.simpleName}, but this class is neither an interface " +
               "nor a Dagger module. Did you forget to add @${Module::class.simpleName}?",
-            element = classSymbol
+            classReference = classReference
           )
         }
 
         moduleAnnotation != null || mergeModulesAnnotation != null
       }
-      .onEach { (classSymbol, _) ->
-        if (classSymbol.owner.visibility != DescriptorVisibilities.PUBLIC) {
-          throw AnvilCompilationException(
-            message = "${classSymbol.fqName} is contributed to the Dagger graph, but the " +
+      .onEach { contributesAnnotation ->
+        val classReference = contributesAnnotation.declaringClass
+        if (classReference.visibility != PUBLIC) {
+          throw AnvilCompilationExceptionClassReferenceIr(
+            message = "${classReference.fqName} is contributed to the Dagger graph, but the " +
               "module is not public. Only public modules are supported.",
-            element = classSymbol
+            classReference = classReference
           )
         }
       }
       // Convert the sequence to a list to avoid iterating it twice. We use the result twice
       // for replaced classes and the final result.
       .toList()
+      // TODO: Continue migrating to use References
+      .map { it.declaringClass.clazz to it.annotation }
 
     val excludedModules = annotationConstructorCall.exclude()
       .onEach { excludedClass ->

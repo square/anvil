@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.name.FqName
  * Returns a sequence of contributed classes from the dependency graph. Note that the result
  * includes inner classes already.
  */
+// TODO: Change to return [ClassReferenceIr]
 internal fun ClassScanner.findContributedClasses(
   pluginContext: IrPluginContext,
   moduleFragment: IrModuleFragment,
