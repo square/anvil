@@ -10,7 +10,6 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterSpec
-import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
@@ -193,23 +192,6 @@ public fun KtTypeReference.requireTypeName(
   }
 
   return (typeElement ?: fail()).requireTypeName()
-}
-
-/**
- * Converts a lambda `TypeName` to a standard `kotlin.Function*` type.
- *
- * given the lambda type: `(kotlin.String) -> kotlin.Unit`
- * returns the function type: `kotlin.Function1<String, Unit>`
- */
-@ExperimentalAnvilApi
-public fun LambdaTypeName.asFunctionType(): ParameterizedTypeName {
-
-  val allTypes = listOfNotNull(receiver)
-    .plus(parameters.map { it.type })
-    .plus(returnType)
-
-  return ClassName("kotlin", "Function${allTypes.size - 1}")
-    .parameterizedBy(allTypes)
 }
 
 @ExperimentalAnvilApi
