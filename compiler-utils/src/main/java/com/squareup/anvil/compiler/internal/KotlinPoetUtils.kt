@@ -4,6 +4,8 @@ package com.squareup.anvil.compiler.internal
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.internal.reference.AnnotatedReference
+import com.squareup.anvil.compiler.internal.reference.TypeReference
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -247,6 +249,10 @@ public fun KotlinType.asTypeNameOrNull(
 }
 
 @ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on descriptors and make the code agnostic to the underlying implementation."
+)
 public fun <T : KtCallableDeclaration> TypeName.withJvmSuppressWildcardsIfNeeded(
   callableDeclaration: T,
   module: ModuleDescriptor
@@ -271,6 +277,33 @@ public fun <T : KtCallableDeclaration> TypeName.withJvmSuppressWildcardsIfNeeded
 }
 
 @ExperimentalAnvilApi
+public fun TypeName.withJvmSuppressWildcardsIfNeeded(
+  annotatedReference: AnnotatedReference,
+  typeReference: TypeReference
+): TypeName {
+  // If the parameter is annotated with @JvmSuppressWildcards, then add the annotation
+  // to our type so that this information is forwarded when our Factory is compiled.
+  val hasJvmSuppressWildcards = annotatedReference.isAnnotatedWith(jvmSuppressWildcardsFqName)
+
+  // Add the @JvmSuppressWildcards annotation even for simple generic return types like
+  // Set<String>. This avoids some edge cases where Dagger chokes.
+  val isGenericType = typeReference.isGenericType()
+
+  // Same for functions.
+  val isFunctionType = typeReference.isFunctionType()
+
+  return when {
+    hasJvmSuppressWildcards || isGenericType -> this.jvmSuppressWildcards()
+    isFunctionType -> this.jvmSuppressWildcards()
+    else -> this
+  }
+}
+
+@ExperimentalAnvilApi
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated(
+  "Don't rely on descriptors and make the code agnostic to the underlying implementation."
+)
 public fun TypeName.withJvmSuppressWildcardsIfNeeded(
   callableMemberDescriptor: CallableMemberDescriptor
 ): TypeName {

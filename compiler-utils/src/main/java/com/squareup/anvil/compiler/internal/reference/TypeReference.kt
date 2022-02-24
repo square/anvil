@@ -13,7 +13,9 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
+import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeReference
@@ -71,6 +73,9 @@ public sealed class TypeReference {
       ?.asTypeNameOrNull()
       ?: asTypeNameOrNull()
   }
+
+  public fun isGenericType(): Boolean = asClassReferenceOrNull() != null
+  public abstract fun isFunctionType(): Boolean
 
   override fun toString(): String {
     return "${this::class.qualifiedName}(declaringClass=$declaringClass, " +
@@ -132,6 +137,8 @@ public sealed class TypeReference {
 
       return resolveGenericTypeReference(implementingClass, declaringClass, type.text)
     }
+
+    override fun isFunctionType(): Boolean = type.typeElement is KtFunctionType
   }
 
   public class Descriptor internal constructor(
@@ -198,6 +205,8 @@ public sealed class TypeReference {
         parameterName = parameterKotlinType.toString()
       )
     }
+
+    override fun isFunctionType(): Boolean = type.isFunctionType
   }
 }
 

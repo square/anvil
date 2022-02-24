@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.PropertyReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.PropertyReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
@@ -29,7 +30,16 @@ public sealed class PropertyReference : AnnotatedReference {
   public val name: String get() = fqName.shortName().asString()
   public val memberName: MemberName get() = MemberName(declaringClass.asClassName(), name)
 
+  protected abstract val type: TypeReference?
+
   public abstract fun visibility(): Visibility
+
+  public fun typeOrNull(): TypeReference? = type
+  public fun type(): TypeReference = type
+    ?: throw AnvilCompilationExceptionPropertyReference(
+      propertyReference = this,
+      message = "Unable to get type for property $fqName."
+    )
 
   override fun toString(): String = "$fqName"
 
@@ -59,6 +69,10 @@ public sealed class PropertyReference : AnnotatedReference {
         .map {
           it.toAnnotationReference(declaringClass = null, module)
         }
+    }
+
+    override val type: TypeReference? by lazy(NONE) {
+      property.typeReference?.toTypeReference(declaringClass)
     }
 
     override fun visibility(): Visibility {
@@ -91,6 +105,10 @@ public sealed class PropertyReference : AnnotatedReference {
         }
     }
 
+    override val type: TypeReference by lazy(NONE) {
+      property.type.toTypeReference(declaringClass)
+    }
+
     override fun visibility(): Visibility {
       return when (val visibility = property.visibility) {
         DescriptorVisibilities.PUBLIC -> PUBLIC
@@ -115,3 +133,22 @@ public fun KtProperty.toPropertyReference(
 public fun PropertyDescriptor.toPropertyReference(
   declaringClass: ClassReference.Descriptor
 ): Descriptor = Descriptor(this, declaringClass)
+
+@ExperimentalAnvilApi
+@Suppress("FunctionName")
+public fun AnvilCompilationExceptionPropertyReference(
+  propertyReference: PropertyReference,
+  message: String,
+  cause: Throwable? = null
+): AnvilCompilationException = when (propertyReference) {
+  is Psi -> AnvilCompilationException(
+    element = propertyReference.property,
+    message = message,
+    cause = cause
+  )
+  is Descriptor -> AnvilCompilationException(
+    propertyDescriptor = propertyReference.property,
+    message = message,
+    cause = cause
+  )
+}

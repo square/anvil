@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.com.intellij.psi.PsiNameIdentifierOwner
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.DeclarationDescriptorWithSource
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.ir.IrElement
@@ -60,6 +61,18 @@ public class AnvilCompilationException(
         message = message,
         cause = cause,
         element = parameterDescriptor.identifier
+      )
+    }
+
+    public operator fun invoke(
+      propertyDescriptor: PropertyDescriptor,
+      message: String,
+      cause: Throwable? = null
+    ): AnvilCompilationException {
+      return AnvilCompilationException(
+        message = message,
+        cause = cause,
+        element = propertyDescriptor.identifier
       )
     }
 
