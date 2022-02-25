@@ -80,7 +80,7 @@ public sealed class TypeReference {
       ?: asTypeNameOrNull()
   }
 
-  public fun isGenericType(): Boolean = asClassReferenceOrNull() != null
+  public fun isGenericType(): Boolean = asClassReferenceOrNull() == null
   public abstract fun isFunctionType(): Boolean
 
   override fun toString(): String {

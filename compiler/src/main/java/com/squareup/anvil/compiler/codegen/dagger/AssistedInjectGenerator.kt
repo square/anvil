@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.optionallyParameterizedBy
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.FunctionReference
@@ -20,7 +21,6 @@ import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.PRIVATE
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.jvm.jvmStatic
@@ -55,14 +55,13 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
           .injectConstructor()
           ?.takeIf { it.isAnnotatedWith(assistedInjectFqName) }
           ?.let {
-            generateFactoryClass(codeGenDir, module, clazz, it)
+            generateFactoryClass(codeGenDir, clazz, it)
           }
       }
   }
 
   private fun generateFactoryClass(
     codeGenDir: File,
-    module: ModuleDescriptor,
     clazz: ClassReference.Psi,
     constructor: FunctionReference.Psi
   ): GeneratedFile {
@@ -70,9 +69,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
     val classIdName = clazz.generateClassName(suffix = "_Factory")
     val className = classIdName.relativeClassName.asString()
 
-    val constructorParameters = constructor.function.valueParameters
-      .mapToConstructorParameters(module)
-
+    val constructorParameters = constructor.parameters.mapToConstructorParameters()
     val memberInjectParameters = clazz.memberInjectParameters()
 
     val parameters = constructorParameters + memberInjectParameters
@@ -81,20 +78,16 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
 
     checkAssistedParametersAreDistinct(clazz, parametersAssisted)
 
-    val typeParameters = clazz.clazz.typeVariableNames(module)
+    val typeParameters = clazz.typeParameters
 
     val factoryClass = classIdName.asClassName()
-    val factoryClassParameterized =
-      if (typeParameters.isEmpty()) factoryClass else factoryClass.parameterizedBy(typeParameters)
-
-    val classType = clazz.asClassName().let {
-      if (typeParameters.isEmpty()) it else it.parameterizedBy(typeParameters)
-    }
+    val factoryClassParameterized = factoryClass.optionallyParameterizedBy(typeParameters)
+    val classType = clazz.asClassName().optionallyParameterizedBy(typeParameters)
 
     val content = FileSpec.buildFile(packageName, className) {
       TypeSpec.classBuilder(factoryClass)
         .apply {
-          typeParameters.forEach { addTypeVariable(it) }
+          typeParameters.forEach { addTypeVariable(it.typeVariableName) }
 
           primaryConstructor(
             FunSpec.constructorBuilder()
@@ -146,7 +139,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
                 .jvmStatic()
                 .apply {
                   if (typeParameters.isNotEmpty()) {
-                    addTypeVariables(typeParameters)
+                    addTypeVariables(typeParameters.map { it.typeVariableName })
                   }
                   parametersNotAssisted.forEach { parameter ->
                     addParameter(parameter.name, parameter.providerTypeName)
@@ -170,7 +163,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
                 .jvmStatic()
                 .apply {
                   if (typeParameters.isNotEmpty()) {
-                    addTypeVariables(typeParameters)
+                    addTypeVariables(typeParameters.map { it.typeVariableName })
                   }
                   constructorParameters.forEach { parameter ->
                     addParameter(

@@ -29,7 +29,7 @@ public sealed class PropertyReference : AnnotatedReference {
 
   public val module: AnvilModuleDescriptor get() = declaringClass.module
 
-  public val name: String get() = fqName.shortName().asString()
+  public abstract val name: String
   public val memberName: MemberName get() = MemberName(declaringClass.asClassName(), name)
 
   protected abstract val type: TypeReference?
@@ -64,7 +64,8 @@ public sealed class PropertyReference : AnnotatedReference {
   public class Psi internal constructor(
     public val property: KtProperty,
     override val declaringClass: ClassReference.Psi,
-    override val fqName: FqName = property.requireFqName()
+    override val fqName: FqName = property.requireFqName(),
+    override val name: String = fqName.shortName().asString()
   ) : PropertyReference() {
 
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
@@ -113,7 +114,8 @@ public sealed class PropertyReference : AnnotatedReference {
   public class Descriptor internal constructor(
     public val property: PropertyDescriptor,
     override val declaringClass: ClassReference.Descriptor,
-    override val fqName: FqName = property.fqNameSafe
+    override val fqName: FqName = property.fqNameSafe,
+    override val name: String = fqName.shortName().asString()
   ) : PropertyReference() {
 
     override val annotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
