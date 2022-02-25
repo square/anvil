@@ -5,9 +5,7 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
-import com.squareup.anvil.compiler.internal.findExtendsBound
 import com.squareup.anvil.compiler.internal.fqNameOrNull
-import com.squareup.anvil.compiler.internal.isTypeParameter
 import com.squareup.anvil.compiler.internal.reference.TypeReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.TypeReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
@@ -24,6 +22,7 @@ import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNullableType
 import org.jetbrains.kotlin.psi.KtProjectionKind
@@ -35,6 +34,7 @@ import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
+import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.types.DefinitelyNotNullType
 import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.KotlinType
@@ -187,6 +187,20 @@ public sealed class TypeReference {
         message = "Couldn't resolve type: $text",
         element = this
       )
+
+      fun KtUserType.isTypeParameter(): Boolean {
+        return parents.filterIsInstance<KtClassOrObject>().first().typeParameters.any {
+          val typeParameter = it.text.split(":").first().trim()
+          typeParameter == text
+        }
+      }
+
+      fun KtUserType.findExtendsBound(): List<FqName> {
+        return parents.filterIsInstance<KtClassOrObject>()
+          .first()
+          .typeParameters
+          .mapNotNull { it.fqName }
+      }
 
       fun KtTypeElement.requireTypeName(): TypeName {
         return when (this) {
