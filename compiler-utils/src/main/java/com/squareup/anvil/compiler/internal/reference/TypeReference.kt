@@ -16,6 +16,7 @@ import com.squareup.kotlinpoet.TypeName
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFunctionType
+import org.jetbrains.kotlin.psi.KtNullableType
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeProjection
@@ -25,6 +26,7 @@ import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.kotlin.types.DefinitelyNotNullType
 import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.isNullable
 import kotlin.LazyThreadSafetyMode.NONE
 
 @ExperimentalAnvilApi
@@ -82,6 +84,7 @@ public sealed class TypeReference {
 
   public fun isGenericType(): Boolean = asClassReferenceOrNull() == null
   public abstract fun isFunctionType(): Boolean
+  public abstract fun isNullable(): Boolean
 
   override fun toString(): String {
     return "${this::class.qualifiedName}(declaringClass=$declaringClass, " +
@@ -158,6 +161,8 @@ public sealed class TypeReference {
     }
 
     override fun isFunctionType(): Boolean = type.typeElement is KtFunctionType
+
+    override fun isNullable(): Boolean = type.typeElement is KtNullableType
   }
 
   public class Descriptor internal constructor(
@@ -233,6 +238,8 @@ public sealed class TypeReference {
     }
 
     override fun isFunctionType(): Boolean = type.isFunctionType
+
+    override fun isNullable(): Boolean = type.isNullable()
   }
 }
 

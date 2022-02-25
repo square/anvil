@@ -19,17 +19,13 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
-import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNullableType
@@ -45,7 +41,6 @@ import org.jetbrains.kotlin.types.Variance.INVARIANT
 import org.jetbrains.kotlin.types.Variance.IN_VARIANCE
 import org.jetbrains.kotlin.types.Variance.OUT_VARIANCE
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import java.io.ByteArrayOutputStream
 
 @ExperimentalAnvilApi
@@ -250,34 +245,6 @@ public fun KotlinType.asTypeNameOrNull(
 }
 
 @ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on descriptors and make the code agnostic to the underlying implementation."
-)
-public fun <T : KtCallableDeclaration> TypeName.withJvmSuppressWildcardsIfNeeded(
-  callableDeclaration: T,
-  module: ModuleDescriptor
-): TypeName {
-  // If the parameter is annotated with @JvmSuppressWildcards, then add the annotation
-  // to our type so that this information is forwarded when our Factory is compiled.
-  val hasJvmSuppressWildcards =
-    callableDeclaration.typeReference?.hasAnnotation(jvmSuppressWildcardsFqName, module) ?: false
-
-  // Add the @JvmSuppressWildcards annotation even for simple generic return types like
-  // Set<String>. This avoids some edge cases where Dagger chokes.
-  val isGenericType = callableDeclaration.typeReference?.isGenericType() ?: false
-
-  // Same for functions.
-  val isFunctionType = callableDeclaration.typeReference?.isFunctionType() ?: false
-
-  return when {
-    hasJvmSuppressWildcards || isGenericType -> this.jvmSuppressWildcards()
-    isFunctionType -> this.jvmSuppressWildcards()
-    else -> this
-  }
-}
-
-@ExperimentalAnvilApi
 public fun TypeName.withJvmSuppressWildcardsIfNeeded(
   annotatedReference: AnnotatedReference,
   typeReference: TypeReference
@@ -292,36 +259,6 @@ public fun TypeName.withJvmSuppressWildcardsIfNeeded(
 
   // Same for functions.
   val isFunctionType = typeReference.isFunctionType()
-
-  return when {
-    hasJvmSuppressWildcards || isGenericType -> this.jvmSuppressWildcards()
-    isFunctionType -> this.jvmSuppressWildcards()
-    else -> this
-  }
-}
-
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on descriptors and make the code agnostic to the underlying implementation."
-)
-public fun TypeName.withJvmSuppressWildcardsIfNeeded(
-  callableMemberDescriptor: CallableMemberDescriptor
-): TypeName {
-  // If the parameter is annotated with @JvmSuppressWildcards, then add the annotation
-  // to our type so that this information is forwarded when our Factory is compiled.
-  val hasJvmSuppressWildcards = callableMemberDescriptor.annotations
-    .hasAnnotation(jvmSuppressWildcardsFqName)
-
-  // Add the @JvmSuppressWildcards annotation even for simple generic return types like
-  // Set<String>. This avoids some edge cases where Dagger chokes.
-  val isGenericType = callableMemberDescriptor.typeParameters.isNotEmpty()
-
-  val type = callableMemberDescriptor.safeAs<PropertyDescriptor>()?.type
-    ?: callableMemberDescriptor.valueParameters.first().type
-
-  // Same for functions.
-  val isFunctionType = type.isFunctionType
 
   return when {
     hasJvmSuppressWildcards || isGenericType -> this.jvmSuppressWildcards()

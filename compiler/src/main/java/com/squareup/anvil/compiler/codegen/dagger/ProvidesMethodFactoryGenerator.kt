@@ -11,18 +11,17 @@ import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.isNullable
+import com.squareup.anvil.compiler.internal.reference.AnnotatedReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.FunctionReference
 import com.squareup.anvil.compiler.internal.reference.PropertyReference
+import com.squareup.anvil.compiler.internal.reference.TypeReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.requireTypeName
-import com.squareup.anvil.compiler.internal.requireTypeReference
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.publishedApiFqName
@@ -40,7 +39,6 @@ import dagger.internal.Factory
 import dagger.internal.Preconditions
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
@@ -140,13 +138,13 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
       append("Factory")
     }
 
-    val callableName = declaration.rawType.nameAsSafeName.asString()
+    val callableName = declaration.name
 
     val parameters = declaration.constructorParameters
 
-    val returnType = declaration.rawType.requireTypeReference(module).requireTypeName(module)
-      .withJvmSuppressWildcardsIfNeeded(declaration.rawType, module)
-    val returnTypeIsNullable = declaration.rawType.typeReference?.isNullable() ?: false
+    val returnType = declaration.type.asTypeName()
+      .withJvmSuppressWildcardsIfNeeded(declaration.annotationReference, declaration.type)
+    val returnTypeIsNullable = declaration.type.isNullable()
 
     val factoryClass = ClassName(packageName, className)
     val moduleClass = clazz.asClassName()
@@ -358,13 +356,21 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
       get() = function?.visibility() ?: property!!.visibility()
 
     val fqName = function?.fqName ?: property!!.fqName
+    val name = function?.name ?: property!!.name
 
     val isProperty = property != null
 
-    val rawType: KtCallableDeclaration = function?.function ?: property!!.property
-
     val constructorParameters: List<ConstructorParameter> =
       function?.parameters?.mapToConstructorParameters() ?: emptyList()
+
+    val type: TypeReference = function?.let {
+      it.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
+        message = "Dagger provider methods must specify the return type explicitly when using " +
+          "Anvil. The return type cannot be inferred implicitly.",
+        functionReference = it
+      )
+    } ?: property!!.type()
+    val annotationReference: AnnotatedReference = function ?: property!!
 
     fun isAnnotatedWith(fqName: FqName): Boolean {
       return function?.isAnnotatedWith(fqName) ?: property!!.isAnnotatedWith(fqName)
