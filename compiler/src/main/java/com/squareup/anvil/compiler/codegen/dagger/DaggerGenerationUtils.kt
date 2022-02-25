@@ -23,13 +23,11 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import dagger.Lazy
 import dagger.internal.ProviderOfLazy
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeElement
@@ -44,43 +42,6 @@ internal fun TypeName.wrapInProvider(): ParameterizedTypeName {
 
 internal fun TypeName.wrapInLazy(): ParameterizedTypeName {
   return Lazy::class.asClassName().parameterizedBy(this)
-}
-
-internal fun KtClassOrObject.typeVariableNames(
-  module: ModuleDescriptor
-): List<TypeVariableName> {
-  // Any type which is constrained in a `where` clause is also defined as a type parameter.
-  // It's also technically possible to have one constraint in the type parameter spot, like this:
-  // class MyClass<T : Any> where T : Set<*>, T : MutableCollection<*>
-  // Merge both groups of type parameters in order to get the full list of bounds.
-  val boundsByVariableName = typeParameterList
-    ?.parameters
-    ?.filter { it.fqNameOrNull(module) == null }
-    ?.associateTo(mutableMapOf()) { parameter ->
-      val variableName = parameter.nameAsSafeName.asString()
-      val extendsBound = parameter.extendsBound?.requireTypeName(module)
-
-      variableName to mutableListOf(extendsBound)
-    } ?: mutableMapOf()
-
-  typeConstraintList
-    ?.constraints
-    ?.filter { it.fqNameOrNull(module) == null }
-    ?.forEach { constraint ->
-      val variableName = constraint.subjectTypeParameterName
-        ?.getReferencedName()
-        ?: return@forEach
-      val extendsBound = constraint.boundTypeReference?.requireTypeName(module)
-
-      boundsByVariableName
-        .getValue(variableName)
-        .add(extendsBound)
-    }
-
-  return boundsByVariableName
-    .map { (variableName, bounds) ->
-      TypeVariableName(variableName, bounds.filterNotNull())
-    }
 }
 
 internal fun List<KtCallableDeclaration>.mapToConstructorParameters(

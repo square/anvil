@@ -5,6 +5,7 @@ package com.squareup.anvil.compiler.internal
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.AnnotatedReference
+import com.squareup.anvil.compiler.internal.reference.TypeParameterReference
 import com.squareup.anvil.compiler.internal.reference.TypeReference
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
 import com.squareup.kotlinpoet.AnnotationSpec
@@ -374,3 +375,14 @@ public fun FileSpec.Companion.buildFile(
     .addComment(generatorComment)
     .build()
     .writeToString()
+
+@ExperimentalAnvilApi
+public fun ClassName.optionallyParameterizedBy(
+  typeParameters: List<TypeParameterReference>
+): TypeName {
+  return if (typeParameters.isEmpty()) {
+    this
+  } else {
+    parameterizedBy(typeParameters.map { it.typeVariableName })
+  }
+}

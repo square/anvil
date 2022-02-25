@@ -4,7 +4,9 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.reference.TypeParameterReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.TypeParameterReference.Psi
+import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
+import kotlin.LazyThreadSafetyMode.NONE
 
 @ExperimentalAnvilApi
 public sealed class TypeParameterReference {
@@ -12,6 +14,10 @@ public sealed class TypeParameterReference {
   public abstract val name: String
   public abstract val upperBounds: List<TypeReference>
   public abstract val declaringClass: ClassReference
+
+  public val typeVariableName: TypeVariableName by lazy(NONE) {
+    TypeVariableName(name, upperBounds.map { it.asTypeName() })
+  }
 
   public class Psi internal constructor(
     override val name: String,
@@ -24,6 +30,10 @@ public sealed class TypeParameterReference {
     override val upperBounds: List<TypeReference.Descriptor>,
     override val declaringClass: ClassReference.Descriptor
   ) : TypeParameterReference()
+
+  override fun toString(): String {
+    return "${this::class.qualifiedName}(name='$name', declaringClass=$declaringClass)"
+  }
 }
 
 @ExperimentalAnvilApi

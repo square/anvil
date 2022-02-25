@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.optionallyParameterizedBy
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.FunctionReference
 import com.squareup.anvil.compiler.internal.reference.asClassName
@@ -70,15 +71,11 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
 
     val allParameters = constructorParameters + memberInjectParameters
 
-    val typeParameters = clazz.clazz.typeVariableNames(module)
+    val typeParameters = clazz.typeParameters
 
     val factoryClass = classId.asClassName()
-    val factoryClassParameterized =
-      if (typeParameters.isEmpty()) factoryClass else factoryClass.parameterizedBy(typeParameters)
-
-    val classType = clazz.asClassName().let {
-      if (typeParameters.isEmpty()) it else it.parameterizedBy(typeParameters)
-    }
+    val factoryClassParameterized = factoryClass.optionallyParameterizedBy(typeParameters)
+    val classType = clazz.asClassName().optionallyParameterizedBy(typeParameters)
 
     val content = FileSpec.buildFile(packageName, className) {
       val canGenerateAnObject = allParameters.isEmpty() && typeParameters.isEmpty()
@@ -87,7 +84,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
       } else {
         TypeSpec.classBuilder(factoryClass)
       }
-      typeParameters.forEach { classBuilder.addTypeVariable(it) }
+      typeParameters.forEach { classBuilder.addTypeVariable(it.typeVariableName) }
 
       classBuilder
         .addSuperinterface(Factory::class.asClassName().parameterizedBy(classType))
@@ -142,7 +139,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                 .jvmStatic()
                 .apply {
                   if (typeParameters.isNotEmpty()) {
-                    addTypeVariables(typeParameters)
+                    addTypeVariables(typeParameters.map { it.typeVariableName })
                   }
                   if (canGenerateAnObject) {
                     addStatement("return this")
@@ -170,7 +167,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                 .jvmStatic()
                 .apply {
                   if (typeParameters.isNotEmpty()) {
-                    addTypeVariables(typeParameters)
+                    addTypeVariables(typeParameters.map { it.typeVariableName })
                   }
                   constructorParameters.forEach { parameter ->
                     addParameter(

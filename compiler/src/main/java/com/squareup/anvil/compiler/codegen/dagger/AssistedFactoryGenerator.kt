@@ -14,6 +14,7 @@ import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.Assis
 import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.AssistedParameterKey.Companion.toAssistedParameterKey
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.optionallyParameterizedBy
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -26,7 +27,6 @@ import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
@@ -57,13 +57,12 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
       .classAndInnerClassReferences(module)
       .filter { it.isAnnotatedWith(assistedFactoryFqName) }
       .forEach { clazz ->
-        generateFactoryClass(codeGenDir, module, clazz)
+        generateFactoryClass(codeGenDir, clazz)
       }
   }
 
   private fun generateFactoryClass(
     codeGenDir: File,
-    module: ModuleDescriptor,
     clazz: ClassReference.Psi
   ): GeneratedFile {
     val packageName = clazz.packageFqName.safePackageString()
@@ -150,22 +149,18 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
       )
     }
 
-    val typeParameters = clazz.clazz.typeVariableNames(module)
-
-    fun ClassName.parameterized(): TypeName {
-      return if (typeParameters.isEmpty()) this else parameterizedBy(typeParameters)
-    }
+    val typeParameters = clazz.typeParameters
 
     val generatedFactoryTypeName = returnType.generateClassName(suffix = "_Factory")
       .asClassName()
-      .parameterized()
+      .optionallyParameterizedBy(typeParameters)
 
-    val baseFactoryTypeName = clazz.asClassName().parameterized()
+    val baseFactoryTypeName = clazz.asClassName().optionallyParameterizedBy(typeParameters)
 
-    val returnTypeName = returnType.asClassName().parameterized()
+    val returnTypeName = returnType.asClassName().optionallyParameterizedBy(typeParameters)
 
     val implClassName = clazz.generateClassName(suffix = "_Impl").asClassName()
-    val implParameterizedTypeName = implClassName.parameterized()
+    val implParameterizedTypeName = implClassName.optionallyParameterizedBy(typeParameters)
     val functionName = function.function.name
     val baseFactoryIsInterface = clazz.isInterface()
     val functionParameterPairs = function.parameterPairs
@@ -173,7 +168,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     val content = FileSpec.buildFile(packageName, implClassName.simpleName) {
       TypeSpec.classBuilder(implClassName)
         .apply {
-          typeParameters.forEach { addTypeVariable(it) }
+          typeParameters.forEach { addTypeVariable(it.typeVariableName) }
 
           if (baseFactoryIsInterface) {
             addSuperinterface(baseFactoryTypeName)
@@ -226,7 +221,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
             .addFunction(
               FunSpec.builder("create")
                 .jvmStatic()
-                .addTypeVariables(typeParameters)
+                .addTypeVariables(typeParameters.map { it.typeVariableName })
                 .addParameter(delegateFactoryName, generatedFactoryTypeName)
                 .returns(Provider::class.asClassName().parameterizedBy(baseFactoryTypeName))
                 .addStatement(
