@@ -1,6 +1,8 @@
 package com.squareup.anvil.compiler
 
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.codegen.reference.ClassReferenceIr
+import com.squareup.anvil.compiler.codegen.reference.toClassReference
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrAnnotationContainer
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -9,7 +11,6 @@ import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
-import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
 import org.jetbrains.kotlin.ir.types.IrSimpleType
@@ -34,8 +35,8 @@ internal fun IrPluginContext.requireReferenceClass(fqName: FqName): IrClassSymbo
 internal fun ClassId.irClass(context: IrPluginContext): IrClassSymbol =
   context.requireReferenceClass(asSingleFqName())
 
-internal fun ClassId.irClassOrNull(context: IrPluginContext): IrClassSymbol? =
-  context.referenceClass(asSingleFqName())
+internal fun ClassId.referenceClassOrNull(context: IrPluginContext): ClassReferenceIr? =
+  context.referenceClass(asSingleFqName())?.toClassReference(context)
 
 internal fun IrClass.requireClassId(): ClassId {
   return classId ?: throw AnvilCompilationException(
@@ -141,15 +142,3 @@ internal fun IrMemberAccessExpression<*>.argument(
       it.first.name.asString() == name
     }
 }
-
-internal fun IrConstructorCall.argumentClassArray(
-  name: String
-): List<IrClass> {
-  val vararg = argument(name)?.second as? IrVararg ?: return emptyList()
-
-  return vararg.elements
-    .filterIsInstance<IrExpression>()
-    .map { it.kclassUnwrapped.owner as IrClass }
-}
-
-internal fun IrConstructorCall.replaces(): List<IrClass> = argumentClassArray("replaces")

@@ -1,13 +1,16 @@
 package com.squareup.anvil.compiler.codegen.reference
 
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.argumentClassArray
+import com.squareup.anvil.compiler.argument
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
+import com.squareup.anvil.compiler.kclassUnwrapped
 import com.squareup.anvil.compiler.parentScope
 import com.squareup.anvil.compiler.scope
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.expressions.IrExpression
+import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.name.FqName
 import kotlin.LazyThreadSafetyMode.NONE
@@ -49,7 +52,27 @@ internal class AnnotationReferenceIr(
   }
 
   val excludedClasses: List<ClassReferenceIr> by lazy(NONE) {
-    annotation.exclude().map { it.symbol.toClassReference(context) }
+    argumentClassArray("exclude")
+  }
+
+  val replacedClasses: List<ClassReferenceIr> by lazy(NONE) {
+    argumentClassArray("replaces")
+  }
+
+  // TODO: May be worth introducing AnnotationArgumentIr here
+  fun argumentClassArray(name: String): List<ClassReferenceIr> {
+    return annotation.argumentClassArray(name)
+  }
+
+  private fun IrConstructorCall.argumentClassArray(
+    name: String
+  ): List<ClassReferenceIr> {
+    val vararg = argument(name)?.second as? IrVararg ?: return emptyList()
+
+    return vararg.elements
+      .filterIsInstance<IrExpression>()
+      .map { it.kclassUnwrapped.owner as IrClass }
+      .map { it.symbol.toClassReference(context) }
   }
 
   override fun toString(): String = "@$fqName"
@@ -81,8 +104,6 @@ internal fun IrConstructorCall.toAnnotationReference(
     classReference = this.symbol.owner.parentAsClass.symbol.toClassReference(context),
     declaringClass = declaringClass
   )
-
-internal fun IrConstructorCall.exclude(): List<IrClass> = argumentClassArray("exclude")
 
 @Suppress("FunctionName")
 internal fun AnvilCompilationExceptionAnnotationReferenceIr(

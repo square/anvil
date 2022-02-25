@@ -1,13 +1,12 @@
 package com.squareup.anvil.compiler
 
 import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
+import com.squareup.anvil.compiler.codegen.reference.AnnotationReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.AnvilCompilationExceptionClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.ClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import com.squareup.anvil.compiler.codegen.reference.find
-import com.squareup.anvil.compiler.codegen.reference.toAnnotationReference
 import com.squareup.anvil.compiler.codegen.reference.toClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.safePackageString
@@ -19,15 +18,12 @@ import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
-import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
-import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrDynamicTypeImpl
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.packageFqName
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -44,13 +40,14 @@ internal class ModuleMergerIr(
     moduleFragment.transform(
       object : IrElementTransformerVoid() {
         override fun visitClass(declaration: IrClass): IrStatement {
-          val annotationContext = AnnotationContext.create(declaration)
+          val declarationReference = declaration.symbol.toClassReference(pluginContext)
+          val annotationContext = AnnotationContext.create(declarationReference)
             ?: return super.visitClass(declaration)
 
           annotationContext.generateDaggerAnnotation(
             moduleFragment,
             pluginContext,
-            declaration.symbol.toClassReference(pluginContext)
+            declarationReference
           )
           return super.visitClass(declaration)
         }
@@ -73,11 +70,10 @@ internal class ModuleMergerIr(
       )
     }
 
-    val scope =
-      annotationConstructorCall.toAnnotationReference(pluginContext, declaration).scope
-    val predefinedModules = annotationConstructorCall.argumentClassArray(modulesKeyword)
+    val scope = annotation.scope
+    val predefinedModules = annotation.argumentClassArray(modulesKeyword)
 
-    val anvilModuleName = createAnvilModuleName(declaration.clazz.owner)
+    val anvilModuleName = createAnvilModuleName(declaration)
 
     val modules = classScanner
       .findContributedClasses(
@@ -88,7 +84,6 @@ internal class ModuleMergerIr(
         scope = scope,
         moduleDescriptorFactory = moduleDescriptorFactory
       )
-      .map { it.toClassReference(pluginContext) }
       .filter {
         // We generate a Dagger module for each merged component. We use Anvil itself to
         // contribute this generated module. It's possible that there are multiple components
@@ -104,43 +99,40 @@ internal class ModuleMergerIr(
           .singleOrNull()
       }
       .filter { contributesAnnotation ->
-        val classReference = contributesAnnotation.declaringClass
-        val moduleAnnotation = classReference.annotations.find(daggerModuleFqName).singleOrNull()
+        val contributedClass = contributesAnnotation.declaringClass
+        val moduleAnnotation = contributedClass.annotations.find(daggerModuleFqName).singleOrNull()
         val mergeModulesAnnotation =
-          classReference.annotations.find(mergeModulesFqName).singleOrNull()
+          contributedClass.annotations.find(mergeModulesFqName).singleOrNull()
 
-        if (!classReference.isInterface &&
+        if (!contributedClass.isInterface &&
           moduleAnnotation == null &&
           mergeModulesAnnotation == null
         ) {
           throw AnvilCompilationExceptionClassReferenceIr(
-            message = "${classReference.fqName} is annotated with " +
+            message = "${contributedClass.fqName} is annotated with " +
               "@${ContributesTo::class.simpleName}, but this class is neither an interface " +
               "nor a Dagger module. Did you forget to add @${Module::class.simpleName}?",
-            classReference = classReference
+            classReference = contributedClass
           )
         }
 
         moduleAnnotation != null || mergeModulesAnnotation != null
       }
       .onEach { contributesAnnotation ->
-        val classReference = contributesAnnotation.declaringClass
-        if (classReference.visibility != PUBLIC) {
+        val contributedClass = contributesAnnotation.declaringClass
+        if (contributedClass.visibility != PUBLIC) {
           throw AnvilCompilationExceptionClassReferenceIr(
-            message = "${classReference.fqName} is contributed to the Dagger graph, but the " +
+            message = "${contributedClass.fqName} is contributed to the Dagger graph, but the " +
               "module is not public. Only public modules are supported.",
-            classReference = classReference
+            classReference = contributedClass
           )
         }
       }
       // Convert the sequence to a list to avoid iterating it twice. We use the result twice
       // for replaced classes and the final result.
       .toList()
-      // TODO: Continue migrating to use References
-      .map { it.declaringClass.clazz to it.annotation }
 
-    val excludedModules = annotationConstructorCall
-      .toAnnotationReference(pluginContext, declaration)
+    val excludedModules = annotation
       .excludedClasses
       .onEach { excludedClass ->
         val contributesToAnnotation = excludedClass
@@ -172,37 +164,38 @@ internal class ModuleMergerIr(
           )
         }
       }
-      // TODO: Continue migrating to use References
-      .map { it.clazz.owner }
 
     val replacedModules = modules
       // Ignore replaced modules or bindings specified by excluded modules.
-      .filter { (classSymbol, _) -> classSymbol.owner !in excludedModules }
-      .flatMap { (classSymbol, contributesAnnotation) ->
-        contributesAnnotation.replaces()
-          .onEach { irClassForReplacement ->
+      .filter { contributesAnnotation ->
+        contributesAnnotation.declaringClass !in excludedModules
+      }
+      .flatMap { contributesAnnotation ->
+        val contributedClass = contributesAnnotation.declaringClass
+        contributesAnnotation.replacedClasses
+          .onEach { classToReplace ->
             // Verify has @Module annotation. It doesn't make sense for a Dagger module to
             // replace a non-Dagger module.
-            if (irClassForReplacement.annotationOrNull(daggerModuleFqName) == null &&
-              irClassForReplacement.annotationOrNull(contributesBindingFqName) == null &&
-              irClassForReplacement.annotationOrNull(contributesMultibindingFqName) == null
+            if (!classToReplace.isAnnotatedWith(daggerModuleFqName) &&
+              !classToReplace.isAnnotatedWith(contributesBindingFqName) &&
+              !classToReplace.isAnnotatedWith(contributesMultibindingFqName)
             ) {
-              throw AnvilCompilationException(
-                message = "${classSymbol.fqName} wants to replace " +
-                  "${irClassForReplacement.fqName}, but the class being " +
+              throw AnvilCompilationExceptionClassReferenceIr(
+                message = "${contributedClass.fqName} wants to replace " +
+                  "${classToReplace.fqName}, but the class being " +
                   "replaced is not a Dagger module.",
-                element = classSymbol
+                classReference = contributedClass
               )
             }
 
-            checkSameScope(classSymbol, irClassForReplacement, scope)
+            checkSameScope(contributedClass, classToReplace, scope)
           }
       }
 
     fun replacedModulesByContributedBinding(
       annotationFqName: FqName,
       hintPackagePrefix: String
-    ): Sequence<IrClass> {
+    ): Sequence<ClassReferenceIr> {
       return classScanner
         .findContributedClasses(
           pluginContext = pluginContext,
@@ -212,12 +205,12 @@ internal class ModuleMergerIr(
           scope = scope,
           moduleDescriptorFactory = moduleDescriptorFactory
         )
-        .flatMap { classSymbol ->
-          val annotation = classSymbol.owner.annotation(annotationFqName)
-          if (scope.fqName == annotation.scope()) {
-            annotation.replaces()
-              .onEach { classDescriptorForReplacement ->
-                checkSameScope(classSymbol, classDescriptorForReplacement, scope)
+        .flatMap { contributedClass ->
+          val annotation = contributedClass.annotations.find(annotationFqName).single()
+          if (scope == annotation.scope) {
+            annotation.replacedClasses
+              .onEach { classToReplace ->
+                checkSameScope(contributedClass, classToReplace, scope)
               }
           } else {
             emptyList()
@@ -248,7 +241,7 @@ internal class ModuleMergerIr(
 
     val contributedSubcomponentModules =
       findContributedSubcomponentModules(
-        declaration.clazz.owner,
+        declaration,
         scope,
         pluginContext,
         moduleFragment
@@ -256,7 +249,7 @@ internal class ModuleMergerIr(
 
     val contributedModules = modules
       .asSequence()
-      .map { it.first.owner }
+      .map { it.declaringClass }
       .minus(replacedModules.toSet())
       .minus(replacedModulesByContributedBindings.toSet())
       .minus(replacedModulesByContributedMultibindings.toSet())
@@ -264,6 +257,7 @@ internal class ModuleMergerIr(
       .plus(predefinedModules)
       .plus(contributedSubcomponentModules)
       .distinct()
+      .map { it.clazz.owner }
 
     val annotationConstructorCall = IrConstructorCallImpl
       .fromSymbolOwner(
@@ -297,6 +291,7 @@ internal class ModuleMergerIr(
         )
 
         fun copyArrayValue(name: String) {
+          // TODO This could also be cleaned up with an AnnotationArgumentIr type
           declaration.clazz.owner.annotation(annotationFqName, scope.fqName)
             .argument(name)
             ?.second
@@ -319,11 +314,12 @@ internal class ModuleMergerIr(
     declaration.clazz.owner.annotations += annotationConstructorCall
   }
 
-  private fun createAnvilModuleName(declaration: IrClass): FqName {
+  private fun createAnvilModuleName(declaration: ClassReferenceIr): FqName {
     val packageName = declaration.packageFqName?.safePackageString() ?: ""
 
     val name = "$MODULE_PACKAGE_PREFIX.$packageName" +
-      declaration.parentsWithSelf
+      // TODO Might be worth updating [ClassReferenceIr] to provide parentsWithSelf
+      declaration.clazz.owner.parentsWithSelf
         .filterIsInstance<IrClass>()
         .toList()
         .reversed()
@@ -334,43 +330,43 @@ internal class ModuleMergerIr(
   }
 
   private fun checkSameScope(
-    contributedClass: IrClassSymbol,
-    classDescriptorForReplacement: IrClass,
+    contributedClass: ClassReferenceIr,
+    classToReplace: ClassReferenceIr,
     scope: ClassReferenceIr
   ) {
-    val contributesToAnnotation = classDescriptorForReplacement
-      .annotationOrNull(contributesToFqName)
-    val contributesBindingAnnotation = classDescriptorForReplacement
-      .annotationOrNull(contributesBindingFqName)
-    val contributesMultibindingAnnotation = classDescriptorForReplacement
-      .annotationOrNull(contributesMultibindingFqName)
+    val contributesToAnnotation = classToReplace
+      .annotations.find(contributesToFqName).singleOrNull()
+    val contributesBindingAnnotation = classToReplace
+      .annotations.find(contributesBindingFqName).singleOrNull()
+    val contributesMultibindingAnnotation = classToReplace
+      .annotations.find(contributesMultibindingFqName).singleOrNull()
 
     // Verify that the replaced classes use the same scope.
-    val scopeOfReplacement = contributesToAnnotation?.scope()
-      ?: contributesBindingAnnotation?.scope()
-      ?: contributesMultibindingAnnotation?.scope()
-      ?: throw AnvilCompilationException(
+    val scopeOfReplacement = contributesToAnnotation?.scope
+      ?: contributesBindingAnnotation?.scope
+      ?: contributesMultibindingAnnotation?.scope
+      ?: throw AnvilCompilationExceptionClassReferenceIr(
         message = "Could not determine the scope of the replaced class " +
-          "${classDescriptorForReplacement.fqName}.",
-        element = contributedClass
+          "${classToReplace.fqName}.",
+        classReference = contributedClass
       )
 
-    if (scopeOfReplacement != scope.fqName) {
-      throw AnvilCompilationException(
+    if (scopeOfReplacement != scope) {
+      throw AnvilCompilationExceptionClassReferenceIr(
         message = "${contributedClass.fqName} with scope ${scope.fqName} wants to replace " +
-          "${classDescriptorForReplacement.fqName} with scope $scopeOfReplacement. The " +
+          "${classToReplace.fqName} with scope ${scopeOfReplacement.fqName}. The " +
           "replacement must use the same scope.",
-        element = contributedClass
+        classReference = contributedClass
       )
     }
   }
 
   private fun findContributedSubcomponentModules(
-    declaration: IrClass,
+    declaration: ClassReferenceIr,
     scope: ClassReferenceIr,
     pluginContext: IrPluginContext,
     moduleFragment: IrModuleFragment
-  ): Sequence<IrClass> {
+  ): Sequence<ClassReferenceIr> {
     return classScanner
       .findContributedClasses(
         pluginContext = pluginContext,
@@ -381,21 +377,20 @@ internal class ModuleMergerIr(
         moduleDescriptorFactory = moduleDescriptorFactory
       )
       .filter {
-        it.owner.annotation(contributesSubcomponentFqName).parentScope() == scope.fqName
+        it.annotations.find(contributesSubcomponentFqName).single().parentScope == scope
       }
       .mapNotNull { contributedSubcomponent ->
-        contributedSubcomponent.requireClassId()
-          .generatedAnvilSubcomponent(declaration.requireClassId())
+        contributedSubcomponent.classId
+          .generatedAnvilSubcomponent(declaration.classId)
           .createNestedClassId(Name.identifier(SUBCOMPONENT_MODULE))
-          .irClassOrNull(pluginContext)
-          ?.owner
+          .referenceClassOrNull(pluginContext)
       }
   }
 }
 
 @Suppress("DataClassPrivateConstructor")
 private data class AnnotationContext private constructor(
-  val annotationConstructorCall: IrConstructorCall,
+  val annotation: AnnotationReferenceIr,
   val annotationFqName: FqName,
   val daggerFqName: FqName,
   val modulesKeyword: String
@@ -404,8 +399,8 @@ private data class AnnotationContext private constructor(
   val isModule = annotationFqName == mergeModulesFqName
 
   companion object {
-    fun create(declaration: IrClass): AnnotationContext? {
-      declaration.annotationOrNull(mergeComponentFqName)
+    fun create(declaration: ClassReferenceIr): AnnotationContext? {
+      declaration.annotations.find(mergeComponentFqName).singleOrNull()
         ?.let {
           return AnnotationContext(
             it,
@@ -414,7 +409,7 @@ private data class AnnotationContext private constructor(
             "modules"
           )
         }
-      declaration.annotationOrNull(mergeSubcomponentFqName)
+      declaration.annotations.find(mergeSubcomponentFqName).singleOrNull()
         ?.let {
           return AnnotationContext(
             it,
@@ -423,7 +418,7 @@ private data class AnnotationContext private constructor(
             "modules"
           )
         }
-      declaration.annotationOrNull(mergeModulesFqName)
+      declaration.annotations.find(mergeModulesFqName).singleOrNull()
         ?.let {
           return AnnotationContext(
             it,

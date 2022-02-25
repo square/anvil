@@ -7,10 +7,13 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
+import com.squareup.anvil.compiler.requireClassId
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.util.isInterface
+import org.jetbrains.kotlin.ir.util.packageFqName
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import kotlin.LazyThreadSafetyMode.NONE
 
@@ -19,6 +22,8 @@ internal class ClassReferenceIr(
   val context: IrPluginContext
 ) : AnnotatedReferenceIr {
   val fqName: FqName = clazz.fqName
+  val packageFqName: FqName? = clazz.owner.packageFqName
+  val classId: ClassId = clazz.requireClassId()
 
   val isInterface: Boolean = clazz.owner.isInterface
 
