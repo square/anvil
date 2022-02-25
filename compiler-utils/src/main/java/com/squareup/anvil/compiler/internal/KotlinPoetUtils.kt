@@ -5,13 +5,11 @@ package com.squareup.anvil.compiler.internal
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.AnnotatedReference
-import com.squareup.anvil.compiler.internal.reference.TypeParameterReference
 import com.squareup.anvil.compiler.internal.reference.TypeReference
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
@@ -145,14 +143,3 @@ public fun FileSpec.Companion.buildFile(
     .addComment(generatorComment)
     .build()
     .writeToString()
-
-@ExperimentalAnvilApi
-public fun ClassName.optionallyParameterizedBy(
-  typeParameters: List<TypeParameterReference>
-): TypeName {
-  return if (typeParameters.isEmpty()) {
-    this
-  } else {
-    parameterizedBy(typeParameters.map { it.typeVariableName })
-  }
-}

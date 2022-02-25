@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ParameterReference
 import com.squareup.anvil.compiler.internal.reference.PropertyReference
+import com.squareup.anvil.compiler.internal.reference.TypeParameterReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.argumentAt
@@ -249,4 +250,14 @@ private fun PropertyReference.toMemberInjectParameter(
     qualifierAnnotationSpecs = qualifierAnnotations,
     injectedFieldSignature = fqName
   )
+}
+
+internal fun ClassName.optionallyParameterizedBy(
+  typeParameters: List<TypeParameterReference>
+): TypeName {
+  return if (typeParameters.isEmpty()) {
+    this
+  } else {
+    parameterizedBy(typeParameters.map { it.typeVariableName })
+  }
 }

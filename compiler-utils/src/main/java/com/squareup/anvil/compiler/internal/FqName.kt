@@ -12,10 +12,12 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import dagger.Lazy
 import dagger.MapKey
 import dagger.Provides
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import javax.inject.Inject
 import javax.inject.Qualifier
 import javax.inject.Scope
+import kotlin.reflect.KClass
 
 internal val jvmSuppressWildcardsFqName = JvmSuppressWildcards::class.fqName
 internal val publishedApiFqName = PublishedApi::class.fqName
@@ -38,3 +40,39 @@ internal val mergeModulesFqName = MergeModules::class.fqName
 @ExperimentalAnvilApi
 public fun FqName.descendant(segments: String): FqName =
   if (isRoot) FqName(segments) else FqName("${asString()}.$segments")
+
+/** Returns the computed [FqName] representation of this [KClass]. */
+@ExperimentalAnvilApi
+public val KClass<*>.fqName: FqName get() = FqName(java.canonicalName)
+
+/**
+ * This function should only be used for package names. If the FqName is the root (no package at
+ * all), then this function returns an empty string whereas `toString()` would return "<root>". For
+ * a more convenient string concatenation the returned result can be prefixed and suffixed with an
+ * additional dot. The root package never will use a prefix or suffix.
+ */
+@ExperimentalAnvilApi
+public fun FqName.safePackageString(
+  dotPrefix: Boolean = false,
+  dotSuffix: Boolean = true
+): String =
+  if (isRoot) {
+    ""
+  } else {
+    val prefix = if (dotPrefix) "." else ""
+    val suffix = if (dotSuffix) "." else ""
+    "$prefix$this$suffix"
+  }
+
+@ExperimentalAnvilApi
+public fun FqName.classIdBestGuess(): ClassId {
+  val segments = pathSegments().map { it.asString() }
+  val classNameIndex = segments.indexOfFirst { it[0].isUpperCase() }
+  if (classNameIndex < 0) {
+    return ClassId.topLevel(this)
+  }
+
+  val packageFqName = FqName.fromSegments(segments.subList(0, classNameIndex))
+  val relativeClassName = FqName.fromSegments(segments.subList(classNameIndex, segments.size))
+  return ClassId(packageFqName, relativeClassName, false)
+}
