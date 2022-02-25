@@ -1,8 +1,6 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
-import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.assistedFqName
-import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.injectFqName
@@ -47,7 +45,6 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
@@ -55,7 +52,6 @@ import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtTypeProjection
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtValueArgument
-import org.jetbrains.kotlin.psi.allConstructors
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
@@ -72,41 +68,6 @@ internal fun TypeName.wrapInProvider(): ParameterizedTypeName {
 
 internal fun TypeName.wrapInLazy(): ParameterizedTypeName {
   return Lazy::class.asClassName().parameterizedBy(this)
-}
-
-/**
- * Returns the with [injectAnnotationFqName] annotated constructor for this class.
- * [injectAnnotationFqName] must be either `@Inject` or `@AssistedInject`. If the class contains
- * multiple constructors annotated with either of these annotations, then this method throws
- * an error as multiple injected constructors aren't allowed.
- */
-internal fun KtClassOrObject.injectConstructor(
-  injectAnnotationFqName: FqName,
-  module: ModuleDescriptor
-): KtConstructor<*>? {
-  if (injectAnnotationFqName != injectFqName && injectAnnotationFqName != assistedInjectFqName) {
-    throw IllegalArgumentException(
-      "injectAnnotationFqName must be either $injectFqName or $assistedInjectFqName. " +
-        "It was $injectAnnotationFqName."
-    )
-  }
-
-  val constructors = allConstructors.filter {
-    it.hasAnnotation(injectFqName, module) || it.hasAnnotation(assistedInjectFqName, module)
-  }
-
-  return when (constructors.size) {
-    0 -> null
-    1 -> if (constructors[0].hasAnnotation(injectAnnotationFqName, module)) {
-      constructors[0]
-    } else {
-      null
-    }
-    else -> throw AnvilCompilationException(
-      "Types may only contain one injected constructor.",
-      element = this
-    )
-  }
 }
 
 internal fun KtClassOrObject.typeVariableNames(

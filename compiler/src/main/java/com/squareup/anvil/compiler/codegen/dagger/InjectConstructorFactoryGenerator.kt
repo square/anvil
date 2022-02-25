@@ -6,10 +6,12 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
+import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.FunctionReference
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
@@ -25,7 +27,6 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.internal.Factory
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
@@ -42,7 +43,9 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     projectFiles
       .classAndInnerClassReferences(module)
       .forEach { clazz ->
-        clazz.clazz.injectConstructor(injectFqName, module)
+        clazz.constructors
+          .injectConstructor()
+          ?.takeIf { it.isAnnotatedWith(injectFqName) }
           ?.let {
             generateFactoryClass(codeGenDir, module, clazz, it)
           }
@@ -53,14 +56,14 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
     codeGenDir: File,
     module: ModuleDescriptor,
     clazz: ClassReference.Psi,
-    constructor: KtConstructor<*>
+    constructor: FunctionReference.Psi
   ): GeneratedFile {
     val classId = clazz.generateClassName(suffix = "_Factory")
 
     val packageName = classId.packageFqName.safePackageString()
     val className = classId.relativeClassName.asString()
 
-    val constructorParameters = constructor.valueParameters
+    val constructorParameters = constructor.function.valueParameters
       .mapToConstructorParameters(module)
 
     val memberInjectParameters = clazz.memberInjectParameters()
