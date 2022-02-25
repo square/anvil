@@ -2,29 +2,47 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.asTypeNameOrNull
+import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.reference.TypeReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.TypeReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
-import com.squareup.anvil.compiler.internal.requireTypeName
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
+import com.squareup.kotlinpoet.WildcardTypeName
 import org.jetbrains.kotlin.builtins.isFunctionType
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFunctionType
+import org.jetbrains.kotlin.psi.KtNullableType
+import org.jetbrains.kotlin.psi.KtProjectionKind
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
+import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtTypeProjection
 import org.jetbrains.kotlin.psi.KtTypeReference
+import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
+import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.types.DefinitelyNotNullType
 import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.Variance.INVARIANT
+import org.jetbrains.kotlin.types.Variance.IN_VARIANCE
+import org.jetbrains.kotlin.types.Variance.OUT_VARIANCE
+import org.jetbrains.kotlin.types.isNullable
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import kotlin.LazyThreadSafetyMode.NONE
 
 @ExperimentalAnvilApi
@@ -82,6 +100,7 @@ public sealed class TypeReference {
 
   public fun isGenericType(): Boolean = asClassReferenceOrNull() == null
   public abstract fun isFunctionType(): Boolean
+  public abstract fun isNullable(): Boolean
 
   override fun toString(): String {
     return "${this::class.qualifiedName}(declaringClass=$declaringClass, " +
@@ -101,9 +120,11 @@ public sealed class TypeReference {
 
     override val typeName: TypeName? by lazy(NONE) {
       try {
-        type.requireTypeName(module).lambdaFix()
+        type.requireTypeName().lambdaFix()
       } catch (e: AnvilCompilationException) {
-        // TODO: The goal is to inline the function above and then stop throwing an exception.
+        // Usually the method should return a nullable value, but throwing an error gives us
+        // better hints which element exactly fails to be converted to a TypeName while debugging.
+        // So it's better to keep that mechanism in place and catch the exception to move on.
         null
       }
     }
@@ -158,6 +179,109 @@ public sealed class TypeReference {
     }
 
     override fun isFunctionType(): Boolean = type.typeElement is KtFunctionType
+
+    override fun isNullable(): Boolean = type.typeElement is KtNullableType
+
+    private fun KtTypeReference.requireTypeName(): TypeName {
+      fun PsiElement.fail(): Nothing = throw AnvilCompilationException(
+        message = "Couldn't resolve type: $text",
+        element = this
+      )
+
+      fun KtUserType.isTypeParameter(): Boolean {
+        return parents.filterIsInstance<KtClassOrObject>().first().typeParameters.any {
+          val typeParameter = it.text.split(":").first().trim()
+          typeParameter == text
+        }
+      }
+
+      fun KtUserType.findExtendsBound(): List<FqName> {
+        return parents.filterIsInstance<KtClassOrObject>()
+          .first()
+          .typeParameters
+          .mapNotNull { it.fqName }
+      }
+
+      fun KtTypeElement.requireTypeName(): TypeName {
+        return when (this) {
+          is KtUserType -> {
+            val className = fqNameOrNull(module)?.asClassName(module)
+              ?: if (isTypeParameter()) {
+                val bounds = findExtendsBound().map { it.asClassName(module) }
+                return TypeVariableName(text, bounds)
+              } else {
+                throw AnvilCompilationException("Couldn't resolve fqName.", element = this)
+              }
+
+            val typeArgumentList = typeArgumentList
+            if (typeArgumentList != null) {
+              className.parameterizedBy(
+                typeArgumentList.arguments.map { typeProjection ->
+                  if (typeProjection.projectionKind == KtProjectionKind.STAR) {
+                    STAR
+                  } else {
+                    val typeReference = typeProjection.typeReference ?: typeProjection.fail()
+                    typeReference
+                      .requireTypeName()
+                      .let { typeName ->
+                        // Preserve annotations, e.g. List<@JvmSuppressWildcards Abc>.
+                        if (typeReference.annotationEntries.isNotEmpty()) {
+                          typeName.copy(
+                            annotations = typeName.annotations + typeReference.annotationEntries
+                              .map { annotationEntry ->
+                                AnnotationSpec
+                                  .builder(
+                                    annotationEntry
+                                      .requireFqName(module)
+                                      .asClassName(module)
+                                  )
+                                  .build()
+                              }
+                          )
+                        } else {
+                          typeName
+                        }
+                      }
+                      .let { typeName ->
+                        val modifierList = typeProjection.modifierList
+                        when {
+                          modifierList == null -> typeName
+                          modifierList.hasModifier(KtTokens.OUT_KEYWORD) ->
+                            WildcardTypeName.producerOf(typeName)
+                          modifierList.hasModifier(KtTokens.IN_KEYWORD) ->
+                            WildcardTypeName.consumerOf(typeName)
+                          else -> typeName
+                        }
+                      }
+                  }
+                }
+              )
+            } else {
+              className
+            }
+          }
+          is KtFunctionType ->
+            LambdaTypeName.get(
+              receiver = receiver?.typeReference?.requireTypeName(),
+              parameters = parameterList
+                ?.parameters
+                ?.map { parameter ->
+                  val parameterReference = parameter.typeReference ?: parameter.fail()
+                  ParameterSpec.unnamed(parameterReference.requireTypeName())
+                }
+                ?: emptyList(),
+              returnType = (returnTypeReference ?: fail())
+                .requireTypeName()
+            )
+          is KtNullableType -> {
+            (innerType ?: fail()).requireTypeName().copy(nullable = true)
+          }
+          else -> fail()
+        }
+      }
+
+      return (typeElement ?: fail()).requireTypeName()
+    }
   }
 
   public class Descriptor internal constructor(
@@ -233,6 +357,30 @@ public sealed class TypeReference {
     }
 
     override fun isFunctionType(): Boolean = type.isFunctionType
+
+    override fun isNullable(): Boolean = type.isNullable()
+
+    private fun KotlinType.asTypeNameOrNull(): TypeName? {
+      if (isTypeParameter()) return TypeVariableName(toString())
+
+      val className = classDescriptor().asClassName()
+      if (arguments.isEmpty()) return className.copy(nullable = isMarkedNullable)
+
+      val argumentTypeNames = arguments.map { typeProjection ->
+        if (typeProjection.isStarProjection) {
+          STAR
+        } else {
+          val typeName = typeProjection.type.asTypeNameOrNull() ?: return null
+          when (typeProjection.projectionKind) {
+            INVARIANT -> typeName
+            OUT_VARIANCE -> WildcardTypeName.producerOf(typeName)
+            IN_VARIANCE -> WildcardTypeName.consumerOf(typeName)
+          }
+        }
+      }
+
+      return className.parameterizedBy(argumentTypeNames).copy(nullable = isMarkedNullable)
+    }
   }
 }
 

@@ -28,7 +28,7 @@ public fun KotlinType.classDescriptorOrNull(): ClassDescriptor? {
 public fun KotlinType.classDescriptor(): ClassDescriptor {
   return classDescriptorOrNull()
     ?: throw AnvilCompilationException(
-      "Unable to resolve type for ${this.asTypeName()}"
+      "Unable to resolve type for $this."
     )
 }
 
@@ -58,41 +58,3 @@ public fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType {
       "Couldn't resolve class across module dependencies for class ID: $classId"
     )
 }
-
-/**
- * This function should only be used for package names. If the FqName is the root (no package at
- * all), then this function returns an empty string whereas `toString()` would return "<root>". For
- * a more convenient string concatenation the returned result can be prefixed and suffixed with an
- * additional dot. The root package never will use a prefix or suffix.
- */
-@ExperimentalAnvilApi
-public fun FqName.safePackageString(
-  dotPrefix: Boolean = false,
-  dotSuffix: Boolean = true
-): String =
-  if (isRoot) {
-    ""
-  } else {
-    val prefix = if (dotPrefix) "." else ""
-    val suffix = if (dotSuffix) "." else ""
-    "$prefix$this$suffix"
-  }
-
-@ExperimentalAnvilApi
-public fun FqName.classIdBestGuess(): ClassId {
-  val segments = pathSegments().map { it.asString() }
-  val classNameIndex = segments.indexOfFirst { it[0].isUpperCase() }
-  if (classNameIndex < 0) {
-    return ClassId.topLevel(this)
-  }
-
-  val packageFqName = FqName.fromSegments(segments.subList(0, classNameIndex))
-  val relativeClassName = FqName.fromSegments(segments.subList(classNameIndex, segments.size))
-  return ClassId(packageFqName, relativeClassName, false)
-}
-
-@ExperimentalAnvilApi
-public fun String.capitalize(): String = replaceFirstChar(Char::uppercaseChar)
-
-@ExperimentalAnvilApi
-public fun String.decapitalize(): String = replaceFirstChar(Char::lowercaseChar)

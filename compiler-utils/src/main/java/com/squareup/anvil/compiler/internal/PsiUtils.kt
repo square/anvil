@@ -12,13 +12,10 @@ import com.squareup.anvil.compiler.internal.reference.toClassReferenceOrNull
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtAnnotated
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
-import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
-import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
@@ -31,80 +28,12 @@ import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
-import kotlin.reflect.KClass
 
 private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName, publishedApiFqName)
-
-/** Returns the computed [FqName] representation of this [KClass]. */
-public val KClass<*>.fqName: FqName get() = FqName(java.canonicalName)
 
 @ExperimentalAnvilApi
 public fun KtNamedDeclaration.requireFqName(): FqName = requireNotNull(fqName) {
   "fqName was null for $this, $nameAsSafeName"
-}
-
-@ExperimentalAnvilApi
-public fun KtAnnotated.hasAnnotation(
-  fqName: FqName,
-  module: ModuleDescriptor
-): Boolean {
-  return findAnnotation(fqName, module) != null
-}
-
-@ExperimentalAnvilApi
-public fun KtAnnotated.findAnnotation(
-  fqName: FqName,
-  module: ModuleDescriptor
-): KtAnnotationEntry? {
-  val annotationEntries = annotationEntries
-  if (annotationEntries.isEmpty()) return null
-
-  // Look first if it's a Kotlin annotation. These annotations are usually not imported and the
-  // remaining checks would fail.
-  if (fqName in kotlinAnnotations) {
-    annotationEntries.firstOrNull { annotation ->
-      val text = annotation.text
-      text.startsWith("@${fqName.shortName()}") || text.startsWith("@$fqName")
-    }?.let { return it }
-  }
-
-  // Check if the fully qualified name is used, e.g. `@dagger.Module`.
-  val annotationEntry = annotationEntries.firstOrNull {
-    it.text.startsWith("@${fqName.asString()}")
-  }
-  if (annotationEntry != null) return annotationEntry
-
-  // Check if the simple name is used, e.g. `@Module`.
-  val annotationEntryShort = annotationEntries
-    .firstOrNull {
-      it.shortName == fqName.shortName()
-    }
-    ?: return null
-
-  val importPaths = containingKtFile.importDirectives.mapNotNull { it.importPath }
-
-  // If the simple name is used, check that the annotation is imported.
-  val hasImport = importPaths.any { it.fqName == fqName }
-  if (hasImport) return annotationEntryShort
-
-  // Look for star imports and make a guess.
-  val hasStarImport = importPaths
-    .filter { it.isAllUnder }
-    .any {
-      fqName.asString().startsWith(it.fqName.asString())
-    }
-  if (hasStarImport) return annotationEntryShort
-
-  // At this point we know that the class is annotated with an annotation that has the same simple
-  // name as fqName. We couldn't find any imports, so the annotation is likely part of the same
-  // package or Kotlin namespace. Leverage our existing utility function and to find the FqName
-  // and then compare the result.
-  val fqNameOfShort = annotationEntryShort.fqNameOrNull(module)
-  if (fqName == fqNameOfShort) {
-    return annotationEntryShort
-  }
-
-  return null
 }
 
 @ExperimentalAnvilApi
@@ -347,53 +276,4 @@ private fun PsiElement.findClassReferenceInSuperTypes(
       clazz.fqName.descendant(className).toClassReferenceOrNull(module)
     }
     .firstOrNull()
-}
-
-@ExperimentalAnvilApi
-public fun KtTypeReference.isNullable(): Boolean = typeElement is KtNullableType
-
-@ExperimentalAnvilApi
-public fun KtTypeReference.isGenericType(): Boolean {
-  val typeElement = typeElement ?: return false
-  val children = typeElement.children
-
-  if (children.size != 2) return false
-  return children[1] is KtTypeArgumentList
-}
-
-@ExperimentalAnvilApi
-public fun KtTypeReference.isFunctionType(): Boolean = typeElement is KtFunctionType
-
-@ExperimentalAnvilApi
-public fun KtCallableDeclaration.requireTypeReference(module: ModuleDescriptor): KtTypeReference {
-  typeReference?.let { return it }
-
-  if (this is KtFunction && hasAnnotation(daggerProvidesFqName, module)) {
-    throw AnvilCompilationException(
-      message = "Dagger provider methods must specify the return type explicitly when using " +
-        "Anvil. The return type cannot be inferred implicitly.",
-      element = this
-    )
-  }
-
-  throw AnvilCompilationException(
-    message = "Couldn't obtain type reference. Did you declare an explicit type for ${this.name}?",
-    element = this
-  )
-}
-
-@ExperimentalAnvilApi
-public fun KtUserType.isTypeParameter(): Boolean {
-  return parents.filterIsInstance<KtClassOrObject>().first().typeParameters.any {
-    val typeParameter = it.text.split(":").first().trim()
-    typeParameter == text
-  }
-}
-
-@ExperimentalAnvilApi
-public fun KtUserType.findExtendsBound(): List<FqName> {
-  return parents.filterIsInstance<KtClassOrObject>()
-    .first()
-    .typeParameters
-    .mapNotNull { it.fqName }
 }
