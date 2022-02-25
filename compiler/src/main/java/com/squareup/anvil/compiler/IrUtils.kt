@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.ir.types.IrType
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.types.typeOrNull
+import org.jetbrains.kotlin.ir.util.IdSignature.CommonSignature
 import org.jetbrains.kotlin.ir.util.classId
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
 import org.jetbrains.kotlin.ir.util.getAnnotation
@@ -89,9 +90,11 @@ internal fun IrConstructorCall.scope(): FqName {
       element = this
     )
 
-  return FqName("${signature.packageFqName}.${signature.shortName}")
+  return signature.fqName
 }
 
+@Suppress("DeprecatedCallableAddReplaceWith")
+@Deprecated("Use a Reference class instead of depending directly on IR")
 internal fun IrConstructorCall.parentScope(): FqName {
   val expression = argument("parentScope")?.second
     ?: throw AnvilCompilationException(
@@ -105,8 +108,22 @@ internal fun IrConstructorCall.parentScope(): FqName {
       element = this
     )
 
-  return FqName("${signature.packageFqName}.${signature.shortName}")
+  return signature.fqName
 }
+
+private val CommonSignature.fqName: FqName
+  // It's important that we use [declarationFqName] instead of [shortName] here to ensure that the
+  // [FqName] being constructed handles nested classes if it's later used for finding IR symbols.
+  //
+  // e.g. we might have a signature like
+  // 'com.squareup.anvil.test/ContributedSubcomponent.ParentScope' which gets broken up as
+  // packageFqName     -> 'com.squareup.anvil.test'
+  // declarationFqName -> 'ContributedSubcomponent.ParentScope'
+  // shortName         -> 'ParentScope'
+  //
+  // Using [shortName] would produce the FqName 'com.squareup.anvil.test.ParentScope' which
+  // prevents the IR lookup utils from finding the matching symbol.
+  get() = FqName("$packageFqName.$declarationFqName")
 
 internal val IrDeclarationWithName.fqName: FqName
   get() = fqNameWhenAvailable ?: throw AnvilCompilationException(
@@ -136,5 +153,3 @@ internal fun IrConstructorCall.argumentClassArray(
 }
 
 internal fun IrConstructorCall.replaces(): List<IrClass> = argumentClassArray("replaces")
-
-internal fun IrConstructorCall.exclude(): List<IrClass> = argumentClassArray("exclude")
