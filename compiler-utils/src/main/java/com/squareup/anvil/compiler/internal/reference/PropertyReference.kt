@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.PropertyReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.PropertyReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
@@ -11,6 +12,8 @@ import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.kotlinpoet.MemberName
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget.PROPERTY_GETTER
+import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget.PROPERTY_SETTER
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtProperty
@@ -29,7 +32,19 @@ public sealed class PropertyReference : AnnotatedReference {
   public val name: String get() = fqName.shortName().asString()
   public val memberName: MemberName get() = MemberName(declaringClass.asClassName(), name)
 
+  protected abstract val type: TypeReference?
+
+  public abstract val setterAnnotations: List<AnnotationReference>
+  public abstract val getterAnnotations: List<AnnotationReference>
+
   public abstract fun visibility(): Visibility
+
+  public fun typeOrNull(): TypeReference? = type
+  public fun type(): TypeReference = type
+    ?: throw AnvilCompilationExceptionPropertyReference(
+      propertyReference = this,
+      message = "Unable to get type for property $fqName."
+    )
 
   override fun toString(): String = "$fqName"
 
@@ -54,11 +69,31 @@ public sealed class PropertyReference : AnnotatedReference {
 
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
       property.annotationEntries
-        .plus(property.setter?.annotationEntries ?: emptyList())
-        .plus(property.getter?.annotationEntries ?: emptyList())
-        .map {
-          it.toAnnotationReference(declaringClass = null, module)
+        .filter {
+          val annotationUseSiteTarget = it.useSiteTarget?.getAnnotationUseSiteTarget()
+          annotationUseSiteTarget != PROPERTY_SETTER && annotationUseSiteTarget != PROPERTY_GETTER
         }
+        .map { it.toAnnotationReference(declaringClass, module) }
+        .plus(setterAnnotations)
+        .plus(getterAnnotations)
+    }
+
+    override val type: TypeReference? by lazy(NONE) {
+      property.typeReference?.toTypeReference(declaringClass)
+    }
+
+    override val setterAnnotations: List<AnnotationReference.Psi> by lazy(NONE) {
+      property.annotationEntries
+        .filter { it.useSiteTarget?.getAnnotationUseSiteTarget() == PROPERTY_SETTER }
+        .plus(property.setter?.annotationEntries ?: emptyList())
+        .map { it.toAnnotationReference(declaringClass, module) }
+    }
+
+    override val getterAnnotations: List<AnnotationReference.Psi> by lazy(NONE) {
+      property.annotationEntries
+        .filter { it.useSiteTarget?.getAnnotationUseSiteTarget() == PROPERTY_GETTER }
+        .plus(property.getter?.annotationEntries ?: emptyList())
+        .map { it.toAnnotationReference(declaringClass, module) }
     }
 
     override fun visibility(): Visibility {
@@ -83,12 +118,28 @@ public sealed class PropertyReference : AnnotatedReference {
 
     override val annotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
       property.annotations
-        .plus(property.setter?.annotations ?: emptyList())
-        .plus(property.getter?.annotations ?: emptyList())
         .plus(property.backingField?.annotations ?: emptyList())
-        .map {
-          it.toAnnotationReference(declaringClass = null, module)
-        }
+        .map { it.toAnnotationReference(declaringClass, module) }
+        .plus(setterAnnotations)
+        .plus(getterAnnotations)
+    }
+
+    override val setterAnnotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
+      property.setter
+        ?.annotations
+        ?.map { it.toAnnotationReference(declaringClass, module) }
+        .orEmpty()
+    }
+
+    override val getterAnnotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
+      property.getter
+        ?.annotations
+        ?.map { it.toAnnotationReference(declaringClass, module) }
+        .orEmpty()
+    }
+
+    override val type: TypeReference by lazy(NONE) {
+      property.type.toTypeReference(declaringClass)
     }
 
     override fun visibility(): Visibility {
@@ -115,3 +166,22 @@ public fun KtProperty.toPropertyReference(
 public fun PropertyDescriptor.toPropertyReference(
   declaringClass: ClassReference.Descriptor
 ): Descriptor = Descriptor(this, declaringClass)
+
+@ExperimentalAnvilApi
+@Suppress("FunctionName")
+public fun AnvilCompilationExceptionPropertyReference(
+  propertyReference: PropertyReference,
+  message: String,
+  cause: Throwable? = null
+): AnvilCompilationException = when (propertyReference) {
+  is Psi -> AnvilCompilationException(
+    element = propertyReference.property,
+    message = message,
+    cause = cause
+  )
+  is Descriptor -> AnvilCompilationException(
+    propertyDescriptor = propertyReference.property,
+    message = message,
+    cause = cause
+  )
+}

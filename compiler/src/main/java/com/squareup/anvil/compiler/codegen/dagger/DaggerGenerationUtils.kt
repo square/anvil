@@ -4,21 +4,16 @@ import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.injectFqName
-import com.squareup.anvil.compiler.internal.argumentType
-import com.squareup.anvil.compiler.internal.asTypeName
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.findAnnotation
 import com.squareup.anvil.compiler.internal.fqNameOrNull
-import com.squareup.anvil.compiler.internal.hasAnnotation
 import com.squareup.anvil.compiler.internal.isNullable
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.PropertyReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
+import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.reference.toAnnotationReference
-import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.anvil.compiler.internal.requireTypeReference
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
@@ -32,25 +27,15 @@ import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import dagger.Lazy
 import dagger.internal.ProviderOfLazy
-import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.descriptors.PropertyDescriptor
-import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtCallableDeclaration
 import org.jetbrains.kotlin.psi.KtClassOrObject
-import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtTypeProjection
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtValueArgument
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.isNullable
-import org.jetbrains.kotlin.utils.addToStdlib.safeAs
 import javax.inject.Provider
 
 internal fun TypeName.wrapInProvider(): ParameterizedTypeName {
@@ -108,7 +93,7 @@ internal fun List<KtCallableDeclaration>.mapToConstructorParameters(
     acc + ktCallableDeclaration.toConstructorParameter(module = module, uniqueName = uniqueName)
   }
 
-internal fun KtCallableDeclaration.toConstructorParameter(
+private fun KtCallableDeclaration.toConstructorParameter(
   module: ModuleDescriptor,
   uniqueName: String
 ): ConstructorParameter {
@@ -178,11 +163,6 @@ private fun KtTypeElement.singleTypeArgument(): KtTypeReference {
     .children
     .filterIsInstance<KtTypeReference>()
     .single()
-}
-
-private fun KtProperty.isSetterInjected(module: ModuleDescriptor): Boolean {
-  return setter?.hasAnnotation(injectFqName, module) == true || findAnnotation(injectFqName, module)
-    ?.useSiteTarget?.getAnnotationUseSiteTarget() == AnnotationUseSiteTarget.PROPERTY_SETTER
 }
 
 internal fun FunSpec.Builder.addMemberInjection(
@@ -296,97 +276,40 @@ internal fun List<Parameter>.asArgumentList(
     .joinToString()
 }
 
-// TODO: Move to PropertyReference
-internal fun PropertyDescriptor.isSetterInjected(): Boolean {
-  return setter?.annotations?.hasAnnotation(injectFqName) == true
-}
-
-// TODO: Return ClassReference
-internal fun KotlinType.fqNameOrNull(): FqName? = classDescriptorOrNull()?.fqNameOrNull()
-
 private fun PropertyReference.toMemberInjectParameter(
   uniqueName: String
 ): MemberInjectParameter {
-  declaringClass
-  return when (this) {
-    is PropertyReference.Psi ->
-      property
-        .toMemberInjectParameter(
-          module = module,
-          containingClass = declaringClass,
-          uniqueName = uniqueName
-        )
-    is PropertyReference.Descriptor ->
-      property
-        .toMemberInjectParameter(
-          module = module,
-          containingClass = declaringClass,
-          uniqueName = uniqueName
-        )
-  }
-}
+  val originalName = name
+  val type = type()
 
-private fun CallableMemberDescriptor.toMemberInjectParameter(
-  module: ModuleDescriptor,
-  containingClass: ClassReference,
-  uniqueName: String
-): MemberInjectParameter {
-  val originalName = name.asString()
-
-  val type = safeAs<PropertyDescriptor>()?.type
-    ?: valueParameters.first().type
-
-  val typeFqName = type.fqNameOrNull()
-
-  val isWrappedInProvider = typeFqName == providerFqName
-  val isWrappedInLazy = typeFqName == daggerLazyFqName
-
-  var isLazyWrappedInProvider = false
+  val isWrappedInProvider = type.asClassReferenceOrNull()?.fqName == providerFqName
+  val isWrappedInLazy = type.asClassReferenceOrNull()?.fqName == daggerLazyFqName
+  val isLazyWrappedInProvider = isWrappedInProvider &&
+    type.unwrappedFirstType.asClassReferenceOrNull()?.fqName == daggerLazyFqName
 
   val typeName = when {
-    type.isNullable() -> type.asTypeName()
-      .copy(nullable = true)
+    isLazyWrappedInProvider -> type.unwrappedFirstType.unwrappedFirstType
+    isWrappedInProvider || isWrappedInLazy -> type.unwrappedFirstType
+    else -> type
+  }.asTypeName().withJvmSuppressWildcardsIfNeeded(this, type)
 
-    isWrappedInLazy || isWrappedInProvider -> {
-      val singleTypeParamType = type.arguments
-        .singleOrNull()
-        ?.type
-
-      if (isWrappedInProvider && singleTypeParamType?.fqNameOrNull() == daggerLazyFqName) {
-
-        // This is a super rare case when someone injects Provider<Lazy<Type>> that requires
-        // special care.
-        isLazyWrappedInProvider = true
-        singleTypeParamType.asTypeName()
-      } else {
-        type.argumentType().asTypeName()
-      }
-    }
-
-    else -> type.asTypeName()
-  }.withJvmSuppressWildcardsIfNeeded(this)
-
-  val assistedAnnotation = annotations
-    .findAnnotation(assistedFqName)
+  val assistedAnnotation = annotations.singleOrNull { it.fqName == assistedFqName }
 
   val assistedIdentifier = assistedAnnotation
-    ?.allValueArguments
-    ?.values
-    ?.firstOrNull()
-    ?.value as? String
+    ?.argumentAt("value", 0)
+    ?.value()
     ?: ""
 
-  val memberInjectorClassName = containingClass
+  val memberInjectorClassName = declaringClass
     .generateClassName(separator = "_", suffix = "_MembersInjector")
     .relativeClassName
     .asString()
 
   val memberInjectorClass = ClassName(
-    containingClass.packageFqName.asString(), memberInjectorClassName
+    declaringClass.packageFqName.asString(), memberInjectorClassName
   )
 
-  val isSetterInjected = safeAs<PropertyDescriptor>()
-    ?.isSetterInjected() == true
+  val isSetterInjected = this.setterAnnotations.any { it.fqName == injectFqName }
 
   // setter delegates require a "set" prefix for their inject function
   val accessName = if (isSetterInjected) {
@@ -396,7 +319,6 @@ private fun CallableMemberDescriptor.toMemberInjectParameter(
   }
 
   val qualifierAnnotations = annotations
-    .map { it.toAnnotationReference(declaringClass = null, module) }
     .filter { it.isQualifier() }
     .map { it.toAnnotationSpec() }
 
@@ -415,55 +337,6 @@ private fun CallableMemberDescriptor.toMemberInjectParameter(
     isSetterInjected = isSetterInjected,
     accessName = accessName,
     qualifierAnnotationSpecs = qualifierAnnotations,
-    injectedFieldSignature = fqNameSafe
-  )
-}
-
-private fun KtProperty.toMemberInjectParameter(
-  module: ModuleDescriptor,
-  containingClass: ClassReference,
-  uniqueName: String
-): MemberInjectParameter {
-
-  val constructorParameter = toConstructorParameter(module, uniqueName)
-
-  val packageName = containingClass.packageFqName.asString()
-
-  val memberInjectorClassName =
-    "${containingClass.generateClassName().relativeClassName}" +
-      "_MembersInjector"
-  val memberInjectorClass = ClassName(packageName, memberInjectorClassName)
-
-  val qualifierAnnotations = annotationEntries
-    .map { it.toAnnotationReference(declaringClass = null, module = module) }
-    .filter { it.isQualifier() }
-    .map { it.toAnnotationSpec() }
-
-  val isSetterInjected = isSetterInjected(module)
-
-  val originalName = constructorParameter.originalName
-
-  // setter delegates require a "set" prefix for their inject function
-  val accessName = if (isSetterInjected) {
-    "set${originalName.capitalize()}"
-  } else {
-    originalName
-  }
-  return MemberInjectParameter(
-    name = constructorParameter.name,
-    typeName = constructorParameter.typeName,
-    providerTypeName = constructorParameter.providerTypeName,
-    lazyTypeName = constructorParameter.lazyTypeName,
-    isWrappedInProvider = constructorParameter.isWrappedInProvider,
-    isWrappedInLazy = constructorParameter.isWrappedInLazy,
-    isLazyWrappedInProvider = constructorParameter.isLazyWrappedInProvider,
-    isAssisted = constructorParameter.isAssisted,
-    assistedIdentifier = constructorParameter.assistedIdentifier,
-    memberInjectorClassName = memberInjectorClass,
-    originalName = originalName,
-    isSetterInjected = isSetterInjected,
-    accessName = accessName,
-    qualifierAnnotationSpecs = qualifierAnnotations,
-    injectedFieldSignature = requireFqName()
+    injectedFieldSignature = fqName
   )
 }
