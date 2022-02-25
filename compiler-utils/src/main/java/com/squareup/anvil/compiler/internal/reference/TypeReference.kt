@@ -2,7 +2,8 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.asTypeNameOrNull
+import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.reference.TypeReference.Descriptor
@@ -12,7 +13,10 @@ import com.squareup.anvil.compiler.internal.requireTypeName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.LambdaTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
+import com.squareup.kotlinpoet.WildcardTypeName
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFunctionType
@@ -26,7 +30,11 @@ import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.kotlin.types.DefinitelyNotNullType
 import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.Variance.INVARIANT
+import org.jetbrains.kotlin.types.Variance.IN_VARIANCE
+import org.jetbrains.kotlin.types.Variance.OUT_VARIANCE
 import org.jetbrains.kotlin.types.isNullable
+import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import kotlin.LazyThreadSafetyMode.NONE
 
 @ExperimentalAnvilApi
@@ -240,6 +248,28 @@ public sealed class TypeReference {
     override fun isFunctionType(): Boolean = type.isFunctionType
 
     override fun isNullable(): Boolean = type.isNullable()
+
+    private fun KotlinType.asTypeNameOrNull(): TypeName? {
+      if (isTypeParameter()) return TypeVariableName(toString())
+
+      val className = classDescriptor().asClassName()
+      if (arguments.isEmpty()) return className.copy(nullable = isMarkedNullable)
+
+      val argumentTypeNames = arguments.map { typeProjection ->
+        if (typeProjection.isStarProjection) {
+          STAR
+        } else {
+          val typeName = typeProjection.type.asTypeNameOrNull() ?: return null
+          when (typeProjection.projectionKind) {
+            INVARIANT -> typeName
+            OUT_VARIANCE -> WildcardTypeName.producerOf(typeName)
+            IN_VARIANCE -> WildcardTypeName.consumerOf(typeName)
+          }
+        }
+      }
+
+      return className.parameterizedBy(argumentTypeNames).copy(nullable = isMarkedNullable)
+    }
   }
 }
 

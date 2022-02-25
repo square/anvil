@@ -28,7 +28,7 @@ public fun KotlinType.classDescriptorOrNull(): ClassDescriptor? {
 public fun KotlinType.classDescriptor(): ClassDescriptor {
   return classDescriptorOrNull()
     ?: throw AnvilCompilationException(
-      "Unable to resolve type for ${this.asTypeName()}"
+      "Unable to resolve type for $this."
     )
 }
 

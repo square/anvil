@@ -26,33 +26,15 @@ import org.jetbrains.kotlin.descriptors.PackageFragmentDescriptor
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNullableType
 import org.jetbrains.kotlin.psi.KtProjectionKind
 import org.jetbrains.kotlin.psi.KtTypeElement
 import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
-import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.descriptorUtil.parentsWithSelf
-import org.jetbrains.kotlin.types.KotlinType
-import org.jetbrains.kotlin.types.Variance.INVARIANT
-import org.jetbrains.kotlin.types.Variance.IN_VARIANCE
-import org.jetbrains.kotlin.types.Variance.OUT_VARIANCE
-import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import java.io.ByteArrayOutputStream
-
-@ExperimentalAnvilApi
-public fun KtClassOrObject.asClassName(): ClassName =
-  ClassName(
-    packageName = containingKtFile.packageFqName.safePackageString(),
-    simpleNames = parentsWithSelf
-      .filterIsInstance<KtClassOrObject>()
-      .map { it.nameAsSafeName.asString() }
-      .toList()
-      .reversed()
-  )
 
 @ExperimentalAnvilApi
 public fun ClassDescriptor.asClassName(): ClassName =
@@ -71,7 +53,7 @@ public fun FqName.asClassName(module: ModuleDescriptor): ClassName {
     ?: throw AnvilCompilationException("Couldn't parse ClassName for $this.")
 }
 
-internal fun FqName.asClassNameOrNull(module: ModuleDescriptor): ClassName? {
+private fun FqName.asClassNameOrNull(module: ModuleDescriptor): ClassName? {
   val segments = pathSegments().map { it.asString() }
 
   // If the first sentence case is not the last segment of the path it becomes ambiguous,
@@ -198,50 +180,6 @@ public fun ClassId.asClassName(): ClassName {
     packageName = packageFqName.asString(),
     simpleNames = relativeClassName.pathSegments().map { it.asString() }
   )
-}
-
-@Suppress("DeprecatedCallableAddReplaceWith")
-@ExperimentalAnvilApi
-@Deprecated("Don't rely on PSI and make the code agnostic to the underlying implementation.")
-public fun KotlinType.asTypeName(): TypeName {
-  return asTypeNameOrNull { true }!!
-}
-
-/**
- * @param rawTypeFilter an optional raw type filter to allow for
- *                      short-circuiting this before attempting to
- *                      resolve type arguments.
- */
-@ExperimentalAnvilApi
-@Suppress("DeprecatedCallableAddReplaceWith")
-@Deprecated(
-  "Don't rely on descriptors and make the code agnostic to the underlying implementation."
-)
-public fun KotlinType.asTypeNameOrNull(
-  rawTypeFilter: (ClassName) -> Boolean = { true }
-): TypeName? {
-  if (isTypeParameter()) return TypeVariableName(toString())
-
-  val className = classDescriptor().asClassName()
-  if (!rawTypeFilter(className)) {
-    return null
-  }
-  if (arguments.isEmpty()) return className.copy(nullable = isMarkedNullable)
-
-  val argumentTypeNames = arguments.map { typeProjection ->
-    if (typeProjection.isStarProjection) {
-      STAR
-    } else {
-      val typeName = typeProjection.type.asTypeName()
-      when (typeProjection.projectionKind) {
-        INVARIANT -> typeName
-        OUT_VARIANCE -> WildcardTypeName.producerOf(typeName)
-        IN_VARIANCE -> WildcardTypeName.consumerOf(typeName)
-      }
-    }
-  }
-
-  return className.parameterizedBy(argumentTypeNames).copy(nullable = isMarkedNullable)
 }
 
 @ExperimentalAnvilApi
