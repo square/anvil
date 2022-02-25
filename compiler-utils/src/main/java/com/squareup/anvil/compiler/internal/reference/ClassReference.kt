@@ -61,6 +61,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
   public abstract val constructors: List<FunctionReference>
   public abstract val functions: List<FunctionReference>
   public abstract val properties: List<PropertyReference>
+  public abstract val typeParameters: List<TypeParameterReference>
 
   protected abstract val innerClassesAndObjects: List<ClassReference>
 
@@ -151,6 +152,10 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
         .filterIsInstance<KtClassBody>()
         .flatMap { it.properties }
         .map { it.toPropertyReference(this) }
+    }
+
+    override val typeParameters: List<TypeParameterReference.Psi> by lazy(NONE) {
+      getTypeParameterReferences()
     }
 
     private val directSuperClassReferences: List<ClassReference> by lazy(NONE) {
@@ -271,6 +276,13 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
         .getContributedDescriptors(kindFilter = DescriptorKindFilter.CLASSIFIERS)
         .filterIsInstance<ClassDescriptor>()
         .map { it.toClassReference(module) }
+    }
+
+    override val typeParameters: List<TypeParameterReference.Descriptor> by lazy(NONE) {
+      clazz.declaredTypeParameters
+        .map { typeParameter ->
+          typeParameter.toTypeParameterReference(this)
+        }
     }
 
     override fun isInterface(): Boolean = clazz.kind == ClassKind.INTERFACE

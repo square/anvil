@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.resolve.source.getPsi
 import org.junit.Test
@@ -65,6 +66,85 @@ class ClassReferenceTest {
 
               assertThat(psiRef.enclosingClass()?.shortName).isEqualTo("SomeClass3")
               assertThat(descriptorRef.enclosingClass()?.shortName).isEqualTo("SomeClass3")
+            }
+            else -> throw NotImplementedError(psiRef.shortName)
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test fun `the type parameter list is parsed`() {
+    compile(
+      """
+      package com.squareup.test
+
+      class SomeClass1<T : List<String>>(
+        private val t: T
+      )
+      
+      class SomeClass2<V>(
+        private val v: V
+      ) where V : Appendable, V : CharSequence
+
+      class SomeClass3<T, R : Set<String>>(
+        private val t: T,
+        private val r: Lazy<R>
+      ) where T : Appendable, T : CharSequence
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          when (psiRef.shortName) {
+            "SomeClass1" -> {
+              val psiParameter = psiRef.typeParameters.single()
+              val descriptorParameter = descriptorRef.typeParameters.single()
+
+              assertThat(psiParameter.name).isEqualTo("T")
+              assertThat(descriptorParameter.name).isEqualTo("T")
+
+              assertThat(psiParameter.upperBounds.single().asTypeName().toString())
+                .isEqualTo("kotlin.collections.List<kotlin.String>")
+              assertThat(descriptorParameter.upperBounds.single().asTypeName().toString())
+                .isEqualTo("kotlin.collections.List<kotlin.String>")
+            }
+            "SomeClass2" -> {
+              val psiParameter = psiRef.typeParameters.single()
+              val descriptorParameter = descriptorRef.typeParameters.single()
+
+              assertThat(psiParameter.name).isEqualTo("V")
+              assertThat(descriptorParameter.name).isEqualTo("V")
+
+              assertThat(psiParameter.upperBounds[0].asClassReference().fqName)
+                .isEqualTo(FqName("java.lang.Appendable"))
+              assertThat(psiParameter.upperBounds[1].asClassReference().fqName)
+                .isEqualTo(FqName("kotlin.CharSequence"))
+
+              assertThat(descriptorParameter.upperBounds[0].asClassReference().fqName)
+                .isEqualTo(FqName("java.lang.Appendable"))
+              assertThat(descriptorParameter.upperBounds[1].asClassReference().fqName)
+                .isEqualTo(FqName("kotlin.CharSequence"))
+            }
+            "SomeClass3" -> {
+              listOf(psiRef, descriptorRef).forEach { ref ->
+                assertThat(ref.typeParameters).hasSize(2)
+
+                val t = ref.typeParameters[0]
+                assertThat(t.upperBounds[0].asClassReference().fqName)
+                  .isEqualTo(FqName("java.lang.Appendable"))
+                assertThat(t.upperBounds[1].asClassReference().fqName)
+                  .isEqualTo(FqName("kotlin.CharSequence"))
+
+                val r = ref.typeParameters[1]
+                assertThat(r.upperBounds.single().asTypeName().toString())
+                  .isEqualTo("kotlin.collections.Set<kotlin.String>")
+              }
             }
             else -> throw NotImplementedError(psiRef.shortName)
           }
