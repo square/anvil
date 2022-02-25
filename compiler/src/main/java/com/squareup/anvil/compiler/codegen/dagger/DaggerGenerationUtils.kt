@@ -5,17 +5,13 @@ import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.findAnnotation
-import com.squareup.anvil.compiler.internal.fqNameOrNull
-import com.squareup.anvil.compiler.internal.isNullable
 import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.ParameterReference
 import com.squareup.anvil.compiler.internal.reference.PropertyReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.requireTypeName
-import com.squareup.anvil.compiler.internal.requireTypeReference
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.providerFqName
 import com.squareup.kotlinpoet.ClassName
@@ -26,14 +22,6 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import dagger.Lazy
 import dagger.internal.ProviderOfLazy
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.psi.KtCallableDeclaration
-import org.jetbrains.kotlin.psi.KtStringTemplateExpression
-import org.jetbrains.kotlin.psi.KtTypeArgumentList
-import org.jetbrains.kotlin.psi.KtTypeElement
-import org.jetbrains.kotlin.psi.KtTypeProjection
-import org.jetbrains.kotlin.psi.KtTypeReference
-import org.jetbrains.kotlin.psi.KtValueArgument
 import javax.inject.Provider
 
 internal fun TypeName.wrapInProvider(): ParameterizedTypeName {
@@ -44,65 +32,38 @@ internal fun TypeName.wrapInLazy(): ParameterizedTypeName {
   return Lazy::class.asClassName().parameterizedBy(this)
 }
 
-internal fun List<KtCallableDeclaration>.mapToConstructorParameters(
-  module: ModuleDescriptor
-): List<ConstructorParameter> =
-  fold(listOf()) { acc, ktCallableDeclaration ->
-
-    val uniqueName = ktCallableDeclaration.nameAsSafeName.asString().uniqueParameterName(acc)
-
-    acc + ktCallableDeclaration.toConstructorParameter(module = module, uniqueName = uniqueName)
+internal fun List<ParameterReference>.mapToConstructorParameters(): List<ConstructorParameter> {
+  return fold(listOf()) { acc, callableReference ->
+    acc + callableReference.toConstructorParameter(callableReference.name.uniqueParameterName(acc))
   }
+}
 
-private fun KtCallableDeclaration.toConstructorParameter(
-  module: ModuleDescriptor,
+private fun ParameterReference.toConstructorParameter(
   uniqueName: String
 ): ConstructorParameter {
+  val type = type()
 
-  val typeElement = typeReference?.typeElement
-  val typeFqName = typeElement?.fqNameOrNull(module)
-
-  val isWrappedInProvider = typeFqName == providerFqName
-  val isWrappedInLazy = typeFqName == daggerLazyFqName
-
-  var isLazyWrappedInProvider = false
+  val isWrappedInProvider = type.asClassReferenceOrNull()?.fqName == providerFqName
+  val isWrappedInLazy = type.asClassReferenceOrNull()?.fqName == daggerLazyFqName
+  val isLazyWrappedInProvider = isWrappedInProvider &&
+    type.unwrappedFirstType.asClassReferenceOrNull()?.fqName == daggerLazyFqName
 
   val typeName = when {
-    requireTypeReference(module).isNullable() ->
-      requireTypeReference(module).requireTypeName(module).copy(nullable = true)
+    isLazyWrappedInProvider -> type.unwrappedFirstType.unwrappedFirstType
+    isWrappedInProvider || isWrappedInLazy -> type.unwrappedFirstType
+    else -> type
+  }.asTypeName().withJvmSuppressWildcardsIfNeeded(this, type)
 
-    isWrappedInProvider || isWrappedInLazy -> {
-      val typeParameterReference = typeElement!!.singleTypeArgument()
+  val assistedAnnotation = annotations.singleOrNull { it.fqName == assistedFqName }
 
-      if (isWrappedInProvider &&
-        typeParameterReference.fqNameOrNull(module) == daggerLazyFqName
-      ) {
-        // This is a super rare case when someone injects Provider<Lazy<Type>> that requires
-        // special care.
-        isLazyWrappedInProvider = true
-        typeParameterReference.typeElement!!.singleTypeArgument().requireTypeName(module)
-      } else {
-        typeParameterReference.requireTypeName(module)
-      }
-    }
-
-    else -> requireTypeReference(module).requireTypeName(module)
-  }.withJvmSuppressWildcardsIfNeeded(this, module)
-
-  val assistedAnnotation = findAnnotation(assistedFqName, module)
-  val assistedIdentifier =
-    (assistedAnnotation?.valueArguments?.firstOrNull() as? KtValueArgument)
-      ?.children
-      ?.filterIsInstance<KtStringTemplateExpression>()
-      ?.single()
-      ?.children
-      ?.first()
-      ?.text
-      ?: ""
+  val assistedIdentifier = assistedAnnotation
+    ?.argumentAt("value", 0)
+    ?.value()
+    ?: ""
 
   return ConstructorParameter(
     name = uniqueName,
-    originalName = nameAsSafeName.asString(),
+    originalName = name,
     typeName = typeName,
     providerTypeName = typeName.wrapInProvider(),
     lazyTypeName = typeName.wrapInLazy(),
@@ -112,18 +73,6 @@ private fun KtCallableDeclaration.toConstructorParameter(
     isAssisted = assistedAnnotation != null,
     assistedIdentifier = assistedIdentifier
   )
-}
-
-private fun KtTypeElement.singleTypeArgument(): KtTypeReference {
-  return children
-    .filterIsInstance<KtTypeArgumentList>()
-    .single()
-    .children
-    .filterIsInstance<KtTypeProjection>()
-    .single()
-    .children
-    .filterIsInstance<KtTypeReference>()
-    .single()
 }
 
 internal fun FunSpec.Builder.addMemberInjection(

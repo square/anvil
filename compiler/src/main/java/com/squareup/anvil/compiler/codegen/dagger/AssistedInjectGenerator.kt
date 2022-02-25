@@ -55,14 +55,13 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
           .injectConstructor()
           ?.takeIf { it.isAnnotatedWith(assistedInjectFqName) }
           ?.let {
-            generateFactoryClass(codeGenDir, module, clazz, it)
+            generateFactoryClass(codeGenDir, clazz, it)
           }
       }
   }
 
   private fun generateFactoryClass(
     codeGenDir: File,
-    module: ModuleDescriptor,
     clazz: ClassReference.Psi,
     constructor: FunctionReference.Psi
   ): GeneratedFile {
@@ -70,9 +69,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
     val classIdName = clazz.generateClassName(suffix = "_Factory")
     val className = classIdName.relativeClassName.asString()
 
-    val constructorParameters = constructor.function.valueParameters
-      .mapToConstructorParameters(module)
-
+    val constructorParameters = constructor.parameters.mapToConstructorParameters()
     val memberInjectParameters = clazz.memberInjectParameters()
 
     val parameters = constructorParameters + memberInjectParameters

@@ -142,8 +142,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
     val callableName = declaration.rawType.nameAsSafeName.asString()
 
-    val parameters = declaration.rawType.valueParameters
-      .mapToConstructorParameters(module)
+    val parameters = declaration.constructorParameters
 
     val returnType = declaration.rawType.requireTypeReference(module).requireTypeName(module)
       .withJvmSuppressWildcardsIfNeeded(declaration.rawType, module)
@@ -365,6 +364,9 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     val isProperty = property != null
 
     val rawType: KtCallableDeclaration = function?.function ?: property!!.property
+
+    val constructorParameters: List<ConstructorParameter> =
+      function?.parameters?.mapToConstructorParameters() ?: emptyList()
 
     fun isAnnotatedWith(fqName: FqName): Boolean {
       return function?.isAnnotatedWith(fqName) ?: property!!.isAnnotatedWith(fqName)
