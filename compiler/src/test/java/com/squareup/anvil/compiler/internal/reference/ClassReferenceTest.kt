@@ -156,6 +156,40 @@ class ClassReferenceTest {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
+
+  @Test fun `an enum entry is a class`() {
+    compile(
+      """
+      package com.squareup.test
+
+      annotation class AnyQualifier(val abc: Values) {
+        enum class Values {
+          ABC
+        }
+      }
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          assertThat(
+            psiRef.module.resolveFqNameOrNull(FqName("com.squareup.test.AnyQualifier"))
+          ).isNotNull()
+
+          assertThat(
+            psiRef.module.resolveFqNameOrNull(FqName("com.squareup.test.AnyQualifier.Values"))
+          ).isNotNull()
+
+          assertThat(
+            psiRef.module.resolveFqNameOrNull(FqName("com.squareup.test.AnyQualifier.Values.ABC"))
+          ).isNotNull()
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
 }
 
 fun ClassReference.toDescriptorReference(): ClassReference.Descriptor {

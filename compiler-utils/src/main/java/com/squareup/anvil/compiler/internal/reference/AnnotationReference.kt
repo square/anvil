@@ -2,9 +2,6 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.argumentType
-import com.squareup.anvil.compiler.internal.asClassName
-import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.contributesSubcomponentFqName
@@ -26,8 +23,6 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtValueArgument
-import org.jetbrains.kotlin.resolve.constants.EnumValue
-import org.jetbrains.kotlin.resolve.constants.KClassValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.annotationClass
 import kotlin.LazyThreadSafetyMode.NONE
 
@@ -85,7 +80,76 @@ public sealed class AnnotationReference {
   public fun isMapKey(): Boolean = classReference.isAnnotatedWith(mapKeyFqName)
   public fun isDaggerScope(): Boolean = classReference.isAnnotatedWith(daggerScopeFqName)
 
-  public abstract fun toAnnotationSpec(): AnnotationSpec
+  public fun toAnnotationSpec(): AnnotationSpec {
+    return AnnotationSpec
+      .builder(classReference.asClassName())
+      .apply {
+        arguments.forEach { argument ->
+          when (val value = argument.value<Any>()) {
+            is ClassReference -> addMember(
+              "${argument.resolvedName} = %T::class",
+              value.asClassName()
+            )
+            is FqName -> {
+              val clazz = value.toClassReferenceOrNull(module)
+              if (clazz != null) {
+                // That's an enum value!
+                val enumMember = MemberName(
+                  enclosingClassName = clazz.enclosingClass()!!.asClassName(),
+                  simpleName = clazz.shortName
+                )
+                addMember("${argument.resolvedName} = %M", enumMember)
+              } else {
+                addMember("${argument.resolvedName} = ${value.asString()}")
+              }
+            }
+            is String -> addMember("${argument.resolvedName} = \"$value\"")
+            is BooleanArray -> addMember(
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+            )
+            is IntArray -> addMember(
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+            )
+            is LongArray -> addMember(
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+            )
+            is DoubleArray -> addMember(
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+            )
+            is ByteArray -> addMember(
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+            )
+            is ShortArray -> addMember(
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+            )
+            is FloatArray -> addMember(
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+            )
+            is List<*> -> {
+              when {
+                value.isEmpty() -> addMember("${argument.resolvedName} = []")
+                value[0] is ClassReference -> {
+                  val classes = value.filterIsInstance<ClassReference>()
+                  val template = classes.joinToString { "%T::class" }
+
+                  addMember(
+                    "${argument.resolvedName} = [$template]",
+                    *classes.map { it.asClassName() }.toTypedArray()
+                  )
+                }
+                value[0] is FqName -> {
+                  val args = value.filterIsInstance<FqName>().joinToString { it.asString() }
+                  addMember("${argument.resolvedName} = [$args]")
+                }
+              }
+            }
+            // int, long, ... other primitives.
+            else -> addMember("${argument.resolvedName} = $value")
+          }
+        }
+      }
+      .build()
+  }
 
   override fun toString(): String = "@$fqName"
 
@@ -129,21 +193,6 @@ public sealed class AnnotationReference {
     private fun computeScope(parameterIndex: Int): ClassReference? {
       return argumentAt("scope", parameterIndex)?.value()
     }
-
-    override fun toAnnotationSpec(): AnnotationSpec {
-      return AnnotationSpec.builder(classReference.asClassName())
-        .apply {
-          annotation.valueArguments
-            .filterIsInstance<KtValueArgument>()
-            .mapNotNull { valueArgument ->
-              valueArgument.getArgumentExpression()?.codeBlock(module)
-            }
-            .forEach {
-              addMember(it)
-            }
-        }
-        .build()
-    }
   }
 
   public class Descriptor internal constructor(
@@ -165,33 +214,6 @@ public sealed class AnnotationReference {
     }
 
     override fun scopeOrNull(parameterIndex: Int): ClassReference? = scope
-
-    override fun toAnnotationSpec(): AnnotationSpec {
-      return AnnotationSpec
-        .builder(classReference.asClassName())
-        .apply {
-          annotation.allValueArguments.forEach { (name, value) ->
-            when (value) {
-              is KClassValue -> {
-                val className = value.argumentType(module).classDescriptor()
-                  .asClassName()
-                addMember("${name.asString()} = %T::class", className)
-              }
-              is EnumValue -> {
-                val enumMember = MemberName(
-                  enclosingClassName = value.enumClassId.asSingleFqName()
-                    .asClassName(module),
-                  simpleName = value.enumEntryName.asString()
-                )
-                addMember("${name.asString()} = %M", enumMember)
-              }
-              // String, int, long, ... other primitives.
-              else -> addMember("${name.asString()} = $value")
-            }
-          }
-        }
-        .build()
-    }
   }
 }
 
