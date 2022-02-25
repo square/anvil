@@ -1,9 +1,12 @@
 package com.squareup.anvil.compiler.codegen.reference
 
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.argumentClassArray
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
+import com.squareup.anvil.compiler.parentScope
 import com.squareup.anvil.compiler.scope
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.name.FqName
@@ -37,6 +40,18 @@ internal class AnnotationReferenceIr(
       message = "The declaring class was null, this means the annotation wasn't used on a class."
     )
 
+  val parentScope: ClassReferenceIr by lazy(NONE) {
+    context.referenceClass(annotation.parentScope())?.toClassReference(context)
+      ?: throw AnvilCompilationException(
+        element = annotation,
+        message = "Couldn't find parent scope for $fqName."
+      )
+  }
+
+  val excludedClasses: List<ClassReferenceIr> by lazy(NONE) {
+    annotation.exclude().map { it.symbol.toClassReference(context) }
+  }
+
   override fun toString(): String = "@$fqName"
 
   override fun equals(other: Any?): Boolean {
@@ -66,6 +81,8 @@ internal fun IrConstructorCall.toAnnotationReference(
     classReference = this.symbol.owner.parentAsClass.symbol.toClassReference(context),
     declaringClass = declaringClass
   )
+
+internal fun IrConstructorCall.exclude(): List<IrClass> = argumentClassArray("exclude")
 
 @Suppress("FunctionName")
 internal fun AnvilCompilationExceptionAnnotationReferenceIr(

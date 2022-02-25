@@ -339,8 +339,6 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     }
   }
 
-  // TODO: May be worth extracting some of this to an interface to actually apply to the Reference
-  // classes if we think it would be useful in other use-cases
   private class CallableReference(
     private val function: FunctionReference.Psi? = null,
     private val property: PropertyReference.Psi? = null

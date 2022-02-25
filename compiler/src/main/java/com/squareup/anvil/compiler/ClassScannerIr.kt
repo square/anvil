@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler
 
+import com.squareup.anvil.compiler.codegen.reference.ClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
@@ -16,12 +17,12 @@ internal fun ClassScanner.findContributedClasses(
   moduleFragment: IrModuleFragment,
   packageName: String,
   annotation: FqName,
-  scope: FqName?,
+  scope: ClassReferenceIr?,
   moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory
 ): Sequence<IrClassSymbol> {
   val module = moduleDescriptorFactory.create(moduleFragment.descriptor)
 
-  return findContributedClasses(module, packageName, annotation, scope)
+  return findContributedClasses(module, packageName, annotation, scope?.fqName)
     .map {
       pluginContext.requireReferenceClass(it.fqName)
     }
