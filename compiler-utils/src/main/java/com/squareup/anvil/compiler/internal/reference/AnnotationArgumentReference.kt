@@ -3,24 +3,42 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.classDescriptor
+import com.squareup.anvil.compiler.internal.descendant
+import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.reference.AnnotationArgumentReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.AnnotationArgumentReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
+import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtConstantExpression
+import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
+import org.jetbrains.kotlin.psi.KtElement
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
+import org.jetbrains.kotlin.psi.KtNamedFunction
+import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.KtValueArgumentName
+import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
+import org.jetbrains.kotlin.resolve.constants.ByteValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
+import org.jetbrains.kotlin.resolve.constants.DoubleValue
 import org.jetbrains.kotlin.resolve.constants.EnumValue
+import org.jetbrains.kotlin.resolve.constants.FloatValue
+import org.jetbrains.kotlin.resolve.constants.IntValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue
+import org.jetbrains.kotlin.resolve.constants.LongValue
+import org.jetbrains.kotlin.resolve.constants.ShortValue
 import org.jetbrains.kotlin.resolve.constants.StringValue
 import kotlin.LazyThreadSafetyMode.NONE
 
@@ -38,6 +56,38 @@ public sealed class AnnotationArgumentReference {
   // Maybe we need to make the return type nullable and allow for a default value.
   @Suppress("UNCHECKED_CAST")
   public fun <T : Any> value(): T = value as T
+
+  protected fun parameterFqName(): String {
+    return annotation.classReference
+      .constructors
+      .single()
+      .parameters
+      .single { it.name == resolvedName }
+      .type()
+      .asClassReference()
+      .fqName
+      .asString()
+  }
+
+  protected fun List<Any>.convertToArrayIfNeeded(): Any {
+    return when (parameterFqName()) {
+      BooleanArray::class.qualifiedName ->
+        filterIsInstance<Boolean>().toBooleanArray()
+      IntArray::class.qualifiedName ->
+        filterIsInstance<Int>().toIntArray()
+      LongArray::class.qualifiedName ->
+        filterIsInstance<Long>().toLongArray()
+      DoubleArray::class.qualifiedName ->
+        filterIsInstance<Double>().toDoubleArray()
+      ByteArray::class.qualifiedName ->
+        filterIsInstance<Byte>().toByteArray()
+      ShortArray::class.qualifiedName ->
+        filterIsInstance<Short>().toShortArray()
+      FloatArray::class.qualifiedName ->
+        filterIsInstance<Float>().toFloatArray()
+      else -> this
+    }
+  }
 
   override fun toString(): String {
     return "${AnnotationArgumentReference::class.simpleName}(name=$name, value=$value, " +
@@ -73,43 +123,117 @@ public sealed class AnnotationArgumentReference {
         throw NotImplementedError("Don't know how to handle ${argument.children.last().text}.")
       }
 
-      when (val psiElement = argument.children.last()) {
-        is KtClassLiteralExpression -> psiElement.requireFqName(module).toClassReference(module)
-        is KtCollectionLiteralExpression ->
-          psiElement.children
-            .filterIsInstance<KtClassLiteralExpression>()
-            .map { it.requireFqName(module).toClassReference(module) }
-        is KtConstantExpression -> {
-          // This could be any primitive type, so we need to check.
-          val parameterFqName = annotation.classReference
-            .constructors
-            .single()
-            .parameters
-            .single { it.name == resolvedName }
-            .type()
-            .asClassReference()
-            .fqName
-            .asString()
-
-          when (parameterFqName) {
-            Boolean::class.qualifiedName -> psiElement.text.toBooleanStrictOrNull()
-            Int::class.qualifiedName -> psiElement.text.toIntOrNull()
-            Long::class.qualifiedName -> psiElement.text.toLongOrNull()
-            Double::class.qualifiedName -> psiElement.text.toDoubleOrNull()
-            Byte::class.qualifiedName -> psiElement.text.toByteOrNull()
-            Short::class.qualifiedName -> psiElement.text.toShortOrNull()
-            Float::class.qualifiedName -> psiElement.text.toFloatOrNull()
-            else -> fail()
-          } ?: fail()
+      fun List<KtProperty>.findConstPropertyWithName(name: String): KtProperty? {
+        return singleOrNull { property ->
+          property.hasModifier(KtTokens.CONST_KEYWORD) && property.name == name
         }
-        is KtStringTemplateExpression ->
-          psiElement
-            .getChildOfType<KtStringTemplateEntry>()
-            ?.text
-            ?: fail()
-        is KtNameReferenceExpression -> psiElement.text
-        else -> fail()
       }
+
+      fun PsiElement.findConstantDefinitionInScope(name: String): String? {
+        when (this) {
+          is KtProperty, is KtNamedFunction -> {
+            // Function or Property, traverse up
+            return (this as KtElement).containingClass()?.findConstantDefinitionInScope(name)
+              ?: containingFile.findConstantDefinitionInScope(name)
+          }
+          is KtObjectDeclaration -> {
+            toClassReference(module)
+              .properties
+              .map { it.property }
+              .findConstPropertyWithName(name)
+              ?.initializer
+              ?.text
+              ?.let { return it }
+
+            if (isCompanion()) {
+              // Nowhere else to look and don't try to traverse up because this is only looked at from a
+              // class already.
+              return null
+            }
+          }
+          is KtFile -> {
+            children.filterIsInstance<KtProperty>()
+              .findConstPropertyWithName(name)
+              ?.initializer
+              ?.text
+              ?.let { return it }
+          }
+          is KtClass -> {
+            // Look in companion object or traverse up
+            return companionObjects.asSequence()
+              .mapNotNull { it.findConstantDefinitionInScope(name) }
+              .firstOrNull()
+              ?: containingClass()?.findConstantDefinitionInScope(name)
+              ?: containingKtFile.findConstantDefinitionInScope(name)
+          }
+        }
+
+        return parent?.findConstantDefinitionInScope(name)
+      }
+
+      fun parsePrimitiveType(text: String): Any {
+        // We need to check the parameter for what type exactly.
+        return when (parameterFqName()) {
+          Boolean::class.qualifiedName, BooleanArray::class.qualifiedName ->
+            text.toBooleanStrictOrNull()
+          Int::class.qualifiedName, IntArray::class.qualifiedName ->
+            text.toIntOrNull()
+          Long::class.qualifiedName, LongArray::class.qualifiedName ->
+            text.toLongOrNull()
+          Double::class.qualifiedName, DoubleArray::class.qualifiedName ->
+            text.toDoubleOrNull()
+          Byte::class.qualifiedName, ByteArray::class.qualifiedName ->
+            text.toByteOrNull()
+          Short::class.qualifiedName, ShortArray::class.qualifiedName ->
+            text.toShortOrNull()
+          Float::class.qualifiedName, FloatArray::class.qualifiedName ->
+            text.toFloatOrNull()
+          String::class.qualifiedName -> {
+            if (text.startsWith("\"") && text.endsWith("\"")) {
+              text.substring(1, text.length - 1)
+            } else {
+              text
+            }
+          }
+          else -> fail()
+        } ?: fail()
+      }
+
+      fun parsePsiElement(psiElement: PsiElement): Any {
+        return when (psiElement) {
+          is KtClassLiteralExpression -> psiElement.requireFqName(module).toClassReference(module)
+          is KtCollectionLiteralExpression ->
+            psiElement.children.map { parsePsiElement(it) }.convertToArrayIfNeeded()
+          is KtConstantExpression -> parsePrimitiveType(psiElement.text)
+          is KtStringTemplateExpression ->
+            psiElement
+              .getChildOfType<KtStringTemplateEntry>()
+              ?.text
+              ?: fail()
+          is KtNameReferenceExpression -> {
+            // Those are likely enum values.
+            psiElement.fqNameOrNull(module)?.let { return it }
+
+            // Check if it's a constant. Note that we don't return the constant FqName directly,
+            // but return the actual value from the constant instead. That's also what the
+            // descriptor APIs do. They never see the constant itself, but the
+            // resolved / inlined value instead.
+            psiElement
+              .findConstantDefinitionInScope(psiElement.getReferencedName())
+              ?.let { return parsePrimitiveType(it) }
+
+            // If we reach here, it's a top-level constant defined in the same package but
+            // a different file. In this case, we can just do the same in our generated code
+            // because we're in the same package and can play by the same rules.
+            return psiElement.containingKtFile.packageFqName
+              .descendant(psiElement.getReferencedName())
+          }
+          is KtDotQualifiedExpression -> psiElement.requireFqName(module)
+          else -> fail()
+        }
+      }
+
+      parsePsiElement(argument.children.last())
     }
   }
 
@@ -125,14 +249,26 @@ public sealed class AnnotationArgumentReference {
         throw NotImplementedError("Don't know how to handle $argument.")
       }
 
-      when (argument) {
-        is KClassValue -> argument.toClassReference()
-        is ArrayValue -> argument.value.map { it.toClassReference() }
-        is BooleanValue -> argument.value
-        is StringValue -> argument.value
-        is EnumValue -> argument.enumEntryName.asString()
-        else -> fail()
+      fun parseConstantValue(value: ConstantValue<*>): Any {
+        return when (value) {
+          is KClassValue -> value.toClassReference()
+          is ArrayValue -> value.value.map { parseConstantValue(it) }.convertToArrayIfNeeded()
+          is StringValue -> value.value
+          is EnumValue ->
+            value.enumClassId.asSingleFqName()
+              .descendant(value.enumEntryName.asString())
+          is BooleanValue -> value.value
+          is IntValue -> value.value
+          is LongValue -> value.value
+          is DoubleValue -> value.value
+          is ByteValue -> value.value
+          is ShortValue -> value.value
+          is FloatValue -> value.value
+          else -> fail()
+        }
       }
+
+      parseConstantValue(argument)
     }
 
     private fun ConstantValue<*>.toClassReference(): ClassReference =

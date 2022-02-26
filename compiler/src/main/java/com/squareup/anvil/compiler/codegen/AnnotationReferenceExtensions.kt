@@ -38,8 +38,8 @@ internal fun AnnotationReference.ignoreQualifier(): Boolean {
 
 internal fun AnnotationReference.priority(): Priority {
   return argumentAt("priority", index = 4)
-    ?.value<String>()
-    ?.let { Priority.valueOf(it) }
+    ?.value<FqName>()
+    ?.let { Priority.valueOf(it.shortName().asString()) }
     ?: NORMAL
 }
 
