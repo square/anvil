@@ -56,7 +56,8 @@ public sealed class TypeReference {
    */
   protected abstract val classReference: ClassReference?
 
-  protected abstract val typeName: TypeName?
+  protected abstract val typeNameOrNull: TypeName?
+  protected abstract val typeName: TypeName
 
   /**
    * For `Lazy<String>` this will return `String`.
@@ -72,12 +73,8 @@ public sealed class TypeReference {
       message = "Unable to convert a type reference to a class reference."
     )
 
-  public fun asTypeNameOrNull(): TypeName? = typeName
+  public fun asTypeNameOrNull(): TypeName? = typeNameOrNull
   public fun asTypeName(): TypeName = typeName
-    ?: throw AnvilCompilationExceptionTypReference(
-      typeReference = this,
-      message = "Unable to convert a type reference to a type reference."
-    )
 
   // Keep this internal, because we need help from other classes for the descriptor
   // implementation, e.g. FunctionReference resolves the return type or ParameterReference.
@@ -118,16 +115,19 @@ public sealed class TypeReference {
         ?.toClassReference(module)
     }
 
-    override val typeName: TypeName? by lazy(NONE) {
-      try {
-        type.requireTypeName().lambdaFix()
+    override val typeName: TypeName by lazy {
+      type.requireTypeName().lambdaFix()
+    }
+
+    override val typeNameOrNull: TypeName?
+      get() = try {
+        typeName
       } catch (e: AnvilCompilationException) {
         // Usually the method should return a nullable value, but throwing an error gives us
         // better hints which element exactly fails to be converted to a TypeName while debugging.
         // So it's better to keep that mechanism in place and catch the exception to move on.
         null
       }
-    }
 
     override val unwrappedFirstType: Psi by lazy(NONE) {
       type.typeElement!!.children
@@ -292,9 +292,16 @@ public sealed class TypeReference {
       type.classDescriptorOrNull()?.toClassReference(module)
     }
 
-    override val typeName: TypeName? by lazy(NONE) {
+    override val typeNameOrNull: TypeName? by lazy(NONE) {
       type.asTypeNameOrNull()?.lambdaFix()
     }
+
+    override val typeName: TypeName
+      get() = typeNameOrNull ?: throw AnvilCompilationExceptionTypReference(
+        typeReference = this,
+        message = "Unable to convert the Kotlin type $type to a type name for declaring class " +
+          "${declaringClass.fqName}."
+      )
 
     override val unwrappedFirstType: Descriptor by lazy(NONE) {
       type.arguments
