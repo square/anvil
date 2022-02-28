@@ -111,14 +111,18 @@ view, but it increased total build time by 20%. Using hints reduced the overhead
 
 A hint is a pointer to the class that is being contributed and implemented by a property.
 For performance reasons and faster filtering without resolving all contributed types we
-additionally create a property for the scope:
+additionally create properties for the scopes. Note that Anvil annotations can be repeatable. We
+only need one reference property to point to the contributed class, but we need multiple scope
+properties for each contribution to a specific scope:
 
 ```kotlin
 package anvil.hint.binding.com.squareup.anvil.test
 
 val com_squareup_anvil_test_AppBinding_reference: KClass<AppBinding> = AppBinding::class
 
-val com_squareup_anvil_test_AppBinding_scope: KClass<AppScope> = AppScope::class
+val com_squareup_anvil_test_AppBinding_scope_1: KClass<AppScope> = AppScope::class
+
+val com_squareup_anvil_test_AppBinding_scope_2: KClass<AppScope> = OtherScope::class
 ```
 
 With that hint we can query all top-level properties within the `anvil.hint.*` package. Our

@@ -76,7 +76,6 @@ internal const val SUBCOMPONENT_MODULE = "SubcomponentModule"
 
 internal const val REFERENCE_SUFFIX = "_reference"
 internal const val SCOPE_SUFFIX = "_scope"
-internal val propertySuffixes = arrayOf(REFERENCE_SUFFIX, SCOPE_SUFFIX)
 
 internal fun FqName.isAnvilModule(): Boolean {
   val name = asString()
@@ -93,3 +92,30 @@ internal fun <T : ClassReference> ClassId.classReferenceOrNull(
 internal fun ClassDescriptor.shouldIgnore(): Boolean {
   return classId == null || DescriptorUtils.isAnonymousObject(this)
 }
+
+/**
+ * Returns the single element matching the given [predicate], or `null` if element was not found.
+ * Unlike [singleOrNull] this method throws an exception if more than one element is found.
+ */
+internal inline fun <T> Iterable<T>.singleOrEmpty(predicate: (T) -> Boolean): T? {
+  var single: T? = null
+  var found = false
+  for (element in this) {
+    if (predicate(element)) {
+      if (found) throw IllegalArgumentException(
+        "Collection contains more than one matching element."
+      )
+      single = element
+      found = true
+    }
+  }
+  return single
+}
+
+private val truePredicate: (Any?) -> Boolean = { true }
+
+/**
+ * Returns single element, or `null` if the collection is empty. Unlike [singleOrNull] this
+ * method throws an exception if more than one element is found.
+ */
+internal fun <T> Iterable<T>.singleOrEmpty(): T? = singleOrEmpty(truePredicate)

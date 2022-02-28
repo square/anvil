@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler
 
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.atLeastOneAnnotation
 import com.squareup.anvil.compiler.codegen.find
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
@@ -43,29 +44,39 @@ internal class InterfaceMerger(
       return
     }
 
-    val mergeScope = mergeAnnotation.scope()
+    val mergeScope = try {
+      mergeAnnotation.scope()
+    } catch (e: AssertionError) {
+      // In some scenarios this error is thrown. Throw a new exception with a better explanation.
+      // Caused by: java.lang.AssertionError: Recursion detected in a lazy value under
+      // LockBasedStorageManager@420989af (TopDownAnalyzer for JVM)
+      throw AnvilCompilationException(
+        classDescriptor = thisDescriptor,
+        message = "It seems like you tried to contribute an inner class to its outer class. " +
+          "This is not supported and results in a compiler error.",
+        cause = e
+      )
+    }
 
     if (!mergeAnnotatedClass.isInterface()) {
       throw AnvilCompilationExceptionClassReference(
-        mergeAnnotatedClass,
-        "Dagger components must be interfaces."
+        classReference = mergeAnnotatedClass,
+        message = "Dagger components must be interfaces."
       )
     }
 
     val classes = classScanner
       .findContributedClasses(
         module = module,
-        packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
         annotation = contributesToFqName,
         scope = mergeScope.fqName
       )
       .filter {
         it.isInterface() && it.annotations.find(daggerModuleFqName).singleOrNull() == null
       }
-      .mapNotNull {
+      .flatMap {
         it.annotations
           .find(annotationName = contributesToFqName, scopeName = mergeScope.fqName)
-          .singleOrNull()
       }
       .onEach { contributeAnnotation ->
         val contributedClass = contributeAnnotation.declaringClass()
@@ -86,44 +97,31 @@ internal class InterfaceMerger(
         val contributedClass = contributeAnnotation.declaringClass()
         contributedClass
           .atLeastOneAnnotation(contributeAnnotation.fqName)
-          .single()
-          .replaces()
+          .flatMap { it.replaces() }
           .onEach { classToReplace ->
             // Verify the other class is an interface. It doesn't make sense for a contributed
             // interface to replace a class that is not an interface.
             if (!classToReplace.isInterface()) {
               throw AnvilCompilationExceptionClassReference(
-                contributedClass,
-                "${contributedClass.fqName} wants to replace " +
+                classReference = contributedClass,
+                message = "${contributedClass.fqName} wants to replace " +
                   "${classToReplace.fqName}, but the class being " +
                   "replaced is not an interface."
               )
             }
 
-            val contributesToAnnotation = classToReplace
-              .annotations.find(contributesToFqName).singleOrNull()
-            val contributesBindingAnnotation = classToReplace
-              .annotations.find(contributesBindingFqName).singleOrNull()
-            val contributesMultibindingAnnotation = classToReplace
-              .annotations.find(contributesMultibindingFqName).singleOrNull()
+            val scopes = classToReplace.annotations.find(contributesToFqName).map { it.scope() } +
+              classToReplace.annotations.find(contributesBindingFqName).map { it.scope() } +
+              classToReplace.annotations.find(contributesMultibindingFqName).map { it.scope() }
 
-            // Verify that the replaced classes use the same scope.
-            val scopeOfReplacement = contributesToAnnotation?.scope()
-              ?: contributesBindingAnnotation?.scope()
-              ?: contributesMultibindingAnnotation?.scope()
-              ?: throw AnvilCompilationExceptionClassReference(
-                contributedClass,
-                "Could not determine the scope of the replaced class " +
-                  "${classToReplace.fqName}."
-              )
+            val contributesToOurScope = scopes.any { it == mergeScope }
 
-            if (scopeOfReplacement != mergeScope) {
+            if (!contributesToOurScope) {
               throw AnvilCompilationExceptionClassReference(
-                contributedClass,
-                "${contributedClass.fqName} with scope ${mergeScope.fqName} wants to replace " +
-                  "${classToReplace.fqName} with scope " +
-                  "${scopeOfReplacement.fqName}. The replacement must use the same " +
-                  "scope."
+                classReference = contributedClass,
+                message = "${contributedClass.fqName} with scope ${mergeScope.fqName} wants " +
+                  "to replace ${classToReplace.fqName}, but the replaced class isn't " +
+                  "contributed to the same scope."
               )
             }
           }
@@ -133,32 +131,20 @@ internal class InterfaceMerger(
     val excludedClasses = mergeAnnotation.exclude()
       .filter { it.isInterface() }
       .onEach { excludedClass ->
-        val contributesToAnnotation = excludedClass
-          .annotations.find(contributesToFqName).singleOrNull()
-        val contributesBindingAnnotation = excludedClass
-          .annotations.find(contributesBindingFqName).singleOrNull()
-        val contributesMultibindingAnnotation = excludedClass
-          .annotations.find(contributesMultibindingFqName).singleOrNull()
-        val contributesSubcomponentAnnotation = excludedClass
-          .annotations.find(contributesSubcomponentFqName).singleOrNull()
+        val scopes = excludedClass.annotations.find(contributesToFqName).map { it.scope() } +
+          excludedClass.annotations.find(contributesBindingFqName).map { it.scope() } +
+          excludedClass.annotations.find(contributesMultibindingFqName).map { it.scope() } +
+          excludedClass.annotations.find(contributesSubcomponentFqName).map { it.parentScope() }
 
         // Verify that the replaced classes use the same scope.
-        val scopeOfExclusion = contributesToAnnotation?.scope()
-          ?: contributesBindingAnnotation?.scope()
-          ?: contributesMultibindingAnnotation?.scope()
-          ?: contributesSubcomponentAnnotation?.parentScope()
-          ?: throw AnvilCompilationExceptionClassReference(
-            mergeAnnotatedClass,
-            "Could not determine the scope of the excluded class " +
-              "${excludedClass.fqName}."
-          )
+        val contributesToOurScope = scopes.any { it == mergeScope }
 
-        if (scopeOfExclusion.fqName != mergeScope.fqName) {
+        if (!contributesToOurScope) {
           throw AnvilCompilationExceptionClassReference(
-            mergeAnnotatedClass,
-            "${mergeAnnotatedClass.fqName} with scope ${mergeScope.fqName} wants to exclude " +
-              "${excludedClass.fqName} with scope " +
-              "${scopeOfExclusion.fqName}. The exclusion must use the same scope."
+            message = "${mergeAnnotatedClass.fqName} with scope ${mergeScope.fqName} wants to " +
+              "exclude ${excludedClass.fqName}, but the excluded class isn't contributed to the " +
+              "same scope.",
+            classReference = mergeAnnotatedClass
           )
         }
       }
@@ -202,7 +188,6 @@ internal class InterfaceMerger(
     return classScanner
       .findContributedClasses(
         module = module,
-        packageName = HINT_SUBCOMPONENTS_PACKAGE_PREFIX,
         annotation = contributesSubcomponentFqName,
         scope = null
       )

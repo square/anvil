@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
+import com.squareup.anvil.compiler.internal.testing.use
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
@@ -89,25 +90,37 @@ internal val Class<*>.hintContributes: KClass<*>?
   get() = getHint(HINT_CONTRIBUTES_PACKAGE_PREFIX)
 
 internal val Class<*>.hintContributesScope: KClass<*>?
-  get() = getHintScope(HINT_CONTRIBUTES_PACKAGE_PREFIX)
+  get() = hintContributesScopes.takeIf { it.isNotEmpty() }?.single()
+
+internal val Class<*>.hintContributesScopes: List<KClass<*>>
+  get() = getHintScopes(HINT_CONTRIBUTES_PACKAGE_PREFIX)
 
 internal val Class<*>.hintBinding: KClass<*>?
   get() = getHint(HINT_BINDING_PACKAGE_PREFIX)
 
 internal val Class<*>.hintBindingScope: KClass<*>?
-  get() = getHintScope(HINT_BINDING_PACKAGE_PREFIX)
+  get() = hintBindingScopes.takeIf { it.isNotEmpty() }?.single()
+
+internal val Class<*>.hintBindingScopes: List<KClass<*>>
+  get() = getHintScopes(HINT_BINDING_PACKAGE_PREFIX)
 
 internal val Class<*>.hintMultibinding: KClass<*>?
   get() = getHint(HINT_MULTIBINDING_PACKAGE_PREFIX)
 
 internal val Class<*>.hintMultibindingScope: KClass<*>?
-  get() = getHintScope(HINT_MULTIBINDING_PACKAGE_PREFIX)
+  get() = hintMultibindingScopes.takeIf { it.isNotEmpty() }?.single()
+
+internal val Class<*>.hintMultibindingScopes: List<KClass<*>>
+  get() = getHintScopes(HINT_MULTIBINDING_PACKAGE_PREFIX)
 
 internal val Class<*>.hintSubcomponent: KClass<*>?
   get() = getHint(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
 
 internal val Class<*>.hintSubcomponentParentScope: KClass<*>?
-  get() = getHintScope(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
+  get() = hintSubcomponentParentScopes.takeIf { it.isNotEmpty() }?.single()
+
+internal val Class<*>.hintSubcomponentParentScopes: List<KClass<*>>
+  get() = getHintScopes(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
 
 internal val Class<*>.anvilModule: Class<*>
   get() = classLoader.loadClass(
@@ -119,12 +132,11 @@ private fun Class<*>.getHint(prefix: String): KClass<*>? = contributedProperties
   ?.also { assertThat(it.size).isEqualTo(1) }
   ?.first()
 
-private fun Class<*>.getHintScope(prefix: String): KClass<*>? =
+private fun Class<*>.getHintScopes(prefix: String): List<KClass<*>> =
   contributedProperties(prefix)
-    ?.also { assertThat(it.size).isEqualTo(2) }
+    ?.also { assertThat(it.size).isAtLeast(2) }
     ?.filter { it.java != this }
-    ?.also { assertThat(it.size).isEqualTo(1) }
-    ?.first()
+    ?: emptyList()
 
 private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*>>? {
   // The capitalize() doesn't make sense, I don't know where this is coming from. Maybe it's a
@@ -142,15 +154,17 @@ private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*
   }
 
   return clazz.declaredFields
-    .map {
-      it.isAccessible = true
-      it.get(null)
-    }
+    .sortedBy { it.name }
+    .map { field -> field.use { it.get(null) } }
     .filterIsInstance<KClass<*>>()
 }
 
 internal fun assumeMergeComponent(annotationClass: KClass<*>) {
   assumeTrue(annotationClass == MergeComponent::class)
+}
+
+internal fun assumeIrBackend() {
+  assumeTrue(USE_IR)
 }
 
 internal fun ComparableSubject<ExitCode>.isError() {

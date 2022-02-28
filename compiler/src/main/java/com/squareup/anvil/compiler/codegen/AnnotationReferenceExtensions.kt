@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionAnnotationReference
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.mergeComponentFqName
@@ -78,5 +79,25 @@ internal fun <T : AnnotationReference> List<T>.find(
   return filter {
     it.fqName == annotationName &&
       (scopeName == null || it.scopeOrNull()?.fqName == scopeName)
+  }
+}
+
+internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScope() {
+  // Exit early to avoid allocating additional collections.
+  if (size < 2) return
+  if (size == 2 && this[0].scope() != this[1].scope()) return
+
+  // Check for duplicate scopes. Multiple contributions to the same scope are forbidden.
+  val duplicates = groupBy { it.scope() }.filterValues { it.size > 1 }
+
+  if (duplicates.isNotEmpty()) {
+    val clazz = this[0].declaringClass()
+    throw AnvilCompilationExceptionClassReference(
+      classReference = clazz,
+      message = "${clazz.fqName} contributes multiple times to the same scope: " +
+        "${duplicates.keys.joinToString(prefix = "[", postfix = "]") { it.shortName }}. " +
+        "Contributing multiple times to the same scope is forbidden and all scopes must " +
+        "be distinct.",
+    )
   }
 }

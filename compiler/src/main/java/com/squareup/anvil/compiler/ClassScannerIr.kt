@@ -14,14 +14,13 @@ import org.jetbrains.kotlin.name.FqName
 internal fun ClassScanner.findContributedClasses(
   pluginContext: IrPluginContext,
   moduleFragment: IrModuleFragment,
-  packageName: String,
   annotation: FqName,
   scope: ClassReferenceIr?,
   moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory
 ): Sequence<ClassReferenceIr> {
   val module = moduleDescriptorFactory.create(moduleFragment.descriptor)
 
-  return findContributedClasses(module, packageName, annotation, scope?.fqName)
+  return findContributedClasses(module, annotation, scope?.fqName)
     .map {
       pluginContext.requireReferenceClass(it.fqName).toClassReference(pluginContext)
     }

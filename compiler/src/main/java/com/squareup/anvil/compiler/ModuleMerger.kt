@@ -30,7 +30,6 @@ import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
-import org.jetbrains.kotlin.utils.addToStdlib.cast
 import org.jetbrains.org.objectweb.asm.AnnotationVisitor
 import org.jetbrains.org.objectweb.asm.Type
 import kotlin.reflect.KClass
@@ -68,7 +67,6 @@ internal class ModuleMerger(
     val modules = classScanner
       .findContributedClasses(
         module = module,
-        packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
         annotation = contributesToFqName,
         scope = mergeScope.fqName
       )
@@ -82,11 +80,11 @@ internal class ModuleMerger(
         // this specific class.
         !it.fqName.isAnvilModule() || it.fqName == anvilModuleName
       }
-      .mapNotNull { contributedClass ->
+      .flatMap { contributedClass ->
         contributedClass.annotations.find(
           annotationName = contributesToFqName,
           scopeName = mergeScope.fqName
-        ).singleOrNull()
+        )
       }
       .filter { contributesAnnotation ->
         val contributedClass = contributesAnnotation.declaringClass()
@@ -119,58 +117,43 @@ internal class ModuleMerger(
 
     val excludedModules = mergeAnnotation.exclude()
       .onEach { excludedClass ->
-        val contributesToAnnotation =
-          excludedClass.annotations.find(contributesToFqName).singleOrNull()
-        val contributesBindingAnnotation =
-          excludedClass.annotations.find(contributesBindingFqName).singleOrNull()
-        val contributesMultibindingAnnotation =
-          excludedClass.annotations.find(contributesMultibindingFqName).singleOrNull()
-        val contributesSubcomponentAnnotation =
-          excludedClass.annotations.find(contributesSubcomponentFqName).singleOrNull()
+        val scopes = excludedClass.annotations.find(contributesToFqName).map { it.scope() } +
+          excludedClass.annotations.find(contributesBindingFqName).map { it.scope() } +
+          excludedClass.annotations.find(contributesMultibindingFqName).map { it.scope() } +
+          excludedClass.annotations.find(contributesSubcomponentFqName).map { it.parentScope() }
 
         // Verify that the replaced classes use the same scope.
-        val scopeOfExclusion = contributesToAnnotation?.scopeOrNull()
-          ?: contributesBindingAnnotation?.scopeOrNull()
-          ?: contributesMultibindingAnnotation?.scopeOrNull()
-          ?: contributesSubcomponentAnnotation?.parentScope()
-          ?: throw AnvilCompilationExceptionClassReference(
-            message = "Could not determine the scope of the excluded class " +
-              "${excludedClass.fqName}.",
-            classReference = excludedClass
-          )
+        val contributesToOurScope = scopes.any { it == mergeScope }
 
-        if (scopeOfExclusion != mergeScope) {
+        if (!contributesToOurScope) {
           throw AnvilCompilationExceptionClassReference(
-            classReference = clazz,
             message = "${clazz.fqName} with scope ${mergeScope.fqName} wants to exclude " +
-              "${excludedClass.fqName} with scope " +
-              "${scopeOfExclusion.fqName}. The exclusion must use the same scope."
+              "${excludedClass.fqName}, but the excluded class isn't contributed to the " +
+              "same scope.",
+            classReference = clazz
           )
         }
       }
 
     val replacedModules = modules
+      // Ignore replaced modules or bindings specified by excluded modules.
       .filter { contributesAnnotation ->
-        // Ignore replaced modules or bindings specified by excluded modules.
         contributesAnnotation.declaringClass() !in excludedModules
       }
       .flatMap { contributesAnnotation ->
         val contributedClass = contributesAnnotation.declaringClass()
-        contributedClass
-          .atLeastOneAnnotation(contributesAnnotation.fqName).single()
-          .replaces()
+        contributesAnnotation.replaces()
           .onEach { classToReplace ->
             // Verify has @Module annotation. It doesn't make sense for a Dagger module to
             // replace a non-Dagger module.
-            if (classToReplace.annotations.find(daggerModuleFqName).singleOrNull() == null &&
-              classToReplace.annotations.find(contributesBindingFqName).singleOrNull() == null &&
-              classToReplace.annotations.find(contributesMultibindingFqName).singleOrNull() == null
+            if (!classToReplace.isAnnotatedWith(daggerModuleFqName) &&
+              !classToReplace.isAnnotatedWith(contributesBindingFqName) &&
+              !classToReplace.isAnnotatedWith(contributesMultibindingFqName)
             ) {
               throw AnvilCompilationExceptionClassReference(
-                contributedClass,
-                "${contributedClass.fqName} wants to replace " +
-                  "${classToReplace.fqName}, but the class being " +
-                  "replaced is not a Dagger module."
+                message = "${contributedClass.fqName} wants to replace " +
+                  "${classToReplace.fqName}, but the class being replaced is not a Dagger module.",
+                classReference = contributedClass
               )
             }
 
@@ -179,39 +162,30 @@ internal class ModuleMerger(
       }
 
     fun replacedModulesByContributedBinding(
-      annotationFqName: FqName,
-      hintPackagePrefix: String
+      annotationFqName: FqName
     ): Sequence<ClassReference> {
       return classScanner
         .findContributedClasses(
           module = module,
-          packageName = hintPackagePrefix,
           annotation = annotationFqName,
           scope = mergeScope.fqName
         )
         .flatMap { contributedClass ->
-          val annotation = contributedClass.atLeastOneAnnotation(annotationFqName).single()
-          if (mergeScope == annotation.scope()) {
-            contributedClass
-              .atLeastOneAnnotation(annotationFqName).single()
-              .replaces()
-              .onEach { classToReplace ->
-                checkSameScope(contributedClass, classToReplace, mergeScope)
-              }
-          } else {
-            emptyList()
-          }
+          contributedClass.annotations
+            .find(annotationName = annotationFqName, scopeName = mergeScope.fqName)
+            .flatMap { it.replaces() }
+            .onEach { classToReplace ->
+              checkSameScope(contributedClass, classToReplace, mergeScope)
+            }
         }
     }
 
     val replacedModulesByContributedBindings = replacedModulesByContributedBinding(
-      annotationFqName = contributesBindingFqName,
-      hintPackagePrefix = HINT_BINDING_PACKAGE_PREFIX
+      annotationFqName = contributesBindingFqName
     )
 
     val replacedModulesByContributedMultibindings = replacedModulesByContributedBinding(
-      annotationFqName = contributesMultibindingFqName,
-      hintPackagePrefix = HINT_MULTIBINDING_PACKAGE_PREFIX
+      annotationFqName = contributesMultibindingFqName
     )
 
     val intersect = predefinedModules.intersect(excludedModules.toSet())
@@ -229,10 +203,10 @@ internal class ModuleMerger(
     val contributedModuleTypes = modules
       .asSequence()
       .map { it.declaringClass() }
-      .minus(replacedModules)
-      .minus(replacedModulesByContributedBindings)
-      .minus(replacedModulesByContributedMultibindings)
-      .minus(excludedModules)
+      .minus(replacedModules.toSet())
+      .minus(replacedModulesByContributedBindings.toSet())
+      .minus(replacedModulesByContributedMultibindings.toSet())
+      .minus(excludedModules.toSet())
       .plus(contributedSubcomponentModules)
       .toSet()
       .types(codegen)
@@ -242,7 +216,7 @@ internal class ModuleMerger(
       .use {
         visitArray(modulesKeyword)
           .use {
-            predefinedModules.toSet().types(codegen).forEach { visit(modulesKeyword, it) }
+            predefinedModules.types(codegen).forEach { visit(modulesKeyword, it) }
             contributedModuleTypes.forEach { visit(modulesKeyword, it) }
           }
 
@@ -256,10 +230,10 @@ internal class ModuleMerger(
       }
   }
 
-  private fun Set<ClassReference>.types(codegen: ImplementationBodyCodegen): Set<Type> {
-    return cast<Set<ClassReference.Descriptor>>()
+  @Suppress("UNCHECKED_CAST")
+  private fun Collection<ClassReference>.types(codegen: ImplementationBodyCodegen): List<Type> {
+    return (this as Collection<ClassReference.Descriptor>)
       .map { codegen.typeMapper.mapType(it.clazz) }
-      .toSet()
   }
 
   private fun AnnotationVisitor.copyArrayValue(
@@ -303,28 +277,18 @@ internal class ModuleMerger(
     classToReplace: ClassReference,
     mergeScope: ClassReference
   ) {
-    val contributesToAnnotation =
-      classToReplace.annotations.find(contributesToFqName).singleOrNull()
-    val contributesBindingAnnotation =
-      classToReplace.annotations.find(contributesBindingFqName).singleOrNull()
-    val contributesMultibindingAnnotation =
-      classToReplace.annotations.find(contributesMultibindingFqName).singleOrNull()
+    val scopes = classToReplace.annotations.find(contributesToFqName).map { it.scope() } +
+      classToReplace.annotations.find(contributesBindingFqName).map { it.scope() } +
+      classToReplace.annotations.find(contributesMultibindingFqName).map { it.scope() }
 
-    // Verify that the replaced classes use the same scope.
-    val scopeOfReplacement = contributesToAnnotation?.scope()
-      ?: contributesBindingAnnotation?.scope()
-      ?: contributesMultibindingAnnotation?.scope()
-      ?: throw AnvilCompilationExceptionClassReference(
-        contributedClass,
-        "Could not determine the scope of the replaced class ${classToReplace.fqName}."
-      )
+    val contributesToOurScope = scopes.any { it == mergeScope }
 
-    if (scopeOfReplacement != mergeScope) {
+    if (!contributesToOurScope) {
       throw AnvilCompilationExceptionClassReference(
-        contributedClass,
-        "${contributedClass.fqName} with scope ${mergeScope.fqName} wants to replace " +
-          "${classToReplace.fqName} with scope " +
-          "${scopeOfReplacement.fqName}. The replacement must use the same scope."
+        classReference = contributedClass,
+        message = "${contributedClass.fqName} with scope ${mergeScope.fqName} wants to replace " +
+          "${classToReplace.fqName}, but the replaced class isn't " +
+          "contributed to the same scope."
       )
     }
   }
@@ -337,14 +301,13 @@ internal class ModuleMerger(
     return classScanner
       .findContributedClasses(
         module = module,
-        packageName = HINT_SUBCOMPONENTS_PACKAGE_PREFIX,
         annotation = contributesSubcomponentFqName,
         scope = null
       )
-      .filter {
-        it.atLeastOneAnnotation(contributesSubcomponentFqName)
-          .single()
-          .parentScope() == scope
+      .filter { contributedClass ->
+        contributedClass
+          .atLeastOneAnnotation(contributesSubcomponentFqName)
+          .any { it.parentScope() == scope }
       }
       .mapNotNull { contributedSubcomponent ->
         contributedSubcomponent.classId

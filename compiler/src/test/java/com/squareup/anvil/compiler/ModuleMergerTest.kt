@@ -3,13 +3,14 @@ package com.squareup.anvil.compiler
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.daggerSubcomponent
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Component
 import dagger.Subcomponent
 import org.junit.Assume.assumeTrue
@@ -129,7 +130,6 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(exitCode).isError()
-      // Position to the class.
       assertThat(messages).contains("Source0.kt: (7, 11)")
     }
   }
@@ -220,7 +220,6 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(exitCode).isError()
-      // Position to the class.
       assertThat(messages).contains("Source0.kt: (7, 16)")
     }
   }
@@ -343,12 +342,11 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(exitCode).isError()
-      // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 16)")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule1 with scope kotlin.Any wants to replace " +
-          "com.squareup.test.ContributingInterface with scope kotlin.Unit. The replacement " +
-          "must use the same scope."
+          "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
+          "to the same scope."
       )
     }
   }
@@ -379,12 +377,11 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(exitCode).isError()
-      // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 16)")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule1 with scope kotlin.Any wants to replace " +
-          "com.squareup.test.ContributingInterface with scope kotlin.Unit. The replacement " +
-          "must use the same scope."
+          "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
+          "to the same scope."
       )
     }
   }
@@ -475,12 +472,11 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(exitCode).isError()
-      // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 11)")
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface with scope kotlin.Any wants to replace " +
-          "com.squareup.test.DaggerModule1 with scope kotlin.Unit. The replacement must use " +
-          "the same scope."
+          "com.squareup.test.DaggerModule1, but the replaced class isn't contributed " +
+          "to the same scope."
       )
     }
   }
@@ -511,12 +507,11 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(exitCode).isError()
-      // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 11)")
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface with scope kotlin.Any wants to replace " +
-          "com.squareup.test.DaggerModule1 with scope kotlin.Unit. The replacement must use " +
-          "the same scope."
+          "com.squareup.test.DaggerModule1, but the replaced class isn't contributed " +
+          "to the same scope."
       )
     }
   }
@@ -543,7 +538,6 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(exitCode).isError()
-      // Position to the class.
       assertThat(messages).contains("Source0.kt: (13, 16)")
     }
   }
@@ -572,12 +566,11 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(exitCode).isError()
-      // Position to the class.
       assertThat(messages).contains("Source0.kt: (15, 16)")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule2 with scope kotlin.Any wants to replace " +
-          "com.squareup.test.DaggerModule1 with scope kotlin.Unit. The replacement must " +
-          "use the same scope."
+          "com.squareup.test.DaggerModule1, but the replaced class isn't contributed " +
+          "to the same scope."
       )
     }
   }
@@ -672,12 +665,11 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(exitCode).isError()
-      // Position to the class.
       assertThat(messages).contains("Source0.kt: (20, 11)")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
-          "com.squareup.test.DaggerModule1 with scope kotlin.Unit. The exclusion must use " +
-          "the same scope."
+          "com.squareup.test.DaggerModule1, but the excluded class isn't contributed " +
+          "to the same scope."
       )
     }
   }
@@ -822,12 +814,11 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(exitCode).isError()
-      // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 11)")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
-          "com.squareup.test.ContributingInterface with scope kotlin.Unit. The exclusion " +
-          "must use the same scope."
+          "com.squareup.test.ContributingInterface, but the excluded class isn't contributed " +
+          "to the same scope."
       )
     }
   }
@@ -855,12 +846,11 @@ class ModuleMergerTest(
       """
     ) {
       assertThat(exitCode).isError()
-      // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 11)")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
-          "com.squareup.test.ContributingInterface with scope kotlin.Unit. The exclusion " +
-          "must use the same scope."
+          "com.squareup.test.ContributingInterface, but the excluded class isn't contributed " +
+          "to the same scope."
       )
     }
   }
@@ -952,7 +942,6 @@ class ModuleMergerTest(
         """
       ) {
         assertThat(exitCode).isError()
-        // Position to the class.
         assertThat(messages).contains("Source0.kt: (8, ")
       }
     }
@@ -1128,9 +1117,6 @@ class ModuleMergerTest(
     }
   }
 
-  private val Class<*>.anyDaggerComponent: AnyDaggerComponent
-    get() = anyDaggerComponent(annotationClass)
-
   @Test fun `locally defined classes without a classId are skipped over when merging modules`() {
     assumeTrue(USE_IR)
 
@@ -1173,7 +1159,243 @@ class ModuleMergerTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isEqualTo(ExitCode.OK)
+      assertThat(exitCode).isEqualTo(OK)
     }
   }
+
+  @Test fun `modules contributed to multiple scopes are merged`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Any::class)
+      @ContributesTo(Unit::class)
+      @dagger.Module
+      abstract class DaggerModule1
+      
+      @ContributesTo(Any::class)
+      @dagger.Module
+      abstract class DaggerModule2
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """
+    ) {
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+        .containsExactly(daggerModule1.kotlin, daggerModule2.kotlin)
+
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+        .containsExactly(daggerModule1.kotlin)
+    }
+  }
+
+  @Test fun `modules contributed to multiple scopes are merged with multiple compilations`() {
+    assumeIrBackend()
+
+    val firstResult = compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      import dagger.Module
+        
+      @ContributesTo(Any::class)
+      @ContributesTo(Unit::class)
+      @Module
+      abstract class DaggerModule1
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Any::class)
+      @dagger.Module
+      abstract class DaggerModule2
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """,
+      previousCompilationResult = firstResult
+    ) {
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+        .containsExactly(daggerModule1.kotlin, daggerModule2.kotlin)
+
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+        .containsExactly(daggerModule1.kotlin)
+    }
+  }
+
+  @Test fun `modules contributed to multiple scopes can be replaced`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Any::class)
+      @ContributesTo(Unit::class)
+      @dagger.Module
+      abstract class DaggerModule1
+      
+      @ContributesTo(Any::class, replaces = [DaggerModule1::class])
+      @dagger.Module
+      abstract class DaggerModule2
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """
+    ) {
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+        .containsExactly(daggerModule2.kotlin)
+
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+        .containsExactly(daggerModule1.kotlin)
+    }
+  }
+
+  @Test
+  fun `replaced module contributed to multiple scopes must use the same scope`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Any::class)
+      @ContributesTo(Unit::class)
+      @dagger.Module
+      abstract class DaggerModule1
+      
+      @ContributesTo(Int::class, replaces = [DaggerModule1::class])
+      @dagger.Module
+      abstract class DaggerModule2
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      
+      $annotation(Unit::class)
+      interface SubcomponentInterface1
+      
+      $annotation(Int::class)
+      interface SubcomponentInterface2
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains(
+        "com.squareup.test.DaggerModule2 with scope kotlin.Int wants to replace " +
+          "com.squareup.test.DaggerModule1, but the replaced class isn't contributed to the " +
+          "same scope."
+      )
+    }
+  }
+
+  @Test fun `modules contributed to multiple scopes can be excluded in one scope`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Any::class)
+      @ContributesTo(Unit::class)
+      @dagger.Module
+      abstract class DaggerModule1
+      
+      @ContributesTo(Any::class)
+      @dagger.Module
+      abstract class DaggerModule2
+      
+      $annotation(Any::class, exclude = [DaggerModule1::class])
+      interface ComponentInterface
+      
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """
+    ) {
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+        .containsExactly(daggerModule2.kotlin)
+
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+        .containsExactly(daggerModule1.kotlin)
+    }
+  }
+
+  @Test fun `contributed modules in the old format are picked up`() {
+    val result = AnvilCompilation()
+      .useIR(USE_IR)
+      .configureAnvil(enableAnvil = false)
+      .compile(
+        """
+        package com.squareup.test
+      
+        import com.squareup.anvil.annotations.ContributesTo
+        import dagger.Module
+        
+        @ContributesTo(Any::class)
+        @Module
+        abstract class DaggerModule1  
+        """,
+        """
+        package anvil.hint.merge.com.squareup.test
+
+        import com.squareup.test.DaggerModule1
+        import kotlin.reflect.KClass
+        
+        public val com_squareup_test_DaggerModule1_reference: KClass<DaggerModule1> = DaggerModule1::class
+        
+        // Note that the number is missing after the scope. 
+        public val com_squareup_test_DaggerModule1_scope: KClass<Any> = Any::class
+        """.trimIndent()
+      ) {
+        assertThat(exitCode).isEqualTo(OK)
+      }
+
+    compile(
+      """
+      package com.squareup.test
+      
+      $import
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """,
+      previousCompilationResult = result
+    ) {
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+        .containsExactly(daggerModule1.kotlin)
+    }
+  }
+
+  private val Class<*>.anyDaggerComponent: AnyDaggerComponent
+    get() = anyDaggerComponent(annotationClass)
 }
