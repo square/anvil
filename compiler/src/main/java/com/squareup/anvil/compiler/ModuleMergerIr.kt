@@ -71,7 +71,8 @@ internal class ModuleMergerIr(
     }
 
     val scope = annotation.scope
-    val predefinedModules = annotation.argumentClassArray(modulesKeyword)
+    val predefinedModules =
+      annotation.argumentOrNull(modulesKeyword)?.value<List<ClassReferenceIr>>().orEmpty()
 
     val anvilModuleName = createAnvilModuleName(declaration)
 
@@ -291,10 +292,9 @@ internal class ModuleMergerIr(
         )
 
         fun copyArrayValue(name: String) {
-          // TODO This could also be cleaned up with an AnnotationArgumentIr type
-          declaration.clazz.owner.annotation(annotationFqName, scope.fqName)
-            .argument(name)
-            ?.second
+          declaration.annotations.find(annotationFqName, scope.fqName).single()
+            .argumentOrNull(name)
+            ?.argumentExpression
             ?.let { expression ->
               putValueArgument(1, expression)
             }

@@ -1,16 +1,10 @@
 package com.squareup.anvil.compiler.codegen.reference
 
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.argument
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
-import com.squareup.anvil.compiler.kclassUnwrapped
-import com.squareup.anvil.compiler.parentScope
-import com.squareup.anvil.compiler.scope
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
-import org.jetbrains.kotlin.ir.expressions.IrExpression
-import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.name.FqName
 import kotlin.LazyThreadSafetyMode.NONE
@@ -23,8 +17,12 @@ internal class AnnotationReferenceIr(
   val fqName: FqName
     get() = classReference.fqName
 
-  private val context: IrPluginContext
+  val context: IrPluginContext
     get() = classReference.context
+
+  val arguments: List<AnnotationArgumentReferenceIr> by lazy(NONE) {
+    annotation.getArgumentsWithIr().map { it.toAnnotationArgumentReference(this) }
+  }
 
   val scope: ClassReferenceIr
     get() = scopeOrNull ?: throw AnvilCompilationException(
@@ -33,7 +31,9 @@ internal class AnnotationReferenceIr(
     )
 
   val scopeOrNull: ClassReferenceIr? by lazy(NONE) {
-    context.referenceClass(annotation.scope())?.toClassReference(context)
+    argumentOrNull("scope")?.value<ClassReferenceIr>()?.let {
+      context.referenceClass(it.fqName)?.toClassReference(context)
+    }
   }
 
   val declaringClassOrNull: ClassReferenceIr? = declaringClass
@@ -44,35 +44,24 @@ internal class AnnotationReferenceIr(
     )
 
   val parentScope: ClassReferenceIr by lazy(NONE) {
-    context.referenceClass(annotation.parentScope())?.toClassReference(context)
-      ?: throw AnvilCompilationException(
-        element = annotation,
-        message = "Couldn't find parent scope for $fqName."
-      )
+    argumentOrNull("parentScope")?.value<ClassReferenceIr>()?.let {
+      context.referenceClass(it.fqName)?.toClassReference(context)
+    } ?: throw AnvilCompilationException(
+      element = annotation,
+      message = "Couldn't find parent scope for $fqName."
+    )
   }
 
   val excludedClasses: List<ClassReferenceIr> by lazy(NONE) {
-    argumentClassArray("exclude")
+    argumentOrNull("exclude")?.value<List<ClassReferenceIr>>().orEmpty()
   }
 
   val replacedClasses: List<ClassReferenceIr> by lazy(NONE) {
-    argumentClassArray("replaces")
+    argumentOrNull("replaces")?.value<List<ClassReferenceIr>>().orEmpty()
   }
 
-  // TODO: May be worth introducing AnnotationArgumentIr here
-  fun argumentClassArray(name: String): List<ClassReferenceIr> {
-    return annotation.argumentClassArray(name)
-  }
-
-  private fun IrConstructorCall.argumentClassArray(
-    name: String
-  ): List<ClassReferenceIr> {
-    val vararg = argument(name)?.second as? IrVararg ?: return emptyList()
-
-    return vararg.elements
-      .filterIsInstance<IrExpression>()
-      .map { it.kclassUnwrapped.owner as IrClass }
-      .map { it.symbol.toClassReference(context) }
+  fun argumentOrNull(name: String): AnnotationArgumentReferenceIr? {
+    return arguments.singleOrNull { it.name == name }
   }
 
   override fun toString(): String = "@$fqName"
@@ -82,15 +71,14 @@ internal class AnnotationReferenceIr(
     if (other !is AnnotationReference) return false
 
     if (fqName != other.fqName) return false
-    // TODO: Check arguments
+    if (arguments != other.arguments) return false
 
     return true
   }
 
   override fun hashCode(): Int {
     var result = fqName.hashCode()
-    // TODO: Add arguments hashcode
-    result = 31 * result
+    result = 31 * result + arguments.hashCode()
     return result
   }
 }
