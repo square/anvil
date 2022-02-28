@@ -13,7 +13,6 @@ import com.squareup.anvil.compiler.internal.safePackageString
 import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.lower.parentsWithSelf
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -318,13 +317,9 @@ internal class ModuleMergerIr(
     val packageName = declaration.packageFqName?.safePackageString() ?: ""
 
     val name = "$MODULE_PACKAGE_PREFIX.$packageName" +
-      // TODO Might be worth updating [ClassReferenceIr] to provide parentsWithSelf
-      declaration.clazz.owner.parentsWithSelf
-        .filterIsInstance<IrClass>()
-        .toList()
-        .reversed()
+      declaration.enclosingClassesWithSelf
         .joinToString(separator = "", postfix = ANVIL_MODULE_SUFFIX) {
-          it.name.asString()
+          it.shortName
         }
     return FqName(name)
   }
