@@ -103,6 +103,7 @@ import kotlin.reflect.KClass
  */
 @Target(CLASS)
 @Retention(RUNTIME)
+@Repeatable
 public annotation class ContributesMultibinding(
   /**
    * The scope in which to include this contributed multibinding.

@@ -6,12 +6,14 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.anvilModule
 import com.squareup.anvil.compiler.anyQualifier
+import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.internal.testing.isAbstract
 import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.parentInterface
+import com.squareup.anvil.compiler.subcomponentInterface
 import dagger.Binds
 import dagger.Provides
 import dagger.multibindings.IntoSet
@@ -438,6 +440,54 @@ class BindingModuleQualifierTest(
 
       assertThat(annotations).doesNotContain(anyQualifier.kotlin)
       assertThat(annotations).containsAtLeast(Binds::class, IntoSet::class)
+    }
+  }
+
+  @Test fun `the Dagger binding method has a qualifier for multiple contributions`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      import javax.inject.Qualifier
+      $import
+      
+      @Qualifier
+      annotation class AnyQualifier
+
+      interface ParentInterface
+      
+      @ContributesBinding(Any::class)
+      @ContributesBinding(Unit::class)
+      @AnyQualifier
+      interface ContributingInterface : ParentInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """
+    ) {
+      with(componentInterface.anvilModule.declaredMethods.single()) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+
+        assertThat(annotations.map { it.annotationClass })
+          .containsExactly(Binds::class, anyQualifier.kotlin)
+      }
+
+      with(subcomponentInterface.anvilModule.declaredMethods.single()) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+
+        assertThat(annotations.map { it.annotationClass })
+          .containsExactly(Binds::class, anyQualifier.kotlin)
+      }
     }
   }
 }

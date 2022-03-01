@@ -5,6 +5,7 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.anvilModule
+import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
@@ -12,6 +13,7 @@ import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.secondContributingInterface
+import com.squareup.anvil.compiler.subcomponentInterface
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -358,6 +360,48 @@ class BindingModulePriorityTest(
     ) {
       val bindingMethods = componentInterface.anvilModule.declaredMethods
       assertThat(bindingMethods).hasLength(2)
+    }
+  }
+
+  @Test fun `the binding with the higher priority is used with multiple contributions`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.ContributesBinding.Priority.HIGH
+      import com.squareup.anvil.annotations.ContributesBinding.Priority.HIGHEST
+      $import
+      
+      interface ParentInterface
+      
+      @ContributesBinding(Any::class, priority = HIGHEST)
+      interface ContributingInterface : ParentInterface
+      
+      @ContributesBinding(Any::class, priority = HIGH)
+      interface ContributingInterface2 : ParentInterface
+      
+      @ContributesBinding(Any::class)
+      @ContributesBinding(Unit::class)
+      interface SecondContributingInterface : ParentInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """
+    ) {
+      with(componentInterface.anvilModule.declaredMethods.single()) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+      }
+      with(subcomponentInterface.anvilModule.declaredMethods.single()) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(secondContributingInterface)
+      }
     }
   }
 }

@@ -5,6 +5,7 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.anvilModule
+import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
@@ -16,6 +17,7 @@ import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.secondContributingInterface
+import com.squareup.anvil.compiler.subcomponentInterface
 import dagger.Binds
 import dagger.Provides
 import dagger.multibindings.IntoSet
@@ -350,6 +352,93 @@ class BindingModuleMultibindingSetTest(
 
       with(methods[0]) {
         assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+        assertThat(isAnnotationPresent(IntoSet::class.java)).isTrue()
+      }
+    }
+  }
+
+  @Test fun `the Dagger multibinding method is generated for multiple contributed bindings`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      $import
+
+      interface ParentInterface
+
+      interface Middle : ParentInterface
+
+      @ContributesMultibinding(Any::class, ParentInterface::class)
+      @ContributesMultibinding(Unit::class, ParentInterface::class)
+      interface ContributingInterface : Middle
+
+      $annotation(Any::class)
+      interface ComponentInterface
+
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """
+    ) {
+      with(componentInterface.anvilModule.declaredMethods.single()) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+        assertThat(isAnnotationPresent(IntoSet::class.java)).isTrue()
+      }
+
+      with(subcomponentInterface.anvilModule.declaredMethods.single()) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+        assertThat(isAnnotationPresent(IntoSet::class.java)).isTrue()
+      }
+    }
+  }
+
+  @Test fun `multiple contribution can have different bound types`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      $import
+      
+      interface ParentInterface1
+      interface ParentInterface2
+
+      @ContributesMultibinding(Any::class, boundType = ParentInterface1::class)
+      @ContributesMultibinding(Unit::class, boundType = ParentInterface2::class)
+      class ContributingInterface : ParentInterface1, ParentInterface2
+
+      $annotation(Any::class)
+      interface ComponentInterface
+
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """
+    ) {
+      with(componentInterface.anvilModule.declaredMethods.single()) {
+        assertThat(returnType)
+          .isEqualTo(classLoader.loadClass("com.squareup.test.ParentInterface1"))
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+        assertThat(isAnnotationPresent(IntoSet::class.java)).isTrue()
+      }
+
+      with(subcomponentInterface.anvilModule.declaredMethods.single()) {
+        assertThat(returnType)
+          .isEqualTo(classLoader.loadClass("com.squareup.test.ParentInterface2"))
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
