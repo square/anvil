@@ -7,6 +7,7 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.codegen.atLeastOneAnnotation
 import com.squareup.anvil.compiler.codegen.checkClassIsPublic
 import com.squareup.anvil.compiler.codegen.find
+import com.squareup.anvil.compiler.codegen.findAll
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
 import com.squareup.anvil.compiler.codegen.modules
 import com.squareup.anvil.compiler.codegen.parentScope
@@ -83,7 +84,7 @@ internal class ModuleMerger(
       .flatMap { contributedClass ->
         contributedClass.annotations.find(
           annotationName = contributesToFqName,
-          scopeName = mergeScope.fqName
+          scope = mergeScope
         )
       }
       .filter { contributesAnnotation ->
@@ -117,10 +118,14 @@ internal class ModuleMerger(
 
     val excludedModules = mergeAnnotation.exclude()
       .onEach { excludedClass ->
-        val scopes = excludedClass.annotations.find(contributesToFqName).map { it.scope() } +
-          excludedClass.annotations.find(contributesBindingFqName).map { it.scope() } +
-          excludedClass.annotations.find(contributesMultibindingFqName).map { it.scope() } +
-          excludedClass.annotations.find(contributesSubcomponentFqName).map { it.parentScope() }
+        val scopes = excludedClass.annotations
+          .findAll(contributesToFqName, contributesBindingFqName, contributesMultibindingFqName)
+          .map { it.scope() }
+          .plus(
+            excludedClass.annotations
+              .find(contributesSubcomponentFqName)
+              .map { it.parentScope() }
+          )
 
         // Verify that the replaced classes use the same scope.
         val contributesToOurScope = scopes.any { it == mergeScope }
@@ -172,7 +177,7 @@ internal class ModuleMerger(
         )
         .flatMap { contributedClass ->
           contributedClass.annotations
-            .find(annotationName = annotationFqName, scopeName = mergeScope.fqName)
+            .find(annotationName = annotationFqName, scope = mergeScope)
             .flatMap { it.replaces() }
             .onEach { classToReplace ->
               checkSameScope(contributedClass, classToReplace, mergeScope)
@@ -277,9 +282,9 @@ internal class ModuleMerger(
     classToReplace: ClassReference,
     mergeScope: ClassReference
   ) {
-    val scopes = classToReplace.annotations.find(contributesToFqName).map { it.scope() } +
-      classToReplace.annotations.find(contributesBindingFqName).map { it.scope() } +
-      classToReplace.annotations.find(contributesMultibindingFqName).map { it.scope() }
+    val scopes = classToReplace.annotations
+      .findAll(contributesToFqName, contributesBindingFqName, contributesMultibindingFqName)
+      .map { it.scope() }
 
     val contributesToOurScope = scopes.any { it == mergeScope }
 

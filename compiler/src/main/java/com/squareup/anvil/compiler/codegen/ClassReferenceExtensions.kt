@@ -92,14 +92,14 @@ internal fun ClassReference.checkClassExtendsBoundType(
 
 internal fun ClassReference.atLeastOneAnnotation(
   annotationName: FqName,
-  scopeName: FqName? = null
+  scope: ClassReference? = null
 ): List<AnnotationReference> {
-  return annotations.find(annotationName = annotationName, scopeName = scopeName)
+  return annotations.find(annotationName = annotationName, scope = scope)
     .ifEmpty {
       throw AnvilCompilationExceptionClassReference(
         classReference = this,
         message = "Class $fqName is not annotated with $annotationName" +
-          "${if (scopeName == null) "" else " with scope $scopeName"}."
+          "${if (scope == null) "" else " with scope ${scope.fqName}"}."
       )
     }
 }

@@ -74,11 +74,19 @@ private fun modulesName(annotationFqName: FqName): String {
 
 internal fun <T : AnnotationReference> List<T>.find(
   annotationName: FqName,
-  scopeName: FqName? = null
+  scope: ClassReference? = null
 ): List<T> {
   return filter {
-    it.fqName == annotationName &&
-      (scopeName == null || it.scopeOrNull()?.fqName == scopeName)
+    it.fqName == annotationName && (scope == null || it.scopeOrNull() == scope)
+  }
+}
+
+internal fun <T : AnnotationReference> List<T>.findAll(
+  vararg annotationNames: FqName,
+  scope: ClassReference? = null
+): List<T> {
+  return filter {
+    it.fqName in annotationNames && (scope == null || it.scopeOrNull() == scope)
   }
 }
 
