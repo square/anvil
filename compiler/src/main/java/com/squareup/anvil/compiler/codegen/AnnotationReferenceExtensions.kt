@@ -5,6 +5,9 @@ import com.squareup.anvil.annotations.ContributesBinding.Priority.NORMAL
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
+import com.squareup.anvil.compiler.daggerComponentFqName
+import com.squareup.anvil.compiler.daggerModuleFqName
+import com.squareup.anvil.compiler.daggerSubcomponentFqName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionAnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
@@ -90,7 +93,9 @@ internal fun <T : AnnotationReference> List<T>.findAll(
   }
 }
 
-internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScope() {
+internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScope(
+  contributeAnnotation: Boolean
+) {
   // Exit early to avoid allocating additional collections.
   if (size < 2) return
   if (size == 2 && this[0].scope() != this[1].scope()) return
@@ -102,10 +107,25 @@ internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScope() {
     val clazz = this[0].declaringClass()
     throw AnvilCompilationExceptionClassReference(
       classReference = clazz,
-      message = "${clazz.fqName} contributes multiple times to the same scope: " +
-        "${duplicates.keys.joinToString(prefix = "[", postfix = "]") { it.shortName }}. " +
-        "Contributing multiple times to the same scope is forbidden and all scopes must " +
-        "be distinct.",
+      message = if (contributeAnnotation) {
+        "${clazz.fqName} contributes multiple times to the same scope: " +
+          "${duplicates.keys.joinToString(prefix = "[", postfix = "]") { it.shortName }}. " +
+          "Contributing multiple times to the same scope is forbidden and all scopes must " +
+          "be distinct."
+      } else {
+        "${clazz.fqName} merges multiple times to the same scope: " +
+          "${duplicates.keys.joinToString(prefix = "[", postfix = "]") { it.shortName }}. " +
+          "Merging multiple times to the same scope is forbidden and all scopes must " +
+          "be distinct."
+      }
     )
   }
 }
+
+internal val AnnotationReference.daggerAnnotationFqName: FqName
+  get() = when (fqName) {
+    mergeComponentFqName -> daggerComponentFqName
+    mergeSubcomponentFqName -> daggerSubcomponentFqName
+    mergeModulesFqName -> daggerModuleFqName
+    else -> throw NotImplementedError("Don't know how to handle $this.")
+  }

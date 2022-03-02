@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler.internal.testing
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
+import com.squareup.anvil.annotations.compat.MergeModules
 import kotlin.reflect.KClass
 
 @ExperimentalAnvilApi
@@ -20,6 +21,10 @@ public fun Class<*>.anyDaggerComponent(annotationClass: KClass<*>): AnyDaggerCom
     }
     MergeSubcomponent::class -> object : AnyDaggerComponent {
       override val modules: List<KClass<*>> = daggerSubcomponent.modules.toList()
+      override val dependencies: List<KClass<*>> get() = throw IllegalAccessException()
+    }
+    MergeModules::class -> object : AnyDaggerComponent {
+      override val modules: List<KClass<*>> = daggerModule.includes.toList()
       override val dependencies: List<KClass<*>> get() = throw IllegalAccessException()
     }
     else -> throw IllegalArgumentException("Cannot handle $annotationClass")

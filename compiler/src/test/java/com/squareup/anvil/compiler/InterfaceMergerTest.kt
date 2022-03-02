@@ -234,7 +234,7 @@ class InterfaceMergerTest(
       // missing an @Module annotation.
       assertThat(messages).contains("Source0.kt: (14, 11)")
       assertThat(messages).contains(
-        "com.squareup.test.SecondContributingInterface with scope kotlin.Any wants to replace " +
+        "com.squareup.test.SecondContributingInterface with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
           "to the same scope."
       )
@@ -322,7 +322,7 @@ class InterfaceMergerTest(
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (18, 11)")
       assertThat(messages).contains(
-        "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
+        "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.ContributingInterface, but the excluded class isn't contributed " +
           "to the same scope."
       )
@@ -779,7 +779,7 @@ class InterfaceMergerTest(
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
-        "com.squareup.test.SecondContributingInterface with scope kotlin.Int wants to " +
+        "com.squareup.test.SecondContributingInterface with scopes [kotlin.Int] wants to " +
           "replace com.squareup.test.ContributingInterface, but the replaced class isn't " +
           "contributed to the same scope."
       )

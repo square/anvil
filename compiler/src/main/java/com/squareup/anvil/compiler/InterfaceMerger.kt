@@ -1,6 +1,5 @@
 package com.squareup.anvil.compiler
 
-import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.atLeastOneAnnotation
 import com.squareup.anvil.compiler.codegen.find
 import com.squareup.anvil.compiler.codegen.findAll
@@ -36,28 +35,10 @@ internal class InterfaceMerger(
 
     val module = moduleDescriptorFactory.create(thisDescriptor.module)
     val mergeAnnotatedClass = thisDescriptor.toClassReference(module)
-    val mergeAnnotation = mergeAnnotatedClass.annotations.find(mergeComponentFqName).singleOrNull()
-      ?: mergeAnnotatedClass.annotations.find(mergeSubcomponentFqName).singleOrNull()
-      ?: mergeAnnotatedClass.annotations.find(mergeInterfacesFqName).singleOrNull()
 
-    if (mergeAnnotation == null) {
-      super.addSyntheticSupertypes(thisDescriptor, supertypes)
-      return
-    }
-
-    val mergeScope = try {
-      mergeAnnotation.scope()
-    } catch (e: AssertionError) {
-      // In some scenarios this error is thrown. Throw a new exception with a better explanation.
-      // Caused by: java.lang.AssertionError: Recursion detected in a lazy value under
-      // LockBasedStorageManager@420989af (TopDownAnalyzer for JVM)
-      throw AnvilCompilationException(
-        classDescriptor = thisDescriptor,
-        message = "It seems like you tried to contribute an inner class to its outer class. " +
-          "This is not supported and results in a compiler error.",
-        cause = e
-      )
-    }
+    val mergeAnnotations = mergeAnnotatedClass.annotations
+      .findAll(mergeComponentFqName, mergeSubcomponentFqName, mergeInterfacesFqName)
+      .ifEmpty { return }
 
     if (!mergeAnnotatedClass.isInterface()) {
       throw AnvilCompilationExceptionClassReference(
@@ -66,25 +47,45 @@ internal class InterfaceMerger(
       )
     }
 
-    val classes = classScanner
-      .findContributedClasses(
-        module = module,
-        annotation = contributesToFqName,
-        scope = mergeScope.fqName
-      )
-      .filter {
-        it.isInterface() && it.annotations.find(daggerModuleFqName).singleOrNull() == null
+    val scopes = mergeAnnotations.map {
+      try {
+        it.scope()
+      } catch (e: AssertionError) {
+        // In some scenarios this error is thrown. Throw a new exception with a better explanation.
+        // Caused by: java.lang.AssertionError: Recursion detected in a lazy value under
+        // LockBasedStorageManager@420989af (TopDownAnalyzer for JVM)
+        throw AnvilCompilationExceptionClassReference(
+          classReference = mergeAnnotatedClass,
+          message = "It seems like you tried to contribute an inner class to its outer class. " +
+            "This is not supported and results in a compiler error.",
+          cause = e
+        )
       }
-      .flatMap {
-        it.annotations
-          .find(annotationName = contributesToFqName, scope = mergeScope)
+    }
+
+    val contributesAnnotations = mergeAnnotations
+      .flatMap { annotation ->
+        classScanner
+          .findContributedClasses(
+            module = module,
+            annotation = contributesToFqName,
+            scope = annotation.scope().fqName
+          )
+      }
+      .filter { clazz ->
+        clazz.isInterface() && clazz.annotations.find(daggerModuleFqName).singleOrNull() == null
+      }
+      .flatMap { clazz ->
+        clazz.annotations
+          .find(annotationName = contributesToFqName)
+          .filter { it.scope() in scopes }
       }
       .onEach { contributeAnnotation ->
         val contributedClass = contributeAnnotation.declaringClass()
         if (contributedClass.visibility() != PUBLIC) {
           throw AnvilCompilationExceptionClassReference(
-            contributedClass,
-            "${contributedClass.fqName} is contributed to the Dagger graph, but the " +
+            classReference = contributedClass,
+            message = "${contributedClass.fqName} is contributed to the Dagger graph, but the " +
               "interface is not public. Only public interfaces are supported."
           )
         }
@@ -93,7 +94,7 @@ internal class InterfaceMerger(
       // for replaced classes and the final result.
       .toList()
 
-    val replacedClasses = classes
+    val replacedClasses = contributesAnnotations
       .flatMap { contributeAnnotation ->
         val contributedClass = contributeAnnotation.declaringClass()
         contributedClass
@@ -111,19 +112,19 @@ internal class InterfaceMerger(
               )
             }
 
-            val scopes = classToReplace.annotations
+            val contributesToOurScope = classToReplace.annotations
               .findAll(
                 contributesToFqName, contributesBindingFqName, contributesMultibindingFqName
               )
               .map { it.scope() }
-
-            val contributesToOurScope = scopes.any { it == mergeScope }
+              .any { scope -> scope in scopes }
 
             if (!contributesToOurScope) {
               throw AnvilCompilationExceptionClassReference(
                 classReference = contributedClass,
-                message = "${contributedClass.fqName} with scope ${mergeScope.fqName} wants " +
-                  "to replace ${classToReplace.fqName}, but the replaced class isn't " +
+                message = "${contributedClass.fqName} with scopes " +
+                  "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
+                  "wants to replace ${classToReplace.fqName}, but the replaced class isn't " +
                   "contributed to the same scope."
               )
             }
@@ -131,24 +132,25 @@ internal class InterfaceMerger(
       }
       .toSet()
 
-    val excludedClasses = mergeAnnotation.exclude()
+    val excludedClasses = mergeAnnotations
+      .flatMap { it.exclude() }
       .filter { it.isInterface() }
       .onEach { excludedClass ->
-        val scopes = excludedClass.annotations
+        // Verify that the replaced classes use the same scope.
+        val contributesToOurScope = excludedClass.annotations
           .findAll(contributesToFqName, contributesBindingFqName, contributesMultibindingFqName)
           .map { it.scope() }
           .plus(
             excludedClass.annotations.find(contributesSubcomponentFqName).map { it.parentScope() }
           )
-
-        // Verify that the replaced classes use the same scope.
-        val contributesToOurScope = scopes.any { it == mergeScope }
+          .any { scope -> scope in scopes }
 
         if (!contributesToOurScope) {
           throw AnvilCompilationExceptionClassReference(
-            message = "${mergeAnnotatedClass.fqName} with scope ${mergeScope.fqName} wants to " +
-              "exclude ${excludedClass.fqName}, but the excluded class isn't contributed to the " +
-              "same scope.",
+            message = "${mergeAnnotatedClass.fqName} with scopes " +
+              "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
+              "wants to exclude ${excludedClass.fqName}, but the excluded class isn't " +
+              "contributed to the same scope.",
             classReference = mergeAnnotatedClass
           )
         }
@@ -163,31 +165,28 @@ internal class InterfaceMerger(
       if (intersect.isNotEmpty()) {
         throw AnvilCompilationExceptionClassReference(
           classReference = mergeAnnotatedClass,
-          message = "${mergeAnnotatedClass.clazz.name} excludes types that it implements or " +
+          message = "${mergeAnnotatedClass.fqName} excludes types that it implements or " +
             "extends. These types cannot be excluded. Look at all the super types to find these " +
-            "classes: ${intersect.joinToString { it.fqName.asString() }}"
+            "classes: ${intersect.joinToString { it.fqName.asString() }}."
         )
       }
     }
 
     @Suppress("ConvertCallChainIntoSequence")
-    val contributedClasses = classes
+    supertypes += contributesAnnotations
       .map { it.declaringClass() }
-      .filterNot {
-        replacedClasses.contains(it) || excludedClasses.contains(it)
+      .filter { clazz ->
+        clazz !in replacedClasses && clazz !in excludedClasses
       }
-      .plus(findContributedSubcomponentParentInterfaces(mergeAnnotatedClass, mergeScope, module))
+      .plus(findContributedSubcomponentParentInterfaces(mergeAnnotatedClass, scopes, module))
       // Avoids an error for repeated interfaces.
       .distinct()
       .map { it.clazz.defaultType }
-
-    supertypes += contributedClasses
-    super.addSyntheticSupertypes(mergeAnnotatedClass.clazz, supertypes)
   }
 
   private fun findContributedSubcomponentParentInterfaces(
     clazz: ClassReference,
-    scope: ClassReference,
+    scopes: Collection<ClassReference>,
     module: ModuleDescriptor
   ): Sequence<ClassReference.Descriptor> {
     return classScanner
@@ -197,7 +196,7 @@ internal class InterfaceMerger(
         scope = null
       )
       .filter {
-        it.atLeastOneAnnotation(contributesSubcomponentFqName).single().parentScope() == scope
+        it.atLeastOneAnnotation(contributesSubcomponentFqName).single().parentScope() in scopes
       }
       .mapNotNull { contributedSubcomponent ->
         contributedSubcomponent.classId

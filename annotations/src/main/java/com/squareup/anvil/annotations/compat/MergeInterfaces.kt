@@ -47,6 +47,7 @@ import kotlin.reflect.KClass
 
 @Target(CLASS)
 @Retention(RUNTIME)
+@Repeatable
 public annotation class MergeInterfaces(
   /**
    * The scope used to find all contributed component interfaces, which should be included in this

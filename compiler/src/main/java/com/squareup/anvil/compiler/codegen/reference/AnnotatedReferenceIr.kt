@@ -14,7 +14,15 @@ internal fun List<AnnotationReferenceIr>.find(
   scopeName: FqName? = null
 ): List<AnnotationReferenceIr> {
   return filter {
-    it.fqName == annotationName &&
-      (scopeName == null || it.scopeOrNull?.fqName == scopeName)
+    it.fqName == annotationName && (scopeName == null || it.scopeOrNull?.fqName == scopeName)
+  }
+}
+
+internal fun List<AnnotationReferenceIr>.findAll(
+  vararg annotationNames: FqName,
+  scopeName: FqName? = null
+): List<AnnotationReferenceIr> {
+  return filter {
+    it.fqName in annotationNames && (scopeName == null || it.scopeOrNull?.fqName == scopeName)
   }
 }
