@@ -6,6 +6,7 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.compiler.internal.testing.extends
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -620,6 +621,26 @@ class InterfaceMergerTest(
 
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
+    }
+  }
+
+  @Test fun `anonymous inner classes should not be evaluated`() {
+    compile(
+      """
+      package com.squareup.test
+
+      class NonContributingClass {
+        private val anonymousDoSomething = object : DoSomethingInterface {
+          override fun doSomething() = Unit
+        }
+      }
+      
+      interface DoSomethingInterface {
+        fun doSomething()
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
     }
   }
 }
