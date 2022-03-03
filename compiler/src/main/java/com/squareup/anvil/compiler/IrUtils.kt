@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
 import org.jetbrains.kotlin.ir.util.classId
 import org.jetbrains.kotlin.ir.util.fqNameWhenAvailable
+import org.jetbrains.kotlin.ir.util.isAnonymousObject
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 
@@ -52,3 +53,9 @@ internal val IrDeclarationWithName.fqName: FqName
   )
 
 internal val IrClassSymbol.fqName: FqName get() = owner.fqName
+
+// If we're evaluating an anonymous inner class, it cannot merge anything and will cause
+// a failure if we try to resolve its [ClassId]
+internal fun IrClass.shouldIgnore(): Boolean {
+  return classId == null || isAnonymousObject
+}

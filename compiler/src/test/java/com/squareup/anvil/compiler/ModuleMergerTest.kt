@@ -9,8 +9,10 @@ import com.squareup.anvil.compiler.internal.testing.daggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.daggerSubcomponent
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import dagger.Component
 import dagger.Subcomponent
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -1128,4 +1130,50 @@ class ModuleMergerTest(
 
   private val Class<*>.anyDaggerComponent: AnyDaggerComponent
     get() = anyDaggerComponent(annotationClass)
+
+  @Test fun `locally defined classes without a classId are skipped over when merging modules`() {
+    assumeTrue(USE_IR)
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      import dagger.Module
+      import dagger.Provides
+      $import
+
+      class Utils {
+        companion object {
+          val EXTRA_UTILS: ExtraUtils
+            get() {
+              // This is the key piece that we're making sure gets skipped during merging
+              class ExtraUtilsImpl : ExtraUtils {
+                override fun doSomething() = Unit
+              }
+              return ExtraUtilsImpl() 
+            }
+        }
+      }
+
+      interface ExtraUtils {
+        fun doSomething()
+      }
+
+      @ContributesTo(Any::class)
+      @Module
+      class DaggerModule1 {
+        @Provides
+        fun provideFunction(): Utils {
+          return Utils()
+        }
+      }
+
+      $annotation(scope = Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(ExitCode.OK)
+    }
+  }
 }
