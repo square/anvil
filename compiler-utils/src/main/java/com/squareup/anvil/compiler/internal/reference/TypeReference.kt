@@ -95,7 +95,7 @@ public sealed class TypeReference {
       ?: asTypeNameOrNull()
   }
 
-  public abstract fun isGenericType(): Boolean
+  public fun isGenericType(): Boolean = asClassReferenceOrNull()?.isGenericClass() ?: true
   public abstract fun isFunctionType(): Boolean
   public abstract fun isNullable(): Boolean
 
@@ -144,12 +144,6 @@ public sealed class TypeReference {
 
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): Psi? {
       return resolveTypeReference(implementingClass)
-    }
-
-    override fun isGenericType(): Boolean {
-      val children = type.typeElement?.children ?: return false
-
-      return children.size == 2 && children[1] is KtTypeArgumentList
     }
 
     /**
@@ -319,8 +313,6 @@ public sealed class TypeReference {
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): TypeReference? {
       return resolveGenericKotlinTypeOrNull(implementingClass)
     }
-
-    override fun isGenericType(): Boolean = asClassReferenceOrNull() != null
 
     /**
      * Safely resolves a [KotlinType], when that type reference is a generic expressed by a type
