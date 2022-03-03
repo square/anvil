@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
@@ -47,9 +46,7 @@ internal class ModuleMerger(
 ) : ExpressionCodegenExtension {
 
   override fun generateClassSyntheticParts(codegen: ImplementationBodyCodegen) {
-    // If we're evaluating an anonymous inner class, it cannot merge anything and will cause
-    // a failure if we try to resolve its [ClassId]
-    if (DescriptorUtils.isAnonymousObject(codegen.descriptor)) return
+    if (codegen.descriptor.shouldIgnore()) return
 
     val module = moduleDescriptorFactory.create(codegen.descriptor.module)
     val clazz = codegen.descriptor.toClassReference(module)

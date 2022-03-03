@@ -21,9 +21,12 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.internal.DoubleCheck
+import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.resolve.DescriptorUtils
+import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Qualifier
@@ -84,3 +87,9 @@ internal fun FqName.isAnvilModule(): Boolean {
 internal fun <T : ClassReference> ClassId.classReferenceOrNull(
   module: ModuleDescriptor
 ): T? = asSingleFqName().toClassReferenceOrNull(module) as T?
+
+// If we're evaluating an anonymous inner class, it cannot merge anything and will cause
+// a failure if we try to resolve its [ClassId]
+internal fun ClassDescriptor.shouldIgnore(): Boolean {
+  return classId == null || DescriptorUtils.isAnonymousObject(this)
+}

@@ -14,7 +14,6 @@ import com.squareup.anvil.compiler.internal.reference.toClassReference
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.types.KotlinType
@@ -31,9 +30,7 @@ internal class InterfaceMerger(
     thisDescriptor: ClassDescriptor,
     supertypes: MutableList<KotlinType>
   ) {
-    // If we're evaluating an anonymous inner class, it cannot merge anything and will cause
-    // a failure if we try to resolve its [ClassId]
-    if (DescriptorUtils.isAnonymousObject(thisDescriptor)) return
+    if (thisDescriptor.shouldIgnore()) return
 
     val module = moduleDescriptorFactory.create(thisDescriptor.module)
     val mergeAnnotatedClass = thisDescriptor.toClassReference(module)

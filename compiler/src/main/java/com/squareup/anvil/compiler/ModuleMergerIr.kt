@@ -23,7 +23,6 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
 import org.jetbrains.kotlin.ir.types.defaultType
 import org.jetbrains.kotlin.ir.types.impl.IrDynamicTypeImpl
 import org.jetbrains.kotlin.ir.util.defaultType
-import org.jetbrains.kotlin.ir.util.isAnonymousObject
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -40,9 +39,7 @@ internal class ModuleMergerIr(
     moduleFragment.transform(
       object : IrElementTransformerVoid() {
         override fun visitClass(declaration: IrClass): IrStatement {
-          // If we're evaluating an anonymous inner class, it cannot merge anything and will cause
-          // a failure if we try to resolve its [ClassId]
-          if (declaration.isAnonymousObject) return super.visitClass(declaration)
+          if (declaration.shouldIgnore()) return super.visitClass(declaration)
 
           val declarationReference = declaration.symbol.toClassReference(pluginContext)
           val annotationContext = AnnotationContext.create(declarationReference)
