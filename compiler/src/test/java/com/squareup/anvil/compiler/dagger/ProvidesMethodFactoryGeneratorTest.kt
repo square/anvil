@@ -16,6 +16,7 @@ import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.internal.Factory
@@ -3146,15 +3147,190 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
     }
   }
 
+  @Test fun `a provides method with nested generics but no explicit @JvmSuppressWildcards still adds @JvmSuppressWildcards in the generated code from another module`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.DaggerGenerated;
+import dagger.internal.Factory;
+import dagger.internal.Preconditions;
+import java.util.Map;
+import javax.annotation.processing.Generated;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class DaggerModule1_ProvideFunctionFactory implements Factory<Preference<Map<String, Boolean>>> {
+  @Override
+  public Preference<Map<String, Boolean>> get() {
+    return provideFunction();
+  }
+
+  public static DaggerModule1_ProvideFunctionFactory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static Preference<Map<String, Boolean>> provideFunction() {
+    return Preconditions.checkNotNullFromProvides(DaggerModule1.INSTANCE.provideFunction());
+  }
+
+  private static final class InstanceHolder {
+    private static final DaggerModule1_ProvideFunctionFactory INSTANCE = new DaggerModule1_ProvideFunctionFactory();
+  }
+}
+     */
+
+    val otherModuleResult = compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Singleton
+      
+      @Module
+      object DaggerModule1 {
+        @Provides
+        @Singleton
+        fun provideFunction(): Preference<Map<String, Boolean>> {
+          return object : Preference<Map<String, Boolean>> {
+            override fun get(): Map<String, Boolean> = mapOf(Pair("lorem", true))
+          }
+        }
+      }
+
+      interface Preference<T> {
+        fun get(): T
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(ExitCode.OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Component
+      import javax.inject.Singleton
+      
+      @Component(modules = [DaggerModule1::class])
+      @Singleton
+      interface ComponentInterface {
+        fun providesSomething(): Preference<Map<String, Boolean>>
+      }
+      """,
+      enableDagger = true,
+      previousCompilationResult = otherModuleResult
+    ) {
+      // We are not able to directly assert that @JvmSuppressWildcards was added because it is
+      // lost as part of converting to bytecode. However, we know that this would fail with an
+      // 'incompatible types' error if the annotation had not been included.
+      assertThat(exitCode).isEqualTo(ExitCode.OK)
+    }
+  }
+
+  @Test fun `a provides method with generics but no explicit @JvmSuppressWildcards still adds @JvmSuppressWildcards in the generated code from another module`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.DaggerGenerated;
+import dagger.internal.Factory;
+import dagger.internal.Preconditions;
+import java.util.Set;
+import javax.annotation.processing.Generated;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<String>> {
+  @Override
+  public Set<String> get() {
+    return provideFunction();
+  }
+
+  public static DaggerModule1_ProvideFunctionFactory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static Set<String> provideFunction() {
+    return Preconditions.checkNotNullFromProvides(DaggerModule1.INSTANCE.provideFunction());
+  }
+
+  private static final class InstanceHolder {
+    private static final DaggerModule1_ProvideFunctionFactory INSTANCE = new DaggerModule1_ProvideFunctionFactory();
+  }
+}
+     */
+
+    val otherModuleResult = compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Singleton
+      
+      @Module
+      object DaggerModule1 {
+        @Provides
+        @Singleton
+        fun provideFunction(): Set<String> {
+          return setOf("ipsum")
+        }
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(ExitCode.OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+
+      import dagger.Component
+      import javax.inject.Singleton
+
+      @Component(modules = [DaggerModule1::class])
+      @Singleton
+      interface ComponentInterface {
+        fun providesSomething(): Set<String>
+      }
+      """,
+      enableDagger = true,
+      previousCompilationResult = otherModuleResult
+    ) {
+      // We are not able to directly assert that @JvmSuppressWildcards was added because it is
+      // lost as part of converting to bytecode. However, we know that this would fail with an
+      // 'incompatible types' error if the annotation had not been included.
+      assertThat(exitCode).isEqualTo(ExitCode.OK)
+    }
+  }
+
   private fun compile(
     @Language("kotlin") vararg sources: String,
+    enableDagger: Boolean = useDagger,
+    previousCompilationResult: Result? = null,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
-    enableDaggerAnnotationProcessor = useDagger,
-    generateDaggerFactories = !useDagger,
+    enableDaggerAnnotationProcessor = enableDagger,
+    generateDaggerFactories = !enableDagger,
     useIR = USE_IR,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
-    block = block
+    block = block,
+    previousCompilationResult = previousCompilationResult
   )
 }
