@@ -189,6 +189,11 @@ public fun PsiElement.requireFqName(
       }
     }
 
+  // If there's an import alias, then we know the FqName.
+  importPaths
+    .singleOrNull { it.alias?.asString() == classReference }
+    ?.let { return it.fqName }
+
   containingKtFile.importDirectives
     .asSequence()
     .filter { it.isAllUnder }

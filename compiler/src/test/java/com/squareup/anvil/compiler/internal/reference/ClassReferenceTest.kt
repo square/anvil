@@ -273,6 +273,44 @@ class ClassReferenceTest {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
+
+  @Test fun `an import alias can be resolved`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.other.Other as Abc
+
+      class SomeClass1 : Abc
+      """,
+      """
+      package com.squareup.other
+      
+      interface Other
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          when (psiRef.shortName) {
+            "Other" -> Unit
+            "SomeClass1" -> {
+              assertThat(psiRef.directSuperClassReferences().single().fqName)
+                .isEqualTo(FqName("com.squareup.other.Other"))
+              assertThat(descriptorRef.directSuperClassReferences().single().fqName)
+                .isEqualTo(FqName("com.squareup.other.Other"))
+            }
+            else -> throw NotImplementedError(psiRef.shortName)
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
 }
 
 fun ClassReference.toDescriptorReference(): ClassReference.Descriptor {
