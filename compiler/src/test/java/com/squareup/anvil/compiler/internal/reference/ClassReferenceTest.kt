@@ -157,6 +157,89 @@ class ClassReferenceTest {
     }
   }
 
+  @Test fun `generic types are detected`() {
+    compile(
+      """
+      package com.squareup.test
+
+      class SomeClass1<T : List<String>>(
+        private val t: T
+      )
+      
+      abstract class SomeClass2 : Lazy<String> {
+        abstract fun string(): String
+      }
+
+      abstract class SomeClass3 {
+        abstract fun list(): List<String>
+      }
+
+      abstract class SomeClass4 {
+        abstract fun <T : List<T>> list(): T
+      }
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          when (psiRef.shortName) {
+            "SomeClass1" -> {
+              assertThat(psiRef.isGenericClass()).isTrue()
+              assertThat(descriptorRef.isGenericClass()).isTrue()
+
+              assertThat(
+                psiRef.constructors.single().parameters.single().type().isGenericType()
+              ).isTrue()
+              assertThat(
+                descriptorRef.constructors.single().parameters.single().type().isGenericType()
+              ).isTrue()
+            }
+            "SomeClass2" -> {
+              assertThat(psiRef.isGenericClass()).isFalse()
+              assertThat(descriptorRef.isGenericClass()).isFalse()
+
+              assertThat(psiRef.functions.single().returnType().isGenericType()).isFalse()
+              assertThat(
+                descriptorRef.functions.single { it.name == "string" }
+                  .returnType()
+                  .isGenericType()
+              ).isFalse()
+
+              assertThat(
+                psiRef.directSuperClassReferences().single().isGenericClass()
+              ).isTrue()
+              assertThat(
+                descriptorRef.directSuperClassReferences().single().isGenericClass()
+              ).isTrue()
+            }
+            "SomeClass3" -> {
+              assertThat(psiRef.functions.single().returnType().isGenericType()).isTrue()
+              assertThat(
+                descriptorRef.functions.single { it.name == "list" }
+                  .returnType()
+                  .isGenericType()
+              ).isTrue()
+            }
+            "SomeClass4" -> {
+              assertThat(psiRef.functions.single().returnType().isGenericType()).isTrue()
+              assertThat(
+                descriptorRef.functions.single { it.name == "list" }
+                  .returnType()
+                  .isGenericType()
+              ).isTrue()
+            }
+            else -> throw NotImplementedError(psiRef.shortName)
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
   @Test fun `an enum entry is a class`() {
     compile(
       """
