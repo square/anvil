@@ -1,16 +1,27 @@
 # Change Log
 
+## [Unreleased]
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+
 ## [2.4.0-M1] - 2022-03-03
 
 ### Added
 
 - Rewrote many of the internals of Anvil and as a result Anvil is up to 41% faster.
-- Automatically publish snapshot for the `main` branch.
+- Automatically publish snapshots for the `main` branch.
 - Documented Anvil's internal, see [here](https://github.com/square/anvil/blob/main/docs/INTERNALS.md).
-
-### Changed
-
-### Deprecated
 
 ### Removed
 
@@ -21,8 +32,6 @@
 
 - Generate code for `@ContributedSubcomponent`s when the trigger is created AFTER the contribution, see #478.
 - Properly parse the `FqName` if the type reference is an inner class, see #479.
-
-### Security
 
 
 ## [2.3.11] - 2022-01-28
@@ -435,7 +444,7 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.3.11...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.4.0-M1...HEAD
 [2.4.0-M1]: https://github.com/square/anvil/releases/tag/v2.4.0-M1
 [2.3.11]: https://github.com/square/anvil/releases/tag/v2.3.11
 [2.3.10]: https://github.com/square/anvil/releases/tag/v2.3.10
