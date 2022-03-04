@@ -2388,7 +2388,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       """
     ) {
       val factoryClass = componentInterface.anvilModule
-        .moduleFactoryClass("provideComSquareupTestContributingObject")
+        .moduleFactoryClass("provideComSquareupTestContributingObjectParentInterface")
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
@@ -2400,7 +2400,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedContributingObject = staticMethods
-        .single { it.name == "provideComSquareupTestContributingObject" }
+        .single { it.name == "provideComSquareupTestContributingObjectParentInterface" }
         .invoke(null)
 
       assertThat(providedContributingObject).isSameInstanceAs(factoryInstance.get())

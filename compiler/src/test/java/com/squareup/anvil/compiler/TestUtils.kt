@@ -46,6 +46,12 @@ internal val Result.innerInterface: Class<*>
 internal val Result.parentInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ParentInterface")
 
+internal val Result.parentInterface1: Class<*>
+  get() = classLoader.loadClass("com.squareup.test.ParentInterface1")
+
+internal val Result.parentInterface2: Class<*>
+  get() = classLoader.loadClass("com.squareup.test.ParentInterface2")
+
 internal val Result.componentInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ComponentInterface")
 

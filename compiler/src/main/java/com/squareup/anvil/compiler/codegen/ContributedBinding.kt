@@ -7,9 +7,7 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
-import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.kotlinpoet.AnnotationSpec
-import com.squareup.kotlinpoet.TypeName
 import org.jetbrains.kotlin.types.KotlinType
 import kotlin.LazyThreadSafetyMode.NONE
 
@@ -17,7 +15,7 @@ internal data class ContributedBinding(
   val contributedClass: ClassReference,
   val mapKeys: List<AnnotationSpec>,
   val qualifiers: List<AnnotationSpec>,
-  val boundTypeClassName: TypeName,
+  val boundType: ClassReference,
   val priority: Priority,
   val qualifiersKeyLazy: Lazy<String>
 )
@@ -44,7 +42,7 @@ internal fun AnnotationReference.toContributedBinding(
     contributedClass = declaringClass(),
     mapKeys = mapKeys,
     qualifiers = qualifiers,
-    boundTypeClassName = boundType.asClassName(),
+    boundType = boundType,
     priority = priority(),
     qualifiersKeyLazy = declaringClass().qualifiersKeyLazy(boundType, ignoreQualifier)
   )

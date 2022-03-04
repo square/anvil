@@ -309,7 +309,7 @@ private fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBi
   if (bindings.size > 1) {
     throw AnvilCompilationException(
       "There are multiple contributed bindings with the same bound type. The bound type is " +
-        "${bindings[0].boundTypeClassName}. The contributed binding classes are: " +
+        "${bindings[0].boundType.fqName}. The contributed binding classes are: " +
         bindings.joinToString(
           prefix = "[",
           postfix = "]"
@@ -326,11 +326,14 @@ private fun ContributedBinding.toGeneratedMethod(
 
   val isMapMultibinding = mapKeys.isNotEmpty()
 
+  val methodNameSubString = contributedClass.fqName.pathSegments()
+    .map { it.asString() }
+    .plus(boundType.shortName)
+
   return if (contributedClass.isObject()) {
     ProviderMethod(
       FunSpec.builder(
-        name = contributedClass.fqName.asString()
-          .split(".")
+        name = methodNameSubString
           .joinToString(
             separator = "",
             prefix = "provide",
@@ -348,15 +351,14 @@ private fun ContributedBinding.toGeneratedMethod(
         }
         .addAnnotations(qualifiers)
         .addAnnotations(mapKeys)
-        .returns(boundTypeClassName)
+        .returns(boundType.asClassName())
         .addStatement("return %T", contributedClass.asClassName())
         .build()
     )
   } else {
     BindingMethod(
       FunSpec.builder(
-        name = contributedClass.fqName.asString()
-          .split(".")
+        name = methodNameSubString
           .joinToString(
             separator = "",
             prefix = "bind",
@@ -379,7 +381,7 @@ private fun ContributedBinding.toGeneratedMethod(
           name = contributedClass.shortName.decapitalize(),
           type = contributedClass.asClassName()
         )
-        .returns(boundTypeClassName)
+        .returns(boundType.asClassName())
         .build()
     )
   }

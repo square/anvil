@@ -381,7 +381,7 @@ class ContributesBindingGeneratorTest {
     }
   }
 
-  @Test fun `multiple annotations with the same scope aren't allowed`() {
+  @Test fun `multiple annotations with the same scope and bound type aren't allowed`() {
     assumeIrBackend()
 
     compile(
@@ -401,10 +401,35 @@ class ContributesBindingGeneratorTest {
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
-        "com.squareup.test.ContributingInterface contributes multiple times to the same scope: " +
-          "[Any, Unit]. Contributing multiple times to the same scope is forbidden and all " +
-          "scopes must be distinct."
+        "com.squareup.test.ContributingInterface contributes multiple times to the same scope " +
+          "using the same bound type: [ParentInterface]. Contributing multiple times to the " +
+          "same scope with the same bound type is forbidden and all scope - bound type " +
+          "combinations must be distinct."
       )
+    }
+  }
+
+  @Test fun `multiple annotations with the same scope and different bound type are allowed`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+
+      interface ParentInterface1
+      interface ParentInterface2
+
+      @ContributesBinding(Any::class, boundType = ParentInterface1::class)
+      @ContributesBinding(Any::class, boundType = ParentInterface2::class)
+      @ContributesBinding(Unit::class, boundType = ParentInterface1::class)
+      @ContributesBinding(Unit::class, boundType = ParentInterface2::class)
+      class ContributingInterface : ParentInterface1, ParentInterface2
+      """
+    ) {
+      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintBindingScopes).containsExactly(Any::class, Unit::class)
     }
   }
 }

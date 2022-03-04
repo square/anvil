@@ -61,7 +61,8 @@ internal class ContributesBindingGenerator : CodeGenerator {
 
         val scopes = clazz.annotations
           .find(contributesBindingFqName)
-          .also { it.checkNoDuplicateScope(contributeAnnotation = true) }
+          .also { it.checkNoDuplicateScopeAndBoundType() }
+          .distinctBy { it.scope() }
           // Give it a stable sort.
           .sortedBy { it.scope() }
           .map { it.scope().asClassName() }
