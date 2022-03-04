@@ -4,8 +4,8 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.extends
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -216,6 +216,7 @@ class InterfaceMergerTest(
       $import
       
       @ContributesTo(Unit::class)
+      @ContributesTo(Int::class)
       interface ContributingInterface
       
       @ContributesTo(
@@ -231,11 +232,11 @@ class InterfaceMergerTest(
       assertThat(exitCode).isError()
       // Position to the class. Unfortunately, a different error is reported that the class is
       // missing an @Module annotation.
-      assertThat(messages).contains("Source0.kt: (13, 11)")
+      assertThat(messages).contains("Source0.kt: (14, 11)")
       assertThat(messages).contains(
         "com.squareup.test.SecondContributingInterface with scope kotlin.Any wants to replace " +
-          "com.squareup.test.ContributingInterface with scope kotlin.Unit. The replacement " +
-          "must use the same scope."
+          "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
+          "to the same scope."
       )
     }
   }
@@ -322,8 +323,8 @@ class InterfaceMergerTest(
       assertThat(messages).contains("Source0.kt: (18, 11)")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
-          "com.squareup.test.ContributingInterface with scope kotlin.Unit. The exclusion " +
-          "must use the same scope."
+          "com.squareup.test.ContributingInterface, but the excluded class isn't contributed " +
+          "to the same scope."
       )
     }
   }
@@ -516,11 +517,10 @@ class InterfaceMergerTest(
       }
       """
     ) {
-      assertThat(exitCode).isEqualTo(INTERNAL_ERROR)
-      // Position to the class.
+      assertThat(exitCode).isError()
       assertThat(messages).contains(
-        "org.jetbrains.kotlin.util.KotlinFrontEndException: " +
-          "Exception while analyzing expression at (6,4"
+        "It seems like you tried to contribute an inner class to its outer class. This is " +
+          "not supported and results in a compiler error."
       )
     }
   }
@@ -641,6 +641,223 @@ class InterfaceMergerTest(
       """
     ) {
       assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test fun `interfaces contributed to multiple scopes are merged successfully`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Any::class)
+      @ContributesTo(Unit::class)
+      interface ContributingInterface
+      
+      @ContributesTo(Any::class)
+      interface SecondContributingInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """
+    ) {
+      assertThat(componentInterface extends contributingInterface).isTrue()
+      assertThat(componentInterface extends secondContributingInterface).isTrue()
+      assertThat(subcomponentInterface extends contributingInterface).isTrue()
+      assertThat(subcomponentInterface extends secondContributingInterface).isFalse()
+    }
+  }
+
+  @Test
+  fun `interfaces contributed to multiple scopes are merged successfully with multiple compilations`() {
+    assumeIrBackend()
+
+    val firstResult = compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+
+      @ContributesTo(Any::class)
+      @ContributesTo(Unit::class)
+      interface ContributingInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Any::class)
+      interface SecondContributingInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """,
+      previousCompilationResult = firstResult
+    ) {
+      assertThat(componentInterface extends contributingInterface).isTrue()
+      assertThat(componentInterface extends secondContributingInterface).isTrue()
+      assertThat(subcomponentInterface extends contributingInterface).isTrue()
+      assertThat(subcomponentInterface extends secondContributingInterface).isFalse()
+    }
+  }
+
+  @Test fun `interfaces contributed to multiple scopes can be replaced`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Any::class)
+      @ContributesTo(Unit::class)
+      interface ContributingInterface
+      
+      @ContributesTo(Any::class, replaces = [ContributingInterface::class])
+      interface SecondContributingInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """
+    ) {
+      assertThat(componentInterface extends contributingInterface).isFalse()
+      assertThat(componentInterface extends secondContributingInterface).isTrue()
+      assertThat(subcomponentInterface extends contributingInterface).isTrue()
+      assertThat(subcomponentInterface extends secondContributingInterface).isFalse()
+    }
+  }
+
+  @Test
+  fun `replaced interfaces contributed to multiple scopes must use the same scope`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Any::class)
+      @ContributesTo(Unit::class)
+      interface ContributingInterface
+      
+      @ContributesTo(Int::class, replaces = [ContributingInterface::class])
+      interface SecondContributingInterface
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      
+      $annotation(Unit::class)
+      interface SubcomponentInterface1
+      
+      $annotation(Int::class)
+      interface SubcomponentInterface2
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains(
+        "com.squareup.test.SecondContributingInterface with scope kotlin.Int wants to " +
+          "replace com.squareup.test.ContributingInterface, but the replaced class isn't " +
+          "contributed to the same scope."
+      )
+    }
+  }
+
+  @Test fun `interfaces contributed to multiple scopes can be excluded in one scope`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @ContributesTo(Any::class)
+      @ContributesTo(Unit::class)
+      interface ContributingInterface
+      
+      @ContributesTo(Any::class)
+      interface SecondContributingInterface
+      
+      $annotation(Any::class, exclude = [ContributingInterface::class])
+      interface ComponentInterface
+      
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """
+    ) {
+      assertThat(componentInterface extends contributingInterface).isFalse()
+      assertThat(componentInterface extends secondContributingInterface).isTrue()
+      assertThat(subcomponentInterface extends contributingInterface).isTrue()
+      assertThat(subcomponentInterface extends secondContributingInterface).isFalse()
+    }
+  }
+
+  @Test fun `contributed interfaces in the old format are picked up`() {
+    val result = AnvilCompilation()
+      .useIR(USE_IR)
+      .configureAnvil(enableAnvil = false)
+      .compile(
+        """
+        package com.squareup.test
+      
+        import com.squareup.anvil.annotations.ContributesTo
+        $import
+        
+        @ContributesTo(Any::class)
+        interface ContributingInterface  
+        """,
+        """
+        package anvil.hint.merge.com.squareup.test
+
+        import com.squareup.test.ContributingInterface
+        import kotlin.reflect.KClass
+        
+        public val com_squareup_test_ContributingInterface_reference: KClass<ContributingInterface> = ContributingInterface::class
+        
+        // Note that the number is missing after the scope. 
+        public val com_squareup_test_ContributingInterface_scope: KClass<Any> = Any::class
+        """.trimIndent()
+      ) {
+        assertThat(exitCode).isEqualTo(OK)
+      }
+
+    compile(
+      """
+      package com.squareup.test
+      
+      $import
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """,
+      previousCompilationResult = result
+    ) {
+      assertThat(componentInterface extends contributingInterface).isTrue()
     }
   }
 }

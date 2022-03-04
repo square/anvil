@@ -76,8 +76,13 @@ internal class ContributesToGenerator : CodeGenerator {
         val className = clazz.asClassName()
         val classFqName = clazz.fqName.toString()
         val propertyName = classFqName.replace('.', '_')
-        val scope = clazz.annotations.single { it.fqName == contributesToFqName }
-          .scope().asClassName()
+
+        val scopes = clazz.annotations
+          .find(contributesToFqName)
+          .also { it.checkNoDuplicateScope() }
+          // Give it a stable sort.
+          .sortedBy { it.scope() }
+          .map { it.scope().asClassName() }
 
         val content =
           FileSpec.buildFile(generatedPackage, fileName) {
@@ -92,16 +97,18 @@ internal class ContributesToGenerator : CodeGenerator {
                 .build()
             )
 
-            addProperty(
-              PropertySpec
-                .builder(
-                  name = propertyName + SCOPE_SUFFIX,
-                  type = KClass::class.asClassName().parameterizedBy(scope)
-                )
-                .initializer("%T::class", scope)
-                .addModifiers(PUBLIC)
-                .build()
-            )
+            scopes.forEachIndexed { index, scope ->
+              addProperty(
+                PropertySpec
+                  .builder(
+                    name = propertyName + SCOPE_SUFFIX + index,
+                    type = KClass::class.asClassName().parameterizedBy(scope)
+                  )
+                  .initializer("%T::class", scope)
+                  .addModifiers(PUBLIC)
+                  .build()
+              )
+            }
           }
 
         createGeneratedFile(

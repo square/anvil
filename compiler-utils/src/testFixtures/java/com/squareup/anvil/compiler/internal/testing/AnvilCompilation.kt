@@ -37,9 +37,15 @@ public class AnvilCompilation internal constructor(
     disableComponentMerging: Boolean = false,
     enableExperimentalAnvilApis: Boolean = true,
     codeGenerators: List<CodeGenerator> = emptyList(),
+    enableAnvil: Boolean = true,
   ) = apply {
     checkNotCompiled()
+    check(!anvilConfigured) { "Anvil should not be configured twice." }
+
     anvilConfigured = true
+
+    if (!enableAnvil) return@apply
+
     kotlinCompilation.apply {
       compilerPlugins = listOf(
         AnvilComponentRegistrar().also { it.addCodeGenerators(codeGenerators) }

@@ -81,7 +81,6 @@ internal class ModuleMergerIr(
       .findContributedClasses(
         pluginContext = pluginContext,
         moduleFragment = moduleFragment,
-        packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
         annotation = contributesToFqName,
         scope = scope,
         moduleDescriptorFactory = moduleDescriptorFactory
@@ -96,9 +95,8 @@ internal class ModuleMergerIr(
         // this specific class.
         !it.fqName.isAnvilModule() || it.fqName == anvilModuleName
       }
-      .mapNotNull {
+      .flatMap {
         it.annotations.find(annotationName = contributesToFqName, scopeName = scope.fqName)
-          .singleOrNull()
       }
       .filter { contributesAnnotation ->
         val contributedClass = contributesAnnotation.declaringClass
@@ -137,31 +135,19 @@ internal class ModuleMergerIr(
     val excludedModules = annotation
       .excludedClasses
       .onEach { excludedClass ->
-        val contributesToAnnotation = excludedClass
-          .annotations.find(contributesToFqName).singleOrNull()
-        val contributesBindingAnnotation = excludedClass
-          .annotations.find(contributesBindingFqName).singleOrNull()
-        val contributesMultibindingAnnotation = excludedClass
-          .annotations.find(contributesMultibindingFqName).singleOrNull()
-        val contributesSubcomponentAnnotation = excludedClass
-          .annotations.find(contributesSubcomponentFqName).singleOrNull()
+        val scopes = excludedClass.annotations.find(contributesToFqName).map { it.scope } +
+          excludedClass.annotations.find(contributesBindingFqName).map { it.scope } +
+          excludedClass.annotations.find(contributesMultibindingFqName).map { it.scope } +
+          excludedClass.annotations.find(contributesSubcomponentFqName).map { it.parentScope }
 
         // Verify that the replaced classes use the same scope.
-        val scopeOfExclusion = contributesToAnnotation?.scope
-          ?: contributesBindingAnnotation?.scope
-          ?: contributesMultibindingAnnotation?.scope
-          ?: contributesSubcomponentAnnotation?.parentScope
-          ?: throw AnvilCompilationExceptionClassReferenceIr(
-            message = "Could not determine the scope of the excluded class " +
-              "${excludedClass.fqName}.",
-            classReference = declaration
-          )
+        val contributesToOurScope = scopes.any { it == scope }
 
-        if (scopeOfExclusion != scope) {
+        if (!contributesToOurScope) {
           throw AnvilCompilationExceptionClassReferenceIr(
             message = "${declaration.fqName} with scope ${scope.fqName} wants to exclude " +
-              "${excludedClass.fqName} with scope ${scopeOfExclusion.fqName}. The exclusion must " +
-              "use the same scope.",
+              "${excludedClass.fqName}, but the excluded class isn't contributed to the " +
+              "same scope.",
             classReference = declaration
           )
         }
@@ -202,21 +188,17 @@ internal class ModuleMergerIr(
         .findContributedClasses(
           pluginContext = pluginContext,
           moduleFragment = moduleFragment,
-          packageName = hintPackagePrefix,
           annotation = annotationFqName,
           scope = scope,
           moduleDescriptorFactory = moduleDescriptorFactory
         )
         .flatMap { contributedClass ->
-          val annotation = contributedClass.annotations.find(annotationFqName).single()
-          if (scope == annotation.scope) {
-            annotation.replacedClasses
-              .onEach { classToReplace ->
-                checkSameScope(contributedClass, classToReplace, scope)
-              }
-          } else {
-            emptyList()
-          }
+          contributedClass.annotations
+            .find(annotationName = annotationFqName, scopeName = scope.fqName)
+            .flatMap { it.replacedClasses }
+            .onEach { classToReplace ->
+              checkSameScope(contributedClass, classToReplace, scope)
+            }
         }
     }
 
@@ -331,29 +313,18 @@ internal class ModuleMergerIr(
     classToReplace: ClassReferenceIr,
     scope: ClassReferenceIr
   ) {
-    val contributesToAnnotation = classToReplace
-      .annotations.find(contributesToFqName).singleOrNull()
-    val contributesBindingAnnotation = classToReplace
-      .annotations.find(contributesBindingFqName).singleOrNull()
-    val contributesMultibindingAnnotation = classToReplace
-      .annotations.find(contributesMultibindingFqName).singleOrNull()
+    val scopes = classToReplace.annotations.find(contributesToFqName).map { it.scope } +
+      classToReplace.annotations.find(contributesBindingFqName).map { it.scope } +
+      classToReplace.annotations.find(contributesMultibindingFqName).map { it.scope }
 
-    // Verify that the replaced classes use the same scope.
-    val scopeOfReplacement = contributesToAnnotation?.scope
-      ?: contributesBindingAnnotation?.scope
-      ?: contributesMultibindingAnnotation?.scope
-      ?: throw AnvilCompilationExceptionClassReferenceIr(
-        message = "Could not determine the scope of the replaced class " +
-          "${classToReplace.fqName}.",
-        classReference = contributedClass
-      )
+    val contributesToOurScope = scopes.any { it == scope }
 
-    if (scopeOfReplacement != scope) {
+    if (!contributesToOurScope) {
       throw AnvilCompilationExceptionClassReferenceIr(
+        classReference = contributedClass,
         message = "${contributedClass.fqName} with scope ${scope.fqName} wants to replace " +
-          "${classToReplace.fqName} with scope ${scopeOfReplacement.fqName}. The " +
-          "replacement must use the same scope.",
-        classReference = contributedClass
+          "${classToReplace.fqName}, but the replaced class isn't " +
+          "contributed to the same scope."
       )
     }
   }
@@ -368,13 +339,12 @@ internal class ModuleMergerIr(
       .findContributedClasses(
         pluginContext = pluginContext,
         moduleFragment = moduleFragment,
-        packageName = HINT_SUBCOMPONENTS_PACKAGE_PREFIX,
         annotation = contributesSubcomponentFqName,
         scope = null,
         moduleDescriptorFactory = moduleDescriptorFactory
       )
-      .filter {
-        it.annotations.find(contributesSubcomponentFqName).single().parentScope == scope
+      .filter { clazz ->
+        clazz.annotations.find(contributesSubcomponentFqName).any { it.parentScope == scope }
       }
       .mapNotNull { contributedSubcomponent ->
         contributedSubcomponent.classId

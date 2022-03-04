@@ -4,7 +4,6 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.ANVIL_SUBCOMPONENT_SUFFIX
 import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.ClassScanner
-import com.squareup.anvil.compiler.HINT_SUBCOMPONENTS_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
@@ -397,7 +396,6 @@ internal class ContributesSubcomponentHandlerGenerator(
     contributions += classScanner
       .findContributedClasses(
         module = module,
-        packageName = HINT_SUBCOMPONENTS_PACKAGE_PREFIX,
         annotation = contributesSubcomponentFqName,
         scope = null
       )

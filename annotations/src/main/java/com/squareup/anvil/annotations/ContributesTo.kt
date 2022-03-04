@@ -38,6 +38,7 @@ import kotlin.reflect.KClass
  */
 @Target(CLASS)
 @Retention(RUNTIME)
+@Repeatable
 public annotation class ContributesTo(
   /**
    * The scope in which to include this module.

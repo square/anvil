@@ -3,9 +3,6 @@ package com.squareup.anvil.compiler.codegen
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.ANVIL_MODULE_SUFFIX
 import com.squareup.anvil.compiler.ClassScanner
-import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
-import com.squareup.anvil.compiler.HINT_CONTRIBUTES_PACKAGE_PREFIX
-import com.squareup.anvil.compiler.HINT_MULTIBINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
@@ -142,7 +139,7 @@ internal class BindingModuleGenerator(
     module: ModuleDescriptor
   ): Collection<GeneratedFile> {
     return mergedClasses.map { (mergedClassKey, daggerModuleFile) ->
-      val scope = mergedClassKey.scope.fqName
+      val scope = mergedClassKey.scope
 
       // Precompute this list once per class since it's expensive.
       val excludedNames = excludedTypesForClass[mergedClassKey].orEmpty()
@@ -154,31 +151,22 @@ internal class BindingModuleGenerator(
       // and types can be an expensive operation, so avoid doing it twice.
       val bindingsReplacedInDaggerModules = contributedModuleClasses
         .asSequence()
-        .filter { clazz ->
-          clazz.annotations.single { it.fqName == contributesToFqName }
-            .scope()
-            .fqName == scope
-        }
-        // Ignore replaced bindings specified by excluded modules for this scope.
-        .filter { clazz -> clazz !in excludedNames }
-        .flatMap { clazz ->
-          clazz.annotations.single { it.fqName == contributesToFqName }.replaces()
-        }
         .plus(
           classScanner
             .findContributedClasses(
               module = module,
-              packageName = HINT_CONTRIBUTES_PACKAGE_PREFIX,
               annotation = contributesToFqName,
-              scope = scope
+              scope = scope.fqName
             )
             .filter { it.isAnnotatedWith(daggerModuleFqName) }
-            // Ignore replaced bindings specified by excluded modules for this scope.
-            .filter { it !in excludedNames }
-            .flatMap { clazz ->
-              clazz.annotations.single { it.fqName == contributesToFqName }.replaces()
-            }
         )
+        // Ignore replaced bindings specified by excluded modules for this scope.
+        .filter { clazz -> clazz !in excludedNames }
+        .flatMap { clazz ->
+          clazz.annotations
+            .filter { it.fqName == contributesToFqName && it.scope() == scope }
+            .flatMap { it.replaces() }
+        }
         .toList()
 
       // Note that this is an inner function to share some of the parameters. It computes all
@@ -187,16 +175,14 @@ internal class BindingModuleGenerator(
       // multibinding methods.
       fun getContributedBindingClasses(
         collectedClasses: List<ClassReference>,
-        hintPackagePrefix: String,
         annotationFqName: FqName,
         isMultibinding: Boolean
       ): List<GeneratedMethod> {
 
         val contributedBindingsDependencies = classScanner.findContributedClasses(
           module,
-          packageName = hintPackagePrefix,
           annotation = annotationFqName,
-          scope = scope
+          scope = scope.fqName
         )
 
         val allContributedClasses = collectedClasses
@@ -214,7 +200,7 @@ internal class BindingModuleGenerator(
           .filterNot { it in excludedNames }
           .filter { clazz ->
             clazz.annotations
-              .find(annotationName = annotationFqName, scopeName = scope)
+              .find(annotationName = annotationFqName, scopeName = scope.fqName)
               .isNotEmpty()
           }
           .map { clazz ->
@@ -238,18 +224,16 @@ internal class BindingModuleGenerator(
 
       val generatedMethods = getContributedBindingClasses(
         collectedClasses = contributedBindingClasses,
-        hintPackagePrefix = HINT_BINDING_PACKAGE_PREFIX,
         annotationFqName = contributesBindingFqName,
         isMultibinding = false
       ) + getContributedBindingClasses(
         collectedClasses = contributedMultibindingClasses,
-        hintPackagePrefix = HINT_MULTIBINDING_PACKAGE_PREFIX,
         annotationFqName = contributesMultibindingFqName,
         isMultibinding = true
       )
 
       val content = daggerModuleContent(
-        scope = scope.asString(),
+        scope = scope.fqName.asString(),
         clazz = mergedClassKey.clazz,
         generatedMethods = generatedMethods
       )
