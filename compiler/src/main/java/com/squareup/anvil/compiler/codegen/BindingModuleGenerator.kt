@@ -164,7 +164,7 @@ internal class BindingModuleGenerator(
         .filter { clazz -> clazz !in excludedNames }
         .flatMap { clazz ->
           clazz.annotations
-            .filter { it.fqName == contributesToFqName && it.scope() == scope }
+            .find(annotationName = contributesToFqName, scope = scope)
             .flatMap { it.replaces() }
         }
         .toList()
@@ -200,7 +200,7 @@ internal class BindingModuleGenerator(
           .filterNot { it in excludedNames }
           .filter { clazz ->
             clazz.annotations
-              .find(annotationName = annotationFqName, scopeName = scope.fqName)
+              .find(annotationName = annotationFqName, scope = scope)
               .isNotEmpty()
           }
           .map { clazz ->

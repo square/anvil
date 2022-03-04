@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.atLeastOneAnnotation
 import com.squareup.anvil.compiler.codegen.find
+import com.squareup.anvil.compiler.codegen.findAll
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
 import com.squareup.anvil.compiler.codegen.parentScope
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
@@ -76,7 +77,7 @@ internal class InterfaceMerger(
       }
       .flatMap {
         it.annotations
-          .find(annotationName = contributesToFqName, scopeName = mergeScope.fqName)
+          .find(annotationName = contributesToFqName, scope = mergeScope)
       }
       .onEach { contributeAnnotation ->
         val contributedClass = contributeAnnotation.declaringClass()
@@ -110,9 +111,11 @@ internal class InterfaceMerger(
               )
             }
 
-            val scopes = classToReplace.annotations.find(contributesToFqName).map { it.scope() } +
-              classToReplace.annotations.find(contributesBindingFqName).map { it.scope() } +
-              classToReplace.annotations.find(contributesMultibindingFqName).map { it.scope() }
+            val scopes = classToReplace.annotations
+              .findAll(
+                contributesToFqName, contributesBindingFqName, contributesMultibindingFqName
+              )
+              .map { it.scope() }
 
             val contributesToOurScope = scopes.any { it == mergeScope }
 
@@ -131,10 +134,12 @@ internal class InterfaceMerger(
     val excludedClasses = mergeAnnotation.exclude()
       .filter { it.isInterface() }
       .onEach { excludedClass ->
-        val scopes = excludedClass.annotations.find(contributesToFqName).map { it.scope() } +
-          excludedClass.annotations.find(contributesBindingFqName).map { it.scope() } +
-          excludedClass.annotations.find(contributesMultibindingFqName).map { it.scope() } +
-          excludedClass.annotations.find(contributesSubcomponentFqName).map { it.parentScope() }
+        val scopes = excludedClass.annotations
+          .findAll(contributesToFqName, contributesBindingFqName, contributesMultibindingFqName)
+          .map { it.scope() }
+          .plus(
+            excludedClass.annotations.find(contributesSubcomponentFqName).map { it.parentScope() }
+          )
 
         // Verify that the replaced classes use the same scope.
         val contributesToOurScope = scopes.any { it == mergeScope }
