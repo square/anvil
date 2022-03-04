@@ -190,7 +190,9 @@ internal class BindingModuleGenerator(
 
         val replacedBindings = allContributedClasses
           .flatMap { classReference ->
-            classReference.annotations.single { it.fqName == annotationFqName }.replaces()
+            classReference.annotations
+              .find(annotationName = annotationFqName, scope = scope)
+              .flatMap { it.replaces() }
           }
 
         return allContributedClasses
@@ -198,17 +200,11 @@ internal class BindingModuleGenerator(
           .filterNot { it in replacedBindings }
           .filterNot { it in bindingsReplacedInDaggerModules }
           .filterNot { it in excludedNames }
-          .filter { clazz ->
+          .flatMap { clazz ->
             clazz.annotations
               .find(annotationName = annotationFqName, scope = scope)
-              .isNotEmpty()
-          }
-          .map { clazz ->
-            clazz.annotations
-              .filter { it.fqName == annotationFqName }
               .map { it.toContributedBinding(isMultibinding) }
           }
-          .flatten()
           .let { bindings ->
             if (isMultibinding) {
               bindings

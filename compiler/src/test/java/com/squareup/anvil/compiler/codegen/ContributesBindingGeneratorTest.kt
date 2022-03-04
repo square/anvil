@@ -1,14 +1,18 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.hintBinding
 import com.squareup.anvil.compiler.hintBindingScope
+import com.squareup.anvil.compiler.hintBindingScopes
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.secondContributingInterface
 import org.junit.Test
 import java.io.File
 
+@Suppress("RemoveRedundantQualifierName")
 class ContributesBindingGeneratorTest {
 
   @Test fun `there is a hint for a contributed binding for interfaces`() {
@@ -301,6 +305,105 @@ class ContributesBindingGeneratorTest {
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface contributes a binding for " +
           "com.squareup.test.ParentInterface, but doesn't extend this type."
+      )
+    }
+  }
+
+  @Test fun `there are multiple hints for multiple contributed bindings`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+
+      interface ParentInterface
+
+      @ContributesBinding(Any::class)
+      @ContributesBinding(Unit::class)
+      class ContributingInterface : ParentInterface
+      """
+    ) {
+      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintBindingScopes).containsExactly(Any::class, Unit::class)
+    }
+  }
+
+  @Test fun `the scopes for multiple contributions have a stable sort`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+
+      interface ParentInterface
+
+      @ContributesBinding(Any::class)
+      @ContributesBinding(Unit::class)
+      class ContributingInterface : ParentInterface
+      
+      @ContributesBinding(Unit::class)
+      @ContributesBinding(Any::class)
+      class SecondContributingInterface : ParentInterface
+      """
+    ) {
+      assertThat(contributingInterface.hintBindingScopes)
+        .containsExactly(Any::class, Unit::class)
+        .inOrder()
+
+      assertThat(secondContributingInterface.hintBindingScopes)
+        .containsExactly(Any::class, Unit::class)
+        .inOrder()
+    }
+  }
+
+  @Test fun `there are multiple hints for contributed bindings with fully qualified names`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+      
+      interface ParentInterface
+
+      @ContributesBinding(Any::class)
+      @com.squareup.anvil.annotations.ContributesBinding(Unit::class)
+      class ContributingInterface : ParentInterface
+      """
+    ) {
+      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintBindingScopes).containsExactly(Any::class, Unit::class)
+    }
+  }
+
+  @Test fun `multiple annotations with the same scope aren't allowed`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+
+      interface ParentInterface
+
+      @ContributesBinding(Any::class)
+      @ContributesBinding(Any::class, replaces = [Int::class])
+      @ContributesBinding(Unit::class)
+      @ContributesBinding(Unit::class, replaces = [Int::class])
+      class ContributingInterface : ParentInterface
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains(
+        "com.squareup.test.ContributingInterface contributes multiple times to the same scope: " +
+          "[Any, Unit]. Contributing multiple times to the same scope is forbidden and all " +
+          "scopes must be distinct."
       )
     }
   }

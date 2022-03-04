@@ -1,17 +1,21 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.hintMultibinding
 import com.squareup.anvil.compiler.hintMultibindingScope
+import com.squareup.anvil.compiler.hintMultibindingScopes
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.mergeComponentFqName
+import com.squareup.anvil.compiler.secondContributingInterface
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.junit.Test
 import java.io.File
 
+@Suppress("RemoveRedundantQualifierName")
 class ContributesMultibindingGeneratorTest {
 
   @Test fun `there is a hint for a contributed multibinding for interfaces`() {
@@ -395,6 +399,107 @@ class ContributesMultibindingGeneratorTest {
     ) {
       assertThat(exitCode).isEqualTo(OK)
       assertThat(contributingInterface.hintMultibindingScope).isEqualTo(Any::class)
+    }
+  }
+
+  @Test fun `there are multiple hints for multiple contributed multibindings`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+
+      interface ParentInterface
+
+      @ContributesMultibinding(Any::class)
+      @ContributesMultibinding(Unit::class)
+      class ContributingInterface : ParentInterface
+      """
+    ) {
+      assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintMultibindingScopes)
+        .containsExactly(Any::class, Unit::class)
+    }
+  }
+
+  @Test fun `the scopes for multiple contributions have a stable sort`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+
+      interface ParentInterface
+
+      @ContributesMultibinding(Any::class)
+      @ContributesMultibinding(Unit::class)
+      class ContributingInterface : ParentInterface
+      
+      @ContributesMultibinding(Unit::class)
+      @ContributesMultibinding(Any::class)
+      class SecondContributingInterface : ParentInterface
+      """
+    ) {
+      assertThat(contributingInterface.hintMultibindingScopes)
+        .containsExactly(Any::class, Unit::class)
+        .inOrder()
+
+      assertThat(secondContributingInterface.hintMultibindingScopes)
+        .containsExactly(Any::class, Unit::class)
+        .inOrder()
+    }
+  }
+
+  @Test fun `there are multiple hints for contributed multibindings with fully qualified names`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      
+      interface ParentInterface
+
+      @ContributesMultibinding(Any::class)
+      @com.squareup.anvil.annotations.ContributesMultibinding(Unit::class)
+      class ContributingInterface : ParentInterface
+      """
+    ) {
+      assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintMultibindingScopes)
+        .containsExactly(Any::class, Unit::class)
+    }
+  }
+
+  @Test fun `multiple annotations with the same scope aren't allowed`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+
+      interface ParentInterface
+
+      @ContributesMultibinding(Any::class)
+      @ContributesMultibinding(Any::class, replaces = [Int::class])
+      @ContributesMultibinding(Unit::class)
+      @ContributesMultibinding(Unit::class, replaces = [Int::class])
+      class ContributingInterface : ParentInterface
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains(
+        "com.squareup.test.ContributingInterface contributes multiple times to the same scope: " +
+          "[Any, Unit]. Contributing multiple times to the same scope is forbidden and all " +
+          "scopes must be distinct."
+      )
     }
   }
 }
