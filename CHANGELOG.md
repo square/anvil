@@ -1,9 +1,10 @@
 # Change Log
 
-## [Unreleased]
+## [2.4.0-M1]
 
 ### Added
 
+- Rewrote many of the internals of Anvil and as a result Anvil is up to 41% faster.
 - Automatically publish snapshot for the `main` branch.
 - Documented Anvil's internal, see [here](https://github.com/square/anvil/blob/main/docs/INTERNALS.md).
 
