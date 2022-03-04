@@ -1,6 +1,6 @@
 # Change Log
 
-## [2.4.0-M1]
+## [2.4.0-M1] - 2022-03-03
 
 ### Added
 
@@ -436,6 +436,7 @@
 
 
 [Unreleased]: https://github.com/square/anvil/compare/v2.3.11...HEAD
+[2.4.0-M1]: https://github.com/square/anvil/releases/tag/v2.4.0-M1
 [2.3.11]: https://github.com/square/anvil/releases/tag/v2.3.11
 [2.3.10]: https://github.com/square/anvil/releases/tag/v2.3.10
 [2.3.9]: https://github.com/square/anvil/releases/tag/v2.3.9
