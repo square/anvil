@@ -48,7 +48,12 @@ internal class ClassScanner {
       .values
       .asSequence()
       .mapNotNull { properties ->
-        val reference = properties.filterIsInstance<ReferenceProperty>().singleOrEmpty()
+        val reference = properties.filterIsInstance<ReferenceProperty>()
+          // In some rare cases we can see a generated property for the same identifier.
+          // Filter them just in case, see https://github.com/square/anvil/issues/460 and
+          // https://github.com/square/anvil/issues/565
+          .distinctBy { it.baseName }
+          .singleOrEmpty()
           ?: throw AnvilCompilationException(
             message = "Couldn't find the reference for a generated hint: ${properties[0].baseName}."
           )
