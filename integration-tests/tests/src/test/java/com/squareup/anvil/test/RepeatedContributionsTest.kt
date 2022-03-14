@@ -40,6 +40,20 @@ class RepeatedContributionsTest {
     assertThat((subcomponent as RepeatedInterfaceInt).integer()).isEqualTo(5)
   }
 
+  @Test fun `repeated merge annotation work`() {
+    val componentAnnotation = RepeatedComponent3::class.java
+      .getAnnotation(Component::class.java)!!
+    assertThat(componentAnnotation.modules.withoutAnvilModule())
+      .containsExactly(RepeatedModule::class, RepeatedModuleInt::class)
+
+    assertThat(RepeatedComponent3::class extends RepeatedInterface::class).isTrue()
+    assertThat(RepeatedComponent3::class extends RepeatedInterfaceInt::class).isTrue()
+
+    val component = DaggerRepeatedContributionsTest_RepeatedComponent3.create()
+    assertThat((component as RepeatedInterface).string()).isEqualTo("Hello")
+    assertThat((component as RepeatedInterfaceInt).integer()).isEqualTo(5)
+  }
+
   @MergeComponent(RepeatedScope1::class)
   interface RepeatedComponent1 {
     fun subcomponent(): RepeatedComponent2
@@ -47,6 +61,10 @@ class RepeatedContributionsTest {
 
   @MergeSubcomponent(RepeatedScope2::class)
   interface RepeatedComponent2
+
+  @MergeComponent(RepeatedScope1::class)
+  @MergeComponent(RepeatedScope2::class)
+  interface RepeatedComponent3
 
   @ContributesTo(RepeatedScope1::class)
   @ContributesTo(RepeatedScope2::class)

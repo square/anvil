@@ -62,7 +62,7 @@ internal class ContributesMultibindingGenerator : CodeGenerator {
 
         val scopes = clazz.annotations
           .find(contributesMultibindingFqName)
-          .also { it.checkNoDuplicateScope() }
+          .also { it.checkNoDuplicateScope(contributeAnnotation = true) }
           // Give it a stable sort.
           .sortedBy { it.scope() }
           .map { it.scope().asClassName() }

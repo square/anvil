@@ -280,7 +280,7 @@ class MergeModulesTest {
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 16)")
       assertThat(messages).contains(
-        "com.squareup.test.DaggerModule2 with scope kotlin.Any wants to replace " +
+        "com.squareup.test.DaggerModule2 with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
           "to the same scope."
       )
@@ -316,7 +316,7 @@ class MergeModulesTest {
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 16)")
       assertThat(messages).contains(
-        "com.squareup.test.DaggerModule2 with scope kotlin.Any wants to replace " +
+        "com.squareup.test.DaggerModule2 with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
           "to the same scope."
       )
@@ -412,7 +412,7 @@ class MergeModulesTest {
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 11)")
       assertThat(messages).contains(
-        "com.squareup.test.ContributingInterface with scope kotlin.Any wants to replace " +
+        "com.squareup.test.ContributingInterface with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.DaggerModule2, but the replaced class isn't contributed " +
           "to the same scope."
       )
@@ -448,7 +448,7 @@ class MergeModulesTest {
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 11)")
       assertThat(messages).contains(
-        "com.squareup.test.ContributingInterface with scope kotlin.Any wants to replace " +
+        "com.squareup.test.ContributingInterface with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.DaggerModule2, but the replaced class isn't contributed " +
           "to the same scope."
       )
@@ -509,7 +509,7 @@ class MergeModulesTest {
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (15, 16)")
       assertThat(messages).contains(
-        "com.squareup.test.DaggerModule2 with scope kotlin.Any wants to replace " +
+        "com.squareup.test.DaggerModule2 with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.DaggerModule3, but the replaced class isn't contributed " +
           "to the same scope."
       )
@@ -604,7 +604,7 @@ class MergeModulesTest {
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (16, 7)")
       assertThat(messages).contains(
-        "com.squareup.test.DaggerModule1 with scope kotlin.Any wants to exclude " +
+        "com.squareup.test.DaggerModule1 with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.DaggerModule2, but the excluded class isn't contributed " +
           "to the same scope."
       )
@@ -689,7 +689,7 @@ class MergeModulesTest {
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 11)")
       assertThat(messages).contains(
-        "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
+        "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.ContributingInterface, but the excluded class isn't contributed " +
           "to the same scope."
       )
@@ -722,7 +722,7 @@ class MergeModulesTest {
       // Position to the class.
       assertThat(messages).contains("Source0.kt: (17, 11)")
       assertThat(messages).contains(
-        "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
+        "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.ContributingInterface, but the excluded class isn't contributed " +
           "to the same scope."
       )

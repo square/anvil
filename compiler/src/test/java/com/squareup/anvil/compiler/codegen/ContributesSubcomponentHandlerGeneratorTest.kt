@@ -868,7 +868,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
-        "com.squareup.test.ComponentInterface with scope kotlin.Any wants to exclude " +
+        "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.SubcomponentInterface, but the excluded class isn't contributed " +
           "to the same scope."
       )

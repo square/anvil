@@ -52,9 +52,9 @@ import kotlin.reflect.KClass
  * interface ActivitySubcomponent
  * ```
  */
-
 @Target(CLASS)
 @Retention(RUNTIME)
+@Repeatable
 public annotation class MergeSubcomponent(
   /**
    * The scope used to find all contributed bindings, multibindings, modules and component

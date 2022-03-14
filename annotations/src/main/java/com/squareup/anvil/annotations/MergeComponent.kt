@@ -31,6 +31,7 @@ import kotlin.reflect.KClass
  */
 @Target(CLASS)
 @Retention(RUNTIME)
+@Repeatable
 public annotation class MergeComponent(
   /**
    * The scope used to find all contributed bindings, multibindings, modules and component
