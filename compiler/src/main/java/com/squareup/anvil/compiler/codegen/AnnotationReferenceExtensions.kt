@@ -122,6 +122,35 @@ internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScope(
   }
 }
 
+internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScopeAndBoundType() {
+  // Exit early to avoid allocating additional collections.
+  if (size < 2) return
+  if (size == 2 && this[0].scope() != this[1].scope()) return
+
+  val duplicateScopes = groupBy { it.scope() }
+    .filterValues { it.size > 1 }
+    .ifEmpty { return }
+
+  duplicateScopes.values.forEach { duplicateScopeAnnotations ->
+    val duplicateBoundTypes = duplicateScopeAnnotations.groupBy { it.boundTypeOrNull() }
+      .filterValues { it.size > 1 }
+      .ifEmpty { return }
+      .keys
+
+    val clazz = this[0].declaringClass()
+    throw AnvilCompilationExceptionClassReference(
+      classReference = clazz,
+      message = "${clazz.fqName} contributes multiple times to the same scope using the same " +
+        "bound type: " +
+        duplicateBoundTypes.joinToString(prefix = "[", postfix = "]") {
+          it?.shortName ?: clazz.directSuperClassReferences().first().shortName
+        } +
+        ". Contributing multiple times to the same scope with the same bound type is forbidden " +
+        "and all scope - bound type combinations must be distinct."
+    )
+  }
+}
+
 internal val AnnotationReference.daggerAnnotationFqName: FqName
   get() = when (fqName) {
     mergeComponentFqName -> daggerComponentFqName

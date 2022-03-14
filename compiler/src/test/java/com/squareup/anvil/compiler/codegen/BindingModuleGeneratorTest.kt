@@ -19,6 +19,8 @@ import com.squareup.anvil.compiler.internal.testing.isAbstract
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.parentInterface
+import com.squareup.anvil.compiler.parentInterface1
+import com.squareup.anvil.compiler.parentInterface2
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -664,20 +666,87 @@ class BindingModuleGeneratorTest(
       """
     ) {
       with(componentInterface.anvilModule.declaredMethods.single()) {
-        assertThat(returnType)
-          .isEqualTo(classLoader.loadClass("com.squareup.test.ParentInterface1"))
+        assertThat(returnType).isEqualTo(parentInterface1)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
 
       with(subcomponentInterface.anvilModule.declaredMethods.single()) {
-        assertThat(returnType)
-          .isEqualTo(classLoader.loadClass("com.squareup.test.ParentInterface2"))
+        assertThat(returnType).isEqualTo(parentInterface2)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
+    }
+  }
+
+  @Test fun `multiple contributions to the same scope must have different bound types`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+      $import
+      
+      interface ParentInterface1
+      interface ParentInterface2
+
+      @ContributesBinding(Any::class, boundType = ParentInterface1::class)
+      @ContributesBinding(Any::class, boundType = ParentInterface2::class)
+      class ContributingInterface : ParentInterface1, ParentInterface2
+
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val methods = componentInterface.anvilModule.declaredMethods.sortedBy { it.name }
+      assertThat(methods).hasSize(2)
+
+      with(methods[0]) {
+        assertThat(returnType).isEqualTo(parentInterface1)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      }
+      with(methods[1]) {
+        assertThat(returnType).isEqualTo(parentInterface2)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      }
+    }
+  }
+
+  @Test fun `multiple contributions to the same scope can be replaced at once`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      interface ParentInterface1
+      interface ParentInterface2
+
+      @ContributesBinding(Any::class, boundType = ParentInterface1::class)
+      @ContributesBinding(Any::class, boundType = ParentInterface2::class)
+      class ContributingInterface : ParentInterface1, ParentInterface2
+
+      @ContributesTo(Any::class, replaces = [ContributingInterface::class])
+      @dagger.Module
+      abstract class DaggerModule1
+
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
     }
   }
 
