@@ -16,6 +16,8 @@ import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 
 internal class ClassScanner {
 
+  private val cache = mutableMapOf<CacheKey, Collection<List<GeneratedProperty>>>()
+
   /**
    * Returns a sequence of contributed classes from the dependency graph. Note that the result
    * includes inner classes already.
@@ -25,27 +27,31 @@ internal class ClassScanner {
     annotation: FqName,
     scope: FqName?
   ): Sequence<ClassReference.Descriptor> {
-    val packageName = when (annotation) {
-      contributesToFqName -> HINT_CONTRIBUTES_PACKAGE_PREFIX
-      contributesBindingFqName -> HINT_BINDING_PACKAGE_PREFIX
-      contributesMultibindingFqName -> HINT_MULTIBINDING_PACKAGE_PREFIX
-      contributesSubcomponentFqName -> HINT_SUBCOMPONENTS_PACKAGE_PREFIX
-      else -> throw AnvilCompilationException(message = "Cannot find hints for $annotation.")
+    val propertyGroups = cache.getOrPut(CacheKey(annotation, module.hashCode())) {
+      val packageName = when (annotation) {
+        contributesToFqName -> HINT_CONTRIBUTES_PACKAGE_PREFIX
+        contributesBindingFqName -> HINT_BINDING_PACKAGE_PREFIX
+        contributesMultibindingFqName -> HINT_MULTIBINDING_PACKAGE_PREFIX
+        contributesSubcomponentFqName -> HINT_SUBCOMPONENTS_PACKAGE_PREFIX
+        else -> throw AnvilCompilationException(message = "Cannot find hints for $annotation.")
+      }
+
+      generateSequence(listOf(module.getPackage(FqName(packageName)))) { subPackages ->
+        subPackages
+          .flatMap { it.subPackages() }
+          .ifEmpty { null }
+      }
+        .flatMap { it.asSequence() }
+        .flatMap {
+          it.memberScope.getContributedDescriptors(DescriptorKindFilter.VALUES)
+        }
+        .filterIsInstance<PropertyDescriptor>()
+        .mapNotNull { GeneratedProperty.fromDescriptor(it) }
+        .groupBy { property -> property.baseName }
+        .values
     }
 
-    return generateSequence(listOf(module.getPackage(FqName(packageName)))) { subPackages ->
-      subPackages
-        .flatMap { it.subPackages() }
-        .ifEmpty { null }
-    }
-      .flatMap { it.asSequence() }
-      .flatMap {
-        it.memberScope.getContributedDescriptors(DescriptorKindFilter.VALUES)
-      }
-      .filterIsInstance<PropertyDescriptor>()
-      .mapNotNull { GeneratedProperty.fromDescriptor(it) }
-      .groupBy { property -> property.baseName }
-      .values
+    return propertyGroups
       .asSequence()
       .mapNotNull { properties ->
         val reference = properties.filterIsInstance<ReferenceProperty>()
@@ -126,3 +132,8 @@ private sealed class GeneratedProperty(
     }
   }
 }
+
+private data class CacheKey(
+  val fqName: FqName,
+  val moduleHash: Int
+)
