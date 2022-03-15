@@ -19,7 +19,7 @@
 
 ### Added
 
-- Made annotations repeatable. Modules and bindings can not be contributed multiple times to different scopes. Multiple scopes can be merged in a single component.
+- Made annotations repeatable. Modules and bindings can now be contributed multiple times to different scopes. Multiple scopes can be merged in a single component.
 
 ### Fixed
 
