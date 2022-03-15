@@ -11,6 +11,8 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.TypeName
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.DECLARATION
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -359,6 +361,15 @@ public fun ClassReference.generateClassName(
 
 @ExperimentalAnvilApi
 public fun ClassReference.asClassName(): ClassName = classId.asClassName()
+
+@ExperimentalAnvilApi
+public fun ClassReference.asTypeName(): TypeName {
+  return if (!isGenericClass()) {
+    asClassName()
+  } else {
+    asClassName().parameterizedBy(typeParameters.map { it.typeVariableName })
+  }
+}
 
 /**
  * This will return all super types as [ClassReference], whether they're parsed as [KtClassOrObject]
