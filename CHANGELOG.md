@@ -15,6 +15,17 @@
 ### Security
 
 
+## [2.4.0-M2] - 2022-03-015
+
+### Added
+
+- Made annotations repeatable. Modules and bindings can not be contributed multiple times to different scopes. Multiple scopes can be merged in a single component.
+
+### Fixed
+
+- Filter duplicate generated properties, see #565.
+
+
 ## [2.4.0-M1] - 2022-03-03
 
 ### Added
@@ -444,7 +455,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.4.0-M1...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.4.0-M2...HEAD
+[2.4.0-M2]: https://github.com/square/anvil/releases/tag/v2.4.0-M2
 [2.4.0-M1]: https://github.com/square/anvil/releases/tag/v2.4.0-M1
 [2.3.11]: https://github.com/square/anvil/releases/tag/v2.3.11
 [2.3.10]: https://github.com/square/anvil/releases/tag/v2.3.10

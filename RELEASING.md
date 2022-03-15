@@ -24,7 +24,7 @@
 
 # Snapshot Releases
 
-Snapshot releases are automatically created whenever a commit to the `main` is pushed.  
+Snapshot releases are automatically created whenever a commit to the `main` branch is pushed.  
 
 # Manually uploading a release
 
