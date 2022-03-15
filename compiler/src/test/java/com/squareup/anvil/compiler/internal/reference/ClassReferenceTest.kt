@@ -3,6 +3,8 @@ package com.squareup.anvil.compiler.internal.reference
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.TypeSpec
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
@@ -300,6 +302,98 @@ class ClassReferenceTest {
                 .isEqualTo(FqName("com.squareup.other.Other"))
               assertThat(descriptorRef.directSuperClassReferences().single().fqName)
                 .isEqualTo(FqName("com.squareup.other.Other"))
+            }
+            else -> throw NotImplementedError(psiRef.shortName)
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test fun `a generic class can be converted to a typename`() {
+    compile(
+      """
+      package com.squareup.test
+
+      abstract class SomeClass1 : Lazy<String> {
+        abstract fun string(): String
+      }
+
+      class SomeClass2<T : List<String>>(
+        private val t: T
+      )
+
+      class SomeClass3<T : String, S : Map<List<String>, Int>>(
+        private val t: T
+      )
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          when (psiRef.shortName) {
+            "SomeClass1" -> {
+              val expected = ClassName("com.squareup.test", "SomeClass1")
+              assertThat(psiRef.asClassName()).isEqualTo(expected)
+              assertThat(descriptorRef.asClassName()).isEqualTo(expected)
+
+              assertThat(psiRef.asTypeName()).isEqualTo(expected)
+              assertThat(descriptorRef.asTypeName()).isEqualTo(expected)
+            }
+            "SomeClass2" -> {
+              val expected = ClassName("com.squareup.test", "SomeClass2")
+              assertThat(psiRef.asClassName()).isEqualTo(expected)
+              assertThat(descriptorRef.asClassName()).isEqualTo(expected)
+
+              assertThat(psiRef.asTypeName().toString())
+                .isEqualTo("com.squareup.test.SomeClass2<T>")
+              assertThat(descriptorRef.asTypeName().toString())
+                .isEqualTo("com.squareup.test.SomeClass2<T>")
+
+              val psiTypeSpec = TypeSpec.classBuilder("Class")
+                .addTypeVariables(psiRef.typeParameters.map { it.typeVariableName })
+                .build()
+
+              val descriptorTypeSpec = TypeSpec.classBuilder("Class")
+                .addTypeVariables(psiRef.typeParameters.map { it.typeVariableName })
+                .build()
+
+              assertThat(psiTypeSpec.toString())
+                .contains("public class Class<T : kotlin.collections.List<kotlin.String>>")
+              assertThat(descriptorTypeSpec.toString())
+                .contains("public class Class<T : kotlin.collections.List<kotlin.String>>")
+            }
+            "SomeClass3" -> {
+              val expected = ClassName("com.squareup.test", "SomeClass3")
+              assertThat(psiRef.asClassName()).isEqualTo(expected)
+              assertThat(descriptorRef.asClassName()).isEqualTo(expected)
+
+              assertThat(psiRef.asTypeName().toString())
+                .isEqualTo("com.squareup.test.SomeClass3<T, S>")
+              assertThat(descriptorRef.asTypeName().toString())
+                .isEqualTo("com.squareup.test.SomeClass3<T, S>")
+
+              val psiTypeSpec = TypeSpec.classBuilder("Class")
+                .addTypeVariables(psiRef.typeParameters.map { it.typeVariableName })
+                .build()
+
+              val descriptorTypeSpec = TypeSpec.classBuilder("Class")
+                .addTypeVariables(psiRef.typeParameters.map { it.typeVariableName })
+                .build()
+
+              assertThat(psiTypeSpec.toString()).contains(
+                "public class Class<T : kotlin.String, " +
+                  "S : kotlin.collections.Map<kotlin.collections.List<kotlin.String>, kotlin.Int>>"
+              )
+              assertThat(descriptorTypeSpec.toString()).contains(
+                "public class Class<T : kotlin.String, " +
+                  "S : kotlin.collections.Map<kotlin.collections.List<kotlin.String>, kotlin.Int>>"
+              )
             }
             else -> throw NotImplementedError(psiRef.shortName)
           }
