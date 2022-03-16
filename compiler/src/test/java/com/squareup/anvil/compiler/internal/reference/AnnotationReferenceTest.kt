@@ -137,9 +137,17 @@ class AnnotationReferenceTest {
   }
 
   @Test fun `an int annotation argument can be parsed`() {
+    @Suppress("RemoveRedundantQualifierName")
     compile(
       """
       package com.squareup.test
+ 
+      import com.squareup.test2.CONSTANT_2
+      import com.squareup.test2.Abc
+      import com.squareup.test2.Abc.Companion.CONSTANT_4
+      import com.squareup.test2.SomeObject
+      import com.squareup.test2.SomeObject.CONSTANT_3
+      import kotlin.Int.Companion.MAX_VALUE
  
       annotation class BindingKey(val value: Int)
       
@@ -150,20 +158,117 @@ class AnnotationReferenceTest {
 
       @BindingKey(CONSTANT)
       interface SomeClass2
+      
+      @BindingKey(-5)
+      interface SomeClass3
+      
+      @BindingKey(MAX_VALUE)
+      interface SomeClass4
+      
+      @BindingKey(Int.MAX_VALUE)
+      interface SomeClass5
+      
+      @BindingKey(kotlin.Int.MAX_VALUE)
+      interface SomeClass6
+      
+      @BindingKey(CONSTANT_2)
+      interface SomeClass7
+      
+      @BindingKey(com.squareup.test2.CONSTANT_2)
+      interface SomeClass8
+      
+      @BindingKey(CONSTANT_3)
+      interface SomeClass9
+      
+      @BindingKey(SomeObject.CONSTANT_3)
+      interface SomeClass10
+      
+      @BindingKey(com.squareup.test2.SomeObject.CONSTANT_3)
+      interface SomeClass11
+      
+      @BindingKey(CONSTANT_4)
+      interface SomeClass12
+      
+      @BindingKey(Abc.CONSTANT_4)
+      interface SomeClass13
+      
+      @BindingKey(com.squareup.test2.Abc.CONSTANT_4)
+      interface SomeClass14
+      """,
+      """
+      package com.squareup.test2
+        
+      const val CONSTANT_2 = 2
+      
+      object SomeObject {
+        const val CONSTANT_3 = 3
+      }
+      
+      class Abc {
+        companion object {
+          const val CONSTANT_4 = 4
+        }
+      }
       """,
       allWarningsAsErrors = false,
       codeGenerators = listOf(
         simpleCodeGenerator { psiRef ->
-          if (psiRef.shortName in listOf("BindingKey"))
+          if (psiRef.shortName in listOf("BindingKey", "SomeObject", "Abc", "Companion"))
             return@simpleCodeGenerator null
 
           listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
-            val argument = ref.annotations.single().arguments.single()
+            when (psiRef.shortName) {
+              "SomeClass1" -> {
+                val argument = ref.annotations.single().arguments.single()
+                assertThat(argument.value<Int>()).isEqualTo(1)
 
-            assertThat(argument.value<Int>()).isEqualTo(1)
+                assertThat(ref.annotations.single().toAnnotationSpec().toString())
+                  .isEqualTo("@com.squareup.test.BindingKey(value = 1)")
+              }
+              "SomeClass2" -> {
+                val argument = ref.annotations.single().arguments.single()
+                assertThat(argument.value<Int>()).isEqualTo(1)
 
-            assertThat(ref.annotations.single().toAnnotationSpec().toString())
-              .isEqualTo("@com.squareup.test.BindingKey(value = 1)")
+                assertThat(ref.annotations.single().toAnnotationSpec().toString())
+                  .isEqualTo("@com.squareup.test.BindingKey(value = 1)")
+              }
+              "SomeClass3" -> {
+                val argument = ref.annotations.single().arguments.single()
+                assertThat(argument.value<Int>()).isEqualTo(-5)
+
+                assertThat(ref.annotations.single().toAnnotationSpec().toString())
+                  .isEqualTo("@com.squareup.test.BindingKey(value = -5)")
+              }
+              "SomeClass4", "SomeClass5", "SomeClass6" -> {
+                val argument = ref.annotations.single().arguments.single()
+                assertThat(argument.value<Int>()).isEqualTo(Int.MAX_VALUE)
+
+                assertThat(ref.annotations.single().toAnnotationSpec().toString())
+                  .isEqualTo("@com.squareup.test.BindingKey(value = 2147483647)")
+              }
+              "SomeClass7", "SomeClass8" -> {
+                val argument = ref.annotations.single().arguments.single()
+                assertThat(argument.value<Int>()).isEqualTo(2)
+
+                assertThat(ref.annotations.single().toAnnotationSpec().toString())
+                  .isEqualTo("@com.squareup.test.BindingKey(value = 2)")
+              }
+              "SomeClass9", "SomeClass10", "SomeClass11" -> {
+                val argument = ref.annotations.single().arguments.single()
+                assertThat(argument.value<Int>()).isEqualTo(3)
+
+                assertThat(ref.annotations.single().toAnnotationSpec().toString())
+                  .isEqualTo("@com.squareup.test.BindingKey(value = 3)")
+              }
+              "SomeClass12", "SomeClass13", "SomeClass14" -> {
+                val argument = ref.annotations.single().arguments.single()
+                assertThat(argument.value<Int>()).isEqualTo(4)
+
+                assertThat(ref.annotations.single().toAnnotationSpec().toString())
+                  .isEqualTo("@com.squareup.test.BindingKey(value = 4)")
+              }
+              else -> throw NotImplementedError(psiRef.shortName)
+            }
           }
 
           null
