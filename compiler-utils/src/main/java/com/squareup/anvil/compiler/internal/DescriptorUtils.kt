@@ -6,7 +6,9 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.findClassAcrossModuleDependencies
+import org.jetbrains.kotlin.incremental.components.NoLookupLocation
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
@@ -57,4 +59,14 @@ public fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType {
     ?: throw AnvilCompilationException(
       "Couldn't resolve class across module dependencies for class ID: $classId"
     )
+}
+
+/**
+ * Assumes that the FqName is a top-level property, e.g. com.squareup.CONSTANT.
+ */
+@ExperimentalAnvilApi
+public fun FqName.getContributedPropertyOrNull(module: ModuleDescriptor): PropertyDescriptor? {
+  return module.getPackage(parent()).memberScope
+    .getContributedVariables(shortName(), NoLookupLocation.FROM_BACKEND)
+    .singleOrNull()
 }

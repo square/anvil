@@ -5,11 +5,13 @@ import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.descendant
 import com.squareup.anvil.compiler.internal.fqNameOrNull
+import com.squareup.anvil.compiler.internal.getContributedPropertyOrNull
 import com.squareup.anvil.compiler.internal.reference.AnnotationArgumentReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.AnnotationArgumentReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.lexer.KtTokens
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
@@ -21,6 +23,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
+import org.jetbrains.kotlin.psi.KtPrefixExpression
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.KtStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
@@ -199,20 +202,68 @@ public sealed class AnnotationArgumentReference {
         } ?: fail()
       }
 
+      fun resolvePrimitiveConstant(fqName: FqName): Any? {
+        // This could be a constant from a primitive type, e.g. Int.MAX_VALUE
+        val classFqName = fqName.parent()
+        val constantName = fqName.shortName().asString()
+
+        // If this constant is coming from a companion object, then we'll find it this way.
+        classFqName.toClassReferenceOrNull(module)
+          ?.let { if (it.isObject()) listOf(it) else it.companionObjects() }
+          ?.flatMap { it.properties }
+          ?.singleOrNull { it.name == constantName }
+          ?.let { property ->
+            return when (property) {
+              is PropertyReference.Descriptor ->
+                property.property.compileTimeInitializer?.value
+              is PropertyReference.Psi ->
+                property.property.initializer?.let { parsePrimitiveType(it.text) }
+            }
+          }
+
+        // Is the constant a top-level constant?
+        return fqName.getContributedPropertyOrNull(module)
+          ?.compileTimeInitializer
+          ?.value
+      }
+
+      fun resolveConstant(fqName: FqName): Any? {
+        return if (fqName.toClassReferenceOrNull(module) != null) {
+          // That's an enum constant.
+          fqName
+        } else {
+          // That's hopefully a constant for a primitive type.
+          resolvePrimitiveConstant(fqName)
+        }
+      }
+
+      fun resolveConstant(psiElement: PsiElement): Any? {
+        val fqName = psiElement.fqNameOrNull(module)
+          ?: (psiElement as? KtDotQualifiedExpression)
+            // That's necessary for constants like kotlin.Int.MAX_VALUE, where the real FqName is
+            // actually Kotlin.Int.Companion.MAX_VALUE.
+            ?.firstChild
+            ?.fqNameOrNull(module)
+            ?.descendant(psiElement.children.last().text)
+          ?: return null
+
+        return resolveConstant(fqName)
+      }
+
       fun parsePsiElement(psiElement: PsiElement): Any {
         return when (psiElement) {
           is KtClassLiteralExpression -> psiElement.requireFqName(module).toClassReference(module)
           is KtCollectionLiteralExpression ->
             psiElement.children.map { parsePsiElement(it) }.convertToArrayIfNeeded()
-          is KtConstantExpression -> parsePrimitiveType(psiElement.text)
+          is KtConstantExpression, is KtPrefixExpression -> parsePrimitiveType(psiElement.text)
           is KtStringTemplateExpression ->
             psiElement
               .getChildOfType<KtStringTemplateEntry>()
               ?.text
               ?: fail()
           is KtNameReferenceExpression -> {
-            // Those are likely enum values.
-            psiElement.fqNameOrNull(module)?.let { return it }
+            // Those are likely enum values or another primitive constant.
+            resolveConstant(psiElement)?.let { return it }
 
             // Check if it's a constant. Note that we don't return the constant FqName directly,
             // but return the actual value from the constant instead. That's also what the
@@ -228,7 +279,12 @@ public sealed class AnnotationArgumentReference {
             return psiElement.containingKtFile.packageFqName
               .descendant(psiElement.getReferencedName())
           }
-          is KtDotQualifiedExpression -> psiElement.requireFqName(module)
+          is KtDotQualifiedExpression -> {
+            // Maybe it's a fully qualified name, so check this too.
+            return resolveConstant(psiElement)
+              ?: resolveConstant(FqName(psiElement.text))
+              ?: fail()
+          }
           else -> fail()
         }
       }
