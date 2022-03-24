@@ -116,6 +116,8 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     val isObject = isCompanionObject || clazz.isObject()
 
     val isProperty = declaration.isProperty
+    val declarationName = declaration.fqName.shortName().asString()
+    val useGetPrefix = isProperty && !declarationName.startsWith("is")
 
     val isMangled = !isProperty &&
       declaration.visibility == INTERNAL &&
@@ -128,10 +130,10 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
       if (isCompanionObject) {
         append("Companion_")
       }
-      if (isProperty) {
+      if (useGetPrefix) {
         append("Get")
       }
-      append(declaration.fqName.shortName().asString().capitalize())
+      append(declarationName.capitalize())
       if (isMangled) {
         append("\$${module.mangledNameSuffix()}")
       }
@@ -150,7 +152,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     val moduleClass = clazz.asClassName()
 
     val byteCodeFunctionName = when {
-      isProperty -> "get" + callableName.capitalize()
+      useGetPrefix -> "get" + callableName.capitalize()
       isMangled -> "$callableName\$${module.mangledNameSuffix()}"
       else -> callableName
     }
