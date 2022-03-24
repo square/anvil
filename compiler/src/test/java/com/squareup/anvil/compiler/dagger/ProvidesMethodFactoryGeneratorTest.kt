@@ -2624,6 +2624,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
 
   @Test
   fun `a factory class is generated for an uppercase factory function`() {
+    @Suppress("TestFunctionName")
     compile(
       """
       package com.squareup.test.a
@@ -3316,6 +3317,78 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
       // lost as part of converting to bytecode. However, we know that this would fail with an
       // 'incompatible types' error if the annotation had not been included.
       assertThat(exitCode).isEqualTo(ExitCode.OK)
+    }
+  }
+
+  @Test fun `a provides method with 'is' as prefix is supported`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Singleton
+      
+      @Module
+      class DaggerModule1 {
+        @get:Provides
+        val isValidCache: BooleanArray = booleanArrayOf(false)
+      }
+      """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("isValidCache")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(2)
+
+      val module = daggerModule1.createInstance()
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, module)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedFactory = staticMethods.single { it.name == "isValidCache" }
+        .invoke(null, module) as Any
+
+      assertThat((factoryInstance as Factory<*>).get()).isSameInstanceAs(providedFactory)
+    }
+  }
+
+  @Test fun `a provides method with 'is' as prefix is supported for objects`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Singleton
+      
+      @Module
+      object DaggerModule1 {
+        @get:Provides
+        val isValidCache: Boolean = false
+      }
+      """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("isValidCache")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedBoolean = staticMethods.single { it.name == "isValidCache" }
+        .invoke(null) as Boolean
+
+      assertThat(providedBoolean).isFalse()
+      assertThat((factoryInstance as Factory<Boolean>).get()).isFalse()
     }
   }
 
