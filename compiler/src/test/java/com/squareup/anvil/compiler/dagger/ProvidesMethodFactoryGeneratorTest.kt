@@ -3320,7 +3320,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     }
   }
 
-  @Test fun `a provides method with 'is' as prefix is supported`() {
+  @Test fun `a provides method with the word 'is' as prefix is supported`() {
     compile(
       """
       package com.squareup.test
@@ -3351,6 +3351,82 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val providedFactory = staticMethods.single { it.name == "isValidCache" }
+        .invoke(null, module) as Any
+
+      assertThat((factoryInstance as Factory<*>).get()).isSameInstanceAs(providedFactory)
+    }
+  }
+
+  @Test
+  fun `a provides method with starting with 'is_' is supported`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Singleton
+      
+      @Module
+      class DaggerModule1 {
+        @get:Provides
+        val is_valid_cache: BooleanArray = booleanArrayOf(false)
+      }
+      """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("is_valid_cache")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(2)
+
+      val module = daggerModule1.createInstance()
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, module)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedFactory = staticMethods.single { it.name == "is_valid_cache" }
+        .invoke(null, module) as Any
+
+      assertThat((factoryInstance as Factory<*>).get()).isSameInstanceAs(providedFactory)
+    }
+  }
+
+  @Test
+  fun `a provides method with starting with 'is' but not as a word is supported`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Singleton
+      
+      @Module
+      class DaggerModule1 {
+        @get:Provides
+        val issues: List<String> = listOf("a")
+      }
+      """
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("getIssues")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(2)
+
+      val module = daggerModule1.createInstance()
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, module)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedFactory = staticMethods.single { it.name == "getIssues" }
         .invoke(null, module) as Any
 
       assertThat((factoryInstance as Factory<*>).get()).isSameInstanceAs(providedFactory)
