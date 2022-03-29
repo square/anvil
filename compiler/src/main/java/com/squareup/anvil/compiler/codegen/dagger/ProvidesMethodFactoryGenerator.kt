@@ -24,6 +24,7 @@ import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferenc
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
+import com.squareup.anvil.compiler.isWordPrefixRegex
 import com.squareup.anvil.compiler.publishedApiFqName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -117,7 +118,9 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
     val isProperty = declaration.isProperty
     val declarationName = declaration.fqName.shortName().asString()
-    val useGetPrefix = isProperty && !declarationName.startsWith("is")
+    // omit the `get-` prefix for property names starting with the *word* `is`, like `isProperty`,
+    // but not for names which just start with those letters, like `issues`.
+    val useGetPrefix = isProperty && !isWordPrefixRegex.matches(declarationName)
 
     val isMangled = !isProperty &&
       declaration.visibility == INTERNAL &&

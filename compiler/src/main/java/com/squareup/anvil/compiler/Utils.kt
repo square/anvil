@@ -59,6 +59,8 @@ internal val publishedApiFqName = PublishedApi::class.fqName
 
 internal val daggerDoubleCheckFqNameString = DoubleCheck::class.java.canonicalName
 
+internal val isWordPrefixRegex = "^is([^a-z].*)".toRegex()
+
 internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "anvil.hint.merge"
 internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
 internal const val HINT_MULTIBINDING_PACKAGE_PREFIX = "anvil.hint.multibinding"
