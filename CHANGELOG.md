@@ -15,6 +15,34 @@
 ### Security
 
 
+## [2.4.0] - 2022-03-28
+
+### Added
+
+- Anvil annotations are repeatable. Modules and bindings can now be contributed multiple times to different scopes. Multiple scopes can be merged in a single component, see #236.
+- Rewrote many of the internals of Anvil and as a result Anvil is up to 41% faster due to heavy caching of already parsed code structures.
+- Automatically publish snapshots for the `main` branch.
+- Documented Anvil's internal, see [here](https://github.com/square/anvil/blob/main/docs/INTERNALS.md).
+
+### Changed
+
+- Many of the internals of Anvil were rewritten and the non-stable APIs of the `compiler-utils` artifact have changed. Some highlights:
+  - Instead of working with PSI or Descriptor APIs directly, you should work with the common `ClassReference` API.
+  - `ClassReference` is a sealed class and either implemented with PSI or Descriptors, so it's easy to fallback to a specific API and add your own extensions.
+  - The entry point to iterate through all classes used be `classesAndInnerClass(module)`, use `classAndInnerClassReferences()` instead. 
+
+### Removed
+
+- Removed support for Kotlin `1.5`.
+- Removed deprecated APIs from the `AnvilExtension` in the gradle plugin.
+
+### Fixed
+
+- Filter duplicate generated properties, see #565.
+- Generate code for `@ContributedSubcomponent` when the trigger is created AFTER the contribution, see #478.
+- Properly parse the `FqName` if the type reference is an inner class, see #479.
+
+
 ## [2.4.0-M2] - 2022-03-015
 
 ### Added
@@ -455,7 +483,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.4.0-M2...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.4.0...HEAD
+[2.4.0]: https://github.com/square/anvil/releases/tag/v2.4.0
 [2.4.0-M2]: https://github.com/square/anvil/releases/tag/v2.4.0-M2
 [2.4.0-M1]: https://github.com/square/anvil/releases/tag/v2.4.0-M1
 [2.3.11]: https://github.com/square/anvil/releases/tag/v2.3.11
