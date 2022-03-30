@@ -395,6 +395,26 @@ public fun ClassReference.allSuperTypeClassReferences(
     .distinct()
 }
 
+/**
+ * Resolves the concrete type for a super type's generic types.
+ *
+ * e.g. this will find [Int] when passing [parameterIndex] of 1 in the following example:
+ * ```
+ * interface SuperClass<T, R>
+ *
+ * interface ImplementingClass : SuperClass<String, Int>
+ * ```
+ *
+ * @param parameterIndex: The index of the super type parameter to resolve.
+ */
+@ExperimentalAnvilApi
+public fun Psi.resolveSuperTypeGenericTypeReference(
+  superClass: ClassReference,
+  parameterIndex: Int = 0
+): TypeReference.Psi? {
+  return resolveGenericTypeReference(this, superClass, parameterIndex = parameterIndex)
+}
+
 @ExperimentalAnvilApi
 @Suppress("FunctionName")
 public fun AnvilCompilationExceptionClassReference(

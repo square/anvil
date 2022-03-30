@@ -314,6 +314,44 @@ class ClassReferenceTest {
     }
   }
 
+  @Test fun `a super type's generic type can be resolved`() {
+    compile(
+      """
+      package com.squareup.test
+
+      interface SomeClass1
+
+      interface SomeClass2<T, R>
+
+      interface SomeClass3 : SomeClass2<SomeClass1, String>
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          when (psiRef.shortName) {
+            "SomeClass3" -> {
+              val declaringClass = psiRef.directSuperClassReferences().single()
+              val resolvedSuperClassTypeParam1 =
+                psiRef.resolveSuperTypeGenericTypeReference(declaringClass)?.asTypeName().toString()
+              val resolvedSuperClassTypeParam2 =
+                psiRef.resolveSuperTypeGenericTypeReference(
+                  declaringClass,
+                  parameterIndex = 1
+                )?.asTypeName().toString()
+
+              assertThat(resolvedSuperClassTypeParam1).isEqualTo("com.squareup.test.SomeClass1")
+              assertThat(resolvedSuperClassTypeParam2).isEqualTo("kotlin.String")
+            }
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
   @Test fun `a generic class can be converted to a typename`() {
     compile(
       """

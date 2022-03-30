@@ -422,17 +422,22 @@ public fun AnvilCompilationExceptionTypReference(
   }
 }
 
-private fun resolveGenericTypeReference(
+internal fun resolveGenericTypeReference(
   implementingClass: ClassReference.Psi,
   declaringClass: ClassReference,
-  parameterName: String
+  parameterName: String? = null,
+  parameterIndex: Int = 0
 ): Psi? {
   // If the class/interface declaring the generic is the receiver class,
   // then the generic hasn't been set to a concrete type and can't be resolved.
   if (implementingClass == declaringClass) return null
 
   // Used to determine which parameter to look at in a KtTypeArgumentList.
-  val indexOfType = declaringClass.indexOfTypeParameter(parameterName)
+  val indexOfType = if (parameterName != null) {
+    declaringClass.indexOfTypeParameter(parameterName)
+  } else {
+    parameterIndex
+  }
 
   // Find where the supertype is actually declared by matching the FqName of the
   // SuperTypeListEntry to the type which declares the generic we're trying to resolve.
