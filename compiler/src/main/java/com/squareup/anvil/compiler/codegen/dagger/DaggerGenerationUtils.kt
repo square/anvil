@@ -47,11 +47,11 @@ private fun ParameterReference.toConstructorParameter(
   val isWrappedInProvider = type.asClassReferenceOrNull()?.fqName == providerFqName
   val isWrappedInLazy = type.asClassReferenceOrNull()?.fqName == daggerLazyFqName
   val isLazyWrappedInProvider = isWrappedInProvider &&
-    type.unwrappedFirstType.asClassReferenceOrNull()?.fqName == daggerLazyFqName
+    type.unwrappedTypes.first().asClassReferenceOrNull()?.fqName == daggerLazyFqName
 
   val typeName = when {
-    isLazyWrappedInProvider -> type.unwrappedFirstType.unwrappedFirstType
-    isWrappedInProvider || isWrappedInLazy -> type.unwrappedFirstType
+    isLazyWrappedInProvider -> type.unwrappedTypes.first().unwrappedTypes.first()
+    isWrappedInProvider || isWrappedInLazy -> type.unwrappedTypes.first()
     else -> type
   }.asTypeName().withJvmSuppressWildcardsIfNeeded(this, type)
 
@@ -196,11 +196,11 @@ private fun PropertyReference.toMemberInjectParameter(
   val isWrappedInProvider = type.asClassReferenceOrNull()?.fqName == providerFqName
   val isWrappedInLazy = type.asClassReferenceOrNull()?.fqName == daggerLazyFqName
   val isLazyWrappedInProvider = isWrappedInProvider &&
-    type.unwrappedFirstType.asClassReferenceOrNull()?.fqName == daggerLazyFqName
+    type.unwrappedTypes.first().asClassReferenceOrNull()?.fqName == daggerLazyFqName
 
   val typeName = when {
-    isLazyWrappedInProvider -> type.unwrappedFirstType.unwrappedFirstType
-    isWrappedInProvider || isWrappedInLazy -> type.unwrappedFirstType
+    isLazyWrappedInProvider -> type.unwrappedTypes.first().unwrappedTypes.first()
+    isWrappedInProvider || isWrappedInLazy -> type.unwrappedTypes.first()
     else -> type
   }.asTypeName().withJvmSuppressWildcardsIfNeeded(this, type)
 
