@@ -152,7 +152,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
-  @Test fun `an implementation for a factory class is generated with intermixed assisted parameters`() {
+  @Test
+  fun `an implementation for a factory class is generated with intermixed assisted parameters`() {
     compile(
       """
       package com.squareup.test
@@ -410,6 +411,47 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
+  @Test fun `nullability is preserved for lambda types`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+
+      data class AssistedService @AssistedInject constructor(
+        @Assisted val callback: ((Int) -> String)?
+      )
+
+      @AssistedFactory
+      interface AssistedServiceFactory {
+        fun create(callback: ((Int) -> String)?): AssistedService
+      }
+      """
+    ) {
+      val factoryImplClass = assistedServiceFactory.implClass()
+      val generatedFactoryInstance = assistedService.factoryClass().createInstance()
+      val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
+
+      val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(1)
+
+      val factoryProvider = staticMethods.single { it.name == "create" }
+        .invoke(null, generatedFactoryInstance) as Provider<*>
+      assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val lambdaArg = null
+      val assistedServiceInstance = factoryImplClass.declaredMethods
+        .filterNot { it.isStatic }
+        .last { it.name == "create" }
+        .invoke(factoryImplInstance, lambdaArg)
+
+      assertThat(assistedServiceInstance).isEqualTo(assistedService.createInstance(lambdaArg))
+    }
+  }
+
   @Test fun `the factory function may substitute a lambda type with a Function type`() {
     compile(
       """
@@ -484,7 +526,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
-  @Test fun `the factory function may be provided by a generic super type with generic parameter`() {
+  @Test
+  fun `the factory function may be provided by a generic super type with generic parameter`() {
     // Note the @JvmSuppressWildcards in the super type of the factory class. Without the
     // annotation the test would fail with Dagger:
     //
@@ -848,7 +891,8 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
     }
   }
 
-  @Test fun `an implementation for a factory class with a type parameter bound by a where clause`() {
+  @Test
+  fun `an implementation for a factory class with a type parameter bound by a where clause`() {
     compile(
       """
       package com.squareup.test
@@ -1279,7 +1323,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
-  @Test fun `a different order for the parameters of the factory function is allowed for parameters`() {
+  @Test
+  fun `a different order for the parameters of the factory function is allowed for parameters`() {
     compile(
       """
       package com.squareup.test
@@ -1369,7 +1414,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
-  @Test fun `a different order for the parameters of the factory function is allowed for type parameters`() {
+  @Test
+  fun `a different order for the parameters of the factory function is allowed for type parameters`() {
     compile(
       """
       package com.squareup.test

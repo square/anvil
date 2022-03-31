@@ -507,4 +507,5 @@ private fun TypeName.lambdaFix(): TypeName {
 
   return ClassName("kotlin", "Function${allTypes.size - 1}")
     .parameterizedBy(allTypes)
+    .copy(nullable = isNullable)
 }
