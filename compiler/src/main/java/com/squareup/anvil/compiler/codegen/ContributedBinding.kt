@@ -66,7 +66,8 @@ private fun AnnotationReference.requireBoundType(): ClassReference {
 
   // If there's no bound type in the annotation,
   // it must be the only supertype of the contributing class
-  val boundType = declaringClass().directSuperClassReferences().singleOrNull()
+  val boundType = declaringClass().directSuperTypeReferences().singleOrNull()
+    ?.asClassReference()
     ?: throw AnvilCompilationException(
       message = "$fqName contributes a binding, but does not " +
         "specify the bound type. This is only allowed with exactly one direct super type. " +

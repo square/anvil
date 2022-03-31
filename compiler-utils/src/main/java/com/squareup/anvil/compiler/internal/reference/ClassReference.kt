@@ -9,7 +9,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
-import com.squareup.anvil.compiler.internal.requireFqName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
@@ -37,8 +36,6 @@ import org.jetbrains.kotlin.psi.allConstructors
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperClassNotAny
-import org.jetbrains.kotlin.resolve.descriptorUtil.getSuperInterfaces
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
@@ -75,10 +72,10 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
   public abstract fun visibility(): Visibility
 
   /**
-   * Returns only the super class (excluding [Any]) and implemented interfaces declared directly by
+   * Returns only the super types (excluding [Any]) and implemented interfaces declared directly by
    * this class.
    */
-  public abstract fun directSuperClassReferences(): List<ClassReference>
+  public abstract fun directSuperTypeReferences(): List<TypeReference>
 
   /**
    * Returns all outer classes including this class. Imagine the inner class `Outer.Middle.Inner`,
@@ -160,8 +157,8 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
       getTypeParameterReferences()
     }
 
-    private val directSuperClassReferences: List<ClassReference> by lazy(NONE) {
-      clazz.superTypeListEntries.map { it.requireFqName(module).toClassReference(module) }
+    private val directSuperTypeReferences: List<TypeReference> by lazy(NONE) {
+      clazz.superTypeListEntries.mapNotNull { it.typeReference?.toTypeReference(this) }
     }
 
     private val enclosingClassesWithSelf by lazy(NONE) {
@@ -208,7 +205,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
       }
     }
 
-    override fun directSuperClassReferences(): List<ClassReference> = directSuperClassReferences
+    override fun directSuperTypeReferences(): List<TypeReference> = directSuperTypeReferences
 
     override fun enclosingClassesWithSelf(): List<Psi> = enclosingClassesWithSelf
 
@@ -258,10 +255,8 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
         .map { it.toPropertyReference(this) }
     }
 
-    private val directSuperClassReferences: List<ClassReference> by lazy(NONE) {
-      listOfNotNull(clazz.getSuperClassNotAny())
-        .plus(clazz.getSuperInterfaces())
-        .map { it.toClassReference(module) }
+    private val directSuperTypeReferences: List<TypeReference> by lazy(NONE) {
+      clazz.typeConstructor.supertypes.map { it.toTypeReference(this) }
     }
 
     private val enclosingClassesWithSelf by lazy(NONE) {
@@ -310,7 +305,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
       }
     }
 
-    override fun directSuperClassReferences(): List<ClassReference> = directSuperClassReferences
+    override fun directSuperTypeReferences(): List<TypeReference> = directSuperTypeReferences
 
     override fun enclosingClassesWithSelf(): List<Descriptor> = enclosingClassesWithSelf
 
@@ -387,7 +382,9 @@ public fun ClassReference.allSuperTypeClassReferences(
 ): Sequence<ClassReference> {
   return generateSequence(listOf(this)) { superTypes ->
     superTypes
-      .flatMap { classRef -> classRef.directSuperClassReferences() }
+      .flatMap { classRef ->
+        classRef.directSuperTypeReferences().mapNotNull { it.asClassReferenceOrNull() }
+      }
       .takeIf { it.isNotEmpty() }
   }
     .drop(if (includeSelf) 0 else 1)

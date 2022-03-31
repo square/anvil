@@ -143,7 +143,7 @@ internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScopeAndBoundType
       message = "${clazz.fqName} contributes multiple times to the same scope using the same " +
         "bound type: " +
         duplicateBoundTypes.joinToString(prefix = "[", postfix = "]") {
-          it?.shortName ?: clazz.directSuperClassReferences().first().shortName
+          it?.shortName ?: clazz.directSuperTypeReferences().single().asClassReference().shortName
         } +
         ". Contributing multiple times to the same scope with the same bound type is forbidden " +
         "and all scope - bound type combinations must be distinct."

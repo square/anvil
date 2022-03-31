@@ -60,7 +60,7 @@ internal fun ClassReference.checkSingleSuperType(
   // type there must be exactly one super type.
   if (annotations.find { it.fqName == annotationFqName }?.boundTypeOrNull() != null) return
 
-  if (directSuperClassReferences().count() != 1) {
+  if (directSuperTypeReferences().count() != 1) {
     throw AnvilCompilationExceptionClassReference(
       message = "$fqName contributes a binding, but does not " +
         "specify the bound type. This is only allowed with exactly one direct super type. " +
@@ -75,7 +75,7 @@ internal fun ClassReference.checkClassExtendsBoundType(
   annotationFqName: FqName
 ) {
   val boundType = annotations.find { it.fqName == annotationFqName }?.boundTypeOrNull()
-    ?: directSuperClassReferences().singleOrNull()
+    ?: directSuperTypeReferences().singleOrNull()?.asClassReference()
     ?: throw AnvilCompilationExceptionClassReference(
       message = "Couldn't find the bound type.",
       classReference = this
