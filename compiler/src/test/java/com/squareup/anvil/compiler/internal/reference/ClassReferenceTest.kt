@@ -209,10 +209,17 @@ class ClassReferenceTest {
               ).isFalse()
 
               assertThat(
-                psiRef.directSuperClassReferences().single().isGenericClass()
+                psiRef.directSuperTypeReferences().single().isGenericType()
               ).isTrue()
               assertThat(
-                descriptorRef.directSuperClassReferences().single().isGenericClass()
+                psiRef.directSuperTypeReferences().single().asClassReference().isGenericClass()
+              ).isTrue()
+              assertThat(
+                descriptorRef.directSuperTypeReferences().single().isGenericType()
+              ).isTrue()
+              assertThat(
+                descriptorRef.directSuperTypeReferences().single().asClassReference()
+                  .isGenericClass()
               ).isTrue()
             }
             "SomeClass3" -> {
@@ -298,10 +305,12 @@ class ClassReferenceTest {
           when (psiRef.shortName) {
             "Other" -> Unit
             "SomeClass1" -> {
-              assertThat(psiRef.directSuperClassReferences().single().fqName)
-                .isEqualTo(FqName("com.squareup.other.Other"))
-              assertThat(descriptorRef.directSuperClassReferences().single().fqName)
-                .isEqualTo(FqName("com.squareup.other.Other"))
+              assertThat(
+                psiRef.directSuperTypeReferences().single().asClassReference().fqName
+              ).isEqualTo(FqName("com.squareup.other.Other"))
+              assertThat(
+                descriptorRef.directSuperTypeReferences().single().asClassReference().fqName
+              ).isEqualTo(FqName("com.squareup.other.Other"))
             }
             else -> throw NotImplementedError(psiRef.shortName)
           }

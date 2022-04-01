@@ -60,9 +60,9 @@ public sealed class TypeReference {
   protected abstract val typeName: TypeName
 
   /**
-   * For `Lazy<String>` this will return `String`.
+   * For `Map<String, Int>` this will return [`String`, `Int`].
    */
-  public abstract val unwrappedFirstType: TypeReference
+  public abstract val unwrappedTypes: List<TypeReference>
 
   public val module: AnvilModuleDescriptor get() = declaringClass.module
 
@@ -129,17 +129,18 @@ public sealed class TypeReference {
         null
       }
 
-    override val unwrappedFirstType: Psi by lazy(NONE) {
+    override val unwrappedTypes: List<Psi> by lazy(NONE) {
       type.typeElement!!.children
         .filterIsInstance<KtTypeArgumentList>()
         .single()
         .children
         .filterIsInstance<KtTypeProjection>()
-        .first()
-        .children
-        .filterIsInstance<KtTypeReference>()
-        .single()
-        .toTypeReference(declaringClass)
+        .map { typeProjection ->
+          typeProjection.children
+            .filterIsInstance<KtTypeReference>()
+            .single()
+            .toTypeReference(declaringClass)
+        }
     }
 
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): Psi? {
@@ -303,11 +304,8 @@ public sealed class TypeReference {
           "${declaringClass.fqName}."
       )
 
-    override val unwrappedFirstType: Descriptor by lazy(NONE) {
-      type.arguments
-        .first()
-        .type
-        .toTypeReference(declaringClass)
+    override val unwrappedTypes: List<Descriptor> by lazy(NONE) {
+      type.arguments.map { it.type.toTypeReference(declaringClass) }
     }
 
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): TypeReference? {
