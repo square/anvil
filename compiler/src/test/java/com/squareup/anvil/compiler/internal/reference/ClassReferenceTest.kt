@@ -414,6 +414,48 @@ class ClassReferenceTest {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
+
+  @Test fun `super types can be resolved`() {
+    compile(
+      """
+      package com.squareup.test
+
+      abstract class OuterClass {
+        interface InnerInterface
+      }
+      
+      class ClassA : OuterClass() {
+        class ClassB : InnerInterface
+      }
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
+            when (psiRef.shortName) {
+              "OuterClass" -> {
+                assertThat(ref.directSuperTypeReferences()).isEmpty()
+              }
+              "InnerInterface" -> {
+                assertThat(ref.directSuperTypeReferences()).isEmpty()
+              }
+              "ClassA" -> {
+                assertThat(ref.directSuperTypeReferences()).hasSize(1)
+              }
+              "ClassB" -> {
+                assertThat(ref.directSuperTypeReferences()).hasSize(1)
+              }
+              else -> throw NotImplementedError(psiRef.shortName)
+            }
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
 }
 
 fun ClassReference.toDescriptorReference(): ClassReference.Descriptor {
