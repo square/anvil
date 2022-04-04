@@ -16,6 +16,7 @@ import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
+import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
 import org.jetbrains.kotlin.psi.KtNamedDeclaration
@@ -37,6 +38,18 @@ public fun KtNamedDeclaration.requireFqName(): FqName = requireNotNull(fqName) {
 }
 
 @ExperimentalAnvilApi
+public fun PsiElement.ktFile(): KtFile {
+  return if (this is KtPureElement) {
+    containingKtFile
+  } else {
+    parentsWithSelf
+      .filterIsInstance<KtPureElement>()
+      .first()
+      .containingKtFile
+  }
+}
+
+@ExperimentalAnvilApi
 public fun PsiElement.fqNameOrNull(
   module: ModuleDescriptor
 ): FqName? {
@@ -53,10 +66,7 @@ public fun PsiElement.fqNameOrNull(
 public fun PsiElement.requireFqName(
   module: ModuleDescriptor
 ): FqName {
-  val containingKtFile = parentsWithSelf
-    .filterIsInstance<KtPureElement>()
-    .first()
-    .containingKtFile
+  val containingKtFile = ktFile()
 
   fun failTypeHandling(): Nothing = throw AnvilCompilationException(
     "Don't know how to handle Psi element: $text",

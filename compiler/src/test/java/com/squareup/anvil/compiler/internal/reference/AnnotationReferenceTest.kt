@@ -147,6 +147,7 @@ class AnnotationReferenceTest {
       import com.squareup.test2.Abc.Companion.CONSTANT_4
       import com.squareup.test2.SomeObject
       import com.squareup.test2.SomeObject.CONSTANT_3
+      import com.squareup.test3.*
       import kotlin.Int.Companion.MAX_VALUE
  
       annotation class BindingKey(val value: Int)
@@ -194,6 +195,9 @@ class AnnotationReferenceTest {
       
       @BindingKey(com.squareup.test2.Abc.CONSTANT_4)
       interface SomeClass14
+
+      @BindingKey(CONSTANT_5)
+      interface SomeClass15
       """,
       """
       package com.squareup.test2
@@ -209,6 +213,11 @@ class AnnotationReferenceTest {
           const val CONSTANT_4 = 4
         }
       }
+      """,
+      """
+      package com.squareup.test3
+        
+      const val CONSTANT_5 = 5
       """,
       allWarningsAsErrors = false,
       codeGenerators = listOf(
@@ -266,6 +275,13 @@ class AnnotationReferenceTest {
 
                 assertThat(ref.annotations.single().toAnnotationSpec().toString())
                   .isEqualTo("@com.squareup.test.BindingKey(value = 4)")
+              }
+              "SomeClass15" -> {
+                val argument = ref.annotations.single().arguments.single()
+                assertThat(argument.value<Int>()).isEqualTo(5)
+
+                assertThat(ref.annotations.single().toAnnotationSpec().toString())
+                  .isEqualTo("@com.squareup.test.BindingKey(value = 5)")
               }
               else -> throw NotImplementedError(psiRef.shortName)
             }

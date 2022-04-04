@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.descendant
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.getContributedPropertyOrNull
+import com.squareup.anvil.compiler.internal.ktFile
 import com.squareup.anvil.compiler.internal.reference.AnnotationArgumentReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.AnnotationArgumentReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
@@ -245,7 +246,11 @@ public sealed class AnnotationArgumentReference {
             ?.firstChild
             ?.fqNameOrNull(module)
             ?.descendant(psiElement.children.last().text)
-          ?: return null
+          ?: return psiElement.ktFile().importDirectives
+            // Check if there's a wildcard import for the constant.
+            .filter { it.isAllUnder }
+            .mapNotNull { it.importPath?.fqName?.descendant(psiElement.text) }
+            .firstNotNullOfOrNull { resolveConstant(it) }
 
         return resolveConstant(fqName)
       }
