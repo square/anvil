@@ -7,7 +7,6 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
-import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.anvil.compiler.internal.reference.toClassReferenceOrNull
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -15,6 +14,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
+import org.jetbrains.kotlin.psi.KtConstructorCalleeExpression
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNameReferenceExpression
@@ -28,6 +28,7 @@ import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
+import org.jetbrains.kotlin.resolve.ImportPath
 
 private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName, publishedApiFqName)
 
@@ -253,7 +254,7 @@ public fun PsiElement.requireFqName(
     .takeIf { it.canResolveFqName(module) }
     ?.let { return it }
 
-  findClassReferenceInSuperTypes(module, classReference)
+  findClassReferenceInSuperTypes(classReference, importPaths, module)
     ?.let { return it.fqName }
 
   // Check if it's a named import.
@@ -270,15 +271,50 @@ public fun PsiElement.requireFqName(
 }
 
 private fun PsiElement.findClassReferenceInSuperTypes(
+  className: String,
+  importPaths: List<ImportPath>,
   module: ModuleDescriptor,
-  className: String
 ): ClassReference? {
   return parents
+    // Get all outer classes, because the type could be from any inner class of them. These
+    // inner classes can be referenced without an import, e.g.
+    //
+    //   class ClassA : SomeType {
+    //     class ClassB : InnerInterfaceOfSomeType
+    //   }
     .filterIsInstance<KtClassOrObject>()
-    .map { it.toClassReference(module) }
+    .flatMap { ktClass ->
+      ktClass.superTypeListEntries
+        .map { superType ->
+          val superTypeName = (
+            // If it's a super constructor call, then we need to strip the argument list, e.g.
+            // ClassA() -> ClassA
+            //
+            // Otherwise it's an interface and we don't need to do anything.
+            superType.children
+              .filterIsInstance<KtConstructorCalleeExpression>()
+              .singleOrNull()?.typeReference?.text
+              ?: superType.typeReference?.text
+            // It might be a generic type, e.g. ClassA<Abc>. Remove the generic type.
+            )?.substringBefore('<')
+            ?: throw AnvilCompilationException(
+              "Couldn't get the super type for ${superType.text}."
+            )
+
+          // Find the FqName for our super type. We check below if it's actually correct.
+          importPaths
+            .singleOrNull {
+              it.alias?.asString() == superTypeName || it.fqName.asString().endsWith(superTypeName)
+            }
+            ?.fqName
+            // No import? Must be in the same package.
+            ?: superType.containingKtFile.packageFqName.descendant(superTypeName)
+        }
+    }
+    .mapNotNull { it.toClassReferenceOrNull(module) }
+    // Now go through all other super types and check if they contain the inner class.
     .flatMap { it.allSuperTypeClassReferences(includeSelf = true) }
-    .mapNotNull { clazz ->
+    .firstNotNullOfOrNull { clazz ->
       clazz.fqName.descendant(className).toClassReferenceOrNull(module)
     }
-    .firstOrNull()
 }

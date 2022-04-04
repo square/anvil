@@ -427,6 +427,23 @@ class ClassReferenceTest {
       class ClassA : OuterClass() {
         class ClassB : InnerInterface
       }
+
+      abstract class OuterClass2<T> {
+        interface InnerInterface2<S>
+      }
+
+      class ClassE : OuterClass2<String>() {
+        class ClassF : InnerInterface2<Int>
+      }
+      """,
+      """
+      package com.squareup.test2
+      
+      import com.squareup.test.OuterClass
+        
+      class ClassC : OuterClass() {
+        class ClassD : InnerInterface
+      }  
       """,
       allWarningsAsErrors = false,
       codeGenerators = listOf(
@@ -435,15 +452,43 @@ class ClassReferenceTest {
             when (psiRef.shortName) {
               "OuterClass" -> {
                 assertThat(ref.directSuperTypeReferences()).isEmpty()
+                assertThat(ref.allSuperTypeClassReferences().toList()).isEmpty()
               }
               "InnerInterface" -> {
                 assertThat(ref.directSuperTypeReferences()).isEmpty()
+                assertThat(ref.allSuperTypeClassReferences().toList()).isEmpty()
               }
               "ClassA" -> {
                 assertThat(ref.directSuperTypeReferences()).hasSize(1)
+                assertThat(ref.allSuperTypeClassReferences().toList()).hasSize(1)
               }
               "ClassB" -> {
                 assertThat(ref.directSuperTypeReferences()).hasSize(1)
+                assertThat(ref.allSuperTypeClassReferences().toList()).hasSize(1)
+              }
+              "ClassC" -> {
+                assertThat(ref.directSuperTypeReferences()).hasSize(1)
+                assertThat(ref.allSuperTypeClassReferences().toList()).hasSize(1)
+              }
+              "ClassD" -> {
+                assertThat(ref.directSuperTypeReferences()).hasSize(1)
+                assertThat(ref.allSuperTypeClassReferences().toList()).hasSize(1)
+              }
+              "OuterClass2" -> {
+                assertThat(ref.directSuperTypeReferences()).isEmpty()
+                assertThat(ref.allSuperTypeClassReferences().toList()).isEmpty()
+              }
+              "InnerInterface2" -> {
+                assertThat(ref.directSuperTypeReferences()).isEmpty()
+                assertThat(ref.allSuperTypeClassReferences().toList()).isEmpty()
+              }
+              "ClassE" -> {
+                assertThat(ref.directSuperTypeReferences()).hasSize(1)
+                assertThat(ref.allSuperTypeClassReferences().toList()).hasSize(1)
+              }
+              "ClassF" -> {
+                assertThat(ref.directSuperTypeReferences()).hasSize(1)
+                assertThat(ref.allSuperTypeClassReferences().toList()).hasSize(1)
               }
               else -> throw NotImplementedError(psiRef.shortName)
             }
