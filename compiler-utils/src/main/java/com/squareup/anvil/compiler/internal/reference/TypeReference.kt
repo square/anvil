@@ -128,23 +128,24 @@ public sealed class TypeReference {
     override val unwrappedTypes: List<Psi> by lazy(NONE) {
       type.typeElement!!.children
         .filterIsInstance<KtTypeArgumentList>()
-        .single()
-        .children
-        .filterIsInstance<KtTypeProjection>()
-        .map { typeProjection ->
+        .singleOrNull()
+        ?.children
+        ?.filterIsInstance<KtTypeProjection>()
+        ?.map { typeProjection ->
           typeProjection.children
             .filterIsInstance<KtTypeReference>()
             .single()
             .toTypeReference(declaringClass)
-        }
+        } ?: emptyList()
     }
 
+    @Suppress("RedundantNullableReturnType")
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference): TypeReference? {
       return resolveTypeReference(implementingClass)
     }
 
     /**
-     * Safely resolves a PSI [KtTypeReference], when that type reference may be a generic
+     * Safely resolves a type reference, when that type reference may be a generic
      * expressed by a type variable name. This is done by inspecting the class hierarchy to
      * find where the generic type is declared, then resolving *that* reference.
      *
@@ -158,21 +159,32 @@ public sealed class TypeReference {
      * interface ServiceFactory : Factory<Service>
      * ```
      *
-     * The KtTypeReference `T` will fail to resolve, since it isn't a type. This function will
+     * The type reference `T` will fail to resolve, since it isn't a type. This function will
      * instead look to the `ServiceFactory` interface, then look at the supertype declaration
      * in order to determine the type.
+     *
+     * It's possible that this method may still return a generic type, if `T` resolves to another
+     * generic type. For instance, `T` will resolve to `R` in the following example:
+     *
+     * ```
+     * interface Factory<T>
+     *
+     * interface UnknownFactory<R> : Factory<R>
+     * ```
      *
      * @param implementingClass The class which actually references the type. In the above
      * example, this would be `ServiceFactory`.
      */
     internal fun resolveTypeReference(
       implementingClass: ClassReference
-    ): TypeReference? {
+    ): TypeReference {
       // If the element isn't a type variable name like `T`, it can be resolved through imports.
       type.typeElement?.fqNameOrNull(module)
         ?.let { return this }
 
-      return resolveGenericTypeReference(implementingClass, declaringClass, type.text)
+      // When we fail to resolve the generic type here, we're potentially at the end of a chain of
+      // generics, so we return the current type instead of null.
+      return resolveGenericTypeReference(implementingClass, declaringClass, type.text) ?: this
     }
 
     override fun isFunctionType(): Boolean = type.typeElement is KtFunctionType

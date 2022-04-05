@@ -654,8 +654,6 @@ public final class ParentClass_NestedInjectClass_MembersInjector implements Memb
       
       import javax.inject.Inject
       
-      typealias StringList = List<String>
-      
       class ParentClass {
         class NestedInjectClass {
           @Inject lateinit var string: String
@@ -1436,6 +1434,156 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
       val constructor = membersInjector.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
+    }
+  }
+
+  @Test fun `a factory class is generated for a generic field injection with a generic class`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+
+      class InjectClass<T, R> {
+        @Inject lateinit var unknownItems: List<T>
+      }
+      """
+    ) {
+      val membersInjector = injectClass.membersInjector()
+
+      val constructor = membersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
+    }
+  }
+
+  @Test fun `a factory class is generated for a field injection in a class with a parent class with a generic field injection`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+
+      abstract class Base<T> {
+        @Inject lateinit var unknownItems: List<T>
+      }
+
+      class InjectClass : Base<String>() {
+        @Inject lateinit var numbers: List<Int>
+        
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+
+          if (unknownItems != other.unknownItems) return false
+          if (numbers != other.numbers) return false
+     
+          return true
+        }
+      }
+      """
+    ) {
+      val baseMembersInjector = classLoader.loadClass("com.squareup.test.Base")
+        .membersInjector()
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val membersInjectorInstance = constructor
+        .newInstance(
+          Provider { listOf("a", "b") },
+          Provider { listOf(1, 2) }
+        ) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      injectClassMembersInjector.staticInjectMethod("numbers")
+        .invoke(null, injectInstanceStatic, listOf(1, 2))
+      baseMembersInjector.staticInjectMethod("unknownItems")
+        .invoke(null, injectInstanceStatic, listOf("a", "b"))
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
+  @Test fun `a factory class is generated for a field injection in a class with an ancestor class with a generic field injection`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+
+      abstract class Base<T> {
+        @Inject lateinit var unknownItems: List<T>
+      }
+
+      abstract class Middle<R> : Base<R>() {
+        @Inject lateinit var numbers: List<Int>
+        
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+
+          if (unknownItems != other.unknownItems) return false
+          if (numbers != other.numbers) return false
+     
+          return true
+        }
+      }
+
+      class InjectClass : Middle<String>() {
+        @Inject lateinit var bools: List<Boolean>
+      }
+      """
+    ) {
+      val baseMembersInjector = classLoader.loadClass("com.squareup.test.Base")
+        .membersInjector()
+      val middleMembersInjector = classLoader.loadClass("com.squareup.test.Middle")
+        .membersInjector()
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java
+        )
+
+      val membersInjectorInstance = constructor
+        .newInstance(
+          Provider { listOf("a", "b") },
+          Provider { listOf(1, 2) },
+          Provider { listOf(true) }
+        ) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      injectClassMembersInjector.staticInjectMethod("bools")
+        .invoke(null, injectInstanceStatic, listOf(true))
+      middleMembersInjector.staticInjectMethod("numbers")
+        .invoke(null, injectInstanceStatic, listOf(1, 2))
+      baseMembersInjector.staticInjectMethod("unknownItems")
+        .invoke(null, injectInstanceStatic, listOf("a", "b"))
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
     }
   }
 

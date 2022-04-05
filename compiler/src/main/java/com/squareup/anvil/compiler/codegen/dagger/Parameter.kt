@@ -98,5 +98,6 @@ internal data class MemberInjectParameter(
   override val assistedParameterKey: AssistedParameterKey = AssistedParameterKey(
     typeName,
     assistedIdentifier
-  )
+  ),
+  val resolvedProviderTypeName: ParameterizedTypeName = providerTypeName
 ) : Parameter

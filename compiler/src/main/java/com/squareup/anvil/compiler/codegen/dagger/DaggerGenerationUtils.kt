@@ -9,9 +9,11 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ParameterReference
 import com.squareup.anvil.compiler.internal.reference.PropertyReference
 import com.squareup.anvil.compiler.internal.reference.TypeParameterReference
+import com.squareup.anvil.compiler.internal.reference.TypeReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.argumentAt
+import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.providerFqName
@@ -116,7 +118,7 @@ internal fun ClassReference.memberInjectParameters(): List<MemberInjectParameter
     .filterNot { it.isInterface() }
     .toList()
     .foldRight(listOf()) { classReference, acc ->
-      acc + classReference.declaredMemberInjectParameters(acc)
+      acc + classReference.declaredMemberInjectParameters(acc, this)
     }
 }
 
@@ -126,14 +128,18 @@ internal fun ClassReference.memberInjectParameters(): List<MemberInjectParameter
  * @return the member-injected parameters for this class only, not including any super-classes
  */
 private fun ClassReference.declaredMemberInjectParameters(
-  superParameters: List<Parameter>
+  superParameters: List<Parameter>,
+  implementingClass: ClassReference
 ): List<MemberInjectParameter> {
   return properties
     .filter { it.isAnnotatedWith(injectFqName) }
     .filter { it.visibility() != PRIVATE }
     .fold(listOf()) { acc, property ->
       val uniqueName = property.name.uniqueParameterName(superParameters, acc)
-      acc + property.toMemberInjectParameter(uniqueName = uniqueName)
+      acc + property.toMemberInjectParameter(
+        uniqueName = uniqueName,
+        implementingClass = implementingClass
+      )
     }
 }
 
@@ -188,7 +194,8 @@ internal fun List<Parameter>.asArgumentList(
 }
 
 private fun PropertyReference.toMemberInjectParameter(
-  uniqueName: String
+  uniqueName: String,
+  implementingClass: ClassReference
 ): MemberInjectParameter {
   val originalName = name
   val type = type()
@@ -198,11 +205,24 @@ private fun PropertyReference.toMemberInjectParameter(
   val isLazyWrappedInProvider = isWrappedInProvider &&
     type.unwrappedTypes.first().asClassReferenceOrNull()?.fqName == daggerLazyFqName
 
-  val typeName = when {
+  val unwrappedType = when {
     isLazyWrappedInProvider -> type.unwrappedTypes.first().unwrappedTypes.first()
     isWrappedInProvider || isWrappedInLazy -> type.unwrappedTypes.first()
     else -> type
-  }.asTypeName().withJvmSuppressWildcardsIfNeeded(this, type)
+  }
+  val typeName = unwrappedType.asTypeName().withJvmSuppressWildcardsIfNeeded(this, type)
+  val resolvedTypeName = if (unwrappedType.isGenericExcludingTypeAliases()) {
+    unwrappedType.asClassReferenceOrNull()
+      ?.asClassName()
+      ?.optionallyParameterizedByNames(
+        unwrappedType.unwrappedTypes.mapNotNull {
+          it.resolveGenericTypeNameOrNull(implementingClass)
+        }
+      )
+      ?.withJvmSuppressWildcardsIfNeeded(this, unwrappedType)
+  } else {
+    null
+  }
 
   val assistedAnnotation = annotations.singleOrNull { it.fqName == assistedFqName }
 
@@ -233,11 +253,13 @@ private fun PropertyReference.toMemberInjectParameter(
     .filter { it.isQualifier() }
     .map { it.toAnnotationSpec() }
 
+  val providerTypeName = typeName.wrapInProvider()
+
   return MemberInjectParameter(
     name = uniqueName,
     originalName = originalName,
     typeName = typeName,
-    providerTypeName = typeName.wrapInProvider(),
+    providerTypeName = providerTypeName,
     lazyTypeName = typeName.wrapInLazy(),
     isWrappedInProvider = isWrappedInProvider,
     isWrappedInLazy = isWrappedInLazy,
@@ -248,8 +270,25 @@ private fun PropertyReference.toMemberInjectParameter(
     isSetterInjected = isSetterInjected,
     accessName = accessName,
     qualifierAnnotationSpecs = qualifierAnnotations,
-    injectedFieldSignature = fqName
+    injectedFieldSignature = fqName,
+    resolvedProviderTypeName = resolvedTypeName?.wrapInProvider() ?: providerTypeName
   )
+}
+
+private fun TypeReference.isGenericExcludingTypeAliases(): Boolean {
+  // A TypeReference for 'typealias StringList = List<String> would still show up as generic but
+  // would have no unwrapped types available (String).
+  return isGenericType() && unwrappedTypes.isNotEmpty()
+}
+
+private fun ClassName.optionallyParameterizedByNames(
+  typeNames: List<TypeName>
+): TypeName {
+  return if (typeNames.isEmpty()) {
+    this
+  } else {
+    parameterizedBy(typeNames)
+  }
 }
 
 internal fun ClassName.optionallyParameterizedBy(
