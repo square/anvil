@@ -52,4 +52,119 @@ class TypeReferenceTest {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
+
+  @Test fun `resolving the generic type name on a concrete type returns the concrete type`() {
+    compile(
+      """
+      package com.squareup.test
+
+      abstract class SomeClass1 : List<String>
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          when (psiRef.shortName) {
+            "SomeClass1" -> {
+              listOf(psiRef, descriptorRef).forEach { ref ->
+                assertThat(
+                  ref.directSuperTypeReferences()
+                    .single() // List<String>
+                    .unwrappedTypes
+                    .single() // String
+                    .resolveGenericTypeNameOrNull(ref)
+                    .toString()
+                ).isEqualTo("kotlin.String")
+              }
+            }
+            else -> throw NotImplementedError(psiRef.shortName)
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test
+  fun `resolving the generic type name with no available resolved type returns unresolved type`() {
+    compile(
+      """
+      package com.squareup.test
+
+      abstract class SomeClass1<T> : List<T>
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          when (psiRef.shortName) {
+            "SomeClass1" -> {
+              listOf(psiRef, descriptorRef).forEach { ref ->
+                assertThat(
+                  ref.directSuperTypeReferences()
+                    .single() // List<T>
+                    .unwrappedTypes
+                    .single() // T
+                    .resolveGenericTypeNameOrNull(ref)
+                    .toString()
+                ).isEqualTo("T")
+              }
+            }
+            else -> throw NotImplementedError(psiRef.shortName)
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test fun `resolving the generic type name from a parent returns the resolved type`() {
+    compile(
+      """
+      package com.squareup.test
+
+      abstract class SomeClass1<T> : List<T>
+
+      abstract class SomeClass2 : SomeClass1<Int>()
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          when (psiRef.shortName) {
+            "SomeClass1" -> Unit
+            "SomeClass2" -> {
+              listOf(psiRef, descriptorRef).forEach { ref ->
+                assertThat(
+                  ref.directSuperTypeReferences()
+                    .single() // SomeClass1<Int>
+                    .asClassReference()
+                    .directSuperTypeReferences()
+                    .single() // List<T>
+                    .unwrappedTypes
+                    .single() // T
+                    .resolveGenericTypeNameOrNull(ref)
+                    .toString()
+                ).isEqualTo("kotlin.Int")
+              }
+            }
+            else -> throw NotImplementedError(psiRef.shortName)
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
 }

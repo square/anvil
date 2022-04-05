@@ -7,7 +7,6 @@ import com.squareup.anvil.compiler.internal.reference.ParameterReference.Psi
 import com.squareup.kotlinpoet.TypeName
 import org.jetbrains.kotlin.descriptors.ValueParameterDescriptor
 import org.jetbrains.kotlin.psi.KtParameter
-import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import kotlin.LazyThreadSafetyMode.NONE
 
 @ExperimentalAnvilApi
@@ -34,25 +33,7 @@ public sealed class ParameterReference : AnnotatedReference {
   public fun resolveTypeNameOrNull(
     implementingClass: ClassReference
   ): TypeName? {
-    return when (implementingClass) {
-      is ClassReference.Psi -> {
-        type?.resolveGenericTypeNameOrNull(implementingClass)
-      }
-      is ClassReference.Descriptor -> {
-        // This implementation is very similar to the return type implementation in
-        // FunctionReference.
-
-        val implementingFunction = implementingClass.functions
-          .singleOrNull { function ->
-            function.overriddenFunctions.any { it.fqNameSafe == declaringFunction.fqName }
-          }
-
-        implementingFunction?.parameters
-          ?.singleOrNull { it.name == name }
-          ?.type()
-          ?.asTypeNameOrNull()
-      }
-    }
+    return type?.resolveGenericTypeNameOrNull(implementingClass)
   }
 
   public fun resolveTypeName(implementingClass: ClassReference): TypeName =

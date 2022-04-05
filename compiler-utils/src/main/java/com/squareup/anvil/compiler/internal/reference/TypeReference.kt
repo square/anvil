@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.types.DefinitelyNotNullType
 import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.KotlinType
@@ -76,14 +77,12 @@ public sealed class TypeReference {
   public fun asTypeNameOrNull(): TypeName? = typeNameOrNull
   public fun asTypeName(): TypeName = typeName
 
-  // Keep this internal, because we need help from other classes for the descriptor
-  // implementation, e.g. FunctionReference resolves the return type or ParameterReference.
-  internal abstract fun resolveGenericTypeOrNull(
-    implementingClass: ClassReference.Psi
+  public abstract fun resolveGenericTypeOrNull(
+    implementingClass: ClassReference
   ): TypeReference?
 
-  internal fun resolveGenericTypeNameOrNull(
-    implementingClass: ClassReference.Psi
+  public fun resolveGenericTypeNameOrNull(
+    implementingClass: ClassReference
   ): TypeName? {
     asClassReferenceOrNull()?.let {
       // Then it's a normal type and not a generic type.
@@ -109,10 +108,7 @@ public sealed class TypeReference {
     override val declaringClass: ClassReference.Psi
   ) : TypeReference() {
     override val classReference: ClassReference? by lazy(NONE) {
-      resolveGenericTypeOrNull(declaringClass)
-        ?.type
-        ?.fqNameOrNull(module)
-        ?.toClassReference(module)
+      type.fqNameOrNull(module)?.toClassReference(module)
     }
 
     override val typeName: TypeName by lazy {
@@ -143,7 +139,7 @@ public sealed class TypeReference {
         }
     }
 
-    override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): Psi? {
+    override fun resolveGenericTypeOrNull(implementingClass: ClassReference): TypeReference? {
       return resolveTypeReference(implementingClass)
     }
 
@@ -170,8 +166,8 @@ public sealed class TypeReference {
      * example, this would be `ServiceFactory`.
      */
     internal fun resolveTypeReference(
-      implementingClass: ClassReference.Psi,
-    ): Psi? {
+      implementingClass: ClassReference
+    ): TypeReference? {
       // If the element isn't a type variable name like `T`, it can be resolved through imports.
       type.typeElement?.fqNameOrNull(module)
         ?.let { return this }
@@ -308,7 +304,7 @@ public sealed class TypeReference {
       type.arguments.map { it.type.toTypeReference(declaringClass) }
     }
 
-    override fun resolveGenericTypeOrNull(implementingClass: ClassReference.Psi): TypeReference? {
+    override fun resolveGenericTypeOrNull(implementingClass: ClassReference): TypeReference? {
       return resolveGenericKotlinTypeOrNull(implementingClass)
     }
 
@@ -330,9 +326,12 @@ public sealed class TypeReference {
      * @param implementingClass The class which actually references the type. In the above example,
      * this would be `SomeFactory`.
      */
-    private fun resolveGenericKotlinTypeOrNull(
-      implementingClass: ClassReference.Psi
-    ): Psi? {
+    internal fun resolveGenericKotlinTypeOrNull(
+      implementingClass: ClassReference
+    ): TypeReference? {
+      type.classDescriptorOrNull()?.fqNameOrNull()
+        ?.let { return this }
+
       val parameterKotlinType = when (type) {
         is FlexibleType -> {
           // A FlexibleType comes from Java code where the compiler doesn't know whether it's a
@@ -421,10 +420,10 @@ public fun AnvilCompilationExceptionTypReference(
 }
 
 private fun resolveGenericTypeReference(
-  implementingClass: ClassReference.Psi,
+  implementingClass: ClassReference,
   declaringClass: ClassReference,
   parameterName: String
-): Psi? {
+): TypeReference? {
   // If the class/interface declaring the generic is the receiver class,
   // then the generic hasn't been set to a concrete type and can't be resolved.
   if (implementingClass == declaringClass) return null
@@ -432,26 +431,45 @@ private fun resolveGenericTypeReference(
   // Used to determine which parameter to look at in a KtTypeArgumentList.
   val indexOfType = declaringClass.indexOfTypeParameter(parameterName)
 
-  // Find where the supertype is actually declared by matching the FqName of the
-  // SuperTypeListEntry to the type which declares the generic we're trying to resolve.
-  // After finding the SuperTypeListEntry, just take the TypeReference from its type
-  // argument list.
-  val resolvedTypeReference = implementingClass.superTypeListEntryOrNull(declaringClass.fqName)
-    ?.typeReference
-    ?.typeElement
-    ?.getChildOfType<KtTypeArgumentList>()
-    ?.arguments
-    ?.get(indexOfType)
-    ?.typeReference
+  when (implementingClass) {
+    is ClassReference.Psi -> {
+      // Find where the supertype is actually declared by matching the FqName of the
+      // SuperTypeListEntry to the type which declares the generic we're trying to resolve.
+      // After finding the SuperTypeListEntry, just take the TypeReference from its type
+      // argument list.
+      val resolvedTypeReference = implementingClass.superTypeListEntryOrNull(declaringClass.fqName)
+        ?.typeReference
+        ?.typeElement
+        ?.getChildOfType<KtTypeArgumentList>()
+        ?.arguments
+        ?.get(indexOfType)
+        ?.typeReference
 
-  return resolvedTypeReference
-    ?.containingClass()
-    ?.toClassReference(implementingClass.module)
-    ?.let { resolvedDeclaringClass ->
-      resolvedTypeReference
-        .toTypeReference(resolvedDeclaringClass)
-        .resolveTypeReference(implementingClass)
+      return resolvedTypeReference
+        ?.containingClass()
+        ?.toClassReference(implementingClass.module)
+        ?.let { resolvedDeclaringClass ->
+          resolvedTypeReference
+            .toTypeReference(resolvedDeclaringClass)
+            .resolveTypeReference(implementingClass)
+        }
     }
+    is ClassReference.Descriptor -> {
+      val resolvedTypeReference = implementingClass
+        .superTypeOrNull(declaringClass.fqName)
+        ?.arguments
+        ?.getOrNull(indexOfType)
+        ?.type
+
+      return resolvedTypeReference
+        ?.containingClassReference(implementingClass)
+        ?.let { resolvedDeclaringClass ->
+          resolvedTypeReference.toTypeReference(
+            resolvedDeclaringClass
+          ).resolveGenericKotlinTypeOrNull(implementingClass)
+        }
+    }
+  }
 }
 
 /**
@@ -474,7 +492,7 @@ private fun resolveGenericTypeReference(
  * Since `InjectClass` doesn't declare it, we look through the supers of `Middle` and find it, then
  * resolve `T` to `Something`.
  */
-private fun ClassReference.superTypeListEntryOrNull(
+private fun ClassReference.Psi.superTypeListEntryOrNull(
   superTypeFqName: FqName
 ): KtSuperTypeListEntry? {
   return allSuperTypeClassReferences(includeSelf = true)
@@ -484,6 +502,51 @@ private fun ClassReference.superTypeListEntryOrNull(
         .superTypeListEntries
         .firstOrNull { it.requireFqName(module) == superTypeFqName }
     }
+}
+
+private fun ClassReference.Descriptor.superTypeOrNull(
+  superTypeFqName: FqName
+): KotlinType? {
+  return allSuperTypeClassReferences(includeSelf = true)
+    .filterIsInstance<ClassReference.Descriptor>()
+    .firstNotNullOfOrNull { classReference ->
+      classReference.clazz
+        .typeConstructor
+        .supertypes
+        .firstOrNull {
+          it.classDescriptorOrNull()
+            ?.toClassReference(module)
+            ?.fqName == superTypeFqName
+        }
+    }
+}
+
+/**
+ * This is a rough corollary to [KtElement.containingClass()].
+ *
+ *  ```
+ *  class Parent<T>
+ *  class Child : Parent<String>
+ *  ```
+ *  In this example, [Child] is the [implementingClass] and [this] is [T]
+ *
+ * @param implementingClass: The lowest descendant implementing class, e.g. Child from
+ */
+private fun KotlinType.containingClassReference(
+  implementingClass: ClassReference
+): ClassReference.Descriptor? {
+  val containingClassReference = implementingClass.allSuperTypeClassReferences(true)
+    .toList()
+    .filterIsInstance<ClassReference.Descriptor>()
+    .find {
+      it.typeParameters.any { typeParameter ->
+        typeParameter.name == toString()
+      }
+    }
+  // If no containing class was found, this is likely already a concrete type and we try using it
+  // directly
+  return containingClassReference ?: classDescriptorOrNull()
+    ?.toClassReference(implementingClass.module)
 }
 
 /**
