@@ -56,35 +56,9 @@ public sealed class FunctionReference : AnnotatedReference {
   public fun resolveGenericReturnTypeOrNull(
     implementingClass: ClassReference
   ): ClassReference? {
-    return when (implementingClass) {
-      // For Psi classes the implementation is different depending on whether this function is a
-      // Psi or Descriptor function, so let each concrete class implement it.
-      is ClassReference.Psi ->
-        returnType
-          ?.resolveGenericTypeOrNull(implementingClass)
-          ?.asClassReferenceOrNull()
-      is ClassReference.Descriptor -> {
-        // If the implementing class is a Descriptor, then the function keeps track of all
-        // functions it's overriding in the hierarchy. We use that information to find the function
-        // in the implementing that implements THIS function reference for which we're trying to
-        // resolve the generic return type. Once we found the function in the implementing class,
-        // we can take its return, because that's what we're looking for.
-        //
-        // The implementation for Psi is completely different. Imagine this class:
-        //
-        //   class Abc : Def<String>
-        //
-        // The Descriptor APIs don't allow us to query the generic type <String>, but we can get
-        // the type from the actual function as described above. Psi can't do this and has to walk
-        // the hierarchy of classes to make the connections.
-        val implementingFunction = implementingClass.functions
-          .singleOrNull { function ->
-            function.overriddenFunctions.any { it.fqNameSafe == fqName }
-          }
-
-        implementingFunction?.returnTypeOrNull()?.asClassReference()
-      }
-    }
+    return returnType
+      ?.resolveGenericTypeOrNull(implementingClass)
+      ?.asClassReferenceOrNull()
   }
 
   public fun resolveGenericReturnType(implementingClass: ClassReference): ClassReference =
