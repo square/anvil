@@ -23,7 +23,6 @@ import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
@@ -71,15 +70,18 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
     val classId = clazz.generateClassName(suffix = "_MembersInjector")
     val packageName = classId.packageFqName.safePackageString()
     val className = classId.relativeClassName.asString()
+    val typeParameters = clazz.typeParameters
 
     val classType = clazz.asClassName()
       .let {
         if (clazz.isGenericClass()) {
-          it.parameterizedBy(List(size = clazz.clazz.typeParameters.size) { STAR })
+          it.parameterizedBy(typeParameters.map { typeParameter -> typeParameter.typeVariableName })
         } else {
           it
         }
       }
+
+    val membersInjectorType = MembersInjector::class.asClassName().parameterizedBy(classType)
 
     fun createArgumentList(asProvider: Boolean): String {
       return parameters
@@ -96,13 +98,16 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
       addType(
         TypeSpec
           .classBuilder(memberInjectorClass)
-          .addSuperinterface(MembersInjector::class.asClassName().parameterizedBy(classType))
+          .addSuperinterface(membersInjectorType)
           .apply {
+            typeParameters.forEach { typeParameter ->
+              addTypeVariable(typeParameter.typeVariableName)
+            }
             primaryConstructor(
               FunSpec.constructorBuilder()
                 .apply {
                   parameters.forEach { parameter ->
-                    addParameter(parameter.name, parameter.providerTypeName)
+                    addParameter(parameter.name, parameter.resolvedProviderTypeName)
                   }
                 }
                 .build()
@@ -110,7 +115,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
 
             parameters.forEach { parameter ->
               addProperty(
-                PropertySpec.builder(parameter.name, parameter.providerTypeName)
+                PropertySpec.builder(parameter.name, parameter.resolvedProviderTypeName)
                   .initializer(parameter.name)
                   .addModifiers(PRIVATE)
                   .build()
@@ -131,8 +136,12 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                 FunSpec.builder("create")
                   .jvmStatic()
                   .apply {
+                    typeParameters.forEach { typeParameter ->
+                      addTypeVariable(typeParameter.typeVariableName)
+                    }
+
                     parameters.forEach { parameter ->
-                      addParameter(parameter.name, parameter.providerTypeName)
+                      addParameter(parameter.name, parameter.resolvedProviderTypeName)
                     }
 
                     addStatement(
@@ -140,7 +149,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                       memberInjectorClass
                     )
                   }
-                  .returns(memberInjectorClass)
+                  .returns(membersInjectorType)
                   .build()
               )
               .apply {
@@ -155,6 +164,10 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                       FunSpec.builder("inject${parameter.accessName.capitalize()}")
                         .jvmStatic()
                         .apply {
+                          typeParameters.forEach { typeParameter ->
+                            addTypeVariable(typeParameter.typeVariableName)
+                          }
+
                           // Don't add @InjectedFieldSignature when it's calling a setter method
                           if (!parameter.isSetterInjected) {
                             addAnnotation(
