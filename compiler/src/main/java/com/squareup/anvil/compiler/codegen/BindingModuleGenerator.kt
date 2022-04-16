@@ -53,9 +53,7 @@ internal class BindingModuleGenerator(
 
   // Keeps track of for which scopes which files were generated. Usually there is only one file,
   // but technically there can be multiple.
-  private val mergedClasses = mutableMapOf<MergedClassKey, File>()
-
-  private val excludedTypesForClass = mutableMapOf<MergedClassKey, List<ClassReference>>()
+  private val mergedClasses = mutableMapOf<ClassReference, File>()
 
   private val contributedBindingClasses = mutableListOf<ClassReference>()
   private val contributedMultibindingClasses = mutableListOf<ClassReference>()
@@ -87,24 +85,9 @@ internal class BindingModuleGenerator(
     // Generate a Dagger module for each @MergeComponent and friends.
     return classes
       .mapNotNull { clazz ->
-        supportedFqNames
-          .firstNotNullOfOrNull { supportedFqName ->
-            clazz.annotations.firstOrNull { it.fqName == supportedFqName }
-          }
-          ?.let { clazz to it }
-      }
-      .map { (clazz, mergeAnnotation) ->
-        val scope = mergeAnnotation.scope()
-        val mergedClassKey = MergedClassKey(scope, clazz)
-
-        // Remember for which scopes which types were excluded so that we later don't generate
-        // a binding method for these types.
-        mergeAnnotation
-          .exclude()
-          .takeIf { it.isNotEmpty() }
-          ?.let { excludedReferences ->
-            excludedTypesForClass[mergedClassKey] = excludedReferences
-          }
+        val mergeAnnotations = clazz.annotations
+          .filter { it.fqName in supportedFqNames }
+          .ifEmpty { return@mapNotNull null }
 
         val packageName = generatePackageName(clazz)
         val className = clazz.generateClassName().relativeClassName.asString()
@@ -122,12 +105,12 @@ internal class BindingModuleGenerator(
         }
 
         val content = daggerModuleContent(
-          scope = scope.fqName.asString(),
+          scopes = mergeAnnotations.map { it.scope() },
           clazz = clazz,
           generatedMethods = emptyList()
         )
 
-        mergedClasses[mergedClassKey] = file
+        mergedClasses[clazz] = file
 
         GeneratedFile(file, content)
       }
@@ -138,11 +121,10 @@ internal class BindingModuleGenerator(
     codeGenDir: File,
     module: ModuleDescriptor
   ): Collection<GeneratedFile> {
-    return mergedClasses.map { (mergedClassKey, daggerModuleFile) ->
-      val scope = mergedClassKey.scope
-
-      // Precompute this list once per class since it's expensive.
-      val excludedNames = excludedTypesForClass[mergedClassKey].orEmpty()
+    return mergedClasses.map { (mergedClass, daggerModuleFile) ->
+      val annotations = mergedClass.annotations.filter { it.fqName in supportedFqNames }
+      val scopes = annotations.map { it.scope() }
+      val excludedClasses = annotations.flatMap { it.exclude() }
 
       // Contributed Dagger modules can replace other Dagger modules but also contributed bindings.
       // If a binding is replaced, then we must not generate the binding method.
@@ -152,20 +134,24 @@ internal class BindingModuleGenerator(
       val bindingsReplacedInDaggerModules = contributedModuleClasses
         .asSequence()
         .plus(
-          classScanner
-            .findContributedClasses(
-              module = module,
-              annotation = contributesToFqName,
-              scope = scope.fqName
-            )
-            .filter { it.isAnnotatedWith(daggerModuleFqName) }
+          scopes.flatMap { scope ->
+            classScanner
+              .findContributedClasses(
+                module = module,
+                annotation = contributesToFqName,
+                scope = scope.fqName
+              )
+              .filter { it.isAnnotatedWith(daggerModuleFqName) }
+          }
         )
         // Ignore replaced bindings specified by excluded modules for this scope.
-        .filter { clazz -> clazz !in excludedNames }
+        .filter { clazz -> clazz !in excludedClasses }
         .flatMap { clazz ->
-          clazz.annotations
-            .find(annotationName = contributesToFqName, scope = scope)
-            .flatMap { it.replaces() }
+          scopes.flatMap { scope ->
+            clazz.annotations
+              .find(annotationName = contributesToFqName, scope = scope)
+              .flatMap { it.replaces() }
+          }
         }
         .toList()
 
@@ -179,31 +165,37 @@ internal class BindingModuleGenerator(
         isMultibinding: Boolean
       ): List<GeneratedMethod> {
 
-        val contributedBindingsDependencies = classScanner.findContributedClasses(
-          module,
-          annotation = annotationFqName,
-          scope = scope.fqName
-        )
+        val contributedBindingsDependencies = scopes.flatMap { scope ->
+          classScanner.findContributedClasses(
+            module,
+            annotation = annotationFqName,
+            scope = scope.fqName
+          )
+        }
 
         val allContributedClasses = collectedClasses
           .plus(contributedBindingsDependencies)
 
         val replacedBindings = allContributedClasses
           .flatMap { classReference ->
-            classReference.annotations
-              .find(annotationName = annotationFqName, scope = scope)
-              .flatMap { it.replaces() }
+            scopes.flatMap { scope ->
+              classReference.annotations
+                .find(annotationName = annotationFqName, scope = scope)
+                .flatMap { it.replaces() }
+            }
           }
 
         return allContributedClasses
           .asSequence()
           .filterNot { it in replacedBindings }
           .filterNot { it in bindingsReplacedInDaggerModules }
-          .filterNot { it in excludedNames }
+          .filterNot { it in excludedClasses }
           .flatMap { clazz ->
-            clazz.annotations
-              .find(annotationName = annotationFqName, scope = scope)
-              .map { it.toContributedBinding(isMultibinding) }
+            scopes.flatMap { scope ->
+              clazz.annotations
+                .find(annotationName = annotationFqName, scope = scope)
+                .map { it.toContributedBinding(isMultibinding) }
+            }
           }
           .let { bindings ->
             if (isMultibinding) {
@@ -229,8 +221,8 @@ internal class BindingModuleGenerator(
       )
 
       val content = daggerModuleContent(
-        scope = scope.fqName.asString(),
-        clazz = mergedClassKey.clazz,
+        scopes = scopes,
+        clazz = mergedClass,
         generatedMethods = generatedMethods
       )
 
@@ -241,7 +233,7 @@ internal class BindingModuleGenerator(
   }
 
   private fun daggerModuleContent(
-    scope: String,
+    scopes: List<ClassReference>,
     clazz: ClassReference,
     generatedMethods: List<GeneratedMethod>
   ): String {
@@ -274,12 +266,16 @@ internal class BindingModuleGenerator(
       addType(
         builder
           .addAnnotation(Module::class)
-          .addAnnotation(
-            AnnotationSpec
-              .builder(ContributesTo::class)
-              .addMember("$scope::class")
-              .build()
-          )
+          .apply {
+            scopes.forEach { scope ->
+              addAnnotation(
+                AnnotationSpec
+                  .builder(ContributesTo::class)
+                  .addMember("%T::class", scope.asClassName())
+                  .build()
+              )
+            }
+          }
           .build()
       )
     }
@@ -388,8 +384,3 @@ private fun ContributedBinding.toGeneratedMethod(
 }
 
 private val Collection<GeneratedMethod>.specs get() = map { it.spec }
-
-private data class MergedClassKey(
-  val scope: ClassReference,
-  val clazz: ClassReference
-)

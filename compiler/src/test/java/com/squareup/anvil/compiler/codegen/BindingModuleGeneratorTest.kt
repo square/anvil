@@ -406,7 +406,8 @@ class BindingModuleGeneratorTest(
     }
   }
 
-  @Test fun `the contributed binding class must not have a generic type parameter with super type chain`() {
+  @Test
+  fun `the contributed binding class must not have a generic type parameter with super type chain`() {
     compile(
       """
       package com.squareup.test
@@ -597,7 +598,8 @@ class BindingModuleGeneratorTest(
     }
   }
 
-  @Test fun `methods are generated for bindings contributed to multiple scopes with multiple compilations`() {
+  @Test
+  fun `methods are generated for bindings contributed to multiple scopes with multiple compilations`() {
     assumeIrBackend()
 
     val previousResult = compile(
@@ -750,7 +752,8 @@ class BindingModuleGeneratorTest(
     }
   }
 
-  @Test fun `bindings contributed to multiple scopes can be replaced by other contributed bindings`() {
+  @Test
+  fun `bindings contributed to multiple scopes can be replaced by other contributed bindings`() {
     assumeIrBackend()
 
     compile(
@@ -880,6 +883,76 @@ class BindingModuleGeneratorTest(
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
+    }
+  }
+
+  @Test fun `a contributed binding is merged in multiple scopes`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      $import
+
+      interface ParentInterface
+
+      @ContributesBinding(Unit::class)
+      interface ContributingInterface : ParentInterface
+      
+      $annotation(Any::class)
+      $annotation(Unit::class)
+      interface ComponentInterface
+      
+      $annotation(Int::class)
+      $annotation(Unit::class)
+      interface SubcomponentInterface
+      """
+    ) {
+      listOf(componentInterface, subcomponentInterface).forEach { component ->
+        with(component.anvilModule.declaredMethods.single()) {
+          assertThat(returnType).isEqualTo(parentInterface)
+          assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+          assertThat(isAbstract).isTrue()
+          assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+        }
+      }
+    }
+  }
+
+  @Test fun `a contributed binding can be excluded in one component`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      $import
+
+      interface ParentInterface
+
+      @ContributesBinding(Unit::class)
+      @ContributesBinding(Any::class)
+      interface ContributingInterface : ParentInterface
+      
+      $annotation(Any::class)
+      $annotation(Unit::class)
+      interface ComponentInterface
+      
+      $annotation(Any::class)
+      $annotation(Unit::class, exclude = [ContributingInterface::class])
+      interface SubcomponentInterface
+      """
+    ) {
+      with(componentInterface.anvilModule.declaredMethods.single()) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      }
+      assertThat(subcomponentInterface.anvilModule.declaredMethods).isEmpty()
     }
   }
 
