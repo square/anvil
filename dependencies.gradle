@@ -11,7 +11,7 @@ ext {
       project.getProperty('square.agpVersion') : '4.2.2'
 
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
-      project.getProperty('square.kotlinVersion') : '1.6.10'
+      project.getProperty('square.kotlinVersion') : '1.7.0-RC2'
 
   kotlinUseIR = (project.hasProperty('square.useIR') ?
       project.getProperty('square.useIR') : 'true').toBoolean()
@@ -81,7 +81,7 @@ ext {
 
       kotlin: [
           annotation_processing_embeddable: "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable:$kotlinVersion",
-          compile_testing: "com.github.tschuchortdev:kotlin-compile-testing:${kotlinPreview ? '1.4.8-20220210.154948-5' : '1.4.7'}",
+          compile_testing: "com.github.tschuchortdev:kotlin-compile-testing:1.4.9-alpha01",
           compiler: "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion",
           dokka: "org.jetbrains.dokka:dokka-gradle-plugin:1.6.10",
           gradle_plugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
