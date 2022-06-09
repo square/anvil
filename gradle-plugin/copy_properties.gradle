@@ -2,8 +2,7 @@ Properties properties = new Properties()
 file("../gradle.properties").withInputStream { properties.load(it) }
 
 properties.each { key, value ->
-  ext.set(key, getGradleProperty(key) ?: value)
-  println "Hello ${ext[key]}"
+  ext.set(key, getGradleProperty(key, value))
 }
 
 def getGradleProperty(String name, String defaultValue = null) {
