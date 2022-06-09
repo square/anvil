@@ -13,9 +13,9 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.constants.ConstantValue
 import org.jetbrains.kotlin.resolve.constants.KClassValue.Value.NormalClass
-import org.jetbrains.kotlin.types.ErrorType
 import org.jetbrains.kotlin.types.KotlinType
 import org.jetbrains.kotlin.types.TypeUtils
+import org.jetbrains.kotlin.types.isError
 
 // When the Kotlin type is of the form: KClass<OurType>.
 @ExperimentalAnvilApi
@@ -37,7 +37,7 @@ public fun KotlinType.classDescriptor(): ClassDescriptor {
 @ExperimentalAnvilApi
 public fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType {
   val argumentType = getType(module).argumentType()
-  if (argumentType !is ErrorType) return argumentType
+  if (!argumentType.isError) return argumentType
 
   // Handle inner classes explicitly. When resolving the Kotlin type of inner class from
   // dependencies the compiler might fail. It tries to load my.package.Class$Inner and fails
