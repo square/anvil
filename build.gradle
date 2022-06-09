@@ -103,6 +103,12 @@ subprojects {
       substitute module("com.squareup.anvil:compiler-api") with project(':compiler-api')
       substitute module("com.squareup.anvil:compiler-utils") with project(':compiler-utils')
     }
+
+    // TODO: check if this is needed with newer Kotlin versions.
+    resolutionStrategy {
+      // Needed for Kotlin 1.7.
+      force deps.kotlin.metadata
+    }
   }
 
   // We disable configure on demand in the local gradle.properties, but you can override this flag

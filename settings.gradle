@@ -6,7 +6,14 @@ include ':integration-tests:code-generator'
 include ':integration-tests:code-generator-tests'
 include ':integration-tests:dagger-factories-only'
 include ':integration-tests:library'
-include ':integration-tests:mpp:android-module'
+
+// TODO: There seems to be a bug with Kotlin 1.7 and MPP projects. Disable the Android
+//  module for now until the issue is resolved
+def kotlinVersion = hasProperty('square.kotlinVersion') ? getProperty('square.kotlinVersion').toString() : '1.6.10'
+if (VersionNumber.parse(kotlinVersion).baseVersion < VersionNumber.parse('1.7.0')) {
+  include ':integration-tests:mpp:android-module'
+}
+
 include ':integration-tests:mpp:jvm-module'
 include ':integration-tests:tests'
 include ':sample:app'
