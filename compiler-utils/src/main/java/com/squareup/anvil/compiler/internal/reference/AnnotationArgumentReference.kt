@@ -143,7 +143,7 @@ public sealed class AnnotationArgumentReference {
           is KtObjectDeclaration -> {
             toClassReference(module)
               .properties
-              .map { it.property }
+              .mapNotNull { it.property as? KtProperty }
               .findConstPropertyWithName(name)
               ?.initializer
               ?.text
@@ -218,7 +218,9 @@ public sealed class AnnotationArgumentReference {
               is PropertyReference.Descriptor ->
                 property.property.compileTimeInitializer?.value
               is PropertyReference.Psi ->
-                property.property.initializer?.let { parsePrimitiveType(it.text) }
+                // A PropertyReference.property may also be a KtParameter if it's in a constructor,
+                // but if we're here we're in an object, so the property must be a KtProperty.
+                (property.property as KtProperty).initializer?.let { parsePrimitiveType(it.text) }
             }
           }
 

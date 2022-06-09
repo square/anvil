@@ -16,7 +16,11 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget.PROP
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget.PROPERTY_SETTER
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtCallableDeclaration
+import org.jetbrains.kotlin.psi.KtParameter
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtValVarKeywordOwner
+import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import kotlin.LazyThreadSafetyMode.NONE
@@ -61,11 +65,16 @@ public sealed class PropertyReference : AnnotatedReference {
     return fqName.hashCode()
   }
 
-  public class Psi internal constructor(
-    public val property: KtProperty,
+  /**
+   * @param property In practice, this is either a [KtProperty], or a [KtParameter] for which
+   *   [KtParameter.isPropertyParameter()] is true. [KtCallableDeclaration] is the most applicable
+   *   common interface, but it's also implemented by other types like `KtConstructor`.
+   */
+  public class Psi private constructor(
+    public val property: KtCallableDeclaration,
     override val declaringClass: ClassReference.Psi,
-    override val fqName: FqName = property.requireFqName(),
-    override val name: String = fqName.shortName().asString()
+    override val fqName: FqName,
+    override val name: String
   ) : PropertyReference() {
 
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
@@ -86,14 +95,14 @@ public sealed class PropertyReference : AnnotatedReference {
     override val setterAnnotations: List<AnnotationReference.Psi> by lazy(NONE) {
       property.annotationEntries
         .filter { it.useSiteTarget?.getAnnotationUseSiteTarget() == PROPERTY_SETTER }
-        .plus(property.setter?.annotationEntries ?: emptyList())
+        .plus((property as? KtProperty)?.setter?.annotationEntries ?: emptyList())
         .map { it.toAnnotationReference(declaringClass, module) }
     }
 
     override val getterAnnotations: List<AnnotationReference.Psi> by lazy(NONE) {
       property.annotationEntries
         .filter { it.useSiteTarget?.getAnnotationUseSiteTarget() == PROPERTY_GETTER }
-        .plus(property.getter?.annotationEntries ?: emptyList())
+        .plus((property as? KtProperty)?.getter?.annotationEntries ?: emptyList())
         .map { it.toAnnotationReference(declaringClass, module) }
     }
 
@@ -108,6 +117,23 @@ public sealed class PropertyReference : AnnotatedReference {
           message = "Couldn't get visibility $visibility for property $fqName."
         )
       }
+    }
+
+    internal companion object {
+      // There's no single applicable type for a PSI property. The multiple generic bounds prevent
+      // us from creating a property out of a function, constructor, or destructuring declaration.
+      internal operator fun <T> invoke(
+        property: T,
+        declaringClass: ClassReference.Psi,
+        fqName: FqName = property.requireFqName(),
+        name: String = fqName.shortName().asString()
+      ): Psi where T : KtCallableDeclaration,
+                   T : KtValVarKeywordOwner = Psi(
+        property = property,
+        declaringClass = declaringClass,
+        fqName = fqName,
+        name = name
+      )
     }
   }
 
@@ -157,6 +183,19 @@ public sealed class PropertyReference : AnnotatedReference {
       }
     }
   }
+}
+
+@ExperimentalAnvilApi
+public fun KtParameter.toPropertyReference(
+  declaringClass: ClassReference.Psi
+): Psi {
+  if (!isPropertyParameter()) {
+    throw AnvilCompilationException(
+      element = this,
+      message = "A KtParameter may only be turned into a PropertyReference if it's a val or var."
+    )
+  }
+  return Psi(this, declaringClass)
 }
 
 @ExperimentalAnvilApi
