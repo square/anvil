@@ -33,6 +33,7 @@ import org.jetbrains.kotlin.psi.KtClassBody
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.allConstructors
+import org.jetbrains.kotlin.psi.psiUtil.isPropertyParameter
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.DescriptorUtils
@@ -146,11 +147,18 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
     }
 
     override val properties: List<PropertyReference.Psi> by lazy(NONE) {
-      clazz
-        .children
-        .filterIsInstance<KtClassBody>()
-        .flatMap { it.properties }
-        .map { it.toPropertyReference(this) }
+      buildList {
+        // Order kind of matters here, since the Descriptor APIs will list body/member properties
+        // before the constructor properties.
+        clazz.body
+          ?.properties
+          ?.forEach { add(it.toPropertyReference(this@Psi)) }
+
+        clazz.primaryConstructor
+          ?.valueParameters
+          ?.filter { it.isPropertyParameter() }
+          ?.forEach { add(it.toPropertyReference(this@Psi)) }
+      }
     }
 
     override val typeParameters: List<TypeParameterReference.Psi> by lazy(NONE) {
