@@ -14,6 +14,26 @@
 
 ### Security
 
+### Custom Code Generator
+
+
+## [2.4.1] - 2022-06-09
+
+### Changed
+
+- **Attention:** This version supports Kotlin `1.7.0` only. For Kotlin `1.6.*` support please use version `2.4.1-1-6` instead. Future Anvil versions will remove support for Kotlin 1.6.  
+
+### Fixed
+
+- Support wildcard imports for constants when resolving annotation arguments, see #592.
+- Fix dagger factory member injection not handling generics, see #486.
+- Correctly merge bindings from all scopes, if multiple `@Merge*` annotations are used, see #596.
+
+### Custom Code Generator
+ 
+- Change the method to get all super classes for `ClassReference` to return `TypeReference` instead.
+- Avoid a stackoverflow when querying all super types, see #587.
+
 
 ## [2.4.0] - 2022-03-28
 
@@ -483,7 +503,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.4.0...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.4.1...HEAD
+[2.4.1]: https://github.com/square/anvil/releases/tag/v2.4.1
 [2.4.0]: https://github.com/square/anvil/releases/tag/v2.4.0
 [2.4.0-M2]: https://github.com/square/anvil/releases/tag/v2.4.0-M2
 [2.4.0-M1]: https://github.com/square/anvil/releases/tag/v2.4.0-M1
