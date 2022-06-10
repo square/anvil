@@ -33,6 +33,7 @@
  
 - Change the method to get all super classes for `ClassReference` to return `TypeReference` instead.
 - Avoid a stackoverflow when querying all super types, see #587.
+- Create `PropertyReference.Psi` from primary constructor properties to have the same behavior as the descriptor implementation, see #609.
 
 
 ## [2.4.0] - 2022-03-28
