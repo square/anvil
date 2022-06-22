@@ -12,6 +12,8 @@
 
 ### Fixed
 
+- Upgraded KotlinPoet to the latest version to fix potential conflicts with other libraries, see #613.
+
 ### Security
 
 ### Custom Code Generator

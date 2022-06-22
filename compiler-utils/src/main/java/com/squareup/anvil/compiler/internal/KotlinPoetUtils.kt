@@ -140,6 +140,6 @@ public fun FileSpec.Companion.buildFile(
 
       block()
     }
-    .addComment(generatorComment)
+    .addFileComment(generatorComment)
     .build()
     .writeToString()
