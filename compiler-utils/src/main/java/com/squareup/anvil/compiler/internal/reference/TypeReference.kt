@@ -214,13 +214,20 @@ public sealed class TypeReference {
       fun KtTypeElement.requireTypeName(): TypeName {
         return when (this) {
           is KtUserType -> {
-            val className = fqNameOrNull(module)?.asClassName(module)
-              ?: if (isTypeParameter()) {
+            val className = try {
+              requireFqName(module).asClassName(module)
+            } catch (e: Exception) {
+              if (isTypeParameter()) {
                 val bounds = findExtendsBound().map { it.asClassName(module) }
                 return TypeVariableName(text, bounds)
               } else {
-                throw AnvilCompilationException("Couldn't resolve fqName.", element = this)
+                throw AnvilCompilationException(
+                  message = "Couldn't resolve fqName.",
+                  element = this,
+                  cause = e
+                )
               }
+            }
 
             val typeArgumentList = typeArgumentList
             if (typeArgumentList != null) {
