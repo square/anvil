@@ -267,6 +267,12 @@ public fun PsiElement.requireFqName(
   findClassReferenceInSuperTypes(classReference, importPaths, module)
     ?.let { return it.fqName }
 
+  // Check if it's an inner class in the hierarchy.
+  parents.filterIsInstance<KtClassOrObject>()
+    .map { FqName("${it.requireFqName()}.$classReference") }
+    .firstOrNull { it.canResolveFqName(module) }
+    ?.let { return it }
+
   // Check if it's a named import.
   containingKtFile.importDirectives
     .firstOrNull { classReference == it.importPath?.importedName?.asString() }

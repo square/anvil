@@ -23,7 +23,6 @@ import org.junit.runners.Parameterized.Parameters
 import java.io.File
 import javax.inject.Provider
 
-@Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
 class InjectConstructorFactoryGeneratorTest(
   private val useDagger: Boolean
@@ -233,6 +232,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 }
      */
 
+    @Suppress("EqualsOrHashCode")
     compile(
       """
       package com.squareup.test
@@ -336,6 +336,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 }
      */
 
+    @Suppress("EqualsOrHashCode")
     compile(
       """
       package com.squareup.test
@@ -426,6 +427,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 }
      */
 
+    @Suppress("EqualsOrHashCode")
     compile(
       """
       package com.squareup.test
@@ -890,6 +892,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 }
      */
 
+    @Suppress("ClassName")
     compile(
       """
       package com.squareup.test
@@ -1451,6 +1454,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 }
      */
 
+    @Suppress("ClassName")
     compile(
       """
       package com.squareup.test
@@ -1640,6 +1644,7 @@ public final class MyClass_Factory implements Factory<MyClass> {
 }
      */
 
+    @Suppress("ClassName")
     compile(
       """
       package com.squareup.test
@@ -2022,7 +2027,7 @@ public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
       package com.squareup.test
       
       import javax.inject.Inject
-      import javax.inject.Provider;
+      import javax.inject.Provider
       
       class InjectClass<T> @Inject constructor(prov: Provider<T>)
       """
@@ -2135,7 +2140,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       package com.squareup.test
       
       import javax.inject.Inject
-      import javax.inject.Provider;
+      import javax.inject.Provider
       
       class InjectClass @Inject constructor(
         map: Map<Class<out CharSequence>, @JvmSuppressWildcards Provider<String>>
@@ -2664,6 +2669,33 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     ) {
       val constructor = injectClass.factoryClass().declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).hasSize(8)
+    }
+  }
+
+  @Test fun `nested inner classes are supported`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import kotlin.LazyThreadSafetyMode.NONE
+      import kotlin.LazyThreadSafetyMode.SYNCHRONIZED 
+      import kotlin.reflect.KClass      
+      import javax.inject.Inject
+      import javax.inject.Named
+      import javax.inject.Qualifier
+      
+      class A {
+        class Factory @Inject constructor(
+          private val innerClassFactory: Achild.Factory
+        )
+      
+        class Achild {
+          class Factory
+        }
+      }
+      """
+    ) {
+      assertThat(classLoader.loadClass("com.squareup.test.A\$Achild\$Factory")).isNotNull()
     }
   }
 
