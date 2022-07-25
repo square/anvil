@@ -495,7 +495,9 @@ class InterfaceMergerTest(
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
-        "Couldn't find the classId for <root>. Are we stuck in a loop while resolving super types?"
+        "Couldn't find the classId for <root>. Are we stuck in a loop while resolving super " +
+          "types? Note that it's not supported to contribute an inner class to a scope that " +
+          "is merged in an outer class."
       )
     }
   }

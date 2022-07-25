@@ -95,7 +95,8 @@ class RealAnvilModuleDescriptor private constructor(
       val classId = descriptor.classId ?: throw AnvilCompilationException(
         classDescriptor = descriptor,
         message = "Couldn't find the classId for $fqNameSafe. Are we stuck in a loop while " +
-          "resolving super types?"
+          "resolving super types? Note that it's not supported to contribute an inner class to " +
+          "a scope that is merged in an outer class."
       )
       Descriptor(descriptor, classId, this)
     } as Descriptor
