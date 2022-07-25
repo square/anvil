@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.internal.anyFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
@@ -61,7 +62,8 @@ public sealed class TypeReference {
   protected abstract val typeName: TypeName
 
   /**
-   * For `Map<String, Int>` this will return [`String`, `Int`].
+   * For `Map<String, Int>` this will return [`String`, `Int`]. For star projections like
+   * `List<*>` the result will be mapped to [Any].
    */
   public abstract val unwrappedTypes: List<TypeReference>
 
@@ -125,17 +127,23 @@ public sealed class TypeReference {
         null
       }
 
-    override val unwrappedTypes: List<Psi> by lazy(NONE) {
+    override val unwrappedTypes: List<TypeReference> by lazy(NONE) {
       type.typeElement!!.children
         .filterIsInstance<KtTypeArgumentList>()
         .singleOrNull()
         ?.children
         ?.filterIsInstance<KtTypeProjection>()
         ?.map { typeProjection ->
-          typeProjection.children
-            .filterIsInstance<KtTypeReference>()
-            .single()
-            .toTypeReference(declaringClass)
+          if (typeProjection.children.isEmpty() && typeProjection.text == "*") {
+            // Resolve `*` star projections to kotlin.Any similar to the descriptor APIs.
+            val anyDescriptor = module.asAnvilModuleDescriptor().resolveFqNameOrNull(anyFqName)!!
+            anyDescriptor.defaultType.toTypeReference(declaringClass)
+          } else {
+            typeProjection.children
+              .filterIsInstance<KtTypeReference>()
+              .single()
+              .toTypeReference(declaringClass)
+          }
         } ?: emptyList()
     }
 
@@ -302,7 +310,7 @@ public sealed class TypeReference {
 
   public class Descriptor internal constructor(
     public val type: KotlinType,
-    override val declaringClass: ClassReference.Descriptor
+    override val declaringClass: ClassReference
   ) : TypeReference() {
     override val classReference: ClassReference? by lazy(NONE) {
       type.classDescriptorOrNull()?.toClassReference(module)
@@ -413,7 +421,7 @@ public fun KtTypeReference.toTypeReference(declaringClass: ClassReference.Psi): 
 }
 
 @ExperimentalAnvilApi
-public fun KotlinType.toTypeReference(declaringClass: ClassReference.Descriptor): Descriptor {
+public fun KotlinType.toTypeReference(declaringClass: ClassReference): Descriptor {
   return Descriptor(this, declaringClass)
 }
 
@@ -431,7 +439,7 @@ public fun AnvilCompilationExceptionTypReference(
   )
   is Descriptor -> {
     AnvilCompilationException(
-      classDescriptor = typeReference.declaringClass.clazz,
+      classDescriptor = typeReference.type.classDescriptor(),
       message = message + " Hint: ${typeReference.type}",
       cause = cause
     )
@@ -547,7 +555,7 @@ private fun ClassReference.Descriptor.superTypeOrNull(
  *  class Parent<T>
  *  class Child : Parent<String>
  *  ```
- *  In this example, [Child] is the [implementingClass] and [this] is [T]
+ *  In this example, `Child` is the [implementingClass] and [this] is `T`.
  *
  * @param implementingClass: The lowest descendant implementing class, e.g. Child from
  */
