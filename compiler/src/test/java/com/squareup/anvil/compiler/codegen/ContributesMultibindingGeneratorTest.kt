@@ -317,6 +317,22 @@ class ContributesMultibindingGeneratorTest {
     }
   }
 
+  @Test fun `the contributed multibinding class can extend Any explicitly`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+
+      @ContributesMultibinding(Int::class, boundType = Any::class)
+      interface ContributingInterface
+      """
+    ) {
+      assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintMultibindingScope).isEqualTo(Int::class)
+    }
+  }
+
   @Test fun `a contributed multibinding can be generated`() {
     val codeGenerator = simpleCodeGenerator { clazz ->
       clazz
