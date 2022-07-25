@@ -167,4 +167,51 @@ class TypeReferenceTest {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
+
+  @Test fun `star projections are supported`() {
+    compile(
+      """
+      package com.squareup.test
+
+      class SomeClass {
+        lateinit var map1: Map<*, *>
+        lateinit var map2: Map<Int, *>
+        lateinit var map3: Map<*, String>
+        lateinit var map4: Map<Int, String>
+      }
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          when (psiRef.shortName) {
+            "SomeClass" -> {
+              listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
+                assertThat(
+                  ref.properties.single { it.name == "map1" }.type().unwrappedTypes
+                    .map { it.asClassReference().shortName }
+                ).containsExactly("Any", "Any").inOrder()
+                assertThat(
+                  ref.properties.single { it.name == "map2" }.type().unwrappedTypes
+                    .map { it.asClassReference().shortName }
+                ).containsExactly("Int", "Any").inOrder()
+                assertThat(
+                  ref.properties.single { it.name == "map3" }.type().unwrappedTypes
+                    .map { it.asClassReference().shortName }
+                ).containsExactly("Any", "String").inOrder()
+                assertThat(
+                  ref.properties.single { it.name == "map4" }.type().unwrappedTypes
+                    .map { it.asClassReference().shortName }
+                ).containsExactly("Int", "String").inOrder()
+              }
+            }
+            else -> throw NotImplementedError(psiRef.shortName)
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
 }

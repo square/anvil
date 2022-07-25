@@ -37,13 +37,19 @@ internal val mergeSubcomponentFqName = MergeSubcomponent::class.fqName
 internal val mergeInterfacesFqName = MergeInterfaces::class.fqName
 internal val mergeModulesFqName = MergeModules::class.fqName
 
+internal val anyFqName = Any::class.fqName
+
 @ExperimentalAnvilApi
 public fun FqName.descendant(segments: String): FqName =
   if (isRoot) FqName(segments) else FqName("${asString()}.$segments")
 
 /** Returns the computed [FqName] representation of this [KClass]. */
 @ExperimentalAnvilApi
-public val KClass<*>.fqName: FqName get() = FqName(java.canonicalName)
+public val KClass<*>.fqName: FqName get() = FqName(
+  requireNotNull(qualifiedName) {
+    "An FqName cannot be created for a local class or class of an anonymous object."
+  }
+)
 
 /**
  * This function should only be used for package names. If the FqName is the root (no package at
