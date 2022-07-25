@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.squareup.anvil.compiler.anyFqName
 import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.injectFqName
@@ -80,6 +81,10 @@ internal fun ClassReference.checkClassExtendsBoundType(
       message = "Couldn't find the bound type.",
       classReference = this
     )
+
+  // The boundType is declared explicitly in the annotation. Since all classes extend Any, we can
+  // stop here.
+  if (boundType.fqName == anyFqName) return
 
   if (allSuperTypeClassReferences().none { it.fqName == boundType.fqName }) {
     throw AnvilCompilationExceptionClassReference(

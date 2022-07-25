@@ -309,6 +309,22 @@ class ContributesBindingGeneratorTest {
     }
   }
 
+  @Test fun `the contributed binding class can extend Any explicitly`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+
+      @ContributesBinding(Int::class, boundType = Any::class)
+      interface ContributingInterface
+      """
+    ) {
+      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.hintBindingScope).isEqualTo(Int::class)
+    }
+  }
+
   @Test fun `there are multiple hints for multiple contributed bindings`() {
     assumeIrBackend()
 
