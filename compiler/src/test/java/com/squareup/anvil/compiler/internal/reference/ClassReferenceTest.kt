@@ -501,6 +501,54 @@ class ClassReferenceTest {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
+
+  @Test fun `an imported top level function doesn't confuse the class resolver`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.test.other.Navigator
+
+      interface Navigator {
+        interface Factory<T : Navigator>
+      }
+      
+      class NavigatorImpl : Navigator {
+        interface Factory : Navigator.Factory<NavigatorImpl>
+      }
+      """,
+      """
+      package com.squareup.test.other
+
+      fun Navigator() = Unit
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
+            when (psiRef.classId.relativeClassName.asString()) {
+              "Navigator" -> {
+                assertThat(ref.allSuperTypeClassReferences().toList()).isEmpty()
+              }
+              "Navigator.Factory" -> {
+                assertThat(ref.allSuperTypeClassReferences().toList()).isEmpty()
+              }
+              "NavigatorImpl" -> {
+                assertThat(ref.allSuperTypeClassReferences().toList()).hasSize(1)
+              }
+              "NavigatorImpl.Factory" -> {
+                assertThat(ref.allSuperTypeClassReferences().toList()).hasSize(1)
+              }
+            }
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
 }
 
 fun ClassReference.toDescriptorReference(): ClassReference.Descriptor {

@@ -174,7 +174,9 @@ public fun PsiElement.requireFqName(
     .also { matchingImportPaths ->
       when {
         matchingImportPaths.size == 1 ->
-          return matchingImportPaths[0].fqName
+          matchingImportPaths[0].fqName
+            .takeIf { it.canResolveFqName(module) }
+            ?.let { return it }
         matchingImportPaths.size > 1 ->
           return matchingImportPaths.first { importPath ->
             importPath.fqName.canResolveFqName(module)
@@ -187,7 +189,9 @@ public fun PsiElement.requireFqName(
     .also { matchingImportPaths ->
       when {
         matchingImportPaths.size == 1 ->
-          return FqName("${matchingImportPaths[0].fqName.parent()}.$classReference")
+          FqName("${matchingImportPaths[0].fqName.parent()}.$classReference")
+            .takeIf { it.canResolveFqName(module) }
+            ?.let { return it }
         matchingImportPaths.size > 1 ->
           return matchingImportPaths.first { importPath ->
             // Note that we must use the parent of the import FqName. An import is `com.abc.A` and
@@ -203,6 +207,7 @@ public fun PsiElement.requireFqName(
   // If there's an import alias, then we know the FqName.
   importPaths
     .singleOrNull { it.alias?.asString() == classReference }
+    ?.takeIf { it.fqName.canResolveFqName(module) }
     ?.let { return it.fqName }
 
   containingKtFile.importDirectives
