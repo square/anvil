@@ -23,7 +23,7 @@ internal abstract class DisableIncrementalCompilationTask : DefaultTask() {
 
   @Suppress("unused")
   @get:OutputFile @get:Optional
-  val someFile = File(project.buildDir, "not-existing-file-because-gradle-needs-an-output")
+  abstract val outputFile: Property<File>
 
   @get:Internal
   abstract val incrementalSignal: Property<IncrementalSignal>

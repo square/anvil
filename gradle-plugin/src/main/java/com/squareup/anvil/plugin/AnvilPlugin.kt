@@ -293,6 +293,12 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         variant.project.configurations.getByName(variant.compilerPluginClasspathName)
       )
       task.incrementalSignal.set(incrementalSignal)
+      task.outputFile.set(
+        File(
+          variant.project.buildDir,
+          "not-existing-file-because-gradle-needs-an-output-$compileTaskName"
+        )
+      )
     }
 
     compileTaskProvider.configure {
