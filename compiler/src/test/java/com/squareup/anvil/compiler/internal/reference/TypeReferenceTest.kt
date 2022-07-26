@@ -214,4 +214,52 @@ class TypeReferenceTest {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
+
+  @Test fun `unwrapped types contain types from type aliases`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      typealias AliasType<X> = Map<String, X>
+
+      typealias MyPair<X, Y> = Triple<X, String, Y>
+      typealias MySingle1<Z> = MyPair<Z, Long>
+      typealias MySingle2<Z> = Triple<Z, Z, Z>
+
+      class SomeClass {
+        lateinit var map: AliasType<Int>
+        lateinit var single1: MySingle1<Int>
+        lateinit var single2: MySingle2<Int>
+      }
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          when (psiRef.shortName) {
+            "SomeClass" -> {
+              listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
+                assertThat(
+                  ref.properties.single { it.name == "map" }.type().unwrappedTypes
+                    .map { it.asClassReference().shortName }
+                ).containsExactly("String", "Int").inOrder()
+                assertThat(
+                  ref.properties.single { it.name == "single1" }.type().unwrappedTypes
+                    .map { it.asClassReference().shortName }
+                ).containsExactly("Int", "String", "Long").inOrder()
+                assertThat(
+                  ref.properties.single { it.name == "single2" }.type().unwrappedTypes
+                    .map { it.asClassReference().shortName }
+                ).containsExactly("Int", "Int", "Int").inOrder()
+              }
+            }
+            else -> throw NotImplementedError(psiRef.shortName)
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
 }

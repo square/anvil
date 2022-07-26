@@ -2171,6 +2171,57 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
   }
 
   @Test
+  fun `a member injector is generated for a class with a typealias injected parameter and different type arguments`() {
+
+    compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      typealias AliasType<X> = Map<String, X>
+
+      class InjectClass {
+        @Inject lateinit var value: AliasType<Int>
+     
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+     
+          if (value != other.value) return false
+     
+          return true
+        }
+        
+        override fun hashCode() = value.hashCode()
+      }
+      """
+    ) {
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
+
+      val membersInjectorInstance = constructor
+        .newInstance(Provider { mapOf("a" to 1) }) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      injectClassMembersInjector.staticInjectMethod("value")
+        .invoke(null, injectInstanceStatic, mapOf("a" to 1))
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
+  @Test
   fun `a member injector is generated for a class with a typealias superclass`() {
 
     compile(
