@@ -300,7 +300,6 @@ modules with mixed Java and Kotlin code for Kotlin classes, though.
 #### Incremental Kotlin compilation breaks compiler plugins
 
 There are two bugs that affect the Anvil Kotlin compiler plugin:
-* [Incremental compilation breaks compiler plugins](https://youtrack.jetbrains.com/issue/KT-38570)
 * [AnalysisResult.RetryWithAdditionalRoots crashes during incremental compilation with java classes in classpath](https://youtrack.jetbrains.com/issue/KT-38576)
 
 The Gradle plugin implements workarounds for these bugs, so you shouldn't notice them. Side effects

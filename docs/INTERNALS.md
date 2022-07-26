@@ -80,7 +80,6 @@ dependencies {
 adds the Anvil `annotations` artifact to the compile classpath and applies several fixes and
 workarounds to make the compiler plugin work, e.g. in incremental build scenarios:
 
-* [KT-38570](https://youtrack.jetbrains.com/issue/KT-38570)
 * [KT-38576](https://youtrack.jetbrains.com/issue/KT-38576)
 
 ## KAPT Specifics
