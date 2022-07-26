@@ -12,6 +12,7 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.descriptors.findTypeAliasAcrossModuleDependencies
 import org.jetbrains.kotlin.descriptors.resolveClassByFqName
 import org.jetbrains.kotlin.incremental.components.LookupLocation
@@ -80,8 +81,12 @@ class RealAnvilModuleDescriptor private constructor(
     return resolveDescriptorCache.getOrPut(fqName) {
       // In the case of a typealias, we need to look up the original reference instead.
       resolveClassByFqName(fqName, lookupLocation)
-        ?: findTypeAliasAcrossModuleDependencies(fqName.classIdBestGuess())?.classDescriptor
+        ?: resolveTypeAliasFqNameOrNull(fqName)?.classDescriptor
     }
+  }
+
+  override fun resolveTypeAliasFqNameOrNull(fqName: FqName): TypeAliasDescriptor? {
+    return findTypeAliasAcrossModuleDependencies(fqName.classIdBestGuess())
   }
 
   override fun getClassReference(clazz: KtClassOrObject): Psi {

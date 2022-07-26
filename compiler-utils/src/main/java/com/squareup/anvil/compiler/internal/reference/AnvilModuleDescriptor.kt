@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.descriptors.TypeAliasDescriptor
 import org.jetbrains.kotlin.incremental.components.LookupLocation
 import org.jetbrains.kotlin.incremental.components.NoLookupLocation.FROM_BACKEND
 import org.jetbrains.kotlin.name.ClassId
@@ -21,6 +22,10 @@ public interface AnvilModuleDescriptor : ModuleDescriptor {
     fqName: FqName,
     lookupLocation: LookupLocation = FROM_BACKEND
   ): ClassDescriptor?
+
+  public fun resolveTypeAliasFqNameOrNull(
+    fqName: FqName
+  ): TypeAliasDescriptor?
 
   public fun getClassAndInnerClassReferences(ktFile: KtFile): List<Psi>
 

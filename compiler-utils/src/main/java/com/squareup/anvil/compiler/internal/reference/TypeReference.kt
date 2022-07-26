@@ -128,7 +128,7 @@ public sealed class TypeReference {
       }
 
     override val unwrappedTypes: List<TypeReference> by lazy(NONE) {
-      type.typeElement!!.children
+      val unwrappedTypes = type.typeElement!!.children
         .filterIsInstance<KtTypeArgumentList>()
         .singleOrNull()
         ?.children
@@ -145,6 +145,8 @@ public sealed class TypeReference {
               .toTypeReference(declaringClass)
           }
         } ?: emptyList()
+
+      findUnwrappedTypesWithTypeAlias(unwrappedTypes)
     }
 
     @Suppress("RedundantNullableReturnType")
@@ -305,6 +307,42 @@ public sealed class TypeReference {
       }
 
       return (typeElement ?: fail()).requireTypeName()
+    }
+
+    private fun findUnwrappedTypesWithTypeAlias(
+      unwrappedTypes: List<TypeReference>
+    ): List<TypeReference> {
+      // For Psi we must inspect the type and check if further arguments have been specified in
+      // a type alias, e.g.
+      //
+      //   typealias MyType<X> = Pair<X, String>
+      //
+      //   val myType: MyType<Int>
+      //
+      // Without inspecting the type, Psi would only tell us that there's one argument `Int`. Type
+      // aliases are pretty much inlined, so we need to treat them specially. The idea is to check
+      // if the type is a type alias and if the type arguments differ. If no, then nothing special
+      // needs to happen. If yes, then we need to merge both type argument lists.
+
+      val children = type.typeElement?.children ?: return unwrappedTypes
+      if (children.size != 2 || children[1] !is KtTypeArgumentList) return unwrappedTypes
+
+      val typeAlias = children[0].fqNameOrNull(module)
+        ?.let { module.asAnvilModuleDescriptor().resolveTypeAliasFqNameOrNull(it) }
+        ?: return unwrappedTypes
+
+      val typeAliasArguments = typeAlias.defaultType.arguments
+      val delegatedTypeArguments = typeAlias.expandedType.arguments
+      if (typeAliasArguments.size == delegatedTypeArguments.size) return unwrappedTypes
+
+      return delegatedTypeArguments.map { typeProjection ->
+        val index = typeAliasArguments.indexOf(typeProjection)
+        if (index >= 0) {
+          unwrappedTypes[index]
+        } else {
+          typeProjection.type.toTypeReference(declaringClass)
+        }
+      }
     }
   }
 
