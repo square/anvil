@@ -230,32 +230,12 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   }
 
   private fun disableIncrementalKotlinCompilation(variant: Variant) {
-    // Use this signal to share state between DisableIncrementalCompilationTask and the Kotlin
-    // compile task. If the plugin classpath changed, then DisableIncrementalCompilationTask sets
-    // the signal to false.
-    @Suppress("UnstableApiUsage")
-    val incrementalSignal = IncrementalSignal.registerIfAbsent(variant.project)
-
-    disableIncrementalCompilationWhenTheCompilerClasspathChanges(
-      variant, incrementalSignal, variant.compileTaskProvider
-    )
-
     variant.project.pluginManager.withPlugin(KAPT_PLUGIN_ID) {
       variant.project
         .namedLazy<KaptGenerateStubsTask>(variant.stubsTaskName) { stubsTaskProvider ->
-          if (variant.variantFilter.generateDaggerFactoriesOnly ||
-            variant.variantFilter.disableComponentMerging
+          if (!variant.variantFilter.generateDaggerFactoriesOnly &&
+            !variant.variantFilter.disableComponentMerging
           ) {
-            // We don't need to disable the incremental compilation for the stub generating task
-            // every time, when we only generate Dagger factories or contribute modules. That's only
-            // needed for merging Dagger modules.
-            //
-            // However, we still need to update the generated code when the compiler plugin classpath
-            // changes.
-            disableIncrementalCompilationWhenTheCompilerClasspathChanges(
-              variant, incrementalSignal, stubsTaskProvider
-            )
-          } else {
             stubsTaskProvider.configure { stubsTask ->
               // Disable incremental compilation for the stub generating task. Trigger the compiler
               // plugin if any dependencies in the compile classpath have changed. This will make sure
@@ -271,56 +251,6 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
             }
           }
         }
-    }
-  }
-
-  private fun disableIncrementalCompilationWhenTheCompilerClasspathChanges(
-    variant: Variant,
-    incrementalSignal: Provider<IncrementalSignal>,
-    compileTaskProvider: TaskProvider<out KotlinCompile>
-  ) {
-    val compileTaskName = compileTaskProvider.name
-
-    // Disable incremental compilation, if the compiler plugin dependency isn't up-to-date.
-    // This will trigger a full compilation of a module using Anvil even though its
-    // source files might not have changed. This workaround is necessary, otherwise
-    // incremental builds are broken. See https://youtrack.jetbrains.com/issue/KT-38570
-    val disableIncrementalCompilationTaskProvider = variant.project.tasks.register(
-      compileTaskName + "CheckIncrementalCompilationAnvil",
-      DisableIncrementalCompilationTask::class.java
-    ) { task ->
-      task.pluginClasspath.from(
-        variant.project.configurations.getByName(variant.compilerPluginClasspathName)
-      )
-      task.incrementalSignal.set(incrementalSignal)
-      task.outputFile.set(
-        File(
-          variant.project.buildDir,
-          "not-existing-file-because-gradle-needs-an-output-$compileTaskName"
-        )
-      )
-    }
-
-    compileTaskProvider.configure {
-      it.dependsOn(disableIncrementalCompilationTaskProvider)
-    }
-
-    // We avoid a reference to the project in the doFirst.
-    val projectPath = variant.project.path
-
-    compileTaskProvider.configure { compileTask ->
-      compileTask.doFirstCompat {
-        // If the signal is set, then the plugin classpath changed. Apply the setting that
-        // DisableIncrementalCompilationTask requested.
-        val incremental = incrementalSignal.get().isIncremental(projectPath)
-        if (incremental != null) {
-          compileTask.incremental = incremental
-        }
-
-        compileTask.log(
-          "Anvil: Incremental compilation enabled: ${compileTask.incremental} (compile)"
-        )
-      }
     }
   }
 
