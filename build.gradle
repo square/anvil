@@ -77,21 +77,13 @@ subprojects {
       jvmTarget = JavaVersion.VERSION_1_8
 
       allWarningsAsErrors = rootProject.ext.makeWarningsErrors
-      if (rootProject.ext.kotlinPreview) {
-        freeCompilerArgs += ["-opt-in=kotlin.RequiresOptIn"]
-      } else {
-        freeCompilerArgs += ["-Xopt-in=kotlin.RequiresOptIn"]
-      }
+      freeCompilerArgs += ["-opt-in=kotlin.RequiresOptIn"]
 
       boolean optInExperimental = project.name != "annotations"
           && project.name != "scopes"
           && project.name != "dagger-factories-only"
       if (optInExperimental) {
-        if (rootProject.ext.kotlinPreview) {
-          freeCompilerArgs += "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
-        } else {
-          freeCompilerArgs += "-Xopt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
-        }
+        freeCompilerArgs += "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
       }
     }
   }
@@ -104,9 +96,7 @@ subprojects {
       substitute module("com.squareup.anvil:compiler-utils") with project(':compiler-utils')
     }
 
-    // TODO: check if this is needed with newer Kotlin versions.
     resolutionStrategy {
-      // Needed for Kotlin 1.7.
       force deps.kotlin.metadata
     }
   }

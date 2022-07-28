@@ -20,17 +20,8 @@ jobs :
           java-version : '11'
           check-latest : true
 
-      # TODO: Revert the commit with Kotlin 1.7 that introduced the 2nd release.
-      - name : Publish Release 1.6
-        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel -Psquare.kotlinVersion=1.6.10 -PVERSION_NAME=2.4.2-1-6 && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=1.6.10 -PVERSION_NAME=2.4.2-1-6 && cd ..
-        env :
-          ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingInMemoryKey : ${{ secrets.ARTIFACT_SIGNING_PRIVATE_KEY }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword : ''
-
-      - name : Publish Release 1.7
-        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel -Psquare.kotlinVersion=1.7.0 && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=1.7.0 && cd ..
+      - name : Publish Release
+        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace && cd ..
         env :
           ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
