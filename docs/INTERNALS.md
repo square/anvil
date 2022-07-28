@@ -176,8 +176,8 @@ stubs in the `build/tmp/kapt3/stubs` folder, if KAPT is being used. Remember tha
 generating task must generate Java code in order to feed annotation processors and the Java
 source code contains generated annotations and super types.
 
-Although Anvil uses Kotlin 1.6, the IR compiler backend became stable in Kotlin 1.5 and the
-old backend was deprecated in Kotlin 1.6, we still must support the old backend, because the
+Although Anvil uses Kotlin 1.6 or higher, the IR compiler backend became stable in Kotlin 1.5 and 
+the old backend was deprecated in Kotlin 1.6, we still must support the old backend, because the
 stub generating task still uses the old backend no matter what. Since Anvil heavily relies on the
 stub generating task, we had to implement the merging phase twice for different APIs. Jetbrains
 promised a solution in Kotlin 1.7:

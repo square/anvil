@@ -19,7 +19,7 @@ jobs :
       # solution.
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.6.10, 1.6.21, 1.7.0 ]
+        kotlin-version : [ 1.7.10 ]
 
     steps :
       - uses : actions/checkout@v2
@@ -47,7 +47,7 @@ jobs :
     strategy :
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.6.10, 1.6.21, 1.7.0 ]
+        kotlin-version : [ 1.7.10 ]
 
     steps :
       - uses : actions/checkout@v2
@@ -167,15 +167,8 @@ jobs :
           java-version : '11'
           check-latest : true
 
-      # TODO: Revert the commit with Kotlin 1.7 that introduced the 2nd release.
-      - name : Publish Snapshots 1.6
-        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel -Psquare.kotlinVersion=1.6.10 -PVERSION_NAME=2.4.2-1-6-SNAPSHOT && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=1.6.10 -PVERSION_NAME=2.4.2-1-6-SNAPSHOT && cd ..
-        env :
-          ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
-
-      - name : Publish Snapshots 1.7
-        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel -Psquare.kotlinVersion=1.7.0 && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=1.7.0 && cd ..
+      - name : Publish Snapshots
+        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace && cd ..
         env :
           ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
@@ -194,7 +187,7 @@ jobs :
       # solution.
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.6.10, 1.6.21, 1.7.0 ]
+        kotlin-version : [ 1.7.10 ]
         agp-version : [ 4.2.2, 7.0.4, 7.1.1, 7.2.0-beta01, 7.3.0-alpha01 ]
 
     steps :
@@ -245,7 +238,7 @@ jobs :
       # solution.
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.6.10, 1.6.21, 1.7.0 ]
+        kotlin-version : [ 1.7.10 ]
 
     steps :
       - uses : actions/checkout@v2
