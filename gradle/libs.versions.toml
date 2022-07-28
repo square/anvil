@@ -28,7 +28,6 @@ mavenPublish = "0.18.0"
 # processor (KAPT is slow).
 config-fullTestRun = "true"
 config-generateDaggerFactoriesWithAnvil = "true"
-config-useIr = "true"
 
 [plugins]
 agp-application = { id = "com.android.application", version.ref = "agp" }

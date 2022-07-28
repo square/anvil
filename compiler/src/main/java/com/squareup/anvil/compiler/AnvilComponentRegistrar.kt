@@ -9,7 +9,6 @@ import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
-import org.jetbrains.kotlin.codegen.extensions.ExpressionCodegenExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
@@ -66,10 +65,6 @@ class AnvilComponentRegistrar : ComponentRegistrar {
       SyntheticResolveExtension.registerExtension(
         project,
         InterfaceMerger(scanner, moduleDescriptorFactory)
-      )
-      ExpressionCodegenExtension.registerExtension(
-        project,
-        ModuleMerger(scanner, moduleDescriptorFactory)
       )
 
       IrGenerationExtension.registerExtension(

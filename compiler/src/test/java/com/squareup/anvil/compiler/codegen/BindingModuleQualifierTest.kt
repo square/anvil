@@ -6,7 +6,6 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.anvilModule
 import com.squareup.anvil.compiler.anyQualifier
-import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
@@ -444,8 +443,6 @@ class BindingModuleQualifierTest(
   }
 
   @Test fun `the Dagger binding method has a qualifier for multiple contributions`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test

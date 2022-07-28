@@ -4,9 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
-import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.anvilModule
-import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
@@ -565,8 +563,6 @@ class BindingModuleGeneratorTest(
   }
 
   @Test fun `methods are generated for bindings contributed to multiple scopes`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -600,8 +596,6 @@ class BindingModuleGeneratorTest(
 
   @Test
   fun `methods are generated for bindings contributed to multiple scopes with multiple compilations`() {
-    assumeIrBackend()
-
     val previousResult = compile(
       """
       package com.squareup.test
@@ -644,8 +638,6 @@ class BindingModuleGeneratorTest(
   }
 
   @Test fun `multiple contributions can have different bound types`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -684,8 +676,6 @@ class BindingModuleGeneratorTest(
   }
 
   @Test fun `multiple contributions to the same scope must have different bound types`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -723,8 +713,6 @@ class BindingModuleGeneratorTest(
   }
 
   @Test fun `multiple contributions using different bound types with the same simple name don't clash`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test.other
@@ -768,8 +756,6 @@ class BindingModuleGeneratorTest(
   }
 
   @Test fun `multiple contributions to the same scope can be replaced at once`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -799,8 +785,6 @@ class BindingModuleGeneratorTest(
 
   @Test
   fun `bindings contributed to multiple scopes can be replaced by other contributed bindings`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -844,8 +828,6 @@ class BindingModuleGeneratorTest(
   }
 
   @Test fun `bindings contributed to multiple scopes can be excluded in one scope`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -883,7 +865,6 @@ class BindingModuleGeneratorTest(
 
   @Test fun `contributed bindings in the old format are picked up`() {
     val result = AnvilCompilation()
-      .useIR(USE_IR)
       .configureAnvil(enableAnvil = false)
       .compile(
         """
@@ -932,8 +913,6 @@ class BindingModuleGeneratorTest(
   }
 
   @Test fun `a contributed binding is merged in multiple scopes`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -967,8 +946,6 @@ class BindingModuleGeneratorTest(
   }
 
   @Test fun `a contributed binding can be excluded in one component`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
