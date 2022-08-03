@@ -337,4 +337,128 @@ class AnnotationReferenceTest {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
+
+  @Test fun `a string template annotation argument can be parsed`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import kotlin.reflect.KClass
+ 
+      annotation class BindingKey(val name: String)
+
+      const val WORLD: String = "World!"
+
+      @BindingKey("Hello, ${'$'}WORLD")
+      interface SomeClass1
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          if (psiRef.shortName in listOf("BindingKey"))
+            return@simpleCodeGenerator null
+
+          listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
+            val arguments = ref.annotations.single().arguments
+            assertThat(arguments[0].value<String>()).isEqualTo("Hello, World!")
+
+            assertThat(ref.annotations.single().toAnnotationSpec().toString()).isEqualTo(
+              "@com.squareup.test.BindingKey(name = \"Hello, World!\")"
+            )
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test fun `a string template annotation argument with no literals can be parsed`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import kotlin.reflect.KClass
+ 
+      annotation class BindingKey(val name: String)
+
+      const val WORLD: String = "World!"
+
+      @BindingKey("${'$'}WORLD")
+      interface SomeClass1
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          if (psiRef.shortName in listOf("BindingKey"))
+            return@simpleCodeGenerator null
+
+          listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
+            val arguments = ref.annotations.single().arguments
+            assertThat(arguments[0].value<String>()).isEqualTo("World!")
+
+            assertThat(ref.annotations.single().toAnnotationSpec().toString()).isEqualTo(
+              "@com.squareup.test.BindingKey(name = \"World!\")"
+            )
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test fun `a string template annotation argument with dot-qualified constants can be parsed`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.test2.Abc
+      import com.squareup.test2.SomeObject
+      import kotlin.reflect.KClass
+ 
+      annotation class BindingKey(val name: String)
+
+      @BindingKey("${'$'}{SomeObject.HELLO_NESTED} ${'$'}{Abc.WORLD_NESTED}")
+      interface SomeClass1
+      """,
+      """
+      package com.squareup.test2
+      
+      object SomeObject {
+        const val HELLO_NESTED = "Hello nested,"
+      }
+      
+      class Abc {
+        companion object {
+          const val WORLD_NESTED = "World nested!"
+        }
+      }
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          if (psiRef.shortName in listOf("BindingKey", "SomeObject", "Abc", "Companion"))
+            return@simpleCodeGenerator null
+
+          listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
+            val arguments = ref.annotations.single().arguments
+            assertThat(arguments[0].value<String>()).isEqualTo("Hello nested, World nested!")
+
+            assertThat(ref.annotations.single().toAnnotationSpec().toString()).isEqualTo(
+              "@com.squareup.test.BindingKey(name = \"Hello nested, World nested!\")"
+            )
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
 }
