@@ -14,6 +14,7 @@ import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtBlockStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtClass
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
@@ -26,12 +27,13 @@ import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.KtObjectDeclaration
 import org.jetbrains.kotlin.psi.KtPrefixExpression
 import org.jetbrains.kotlin.psi.KtProperty
+import org.jetbrains.kotlin.psi.KtSimpleNameStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtStringTemplateEntry
 import org.jetbrains.kotlin.psi.KtStringTemplateExpression
 import org.jetbrains.kotlin.psi.KtValueArgument
 import org.jetbrains.kotlin.psi.KtValueArgumentName
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
-import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
+import org.jetbrains.kotlin.psi.psiUtil.getChildrenOfType
 import org.jetbrains.kotlin.resolve.constants.ArrayValue
 import org.jetbrains.kotlin.resolve.constants.BooleanValue
 import org.jetbrains.kotlin.resolve.constants.ByteValue
@@ -263,11 +265,19 @@ public sealed class AnnotationArgumentReference {
           is KtCollectionLiteralExpression ->
             psiElement.children.map { parsePsiElement(it) }.convertToArrayIfNeeded()
           is KtConstantExpression, is KtPrefixExpression -> parsePrimitiveType(psiElement.text)
-          is KtStringTemplateExpression ->
-            psiElement
-              .getChildOfType<KtStringTemplateEntry>()
-              ?.text
-              ?: fail()
+          is KtStringTemplateExpression -> {
+            val parts = psiElement.getChildrenOfType<KtStringTemplateEntry>()
+
+            parts.map { templateEntry ->
+              if (templateEntry is KtSimpleNameStringTemplateEntry ||
+                templateEntry is KtBlockStringTemplateEntry
+              ) {
+                parsePsiElement(templateEntry.expression as PsiElement)
+              } else {
+                templateEntry.text
+              }
+            }.joinToString("").ifEmpty { fail() }
+          }
           is KtNameReferenceExpression -> {
             // Those are likely enum values or another primitive constant.
             resolveConstant(psiElement)?.let { return it }
