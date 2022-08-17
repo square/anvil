@@ -5,6 +5,7 @@ import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionPropertyReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ParameterReference
 import com.squareup.anvil.compiler.internal.reference.PropertyReference
@@ -16,6 +17,7 @@ import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
+import com.squareup.anvil.compiler.jvmFieldFqName
 import com.squareup.anvil.compiler.providerFqName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
@@ -197,6 +199,20 @@ private fun PropertyReference.toMemberInjectParameter(
   uniqueName: String,
   implementingClass: ClassReference
 ): MemberInjectParameter {
+  if (
+    !isLateinit() &&
+    !isAnnotatedWith(jvmFieldFqName) &&
+    setterAnnotations.none { it.fqName == injectFqName }
+  ) {
+    // Technically this works with Anvil and we could remove this check. But we prefer consistency
+    // with Dagger.
+    throw AnvilCompilationExceptionPropertyReference(
+      propertyReference = this,
+      message = "Dagger does not support injection into private fields. Either use a " +
+        "'lateinit var' or '@JvmField'."
+    )
+  }
+
   val originalName = name
   val type = type()
 

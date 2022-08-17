@@ -42,6 +42,7 @@ public sealed class PropertyReference : AnnotatedReference {
   public abstract val getterAnnotations: List<AnnotationReference>
 
   public abstract fun visibility(): Visibility
+  public abstract fun isLateinit(): Boolean
 
   public fun typeOrNull(): TypeReference? = type
   public fun type(): TypeReference = type
@@ -119,6 +120,10 @@ public sealed class PropertyReference : AnnotatedReference {
       }
     }
 
+    override fun isLateinit(): Boolean {
+      return property.modifierList?.hasModifier(KtTokens.LATEINIT_KEYWORD) ?: false
+    }
+
     internal companion object {
       // There's no single applicable type for a PSI property. The multiple generic bounds prevent
       // us from creating a property out of a function, constructor, or destructuring declaration.
@@ -182,6 +187,8 @@ public sealed class PropertyReference : AnnotatedReference {
         )
       }
     }
+
+    override fun isLateinit(): Boolean = property.isLateInit
   }
 }
 

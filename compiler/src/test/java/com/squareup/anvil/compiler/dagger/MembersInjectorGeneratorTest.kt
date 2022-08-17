@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.membersInjector
+import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.nestedInjectClass
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -2411,6 +2412,86 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       assertFailsWith<ClassNotFoundException> {
         injectClass.membersInjector()
       }
+    }
+  }
+
+  @Test
+  fun `a member injector is not generated when Dagger doesn't support it`() {
+    compile(
+      """
+      package com.squareup.test
+ 
+      import javax.inject.Inject
+
+      class InjectClass {
+        @Inject
+        var injected: String? = null
+      }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("Dagger does not support injection into private fields")
+
+      assertFailsWith<ClassNotFoundException> {
+        injectClass.membersInjector()
+      }
+    }
+
+    compile(
+      """
+      package com.squareup.test
+ 
+      import javax.inject.Inject
+
+      class InjectClass {
+        @Inject
+        lateinit var injected1: String
+        
+        @Inject @JvmField
+        var injected2: String? = null
+        
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+      
+          other as InjectClass
+      
+          if (injected1 != other.injected1) return false
+          if (injected2 != other.injected2) return false
+      
+          return true
+        }
+      
+        override fun hashCode(): Int {
+          var result = injected1.hashCode()
+          result = 31 * result + injected2.hashCode()
+          return result
+        }
+      }
+      """
+    ) {
+      val membersInjector = injectClass.membersInjector()
+
+      val constructor = membersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java, Provider::class.java)
+
+      val membersInjectorInstance = constructor
+        .newInstance(Provider { "a" }, Provider { "b" }) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      membersInjector.staticInjectMethod("injected1")
+        .invoke(null, injectInstanceStatic, "a")
+
+      membersInjector.staticInjectMethod("injected2")
+        .invoke(null, injectInstanceStatic, "b")
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
     }
   }
 
