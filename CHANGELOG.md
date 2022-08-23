@@ -12,11 +12,29 @@
 
 ### Fixed
 
-- Upgraded KotlinPoet to the latest version to fix potential conflicts with other libraries, see #613.
-
 ### Security
 
 ### Custom Code Generator
+
+## [2.4.2] - 2022-08-23
+
+### Removed
+
+- Remove support for Kotlin 1.6. Anvil only supports Kotlin 1.7 moving forward.
+
+### Fixed
+
+- Upgraded KotlinPoet to the latest version to fix potential conflicts with other libraries, see #613.
+- When resolving `FqName`s check the inner class hierarchy for the right reference, see #617.
+- An imported top level function should not be considered a class.
+- Support star projections for wrapped type references, see #620.
+- Support contributing types with `Any` as `boundType`, see #619.
+- Improve the error message for contributed inner classes, see #616.
+- Don't share the output directory for the `DisableIncrementalCompilationTask`, if there are multiple Kotlin compilation tasks for the same module, see #602.
+- Unwrap types from type aliases for `TypeReference`, see #611.
+- Remove incremental compilation workaround, see #627.
+- Fix annotation arguments using string templates not being parsed correctly, see #631.
+- Align Anvil with Dagger and don't support member injection for private fields, see #341.
 
 
 ## [2.4.1] - 2022-06-09
@@ -506,7 +524,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.4.1...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.4.2...HEAD
+[2.4.2]: https://github.com/square/anvil/releases/tag/v2.4.2
 [2.4.1]: https://github.com/square/anvil/releases/tag/v2.4.1
 [2.4.0]: https://github.com/square/anvil/releases/tag/v2.4.0
 [2.4.0-M2]: https://github.com/square/anvil/releases/tag/v2.4.0-M2
