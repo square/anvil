@@ -299,10 +299,10 @@ modules with mixed Java and Kotlin code for Kotlin classes, though.
 
 #### Incremental Kotlin compilation breaks compiler plugins
 
-There are two bugs that affect the Anvil Kotlin compiler plugin:
+There is a bug that affects the Anvil Kotlin compiler plugin:
 * [AnalysisResult.RetryWithAdditionalRoots crashes during incremental compilation with java classes in classpath](https://youtrack.jetbrains.com/issue/KT-38576)
 
-The Gradle plugin implements workarounds for these bugs, so you shouldn't notice them. Side effects
+The Gradle plugin implements a workaround for this bug, so you shouldn't notice it. Side effects
 are that incremental Kotlin compilation is disabled for stub generating tasks (which don't run a
 full compilation before KAPT anyways). The flag `usePreciseJavaTracking` is disabled, if the
 module contains Java code.
