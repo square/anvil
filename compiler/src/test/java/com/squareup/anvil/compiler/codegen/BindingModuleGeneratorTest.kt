@@ -956,6 +956,36 @@ class BindingModuleGeneratorTest(
     }
   }
 
+  @Test fun `an unrelated annotation wrapped in backticks does not break type resolution`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      $import
+      
+      @DslMarker
+      annotation class `Fancy${'$'}DslMarker`
+
+      @ContributesTo(Any::class)
+      @dagger.Module
+      abstract class DaggerModule1
+      
+      @`Fancy${'$'}DslMarker`
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val modules = if (annotationClass == MergeModules::class) {
+        componentInterface.daggerModule.includes.toList()
+      } else {
+        componentInterface.anyDaggerComponent.modules
+      }
+      assertThat(modules)
+        .containsExactly(componentInterface.anvilModule.kotlin, daggerModule1.kotlin)
+    }
+  }
+
   private val Class<*>.anyDaggerComponent: AnyDaggerComponent
     get() = anyDaggerComponent(annotationClass)
 }

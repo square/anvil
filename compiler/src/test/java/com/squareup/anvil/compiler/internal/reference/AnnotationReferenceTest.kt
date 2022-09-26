@@ -461,4 +461,38 @@ class AnnotationReferenceTest {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
+
+  @Test fun `an annotation may have a dollar sign and be wrapped in backticks`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      @DslMarker
+      annotation class `Fancy${'$'}DslMarker`
+      
+      @`Fancy${'$'}DslMarker`
+      interface SomeClass1
+      """,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          if (psiRef.shortName == "Fancy\$DslMarker") {
+            psiRef.clazz.nameAsSafeName.asString().also(::println)
+            return@simpleCodeGenerator null
+          }
+
+          listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
+
+            val annotation = ref.annotations.single()
+
+            assertThat(annotation.fqName.asString())
+              .isEqualTo("com.squareup.test.Fancy\$DslMarker")
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
 }

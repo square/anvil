@@ -85,18 +85,20 @@ public fun PsiElement.requireFqName(
     }
     is KtNameReferenceExpression -> getReferencedName()
     is KtUserType -> {
-      val isGenericType = children.any { it is KtTypeArgumentList }
-      if (isGenericType) {
-        // For an expression like Lazy<Abc> the qualifier will be null. If the qualifier exists,
-        // then it may refer to the package and the referencedName refers to the class name, e.g.
-        // a KtUserType "abc.def.GenericType<String>" has three children: a qualifier "abc.def",
-        // the referencedName "GenericType" and the KtTypeArgumentList.
-        val qualifierText = qualifier?.text
-        val className = referencedName
+      // For a simple expression like `String` or `Lazy<Abc>` the qualifier will be null.
+      // If the qualifier exists, then it may refer to the package and the referencedName refers to
+      // the class name, e.g. a KtUserType "abc.def.GenericType<String>" has three children: a
+      // qualifier "abc.def", the referencedName "GenericType" and the KtTypeArgumentList.
+      val qualifierText = qualifier?.text
+      // Prefer `referencedName` instead of just `text` even if this is just a simple name without a
+      // qualifier, because `referencedName` will automatically remove any wrapping backticks, and
+      // backticks must be removed before resolving with an FqName via ModuleDescriptor.
+      val className = referencedName
 
-        if (qualifierText != null) {
+      when {
+        qualifierText != null -> {
 
-          // The generic might be fully qualified. Try to resolve it and return early.
+          // The KtUserType might be fully qualified. Try to resolve it and return early.
           FqName("$qualifierText.$className")
             .takeIf { it.canResolveFqName(module) }
             ?.let { return it }
@@ -104,21 +106,13 @@ public fun PsiElement.requireFqName(
           // If the name isn't fully qualified, then it's something like "Outer.Inner".
           // We can't use `text` here because that includes the type parameter(s).
           "$qualifierText.$className"
-        } else {
-          className ?: failTypeHandling()
         }
-      } else {
-        val text = text
-
-        // Sometimes a KtUserType is a fully qualified name. Give it a try and return early.
-        if (text.contains(".") && text[0].isLowerCase()) {
-          FqName(text).takeIf { it.canResolveFqName(module) }
-            ?.let { return it }
-        }
-
-        // We can't use referencedName here. For inner classes like "Outer.Inner" it would only
-        // return "Inner", whereas text returns "Outer.Inner", what we expect.
-        text
+        className != null -> className
+        // If there are type arguments, it's a generic type.  In this case, the `text` would
+        // include type parameters and can't be resolved as a name.
+        children.any { it is KtTypeArgumentList } -> failTypeHandling()
+        // If className is somehow null, and it's not a generic type, try resolving the text.
+        else -> text
       }
     }
     is KtTypeReference -> {
