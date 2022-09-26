@@ -53,6 +53,46 @@ class TypeReferenceTest {
     }
   }
 
+  @Test fun `type names may be wrapped in backticks`() {
+    compile(
+      """
+      package com.squareup.test
+
+      abstract class `Fancy${'$'}Class`
+
+      class Subject : `Fancy${'$'}Class`()
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          when (psiRef.shortName) {
+            "Fancy\$Class" -> return@simpleCodeGenerator null
+
+            "Subject" -> {
+              listOf(psiRef, descriptorRef).forEach { ref ->
+                val superType = ref.directSuperTypeReferences().single()
+
+                assertThat(superType.asTypeName().toString())
+                  .isEqualTo("com.squareup.test.`Fancy\$Class`")
+
+                assertThat(superType.asClassReference().fqName.asString())
+                  .isEqualTo("com.squareup.test.Fancy\$Class")
+              }
+            }
+
+            else -> throw NotImplementedError(psiRef.shortName)
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
   @Test fun `resolving the generic type name on a concrete type returns the concrete type`() {
     compile(
       """

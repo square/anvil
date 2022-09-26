@@ -175,6 +175,145 @@ class PropertyReferenceTest {
     }
   }
 
+  @Test fun `a stdlib type reference wrapped in backticks resolves to the standard type`() {
+    compile(
+      """
+      package com.squareup.test
+
+      class Subject {
+        val name: `String` = ""
+      }
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          listOf(psiRef, descriptorRef).forEach { ref ->
+
+            assertThat(ref.properties.single().type().asTypeName().toString())
+              .isEqualTo("kotlin.String")
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test fun `a property for a nested class with a name wrapped in backticks can be resolved`() {
+    compile(
+      """
+      package com.squareup.test
+
+      class Subject {
+        lateinit var fancy: `Nested${'$'}Fancy` 
+        
+        class `Nested${'$'}Fancy`
+      }
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          if (psiRef.shortName == "Nested\$Fancy") return@simpleCodeGenerator null
+
+          listOf(psiRef, descriptorRef).forEach { ref ->
+
+            val propertyType = ref.properties.single().type()
+
+            assertThat(propertyType.asTypeName().toString())
+              .isEqualTo("com.squareup.test.Subject.`Nested\$Fancy`")
+
+            assertThat(propertyType.asClassReference().fqName.asString())
+              .isEqualTo("com.squareup.test.Subject.Nested\$Fancy")
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test fun `a property for a partially qualified nested class with a name wrapped in backticks can be resolved`() {
+    compile(
+      """
+      package com.squareup.test
+
+      class Subject {
+        lateinit var fancy: Subject.`Nested${'$'}Fancy` 
+        
+        class `Nested${'$'}Fancy`
+      }
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          if (psiRef.shortName == "Nested\$Fancy") return@simpleCodeGenerator null
+
+          listOf(psiRef, descriptorRef).forEach { ref ->
+
+            val propertyType = ref.properties.single().type()
+
+            assertThat(propertyType.asTypeName().toString())
+              .isEqualTo("com.squareup.test.Subject.`Nested\$Fancy`")
+
+            assertThat(propertyType.asClassReference().fqName.asString())
+              .isEqualTo("com.squareup.test.Subject.Nested\$Fancy")
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test fun `a property with fully qualified reference to a nested class with a name wrapped in backticks can be resolved`() {
+    compile(
+      """
+      package com.squareup.test
+
+      class Subject {
+        lateinit var fancy: com.squareup.test.Subject.`Nested${'$'}Fancy` 
+        
+        class `Nested${'$'}Fancy`
+      }
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          if (psiRef.shortName == "Nested\$Fancy") return@simpleCodeGenerator null
+
+          listOf(psiRef, descriptorRef).forEach { ref ->
+
+            val propertyType = ref.properties.single().type()
+
+            assertThat(propertyType.asTypeName().toString())
+              .isEqualTo("com.squareup.test.Subject.`Nested\$Fancy`")
+
+            assertThat(propertyType.asClassReference().fqName.asString())
+              .isEqualTo("com.squareup.test.Subject.Nested\$Fancy")
+          }
+
+          null
+        }
+      )
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
   @Test fun `mixed constructor and member properties are all properties`() {
     compile(
       """
