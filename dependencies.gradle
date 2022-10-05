@@ -9,12 +9,12 @@ ext {
       project.getProperty('square.agpVersion') : '4.2.2'
 
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
-      project.getProperty('square.kotlinVersion') : '1.7.10'
+      project.getProperty('square.kotlinVersion') : '1.7.20'
 
   kotlinUseIR = (project.hasProperty('square.useIR') ?
       project.getProperty('square.useIR') : 'true').toBoolean()
 
-  kotlinPreview = !kotlinVersion.startsWith('1.7.1')
+  kotlinPreview = !kotlinVersion.startsWith('1.7.2')
 
   generateDaggerFactoriesWithAnvil = (project.hasProperty('square.generateDaggerFactoriesWithAnvil') ?
       project.getProperty('square.generateDaggerFactoriesWithAnvil') : 'true').toBoolean()
