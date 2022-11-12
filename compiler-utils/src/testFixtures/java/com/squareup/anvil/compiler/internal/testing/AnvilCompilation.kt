@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.internal.testing
 
+import com.google.auto.value.processor.AutoAnnotationProcessor
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
@@ -51,7 +52,7 @@ public class AnvilCompilation internal constructor(
         AnvilComponentRegistrar().also { it.addCodeGenerators(codeGenerators) }
       )
       if (enableDaggerAnnotationProcessor) {
-        annotationProcessors = listOf(ComponentProcessor())
+        annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
       }
 
       val anvilCommandLineProcessor = AnvilCommandLineProcessor()

@@ -21,6 +21,8 @@ dependencies {
   testFixturesImplementation project(':compiler')
   testFixturesImplementation deps.dagger2.compiler
   testFixturesImplementation deps.dagger2.dagger
+  testFixturesImplementation deps.auto.value.annotations
+  testFixturesImplementation deps.auto.value.processor
   testFixturesImplementation deps.junit
   testFixturesImplementation deps.truth
 
