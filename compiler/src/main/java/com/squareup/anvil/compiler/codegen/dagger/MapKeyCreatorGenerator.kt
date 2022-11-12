@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.PropertyReference
+import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.asTypeName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
@@ -66,7 +67,14 @@ internal class MapKeyCreatorGenerator : PrivateCodeGenerator() {
   ) {
     projectFiles
       .classAndInnerClassReferences(module)
-      .filter { it.isAnnotatedWith(mapKeyFqName) }
+      .filter { classRef ->
+        val mapKey = classRef.annotations.find { it.fqName == mapKeyFqName }
+        if (mapKey != null) {
+          mapKey.argumentAt("unwrapValue", 0)?.value<Boolean>() == false
+        } else {
+          false
+        }
+      }
       .forEach { clazz ->
         generateCreatorClass(codeGenDir, clazz)
       }

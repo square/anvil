@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isFullTestRun
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.descriptors.runtime.components.tryLoadClass
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -119,9 +120,6 @@ class MapKeyCreatorGeneratorTest(
       package com.squareup.test
       
       import dagger.MapKey
-      import kotlin.reflect.KClass
-      import com.squareup.anvil.compiler.dagger.TestEnum
-      import com.squareup.anvil.compiler.dagger.TestAnnotation
 
       annotation class RecursiveAnnotation(
         val value: Array<RecursiveAnnotation> = []
@@ -155,6 +153,33 @@ class MapKeyCreatorGeneratorTest(
         )
 
       assertThat(mapKeyInstance::class.java).isAssignableTo(mapKeyClass)
+    }
+  }
+
+  @Test fun `do nothing if unwrapValue is not set to false`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.MapKey
+
+      @MapKey(unwrapValue = true)
+      annotation class ExampleMapKey(
+        val value: String,
+      )
+
+      @MapKey // Use default value
+      annotation class ExampleMapKey2(
+        val value: String,
+      )
+      """
+    ) {
+      classLoader.loadClass("com.squareup.test.ExampleMapKey")
+      val creatorClass = classLoader.tryLoadClass("com.squareup.test.ExampleMapKeyCreator")
+      assertThat(creatorClass).isNull()
+      classLoader.loadClass("com.squareup.test.ExampleMapKey2")
+      val creatorClass2 = classLoader.tryLoadClass("com.squareup.test.ExampleMapKeyCreator2")
+      assertThat(creatorClass2).isNull()
     }
   }
 
