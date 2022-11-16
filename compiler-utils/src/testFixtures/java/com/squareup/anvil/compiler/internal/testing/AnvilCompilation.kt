@@ -11,6 +11,7 @@ import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.addPreviousResultToClasspath
 import dagger.internal.codegen.ComponentProcessor
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.JvmTarget
 import java.io.File
 import java.io.OutputStream
@@ -28,6 +29,7 @@ public class AnvilCompilation internal constructor(
   private var anvilConfigured = false
 
   /** Configures this the Anvil behavior of this compilation. */
+  @OptIn(ExperimentalCompilerApi::class)
   @Suppress("SuspiciousCollectionReassignment")
   @ExperimentalAnvilApi
   public fun configureAnvil(

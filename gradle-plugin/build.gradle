@@ -5,6 +5,7 @@ buildscript {
     google()
     gradlePluginPortal()
     mavenCentral()
+    maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev' }
   }
 
   dependencies {
@@ -19,6 +20,7 @@ buildscript {
 repositories {
   google()
   mavenCentral()
+  maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev' }
 }
 
 apply from: rootProject.file('copy_properties.gradle')

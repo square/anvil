@@ -9,7 +9,7 @@ ext {
       project.getProperty('square.agpVersion') : '4.2.2'
 
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
-      project.getProperty('square.kotlinVersion') : '1.7.20'
+      project.getProperty('square.kotlinVersion') : '1.8.0-RC-268'
 
   kotlinUseIR = (project.hasProperty('square.useIR') ?
       project.getProperty('square.useIR') : 'true').toBoolean()

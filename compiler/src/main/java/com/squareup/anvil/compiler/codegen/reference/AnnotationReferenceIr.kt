@@ -32,7 +32,7 @@ internal class AnnotationReferenceIr(
 
   val scopeOrNull: ClassReferenceIr? by lazy(NONE) {
     argumentOrNull("scope")?.value<ClassReferenceIr>()?.let {
-      context.referenceClass(it.fqName)?.toClassReference(context)
+      context.referenceClass(it.classId)?.toClassReference(context)
     }
   }
 
@@ -45,7 +45,7 @@ internal class AnnotationReferenceIr(
 
   val parentScope: ClassReferenceIr by lazy(NONE) {
     argumentOrNull("parentScope")?.value<ClassReferenceIr>()?.let {
-      context.referenceClass(it.fqName)?.toClassReference(context)
+      context.referenceClass(it.classId)?.toClassReference(context)
     } ?: throw AnvilCompilationException(
       element = annotation,
       message = "Couldn't find parent scope for $fqName."

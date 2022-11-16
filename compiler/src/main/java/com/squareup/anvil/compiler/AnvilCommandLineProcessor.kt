@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
+import org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.CompilerConfigurationKey
 
@@ -25,6 +26,7 @@ internal val disableComponentMergingKey =
 /**
  * Parses arguments from the Gradle plugin for the compiler plugin.
  */
+@OptIn(ExperimentalCompilerApi::class)
 @AutoService(CommandLineProcessor::class)
 class AnvilCommandLineProcessor : CommandLineProcessor {
   override val pluginId: String = "com.squareup.anvil.compiler"

@@ -5,6 +5,7 @@ buildscript {
     google()
     mavenCentral()
     gradlePluginPortal()
+    maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev' }
   }
 
   dependencies {
@@ -16,10 +17,17 @@ buildscript {
 repositories {
   google()
   mavenCentral()
+  maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev' }
 }
 
 apply plugin: 'org.jetbrains.kotlin.jvm'
 apply plugin: 'org.jlleitschuh.gradle.ktlint'
+
+kotlin {
+  jvmToolchain {
+    languageVersion.set(JavaLanguageVersion.of(11))
+  }
+}
 
 dependencies {
   compileOnly(gradleApi())

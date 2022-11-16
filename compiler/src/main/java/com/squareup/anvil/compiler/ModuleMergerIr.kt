@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import com.squareup.anvil.compiler.codegen.reference.find
 import com.squareup.anvil.compiler.codegen.reference.findAll
 import com.squareup.anvil.compiler.codegen.reference.toClassReference
+import com.squareup.anvil.compiler.internal.classIdBestGuess
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.safePackageString
 import dagger.Module
@@ -255,7 +256,7 @@ internal class ModuleMergerIr(
         endOffset = UNDEFINED_OFFSET,
         type = pluginContext.requireReferenceClass(daggerAnnotationFqName).defaultType,
         constructorSymbol = pluginContext
-          .referenceConstructors(daggerAnnotationFqName)
+          .referenceConstructors(daggerAnnotationFqName.classIdBestGuess())
           .single { it.owner.isPrimary }
       )
       .apply {
