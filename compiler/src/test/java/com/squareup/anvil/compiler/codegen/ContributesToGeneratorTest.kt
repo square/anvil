@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.KOTLIN_PREVIEW
 import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
@@ -298,7 +299,11 @@ class ContributesToGeneratorTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      assertThat(messages).contains("Source0.kt: (6, 16)")
+      if (KOTLIN_PREVIEW) {
+        assertThat(messages).contains("Source0.kt:6:16")
+      } else {
+        assertThat(messages).contains("Source0.kt: (6, 16)")
+      }
     }
   }
 
@@ -323,7 +328,11 @@ class ContributesToGeneratorTest {
       ) {
         assertThat(exitCode).isError()
         // Position to the class.
-        assertThat(messages).contains("Source0.kt: (7, ")
+        if (KOTLIN_PREVIEW) {
+          assertThat(messages).contains("Source0.kt:7")
+        } else {
+          assertThat(messages).contains("Source0.kt: (7, ")
+        }
       }
     }
   }
@@ -348,7 +357,11 @@ class ContributesToGeneratorTest {
       ) {
         assertThat(exitCode).isError()
         // Position to the class.
-        assertThat(messages).contains("Source0.kt: (6, ")
+        if (KOTLIN_PREVIEW) {
+          assertThat(messages).contains("Source0.kt:6")
+        } else {
+          assertThat(messages).contains("Source0.kt: (6, ")
+        }
       }
     }
   }

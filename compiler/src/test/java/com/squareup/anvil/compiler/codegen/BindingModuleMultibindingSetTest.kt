@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.compiler.KOTLIN_PREVIEW
 import com.squareup.anvil.compiler.anvilModule
 import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
@@ -278,7 +279,11 @@ class BindingModuleMultibindingSetTest(
     ) {
       assertThat(exitCode).isError()
 
-      assertThat(messages).contains("Source0.kt: (6, 11)")
+      if (KOTLIN_PREVIEW) {
+        assertThat(messages).contains("Source0.kt:6:11")
+      } else {
+        assertThat(messages).contains("Source0.kt: (6, 11)")
+      }
       assertThat(messages).contains(
         "Class com.squareup.test.ContributingInterface binds com.squareup.test.ParentInterface, " +
           "but the bound type contains type parameter(s) <T, S>. Type parameters in bindings " +

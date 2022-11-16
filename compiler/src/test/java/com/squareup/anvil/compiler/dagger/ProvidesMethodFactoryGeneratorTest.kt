@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.KOTLIN_PREVIEW
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.anvilModule
@@ -2559,7 +2560,11 @@ public final class DaggerComponentInterface implements ComponentInterface {
       assumeFalse(useDagger)
 
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt: (5, 3)")
+      if (KOTLIN_PREVIEW) {
+        assertThat(messages).contains("Source0.kt:5:3")
+      } else {
+        assertThat(messages).contains("Source0.kt: (5, 3)")
+      }
       assertThat(messages).contains(
         "Dagger provider methods must specify the return type explicitly when using Anvil. " +
           "The return type cannot be inferred implicitly."
