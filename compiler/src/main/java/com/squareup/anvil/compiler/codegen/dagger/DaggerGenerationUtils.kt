@@ -5,8 +5,10 @@ import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionPropertyReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.FunctionReference
 import com.squareup.anvil.compiler.internal.reference.ParameterReference
 import com.squareup.anvil.compiler.internal.reference.PropertyReference
 import com.squareup.anvil.compiler.internal.reference.TypeParameterReference
@@ -314,5 +316,23 @@ internal fun ClassName.optionallyParameterizedBy(
     this
   } else {
     parameterizedBy(typeParameters.map { it.typeVariableName })
+  }
+}
+
+internal fun assertNoDuplicateFunctions(
+  declaringClass: ClassReference,
+  functions: Sequence<FunctionReference.Psi>
+) {
+  // Check for duplicate function names.
+  val duplicateFunctions = functions
+    .groupBy { it.fqName }
+    .filterValues { it.size > 1 }
+
+  if (duplicateFunctions.isNotEmpty()) {
+    throw AnvilCompilationExceptionClassReference(
+      classReference = declaringClass,
+      message = "Cannot have more than one binding method with the same name in " +
+        "a single module: ${duplicateFunctions.keys.joinToString()}"
+    )
   }
 }
