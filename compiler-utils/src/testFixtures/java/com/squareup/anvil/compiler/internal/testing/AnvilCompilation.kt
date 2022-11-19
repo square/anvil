@@ -219,7 +219,8 @@ public fun compileAnvil(
   enableExperimentalAnvilApis: Boolean = true,
   previousCompilationResult: Result? = null,
   codeGenerators: List<CodeGenerator> = emptyList(),
-  block: Result.() -> Unit = { }
+  moduleName: String? = null,
+  block: Result.() -> Unit = { },
 ): Result {
   return AnvilCompilation()
     .apply {
@@ -228,6 +229,9 @@ public fun compileAnvil(
         this.messageOutputStream = messageOutputStream
         if (workingDir != null) {
           this.workingDir = workingDir
+        }
+        if (moduleName != null) {
+          this.moduleName = moduleName
         }
       }
 

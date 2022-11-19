@@ -863,6 +863,38 @@ public final class DaggerModule1_ProvideString$mainFactory implements Factory<St
   }
 
   @Test
+  fun `a factory class is generated for an internal provider method with a mangled name in a object in a module with a dash-separated name`() {
+    compile(
+      """
+      package com.squareup.test
+
+      @dagger.Module
+      object DaggerModule1 {
+        @dagger.Provides internal fun provideString(): String = "abc"
+      }
+      """,
+      moduleName = "with-dashes",
+    ) {
+      val factoryClass = daggerModule1.moduleFactoryClass("provideString\$with_dashes")
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val providedString = staticMethods.single { it.name == "provideString\$with_dashes" }
+        .invoke(null) as String
+
+      assertThat(providedString).isEqualTo("abc")
+      assertThat((factoryInstance as Factory<String>).get()).isEqualTo("abc")
+    }
+  }
+
+  @Test
   fun `the factory does not contain the mangled name if the function is internal and uses @PublishedApi`() {
     compile(
       """
@@ -3472,7 +3504,8 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     @Language("kotlin") vararg sources: String,
     enableDagger: Boolean = useDagger,
     previousCompilationResult: Result? = null,
-    block: Result.() -> Unit = { }
+    moduleName: String? = null,
+    block: Result.() -> Unit = { },
   ): Result = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = enableDagger,
@@ -3480,6 +3513,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     useIR = USE_IR,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block,
-    previousCompilationResult = previousCompilationResult
+    previousCompilationResult = previousCompilationResult,
+    moduleName = moduleName
   )
 }
