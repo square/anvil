@@ -333,8 +333,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
   }
 
   private fun ModuleDescriptor.mangledNameSuffix(): String {
-    // We replace - with _ to maintain interoperability with Dagger's expected generated identifiers
-    val name = name.asString().replace('-', '_')
+    val name = name.asString()
     return if (name.startsWith('<') && name.endsWith('>')) {
       name.substring(1, name.length - 1)
     } else {
