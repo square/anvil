@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler.dagger
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
+import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isFullTestRun
@@ -28,6 +29,7 @@ class MapKeyCreatorGeneratorTest(
   }
 
   @Test fun `a creator class is generated`() {
+    assumeIrBackend()
     compile(
       """
       package com.squareup.test
@@ -115,6 +117,7 @@ class MapKeyCreatorGeneratorTest(
   }
 
   @Test fun `a recursive annotation still works`() {
+    assumeIrBackend()
     compile(
       """
       package com.squareup.test
@@ -157,6 +160,7 @@ class MapKeyCreatorGeneratorTest(
   }
 
   @Test fun `do nothing if unwrapValue is not set to false`() {
+    assumeIrBackend()
     compile(
       """
       package com.squareup.test
@@ -186,6 +190,7 @@ class MapKeyCreatorGeneratorTest(
   @Ignore("https://youtrack.jetbrains.com/issue/KT-54931")
   @Test
   fun `a nested creator class is generated`() {
+    assumeIrBackend()
     compile(
       """
       package com.squareup.test
