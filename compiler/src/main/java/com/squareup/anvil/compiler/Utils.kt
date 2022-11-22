@@ -11,6 +11,7 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.toClassReferenceOrNull
+import dagger.Binds
 import dagger.Component
 import dagger.Lazy
 import dagger.MapKey
@@ -45,6 +46,7 @@ internal val daggerSubcomponentFqName = Subcomponent::class.fqName
 internal val daggerSubcomponentFactoryFqName = Subcomponent.Factory::class.fqName
 internal val daggerSubcomponentBuilderFqName = Subcomponent.Builder::class.fqName
 internal val daggerModuleFqName = Module::class.fqName
+internal val daggerBindsFqName = Binds::class.fqName
 internal val daggerProvidesFqName = Provides::class.fqName
 internal val daggerLazyFqName = Lazy::class.fqName
 internal val injectFqName = Inject::class.fqName

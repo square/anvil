@@ -12,7 +12,6 @@ import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.reference.AnnotatedReference
-import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.FunctionReference
@@ -65,18 +64,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
             checkFunctionIsNotAbstract(clazz, function)
           }
           .also { functions ->
-            // Check for duplicate function names.
-            val duplicateFunctions = functions
-              .groupBy { it.fqName }
-              .filterValues { it.size > 1 }
-
-            if (duplicateFunctions.isNotEmpty()) {
-              throw AnvilCompilationExceptionClassReference(
-                classReference = clazz,
-                message = "Cannot have more than one binding method with the same name in " +
-                  "a single module: ${duplicateFunctions.keys.joinToString()}"
-              )
-            }
+            assertNoDuplicateFunctions(clazz, functions)
           }
           .forEach { function ->
             generateFactoryClass(
