@@ -113,11 +113,11 @@ internal class MapKeyCreatorGenerator : PrivateCodeGenerator() {
 
     val className = clazz.asClassName()
 
-    val creatorsToGenerator = mutableSetOf<ClassReference>()
+    val creatorsToGenerate = mutableSetOf<ClassReference>()
 
     fun visitAnnotations(clazz: ClassReference) {
       if (clazz.isAnnotationClass()) {
-        val added = creatorsToGenerator.add(clazz)
+        val added = creatorsToGenerate.add(clazz)
         if (added) {
           for (property in clazz.properties) {
             val type = property.type().asClassReferenceOrNull()
@@ -132,7 +132,7 @@ internal class MapKeyCreatorGenerator : PrivateCodeGenerator() {
     // Populate all used annotations
     visitAnnotations(clazz)
 
-    val creatorFunctions = creatorsToGenerator
+    val creatorFunctions = creatorsToGenerate
       .associateBy { annotationClass ->
         annotationClass.asTypeName().rawTypeOrNull()
           ?: throw AnvilCompilationExceptionClassReference(
