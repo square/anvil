@@ -21,10 +21,12 @@ dependencies {
   testFixturesImplementation project(':compiler')
   testFixturesImplementation deps.dagger2.compiler
   testFixturesImplementation deps.dagger2.dagger
-  testFixturesImplementation deps.auto.value.annotations
-  testFixturesImplementation deps.auto.value.processor
   testFixturesImplementation deps.junit
   testFixturesImplementation deps.truth
+
+  // Necessary because this is what dagger uses when it runs to support instantiating annotations at runtime
+  testFixturesImplementation deps.auto.value.annotations
+  testFixturesImplementation deps.auto.value.processor
 
   // This workaround is needed to resolve classes in the IDE properly.
   if (isIdeSync) {
