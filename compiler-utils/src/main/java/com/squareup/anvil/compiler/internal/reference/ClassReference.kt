@@ -70,6 +70,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
   public abstract fun isObject(): Boolean
   public abstract fun isCompanion(): Boolean
   public abstract fun isGenericClass(): Boolean
+  public abstract fun isAnnotationClass(): Boolean
   public abstract fun visibility(): Visibility
 
   /**
@@ -200,6 +201,8 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
 
     override fun isGenericClass(): Boolean = clazz.typeParameterList != null
 
+    override fun isAnnotationClass(): Boolean = clazz is KtClass && clazz.isAnnotation()
+
     override fun visibility(): Visibility {
       return when (val visibility = clazz.visibilityModifierTypeOrDefault()) {
         PUBLIC_KEYWORD -> PUBLIC
@@ -298,6 +301,8 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
     override fun isObject(): Boolean = DescriptorUtils.isObject(clazz)
 
     override fun isCompanion(): Boolean = DescriptorUtils.isCompanionObject(clazz)
+
+    override fun isAnnotationClass(): Boolean = DescriptorUtils.isAnnotationClass(clazz)
 
     override fun isGenericClass(): Boolean = clazz.declaredTypeParameters.isNotEmpty()
 

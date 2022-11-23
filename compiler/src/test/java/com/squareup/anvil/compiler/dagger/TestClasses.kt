@@ -13,3 +13,7 @@ abstract class OuterClass constructor(
 ) {
   class InnerClass
 }
+
+enum class TestEnum { A, B, C }
+
+annotation class TestAnnotation(val value: String)
