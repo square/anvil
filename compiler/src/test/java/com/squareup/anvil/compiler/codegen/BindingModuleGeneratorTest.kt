@@ -397,7 +397,7 @@ class BindingModuleGeneratorTest(
     ) {
       assertThat(exitCode).isError()
 
-      assertThat(messages).contains("Source0.kt: (6, 11)")
+      assertThat(messages).contains("Source0.kt:6:11")
       assertThat(messages).contains(
         "Class com.squareup.test.ContributingInterface binds com.squareup.test.ParentInterface, " +
           "but the bound type contains type parameter(s) <T, S>. Type parameters in bindings " +
@@ -429,7 +429,7 @@ class BindingModuleGeneratorTest(
     ) {
       assertThat(exitCode).isError()
 
-      assertThat(messages).contains("Source0.kt: (6, 11)")
+      assertThat(messages).contains("Source0.kt:6:11")
       assertThat(messages).contains(
         "Class com.squareup.test.ContributingInterface binds com.squareup.test.ParentInterface, " +
           "but the bound type contains type parameter(s) <OutputT>. Type parameters in " +
