@@ -20,6 +20,7 @@ import java.nio.file.Files
 /**
  * A simple API over a [KotlinCompilation] with extra configuration support for Anvil.
  */
+@ExperimentalCompilerApi
 @ExperimentalAnvilApi
 public class AnvilCompilation internal constructor(
   val kotlinCompilation: KotlinCompilation
@@ -49,7 +50,7 @@ public class AnvilCompilation internal constructor(
     if (!enableAnvil) return@apply
 
     kotlinCompilation.apply {
-      compilerPlugins = listOf(
+      componentRegistrars = listOf(
         AnvilComponentRegistrar().also { it.addCodeGenerators(codeGenerators) }
       )
       if (enableDaggerAnnotationProcessor) {
@@ -207,6 +208,7 @@ public class AnvilCompilation internal constructor(
  * [AnvilCompilation.configureAnvil]. Consider using those APIs if more advanced configuration
  * is needed.
  */
+@ExperimentalCompilerApi
 @ExperimentalAnvilApi
 public fun compileAnvil(
   @Language("kotlin") vararg sources: String,
