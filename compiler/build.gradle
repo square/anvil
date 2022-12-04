@@ -28,10 +28,11 @@ dependencies {
 
 //noinspection UnnecessaryQualifiedReference
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-  kotlinOptions {
+  compilerOptions {
     // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin
     // compiler requires this flag when doing so.
-    freeCompilerArgs += "-Xjvm-default=all"
+    freeCompilerArgs.add("-Xjvm-default=all")
+    freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
   }
 }
 
