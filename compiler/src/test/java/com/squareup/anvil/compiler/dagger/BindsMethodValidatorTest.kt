@@ -6,7 +6,6 @@ import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -139,35 +138,6 @@ class BindsMethodValidatorTest(
   }
 
   @Test
-  fun `an extension function binding with a parameter fails to compile`() {
-    compile(
-      """
-      package com.squareup.test
- 
-      import dagger.Binds
-      import dagger.Module
-      import javax.inject.Inject
-
-      class Foo @Inject constructor() : Bar
-      class Hammer @Inject constructor() : Bar
-      interface Bar
-
-      @Module
-      abstract class BarModule {
-        @Binds
-        abstract fun Foo.bindsBar(impl2: Hammer): Bar
-      }
-      """
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "@Binds methods must have exactly one parameter, " +
-          "whose type is assignable to the return type"
-      )
-    }
-  }
-
-  @Test
   fun `a binding with no return type fails to compile`() {
     compile(
       """
@@ -191,30 +161,6 @@ class BindsMethodValidatorTest(
       assertThat(messages).contains(
         "@Binds methods must return a value (not void)"
       )
-    }
-  }
-
-  @Test
-  fun `an extension function binding is valid`() {
-    compile(
-      """
-      package com.squareup.test
- 
-      import dagger.Binds
-      import dagger.Module
-      import javax.inject.Inject
-
-      class Foo @Inject constructor() : Bar
-      interface Bar
-
-      @Module
-      abstract class BarModule {
-        @Binds
-        abstract fun Foo.bindsBar(): Bar
-      }
-      """
-    ) {
-      assertThat(exitCode).isEqualTo(OK)
     }
   }
 

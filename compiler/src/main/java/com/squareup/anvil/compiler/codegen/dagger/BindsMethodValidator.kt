@@ -10,10 +10,8 @@ import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionF
 import com.squareup.anvil.compiler.internal.reference.FunctionReference
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.toTypeReference
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
-import org.jetbrains.kotlin.psi.psiUtil.isExtensionDeclaration
 import java.io.File
 
 /**
@@ -58,10 +56,7 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
       )
     }
 
-    val hasSingleBindingParameter =
-      (function.parameters.size == 1 && !function.function.isExtensionDeclaration())
-        || (function.parameters.isEmpty() && function.function.isExtensionDeclaration())
-    if (!hasSingleBindingParameter) {
+    if (function.parameters.size != 1) {
       throw AnvilCompilationExceptionFunctionReference(
         message = "@Binds methods must have exactly one parameter, " +
           "whose type is assignable to the return type",
@@ -69,34 +64,22 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
       )
     }
 
-    function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
-      message = "@Binds methods must return a value (not void)",
-      functionReference = function
-    )
+    val returnType =
+      function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
+        message = "@Binds methods must return a value (not void)",
+        functionReference = function
+      )
+    val parameterMatchesReturnType = function.parameters.single()
+      .type()
+      .asClassReference()
+      .allSuperTypeClassReferences(includeSelf = true)
+      .contains(returnType.asClassReference())
 
-    if (!function.parameterMatchesReturnType() && !function.receiverMatchesReturnType()) {
+    if (!parameterMatchesReturnType) {
       throw AnvilCompilationExceptionFunctionReference(
         message = "@Binds methods' parameter type must be assignable to the return type",
         functionReference = function
       )
     }
-  }
-
-  private fun FunctionReference.Psi.parameterMatchesReturnType(): Boolean {
-    return parameters.singleOrNull()
-      ?.type()
-      ?.asClassReference()
-      ?.allSuperTypeClassReferences(includeSelf = true)
-      ?.contains(returnType().asClassReference())
-      ?: false
-  }
-
-  private fun FunctionReference.Psi.receiverMatchesReturnType(): Boolean {
-    return function.receiverTypeReference
-      ?.toTypeReference(declaringClass)
-      ?.asClassReference()
-      ?.allSuperTypeClassReferences(includeSelf = true)
-      ?.contains(returnType().asClassReference())
-      ?: false
   }
 }
