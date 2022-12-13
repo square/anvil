@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -138,6 +139,35 @@ class BindsMethodValidatorTest(
   }
 
   @Test
+  fun `an extension function binding with a parameter fails to compile`() {
+    compile(
+      """
+      package com.squareup.test
+ 
+      import dagger.Binds
+      import dagger.Module
+      import javax.inject.Inject
+
+      class Foo @Inject constructor() : Bar
+      class Hammer @Inject constructor() : Bar
+      interface Bar
+
+      @Module
+      abstract class BarModule {
+        @Binds
+        abstract fun Foo.bindsBar(impl2: Hammer): Bar
+      }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains(
+        "@Binds methods must have exactly one parameter, " +
+          "whose type is assignable to the return type"
+      )
+    }
+  }
+
+  @Test
   fun `a binding with no return type fails to compile`() {
     compile(
       """
@@ -164,14 +194,58 @@ class BindsMethodValidatorTest(
     }
   }
 
+  @Test
+  fun `an extension function binding is valid`() {
+    val moduleResult = compile(
+      """
+      package com.squareup.test
+ 
+      import dagger.Binds
+      import dagger.Module
+      import javax.inject.Inject
+
+      class Foo @Inject constructor() : Bar
+      interface Bar
+
+      @Module
+      abstract class BarModule {
+        @Binds
+        abstract fun Foo.bindsBar(): Bar
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+
+      import dagger.Component
+      import javax.inject.Singleton
+
+      @Component(modules = [BarModule::class])
+      @Singleton
+      interface ComponentInterface {
+        fun bar(): Bar
+      }
+      """,
+      previousCompilationResult = moduleResult,
+      enableDagger = true,
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: Result? = null,
+    enableDagger: Boolean = useDagger,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
-    enableDaggerAnnotationProcessor = useDagger,
-    generateDaggerFactories = !useDagger,
+    enableDaggerAnnotationProcessor = enableDagger,
+    generateDaggerFactories = !enableDagger,
     useIR = USE_IR,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
