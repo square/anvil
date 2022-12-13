@@ -21,6 +21,7 @@ def generateBuildProperties = project.tasks.register('generateBuildProperties') 
       package com.squareup.anvil.compiler
       
       internal const val USE_IR = ${rootProject.ext.kotlinUseIR}
+      internal const val KOTLIN_PREVIEW = ${rootProject.ext.kotlinPreview}
 
       // With Kotlin 1.6 the old backend triggers deprecation warnings.
       internal const val WARNINGS_AS_ERRORS = ${rootProject.ext.kotlinUseIR && !rootProject.ext.kotlinPreview}

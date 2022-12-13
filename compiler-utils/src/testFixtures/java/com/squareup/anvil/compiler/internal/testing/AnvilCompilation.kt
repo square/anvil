@@ -48,8 +48,10 @@ public class AnvilCompilation internal constructor(
     if (!enableAnvil) return@apply
 
     kotlinCompilation.apply {
-      compilerPlugins = listOf(
-        AnvilComponentRegistrar().also { it.addCodeGenerators(codeGenerators) }
+      setRegistrars(
+        listOf(
+          AnvilComponentRegistrar().also { it.addCodeGenerators(codeGenerators) }
+        )
       )
       if (enableDaggerAnnotationProcessor) {
         annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())

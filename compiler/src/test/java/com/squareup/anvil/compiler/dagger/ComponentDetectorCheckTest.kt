@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.KOTLIN_PREVIEW
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
@@ -25,7 +26,11 @@ class ComponentDetectorCheckTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      assertThat(messages).contains("Source0.kt: (6, 11")
+      if (KOTLIN_PREVIEW) {
+        assertThat(messages).contains("Source0.kt:6:11")
+      } else {
+        assertThat(messages).contains("Source0.kt: (6, 11)")
+      }
       assertThat(messages).contains(
         "Anvil cannot generate the code for Dagger components or subcomponents. In these " +
           "cases the Dagger annotation processor is required. Enabling the Dagger " +
@@ -65,7 +70,11 @@ class ComponentDetectorCheckTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      assertThat(messages).contains("Source0.kt: (7, 13")
+      if (KOTLIN_PREVIEW) {
+        assertThat(messages).contains("Source0.kt:7:13")
+      } else {
+        assertThat(messages).contains("Source0.kt: (7, 13)")
+      }
       assertThat(messages).contains(
         "Anvil cannot generate the code for Dagger components or subcomponents. In these " +
           "cases the Dagger annotation processor is required. Enabling the Dagger " +

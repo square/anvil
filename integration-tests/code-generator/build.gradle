@@ -12,3 +12,12 @@ dependencies {
   testImplementation deps.junit
   testImplementation deps.truth
 }
+
+if (rootProject.ext.kotlinPreview) {
+  //noinspection UnnecessaryQualifiedReference
+  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions {
+      freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
+    }
+  }
+}

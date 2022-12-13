@@ -28,6 +28,7 @@ allprojects {
     google()
     mavenCentral()
     if (rootProject.ext.kotlinPreview) {
+      maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev' }
       maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap' }
       maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
       maven { url "https://oss.sonatype.org/content/repositories/snapshots" }

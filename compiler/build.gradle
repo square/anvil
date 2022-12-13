@@ -20,18 +20,30 @@ dependencies {
   testImplementation testFixtures(project(":compiler-utils"))
   testImplementation deps.dagger2.compiler
   testImplementation deps.kotlin.annotation_processing_embeddable
-  testImplementation deps.kotlin.compile_testing
+  testImplementation kotlinCompileTesting
   testImplementation deps.kotlin.compiler
   testImplementation deps.kotlin.test
   testImplementation deps.truth
 }
 
-//noinspection UnnecessaryQualifiedReference
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-  kotlinOptions {
-    // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin
-    // compiler requires this flag when doing so.
-    freeCompilerArgs += "-Xjvm-default=all"
+if (rootProject.ext.kotlinPreview) {
+  //noinspection UnnecessaryQualifiedReference
+  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions {
+      // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin
+      // compiler requires this flag when doing so.
+      freeCompilerArgs.add("-Xjvm-default=all")
+      freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
+    }
+  }
+} else {
+  //noinspection UnnecessaryQualifiedReference
+  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    kotlinOptions {
+      // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin
+      // compiler requires this flag when doing so.
+      freeCompilerArgs.add("-Xjvm-default=all")
+    }
   }
 }
 

@@ -149,7 +149,11 @@ class InterfaceMergerTest(
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      assertThat(messages).contains("Source0.kt: (6, 16)")
+      if (KOTLIN_PREVIEW) {
+        assertThat(messages).contains("Source0.kt:6:16")
+      } else {
+        assertThat(messages).contains("Source0.kt: (6, 16)")
+      }
     }
   }
 
@@ -203,7 +207,11 @@ class InterfaceMergerTest(
       assertThat(exitCode).isError()
       // Position to the class. Unfortunately, a different error is reported that the class is
       // missing an @Module annotation.
-      assertThat(messages).contains("Source0.kt: (7, 7)")
+      if (KOTLIN_PREVIEW) {
+        assertThat(messages).contains("Source0.kt:7:7")
+      } else {
+        assertThat(messages).contains("Source0.kt: (7, 7)")
+      }
     }
   }
 
@@ -232,7 +240,11 @@ class InterfaceMergerTest(
       assertThat(exitCode).isError()
       // Position to the class. Unfortunately, a different error is reported that the class is
       // missing an @Module annotation.
-      assertThat(messages).contains("Source0.kt: (14, 11)")
+      if (KOTLIN_PREVIEW) {
+        assertThat(messages).contains("Source0.kt:14:11")
+      } else {
+        assertThat(messages).contains("Source0.kt: (14, 11)")
+      }
       assertThat(messages).contains(
         "com.squareup.test.SecondContributingInterface with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
@@ -320,7 +332,11 @@ class InterfaceMergerTest(
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      assertThat(messages).contains("Source0.kt: (18, 11)")
+      if (KOTLIN_PREVIEW) {
+        assertThat(messages).contains("Source0.kt:18:11")
+      } else {
+        assertThat(messages).contains("Source0.kt: (18, 11)")
+      }
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.ContributingInterface, but the excluded class isn't contributed " +
@@ -451,7 +467,11 @@ class InterfaceMergerTest(
       ) {
         assertThat(exitCode).isError()
         // Position to the class.
-        assertThat(messages).contains("Source0.kt: (7, ")
+        if (KOTLIN_PREVIEW) {
+          assertThat(messages).contains("Source0.kt:7")
+        } else {
+          assertThat(messages).contains("Source0.kt: (7, ")
+        }
       }
     }
   }

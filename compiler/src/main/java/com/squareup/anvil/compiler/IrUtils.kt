@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.reference.ClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.toClassReference
+import com.squareup.anvil.compiler.internal.classIdBestGuess
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
@@ -19,7 +20,7 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 
 internal fun IrPluginContext.requireReferenceClass(fqName: FqName): IrClassSymbol {
-  return referenceClass(fqName) ?: throw AnvilCompilationException(
+  return referenceClass(fqName.classIdBestGuess()) ?: throw AnvilCompilationException(
     message = "Couldn't resolve reference for $fqName"
   )
 }
@@ -28,7 +29,7 @@ internal fun ClassId.irClass(context: IrPluginContext): IrClassSymbol =
   context.requireReferenceClass(asSingleFqName())
 
 internal fun ClassId.referenceClassOrNull(context: IrPluginContext): ClassReferenceIr? =
-  context.referenceClass(asSingleFqName())?.toClassReference(context)
+  context.referenceClass(asSingleFqName().classIdBestGuess())?.toClassReference(context)
 
 internal fun IrClass.requireClassId(): ClassId {
   return classId ?: throw AnvilCompilationException(
