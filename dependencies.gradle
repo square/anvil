@@ -9,6 +9,7 @@ ext {
   agpVersion = project.hasProperty('square.agpVersion') ?
       project.getProperty('square.agpVersion') : '4.2.2'
 
+  // TODO: Make sure you update the versions in `releases.yaml` and `ci.yaml` as well when this changes
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
       project.getProperty('square.kotlinVersion') : '1.7.20'
 
