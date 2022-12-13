@@ -196,7 +196,7 @@ class BindsMethodValidatorTest(
 
   @Test
   fun `an extension function binding is valid`() {
-    compile(
+    val moduleResult = compile(
       """
       package com.squareup.test
  
@@ -216,16 +216,36 @@ class BindsMethodValidatorTest(
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
+
+    compile(
+      """
+      package com.squareup.test
+
+      import dagger.Component
+      import javax.inject.Singleton
+
+      @Component(modules = [BarModule::class])
+      @Singleton
+      interface ComponentInterface {
+        fun bar(): Bar
+      }
+      """,
+      previousCompilationResult = moduleResult,
+      enableDagger = true,
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
   }
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: Result? = null,
+    enableDagger: Boolean = useDagger,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
-    enableDaggerAnnotationProcessor = useDagger,
-    generateDaggerFactories = !useDagger,
+    enableDaggerAnnotationProcessor = enableDagger,
+    generateDaggerFactories = !enableDagger,
     useIR = USE_IR,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
