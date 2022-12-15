@@ -37,7 +37,9 @@ class BindsMethodValidatorTest(
       import dagger.Module
       import javax.inject.Inject
 
-      class Foo @Inject constructor()
+      interface Lorem
+      open class Ipsum
+      class Foo @Inject constructor() : Ipsum(), Lorem
       interface Bar
 
       @Module
@@ -51,6 +53,12 @@ class BindsMethodValidatorTest(
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type"
       )
+      if (!useDagger) {
+        assertThat(messages).contains(
+          "Expected return type of Bar but impl parameter of type Foo only has the following " +
+            "supertypes: [Foo, Ipsum, Lorem]"
+        )
+      }
     }
   }
 
