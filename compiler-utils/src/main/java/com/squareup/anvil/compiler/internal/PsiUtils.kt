@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtClassLiteralExpression
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtConstructorCalleeExpression
+import org.jetbrains.kotlin.psi.KtDeclarationModifierList
 import org.jetbrains.kotlin.psi.KtDotQualifiedExpression
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunctionType
@@ -123,6 +124,14 @@ public fun PsiElement.requireFqName(
           return children[0].requireFqName(module)
         } catch (e: AnvilCompilationException) {
           // Fallback to the text representation.
+          text
+        }
+      } else if (children.size == 2 && children[0] is KtDeclarationModifierList) {
+        // This could be a case of a KtUserType with a modifier like `@receiver:Qualifier`
+        try {
+          return children[1].requireFqName(module)
+        } catch (e: AnvilCompilationException) {
+          // Fallback to text
           text
         }
       } else {
