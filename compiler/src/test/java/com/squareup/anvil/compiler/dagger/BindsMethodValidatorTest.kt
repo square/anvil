@@ -225,8 +225,62 @@ class BindsMethodValidatorTest(
       import javax.inject.Singleton
 
       @Component(modules = [BarModule::class])
-      @Singleton
       interface ComponentInterface {
+        fun bar(): Bar
+      }
+      """,
+      previousCompilationResult = moduleResult,
+      enableDagger = true,
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test
+  fun `an extension function binding with a qualifier is valid`() {
+    val moduleResult = compile(
+      """
+      package com.squareup.test
+ 
+      import dagger.Binds
+      import dagger.Module
+      import dagger.Provides
+      import javax.inject.Inject
+      import javax.inject.Qualifier
+
+      @Qualifier
+      annotation class Marker
+
+      class Foo : Bar
+      interface Bar
+
+      @Module
+      abstract class BarModule {
+
+        @Marker
+        @Binds
+        abstract fun @receiver:Marker Foo.bindsBar(): Bar
+
+        companion object {
+            @Provides 
+            @Marker
+            fun providesFoo(): Foo = Foo()
+        }
+      }
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+
+      import dagger.Component
+
+      @Component(modules = [BarModule::class])
+      interface ComponentInterface {
+        @Marker
         fun bar(): Bar
       }
       """,
