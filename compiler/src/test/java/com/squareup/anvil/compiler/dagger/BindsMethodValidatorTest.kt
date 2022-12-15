@@ -237,6 +237,52 @@ class BindsMethodValidatorTest(
   }
 
   @Test
+  fun `a binding for a back-ticked-package type is valid`() {
+    val moduleResult = compile(
+      """
+      package com.squareup.`impl`
+
+      interface Bar
+      """,
+      """
+      package com.squareup.test
+ 
+      import dagger.Binds
+      import dagger.Module
+      import javax.inject.Inject
+
+      class Foo @Inject constructor() : com.squareup.`impl`.Bar
+
+      @Module
+      abstract class BarModule {
+        @Binds
+        abstract fun bindsBar(foo: Foo): com.squareup.`impl`.Bar
+      }
+      """,
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+
+    compile(
+      """
+      package com.squareup.test
+
+      import dagger.Component
+      import javax.inject.Singleton
+
+      @Component(modules = [BarModule::class])
+      interface ComponentInterface {
+        fun bar(): com.squareup.`impl`.Bar
+      }
+      """,
+      previousCompilationResult = moduleResult,
+      enableDagger = true,
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test
   fun `an extension function binding with a qualifier is valid`() {
     val moduleResult = compile(
       """
