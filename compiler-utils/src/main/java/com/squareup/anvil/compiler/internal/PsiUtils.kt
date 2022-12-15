@@ -90,7 +90,10 @@ public fun PsiElement.requireFqName(
       // If the qualifier exists, then it may refer to the package and the referencedName refers to
       // the class name, e.g. a KtUserType "abc.def.GenericType<String>" has three children: a
       // qualifier "abc.def", the referencedName "GenericType" and the KtTypeArgumentList.
-      val qualifierText = qualifier?.text
+      // It's also possible for the qualifier text to be a back-tick-wrapped package such as
+      // com.squareup.`impl`, so we remove any backticks since they will cause issues with resolving
+      // the FqName.
+      val qualifierText = qualifier?.text?.replace("`", "")
       // Prefer `referencedName` instead of just `text` even if this is just a simple name without a
       // qualifier, because `referencedName` will automatically remove any wrapping backticks, and
       // backticks must be removed before resolving with an FqName via ModuleDescriptor.
