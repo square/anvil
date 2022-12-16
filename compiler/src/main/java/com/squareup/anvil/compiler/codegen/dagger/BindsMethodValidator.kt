@@ -81,10 +81,15 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
         .map { it.shortName }
         .toList()
 
+      val superTypesMessage = if (paramSuperTypes.size == 1) {
+        "has no supertypes."
+      } else {
+        "only has the following supertypes: ${paramSuperTypes.drop(1)}"
+      }
       throw AnvilCompilationExceptionFunctionReference(
         message = "@Binds methods' parameter type must be assignable to the return type. " +
-          "Expected return type of $returnType but impl parameter of type " +
-          "${paramSuperTypes.first()} only has the following supertypes: $paramSuperTypes",
+          "Expected binding of type $returnType but impl parameter of type " +
+          "${paramSuperTypes.first()} $superTypesMessage",
         functionReference = function
       )
     }
