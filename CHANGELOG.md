@@ -16,6 +16,25 @@
 
 ### Custom Code Generator
 
+## [2.4.3] - 2022-12-16
+
+### Added
+- Add support for generating MapKeyCreator classes when generating Dagger factories, see #651.
+- `@Binds` methods are now validated for correctness when generating Dagger factories, see #649.
+
+### Changed
+- Upgrade Kotlin to `1.7.20` and Gradle to `7.5.1`, see #643.
+- For Kotlin `1.8.x` releases, we now use a fork of `kotlin-compile-testing`: `dev.zacsweers.kctfork:core:0.1.0-1.8.0-Beta01`.
+- Use Anvil version `2.4.3-1-8-0-RC` if you want to test Kotlin `1.8.0-RC`. Until Anvil has fully adopted Kotlin `1.8` we'll publish additional versions that are required due to compiler API incompatibilities.
+
+### Fixed
+- Fix resolving types whose packages are wrapped in backticks, see #665.
+- Fix resolving types when paired with qualifiers, see #664.
+- Fix inconsistency between Dagger and Anvil for generated factory names involving a dash-separated module name, see #653.
+- Fix resolving types whose names are wrapped in backticks, see #641.
+- Update outdated documentation on incremental compilation limitations, see #637.
+
+
 ## [2.4.2] - 2022-08-23
 
 ### Removed
@@ -524,7 +543,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.4.2...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.4.3...HEAD
+[2.4.3]: https://github.com/square/anvil/releases/tag/v2.4.3
 [2.4.2]: https://github.com/square/anvil/releases/tag/v2.4.2
 [2.4.1]: https://github.com/square/anvil/releases/tag/v2.4.1
 [2.4.0]: https://github.com/square/anvil/releases/tag/v2.4.0
