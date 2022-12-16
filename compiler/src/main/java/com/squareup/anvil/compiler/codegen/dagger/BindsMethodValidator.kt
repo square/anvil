@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.daggerBindsFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
+import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.FunctionReference
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
@@ -75,28 +76,48 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
     )
 
     if (!function.parameterMatchesReturnType() && !function.receiverMatchesReturnType()) {
+      val returnType = function.returnType().asClassReference().shortName
+      val paramSuperTypes = (function.parameterSuperTypes() ?: function.receiverSuperTypes())!!
+        .map { it.shortName }
+        .toList()
+
+      val superTypesMessage = if (paramSuperTypes.size == 1) {
+        "has no supertypes."
+      } else {
+        "only has the following supertypes: ${paramSuperTypes.drop(1)}"
+      }
       throw AnvilCompilationExceptionFunctionReference(
-        message = "@Binds methods' parameter type must be assignable to the return type",
+        message = "@Binds methods' parameter type must be assignable to the return type. " +
+          "Expected binding of type $returnType but impl parameter of type " +
+          "${paramSuperTypes.first()} $superTypesMessage",
         functionReference = function
       )
     }
   }
 
   private fun FunctionReference.Psi.parameterMatchesReturnType(): Boolean {
-    return parameters.singleOrNull()
-      ?.type()
-      ?.asClassReference()
-      ?.allSuperTypeClassReferences(includeSelf = true)
+    return parameterSuperTypes()
       ?.contains(returnType().asClassReference())
       ?: false
   }
 
+  private fun FunctionReference.Psi.parameterSuperTypes(): Sequence<ClassReference>? {
+    return parameters.singleOrNull()
+      ?.type()
+      ?.asClassReference()
+      ?.allSuperTypeClassReferences(includeSelf = true)
+  }
+
   private fun FunctionReference.Psi.receiverMatchesReturnType(): Boolean {
+    return receiverSuperTypes()
+      ?.contains(returnType().asClassReference())
+      ?: false
+  }
+
+  private fun FunctionReference.Psi.receiverSuperTypes(): Sequence<ClassReference>? {
     return function.receiverTypeReference
       ?.toTypeReference(declaringClass)
       ?.asClassReference()
       ?.allSuperTypeClassReferences(includeSelf = true)
-      ?.contains(returnType().asClassReference())
-      ?: false
   }
 }

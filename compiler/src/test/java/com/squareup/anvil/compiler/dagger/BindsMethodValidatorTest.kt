@@ -37,6 +37,41 @@ class BindsMethodValidatorTest(
       import dagger.Module
       import javax.inject.Inject
 
+      interface Lorem
+      open class Ipsum
+      class Foo @Inject constructor() : Ipsum(), Lorem
+      interface Bar
+
+      @Module
+      abstract class BarModule {
+        @Binds
+        abstract fun bindsBar(impl: Foo): Bar
+      }
+      """
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains(
+        "@Binds methods' parameter type must be assignable to the return type"
+      )
+      if (!useDagger) {
+        assertThat(messages).contains(
+          "Expected binding of type Bar but impl parameter of type Foo only has the following " +
+            "supertypes: [Ipsum, Lorem]"
+        )
+      }
+    }
+  }
+
+  @Test
+  fun `a binding with an incompatible parameter type with no supertypes fails to compile`() {
+    compile(
+      """
+      package com.squareup.test
+ 
+      import dagger.Binds
+      import dagger.Module
+      import javax.inject.Inject
+
       class Foo @Inject constructor()
       interface Bar
 
@@ -51,6 +86,11 @@ class BindsMethodValidatorTest(
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type"
       )
+      if (!useDagger) {
+        assertThat(messages).contains(
+          "Expected binding of type Bar but impl parameter of type Foo has no supertypes."
+        )
+      }
     }
   }
 
