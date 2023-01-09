@@ -9,14 +9,13 @@ ext {
   agpVersion = project.hasProperty('square.agpVersion') ?
       project.getProperty('square.agpVersion') : '4.2.2'
 
-  // TODO: Make sure you update the versions in `releases.yaml` and `ci.yaml` as well when this changes
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
-      project.getProperty('square.kotlinVersion') : '1.7.20'
+      project.getProperty('square.kotlinVersion') : '1.8.0'
 
   kotlinUseIR = (project.hasProperty('square.useIR') ?
       project.getProperty('square.useIR') : 'true').toBoolean()
 
-  kotlinPreview = !kotlinVersion.startsWith('1.7.2')
+  kotlinPreview = !kotlinVersion.startsWith('1.8.0')
 
   generateDaggerFactoriesWithAnvil =
       (project.hasProperty('square.generateDaggerFactoriesWithAnvil') ?
@@ -85,10 +84,9 @@ ext {
 
       kotlin: [
           annotation_processing_embeddable: "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable:$kotlinVersion",
-          compile_testing: "com.github.tschuchortdev:kotlin-compile-testing:1.4.9",
-          compile_testing_preview: "dev.zacsweers.kctfork:core:0.2.0",
+          compile_testing: "dev.zacsweers.kctfork:core:0.2.0",
           compiler: "org.jetbrains.kotlin:kotlin-compiler-embeddable:$kotlinVersion",
-          dokka: "org.jetbrains.dokka:dokka-gradle-plugin:1.7.10",
+          dokka: "org.jetbrains.dokka:dokka-gradle-plugin:1.7.20",
           gradle_plugin: "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinVersion",
           gradle_plugin_api: "org.jetbrains.kotlin:kotlin-gradle-plugin-api:$kotlinVersion",
           metadata: "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.5.0",
@@ -100,7 +98,4 @@ ext {
 
       truth: "com.google.truth:truth:1.1.3",
   ]
-
-  kotlinCompileTesting =
-      kotlinPreview ? deps.kotlin.compile_testing_preview : deps.kotlin.compile_testing
 }

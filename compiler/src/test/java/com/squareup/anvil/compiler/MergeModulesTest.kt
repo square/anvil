@@ -86,11 +86,7 @@ class MergeModulesTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:7:7")
-      } else {
-        assertThat(messages).contains("Source0.kt: (7, 7)")
-      }
+      assertThat(messages).contains("Source0.kt:7:7")
     }
   }
 
@@ -159,11 +155,7 @@ class MergeModulesTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:7:16")
-      } else {
-        assertThat(messages).contains("Source0.kt: (7, 16)")
-      }
+      assertThat(messages).contains("Source0.kt:7:16")
     }
   }
 
@@ -286,11 +278,7 @@ class MergeModulesTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:17:16")
-      } else {
-        assertThat(messages).contains("Source0.kt: (17, 16)")
-      }
+      assertThat(messages).contains("Source0.kt:17:16")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule2 with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
@@ -326,11 +314,7 @@ class MergeModulesTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:17:16")
-      } else {
-        assertThat(messages).contains("Source0.kt: (17, 16)")
-      }
+      assertThat(messages).contains("Source0.kt:17:16")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule2 with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
@@ -426,11 +410,7 @@ class MergeModulesTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:17:11")
-      } else {
-        assertThat(messages).contains("Source0.kt: (17, 11)")
-      }
+      assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.DaggerModule2, but the replaced class isn't contributed " +
@@ -466,11 +446,7 @@ class MergeModulesTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:17:11")
-      } else {
-        assertThat(messages).contains("Source0.kt: (17, 11)")
-      }
+      assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.DaggerModule2, but the replaced class isn't contributed " +
@@ -502,11 +478,7 @@ class MergeModulesTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:13:16")
-      } else {
-        assertThat(messages).contains("Source0.kt: (13, 16)")
-      }
+      assertThat(messages).contains("Source0.kt:13:16")
     }
   }
 
@@ -535,11 +507,7 @@ class MergeModulesTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:15:16")
-      } else {
-        assertThat(messages).contains("Source0.kt: (15, 16)")
-      }
+      assertThat(messages).contains("Source0.kt:15:16")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule2 with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.DaggerModule3, but the replaced class isn't contributed " +
@@ -634,11 +602,7 @@ class MergeModulesTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:16:7")
-      } else {
-        assertThat(messages).contains("Source0.kt: (16, 7)")
-      }
+      assertThat(messages).contains("Source0.kt:16:7")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule1 with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.DaggerModule2, but the excluded class isn't contributed " +
@@ -723,11 +687,7 @@ class MergeModulesTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:17:11")
-      } else {
-        assertThat(messages).contains("Source0.kt: (17, 11)")
-      }
+      assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.ContributingInterface, but the excluded class isn't contributed " +
@@ -760,11 +720,7 @@ class MergeModulesTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:17:11")
-      } else {
-        assertThat(messages).contains("Source0.kt: (17, 11)")
-      }
+      assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.ContributingInterface, but the excluded class isn't contributed " +
@@ -828,11 +784,7 @@ class MergeModulesTest {
       ) {
         assertThat(exitCode).isError()
         // Position to the class.
-        if (KOTLIN_PREVIEW) {
-          assertThat(messages).contains("Source0.kt:8:")
-        } else {
-          assertThat(messages).contains("Source0.kt: (8, ")
-        }
+        assertThat(messages).contains("Source0.kt:8:")
       }
     }
   }
@@ -928,11 +880,7 @@ class MergeModulesTest {
       """
     ) {
       assertThat(exitCode).isError()
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:19:11")
-      } else {
-        assertThat(messages).contains("Source0.kt: (19, 11)")
-      }
+      assertThat(messages).contains("Source0.kt:19:11")
     }
   }
 

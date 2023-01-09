@@ -60,7 +60,7 @@ tasks.withType(JavaCompile).configureEach {
 }
 
 //noinspection UnnecessaryQualifiedReference
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask).configureEach {
   kotlinOptions {
     jvmTarget = JavaVersion.VERSION_1_8
 

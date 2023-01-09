@@ -48,10 +48,8 @@ public class AnvilCompilation internal constructor(
     if (!enableAnvil) return@apply
 
     kotlinCompilation.apply {
-      setRegistrars(
-        listOf(
-          AnvilComponentRegistrar().also { it.addCodeGenerators(codeGenerators) }
-        )
+      componentRegistrars = listOf(
+        AnvilComponentRegistrar().also { it.addCodeGenerators(codeGenerators) }
       )
       if (enableDaggerAnnotationProcessor) {
         annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
@@ -99,7 +97,6 @@ public class AnvilCompilation internal constructor(
   public fun useIR(useIR: Boolean) = apply {
     checkNotCompiled()
     kotlinCompilation.useIR = useIR
-    kotlinCompilation.useOldBackend = !useIR
 
     if (!useIR) {
       // To suppress:
