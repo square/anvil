@@ -116,7 +116,6 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       .extendsFrom(getConfiguration(project, variant.name))
 
     disableIncrementalKotlinCompilation(variant)
-    disablePreciseJavaTracking(variant)
 
     if (!variant.variantFilter.generateDaggerFactoriesOnly) {
       disableCorrectErrorTypes(variant)
@@ -184,35 +183,6 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     artifactId = "compiler",
     version = VERSION
   )
-
-  private fun disablePreciseJavaTracking(variant: Variant) {
-    val configureAction: (KotlinCompile) -> Unit = { compileTask ->
-      val result = CheckMixedSourceSet.preparePreciseJavaTrackingCheck(variant)
-
-      compileTask.doFirstCompat {
-        // Disable precise java tracking if needed. Note that the doFirst() action only runs
-        // if the task is not up to date. That's ideal, because if nothing needs to be
-        // compiled, then we don't need to disable the flag.
-        //
-        // We also use the doFirst block to walk through the file system at execution time
-        // and minimize the IO at configuration time.
-        CheckMixedSourceSet.disablePreciseJavaTrackingIfNeeded(compileTask, result)
-
-        compileTask.log(
-          "Anvil: Use precise java tracking: ${compileTask.usePreciseJavaTracking}"
-        )
-      }
-    }
-
-    variant.compileTaskProvider.configure(configureAction)
-
-    variant.project.pluginManager.withPlugin(KAPT_PLUGIN_ID) {
-      variant.project
-        .namedLazy<KaptGenerateStubsTask>(variant.stubsTaskName) { stubsTaskProvider ->
-          stubsTaskProvider.configure(configureAction)
-        }
-    }
-  }
 
   private fun disableCorrectErrorTypes(variant: Variant) {
     variant.project.pluginManager.withPlugin(KAPT_PLUGIN_ID) {
