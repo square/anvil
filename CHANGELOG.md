@@ -6,6 +6,8 @@
 
 ### Changed
 
+- The [issue](https://youtrack.jetbrains.com/issue/KT-38576) that required disabling precise Java tracking is not needed anymore. The workaround has been removed.
+
 ### Deprecated
 
 ### Removed
