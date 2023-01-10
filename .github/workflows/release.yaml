@@ -20,17 +20,8 @@ jobs :
           java-version : '11'
           check-latest : true
 
-      # TODO: Revert release changes when we drop support for 1.7
-      - name : Publish Release 1.7
-        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel -Psquare.kotlinVersion=1.7.20 && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=1.7.20 && cd ..
-        env :
-          ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
-          ORG_GRADLE_PROJECT_signingInMemoryKey : ${{ secrets.ARTIFACT_SIGNING_PRIVATE_KEY }}
-          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword : ''
-
-      - name : Publish Release 1.8
-        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel -Psquare.kotlinVersion=1.8.0 -PVERSION_NAME=2.4.4-1-8-0 && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=1.8.0 -PVERSION_NAME=2.4.4-1-8-0 && cd ..
+      - name : Publish Release
+        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace && cd ..
         env :
           ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}

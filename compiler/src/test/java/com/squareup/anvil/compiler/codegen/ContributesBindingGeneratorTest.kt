@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.KOTLIN_PREVIEW
 import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
@@ -165,11 +164,7 @@ class ContributesBindingGeneratorTest {
       ) {
         assertThat(exitCode).isError()
         // Position to the class.
-        if (KOTLIN_PREVIEW) {
-          assertThat(messages).contains("Source0.kt:8")
-        } else {
-          assertThat(messages).contains("Source0.kt: (8, ")
-        }
+        assertThat(messages).contains("Source0.kt:8")
         assertThat(messages).contains(
           "com.squareup.test.ContributingInterface is binding a type, but the class is not " +
             "public. Only public types are supported."

@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.compiler.KOTLIN_PREVIEW
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.hintSubcomponent
 import com.squareup.anvil.compiler.hintSubcomponentParentScope
@@ -107,11 +106,7 @@ class ContributesSubcomponentGeneratorTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:6:")
-      } else {
-        assertThat(messages).contains("Source0.kt: (6, ")
-      }
+      assertThat(messages).contains("Source0.kt:6:")
       assertThat(messages).contains(
         "com.squareup.test.SubcomponentInterface is annotated with @ContributesSubcomponent, " +
           "but this class is not an interface."
@@ -130,11 +125,7 @@ class ContributesSubcomponentGeneratorTest {
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:6:")
-      } else {
-        assertThat(messages).contains("Source0.kt: (6,")
-      }
+      assertThat(messages).contains("Source0.kt:6:")
       assertThat(messages).contains(
         "com.squareup.test.SubcomponentInterface is annotated with @ContributesSubcomponent, " +
           "but this class is not an interface."
@@ -162,11 +153,7 @@ class ContributesSubcomponentGeneratorTest {
       ) {
         assertThat(exitCode).isError()
         // Position to the class.
-        if (KOTLIN_PREVIEW) {
-          assertThat(messages).contains("Source0.kt:6:")
-        } else {
-          assertThat(messages).contains("Source0.kt: (6, ")
-        }
+        assertThat(messages).contains("Source0.kt:6:")
         assertThat(messages).contains(
           "com.squareup.test.SubcomponentInterface is contributed to the Dagger graph, but the " +
             "interface is not public. Only public interfaces are supported."
@@ -224,11 +211,7 @@ class ContributesSubcomponentGeneratorTest {
       """
     ) {
       assertThat(exitCode).isError()
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:7:11")
-      } else {
-        assertThat(messages).contains("Source0.kt: (7, 11)")
-      }
+      assertThat(messages).contains("Source0.kt:7:11")
       assertThat(messages).contains(
         "Expected zero or one parent component interface within " +
           "com.squareup.test.SubcomponentInterface being contributed to the parent scope."
@@ -256,11 +239,7 @@ class ContributesSubcomponentGeneratorTest {
       """
     ) {
       assertThat(exitCode).isError()
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:9:13")
-      } else {
-        assertThat(messages).contains("Source0.kt: (9, 13)")
-      }
+      assertThat(messages).contains("Source0.kt:9:13")
       assertThat(messages).contains(
         "Expected zero or one function returning the subcomponent " +
           "com.squareup.test.SubcomponentInterface."
@@ -292,11 +271,7 @@ class ContributesSubcomponentGeneratorTest {
       """
     ) {
       assertThat(exitCode).isError()
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:8:11")
-      } else {
-        assertThat(messages).contains("Source0.kt: (8, 11)")
-      }
+      assertThat(messages).contains("Source0.kt:8:11")
       assertThat(messages).contains(
         "Expected zero or one factory within com.squareup.test.SubcomponentInterface."
       )
@@ -323,11 +298,7 @@ class ContributesSubcomponentGeneratorTest {
       """
     ) {
       assertThat(exitCode).isError()
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:10:3")
-      } else {
-        assertThat(messages).contains("Source0.kt: (10, 3)")
-      }
+      assertThat(messages).contains("Source0.kt:10:3")
       assertThat(messages).contains("A factory must be an interface or an abstract class.")
     }
 
@@ -349,11 +320,7 @@ class ContributesSubcomponentGeneratorTest {
       """
     ) {
       assertThat(exitCode).isError()
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:10:9")
-      } else {
-        assertThat(messages).contains("Source0.kt: (10, 9)")
-      }
+      assertThat(messages).contains("Source0.kt:10:9")
       assertThat(messages).contains("A factory must be an interface or an abstract class.")
     }
   }
@@ -376,11 +343,7 @@ class ContributesSubcomponentGeneratorTest {
       """
     ) {
       assertThat(exitCode).isError()
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:10:13")
-      } else {
-        assertThat(messages).contains("Source0.kt: (10, 13)")
-      }
+      assertThat(messages).contains("Source0.kt:10:13")
       assertThat(messages).contains(
         "A factory must have exactly one abstract function returning the subcomponent " +
           "com.squareup.test.SubcomponentInterface."
@@ -409,11 +372,7 @@ class ContributesSubcomponentGeneratorTest {
       """
     ) {
       assertThat(exitCode).isError()
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:10:13")
-      } else {
-        assertThat(messages).contains("Source0.kt: (10, 13)")
-      }
+      assertThat(messages).contains("Source0.kt:10:13")
       assertThat(messages).contains(
         "A factory must have exactly one abstract function returning the subcomponent " +
           "com.squareup.test.SubcomponentInterface."
@@ -441,11 +400,7 @@ class ContributesSubcomponentGeneratorTest {
       """
     ) {
       assertThat(exitCode).isError()
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:10:18")
-      } else {
-        assertThat(messages).contains("Source0.kt: (10, 18)")
-      }
+      assertThat(messages).contains("Source0.kt:10:18")
       assertThat(messages).contains(
         "A factory must have exactly one abstract function returning the subcomponent " +
           "com.squareup.test.SubcomponentInterface."
@@ -472,11 +427,7 @@ class ContributesSubcomponentGeneratorTest {
       """
     ) {
       assertThat(exitCode).isError()
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:9:13")
-      } else {
-        assertThat(messages).contains("Source0.kt: (9, 13)")
-      }
+      assertThat(messages).contains("Source0.kt:9:13")
       assertThat(messages).contains(
         "Within a class using @ContributesSubcomponent you must use " +
           "com.squareup.anvil.annotations.ContributesSubcomponent.Factory and not " +
@@ -504,11 +455,7 @@ class ContributesSubcomponentGeneratorTest {
       """
     ) {
       assertThat(exitCode).isError()
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:9:13")
-      } else {
-        assertThat(messages).contains("Source0.kt: (9, 13)")
-      }
+      assertThat(messages).contains("Source0.kt:9:13")
       assertThat(messages).contains(
         "Within a class using @ContributesSubcomponent you must use " +
           "com.squareup.anvil.annotations.ContributesSubcomponent.Factory and not " +
@@ -568,11 +515,7 @@ class ContributesSubcomponentGeneratorTest {
       """
     ) {
       assertThat(exitCode).isError()
-      if (KOTLIN_PREVIEW) {
-        assertThat(messages).contains("Source0.kt:16:11")
-      } else {
-        assertThat(messages).contains("Source0.kt: (16, 11)")
-      }
+      assertThat(messages).contains("Source0.kt:16:11")
       assertThat(messages).contains(
         "com.squareup.test.SubcomponentInterface2 with scope kotlin.Any wants to replace " +
           "com.squareup.test.SubcomponentInterface1 with scope kotlin.Long. The replacement " +

@@ -10,6 +10,8 @@
 
 ### Removed
 
+- Remove support for Kotlin 1.7. Anvil only supports Kotlin 1.8 moving forward.
+
 ### Fixed
 
 ### Security

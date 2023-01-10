@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.KOTLIN_PREVIEW
 import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
@@ -133,11 +132,7 @@ class AnvilAnnotationDetectorCheckTest {
 
   private fun Result.assertError() {
     assertThat(exitCode).isError()
-    if (KOTLIN_PREVIEW) {
-      assertThat(messages).contains("Source0.kt:6:7")
-    } else {
-      assertThat(messages).contains("Source0.kt: (6, 7)")
-    }
+    assertThat(messages).contains("Source0.kt:6:7")
     assertThat(messages).contains(
       "This Gradle module is configured to ONLY generate Dagger factories with the " +
         "`generateDaggerFactoriesOnly` flag. However, this module contains code that uses " +

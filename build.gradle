@@ -73,9 +73,14 @@ subprojects {
   }
 
   //noinspection UnnecessaryQualifiedReference
-  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask).configureEach {
     kotlinOptions {
-      jvmTarget = JavaVersion.VERSION_1_8
+      if (parent?.path != ':integration-tests:mpp') {
+        // The configuration for KMP projects is different. We should fix that eventually.
+        //
+        // Caused by: groovy.lang.MissingPropertyException: Could not set unknown property 'jvmTarget' for object of type org.jetbrains.kotlin.gradle.tasks.internal.KotlinMultiplatformCommonOptionsCompat.
+        jvmTarget = JavaVersion.VERSION_1_8
+      }
 
       allWarningsAsErrors = rootProject.ext.makeWarningsErrors
       freeCompilerArgs += ["-opt-in=kotlin.RequiresOptIn"]

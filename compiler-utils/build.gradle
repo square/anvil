@@ -17,7 +17,7 @@ dependencies {
   implementation deps.dagger2.dagger
   implementation deps.inject
 
-  testFixturesApi kotlinCompileTesting
+  testFixturesApi deps.kotlin.compile_testing
   testFixturesImplementation project(':compiler')
   testFixturesImplementation deps.dagger2.compiler
   testFixturesImplementation deps.dagger2.dagger
@@ -33,24 +33,16 @@ dependencies {
     compileOnly project(':compiler')
     compileOnly deps.dagger2.compiler
     compileOnly deps.junit
-    compileOnly kotlinCompileTesting
+    compileOnly deps.kotlin.compile_testing
     compileOnly deps.truth
   }
 }
 
-// We conditionally include one of two source sets here because there are some breaking API changes
-// between Kotlin 1.7 and 1.8. We must support both until 1.8 is fully released and we drop 1.7.
-if (rootProject.ext.kotlinPreview) {
-  sourceSets.testFixtures.java.srcDirs += ['src/testFixtures/preview']
-
-  //noinspection UnnecessaryQualifiedReference
-  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-    compilerOptions {
-      freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
-    }
+//noinspection UnnecessaryQualifiedReference
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask).configureEach {
+  compilerOptions {
+    freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
   }
-} else {
-  sourceSets.testFixtures.java.srcDirs += ['src/testFixtures/stable']
 }
 
 private def getSystemProperty(String name, String defaultValue = null) {
