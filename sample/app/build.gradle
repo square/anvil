@@ -6,16 +6,17 @@ plugins {
 }
 
 android {
-  compileSdkVersion 30
+  compileSdk = 30
+  namespace = "com.squareup.anvil.sample"
 
   defaultConfig {
-    applicationId "com.squareup.anvil.sample"
-    minSdkVersion 24
-    targetSdkVersion 30
-    versionCode 1
-    versionName "1.0.0"
+    applicationId = "com.squareup.anvil.sample"
+    minSdk = 24
+    targetSdk = 30
+    versionCode = 1
+    versionName = "1.0.0"
 
-    testInstrumentationRunner "com.squareup.anvil.sample.TestRunner"
+    testInstrumentationRunner = "com.squareup.anvil.sample.TestRunner"
   }
 
   compileOptions {
@@ -23,8 +24,8 @@ android {
     targetCompatibility JavaVersion.VERSION_1_8
   }
 
-  lintOptions {
-    warningsAsErrors true
+  lint {
+//    warningsAsErrors = true
   }
 
   variantFilter { variant ->

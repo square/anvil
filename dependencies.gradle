@@ -7,7 +7,7 @@ ext {
   espressoVersion = '3.2.0'
 
   agpVersion = project.hasProperty('square.agpVersion') ?
-      project.getProperty('square.agpVersion') : '4.2.2'
+      project.getProperty('square.agpVersion') : '7.0.0'
 
   kotlinVersion = project.hasProperty('square.kotlinVersion') ?
       project.getProperty('square.kotlinVersion') : '1.8.0'

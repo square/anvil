@@ -9,13 +9,14 @@ plugins {
 }
 
 android {
-  compileSdkVersion 30
+  compileSdk = 30
+  namespace = "com.squareup.anvil.mpp"
 
   defaultConfig {
-    minSdkVersion 24
-    targetSdkVersion 30
-    versionCode 1
-    versionName "1.0.0"
+    minSdk = 24
+    targetSdk = 30
+    versionCode = 1
+    versionName = "1.0.0"
   }
 
   compileOptions {
@@ -23,8 +24,8 @@ android {
     targetCompatibility JavaVersion.VERSION_1_8
   }
 
-  lintOptions {
-    warningsAsErrors true
+  lint {
+    it.warningsAsErrors = true
   }
 
   variantFilter { variant ->
