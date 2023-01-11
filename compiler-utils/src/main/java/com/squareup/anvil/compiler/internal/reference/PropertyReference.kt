@@ -90,7 +90,7 @@ public sealed class PropertyReference : AnnotatedReference {
     }
 
     override val type: TypeReference? by lazy(NONE) {
-      property.typeReference?.toTypeReference(declaringClass)
+      property.typeReference?.toTypeReference(declaringClass, module)
     }
 
     override val setterAnnotations: List<AnnotationReference.Psi> by lazy(NONE) {
@@ -172,7 +172,7 @@ public sealed class PropertyReference : AnnotatedReference {
     }
 
     override val type: TypeReference by lazy(NONE) {
-      property.type.toTypeReference(declaringClass)
+      property.type.toTypeReference(declaringClass, module)
     }
 
     override fun visibility(): Visibility {

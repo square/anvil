@@ -97,7 +97,7 @@ public sealed class FunctionReference : AnnotatedReference {
     }
 
     override val returnType: TypeReference.Psi? by lazy(NONE) {
-      function.typeReference?.toTypeReference(declaringClass)
+      function.typeReference?.toTypeReference(declaringClass, module)
     }
 
     override val parameters: List<ParameterReference.Psi> by lazy(NONE) {
@@ -141,7 +141,7 @@ public sealed class FunctionReference : AnnotatedReference {
     }
 
     override val returnType: TypeReference.Descriptor? by lazy(NONE) {
-      function.returnType?.toTypeReference(declaringClass)
+      function.returnType?.toTypeReference(declaringClass, module)
     }
 
     internal val overriddenFunctions by lazy(NONE) {

@@ -116,7 +116,7 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
 
   private fun FunctionReference.Psi.receiverSuperTypes(): Sequence<ClassReference>? {
     return function.receiverTypeReference
-      ?.toTypeReference(declaringClass)
+      ?.toTypeReference(declaringClass, module)
       ?.asClassReference()
       ?.allSuperTypeClassReferences(includeSelf = true)
   }

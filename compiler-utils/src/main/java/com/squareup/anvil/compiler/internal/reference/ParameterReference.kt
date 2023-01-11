@@ -77,7 +77,7 @@ public sealed class ParameterReference : AnnotatedReference {
     }
 
     override val type: TypeReference.Psi? by lazy(NONE) {
-      parameter.typeReference?.toTypeReference(declaringFunction.declaringClass)
+      parameter.typeReference?.toTypeReference(declaringFunction.declaringClass, module)
     }
   }
 
@@ -94,7 +94,7 @@ public sealed class ParameterReference : AnnotatedReference {
     }
 
     override val type: TypeReference.Descriptor? by lazy(NONE) {
-      parameter.type.toTypeReference(declaringFunction.declaringClass)
+      parameter.type.toTypeReference(declaringFunction.declaringClass, module)
     }
   }
 }

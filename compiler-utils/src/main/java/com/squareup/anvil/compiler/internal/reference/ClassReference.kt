@@ -167,7 +167,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
     }
 
     private val directSuperTypeReferences: List<TypeReference> by lazy(NONE) {
-      clazz.superTypeListEntries.mapNotNull { it.typeReference?.toTypeReference(this) }
+      clazz.superTypeListEntries.mapNotNull { it.typeReference?.toTypeReference(this, module) }
     }
 
     private val enclosingClassesWithSelf by lazy(NONE) {
@@ -267,7 +267,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
     }
 
     private val directSuperTypeReferences: List<TypeReference> by lazy(NONE) {
-      clazz.typeConstructor.supertypes.map { it.toTypeReference(this) }
+      clazz.typeConstructor.supertypes.map { it.toTypeReference(this, module) }
         .filterNot { it.asClassReference().fqName.asString() == "kotlin.Any" }
     }
 
