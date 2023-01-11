@@ -6,7 +6,7 @@ import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
-import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionPropertyReference
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionVariableReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.FunctionReference
 import com.squareup.anvil.compiler.internal.reference.ParameterReference
@@ -208,8 +208,8 @@ private fun PropertyReference.toMemberInjectParameter(
   ) {
     // Technically this works with Anvil and we could remove this check. But we prefer consistency
     // with Dagger.
-    throw AnvilCompilationExceptionPropertyReference(
-      propertyReference = this,
+    throw AnvilCompilationExceptionVariableReference(
+      variableReference = this,
       message = "Dagger does not support injection into private fields. Either use a " +
         "'lateinit var' or '@JvmField'."
     )

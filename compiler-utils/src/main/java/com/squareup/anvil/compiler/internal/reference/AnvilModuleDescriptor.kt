@@ -31,6 +31,8 @@ public interface AnvilModuleDescriptor : ModuleDescriptor {
 
   public fun getTopLevelFunctionReferences(ktFile: KtFile): List<TopLevelFunctionReference.Psi>
 
+  public fun getTopLevelPropertyReferences(ktFile: KtFile): List<TopLevelPropertyReference.Psi>
+
   public fun getClassReference(clazz: KtClassOrObject): Psi
 
   public fun getClassReference(descriptor: ClassDescriptor): Descriptor
@@ -67,5 +69,14 @@ public fun Collection<KtFile>.topLevelFunctionReferences(
 ): Sequence<TopLevelFunctionReference.Psi> {
   return asSequence().flatMap {
     module.asAnvilModuleDescriptor().getTopLevelFunctionReferences(it)
+  }
+}
+
+@ExperimentalAnvilApi
+public fun Collection<KtFile>.topLevelPropertyReferences(
+  module: ModuleDescriptor
+): Sequence<TopLevelPropertyReference.Psi> {
+  return asSequence().flatMap {
+    module.asAnvilModuleDescriptor().getTopLevelPropertyReferences(it)
   }
 }

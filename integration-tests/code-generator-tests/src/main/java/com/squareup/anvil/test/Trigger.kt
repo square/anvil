@@ -7,3 +7,6 @@ class AnyClass
 
 @Trigger
 fun abc() = Unit
+
+@Trigger
+val def = Unit

@@ -10,7 +10,9 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.TopLevelFunctionReference
+import com.squareup.anvil.compiler.internal.reference.TopLevelPropertyReference
 import com.squareup.anvil.compiler.internal.reference.toTopLevelFunctionReference
+import com.squareup.anvil.compiler.internal.reference.toTopLevelPropertyReference
 import com.squareup.anvil.compiler.internal.requireFqName
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -23,6 +25,7 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
+import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
@@ -37,6 +40,9 @@ class RealAnvilModuleDescriptor private constructor(
 
   private val ktFileToTopLevelFunctionReferenceMap =
     mutableMapOf<String, List<TopLevelFunctionReference.Psi>>()
+
+  private val ktFileToTopLevelPropertyReferenceMap =
+    mutableMapOf<String, List<TopLevelPropertyReference.Psi>>()
 
   private val resolveDescriptorCache = mutableMapOf<FqName, ClassDescriptor?>()
   private val resolveClassIdCache = mutableMapOf<ClassId, FqName?>()
@@ -75,6 +81,12 @@ class RealAnvilModuleDescriptor private constructor(
   override fun getTopLevelFunctionReferences(ktFile: KtFile): List<TopLevelFunctionReference.Psi> {
     return ktFileToTopLevelFunctionReferenceMap.getOrPut(ktFile.identifier) {
       ktFile.topLevelFunctions().map { it.toTopLevelFunctionReference(this) }
+    }
+  }
+
+  override fun getTopLevelPropertyReferences(ktFile: KtFile): List<TopLevelPropertyReference.Psi> {
+    return ktFileToTopLevelPropertyReferenceMap.getOrPut(ktFile.identifier) {
+      ktFile.topLevelProperties().map { it.toTopLevelPropertyReference(this) }
     }
   }
 
@@ -180,6 +192,10 @@ private fun KtFile.classesAndInnerClasses(): List<KtClassOrObject> {
 
 private fun KtFile.topLevelFunctions(): List<KtFunction> {
   return findChildrenByClass(KtFunction::class.java).toList()
+}
+
+private fun KtFile.topLevelProperties(): List<KtProperty> {
+  return findChildrenByClass(KtProperty::class.java).toList()
 }
 
 private fun KtClassOrObject.toClassId(): ClassId {

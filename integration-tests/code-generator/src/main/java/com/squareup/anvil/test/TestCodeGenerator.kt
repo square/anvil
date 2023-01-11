@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.topLevelFunctionReferences
+import com.squareup.anvil.compiler.internal.reference.topLevelPropertyReferences
 import com.squareup.anvil.compiler.internal.safePackageString
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -194,6 +195,31 @@ class TestCodeGenerator : CodeGenerator {
                 codeGenDir = codeGenDir,
                 packageName = generatedPackage,
                 fileName = "GeneratedFunctionClass",
+                content = generatedClass
+              ),
+            )
+          }
+      )
+      .plus(
+        projectFiles
+          .topLevelPropertyReferences(module)
+          .filter { it.isAnnotatedWith(FqName("com.squareup.anvil.test.Trigger")) }
+          .flatMap {
+            val generatedPackage = "generated.test" + it.fqName.parent()
+              .safePackageString(dotPrefix = true, dotSuffix = false)
+
+            @Language("kotlin")
+            val generatedClass = """
+              package $generatedPackage
+              
+              class GeneratedPropertyClass 
+            """.trimIndent()
+
+            listOf(
+              createGeneratedFile(
+                codeGenDir = codeGenDir,
+                packageName = generatedPackage,
+                fileName = "GeneratedPropertyClass",
                 content = generatedClass
               ),
             )

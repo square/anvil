@@ -20,7 +20,7 @@
 
 ### Custom Code Generator
 
-- Add ability to query top-level functions. This allows you write code generators for top-level functions, see #644.
+- Add ability to query top-level functions and properties. The entry point is `projectFiles.topLevelFunctionReferences(module)` and `projectFiles.topLevelPropertyReferences(module)`. This allows you write code generators reacting to top-level functions and properties and not only classes, see #644.
 
 ## [2.4.3] - 2022-12-16
 
