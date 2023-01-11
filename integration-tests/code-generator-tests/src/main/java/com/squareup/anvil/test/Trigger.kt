@@ -4,3 +4,6 @@ annotation class Trigger
 
 @Trigger
 class AnyClass
+
+@Trigger
+fun abc() = Unit

@@ -78,6 +78,12 @@ class GeneratedCodeTest {
     assertThat(int).isEqualTo(7)
   }
 
+  @Test fun `the function class is generated`() {
+    val generatedClass =
+      Class.forName("generated.test.com.squareup.anvil.test.GeneratedFunctionClass")
+    assertThat(generatedClass).isNotNull()
+  }
+
   @MergeComponent(Unit::class)
   interface AppComponent {
     fun otherClass(): OtherClass

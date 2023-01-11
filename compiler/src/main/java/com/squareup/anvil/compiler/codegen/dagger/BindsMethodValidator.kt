@@ -6,7 +6,7 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.daggerBindsFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
-import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionalReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.FunctionReference
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
@@ -53,9 +53,9 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
 
   private fun validateBindsFunction(function: FunctionReference.Psi) {
     if (!function.isAbstract()) {
-      throw AnvilCompilationExceptionFunctionReference(
+      throw AnvilCompilationExceptionFunctionalReference(
         message = "@Binds methods must be abstract",
-        functionReference = function
+        functionalReference = function
       )
     }
 
@@ -63,16 +63,16 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
       (function.parameters.size == 1 && !function.function.isExtensionDeclaration()) ||
         (function.parameters.isEmpty() && function.function.isExtensionDeclaration())
     if (!hasSingleBindingParameter) {
-      throw AnvilCompilationExceptionFunctionReference(
+      throw AnvilCompilationExceptionFunctionalReference(
         message = "@Binds methods must have exactly one parameter, " +
           "whose type is assignable to the return type",
-        functionReference = function
+        functionalReference = function
       )
     }
 
-    function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
+    function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionalReference(
       message = "@Binds methods must return a value (not void)",
-      functionReference = function
+      functionalReference = function
     )
 
     if (!function.parameterMatchesReturnType() && !function.receiverMatchesReturnType()) {
@@ -86,11 +86,11 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
       } else {
         "only has the following supertypes: ${paramSuperTypes.drop(1)}"
       }
-      throw AnvilCompilationExceptionFunctionReference(
+      throw AnvilCompilationExceptionFunctionalReference(
         message = "@Binds methods' parameter type must be assignable to the return type. " +
           "Expected binding of type $returnType but impl parameter of type " +
           "${paramSuperTypes.first()} $superTypesMessage",
-        functionReference = function
+        functionalReference = function
       )
     }
   }
