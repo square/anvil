@@ -6,7 +6,7 @@ import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.junit.Test
 
-class PropertyReferenceTest {
+class MemberPropertyReferenceTest {
 
   @Test fun `primary constructor val properties are properties`() {
     compile(
@@ -754,5 +754,5 @@ class PropertyReferenceTest {
   private fun ClassReference.propertyTypeNames() = properties
     .map { "${it.name}: ${it.type().asTypeName()}" }
 
-  private fun List<PropertyReference>.named(name: String) = single { it.name == name }
+  private fun List<MemberPropertyReference>.named(name: String) = single { it.name == name }
 }

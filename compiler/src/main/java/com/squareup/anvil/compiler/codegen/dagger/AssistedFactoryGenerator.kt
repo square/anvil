@@ -15,9 +15,9 @@ import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryGenerator.Assis
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
-import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionalReference
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.FunctionReference
+import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ParameterReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
@@ -73,10 +73,10 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
       function.function.resolveGenericReturnType(clazz)
     } catch (e: AnvilCompilationException) {
       // Catch the exception and throw the same error that Dagger would.
-      throw AnvilCompilationExceptionFunctionalReference(
+      throw AnvilCompilationExceptionFunctionReference(
         message = "Invalid return type: ${clazz.fqName}. An assisted factory's " +
           "abstract method must return a type with an @AssistedInject-annotated constructor.",
-        functionalReference = function.function,
+        functionReference = function.function,
         cause = e
       )
     }
@@ -286,7 +286,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
    * Represents a parsed function in an `@AssistedInject.Factory`-annotated interface.
    */
   private data class AssistedFactoryFunction(
-    val function: FunctionReference,
+    val function: MemberFunctionReference,
     val parameterKeys: List<AssistedParameterKey>,
     /**
      * Pair of parameter reference to parameter type.
@@ -294,7 +294,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     val parameterPairs: List<Pair<ParameterReference, TypeName>>
   ) {
     companion object {
-      fun FunctionReference.toAssistedFactoryFunction(
+      fun MemberFunctionReference.toAssistedFactoryFunction(
         factoryClass: ClassReference.Psi
       ): AssistedFactoryFunction {
         return AssistedFactoryFunction(

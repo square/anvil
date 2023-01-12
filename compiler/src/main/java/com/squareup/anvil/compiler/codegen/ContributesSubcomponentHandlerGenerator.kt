@@ -19,7 +19,7 @@ import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.FunctionReference
+import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
@@ -498,7 +498,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private class ParentComponentInterfaceHolder(
     componentInterface: ClassReference,
-    function: FunctionReference
+    function: MemberFunctionReference
   ) {
     val componentInterface = componentInterface.asClassName()
     val functionName = function.fqName.shortName().asString()

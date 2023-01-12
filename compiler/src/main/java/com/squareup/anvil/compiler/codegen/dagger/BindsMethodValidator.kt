@@ -6,9 +6,9 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.daggerBindsFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
-import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionalReference
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.FunctionReference
+import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.toTypeReference
@@ -51,11 +51,11 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
       }
   }
 
-  private fun validateBindsFunction(function: FunctionReference.Psi) {
+  private fun validateBindsFunction(function: MemberFunctionReference.Psi) {
     if (!function.isAbstract()) {
-      throw AnvilCompilationExceptionFunctionalReference(
+      throw AnvilCompilationExceptionFunctionReference(
         message = "@Binds methods must be abstract",
-        functionalReference = function
+        functionReference = function
       )
     }
 
@@ -63,16 +63,16 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
       (function.parameters.size == 1 && !function.function.isExtensionDeclaration()) ||
         (function.parameters.isEmpty() && function.function.isExtensionDeclaration())
     if (!hasSingleBindingParameter) {
-      throw AnvilCompilationExceptionFunctionalReference(
+      throw AnvilCompilationExceptionFunctionReference(
         message = "@Binds methods must have exactly one parameter, " +
           "whose type is assignable to the return type",
-        functionalReference = function
+        functionReference = function
       )
     }
 
-    function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionalReference(
+    function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
       message = "@Binds methods must return a value (not void)",
-      functionalReference = function
+      functionReference = function
     )
 
     if (!function.parameterMatchesReturnType() && !function.receiverMatchesReturnType()) {
@@ -86,35 +86,35 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
       } else {
         "only has the following supertypes: ${paramSuperTypes.drop(1)}"
       }
-      throw AnvilCompilationExceptionFunctionalReference(
+      throw AnvilCompilationExceptionFunctionReference(
         message = "@Binds methods' parameter type must be assignable to the return type. " +
           "Expected binding of type $returnType but impl parameter of type " +
           "${paramSuperTypes.first()} $superTypesMessage",
-        functionalReference = function
+        functionReference = function
       )
     }
   }
 
-  private fun FunctionReference.Psi.parameterMatchesReturnType(): Boolean {
+  private fun MemberFunctionReference.Psi.parameterMatchesReturnType(): Boolean {
     return parameterSuperTypes()
       ?.contains(returnType().asClassReference())
       ?: false
   }
 
-  private fun FunctionReference.Psi.parameterSuperTypes(): Sequence<ClassReference>? {
+  private fun MemberFunctionReference.Psi.parameterSuperTypes(): Sequence<ClassReference>? {
     return parameters.singleOrNull()
       ?.type()
       ?.asClassReference()
       ?.allSuperTypeClassReferences(includeSelf = true)
   }
 
-  private fun FunctionReference.Psi.receiverMatchesReturnType(): Boolean {
+  private fun MemberFunctionReference.Psi.receiverMatchesReturnType(): Boolean {
     return receiverSuperTypes()
       ?.contains(returnType().asClassReference())
       ?: false
   }
 
-  private fun FunctionReference.Psi.receiverSuperTypes(): Sequence<ClassReference>? {
+  private fun MemberFunctionReference.Psi.receiverSuperTypes(): Sequence<ClassReference>? {
     return function.receiverTypeReference
       ?.toTypeReference(declaringClass, module)
       ?.asClassReference()

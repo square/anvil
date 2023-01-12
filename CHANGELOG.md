@@ -21,6 +21,8 @@
 ### Custom Code Generator
 
 - Add ability to query top-level functions and properties. The entry point is `projectFiles.topLevelFunctionReferences(module)` and `projectFiles.topLevelPropertyReferences(module)`. This allows you write code generators reacting to top-level functions and properties and not only classes, see #644.
+- The `FunctionReference` type has been renamed to `MemberFunctionReference` and a new super type `FunctionReference` has been introduced for `TopLevelFunctionReference` and `MemberFunctionReference`.
+- The `PropertyReference` type has been renamed to `MemberPropertyReference` and a new super type `PropertyReference` has been introduced for `TopLevelPropertyReference` and `MemberPropertyReference`.
 
 ## [2.4.3] - 2022-12-16
 

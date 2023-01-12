@@ -6,11 +6,11 @@ import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
-import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionVariableReference
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionPropertyReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.FunctionReference
+import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
+import com.squareup.anvil.compiler.internal.reference.MemberPropertyReference
 import com.squareup.anvil.compiler.internal.reference.ParameterReference
-import com.squareup.anvil.compiler.internal.reference.PropertyReference
 import com.squareup.anvil.compiler.internal.reference.TypeParameterReference
 import com.squareup.anvil.compiler.internal.reference.TypeReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
@@ -197,7 +197,7 @@ internal fun List<Parameter>.asArgumentList(
     .joinToString()
 }
 
-private fun PropertyReference.toMemberInjectParameter(
+private fun MemberPropertyReference.toMemberInjectParameter(
   uniqueName: String,
   implementingClass: ClassReference
 ): MemberInjectParameter {
@@ -208,8 +208,8 @@ private fun PropertyReference.toMemberInjectParameter(
   ) {
     // Technically this works with Anvil and we could remove this check. But we prefer consistency
     // with Dagger.
-    throw AnvilCompilationExceptionVariableReference(
-      variableReference = this,
+    throw AnvilCompilationExceptionPropertyReference(
+      propertyReference = this,
       message = "Dagger does not support injection into private fields. Either use a " +
         "'lateinit var' or '@JvmField'."
     )
@@ -321,7 +321,7 @@ internal fun ClassName.optionallyParameterizedBy(
 
 internal fun assertNoDuplicateFunctions(
   declaringClass: ClassReference,
-  functions: Sequence<FunctionReference.Psi>
+  functions: Sequence<MemberFunctionReference.Psi>
 ) {
   // Check for duplicate function names.
   val duplicateFunctions = functions
