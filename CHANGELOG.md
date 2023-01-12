@@ -6,13 +6,9 @@
 
 ### Changed
 
-- The [issue](https://youtrack.jetbrains.com/issue/KT-38576) that required disabling precise Java tracking is not needed anymore. The workaround has been removed.
-
 ### Deprecated
 
 ### Removed
-
-- Remove support for Kotlin 1.7. Anvil only supports Kotlin 1.8 moving forward.
 
 ### Fixed
 
@@ -20,9 +16,26 @@
 
 ### Custom Code Generator
 
+# [2.4.4] - 2023-01-12
+
+### Added
+
+- Added support for Kotlin 1.8.
+
+### Changed
+
+- The [issue](https://youtrack.jetbrains.com/issue/KT-38576) that required disabling precise Java tracking is not needed anymore. The workaround has been removed.
+
+### Removed
+
+- Remove support for Kotlin 1.7. Anvil only supports Kotlin 1.8 moving forward.
+
+### Custom Code Generator
+
 - Add ability to query top-level functions and properties. The entry point is `projectFiles.topLevelFunctionReferences(module)` and `projectFiles.topLevelPropertyReferences(module)`. This allows you write code generators reacting to top-level functions and properties and not only classes, see #644.
 - The `FunctionReference` type has been renamed to `MemberFunctionReference` and a new super type `FunctionReference` has been introduced for `TopLevelFunctionReference` and `MemberFunctionReference`.
 - The `PropertyReference` type has been renamed to `MemberPropertyReference` and a new super type `PropertyReference` has been introduced for `TopLevelPropertyReference` and `MemberPropertyReference`.
+
 
 ## [2.4.3] - 2022-12-16
 
@@ -551,7 +564,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.4.3...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.4.4...HEAD
+[2.4.4]: https://github.com/square/anvil/releases/tag/v2.4.4
 [2.4.3]: https://github.com/square/anvil/releases/tag/v2.4.3
 [2.4.2]: https://github.com/square/anvil/releases/tag/v2.4.2
 [2.4.1]: https://github.com/square/anvil/releases/tag/v2.4.1
