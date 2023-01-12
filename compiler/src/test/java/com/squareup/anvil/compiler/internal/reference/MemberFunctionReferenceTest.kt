@@ -8,7 +8,7 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
-class FunctionReferenceTest {
+class MemberFunctionReferenceTest {
 
   @Test fun `constructors are parsed for PSI and Descriptor APIs correctly`() {
     compile(

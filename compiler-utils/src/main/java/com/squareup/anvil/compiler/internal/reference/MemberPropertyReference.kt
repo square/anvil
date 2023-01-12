@@ -2,13 +2,14 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.reference.TopLevelPropertyReference.Descriptor
-import com.squareup.anvil.compiler.internal.reference.TopLevelPropertyReference.Psi
+import com.squareup.anvil.compiler.internal.reference.MemberPropertyReference.Descriptor
+import com.squareup.anvil.compiler.internal.reference.MemberPropertyReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.kotlinpoet.MemberName
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget.PROPERTY_GETTER
@@ -25,7 +26,13 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import kotlin.LazyThreadSafetyMode.NONE
 
 @ExperimentalAnvilApi
-public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyReference {
+public sealed class MemberPropertyReference : AnnotatedReference, PropertyReference {
+
+  public abstract val declaringClass: ClassReference
+
+  public override val module: AnvilModuleDescriptor get() = declaringClass.module
+
+  public val memberName: MemberName get() = MemberName(declaringClass.asClassName(), name)
 
   protected abstract val type: TypeReference?
 
@@ -35,7 +42,7 @@ public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyRefe
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
-    if (other !is TopLevelPropertyReference) return false
+    if (other !is MemberPropertyReference) return false
 
     if (fqName != other.fqName) return false
 
@@ -53,10 +60,10 @@ public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyRefe
    */
   public class Psi private constructor(
     public override val property: KtCallableDeclaration,
+    override val declaringClass: ClassReference.Psi,
     override val fqName: FqName,
-    override val name: String,
-    override val module: AnvilModuleDescriptor,
-  ) : TopLevelPropertyReference(), PropertyReference.Psi {
+    override val name: String
+  ) : MemberPropertyReference(), PropertyReference.Psi {
 
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
       property.annotationEntries
@@ -64,27 +71,27 @@ public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyRefe
           val annotationUseSiteTarget = it.useSiteTarget?.getAnnotationUseSiteTarget()
           annotationUseSiteTarget != PROPERTY_SETTER && annotationUseSiteTarget != PROPERTY_GETTER
         }
-        .map { it.toAnnotationReference(null, module) }
+        .map { it.toAnnotationReference(declaringClass, module) }
         .plus(setterAnnotations)
         .plus(getterAnnotations)
     }
 
     override val type: TypeReference? by lazy(NONE) {
-      property.typeReference?.toTypeReference(null, module)
+      property.typeReference?.toTypeReference(declaringClass, module)
     }
 
     override val setterAnnotations: List<AnnotationReference.Psi> by lazy(NONE) {
       property.annotationEntries
         .filter { it.useSiteTarget?.getAnnotationUseSiteTarget() == PROPERTY_SETTER }
         .plus((property as? KtProperty)?.setter?.annotationEntries ?: emptyList())
-        .map { it.toAnnotationReference(null, module) }
+        .map { it.toAnnotationReference(declaringClass, module) }
     }
 
     override val getterAnnotations: List<AnnotationReference.Psi> by lazy(NONE) {
       property.annotationEntries
         .filter { it.useSiteTarget?.getAnnotationUseSiteTarget() == PROPERTY_GETTER }
         .plus((property as? KtProperty)?.getter?.annotationEntries ?: emptyList())
-        .map { it.toAnnotationReference(null, module) }
+        .map { it.toAnnotationReference(declaringClass, module) }
     }
 
     override fun visibility(): Visibility {
@@ -93,8 +100,8 @@ public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyRefe
         KtTokens.INTERNAL_KEYWORD -> INTERNAL
         KtTokens.PROTECTED_KEYWORD -> PROTECTED
         KtTokens.PRIVATE_KEYWORD -> PRIVATE
-        else -> throw AnvilCompilationExceptionPropertyReference(
-          propertyReference = this,
+        else -> throw AnvilCompilationExceptionClassReference(
+          classReference = declaringClass,
           message = "Couldn't get visibility $visibility for property $fqName."
         )
       }
@@ -109,30 +116,30 @@ public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyRefe
       // us from creating a property out of a function, constructor, or destructuring declaration.
       internal operator fun <T> invoke(
         property: T,
+        declaringClass: ClassReference.Psi,
         fqName: FqName = property.requireFqName(),
-        name: String = fqName.shortName().asString(),
-        module: AnvilModuleDescriptor,
+        name: String = fqName.shortName().asString()
       ): Psi where T : KtCallableDeclaration,
                    T : KtValVarKeywordOwner = Psi(
         property = property,
+        declaringClass = declaringClass,
         fqName = fqName,
-        name = name,
-        module = module
+        name = name
       )
     }
   }
 
   public class Descriptor internal constructor(
     public override val property: PropertyDescriptor,
+    override val declaringClass: ClassReference.Descriptor,
     override val fqName: FqName = property.fqNameSafe,
-    override val name: String = fqName.shortName().asString(),
-    override val module: AnvilModuleDescriptor,
-  ) : TopLevelPropertyReference(), PropertyReference.Descriptor {
+    override val name: String = fqName.shortName().asString()
+  ) : MemberPropertyReference(), PropertyReference.Descriptor {
 
     override val annotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
       property.annotations
         .plus(property.backingField?.annotations ?: emptyList())
-        .map { it.toAnnotationReference(null, module) }
+        .map { it.toAnnotationReference(declaringClass, module) }
         .plus(setterAnnotations)
         .plus(getterAnnotations)
     }
@@ -140,19 +147,19 @@ public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyRefe
     override val setterAnnotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
       property.setter
         ?.annotations
-        ?.map { it.toAnnotationReference(null, module) }
+        ?.map { it.toAnnotationReference(declaringClass, module) }
         .orEmpty()
     }
 
     override val getterAnnotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
       property.getter
         ?.annotations
-        ?.map { it.toAnnotationReference(null, module) }
+        ?.map { it.toAnnotationReference(declaringClass, module) }
         .orEmpty()
     }
 
     override val type: TypeReference by lazy(NONE) {
-      property.type.toTypeReference(null, module)
+      property.type.toTypeReference(declaringClass, module)
     }
 
     override fun visibility(): Visibility {
@@ -161,8 +168,8 @@ public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyRefe
         DescriptorVisibilities.INTERNAL -> INTERNAL
         DescriptorVisibilities.PROTECTED -> PROTECTED
         DescriptorVisibilities.PRIVATE -> PRIVATE
-        else -> throw AnvilCompilationExceptionPropertyReference(
-          propertyReference = this,
+        else -> throw AnvilCompilationExceptionClassReference(
+          classReference = declaringClass,
           message = "Couldn't get visibility $visibility for property $fqName."
         )
       }
@@ -173,8 +180,8 @@ public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyRefe
 }
 
 @ExperimentalAnvilApi
-public fun KtParameter.toTopLevelPropertyReference(
-  module: AnvilModuleDescriptor,
+public fun KtParameter.toPropertyReference(
+  declaringClass: ClassReference.Psi
 ): Psi {
   if (!isPropertyParameter()) {
     throw AnvilCompilationException(
@@ -182,15 +189,15 @@ public fun KtParameter.toTopLevelPropertyReference(
       message = "A KtParameter may only be turned into a PropertyReference if it's a val or var."
     )
   }
-  return Psi(property = this, module = module)
+  return Psi(this, declaringClass)
 }
 
 @ExperimentalAnvilApi
-public fun KtProperty.toTopLevelPropertyReference(
-  module: AnvilModuleDescriptor,
-): Psi = Psi(property = this, module = module)
+public fun KtProperty.toPropertyReference(
+  declaringClass: ClassReference.Psi
+): Psi = Psi(this, declaringClass)
 
 @ExperimentalAnvilApi
-public fun PropertyDescriptor.toTopLevelPropertyReference(
-  module: AnvilModuleDescriptor,
-): Descriptor = Descriptor(property = this, module = module)
+public fun PropertyDescriptor.toPropertyReference(
+  declaringClass: ClassReference.Descriptor
+): Descriptor = Descriptor(this, declaringClass)

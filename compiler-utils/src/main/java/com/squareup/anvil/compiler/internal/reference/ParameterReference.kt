@@ -13,7 +13,7 @@ import kotlin.LazyThreadSafetyMode.NONE
 public sealed class ParameterReference : AnnotatedReference {
 
   public abstract val name: String
-  public abstract val declaringFunction: FunctionalReference
+  public abstract val declaringFunction: FunctionReference
   public val module: AnvilModuleDescriptor get() = declaringFunction.module
 
   protected abstract val type: TypeReference?
@@ -68,7 +68,7 @@ public sealed class ParameterReference : AnnotatedReference {
 
   public class Psi(
     public val parameter: KtParameter,
-    override val declaringFunction: FunctionalReference.Psi
+    override val declaringFunction: FunctionReference.Psi
   ) : ParameterReference() {
     override val name: String = parameter.nameAsSafeName.asString()
 
@@ -85,13 +85,13 @@ public sealed class ParameterReference : AnnotatedReference {
     override val declaringClass: ClassReference.Psi?
       get() = when (declaringFunction) {
         is TopLevelFunctionReference.Psi -> null
-        is FunctionReference.Psi -> declaringFunction.declaringClass
+        is MemberFunctionReference.Psi -> declaringFunction.declaringClass
       }
   }
 
   public class Descriptor(
     public val parameter: ValueParameterDescriptor,
-    override val declaringFunction: FunctionalReference.Descriptor
+    override val declaringFunction: FunctionReference.Descriptor
   ) : ParameterReference() {
     override val name: String = parameter.name.asString()
 
@@ -108,21 +108,21 @@ public sealed class ParameterReference : AnnotatedReference {
     override val declaringClass: ClassReference.Descriptor?
       get() = when (declaringFunction) {
         is TopLevelFunctionReference.Descriptor -> null
-        is FunctionReference.Descriptor -> declaringFunction.declaringClass
+        is MemberFunctionReference.Descriptor -> declaringFunction.declaringClass
       }
   }
 }
 
 @ExperimentalAnvilApi
 public fun KtParameter.toParameterReference(
-  declaringFunction: FunctionalReference.Psi
+  declaringFunction: FunctionReference.Psi
 ): Psi {
   return Psi(this, declaringFunction)
 }
 
 @ExperimentalAnvilApi
 public fun ValueParameterDescriptor.toParameterReference(
-  declaringFunction: FunctionalReference.Descriptor
+  declaringFunction: FunctionReference.Descriptor
 ): Descriptor {
   return Descriptor(this, declaringFunction)
 }

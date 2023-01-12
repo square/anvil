@@ -9,7 +9,7 @@ import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.PropertyReference
+import com.squareup.anvil.compiler.internal.reference.MemberPropertyReference
 import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.asTypeName
@@ -189,7 +189,7 @@ private class AnnotationProperty(
 ) {
   companion object {
     operator fun invoke(
-      property: PropertyReference
+      property: MemberPropertyReference
     ): AnnotationProperty {
       val name = property.name
       val typeName = property.type().asTypeName()

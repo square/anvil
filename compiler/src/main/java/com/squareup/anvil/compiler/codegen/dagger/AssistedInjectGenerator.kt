@@ -12,7 +12,7 @@ import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.FunctionReference
+import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
@@ -62,7 +62,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
   private fun generateFactoryClass(
     codeGenDir: File,
     clazz: ClassReference.Psi,
-    constructor: FunctionReference.Psi
+    constructor: MemberFunctionReference.Psi
   ): GeneratedFile {
     val packageName = clazz.packageFqName.safePackageString()
     val classIdName = clazz.generateClassName(suffix = "_Factory")
