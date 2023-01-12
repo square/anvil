@@ -13,10 +13,12 @@ import kotlin.LazyThreadSafetyMode.NONE
 public sealed class ParameterReference : AnnotatedReference {
 
   public abstract val name: String
-  public abstract val declaringFunction: FunctionReference
+  public abstract val declaringFunction: FunctionalReference
   public val module: AnvilModuleDescriptor get() = declaringFunction.module
 
   protected abstract val type: TypeReference?
+
+  protected abstract val declaringClass: ClassReference?
 
   /**
    * The type can be null for generic type parameters like `T`. In this case try to resolve the
@@ -66,7 +68,7 @@ public sealed class ParameterReference : AnnotatedReference {
 
   public class Psi(
     public val parameter: KtParameter,
-    override val declaringFunction: FunctionReference.Psi
+    override val declaringFunction: FunctionalReference.Psi
   ) : ParameterReference() {
     override val name: String = parameter.nameAsSafeName.asString()
 
@@ -77,13 +79,19 @@ public sealed class ParameterReference : AnnotatedReference {
     }
 
     override val type: TypeReference.Psi? by lazy(NONE) {
-      parameter.typeReference?.toTypeReference(declaringFunction.declaringClass)
+      parameter.typeReference?.toTypeReference(declaringClass, module)
     }
+
+    override val declaringClass: ClassReference.Psi?
+      get() = when (declaringFunction) {
+        is TopLevelFunctionReference.Psi -> null
+        is FunctionReference.Psi -> declaringFunction.declaringClass
+      }
   }
 
   public class Descriptor(
     public val parameter: ValueParameterDescriptor,
-    override val declaringFunction: FunctionReference.Descriptor
+    override val declaringFunction: FunctionalReference.Descriptor
   ) : ParameterReference() {
     override val name: String = parameter.name.asString()
 
@@ -94,21 +102,27 @@ public sealed class ParameterReference : AnnotatedReference {
     }
 
     override val type: TypeReference.Descriptor? by lazy(NONE) {
-      parameter.type.toTypeReference(declaringFunction.declaringClass)
+      parameter.type.toTypeReference(declaringClass, module)
     }
+
+    override val declaringClass: ClassReference.Descriptor?
+      get() = when (declaringFunction) {
+        is TopLevelFunctionReference.Descriptor -> null
+        is FunctionReference.Descriptor -> declaringFunction.declaringClass
+      }
   }
 }
 
 @ExperimentalAnvilApi
 public fun KtParameter.toParameterReference(
-  declaringFunction: FunctionReference.Psi
+  declaringFunction: FunctionalReference.Psi
 ): Psi {
   return Psi(this, declaringFunction)
 }
 
 @ExperimentalAnvilApi
 public fun ValueParameterDescriptor.toParameterReference(
-  declaringFunction: FunctionReference.Descriptor
+  declaringFunction: FunctionalReference.Descriptor
 ): Descriptor {
   return Descriptor(this, declaringFunction)
 }

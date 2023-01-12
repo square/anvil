@@ -12,7 +12,7 @@ import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.reference.AnnotatedReference
-import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionalReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.FunctionReference
 import com.squareup.anvil.compiler.internal.reference.PropertyReference
@@ -301,9 +301,9 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     clazz: ClassReference.Psi,
     function: FunctionReference.Psi
   ) {
-    fun fail(): Nothing = throw AnvilCompilationExceptionFunctionReference(
+    fun fail(): Nothing = throw AnvilCompilationExceptionFunctionalReference(
       message = "@Provides methods cannot be abstract",
-      functionReference = function
+      functionalReference = function
     )
 
     // If the function is abstract, then it's an error.
@@ -358,10 +358,10 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
       function?.parameters?.mapToConstructorParameters() ?: emptyList()
 
     val type: TypeReference = function?.let {
-      it.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
+      it.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionalReference(
         message = "Dagger provider methods must specify the return type explicitly when using " +
           "Anvil. The return type cannot be inferred implicitly.",
-        functionReference = it
+        functionalReference = it
       )
     } ?: property!!.type()
     val annotationReference: AnnotatedReference = function ?: property!!

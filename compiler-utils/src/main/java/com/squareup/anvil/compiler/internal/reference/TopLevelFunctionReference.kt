@@ -1,67 +1,34 @@
 package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
-import com.squareup.anvil.compiler.internal.reference.FunctionReference.Descriptor
-import com.squareup.anvil.compiler.internal.reference.FunctionReference.Psi
+import com.squareup.anvil.compiler.internal.reference.TopLevelFunctionReference.Descriptor
+import com.squareup.anvil.compiler.internal.reference.TopLevelFunctionReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.requireFqName
-import org.jetbrains.kotlin.descriptors.ClassConstructorDescriptor
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.FunctionDescriptor
-import org.jetbrains.kotlin.descriptors.Modality.ABSTRACT
 import org.jetbrains.kotlin.lexer.KtTokens
-import org.jetbrains.kotlin.lexer.KtTokens.ABSTRACT_KEYWORD
-import org.jetbrains.kotlin.lexer.KtTokens.PUBLIC_KEYWORD
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.psi.KtConstructor
 import org.jetbrains.kotlin.psi.KtFunction
-import org.jetbrains.kotlin.psi.KtNamedFunction
 import org.jetbrains.kotlin.psi.psiUtil.visibilityModifierTypeOrDefault
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import kotlin.LazyThreadSafetyMode.NONE
 
-/**
- * Used to create a common type between [KtNamedFunction] class references and
- * [FunctionDescriptor] references, to streamline parsing.
- */
 @ExperimentalAnvilApi
-public sealed class FunctionReference : AnnotatedReference, FunctionalReference {
-
-  public abstract val declaringClass: ClassReference
-
-  public override val module: AnvilModuleDescriptor get() = declaringClass.module
+public sealed class TopLevelFunctionReference : AnnotatedReference, FunctionalReference {
 
   protected abstract val returnType: TypeReference?
 
   public override fun returnTypeOrNull(): TypeReference? = returnType
 
-  public abstract fun isAbstract(): Boolean
-  public abstract fun isConstructor(): Boolean
-  public fun resolveGenericReturnTypeOrNull(
-    implementingClass: ClassReference
-  ): ClassReference? {
-    return returnType
-      ?.resolveGenericTypeOrNull(implementingClass)
-      ?.asClassReferenceOrNull()
-  }
-
-  public fun resolveGenericReturnType(implementingClass: ClassReference): ClassReference =
-    resolveGenericReturnTypeOrNull(implementingClass)
-      ?: throw AnvilCompilationExceptionFunctionalReference(
-        functionalReference = this,
-        message = "Unable to resolve return type for function $fqName with the implementing " +
-          "class ${implementingClass.fqName}."
-      )
-
   override fun toString(): String = "$fqName()"
 
   override fun equals(other: Any?): Boolean {
     if (this === other) return true
-    if (other !is FunctionReference) return false
+    if (other !is TopLevelFunctionReference) return false
 
     if (fqName != other.fqName) return false
 
@@ -74,9 +41,9 @@ public sealed class FunctionReference : AnnotatedReference, FunctionalReference 
 
   public class Psi internal constructor(
     public override val function: KtFunction,
-    override val declaringClass: ClassReference.Psi,
-    override val fqName: FqName
-  ) : FunctionReference(), FunctionalReference.Psi {
+    override val fqName: FqName,
+    override val module: AnvilModuleDescriptor,
+  ) : TopLevelFunctionReference(), FunctionalReference.Psi {
 
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
       function.annotationEntries.map {
@@ -85,27 +52,21 @@ public sealed class FunctionReference : AnnotatedReference, FunctionalReference 
     }
 
     override val returnType: TypeReference.Psi? by lazy(NONE) {
-      function.typeReference?.toTypeReference(declaringClass, module)
+      function.typeReference?.toTypeReference(declaringClass = null, module)
     }
 
     override val parameters: List<ParameterReference.Psi> by lazy(NONE) {
       function.valueParameters.map { it.toParameterReference(this) }
     }
 
-    override fun isAbstract(): Boolean =
-      function.hasModifier(ABSTRACT_KEYWORD) ||
-        (declaringClass.isInterface() && !function.hasBody())
-
-    override fun isConstructor(): Boolean = function is KtConstructor<*>
-
     override fun visibility(): Visibility {
       return when (val visibility = function.visibilityModifierTypeOrDefault()) {
-        PUBLIC_KEYWORD -> PUBLIC
+        KtTokens.PUBLIC_KEYWORD -> PUBLIC
         KtTokens.INTERNAL_KEYWORD -> INTERNAL
         KtTokens.PROTECTED_KEYWORD -> PROTECTED
         KtTokens.PRIVATE_KEYWORD -> PRIVATE
-        else -> throw AnvilCompilationExceptionClassReference(
-          classReference = declaringClass,
+        else -> throw AnvilCompilationExceptionFunctionalReference(
+          functionalReference = this,
           message = "Couldn't get visibility $visibility for function $fqName."
         )
       }
@@ -114,9 +75,9 @@ public sealed class FunctionReference : AnnotatedReference, FunctionalReference 
 
   public class Descriptor internal constructor(
     public override val function: FunctionDescriptor,
-    override val declaringClass: ClassReference.Descriptor,
-    override val fqName: FqName = function.fqNameSafe
-  ) : FunctionReference(), FunctionalReference.Descriptor {
+    override val fqName: FqName = function.fqNameSafe,
+    override val module: AnvilModuleDescriptor,
+  ) : TopLevelFunctionReference(), FunctionalReference.Descriptor {
 
     override val annotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
       function.annotations.map {
@@ -129,12 +90,8 @@ public sealed class FunctionReference : AnnotatedReference, FunctionalReference 
     }
 
     override val returnType: TypeReference.Descriptor? by lazy(NONE) {
-      function.returnType?.toTypeReference(declaringClass, module)
+      function.returnType?.toTypeReference(declaringClass = null, module)
     }
-
-    override fun isAbstract(): Boolean = function.modality == ABSTRACT
-
-    override fun isConstructor(): Boolean = function is ClassConstructorDescriptor
 
     override fun visibility(): Visibility {
       return when (val visibility = function.visibility) {
@@ -142,8 +99,8 @@ public sealed class FunctionReference : AnnotatedReference, FunctionalReference 
         DescriptorVisibilities.INTERNAL -> INTERNAL
         DescriptorVisibilities.PROTECTED -> PROTECTED
         DescriptorVisibilities.PRIVATE -> PRIVATE
-        else -> throw AnvilCompilationExceptionClassReference(
-          classReference = declaringClass,
+        else -> throw AnvilCompilationExceptionFunctionalReference(
+          functionalReference = this,
           message = "Couldn't get visibility $visibility for function $fqName."
         )
       }
@@ -152,21 +109,15 @@ public sealed class FunctionReference : AnnotatedReference, FunctionalReference 
 }
 
 @ExperimentalAnvilApi
-public fun KtFunction.toFunctionReference(
-  declaringClass: ClassReference.Psi
+public fun KtFunction.toTopLevelFunctionReference(
+  module: AnvilModuleDescriptor,
 ): Psi {
-  val fqName = if (this is KtConstructor<*>) {
-    declaringClass.fqName.child(Name.identifier("<init>"))
-  } else {
-    requireFqName()
-  }
-
-  return Psi(this, declaringClass, fqName)
+  return Psi(function = this, fqName = requireFqName(), module = module)
 }
 
 @ExperimentalAnvilApi
-public fun FunctionDescriptor.toFunctionReference(
-  declaringClass: ClassReference.Descriptor,
+public fun FunctionDescriptor.toTopLevelFunctionReference(
+  module: AnvilModuleDescriptor,
 ): Descriptor {
-  return Descriptor(this, declaringClass)
+  return Descriptor(function = this, module = module)
 }
