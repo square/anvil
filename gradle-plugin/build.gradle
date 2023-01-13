@@ -1,19 +1,10 @@
-buildscript {
-  apply from: rootProject.file('../dependencies.gradle')
-
-  repositories {
-    google()
-    gradlePluginPortal()
-    mavenCentral()
-  }
-
-  dependencies {
-    classpath deps.kotlin.dokka
-    classpath deps.kotlin.gradle_plugin
-    classpath deps.maven_publishing_plugin
-    classpath deps.gradle_publishing_plugin
-    classpath deps.ktlint_plugin
-  }
+plugins {
+  id 'java-gradle-plugin'
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.kotlin.dokka)
+  alias(libs.plugins.gradlePublish)
+  alias(libs.plugins.mavenPublish)
+  alias(libs.plugins.ktlint)
 }
 
 repositories {
@@ -22,14 +13,7 @@ repositories {
 }
 
 apply from: rootProject.file('copy_properties.gradle')
-
-apply plugin: 'java-gradle-plugin'
-apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'com.gradle.plugin-publish'
-apply plugin: 'org.jlleitschuh.gradle.ktlint'
-
 apply from: rootProject.file('generate_build_properties.gradle')
-apply from: rootProject.file('../publishing.gradle')
 
 gradlePlugin {
   plugins {
@@ -74,16 +58,16 @@ kotlin {
 }
 
 ktlint {
-  version = rootProject.ext.ktlintVersion
+  version = libs.versions.ktlint.get()
 }
 
 dependencies {
-  implementation deps.kotlin.gradle_plugin
-  implementation deps.kotlin.gradle_plugin_api
+  implementation libs.kotlin.gradlePlugin
+  implementation libs.kotlin.gradlePluginApi
 
   // Necessary to bump a transitive dependency.
-  compileOnly deps.kotlin.reflect
+  compileOnly libs.kotlin.reflect
 
   // Compile only so that Java / Kotlin modules don't download it unnecessarily.
-  compileOnly deps.android_gradle_plugin
+  compileOnly libs.agp
 }

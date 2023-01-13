@@ -1,1 +1,46 @@
+pluginManagement {
+  repositories {
+    google()
+    gradlePluginPortal()
+    mavenCentral()
+  }
+}
+
+dependencyResolutionManagement {
+  versionCatalogs {
+    libs {
+      // TODO remove this once the dirs aren't symlinked anymore
+//      from(files("../gradle/libs.versions.toml"))
+      if (System.getenv("DEP_OVERRIDES") == "true") {
+        Map<String, String> overrides = new LinkedHashMap()
+        def mergedProperties = System.getenv().plus(System.getProperties())
+        mergedProperties.forEach { key, value ->
+          String keyString = key.toString()
+          if (keyString.startsWith("DEP_OVERRIDE_")) {
+            overrides.put(keyString, value.toString())
+          }
+        }
+        for (Map.Entry<String, String> entry : overrides.entrySet()) {
+          String key = entry.getKey()
+          String value = entry.getValue()
+          String catalogKey = key.substring("DEP_OVERRIDE_".length()).toLowerCase(Locale.US)
+          println("Overriding $catalogKey with $value")
+          version(catalogKey, value)
+        }
+      }
+    }
+  }
+
+  repositories {
+    google()
+    mavenCentral()
+    if (hasProperty("anvil.allowSnapshots")) {
+      maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev' }
+      maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap' }
+      maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
+      maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
+    }
+  }
+}
+
 rootProject.name = "gradle-plugin"
