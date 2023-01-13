@@ -1,3 +1,5 @@
+import com.android.builder.core.BuilderConstants
+
 plugins {
   alias(libs.plugins.agp.application)
   alias(libs.plugins.kotlin.android)
@@ -29,8 +31,7 @@ android {
   }
 
   variantFilter { variant ->
-    //noinspection UnnecessaryQualifiedReference
-    if (variant.buildType.name == com.android.builder.core.BuilderConstants.RELEASE) {
+    if (variant.buildType.name == BuilderConstants.RELEASE) {
       variant.setIgnore(true)
     }
   }

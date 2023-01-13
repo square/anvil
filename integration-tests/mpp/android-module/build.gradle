@@ -1,4 +1,5 @@
 import com.android.build.gradle.api.UnitTestVariant
+import com.android.builder.core.BuilderConstants
 import com.squareup.anvil.plugin.AndroidVariantFilter
 
 plugins {
@@ -29,8 +30,7 @@ android {
   }
 
   variantFilter { variant ->
-    //noinspection UnnecessaryQualifiedReference
-    if (variant.buildType.name == com.android.builder.core.BuilderConstants.RELEASE) {
+    if (variant.buildType.name == BuilderConstants.RELEASE) {
       variant.setIgnore(true)
     }
   }

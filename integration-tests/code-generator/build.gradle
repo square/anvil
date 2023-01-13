@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
   alias(libs.plugins.kotlin.jvm)
   alias(libs.plugins.kotlin.kapt)
@@ -15,8 +17,7 @@ dependencies {
   testImplementation libs.truth
 }
 
-//noinspection UnnecessaryQualifiedReference
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask).configureEach {
+tasks.withType(KotlinCompile).configureEach {
   compilerOptions {
     freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
   }

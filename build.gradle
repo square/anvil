@@ -1,4 +1,7 @@
+import com.squareup.anvil.benchmark.CreateBenchmarkProjectTask
 import com.vanniktech.maven.publish.SonatypeHost
+import org.gradle.api.internal.project.DefaultProject
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
   alias(libs.plugins.agp.application) apply false
@@ -74,8 +77,7 @@ subprojects {
     }
   }
 
-  //noinspection UnnecessaryQualifiedReference
-  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+  tasks.withType(KotlinCompile).configureEach {
     compilerOptions {
       if (isIntegrationTestOrSample) {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
@@ -117,8 +119,7 @@ subprojects {
   // folks (including myself 🙃) set the flag globally in the Gradle home dir. The workaround
   // is good enough for now.
   if (configureOnDemandEnabled) {
-    //noinspection UnnecessaryQualifiedReference
-    (it as org.gradle.api.internal.project.DefaultProject).evaluate()
+    (it as DefaultProject).evaluate()
   }
 
   plugins.withId("com.vanniktech.maven.publish") {
@@ -139,5 +140,4 @@ def getProperty(String name, String defaultValue) {
 }
 
 // Register the task that can create the benchmark project.
-//noinspection UnnecessaryQualifiedReference
-tasks.register("createBenchmarkProject", com.squareup.anvil.benchmark.CreateBenchmarkProjectTask)
+tasks.register("createBenchmarkProject", CreateBenchmarkProjectTask)

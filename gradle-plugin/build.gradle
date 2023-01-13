@@ -1,3 +1,6 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
   id 'java-gradle-plugin'
   alias(libs.plugins.kotlin.jvm)
@@ -43,10 +46,9 @@ tasks.withType(JavaCompile).configureEach {
   options.release.set(8)
 }
 
-//noinspection UnnecessaryQualifiedReference
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask).configureEach {
-  kotlinOptions {
-    jvmTarget = JavaVersion.VERSION_1_8
+tasks.withType(KotlinCompile).configureEach {
+  compilerOptions {
+    jvmTarget.set(JvmTarget.JVM_1_8)
 
     // Because Gradle hardcodes Kotlin versions we have warnings during compilation.
     allWarningsAsErrors = false
