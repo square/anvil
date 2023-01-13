@@ -14,12 +14,14 @@ plugins {
 
 boolean isCi = (System.getenv('CI') ?: 'false').toBoolean()
 String kotlinVersion = libs.versions.kotlin.get()
+boolean useKotlinIr =  libs.versions.config.useIr.get().toBoolean()
 ext {
   ci = isCi
   kotlinPreview = !kotlinVersion.startsWith('1.8.0')
+  kotlinUseIR = useKotlinIr
+  fullTestRun = libs.versions.config.fullTestRun.get().toBoolean()
 }
 
-boolean useKotlinIr =  libs.versions.config.useIr.get().toBoolean()
 println "Versions: " + [
     "Kotlin": kotlinVersion,
     "Gradle": gradle.gradleVersion,
