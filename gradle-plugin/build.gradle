@@ -10,13 +10,11 @@ plugins {
   alias(libs.plugins.ktlint)
 }
 
-repositories {
-  google()
-  mavenCentral()
-}
-
 apply from: rootProject.file('copy_properties.gradle')
 apply from: rootProject.file('generate_build_properties.gradle')
+
+// Pull from the GROUP property and assign to the project
+group = GROUP
 
 gradlePlugin {
   plugins {
