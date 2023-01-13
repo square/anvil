@@ -133,15 +133,17 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
       }
 
     val content = """
-      |apply plugin: 'org.jetbrains.kotlin.jvm'
-      |apply plugin: 'com.squareup.anvil'
+      |plugins {
+      |  alias(libs.plugins.kotlin.jvm)
+      |  alias(libs.plugins.anvil)
+      |}
       |
       |anvil {
       |  generateDaggerFactories = true
       |}
       |
       |dependencies {
-      |  api deps.dagger2.dagger
+      |  api libs.dagger2
       |}
       ${libDependency ?: "|"}
     """.trimMargin()
@@ -324,13 +326,15 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
       .joinToString(separator = "\n") { "|  api project('${it.path}')" }
 
     val content = """
-      |apply plugin: 'org.jetbrains.kotlin.jvm'
-      |apply plugin: 'com.squareup.anvil'
-      |apply plugin: 'org.jetbrains.kotlin.kapt'
+      |plugins {
+      |  alias(libs.plugins.kotlin.jvm)
+      |  alias(libs.plugins.kotlin.kapt)
+      |  alias(libs.plugins.anvil)
+      |}
       |
       |dependencies {
-      |  api deps.dagger2.dagger
-      |  kapt deps.dagger2.compiler
+      |  api libs.dagger2
+      |  kapt libs.dagger2.compiler
       $libDependencies 
       |}
     """.trimMargin()
