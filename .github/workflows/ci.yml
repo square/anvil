@@ -20,6 +20,9 @@ jobs :
       fail-fast : false
       matrix :
         kotlin-version : [ 1.8.0 ]
+      env:
+        DEP_OVERRIDES: "true"
+        DEP_OVERRIDE_kotlin: ${{ matrix.kotlin-version }}
 
     steps :
       - uses : actions/checkout@v2
@@ -30,7 +33,9 @@ jobs :
           check-latest : true
 
       - name : Test on Ubuntu
-        run : ./gradlew assemble test -Psquare.useIR=false --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+        env:
+          DEP_OVERRIDE_config-useIR: "false"
+        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v2
@@ -58,7 +63,7 @@ jobs :
           check-latest : true
 
       - name : Test on Ubuntu
-        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v2
@@ -87,7 +92,9 @@ jobs :
       # Expressions in Github actions are limited. If there would be an if expression, then we
       # wouldn't need to duplicate the next step and depending on the OS enable / disable them.
       - name : Test on Windows
-        run : ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace "-Psquare.fullTestRun=false"
+        env:
+          DEP_OVERRIDE_config-fullTestRun: "false"
+        run : ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v2
@@ -188,7 +195,7 @@ jobs :
       fail-fast : false
       matrix :
         kotlin-version : [ 1.8.0 ]
-        agp-version : [ 4.2.2, 7.0.4, 7.1.1, 7.2.0-beta01, 7.3.0-alpha01 ]
+        agp-version : [ 7.1.1, 7.2.0, 7.3.1 ]
 
     steps :
       - uses : actions/checkout@v2
@@ -199,7 +206,9 @@ jobs :
           check-latest : true
 
       - name : Test Gradle Plugin
-        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }} -Psquare.agpVersion=${{ matrix.agp-version }}
+        env:
+          DEP_OVERRIDE_agp: ${{ matrix.agp-version }}
+        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v2
@@ -249,10 +258,14 @@ jobs :
           check-latest : true
 
       - name : Run integration tests
-        run : ./gradlew -p integration-tests test -Psquare.generateDaggerFactoriesWithAnvil=false --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+        env:
+          DEP_OVERRIDE_config-generateDaggerFactoriesWithAnvil: "false"
+        run : ./gradlew -p integration-tests test --no-build-cache --no-daemon --stacktrace
 
       - name : Build the sample
-        run : ./gradlew :sample:app:assembleDebug -Psquare.generateDaggerFactoriesWithAnvil=false --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+        env:
+          DEP_OVERRIDE_config-generateDaggerFactoriesWithAnvil: "false"
+        run : ./gradlew :sample:app:assembleDebug --no-build-cache --no-daemon --stacktrace
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v2
