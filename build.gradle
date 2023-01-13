@@ -1,40 +1,29 @@
-buildscript {
-  apply from: rootProject.file('dependencies.gradle')
-
-  repositories {
-    google()
-    gradlePluginPortal()
-    mavenCentral()
-  }
-
-  dependencies {
-    classpath deps.android_gradle_plugin
-    classpath deps.kotlin.dokka
-    classpath deps.kotlin.gradle_plugin
-    classpath deps.ktlint_plugin
-    classpath deps.anvil_plugin
-    classpath deps.maven_publishing_plugin
-  }
+plugins {
+  alias(libs.plugins.agp.application) apply false
+  alias(libs.plugins.agp.library) apply false
+  alias(libs.plugins.anvil) apply false
+  alias(libs.plugins.kotlin.jvm) apply false
+  alias(libs.plugins.kotlin.kapt) apply false
+  alias(libs.plugins.kotlin.dokka) apply false
+  alias(libs.plugins.kotlin.multiplatform) apply false
+  alias(libs.plugins.mavenPublish) apply false
+  alias(libs.plugins.gradlePublish) apply false
+  alias(libs.plugins.ktlint) apply false
 }
 
+boolean isCi = (System.getenv('CI') ?: 'false').toBoolean()
+String kotlinVersion = libs.versions.kotlin.get()
+ext {
+  ci = isCi
+  kotlinPreview = !kotlinVersion.startsWith('1.8.0')
+}
+
+boolean useKotlinIr =  libs.versions.config.useIr.get().toBoolean()
 println "Versions: " + [
-    "Kotlin": ext.kotlinVersion,
+    "Kotlin": kotlinVersion,
     "Gradle": gradle.gradleVersion,
-    "Kotlin use IR in tests": ext.kotlinUseIR
+    "Kotlin use IR in tests": useKotlinIr
 ]
-
-allprojects {
-  repositories {
-    google()
-    mavenCentral()
-    if (rootProject.ext.kotlinPreview) {
-      maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev' }
-      maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap' }
-      maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
-      maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-    }
-  }
-}
 
 boolean configureOnDemandEnabled = getProperty("org.gradle.configureondemand", "false").toBoolean()
 
@@ -43,7 +32,7 @@ subprojects {
     apply plugin: 'org.jlleitschuh.gradle.ktlint'
 
     ktlint {
-      version = rootProject.ext.ktlintVersion
+      version = libs.versions.ktlint.get()
       verbose = true
     }
   }
@@ -82,7 +71,7 @@ subprojects {
         jvmTarget = JavaVersion.VERSION_1_8
       }
 
-      allWarningsAsErrors = rootProject.ext.makeWarningsErrors
+      allWarningsAsErrors = isCi && (kotlinVersion.startsWith('1.5') || useKotlinIr) && false
       freeCompilerArgs += ["-opt-in=kotlin.RequiresOptIn"]
 
       boolean optInExperimental = project.name != "annotations"
@@ -103,7 +92,7 @@ subprojects {
     }
 
     resolutionStrategy {
-      force deps.kotlin.metadata
+      force libs.kotlin.metadata
     }
   }
 
@@ -118,6 +107,13 @@ subprojects {
   if (configureOnDemandEnabled) {
     //noinspection UnnecessaryQualifiedReference
     (it as org.gradle.api.internal.project.DefaultProject).evaluate()
+  }
+
+  plugins.withId("com.vanniktech.maven.publish") {
+    apply plugin: 'org.jetbrains.dokka'
+    mavenPublish {
+      sonatypeHost = "S01"
+    }
   }
 }
 
