@@ -12,6 +12,9 @@ jobs :
   test-ubuntu-old-backend :
     runs-on : ubuntu-latest
     timeout-minutes : 25
+    env:
+      DEP_OVERRIDES: "true"
+      DEP_OVERRIDE_kotlin: ${{ matrix.kotlin-version }}
 
     strategy :
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
@@ -20,9 +23,6 @@ jobs :
       fail-fast : false
       matrix :
         kotlin-version : [ 1.8.0 ]
-      env:
-        DEP_OVERRIDES: "true"
-        DEP_OVERRIDE_kotlin: ${{ matrix.kotlin-version }}
 
     steps :
       - uses : actions/checkout@v3
