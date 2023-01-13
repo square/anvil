@@ -34,3 +34,8 @@ def generateBuildProperties = project.tasks.register('generateBuildProperties') 
 tasks.named("compileKotlin").configure {
   it.dependsOn generateBuildProperties
 }
+
+// So Gradle stops complaining about the missing dependency
+tasks.named("runKtlintCheckOverTestSourceSet").configure {
+  it.dependsOn generateBuildProperties
+}
