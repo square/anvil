@@ -5,7 +5,7 @@ import org.jetbrains.kotlin.name.FqName
 
 /**
  * This marks any code reference that can be annotated, such as a [ClassReference] or
- * [FunctionReference].
+ * [MemberFunctionReference].
  */
 @ExperimentalAnvilApi
 public interface AnnotatedReference {

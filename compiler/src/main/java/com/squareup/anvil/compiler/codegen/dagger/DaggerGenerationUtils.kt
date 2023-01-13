@@ -8,9 +8,9 @@ import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionPropertyReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.FunctionReference
+import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
+import com.squareup.anvil.compiler.internal.reference.MemberPropertyReference
 import com.squareup.anvil.compiler.internal.reference.ParameterReference
-import com.squareup.anvil.compiler.internal.reference.PropertyReference
 import com.squareup.anvil.compiler.internal.reference.TypeParameterReference
 import com.squareup.anvil.compiler.internal.reference.TypeReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
@@ -197,7 +197,7 @@ internal fun List<Parameter>.asArgumentList(
     .joinToString()
 }
 
-private fun PropertyReference.toMemberInjectParameter(
+private fun MemberPropertyReference.toMemberInjectParameter(
   uniqueName: String,
   implementingClass: ClassReference
 ): MemberInjectParameter {
@@ -321,7 +321,7 @@ internal fun ClassName.optionallyParameterizedBy(
 
 internal fun assertNoDuplicateFunctions(
   declaringClass: ClassReference,
-  functions: Sequence<FunctionReference.Psi>
+  functions: Sequence<MemberFunctionReference.Psi>
 ) {
   // Check for duplicate function names.
   val duplicateFunctions = functions

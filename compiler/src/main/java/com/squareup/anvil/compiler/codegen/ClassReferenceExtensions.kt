@@ -7,7 +7,7 @@ import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.FunctionReference
+import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import org.jetbrains.kotlin.name.FqName
@@ -114,7 +114,7 @@ internal fun ClassReference.atLeastOneAnnotation(
  * If the class contains multiple constructors annotated with either of these annotations, then
  * this method throws an error as multiple injected constructors aren't allowed.
  */
-internal fun <T : FunctionReference> Collection<T>.injectConstructor(): T? {
+internal fun <T : MemberFunctionReference> Collection<T>.injectConstructor(): T? {
   val constructors = filter {
     it.isAnnotatedWith(injectFqName) || it.isAnnotatedWith(assistedInjectFqName)
   }

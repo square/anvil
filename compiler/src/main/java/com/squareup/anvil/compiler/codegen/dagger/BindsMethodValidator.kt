@@ -8,7 +8,7 @@ import com.squareup.anvil.compiler.daggerBindsFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.FunctionReference
+import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.toTypeReference
@@ -51,7 +51,7 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
       }
   }
 
-  private fun validateBindsFunction(function: FunctionReference.Psi) {
+  private fun validateBindsFunction(function: MemberFunctionReference.Psi) {
     if (!function.isAbstract()) {
       throw AnvilCompilationExceptionFunctionReference(
         message = "@Binds methods must be abstract",
@@ -95,28 +95,28 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
     }
   }
 
-  private fun FunctionReference.Psi.parameterMatchesReturnType(): Boolean {
+  private fun MemberFunctionReference.Psi.parameterMatchesReturnType(): Boolean {
     return parameterSuperTypes()
       ?.contains(returnType().asClassReference())
       ?: false
   }
 
-  private fun FunctionReference.Psi.parameterSuperTypes(): Sequence<ClassReference>? {
+  private fun MemberFunctionReference.Psi.parameterSuperTypes(): Sequence<ClassReference>? {
     return parameters.singleOrNull()
       ?.type()
       ?.asClassReference()
       ?.allSuperTypeClassReferences(includeSelf = true)
   }
 
-  private fun FunctionReference.Psi.receiverMatchesReturnType(): Boolean {
+  private fun MemberFunctionReference.Psi.receiverMatchesReturnType(): Boolean {
     return receiverSuperTypes()
       ?.contains(returnType().asClassReference())
       ?: false
   }
 
-  private fun FunctionReference.Psi.receiverSuperTypes(): Sequence<ClassReference>? {
+  private fun MemberFunctionReference.Psi.receiverSuperTypes(): Sequence<ClassReference>? {
     return function.receiverTypeReference
-      ?.toTypeReference(declaringClass)
+      ?.toTypeReference(declaringClass, module)
       ?.asClassReference()
       ?.allSuperTypeClassReferences(includeSelf = true)
   }

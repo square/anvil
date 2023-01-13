@@ -17,7 +17,7 @@ import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.FunctionReference
+import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ParameterReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
@@ -286,7 +286,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
    * Represents a parsed function in an `@AssistedInject.Factory`-annotated interface.
    */
   private data class AssistedFactoryFunction(
-    val function: FunctionReference,
+    val function: MemberFunctionReference,
     val parameterKeys: List<AssistedParameterKey>,
     /**
      * Pair of parameter reference to parameter type.
@@ -294,7 +294,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     val parameterPairs: List<Pair<ParameterReference, TypeName>>
   ) {
     companion object {
-      fun FunctionReference.toAssistedFactoryFunction(
+      fun MemberFunctionReference.toAssistedFactoryFunction(
         factoryClass: ClassReference.Psi
       ): AssistedFactoryFunction {
         return AssistedFactoryFunction(

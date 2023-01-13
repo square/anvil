@@ -14,8 +14,8 @@ import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.reference.AnnotatedReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.FunctionReference
-import com.squareup.anvil.compiler.internal.reference.PropertyReference
+import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
+import com.squareup.anvil.compiler.internal.reference.MemberPropertyReference
 import com.squareup.anvil.compiler.internal.reference.TypeReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.asClassName
@@ -299,7 +299,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
   private fun checkFunctionIsNotAbstract(
     clazz: ClassReference.Psi,
-    function: FunctionReference.Psi
+    function: MemberFunctionReference.Psi
   ) {
     fun fail(): Nothing = throw AnvilCompilationExceptionFunctionReference(
       message = "@Provides methods cannot be abstract",
@@ -331,8 +331,8 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
   }
 
   private class CallableReference(
-    private val function: FunctionReference.Psi? = null,
-    private val property: PropertyReference.Psi? = null
+    private val function: MemberFunctionReference.Psi? = null,
+    private val property: MemberPropertyReference.Psi? = null
   ) {
 
     init {

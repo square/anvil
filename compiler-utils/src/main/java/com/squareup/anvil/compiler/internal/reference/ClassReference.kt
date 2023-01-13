@@ -58,9 +58,9 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
   public val shortName: String get() = fqName.shortName().asString()
   public val packageFqName: FqName get() = classId.packageFqName
 
-  public abstract val constructors: List<FunctionReference>
-  public abstract val functions: List<FunctionReference>
-  public abstract val properties: List<PropertyReference>
+  public abstract val constructors: List<MemberFunctionReference>
+  public abstract val functions: List<MemberFunctionReference>
+  public abstract val properties: List<MemberPropertyReference>
   public abstract val typeParameters: List<TypeParameterReference>
 
   protected abstract val innerClassesAndObjects: List<ClassReference>
@@ -131,11 +131,11 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
   ) : ClassReference() {
     override val fqName: FqName = classId.asSingleFqName()
 
-    override val constructors: List<FunctionReference.Psi> by lazy(NONE) {
+    override val constructors: List<MemberFunctionReference.Psi> by lazy(NONE) {
       clazz.allConstructors.map { it.toFunctionReference(this) }
     }
 
-    override val functions: List<FunctionReference.Psi> by lazy(NONE) {
+    override val functions: List<MemberFunctionReference.Psi> by lazy(NONE) {
       clazz
         .children
         .filterIsInstance<KtClassBody>()
@@ -147,7 +147,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
       clazz.annotationEntries.map { it.toAnnotationReference(this, module) }
     }
 
-    override val properties: List<PropertyReference.Psi> by lazy(NONE) {
+    override val properties: List<MemberPropertyReference.Psi> by lazy(NONE) {
       buildList {
         // Order kind of matters here, since the Descriptor APIs will list body/member properties
         // before the constructor properties.
@@ -167,7 +167,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
     }
 
     private val directSuperTypeReferences: List<TypeReference> by lazy(NONE) {
-      clazz.superTypeListEntries.mapNotNull { it.typeReference?.toTypeReference(this) }
+      clazz.superTypeListEntries.mapNotNull { it.typeReference?.toTypeReference(this, module) }
     }
 
     private val enclosingClassesWithSelf by lazy(NONE) {
@@ -239,11 +239,11 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
   ) : ClassReference() {
     override val fqName: FqName = classId.asSingleFqName()
 
-    override val constructors: List<FunctionReference.Descriptor> by lazy(NONE) {
+    override val constructors: List<MemberFunctionReference.Descriptor> by lazy(NONE) {
       clazz.constructors.map { it.toFunctionReference(this) }
     }
 
-    override val functions: List<FunctionReference.Descriptor> by lazy(NONE) {
+    override val functions: List<MemberFunctionReference.Descriptor> by lazy(NONE) {
       clazz.unsubstitutedMemberScope
         .getContributedDescriptors(kindFilter = DescriptorKindFilter.FUNCTIONS)
         .filterIsInstance<FunctionDescriptor>()
@@ -255,7 +255,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
       clazz.annotations.map { it.toAnnotationReference(this, module) }
     }
 
-    override val properties: List<PropertyReference.Descriptor> by lazy(NONE) {
+    override val properties: List<MemberPropertyReference.Descriptor> by lazy(NONE) {
       clazz.unsubstitutedMemberScope
         .getDescriptorsFiltered(kindFilter = DescriptorKindFilter.VARIABLES)
         .filterIsInstance<PropertyDescriptor>()
@@ -267,7 +267,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
     }
 
     private val directSuperTypeReferences: List<TypeReference> by lazy(NONE) {
-      clazz.typeConstructor.supertypes.map { it.toTypeReference(this) }
+      clazz.typeConstructor.supertypes.map { it.toTypeReference(this, module) }
         .filterNot { it.asClassReference().fqName.asString() == "kotlin.Any" }
     }
 

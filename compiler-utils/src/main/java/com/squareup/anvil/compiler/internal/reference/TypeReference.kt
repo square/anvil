@@ -50,7 +50,7 @@ import kotlin.LazyThreadSafetyMode.NONE
 @ExperimentalAnvilApi
 public sealed class TypeReference {
 
-  public abstract val declaringClass: ClassReference
+  public abstract val declaringClass: ClassReference?
 
   /**
    * If the type refers to class and is not a generic type, then the returned reference
@@ -67,7 +67,7 @@ public sealed class TypeReference {
    */
   public abstract val unwrappedTypes: List<TypeReference>
 
-  public val module: AnvilModuleDescriptor get() = declaringClass.module
+  public abstract val module: AnvilModuleDescriptor
 
   public fun asClassReferenceOrNull(): ClassReference? = classReference
   public fun asClassReference(): ClassReference = classReference
@@ -107,7 +107,8 @@ public sealed class TypeReference {
 
   public class Psi internal constructor(
     public val type: KtTypeReference,
-    override val declaringClass: ClassReference.Psi
+    override val declaringClass: ClassReference.Psi?,
+    override val module: AnvilModuleDescriptor,
   ) : TypeReference() {
     override val classReference: ClassReference? by lazy(NONE) {
       type.fqNameOrNull(module)?.toClassReference(module)
@@ -137,12 +138,12 @@ public sealed class TypeReference {
           if (typeProjection.children.isEmpty() && typeProjection.text == "*") {
             // Resolve `*` star projections to kotlin.Any similar to the descriptor APIs.
             val anyDescriptor = module.asAnvilModuleDescriptor().resolveFqNameOrNull(anyFqName)!!
-            anyDescriptor.defaultType.toTypeReference(declaringClass)
+            anyDescriptor.defaultType.toTypeReference(declaringClass, module)
           } else {
             typeProjection.children
               .filterIsInstance<KtTypeReference>()
               .single()
-              .toTypeReference(declaringClass)
+              .toTypeReference(declaringClass, module)
           }
         } ?: emptyList()
 
@@ -192,9 +193,14 @@ public sealed class TypeReference {
       type.typeElement?.fqNameOrNull(module)
         ?.let { return this }
 
+      // That's a top level function and there's nothing to resolve.
+      if (declaringClass == null) return this
+
       // When we fail to resolve the generic type here, we're potentially at the end of a chain of
       // generics, so we return the current type instead of null.
-      return resolveGenericTypeReference(implementingClass, declaringClass, type.text) ?: this
+      return resolveGenericTypeReference(
+        implementingClass, declaringClass, type.text, module
+      ) ?: this
     }
 
     override fun isFunctionType(): Boolean = type.typeElement is KtFunctionType
@@ -340,7 +346,7 @@ public sealed class TypeReference {
         if (index >= 0) {
           unwrappedTypes[index]
         } else {
-          typeProjection.type.toTypeReference(declaringClass)
+          typeProjection.type.toTypeReference(declaringClass, module)
         }
       }
     }
@@ -348,7 +354,8 @@ public sealed class TypeReference {
 
   public class Descriptor internal constructor(
     public val type: KotlinType,
-    override val declaringClass: ClassReference
+    override val declaringClass: ClassReference?,
+    override val module: AnvilModuleDescriptor,
   ) : TypeReference() {
     override val classReference: ClassReference? by lazy(NONE) {
       type.classDescriptorOrNull()?.toClassReference(module)
@@ -362,11 +369,11 @@ public sealed class TypeReference {
       get() = typeNameOrNull ?: throw AnvilCompilationExceptionTypReference(
         typeReference = this,
         message = "Unable to convert the Kotlin type $type to a type name for declaring class " +
-          "${declaringClass.fqName}."
+          "${declaringClass?.fqName}."
       )
 
     override val unwrappedTypes: List<Descriptor> by lazy(NONE) {
-      type.arguments.map { it.type.toTypeReference(declaringClass) }
+      type.arguments.map { it.type.toTypeReference(declaringClass, module) }
     }
 
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference): TypeReference? {
@@ -418,10 +425,14 @@ public sealed class TypeReference {
         else -> type
       }
 
+      // That's a top level function and there's nothing to resolve.
+      if (declaringClass == null) return null
+
       return resolveGenericTypeReference(
         implementingClass = implementingClass,
         declaringClass = declaringClass,
-        parameterName = parameterKotlinType.toString()
+        parameterName = parameterKotlinType.toString(),
+        module = module
       )
     }
 
@@ -454,13 +465,19 @@ public sealed class TypeReference {
 }
 
 @ExperimentalAnvilApi
-public fun KtTypeReference.toTypeReference(declaringClass: ClassReference.Psi): Psi {
-  return Psi(this, declaringClass)
+public fun KtTypeReference.toTypeReference(
+  declaringClass: ClassReference.Psi?,
+  module: AnvilModuleDescriptor
+): Psi {
+  return Psi(this, declaringClass, module)
 }
 
 @ExperimentalAnvilApi
-public fun KotlinType.toTypeReference(declaringClass: ClassReference): Descriptor {
-  return Descriptor(this, declaringClass)
+public fun KotlinType.toTypeReference(
+  declaringClass: ClassReference?,
+  module: AnvilModuleDescriptor
+): Descriptor {
+  return Descriptor(this, declaringClass, module)
 }
 
 @ExperimentalAnvilApi
@@ -487,7 +504,8 @@ public fun AnvilCompilationExceptionTypReference(
 private fun resolveGenericTypeReference(
   implementingClass: ClassReference,
   declaringClass: ClassReference,
-  parameterName: String
+  parameterName: String,
+  module: AnvilModuleDescriptor,
 ): TypeReference? {
   // If the class/interface declaring the generic is the receiver class,
   // then the generic hasn't been set to a concrete type and can't be resolved.
@@ -515,7 +533,7 @@ private fun resolveGenericTypeReference(
         ?.toClassReference(implementingClass.module)
         ?.let { resolvedDeclaringClass ->
           resolvedTypeReference
-            .toTypeReference(resolvedDeclaringClass)
+            .toTypeReference(resolvedDeclaringClass, module)
             .resolveTypeReference(implementingClass)
         }
     }
@@ -530,7 +548,7 @@ private fun resolveGenericTypeReference(
         ?.containingClassReference(implementingClass)
         ?.let { resolvedDeclaringClass ->
           resolvedTypeReference.toTypeReference(
-            resolvedDeclaringClass
+            resolvedDeclaringClass, module
           ).resolveGenericKotlinTypeOrNull(implementingClass)
         }
     }

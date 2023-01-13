@@ -18,6 +18,8 @@ public sealed class ParameterReference : AnnotatedReference {
 
   protected abstract val type: TypeReference?
 
+  protected abstract val declaringClass: ClassReference?
+
   /**
    * The type can be null for generic type parameters like `T`. In this case try to resolve the
    * type with [TypeReference.resolveGenericTypeOrNull].
@@ -77,8 +79,14 @@ public sealed class ParameterReference : AnnotatedReference {
     }
 
     override val type: TypeReference.Psi? by lazy(NONE) {
-      parameter.typeReference?.toTypeReference(declaringFunction.declaringClass)
+      parameter.typeReference?.toTypeReference(declaringClass, module)
     }
+
+    override val declaringClass: ClassReference.Psi?
+      get() = when (declaringFunction) {
+        is TopLevelFunctionReference.Psi -> null
+        is MemberFunctionReference.Psi -> declaringFunction.declaringClass
+      }
   }
 
   public class Descriptor(
@@ -94,8 +102,14 @@ public sealed class ParameterReference : AnnotatedReference {
     }
 
     override val type: TypeReference.Descriptor? by lazy(NONE) {
-      parameter.type.toTypeReference(declaringFunction.declaringClass)
+      parameter.type.toTypeReference(declaringClass, module)
     }
+
+    override val declaringClass: ClassReference.Descriptor?
+      get() = when (declaringFunction) {
+        is TopLevelFunctionReference.Descriptor -> null
+        is MemberFunctionReference.Descriptor -> declaringFunction.declaringClass
+      }
   }
 }
 

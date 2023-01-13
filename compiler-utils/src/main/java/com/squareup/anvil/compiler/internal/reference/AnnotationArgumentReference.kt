@@ -217,9 +217,9 @@ public sealed class AnnotationArgumentReference {
           ?.singleOrNull { it.name == constantName }
           ?.let { property ->
             return when (property) {
-              is PropertyReference.Descriptor ->
+              is MemberPropertyReference.Descriptor ->
                 property.property.compileTimeInitializer?.value
-              is PropertyReference.Psi ->
+              is MemberPropertyReference.Psi ->
                 // A PropertyReference.property may also be a KtParameter if it's in a constructor,
                 // but if we're here we're in an object, so the property must be a KtProperty.
                 (property.property as KtProperty).initializer?.let { parsePrimitiveType(it.text) }

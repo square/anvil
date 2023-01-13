@@ -47,7 +47,7 @@ public fun ClassReference.Psi.getTypeParameterReferences(): List<Psi> {
     ?.filter { it.fqNameOrNull(module) == null }
     ?.associateTo(mutableMapOf()) { parameter ->
       val variableName = parameter.nameAsSafeName.asString()
-      val extendsBound = parameter.extendsBound?.toTypeReference(this)
+      val extendsBound = parameter.extendsBound?.toTypeReference(this, module)
 
       variableName to listOfNotNull(extendsBound).toMutableList()
     } ?: mutableMapOf()
@@ -59,7 +59,7 @@ public fun ClassReference.Psi.getTypeParameterReferences(): List<Psi> {
       val variableName = constraint.subjectTypeParameterName
         ?.getReferencedName()
         ?: return@forEach
-      val extendsBound = constraint.boundTypeReference?.toTypeReference(this)
+      val extendsBound = constraint.boundTypeReference?.toTypeReference(this, module)
         ?: return@forEach
 
       boundsByVariableName
@@ -78,7 +78,7 @@ public fun TypeParameterDescriptor.toTypeParameterReference(
 ): Descriptor {
   return Descriptor(
     name = name.asString(),
-    upperBounds = upperBounds.map { it.toTypeReference(declaringClass) },
+    upperBounds = upperBounds.map { it.toTypeReference(declaringClass, declaringClass.module) },
     declaringClass = declaringClass
   )
 }
