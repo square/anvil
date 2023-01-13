@@ -1,7 +1,9 @@
-apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'com.squareup.anvil'
+plugins {
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.anvil)
+}
 
-if (rootProject.ext.generateDaggerFactoriesWithAnvil) {
+if (libs.versions.config.generateDaggerFactoriesWithAnvil.get().toBoolean()) {
   anvil {
     generateDaggerFactories = true
   }
@@ -9,7 +11,7 @@ if (rootProject.ext.generateDaggerFactoriesWithAnvil) {
   apply plugin: 'org.jetbrains.kotlin.kapt'
 
   dependencies {
-    kapt deps.dagger2.compiler
+    kapt libs.dagger2.compiler
   }
 }
 
@@ -18,5 +20,5 @@ kotlin {
 }
 
 dependencies {
-  api deps.dagger2.dagger
+  api libs.dagger2
 }

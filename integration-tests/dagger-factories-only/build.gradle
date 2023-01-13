@@ -1,6 +1,8 @@
-apply plugin: 'org.jetbrains.kotlin.jvm'
+plugins {
+  alias(libs.plugins.kotlin.jvm)
+}
 
-if (rootProject.ext.generateDaggerFactoriesWithAnvil) {
+if (libs.versions.config.generateDaggerFactoriesWithAnvil.get().toBoolean()) {
   apply plugin: 'com.squareup.anvil'
 
   anvil {
@@ -11,14 +13,14 @@ if (rootProject.ext.generateDaggerFactoriesWithAnvil) {
   apply plugin: 'org.jetbrains.kotlin.kapt'
 
   dependencies {
-    kapt deps.dagger2.compiler
-    kaptTest deps.dagger2.compiler
+    kapt libs.dagger2.compiler
+    kaptTest libs.dagger2.compiler
   }
 }
 
 dependencies {
-  implementation deps.dagger2.dagger
-  testImplementation deps.junit
-  testImplementation deps.kotlin.test
-  testImplementation deps.truth
+  implementation libs.dagger2
+  testImplementation libs.junit
+  testImplementation libs.kotlin.test
+  testImplementation libs.truth
 }

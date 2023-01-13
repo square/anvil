@@ -1,5 +1,7 @@
-apply plugin: 'org.jetbrains.kotlin.jvm'
+plugins {
+  alias(libs.plugins.kotlin.jvm)
+}
 
 dependencies {
-  api deps.inject
+  api libs.inject
 }

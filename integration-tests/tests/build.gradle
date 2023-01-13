@@ -1,6 +1,8 @@
-apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'org.jetbrains.kotlin.kapt'
-apply plugin: 'com.squareup.anvil'
+plugins {
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.kotlin.kapt)
+  alias(libs.plugins.anvil)
+}
 
 kotlin {
   explicitApi()
@@ -15,11 +17,11 @@ anvil {
 dependencies {
   testImplementation project(':integration-tests:library')
   testImplementation testFixtures(project(":compiler-utils"))
-  testImplementation deps.dagger2.dagger
-  testImplementation deps.junit
-  testImplementation deps.truth
+  testImplementation libs.dagger2
+  testImplementation libs.junit
+  testImplementation libs.truth
 
-  kaptTest deps.dagger2.compiler
+  kaptTest libs.dagger2.compiler
 }
 
 // Okay, this check is sketchy here. But this module serves as integration test so it's not too

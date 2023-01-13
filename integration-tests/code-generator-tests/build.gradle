@@ -1,6 +1,8 @@
-apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'com.squareup.anvil'
-apply plugin: 'org.jetbrains.kotlin.kapt'
+plugins {
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.kotlin.kapt)
+  alias(libs.plugins.anvil)
+}
 
 anvil {
   generateDaggerFactories = true
@@ -9,14 +11,14 @@ anvil {
 dependencies {
   anvil project(':integration-tests:code-generator')
 
-  implementation deps.dagger2.dagger
+  implementation libs.dagger2
 
   testImplementation testFixtures(project(":compiler-utils"))
-  testImplementation deps.junit
-  testImplementation deps.truth
+  testImplementation libs.junit
+  testImplementation libs.truth
 
   // Notice that Kapt is only enabled in tests for compiling our Dagger components. We also
   // generate a Dagger component in one of the code generators and this custom code generator
   // is triggered in tests.
-  kaptTest deps.dagger2.compiler
+  kaptTest libs.dagger2.compiler
 }

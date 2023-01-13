@@ -2,10 +2,10 @@ import com.android.build.gradle.api.UnitTestVariant
 import com.squareup.anvil.plugin.AndroidVariantFilter
 
 plugins {
-  id 'org.jetbrains.kotlin.multiplatform'
-  id 'com.android.library'
-  id 'org.jetbrains.kotlin.kapt'
-  id 'com.squareup.anvil'
+  alias(libs.plugins.kotlin.multiplatform)
+  alias(libs.plugins.kotlin.kapt)
+  alias(libs.plugins.agp.library)
+  alias(libs.plugins.anvil)
 }
 
 android {
@@ -42,14 +42,14 @@ kotlin {
   sourceSets {
     androidMain {
       dependencies {
-        implementation deps.dagger2.dagger
+        implementation libs.dagger2
       }
     }
 
     androidTest {
       dependencies {
-        implementation deps.junit
-        implementation deps.truth
+        implementation libs.junit
+        implementation libs.truth
       }
     }
   }
@@ -65,7 +65,7 @@ anvil {
 }
 
 dependencies {
-  kapt deps.dagger2.compiler
+  kapt libs.dagger2.compiler
 
   // This dependency isn't needed. It's only here for testing purposes (this is still an
   // integration test).

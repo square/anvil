@@ -25,7 +25,7 @@ android {
   }
 
   lint {
-//    warningsAsErrors = true
+    it.warningsAsErrors = true
   }
 
   variantFilter { variant ->
@@ -40,25 +40,25 @@ dependencies {
   implementation project(':sample:library')
   implementation project(':sample:scopes')
 
-  implementation deps.androidx.appcompat
-  implementation deps.androidx.core
-  implementation deps.androidx.material
-  implementation deps.dagger2.dagger
+  implementation libs.androidx.appcompat
+  implementation libs.androidx.core
+  implementation libs.androidx.material
+  implementation libs.dagger2
 
-  kapt deps.dagger2.compiler
+  kapt libs.dagger2.compiler
 
-  testImplementation deps.junit
-  testImplementation deps.truth
+  testImplementation libs.junit
+  testImplementation libs.truth
 
-  androidTestImplementation deps.androidx.test.core
-  androidTestImplementation deps.androidx.test.espresso.core
-  androidTestImplementation deps.androidx.test.junit
-  androidTestImplementation deps.androidx.test.rules
-  androidTestImplementation deps.androidx.test.runner
-  androidTestImplementation deps.junit
-  androidTestImplementation deps.truth
+  androidTestImplementation libs.androidx.test.core
+  androidTestImplementation libs.androidx.test.espresso.core
+  androidTestImplementation libs.androidx.test.junit
+  androidTestImplementation libs.androidx.test.rules
+  androidTestImplementation libs.androidx.test.runner
+  androidTestImplementation libs.junit
+  androidTestImplementation libs.truth
 
-  kaptAndroidTest deps.dagger2.compiler
+  kaptAndroidTest libs.dagger2.compiler
 }
 
 // Keep that here for testing purposes. The Anvil Gradle plugin will set this flag to false again,
