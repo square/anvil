@@ -1,5 +1,5 @@
 [versions]
-agp = "7.0.0"
+agp = "7.1.0"
 autoService = "1.0.1"
 autoValue = "1.10"
 dagger = "2.39.1"
