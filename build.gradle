@@ -1,3 +1,5 @@
+import com.vanniktech.maven.publish.SonatypeHost
+
 plugins {
   alias(libs.plugins.agp.application) apply false
   alias(libs.plugins.agp.library) apply false
@@ -121,8 +123,9 @@ subprojects {
 
   plugins.withId("com.vanniktech.maven.publish") {
     apply plugin: 'org.jetbrains.dokka'
-    mavenPublish {
-      sonatypeHost = "S01"
+    mavenPublishing {
+      publishToMavenCentral(SonatypeHost.S01)
+      signAllPublications()
     }
   }
 }

@@ -23,7 +23,7 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "10.2.0" }
-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.18.0" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.22.0" }
 
 [libraries]
 androidx-appcompat = "androidx.appcompat:appcompat:1.1.0"
