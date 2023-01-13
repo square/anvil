@@ -48,6 +48,9 @@ jobs :
   test-ubuntu :
     runs-on : ubuntu-latest
     timeout-minutes : 25
+    env:
+      DEP_OVERRIDES: "true"
+      DEP_OVERRIDE_kotlin: ${{ matrix.kotlin-version }}
 
     strategy :
       fail-fast : false
@@ -76,6 +79,8 @@ jobs :
   test-windows :
     runs-on : windows-latest
     timeout-minutes : 25
+    env:
+      DEP_OVERRIDES: "true"
 
     steps :
       - uses : actions/checkout@v3
@@ -187,6 +192,10 @@ jobs :
         working-directory : gradle-plugin
 
     timeout-minutes : 15
+    env:
+      DEP_OVERRIDES: "true"
+      DEP_OVERRIDE_kotlin: ${{ matrix.kotlin-version }}
+      DEP_OVERRIDE_agp: ${{ matrix.agp-version }}
 
     strategy :
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
@@ -206,8 +215,6 @@ jobs :
           check-latest : true
 
       - name : Test Gradle Plugin
-        env:
-          DEP_OVERRIDE_agp: ${{ matrix.agp-version }}
         run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace
 
       - name : Upload Test Results
@@ -240,6 +247,9 @@ jobs :
   kapt-for-dagger-factories :
     runs-on : ubuntu-latest
     timeout-minutes : 25
+    env:
+      DEP_OVERRIDES: "true"
+      DEP_OVERRIDE_kotlin: ${{ matrix.kotlin-version }}
 
     strategy :
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
