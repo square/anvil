@@ -7,9 +7,9 @@ sourceSets {
 def generateBuildProperties = project.tasks.register('generateBuildProperties') {
   File buildPropertiesFile = new File(new File(project.buildDir, generatedDirPath), 'BuildProperties.kt')
 
-  inputs.property 'useIR', rootProject.ext.kotlinUseIR
-  inputs.property 'fullTestRun', rootProject.ext.fullTestRun
-  inputs.property 'kotlinVersion', rootProject.ext.kotlinVersion
+  inputs.property 'useIR', libs.versions.config.useIr.get()
+  inputs.property 'fullTestRun', libs.versions.config.fullTestRun.get()
+  inputs.property 'kotlinVersion', libs.versions.kotlin.get()
   inputs.property 'kotlinPreview', rootProject.ext.kotlinPreview
 
   outputs.file buildPropertiesFile
