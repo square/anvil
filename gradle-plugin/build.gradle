@@ -62,12 +62,11 @@ ktlint {
 }
 
 dependencies {
-  implementation libs.kotlin.gradlePlugin
-  implementation libs.kotlin.gradlePluginApi
-
   // Necessary to bump a transitive dependency.
   compileOnly libs.kotlin.reflect
 
-  // Compile only so that Java / Kotlin modules don't download it unnecessarily.
+  // Compile only so we don't pre-empty what the consuming project actually uses
+  compileOnly libs.kotlin.gradlePlugin
+  compileOnly libs.kotlin.gradlePluginApi
   compileOnly libs.agp
 }
