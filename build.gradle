@@ -51,6 +51,10 @@ subprojects {
     }
   }
 
+  // Dynamically configure JVM targets because Dagger compiler always uses the java 11 @Generated
+  // annotation regardless of release target
+  boolean isIntegrationTestOrSample = project.path.contains("integration-test") || project.path.startsWith(":sample")
+
   pluginManager.withPlugin("java") {
     // Use JDK 11 but target Java 8 for maximum compatibility.
     java {
@@ -60,28 +64,31 @@ subprojects {
     }
 
     tasks.withType(JavaCompile).configureEach {
-      options.release.set(8)
+      if (isIntegrationTestOrSample) {
+        options.release.set(11)
+      } else {
+        options.release.set(8)
+      }
     }
   }
 
   //noinspection UnnecessaryQualifiedReference
-  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask).configureEach {
-    kotlinOptions {
-      if (parent?.path != ':integration-tests:mpp') {
-        // The configuration for KMP projects is different. We should fix that eventually.
-        //
-        // Caused by: groovy.lang.MissingPropertyException: Could not set unknown property 'jvmTarget' for object of type org.jetbrains.kotlin.gradle.tasks.internal.KotlinMultiplatformCommonOptionsCompat.
-        jvmTarget = JavaVersion.VERSION_1_8
+  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
+    compilerOptions {
+      if (isIntegrationTestOrSample) {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+      } else {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
       }
 
-      allWarningsAsErrors = isCi && (kotlinVersion.startsWith('1.5') || useKotlinIr) && false
-      freeCompilerArgs += ["-opt-in=kotlin.RequiresOptIn"]
+      allWarningsAsErrors.set(isCi && (useKotlinIr) && false)
+      freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
 
       boolean optInExperimental = project.name != "annotations"
           && project.name != "scopes"
           && project.name != "dagger-factories-only"
       if (optInExperimental) {
-        freeCompilerArgs += "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
+        freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
       }
     }
   }
