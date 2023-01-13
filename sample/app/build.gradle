@@ -1,8 +1,8 @@
 plugins {
-  id 'com.android.application'
-  id 'org.jetbrains.kotlin.android'
-  id 'org.jetbrains.kotlin.kapt'
-  id 'com.squareup.anvil'
+  alias(libs.plugins.agp.application)
+  alias(libs.plugins.kotlin.android)
+  alias(libs.plugins.kotlin.kapt)
+  alias(libs.plugins.anvil)
 }
 
 android {
