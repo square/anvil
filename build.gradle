@@ -96,10 +96,10 @@ subprojects {
 
   configurations.configureEach {
     resolutionStrategy.dependencySubstitution {
-      substitute module("com.squareup.anvil:annotations") with project(':annotations')
-      substitute module("com.squareup.anvil:compiler") with project(':compiler')
-      substitute module("com.squareup.anvil:compiler-api") with project(':compiler-api')
-      substitute module("com.squareup.anvil:compiler-utils") with project(':compiler-utils')
+      substitute module("com.squareup.anvil:annotations") using project(':annotations')
+      substitute module("com.squareup.anvil:compiler") using project(':compiler')
+      substitute module("com.squareup.anvil:compiler-api") using project(':compiler-api')
+      substitute module("com.squareup.anvil:compiler-utils") using project(':compiler-utils')
     }
 
     resolutionStrategy {
