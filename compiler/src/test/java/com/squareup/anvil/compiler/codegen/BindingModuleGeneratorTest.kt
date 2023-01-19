@@ -722,6 +722,51 @@ class BindingModuleGeneratorTest(
     }
   }
 
+  @Test fun `multiple contributions using different bound types with the same simple name don't clash`() {
+    assumeIrBackend()
+
+    compile(
+      """
+      package com.squareup.test.other
+
+      interface ParentInterface
+      """,
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+      $import
+      
+      interface ParentInterface : com.squareup.test.other.ParentInterface
+
+      @ContributesBinding(Any::class, boundType = ParentInterface::class)
+      @ContributesBinding(Any::class, boundType = com.squareup.test.other.ParentInterface::class)
+      class ContributingInterface : ParentInterface
+
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      val methods = componentInterface.anvilModule.declaredMethods.sortedBy { it.name }
+      assertThat(methods).hasSize(2)
+
+      with(methods[0]) {
+        assertThat(returnType).isEqualTo(parentInterface)
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      }
+      with(methods[1]) {
+        assertThat(returnType).isEqualTo(
+          classLoader.loadClass("com.squareup.test.other.ParentInterface")
+        )
+        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+        assertThat(isAbstract).isTrue()
+        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      }
+    }
+  }
+
   @Test fun `multiple contributions to the same scope can be replaced at once`() {
     assumeIrBackend()
 

@@ -12,6 +12,8 @@
 
 ### Fixed
 
+- Fix duplicate generated binding method names. If a class contributes multiple bindings and the bound types have the same short name, then Anvil would generate methods with duplicate names that clash in the end.
+
 ### Security
 
 ### Custom Code Generator
