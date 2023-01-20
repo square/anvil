@@ -1,13 +1,16 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.annotations.ContributesBinding.Priority
+import com.squareup.anvil.compiler.anyFqName
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
+import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.kotlinpoet.AnnotationSpec
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import kotlin.LazyThreadSafetyMode.NONE
 
@@ -21,9 +24,10 @@ internal data class ContributedBinding(
 )
 
 internal fun AnnotationReference.toContributedBinding(
-  isMultibinding: Boolean
+  isMultibinding: Boolean,
+  module: ModuleDescriptor,
 ): ContributedBinding {
-  val boundType = requireBoundType()
+  val boundType = requireBoundType(module)
 
   val mapKeys = if (isMultibinding) {
     declaringClass().annotations.filter { it.isMapKey() }.map { it.toAnnotationSpec() }
@@ -48,10 +52,13 @@ internal fun AnnotationReference.toContributedBinding(
   )
 }
 
-private fun AnnotationReference.requireBoundType(): ClassReference {
+private fun AnnotationReference.requireBoundType(module: ModuleDescriptor): ClassReference {
   val boundFromAnnotation = boundTypeOrNull()
 
   if (boundFromAnnotation != null) {
+    // Since all classes extend Any, we can stop here.
+    if (boundFromAnnotation.fqName == anyFqName) return anyFqName.toClassReference(module)
+
     // ensure that the bound type is actually a supertype of the contributing class
     val boundType = declaringClass().allSuperTypeClassReferences()
       .firstOrNull { it.fqName == boundFromAnnotation.fqName }

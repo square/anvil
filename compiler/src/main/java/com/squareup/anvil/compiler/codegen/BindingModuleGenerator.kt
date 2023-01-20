@@ -194,7 +194,7 @@ internal class BindingModuleGenerator(
             scopes.flatMap { scope ->
               clazz.annotations
                 .find(annotationName = annotationFqName, scope = scope)
-                .map { it.toContributedBinding(isMultibinding) }
+                .map { it.toContributedBinding(isMultibinding, module) }
             }
           }
           .let { bindings ->
