@@ -315,9 +315,15 @@ class ContributesBindingGeneratorTest {
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.MergeComponent
 
       @ContributesBinding(Int::class, boundType = Any::class)
       interface ContributingInterface
+
+      @MergeComponent(
+        scope = Int::class,
+      )
+      interface ComponentInterface
       """
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
