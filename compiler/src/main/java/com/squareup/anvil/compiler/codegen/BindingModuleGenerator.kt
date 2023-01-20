@@ -210,15 +210,21 @@ internal class BindingModuleGenerator(
           .toList()
       }
 
-      val generatedMethods = getContributedBindingClasses(
-        collectedClasses = contributedBindingClasses,
-        annotationFqName = contributesBindingFqName,
-        isMultibinding = false
-      ) + getContributedBindingClasses(
-        collectedClasses = contributedMultibindingClasses,
-        annotationFqName = contributesMultibindingFqName,
-        isMultibinding = true
-      )
+      val generatedMethods =
+        getContributedBindingClasses(
+          collectedClasses = contributedBindingClasses,
+          annotationFqName = contributesBindingFqName,
+          isMultibinding = false
+        )
+          .plus(
+            getContributedBindingClasses(
+              collectedClasses = contributedMultibindingClasses,
+              annotationFqName = contributesMultibindingFqName,
+              isMultibinding = true
+            )
+          )
+          .renameDuplicateFunctions()
+          .sorted()
 
       val content = daggerModuleContent(
         scopes = scopes,
@@ -285,11 +291,30 @@ internal class BindingModuleGenerator(
 private fun generatePackageName(clazz: ClassReference): String = MODULE_PACKAGE_PREFIX +
   clazz.packageFqName.safePackageString(dotPrefix = true)
 
-private sealed class GeneratedMethod {
+private sealed class GeneratedMethod : Comparable<GeneratedMethod> {
   abstract val spec: FunSpec
+  abstract val contributedClass: ClassReference
+  abstract val boundType: ClassReference
 
-  class ProviderMethod(override val spec: FunSpec) : GeneratedMethod()
-  class BindingMethod(override val spec: FunSpec) : GeneratedMethod()
+  override fun compareTo(other: GeneratedMethod): Int = COMPARATOR.compare(this, other)
+
+  data class ProviderMethod(
+    override val spec: FunSpec,
+    override val contributedClass: ClassReference,
+    override val boundType: ClassReference,
+  ) : GeneratedMethod()
+
+  data class BindingMethod(
+    override val spec: FunSpec,
+    override val contributedClass: ClassReference,
+    override val boundType: ClassReference,
+  ) : GeneratedMethod()
+
+  companion object {
+    val COMPARATOR = compareBy<GeneratedMethod>(
+      { it.spec.name }, { it.contributedClass }, { it.boundType }
+    )
+  }
 }
 
 private fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBinding {
@@ -322,22 +347,16 @@ private fun ContributedBinding.toGeneratedMethod(
 
   val isMapMultibinding = mapKeys.isNotEmpty()
 
-  val methodNameSubString = contributedClass.fqName.pathSegments()
-    .map { it.asString() }
-    .plus(boundType.shortName)
+  val methodNameSuffix = buildString {
+    append(boundType.shortName.capitalize())
+    if (isMultibinding) {
+      append("Multi")
+    }
+  }
 
   return if (contributedClass.isObject()) {
     ProviderMethod(
-      FunSpec.builder(
-        name = methodNameSubString
-          .joinToString(
-            separator = "",
-            prefix = "provide",
-            postfix = if (isMultibinding) "Multi" else ""
-          ) {
-            it.capitalize()
-          }
-      )
+      spec = FunSpec.builder(name = "provide$methodNameSuffix")
         .addAnnotation(Provides::class)
         .apply {
           when {
@@ -349,20 +368,13 @@ private fun ContributedBinding.toGeneratedMethod(
         .addAnnotations(mapKeys)
         .returns(boundType.asClassName())
         .addStatement("return %T", contributedClass.asClassName())
-        .build()
+        .build(),
+      contributedClass = contributedClass,
+      boundType = boundType
     )
   } else {
     BindingMethod(
-      FunSpec.builder(
-        name = methodNameSubString
-          .joinToString(
-            separator = "",
-            prefix = "bind",
-            postfix = if (isMultibinding) "Multi" else ""
-          ) {
-            it.capitalize()
-          }
-      )
+      spec = FunSpec.builder(name = "bind$methodNameSuffix")
         .addAnnotation(Binds::class)
         .apply {
           when {
@@ -378,9 +390,32 @@ private fun ContributedBinding.toGeneratedMethod(
           type = contributedClass.asClassName()
         )
         .returns(boundType.asClassName())
-        .build()
+        .build(),
+      contributedClass = contributedClass,
+      boundType = boundType
     )
   }
+}
+
+private fun List<GeneratedMethod>.renameDuplicateFunctions(): List<GeneratedMethod> {
+  return groupBy { it.spec.name }
+    .values
+    .flatMap { duplicates ->
+      if (duplicates.size == 1) {
+        duplicates
+      } else {
+        duplicates.mapIndexed { index, generatedMethod ->
+          val newSpec = generatedMethod.spec
+            .toBuilder(name = generatedMethod.spec.name + index)
+            .build()
+
+          when (generatedMethod) {
+            is BindingMethod -> generatedMethod.copy(spec = newSpec)
+            is ProviderMethod -> generatedMethod.copy(spec = newSpec)
+          }
+        }
+      }
+    }
 }
 
 private val Collection<GeneratedMethod>.specs get() = map { it.spec }
