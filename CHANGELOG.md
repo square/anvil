@@ -18,6 +18,8 @@
 
 ### Custom Code Generator
 
+- Add option to change the JVM target when testing code generators with the custom `AnvilCompilation` class, see #682.
+
 # [2.4.4] - 2023-01-12
 
 ### Added
