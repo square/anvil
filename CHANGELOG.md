@@ -13,6 +13,7 @@
 ### Fixed
 
 - Fix duplicate generated binding method names. If a class contributes multiple bindings and the bound types have the same short name, then Anvil would generate methods with duplicate names that clash in the end.
+- Support `Any` as bound type when using `@ContributesBinding` or `@ContributesMultibinding`, see #680.
 
 ### Security
 
