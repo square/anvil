@@ -7,7 +7,13 @@ espresso = "3.5.1"
 kotlin = "1.8.0"
 ktlint = "0.41.0"
 
+#
 # Configs that we can override in CI. Not exactly "versions" but useful to repurpose it here.
+#
+
+# We don't need to run all tests for sanity checks. If the flag is
+# false, then we run each test with one annotation instead of all options. We also skip tests
+# that run the Dagger annotation processor (KAPT is slow).
 config-fullTestRun = "true"
 config-generateDaggerFactoriesWithAnvil = "true"
 config-useIr = "true"
