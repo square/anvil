@@ -1,6 +1,7 @@
 import com.squareup.anvil.benchmark.CreateBenchmarkProjectTask
 import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.internal.project.DefaultProject
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
@@ -80,9 +81,9 @@ subprojects {
   tasks.withType(KotlinCompile).configureEach {
     compilerOptions {
       if (isIntegrationTestOrSample) {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+        jvmTarget.set(JvmTarget.JVM_11)
       } else {
-        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
+        jvmTarget.set(JvmTarget.JVM_1_8)
       }
 
       // TODO: Remove when we remove the old backend.
