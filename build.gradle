@@ -85,6 +85,8 @@ subprojects {
         jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
       }
 
+      // TODO: Remove when we remove the old backend.
+      // TODO Repeatable: After cleaning up all deprecated methods remove the `&& false`.
       allWarningsAsErrors.set(isCi && (useKotlinIr) && false)
       freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
 
