@@ -6,6 +6,8 @@
 
 ### Changed
 
+The Kotlin Gradle Plugin (both the core plugin and the API artifact) are no longer a dependency of the Anvil Gradle Plugin. Instead, it's now a `compileOnly` dependency, allowing the plugin to defer to whatever version the user already has. If you were accidentally depending on KGP through Anvil, you'll need to explicitly add the plugin yourself now.
+
 ### Deprecated
 
 ### Removed
