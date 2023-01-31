@@ -12,9 +12,6 @@ jobs :
   test-ubuntu-old-backend :
     runs-on : ubuntu-latest
     timeout-minutes : 25
-    env:
-      DEP_OVERRIDES: "true"
-      DEP_OVERRIDE_kotlin: ${{ matrix.kotlin-version }}
 
     strategy :
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
@@ -33,9 +30,7 @@ jobs :
           check-latest : true
 
       - name : Test on Ubuntu
-        env:
-          DEP_OVERRIDE_config-useIR: "false"
-        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace
+        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-useIR=false
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v3
@@ -48,9 +43,6 @@ jobs :
   test-ubuntu :
     runs-on : ubuntu-latest
     timeout-minutes : 25
-    env:
-      DEP_OVERRIDES: "true"
-      DEP_OVERRIDE_kotlin: ${{ matrix.kotlin-version }}
 
     strategy :
       fail-fast : false
@@ -66,7 +58,7 @@ jobs :
           check-latest : true
 
       - name : Test on Ubuntu
-        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace
+        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }}
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v3
@@ -80,7 +72,6 @@ jobs :
     runs-on : windows-latest
     timeout-minutes : 25
     env:
-      DEP_OVERRIDES: "true"
 
     steps :
       - uses : actions/checkout@v3
@@ -97,9 +88,7 @@ jobs :
       # Expressions in Github actions are limited. If there would be an if expression, then we
       # wouldn't need to duplicate the next step and depending on the OS enable / disable them.
       - name : Test on Windows
-        env:
-          DEP_OVERRIDE_config-fullTestRun: "false"
-        run : ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace
+        run : ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace -Doverride_config-fullTestRun=false
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v3
@@ -192,10 +181,6 @@ jobs :
         working-directory : gradle-plugin
 
     timeout-minutes : 15
-    env:
-      DEP_OVERRIDES: "true"
-      DEP_OVERRIDE_kotlin: ${{ matrix.kotlin-version }}
-      DEP_OVERRIDE_agp: ${{ matrix.agp-version }}
 
     strategy :
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
@@ -215,7 +200,7 @@ jobs :
           check-latest : true
 
       - name : Test Gradle Plugin
-        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace
+        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_agp=${{ matrix.agp-version }}
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v3
@@ -247,9 +232,6 @@ jobs :
   kapt-for-dagger-factories :
     runs-on : ubuntu-latest
     timeout-minutes : 25
-    env:
-      DEP_OVERRIDES: "true"
-      DEP_OVERRIDE_kotlin: ${{ matrix.kotlin-version }}
 
     strategy :
       # Run all tasks, even if some fail. Note that they don't share an output, some tasks overlap
@@ -268,14 +250,10 @@ jobs :
           check-latest : true
 
       - name : Run integration tests
-        env:
-          DEP_OVERRIDE_config-generateDaggerFactoriesWithAnvil: "false"
-        run : ./gradlew -p integration-tests test --no-build-cache --no-daemon --stacktrace
+        run : ./gradlew -p integration-tests test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
 
       - name : Build the sample
-        env:
-          DEP_OVERRIDE_config-generateDaggerFactoriesWithAnvil: "false"
-        run : ./gradlew :sample:app:assembleDebug --no-build-cache --no-daemon --stacktrace
+        run : ./gradlew :sample:app:assembleDebug --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v3
