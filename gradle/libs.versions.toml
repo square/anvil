@@ -10,6 +10,8 @@ ktlint = "0.41.0"
 #
 # Configs that we can override in CI. Not exactly "versions" but useful to repurpose it here.
 #
+# Example: ./gradlew tasks -Doverride_kotlin=1.7.22
+#
 
 # We don't need to run all tests for sanity checks. If the flag is
 # false, then we run each test with one annotation instead of all options. We also skip tests
