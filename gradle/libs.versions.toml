@@ -21,7 +21,6 @@ config-useIr = "true"
 [plugins]
 agp-application = { id = "com.android.application", version.ref = "agp" }
 agp-library = { id = "com.android.library", version.ref = "agp" }
-anvil = { id = "com.squareup.anvil", version = "2.4.4" }
 gradlePublish = { id = "com.gradle.plugin-publish", version = "0.15.0" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-dokka = { id = "org.jetbrains.dokka", version = "1.7.20" }

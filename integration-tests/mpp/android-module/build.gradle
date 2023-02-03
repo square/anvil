@@ -6,7 +6,7 @@ plugins {
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.kotlin.kapt)
   alias(libs.plugins.agp.library)
-  alias(libs.plugins.anvil)
+  id("com.squareup.anvil")
 }
 
 android {
