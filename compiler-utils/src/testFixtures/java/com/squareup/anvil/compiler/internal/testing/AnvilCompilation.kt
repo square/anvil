@@ -137,6 +137,11 @@ public class AnvilCompilation internal constructor(
     kotlinCompilation.addPreviousResultToClasspath(result)
   }
 
+  public fun jvmTarget(jvmTarget: JvmTarget) {
+    checkNotCompiled()
+    kotlinCompilation.jvmTarget = jvmTarget.description
+  }
+
   /**
    * Returns an Anvil-generated file with the given [packageName] and [fileName] from its expected
    * path.
@@ -220,6 +225,7 @@ public fun compileAnvil(
   previousCompilationResult: Result? = null,
   codeGenerators: List<CodeGenerator> = emptyList(),
   moduleName: String? = null,
+  jvmTarget: JvmTarget? = null,
   block: Result.() -> Unit = { },
 ): Result {
   return AnvilCompilation()
@@ -233,6 +239,10 @@ public fun compileAnvil(
         if (moduleName != null) {
           this.moduleName = moduleName
         }
+      }
+
+      if (jvmTarget != null) {
+        jvmTarget(jvmTarget)
       }
 
       if (previousCompilationResult != null) {

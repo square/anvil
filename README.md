@@ -287,7 +287,7 @@ processor in many modules if you enable [Dagger Factory generation](#dagger-fact
 We investigated whether other alternatives like a bytecode transformer and an annotation processor
 would be a better option, but ultimately decided against them. For what we tried to achieve a
 bytecode transformer runs too late in the build process; after the Dagger components have been
-generated. An annotation processor especially when using Kapt would be too slow. Even though the
+generated. An annotation processor especially when using KAPT would be too slow. Even though the
 Kotlin compiler plugin API isn't stable and contains bugs we decided to write a compiler plugin.
 
 ## Limitations
@@ -297,14 +297,38 @@ Kotlin compiler plugin API isn't stable and contains bugs we decided to write a 
 Anvil is a Kotlin compiler plugin, thus Java isn’t supported. You can use Anvil in
 modules with mixed Java and Kotlin code for Kotlin classes, though.
 
-#### Incremental Kotlin compilation breaks compiler plugins
+#### Correct error types disabled
 
-There is a bug that affects the Anvil Kotlin compiler plugin:
-* [AnalysisResult.RetryWithAdditionalRoots crashes during incremental compilation with java classes in classpath](https://youtrack.jetbrains.com/issue/KT-38576)
+KAPT has the option to
+[correct non-existent types](https://kotlinlang.org/docs/kapt.html#non-existent-type-correction).
+This option however changes order of how compiler plugins and KAPT itself are invoked. The result
+is that Anvil cannot merge supertypes before the Dagger annotation processor runs and abstract
+functions won't be implemented properly in the final Dagger component.
 
-The Gradle plugin implements a workaround for this bug, so you shouldn't notice it. Side effects
-are that incremental Kotlin compilation is disabled for stub generating tasks (which don't run a
-full compilation before KAPT anyways).
+Anvil will automatically set `correctErrorTypes` to false to avoid this issue.
+
+#### Incremental Kotlin compilation breaks Anvil's feature to merge contributions
+
+Anvil merges Dagger component interfaces and Dagger modules during the stub generating task
+when `@MergeComponent` is used. This requires scanning the compile classpath for any contributions.
+Assume the scenario that a contributed type in a module dependency has changed, but the module
+using `@MergeComponent` itself didn't change. With Kotlin incremental compilation enabled the
+compiler will notice that the module using `@MergeComponent` doesn't need to be recompiled and
+therefore doesn't invoke compiler plugins. Anvil will miss the new contributed type from the module
+dependency.
+
+To avoid this issue, Anvil must disable incremental compilation for the stub generating task, which
+runs right before Dagger processes annotations. Normal Kotlin compilation isn't impacted by this
+workaround. The issue is captured in
+[KT-54850 Provide mechanism for compiler plugins to add custom information into binaries](https://youtrack.jetbrains.com/issue/KT-54850/Provide-mechanism-for-compiler-plugins-to-add-custom-information-into-binaries).
+
+Disabling incremental compilation for the stub generating task could have a negative impact on
+compile times, if you heavily rely on KAPT. While Anvil can
+[significantly help to improve build times](#dagger-factory-generation), the wrong configuration
+and using KAPT in most modules could make things worse. The
+suggestion is to extract and isolate annotation processors in separate modules and avoid using Anvil
+in the same modules, e.g. a common practice is to move the Dagger component using `@MergeComponent`
+into the final application module with little to no other code in the app module.
 
 ## Hilt
 
