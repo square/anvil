@@ -71,7 +71,6 @@ jobs :
   test-windows :
     runs-on : windows-latest
     timeout-minutes : 25
-    env:
 
     steps :
       - uses : actions/checkout@v3
