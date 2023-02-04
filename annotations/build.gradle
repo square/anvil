@@ -1,5 +1,7 @@
-apply plugin: 'org.jetbrains.kotlin.jvm'
-apply from: rootProject.file('publishing.gradle')
+plugins {
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.mavenPublish)
+}
 
 kotlin {
   explicitApi()

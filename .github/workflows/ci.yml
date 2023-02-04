@@ -22,18 +22,18 @@ jobs :
         kotlin-version : [ 1.8.0 ]
 
     steps :
-      - uses : actions/checkout@v2
-      - uses : actions/setup-java@v2
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
         with :
           distribution : 'adopt'
           java-version : '11'
           check-latest : true
 
       - name : Test on Ubuntu
-        run : ./gradlew assemble test -Psquare.useIR=false --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-useIR=false
 
       - name : Upload Test Results
-        uses : actions/upload-artifact@v2
+        uses : actions/upload-artifact@v3
         if : ${{ failure() }}
         with :
           # Use the Kotlin version to prevent overrides.
@@ -50,18 +50,18 @@ jobs :
         kotlin-version : [ 1.8.0 ]
 
     steps :
-      - uses : actions/checkout@v2
-      - uses : actions/setup-java@v2
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
       - name : Test on Ubuntu
-        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }}
 
       - name : Upload Test Results
-        uses : actions/upload-artifact@v2
+        uses : actions/upload-artifact@v3
         if : ${{ failure() }}
         with :
           name : test-results-${{ matrix.kotlin-version }}
@@ -73,8 +73,8 @@ jobs :
     timeout-minutes : 25
 
     steps :
-      - uses : actions/checkout@v2
-      - uses : actions/setup-java@v2
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
         with :
           distribution : 'temurin'
           java-version : '11'
@@ -87,10 +87,10 @@ jobs :
       # Expressions in Github actions are limited. If there would be an if expression, then we
       # wouldn't need to duplicate the next step and depending on the OS enable / disable them.
       - name : Test on Windows
-        run : ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace "-Psquare.fullTestRun=false"
+        run : ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace -Doverride_config-fullTestRun=false
 
       - name : Upload Test Results
-        uses : actions/upload-artifact@v2
+        uses : actions/upload-artifact@v3
         if : ${{ failure() }}
         with :
           name : test-results-windows
@@ -101,8 +101,8 @@ jobs :
     timeout-minutes : 15
 
     steps :
-      - uses : actions/checkout@v2
-      - uses : actions/setup-java@v2
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
         with :
           distribution : 'temurin'
           java-version : '11'
@@ -116,8 +116,8 @@ jobs :
     timeout-minutes : 15
 
     steps :
-      - uses : actions/checkout@v2
-      - uses : actions/setup-java@v2
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
         with :
           distribution : 'temurin'
           java-version : '11'
@@ -127,7 +127,7 @@ jobs :
         run : ./gradlew lint --no-build-cache --no-daemon --stacktrace
 
       - name : Upload Lint Results
-        uses : actions/upload-artifact@v2
+        uses : actions/upload-artifact@v3
         if : ${{ failure() }}
         with :
           name : lint-results
@@ -138,8 +138,8 @@ jobs :
     timeout-minutes : 15
 
     steps :
-      - uses : actions/checkout@v2
-      - uses : actions/setup-java@v2
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
         with :
           distribution : 'temurin'
           java-version : '11'
@@ -160,8 +160,8 @@ jobs :
       - publish-maven-local
 
     steps :
-      - uses : actions/checkout@v2
-      - uses : actions/setup-java@v2
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
         with :
           distribution : 'temurin'
           java-version : '11'
@@ -188,21 +188,21 @@ jobs :
       fail-fast : false
       matrix :
         kotlin-version : [ 1.8.0 ]
-        agp-version : [ 4.2.2, 7.0.4, 7.1.1, 7.2.0-beta01, 7.3.0-alpha01 ]
+        agp-version : [ 7.1.1, 7.2.0, 7.3.1 ]
 
     steps :
-      - uses : actions/checkout@v2
-      - uses : actions/setup-java@v2
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
       - name : Test Gradle Plugin
-        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }} -Psquare.agpVersion=${{ matrix.agp-version }}
+        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_agp=${{ matrix.agp-version }}
 
       - name : Upload Test Results
-        uses : actions/upload-artifact@v2
+        uses : actions/upload-artifact@v3
         if : ${{ failure() }}
         with :
           # Use the Kotlin version to prevent overrides.
@@ -218,8 +218,8 @@ jobs :
     timeout-minutes : 15
 
     steps :
-      - uses : actions/checkout@v2
-      - uses : actions/setup-java@v2
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
         with :
           distribution : 'temurin'
           java-version : '11'
@@ -241,21 +241,21 @@ jobs :
         kotlin-version : [ 1.8.0 ]
 
     steps :
-      - uses : actions/checkout@v2
-      - uses : actions/setup-java@v2
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
         with :
           distribution : 'temurin'
           java-version : '11'
           check-latest : true
 
       - name : Run integration tests
-        run : ./gradlew -p integration-tests test -Psquare.generateDaggerFactoriesWithAnvil=false --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+        run : ./gradlew -p integration-tests test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
 
       - name : Build the sample
-        run : ./gradlew :sample:app:assembleDebug -Psquare.generateDaggerFactoriesWithAnvil=false --no-build-cache --no-daemon --stacktrace -Psquare.kotlinVersion=${{ matrix.kotlin-version }}
+        run : ./gradlew :sample:app:assembleDebug --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
 
       - name : Upload Test Results
-        uses : actions/upload-artifact@v2
+        uses : actions/upload-artifact@v3
         if : ${{ failure() }}
         with :
           # Use the Kotlin version to prevent overrides.
@@ -275,8 +275,8 @@ jobs :
           #- 24
           - 29
     steps :
-      - uses : actions/checkout@v2
-      - uses : actions/setup-java@v2
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
         with :
           distribution : 'temurin'
           java-version : '11'
@@ -291,7 +291,7 @@ jobs :
           script : ./gradlew connectedCheck --no-build-cache --no-daemon --stacktrace
 
       - name : Upload results
-        uses : actions/upload-artifact@v2
+        uses : actions/upload-artifact@v3
         with :
           name : insrumentation-test-results
           path : ./**/build/reports/androidTests/connected/**
@@ -301,7 +301,7 @@ jobs :
     runs-on : ubuntu-latest
     timeout-minutes : 15
     steps :
-      - uses : actions/checkout@v2
+      - uses : actions/checkout@v3
       - uses : gradle/wrapper-validation-action@v1
 
   build-benchmark-project :
@@ -309,8 +309,8 @@ jobs :
     timeout-minutes : 25
 
     steps :
-      - uses : actions/checkout@v2
-      - uses : actions/setup-java@v2
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
         with :
           distribution : 'temurin'
           java-version : '11'

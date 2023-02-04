@@ -1,20 +1,23 @@
-apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'org.jetbrains.kotlin.kapt'
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+plugins {
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.kotlin.kapt)
+}
 
 dependencies {
   api project(':compiler-api')
   implementation project(':compiler-utils')
 
-  compileOnly deps.auto.service.annotations
-  kapt deps.auto.service.processor
+  compileOnly libs.auto.service.annotations
+  kapt libs.auto.service.processor
 
   testImplementation testFixtures(project(":compiler-utils"))
-  testImplementation deps.junit
-  testImplementation deps.truth
+  testImplementation libs.junit
+  testImplementation libs.truth
 }
 
-//noinspection UnnecessaryQualifiedReference
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask).configureEach {
+tasks.withType(KotlinCompile).configureEach {
   compilerOptions {
     freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
   }

@@ -16,6 +16,7 @@ dependencyResolutionManagement {
       }
     }
     libs {
+      from(files("../gradle/libs.versions.toml"))
       for (Map.Entry<String, String> entry : overrides.entrySet()) {
         String key = entry.getKey()
         String value = entry.getValue()
@@ -36,32 +37,4 @@ dependencyResolutionManagement {
       maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
     }
   }
-}
-
-include ':annotations'
-include ':compiler'
-include ':compiler-api'
-include ':compiler-utils'
-include ':integration-tests:code-generator'
-include ':integration-tests:code-generator-tests'
-include ':integration-tests:dagger-factories-only'
-include ':integration-tests:library'
-include ':integration-tests:mpp:android-module'
-include ':integration-tests:mpp:jvm-module'
-include ':integration-tests:tests'
-include ':sample:app'
-include ':sample:library'
-include ':sample:scopes'
-
-// Use the local version instead of a remote artifact.
-includeBuild('gradle-plugin') {
-  dependencySubstitution {
-    substitute module('com.squareup.anvil:gradle-plugin') using project(':')
-  }
-}
-
-// Include the benchmark modules if they exist.
-def benchmarkSettingsFile = file('benchmark/settings.gradle')
-if (benchmarkSettingsFile.exists()) {
-  apply from: benchmarkSettingsFile
 }

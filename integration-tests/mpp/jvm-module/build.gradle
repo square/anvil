@@ -1,7 +1,7 @@
 plugins {
-  id 'org.jetbrains.kotlin.multiplatform'
-  id 'org.jetbrains.kotlin.kapt'
-  id 'com.squareup.anvil'
+  alias(libs.plugins.kotlin.multiplatform)
+  alias(libs.plugins.kotlin.kapt)
+  id("com.squareup.anvil")
 }
 
 kotlin {
@@ -12,19 +12,19 @@ kotlin {
   sourceSets {
     jvmMain {
       dependencies {
-        implementation deps.dagger2.dagger
+        implementation libs.dagger2
       }
     }
 
     jvmTest {
       dependencies {
-        implementation deps.junit
-        implementation deps.truth
+        implementation libs.junit
+        implementation libs.truth
       }
     }
   }
 }
 
 dependencies {
-  kapt deps.dagger2.compiler
+  kapt libs.dagger2.compiler
 }

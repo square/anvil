@@ -136,7 +136,6 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     if (variant.variantFilter.syncGeneratedSources) {
       val isIdeSyncProvider = project.providers
         .systemProperty("idea.sync.active")
-        .forUseAtConfigurationTime()
 
       if (isIdeSyncProvider.getOrElse("false").toBoolean()) {
         // Only add source sets during the IDE sync. Don't add them for compilation, otherwise
@@ -386,7 +385,7 @@ internal class Variant private constructor(
       return Variant(
         name = kotlinCompilation.name,
         project = project,
-        compileTaskProvider = kotlinCompilation.compileKotlinTaskProvider as
+        compileTaskProvider = kotlinCompilation.compileTaskProvider as
           TaskProvider<KotlinCompile>,
         androidVariant = androidVariant,
         androidSourceSets = androidSourceSets,

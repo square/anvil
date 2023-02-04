@@ -1,40 +1,43 @@
+import com.squareup.anvil.benchmark.CreateBenchmarkProjectTask
+import com.vanniktech.maven.publish.SonatypeHost
+import org.gradle.api.internal.project.DefaultProject
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 buildscript {
-  apply from: rootProject.file('dependencies.gradle')
-
-  repositories {
-    google()
-    gradlePluginPortal()
-    mavenCentral()
-  }
-
   dependencies {
-    classpath deps.android_gradle_plugin
-    classpath deps.kotlin.dokka
-    classpath deps.kotlin.gradle_plugin
-    classpath deps.ktlint_plugin
-    classpath deps.anvil_plugin
-    classpath deps.maven_publishing_plugin
+    classpath("com.squareup.anvil:gradle-plugin:${findProperty("VERSION_NAME")}",)
   }
+}
+
+plugins {
+  alias(libs.plugins.agp.application) apply false
+  alias(libs.plugins.agp.library) apply false
+  alias(libs.plugins.kotlin.jvm) apply false
+  alias(libs.plugins.kotlin.android) apply false
+  alias(libs.plugins.kotlin.kapt) apply false
+  alias(libs.plugins.kotlin.dokka) apply false
+  alias(libs.plugins.kotlin.multiplatform) apply false
+  alias(libs.plugins.mavenPublish) apply false
+  alias(libs.plugins.gradlePublish) apply false
+  alias(libs.plugins.ktlint) apply false
+}
+
+boolean isCi = (System.getenv('CI') ?: 'false').toBoolean()
+String kotlinVersion = libs.versions.kotlin.get()
+boolean useKotlinIr =  libs.versions.config.useIr.get().toBoolean()
+ext {
+  ci = isCi
+  kotlinPreview = !kotlinVersion.startsWith('1.8.0')
+  kotlinUseIR = useKotlinIr
+  fullTestRun = libs.versions.config.fullTestRun.get().toBoolean()
 }
 
 println "Versions: " + [
-    "Kotlin": ext.kotlinVersion,
+    "Kotlin": kotlinVersion,
     "Gradle": gradle.gradleVersion,
-    "Kotlin use IR in tests": ext.kotlinUseIR
+    "Kotlin use IR in tests": useKotlinIr
 ]
-
-allprojects {
-  repositories {
-    google()
-    mavenCentral()
-    if (rootProject.ext.kotlinPreview) {
-      maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev' }
-      maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap' }
-      maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
-      maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-    }
-  }
-}
 
 boolean configureOnDemandEnabled = getProperty("org.gradle.configureondemand", "false").toBoolean()
 
@@ -43,7 +46,7 @@ subprojects {
     apply plugin: 'org.jlleitschuh.gradle.ktlint'
 
     ktlint {
-      version = rootProject.ext.ktlintVersion
+      version = libs.versions.ktlint.get()
       verbose = true
     }
   }
@@ -59,6 +62,10 @@ subprojects {
     }
   }
 
+  // Dynamically configure JVM targets because Dagger compiler always uses the java 11 @Generated
+  // annotation regardless of release target
+  boolean isIntegrationTestOrSample = project.path.startsWith(":integration-test") || project.path.startsWith(":sample")
+
   pluginManager.withPlugin("java") {
     // Use JDK 11 but target Java 8 for maximum compatibility.
     java {
@@ -68,42 +75,46 @@ subprojects {
     }
 
     tasks.withType(JavaCompile).configureEach {
-      options.release.set(8)
+      if (isIntegrationTestOrSample) {
+        options.release.set(11)
+      } else {
+        options.release.set(8)
+      }
     }
   }
 
-  //noinspection UnnecessaryQualifiedReference
-  tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask).configureEach {
-    kotlinOptions {
-      if (parent?.path != ':integration-tests:mpp') {
-        // The configuration for KMP projects is different. We should fix that eventually.
-        //
-        // Caused by: groovy.lang.MissingPropertyException: Could not set unknown property 'jvmTarget' for object of type org.jetbrains.kotlin.gradle.tasks.internal.KotlinMultiplatformCommonOptionsCompat.
-        jvmTarget = JavaVersion.VERSION_1_8
+  tasks.withType(KotlinCompile).configureEach {
+    compilerOptions {
+      if (isIntegrationTestOrSample) {
+        jvmTarget.set(JvmTarget.JVM_11)
+      } else {
+        jvmTarget.set(JvmTarget.JVM_1_8)
       }
 
-      allWarningsAsErrors = rootProject.ext.makeWarningsErrors
-      freeCompilerArgs += ["-opt-in=kotlin.RequiresOptIn"]
+      // TODO: Remove when we remove the old backend.
+      // TODO Repeatable: After cleaning up all deprecated methods remove the `&& false`.
+      allWarningsAsErrors.set(isCi && (useKotlinIr) && false)
+      freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
 
       boolean optInExperimental = project.name != "annotations"
           && project.name != "scopes"
           && project.name != "dagger-factories-only"
       if (optInExperimental) {
-        freeCompilerArgs += "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
+        freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
       }
     }
   }
 
-  configurations.all {
+  configurations.configureEach {
     resolutionStrategy.dependencySubstitution {
-      substitute module("com.squareup.anvil:annotations") with project(':annotations')
-      substitute module("com.squareup.anvil:compiler") with project(':compiler')
-      substitute module("com.squareup.anvil:compiler-api") with project(':compiler-api')
-      substitute module("com.squareup.anvil:compiler-utils") with project(':compiler-utils')
+      substitute module("com.squareup.anvil:annotations") using project(':annotations')
+      substitute module("com.squareup.anvil:compiler") using project(':compiler')
+      substitute module("com.squareup.anvil:compiler-api") using project(':compiler-api')
+      substitute module("com.squareup.anvil:compiler-utils") using project(':compiler-utils')
     }
 
     resolutionStrategy {
-      force deps.kotlin.metadata
+      force libs.kotlin.metadata
     }
   }
 
@@ -116,8 +127,15 @@ subprojects {
   // folks (including myself 🙃) set the flag globally in the Gradle home dir. The workaround
   // is good enough for now.
   if (configureOnDemandEnabled) {
-    //noinspection UnnecessaryQualifiedReference
-    (it as org.gradle.api.internal.project.DefaultProject).evaluate()
+    (it as DefaultProject).evaluate()
+  }
+
+  plugins.withId("com.vanniktech.maven.publish") {
+    apply plugin: 'org.jetbrains.dokka'
+    mavenPublishing {
+      publishToMavenCentral(SonatypeHost.S01)
+      signAllPublications()
+    }
   }
 }
 
@@ -130,5 +148,4 @@ def getProperty(String name, String defaultValue) {
 }
 
 // Register the task that can create the benchmark project.
-//noinspection UnnecessaryQualifiedReference
-tasks.register("createBenchmarkProject", com.squareup.anvil.benchmark.CreateBenchmarkProjectTask)
+tasks.register("createBenchmarkProject", CreateBenchmarkProjectTask)

@@ -1,6 +1,10 @@
-apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'java-test-fixtures'
-apply from: rootProject.file('publishing.gradle')
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
+plugins {
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.mavenPublish)
+  id 'java-test-fixtures'
+}
 
 kotlin {
   explicitApi()
@@ -11,35 +15,34 @@ def isIdeSync = getSystemProperty('idea.sync.active', 'false').toBoolean()
 dependencies {
   api project(':annotations')
   api project(':compiler-api')
-  api deps.kotlin.compiler
-  api deps.kotlinpoet
+  api libs.kotlin.compiler
+  api libs.kotlinpoet
 
-  implementation deps.dagger2.dagger
-  implementation deps.inject
+  implementation libs.dagger2
+  implementation libs.inject
 
-  testFixturesApi deps.kotlin.compile_testing
+  testFixturesApi libs.kotlin.compileTesting
   testFixturesImplementation project(':compiler')
-  testFixturesImplementation deps.dagger2.compiler
-  testFixturesImplementation deps.dagger2.dagger
-  testFixturesImplementation deps.junit
-  testFixturesImplementation deps.truth
+  testFixturesImplementation libs.dagger2.compiler
+  testFixturesImplementation libs.dagger2
+  testFixturesImplementation libs.junit
+  testFixturesImplementation libs.truth
 
   // Necessary because this is what dagger uses when it runs to support instantiating annotations at runtime
-  testFixturesImplementation deps.auto.value.annotations
-  testFixturesImplementation deps.auto.value.processor
+  testFixturesImplementation libs.auto.value.annotations
+  testFixturesImplementation libs.auto.value.processor
 
   // This workaround is needed to resolve classes in the IDE properly.
   if (isIdeSync) {
     compileOnly project(':compiler')
-    compileOnly deps.dagger2.compiler
-    compileOnly deps.junit
-    compileOnly deps.kotlin.compile_testing
-    compileOnly deps.truth
+    compileOnly libs.dagger2.compiler
+    compileOnly libs.junit
+    compileOnly libs.kotlin.compileTesting
+    compileOnly libs.truth
   }
 }
 
-//noinspection UnnecessaryQualifiedReference
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask).configureEach {
+tasks.withType(KotlinCompile).configureEach {
   compilerOptions {
     freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
   }

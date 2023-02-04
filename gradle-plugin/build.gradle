@@ -1,35 +1,20 @@
-buildscript {
-  apply from: rootProject.file('../dependencies.gradle')
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-  repositories {
-    google()
-    gradlePluginPortal()
-    mavenCentral()
-  }
-
-  dependencies {
-    classpath deps.kotlin.dokka
-    classpath deps.kotlin.gradle_plugin
-    classpath deps.maven_publishing_plugin
-    classpath deps.gradle_publishing_plugin
-    classpath deps.ktlint_plugin
-  }
-}
-
-repositories {
-  google()
-  mavenCentral()
+plugins {
+  id 'java-gradle-plugin'
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.kotlin.dokka)
+  alias(libs.plugins.gradlePublish)
+  alias(libs.plugins.mavenPublish)
+  alias(libs.plugins.ktlint)
 }
 
 apply from: rootProject.file('copy_properties.gradle')
-
-apply plugin: 'java-gradle-plugin'
-apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'com.gradle.plugin-publish'
-apply plugin: 'org.jlleitschuh.gradle.ktlint'
-
 apply from: rootProject.file('generate_build_properties.gradle')
-apply from: rootProject.file('../publishing.gradle')
+
+// Pull from the GROUP property and assign to the project
+group = GROUP
 
 gradlePlugin {
   plugins {
@@ -59,10 +44,9 @@ tasks.withType(JavaCompile).configureEach {
   options.release.set(8)
 }
 
-//noinspection UnnecessaryQualifiedReference
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask).configureEach {
-  kotlinOptions {
-    jvmTarget = JavaVersion.VERSION_1_8
+tasks.withType(KotlinCompile).configureEach {
+  compilerOptions {
+    jvmTarget.set(JvmTarget.JVM_1_8)
 
     // Because Gradle hardcodes Kotlin versions we have warnings during compilation.
     allWarningsAsErrors = false
@@ -74,16 +58,15 @@ kotlin {
 }
 
 ktlint {
-  version = rootProject.ext.ktlintVersion
+  version = libs.versions.ktlint.get()
 }
 
 dependencies {
-  implementation deps.kotlin.gradle_plugin
-  implementation deps.kotlin.gradle_plugin_api
-
   // Necessary to bump a transitive dependency.
-  compileOnly deps.kotlin.reflect
+  compileOnly libs.kotlin.reflect
 
-  // Compile only so that Java / Kotlin modules don't download it unnecessarily.
-  compileOnly deps.android_gradle_plugin
+  // Compile only so we don't pre-empty what the consuming project actually uses
+  compileOnly libs.kotlin.gradlePlugin
+  compileOnly libs.kotlin.gradlePluginApi
+  compileOnly libs.agp
 }

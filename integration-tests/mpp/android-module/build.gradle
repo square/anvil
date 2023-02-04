@@ -1,21 +1,23 @@
 import com.android.build.gradle.api.UnitTestVariant
+import com.android.builder.core.BuilderConstants
 import com.squareup.anvil.plugin.AndroidVariantFilter
 
 plugins {
-  id 'org.jetbrains.kotlin.multiplatform'
-  id 'com.android.library'
-  id 'org.jetbrains.kotlin.kapt'
-  id 'com.squareup.anvil'
+  alias(libs.plugins.kotlin.multiplatform)
+  alias(libs.plugins.kotlin.kapt)
+  alias(libs.plugins.agp.library)
+  id("com.squareup.anvil")
 }
 
 android {
-  compileSdkVersion 30
+  compileSdk = 33
+  namespace = "com.squareup.anvil.mpp"
 
   defaultConfig {
-    minSdkVersion 24
-    targetSdkVersion 30
-    versionCode 1
-    versionName "1.0.0"
+    minSdk = 24
+    targetSdk = 33
+    versionCode = 1
+    versionName = "1.0.0"
   }
 
   compileOptions {
@@ -23,13 +25,12 @@ android {
     targetCompatibility JavaVersion.VERSION_1_8
   }
 
-  lintOptions {
-    warningsAsErrors true
+  lint {
+    it.warningsAsErrors = true
   }
 
   variantFilter { variant ->
-    //noinspection UnnecessaryQualifiedReference
-    if (variant.buildType.name == com.android.builder.core.BuilderConstants.RELEASE) {
+    if (variant.buildType.name == BuilderConstants.RELEASE) {
       variant.setIgnore(true)
     }
   }
@@ -41,14 +42,14 @@ kotlin {
   sourceSets {
     androidMain {
       dependencies {
-        implementation deps.dagger2.dagger
+        implementation libs.dagger2
       }
     }
 
-    androidTest {
+    androidUnitTest {
       dependencies {
-        implementation deps.junit
-        implementation deps.truth
+        implementation libs.junit
+        implementation libs.truth
       }
     }
   }
@@ -64,7 +65,7 @@ anvil {
 }
 
 dependencies {
-  kapt deps.dagger2.compiler
+  kapt libs.dagger2.compiler
 
   // This dependency isn't needed. It's only here for testing purposes (this is still an
   // integration test).

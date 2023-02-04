@@ -1,0 +1,71 @@
+[versions]
+agp = "7.1.0"
+autoService = "1.0.1"
+autoValue = "1.10"
+dagger = "2.39.1"
+espresso = "3.5.1"
+kotlin = "1.8.0"
+ktlint = "0.41.0"
+
+#
+# Configs that we can override in CI. Not exactly "versions" but useful to repurpose it here.
+#
+# Example: ./gradlew tasks -Doverride_kotlin=1.7.22
+#
+
+# We don't need to run all tests for sanity checks. If the flag is
+# false, then we run each test with one annotation instead of all options. We also skip tests
+# that run the Dagger annotation processor (KAPT is slow).
+config-fullTestRun = "true"
+config-generateDaggerFactoriesWithAnvil = "true"
+config-useIr = "true"
+
+[plugins]
+agp-application = { id = "com.android.application", version.ref = "agp" }
+agp-library = { id = "com.android.library", version.ref = "agp" }
+gradlePublish = { id = "com.gradle.plugin-publish", version = "0.15.0" }
+kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
+kotlin-dokka = { id = "org.jetbrains.dokka", version = "1.7.20" }
+kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
+kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
+kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "10.2.0" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.22.0" }
+
+[libraries]
+androidx-appcompat = "androidx.appcompat:appcompat:1.1.0"
+androidx-core = "androidx.core:core-ktx:1.3.0"
+androidx-material = "com.google.android.material:material:1.1.0"
+androidx-test-core = "androidx.test:core:1.1.0"
+androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
+androidx-test-junit = "androidx.test.ext:junit:1.1.1"
+androidx-test-rules = "androidx.test:rules:1.1.0"
+androidx-test-runner = "androidx.test:runner:1.1.0"
+
+agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+
+auto-service-annotations = { module = "com.google.auto.service:auto-service-annotations", version.ref = "autoService" }
+auto-service-processor = { module = "com.google.auto.service:auto-service", version.ref = "autoService" }
+auto-value-annotations = { module = "com.google.auto.value:auto-value-annotations", version.ref = "autoValue" }
+auto-value-processor = { module = "com.google.auto.value:auto-value", version.ref = "autoValue" }
+
+dagger2 = { module = "com.google.dagger:dagger", version.ref = "dagger" }
+dagger2-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
+
+inject = "javax.inject:javax.inject:1"
+jsr250 = "javax.annotation:jsr250-api:1.0"
+junit = "junit:junit:4.13"
+
+kotlin-annotationProcessingEmbeddable = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable", version.ref = "kotlin" }
+kotlin-compileTesting = "dev.zacsweers.kctfork:core:0.2.0"
+kotlin-compiler = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
+kotlin-dokka = "org.jetbrains.dokka:dokka-gradle-plugin:1.7.20"
+kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
+kotlin-gradlePluginApi = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
+kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.5.0"
+kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+
+kotlinpoet = "com.squareup:kotlinpoet:1.12.0"
+
+truth = "com.google.truth:truth:1.1.3"
