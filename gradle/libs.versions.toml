@@ -4,7 +4,7 @@ autoService = "1.0.1"
 autoValue = "1.10"
 dagger = "2.39.1"
 espresso = "3.5.1"
-kotlin = "1.8.0"
+kotlin = "1.8.20-Beta"
 ktlint = "0.41.0"
 
 #
