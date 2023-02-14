@@ -1,3 +1,12 @@
+# You can override any of these versions or configs below with a system property:
+#
+#   > ./gradlew tasks -Doverride_kotlin=1.7.22
+#
+# To override a version in a gradle.properties file, use the `systemProp.` prefix:
+#
+#   systemProp.override_config-fullTestRun=false
+#
+
 [versions]
 agp = "7.1.0"
 autoService = "1.0.1"
@@ -10,12 +19,10 @@ ktlint = "0.41.0"
 #
 # Configs that we can override in CI. Not exactly "versions" but useful to repurpose it here.
 #
-# Example: ./gradlew tasks -Doverride_kotlin=1.7.22
-#
 
-# We don't need to run all tests for sanity checks. If the flag is
-# false, then we run each test with one annotation instead of all options. We also skip tests
-# that run the Dagger annotation processor (KAPT is slow).
+# We don't need to run all tests for sanity checks. If the flag is false, then we run each test
+# with one annotation instead of all options. We also skip tests that run the Dagger annotation
+# processor (KAPT is slow).
 config-fullTestRun = "true"
 config-generateDaggerFactoriesWithAnvil = "true"
 config-useIr = "true"

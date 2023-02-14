@@ -26,6 +26,7 @@ plugins {
 boolean isCi = (System.getenv('CI') ?: 'false').toBoolean()
 String kotlinVersion = libs.versions.kotlin.get()
 boolean useKotlinIr =  libs.versions.config.useIr.get().toBoolean()
+
 ext {
   ci = isCi
   kotlinPreview = !kotlinVersion.startsWith('1.8.0')
@@ -36,7 +37,8 @@ ext {
 println "Versions: " + [
     "Kotlin": kotlinVersion,
     "Gradle": gradle.gradleVersion,
-    "Kotlin use IR in tests": useKotlinIr
+    "Kotlin use IR in tests": useKotlinIr,
+    "Full test run": ext.fullTestRun,
 ]
 
 boolean configureOnDemandEnabled = getProperty("org.gradle.configureondemand", "false").toBoolean()
