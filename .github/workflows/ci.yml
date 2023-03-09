@@ -19,7 +19,7 @@ jobs :
       # solution.
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.8.20-Beta ]
+        kotlin-version : [ 1.8.20-RC ]
 
     steps :
       - uses : actions/checkout@v3
