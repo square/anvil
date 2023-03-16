@@ -13,8 +13,11 @@ autoService = "1.0.1"
 autoValue = "1.10"
 dagger = "2.39.1"
 espresso = "3.5.1"
+gradlePublish = "0.15.0"
 kotlin = "1.8.0"
 ktlint = "0.41.0"
+ktlintPlugin = "10.2.0"
+mavenPublish = "0.18.0"
 
 #
 # Configs that we can override in CI. Not exactly "versions" but useful to repurpose it here.
@@ -30,14 +33,14 @@ config-useIr = "true"
 [plugins]
 agp-application = { id = "com.android.application", version.ref = "agp" }
 agp-library = { id = "com.android.library", version.ref = "agp" }
-gradlePublish = { id = "com.gradle.plugin-publish", version = "0.15.0" }
+gradlePublish = { id = "com.gradle.plugin-publish", version.ref = "gradlePublish" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-dokka = { id = "org.jetbrains.dokka", version = "1.7.20" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "10.2.0" }
-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.22.0" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
 
 [libraries]
 androidx-appcompat = "androidx.appcompat:appcompat:1.1.0"
@@ -59,6 +62,8 @@ auto-value-processor = { module = "com.google.auto.value:auto-value", version.re
 dagger2 = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger2-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
 
+gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", version.ref = "gradlePublish" }
+
 inject = "javax.inject:javax.inject:1"
 jsr250 = "javax.annotation:jsr250-api:1.0"
 junit = "junit:junit:4.13"
@@ -74,5 +79,9 @@ kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref =
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 
 kotlinpoet = "com.squareup:kotlinpoet:1.12.0"
+
+ktlintRaw = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlintPlugin" }
+
+mavenPublishRaw = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
 
 truth = "com.google.truth:truth:1.1.3"
