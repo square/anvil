@@ -3,8 +3,8 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
   alias(libs.plugins.kotlin.jvm)
   alias(libs.plugins.kotlin.kapt)
-  alias(libs.plugins.mavenPublish)
 }
+apply from: rootProject.file('publishing.gradle')
 
 apply from: project.file('generate_build_properties.gradle')
 

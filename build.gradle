@@ -1,11 +1,11 @@
 import com.squareup.anvil.benchmark.CreateBenchmarkProjectTask
-import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.internal.project.DefaultProject
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
   dependencies {
+    classpath libs.mavenPublishRaw
     classpath("com.squareup.anvil:gradle-plugin:${findProperty("VERSION_NAME")}",)
   }
 }
@@ -18,7 +18,6 @@ plugins {
   alias(libs.plugins.kotlin.kapt) apply false
   alias(libs.plugins.kotlin.dokka) apply false
   alias(libs.plugins.kotlin.multiplatform) apply false
-  alias(libs.plugins.mavenPublish) apply false
   alias(libs.plugins.gradlePublish) apply false
   alias(libs.plugins.ktlint) apply false
 }
@@ -130,14 +129,6 @@ subprojects {
   // is good enough for now.
   if (configureOnDemandEnabled) {
     (it as DefaultProject).evaluate()
-  }
-
-  plugins.withId("com.vanniktech.maven.publish") {
-    apply plugin: 'org.jetbrains.dokka'
-    mavenPublishing {
-      publishToMavenCentral(SonatypeHost.S01)
-      signAllPublications()
-    }
   }
 }
 

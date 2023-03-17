@@ -30,7 +30,7 @@ Snapshot releases are automatically created whenever a commit to the `main` bran
 
 Depending on the version in the `gradle.properties` file it will be either a production or snapshot release.
 ```
-./gradlew clean publish --no-daemon --no-parallel --no-build-cache && cd gradle-plugin && ./gradlew clean publish publishPlugins --no-daemon --no-parallel --no-build-cache && cd ..
+./gradlew clean publish --no-daemon --no-parallel --no-build-cache && cd gradle-plugin && ./gradlew clean publish --no-daemon --no-parallel --no-build-cache && cd ..
 ```
 
 # Installing in Maven Local

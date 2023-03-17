@@ -1,7 +1,7 @@
 plugins {
   alias(libs.plugins.kotlin.jvm)
-  alias(libs.plugins.mavenPublish)
 }
+apply from: rootProject.file('publishing.gradle')
 
 kotlin {
   explicitApi()
