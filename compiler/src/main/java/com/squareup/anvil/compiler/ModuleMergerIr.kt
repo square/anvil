@@ -35,6 +35,9 @@ internal class ModuleMergerIr(
   private val classScanner: ClassScanner,
   private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory
 ) : IrGenerationExtension {
+  // https://youtrack.jetbrains.com/issue/KT-56635
+  override val shouldAlsoBeAppliedInKaptStubGenerationMode: Boolean get() = true
+
   override fun generate(
     moduleFragment: IrModuleFragment,
     pluginContext: IrPluginContext

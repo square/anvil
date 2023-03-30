@@ -28,7 +28,7 @@ boolean useKotlinIr =  libs.versions.config.useIr.get().toBoolean()
 
 ext {
   ci = isCi
-  kotlinPreview = !kotlinVersion.startsWith('1.8.0')
+  kotlinPreview = !kotlinVersion.startsWith('1.8.20')
   kotlinUseIR = useKotlinIr
   fullTestRun = libs.versions.config.fullTestRun.get().toBoolean()
 }
