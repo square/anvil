@@ -315,7 +315,7 @@ in a daemon and in-process with Gradle:
    ```
 2. Run your build:
    ```
-   > ./gradlew :your:project:assemble --no-daemon -Dorg.gradle.debug=true -Dkotlin.compiler.execution.strategy=in-process
+   > ./gradlew :your:project:assemble --no-daemon -Dorg.gradle.debug=true -Pkotlin.compiler.execution.strategy=in-process
    ```
 3. Gradle will wait to execute any task until you attach the debugger. Hit the debug button in
    IntelliJ:
