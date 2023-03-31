@@ -1,3 +1,6 @@
+// Deprecation tracked in https://github.com/square/anvil/issues/672
+@file:Suppress("DEPRECATION")
+
 package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService

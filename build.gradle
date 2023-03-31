@@ -29,6 +29,7 @@ ext {
   ci = isCi
   kotlinPreview = !kotlinVersion.startsWith('1.8.20')
   fullTestRun = libs.versions.config.fullTestRun.get().toBoolean()
+  warningsAsErrors = isCi
 }
 
 println "Versions: " + [
@@ -89,8 +90,7 @@ subprojects {
         jvmTarget.set(JvmTarget.JVM_1_8)
       }
 
-      // TODO Repeatable: After cleaning up all deprecated methods remove the `&& false`.
-      allWarningsAsErrors.set(isCi && false)
+      allWarningsAsErrors.set(warningsAsErrors)
       freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
 
       boolean optInExperimental = project.name != "annotations"
