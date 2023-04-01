@@ -26,7 +26,6 @@ internal fun compile(
   block: Result.() -> Unit = { }
 ): Result = compileAnvil(
   sources = sources,
-  useIR = USE_IR,
   allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
   enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
@@ -167,10 +166,6 @@ private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*
 
 internal fun assumeMergeComponent(annotationClass: KClass<*>) {
   assumeTrue(annotationClass == MergeComponent::class)
-}
-
-internal fun assumeIrBackend() {
-  assumeTrue(USE_IR)
 }
 
 internal fun ComparableSubject<ExitCode>.isError() {

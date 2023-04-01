@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
@@ -73,8 +72,6 @@ class ContributesToGeneratorTest {
   }
 
   @Test fun `there are multiple hints for contributed Dagger modules`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -94,8 +91,6 @@ class ContributesToGeneratorTest {
   }
 
   @Test fun `the scopes for multiple contributions have a stable sort`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -124,8 +119,6 @@ class ContributesToGeneratorTest {
   }
 
   @Test fun `there are multiple hints for contributed Dagger modules with fully qualified names`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -144,8 +137,6 @@ class ContributesToGeneratorTest {
   }
 
   @Test fun `there are multiple hints for contributed Dagger modules with star imports`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -164,8 +155,6 @@ class ContributesToGeneratorTest {
   }
 
   @Test fun `multiple annotations with the same scope aren't allowed`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test

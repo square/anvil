@@ -6,12 +6,15 @@
 
 ### Changed
 
+- Raise minimum Kotlin version to 1.8.20.
 - Raise minimum AGP version to 7.1.0.
 - The Kotlin Gradle Plugin (both the core plugin and the API artifact) are no longer a dependency of the Anvil Gradle Plugin. Instead, it's now a `compileOnly` dependency, allowing the plugin to defer to whatever version the user already has. If you were accidentally depending on KGP through Anvil, you'll need to explicitly add the plugin yourself now.
 
 ### Deprecated
 
 ### Removed
+
+- Support for the old compiler backend. The Java stub generating task uses the new backend by default since Kotlin 1.8.20.
 
 ### Fixed
 

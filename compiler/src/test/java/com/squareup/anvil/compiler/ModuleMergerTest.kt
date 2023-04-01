@@ -13,7 +13,6 @@ import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Component
 import dagger.Subcomponent
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -1120,8 +1119,6 @@ class ModuleMergerTest(
   }
 
   @Test fun `locally defined classes without a classId are skipped over when merging modules`() {
-    assumeTrue(USE_IR)
-
     compile(
       """
       package com.squareup.test
@@ -1166,8 +1163,6 @@ class ModuleMergerTest(
   }
 
   @Test fun `modules contributed to multiple scopes are merged`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -1200,8 +1195,6 @@ class ModuleMergerTest(
   }
 
   @Test fun `modules contributed to multiple scopes are merged with multiple compilations`() {
-    assumeIrBackend()
-
     val firstResult = compile(
       """
       package com.squareup.test
@@ -1246,8 +1239,6 @@ class ModuleMergerTest(
   }
 
   @Test fun `modules contributed to multiple scopes can be replaced`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -1281,8 +1272,6 @@ class ModuleMergerTest(
 
   @Test
   fun `replaced module contributed to multiple scopes must use the same scope`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -1319,8 +1308,6 @@ class ModuleMergerTest(
   }
 
   @Test fun `modules contributed to multiple scopes can be excluded in one scope`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -1354,7 +1341,6 @@ class ModuleMergerTest(
 
   @Test fun `contributed modules in the old format are picked up`() {
     val result = AnvilCompilation()
-      .useIR(USE_IR)
       .configureAnvil(enableAnvil = false)
       .compile(
         """

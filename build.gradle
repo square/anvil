@@ -24,19 +24,16 @@ plugins {
 
 boolean isCi = (System.getenv('CI') ?: 'false').toBoolean()
 String kotlinVersion = libs.versions.kotlin.get()
-boolean useKotlinIr =  libs.versions.config.useIr.get().toBoolean()
 
 ext {
   ci = isCi
   kotlinPreview = !kotlinVersion.startsWith('1.8.20')
-  kotlinUseIR = useKotlinIr
   fullTestRun = libs.versions.config.fullTestRun.get().toBoolean()
 }
 
 println "Versions: " + [
     "Kotlin": kotlinVersion,
     "Gradle": gradle.gradleVersion,
-    "Kotlin use IR in tests": useKotlinIr,
     "Full test run": ext.fullTestRun,
 ]
 
@@ -92,9 +89,8 @@ subprojects {
         jvmTarget.set(JvmTarget.JVM_1_8)
       }
 
-      // TODO: Remove when we remove the old backend.
       // TODO Repeatable: After cleaning up all deprecated methods remove the `&& false`.
-      allWarningsAsErrors.set(isCi && (useKotlinIr) && false)
+      allWarningsAsErrors.set(isCi && false)
       freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
 
       boolean optInExperimental = project.name != "annotations"

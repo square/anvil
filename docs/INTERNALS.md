@@ -51,11 +51,10 @@ to parse and represent source code.
 
 #### Descriptors
 
-Descriptors are used in the old compiler backend (and partially frontend) to represent resolved
-types. After a type is resolved it doesn’t change anymore. A common use case is querying a type
-from a dependency that isn’t part of the compilation. Instead of having access to the source code
-(PSI) we rely on a descriptor. Descriptors themselves are an abstraction for Kotlin code,
-Java code and bytecode.
+Descriptors are used in the compiler frontend and represent resolved types. After a type is resolved it
+doesn’t change anymore. A common use case is querying a type from a dependency that isn’t part of
+the compilation. Instead of having access to the source code (PSI) we rely on a descriptor.
+Descriptors themselves are an abstraction for Kotlin code, Java code and bytecode.
 
 #### IR
 
@@ -176,18 +175,6 @@ stubs in the `build/tmp/kapt3/stubs` folder, if KAPT is being used. Remember tha
 generating task must generate Java code in order to feed annotation processors and the Java
 source code contains generated annotations and super types.
 
-Although Anvil uses Kotlin 1.6 or higher, the IR compiler backend became stable in Kotlin 1.5 and 
-the old backend was deprecated in Kotlin 1.6, we still must support the old backend, because the
-stub generating task still uses the old backend no matter what. Since Anvil heavily relies on the
-stub generating task, we had to implement the merging phase twice for different APIs. Jetbrains
-promised a solution in Kotlin 1.7:
-
-* [#422](https://github.com/square/anvil/issues/422)
-* [KT-49682](https://youtrack.jetbrains.com/issue/KT-49682)
-
-To ensure feature parity, compatibility and avoid regressions, we run all of our tests twice in
-the old and new backend.
-
 ## Generating Code in the Frontend
 
 `AnalysisHandlerExtension` doesn’t allow multiple rounds. It means, you can generate Kotlin code
@@ -223,12 +210,11 @@ module.
 The compiler uses different data structures during the different stages of compilation. In
 the frontend it’s a mix of PSI and Descriptors (PSI is used for source files in this module,
 Descriptors are used for types from precompiled dependencies that you need to resolve in the
-frontend). In the old backend it’s Descriptors only. In the new IR backend the compiler uses
-IR data structures. The unfortunate part for Anvil is that it has to implement the same
-functionality up to three times, e.g. getting a scope for an annotation. In the beginning Anvil
-was simpler and it was easy to branch the logic with if-else statements, but this became especially
-problematic with code generation in the frontend through custom code generators. You have to
-constantly switch between PSI and Descriptors.
+frontend). In the IR backend the compiler uses IR data structures. The unfortunate part for
+Anvil is that it has to implement the same functionality up to three times, e.g. getting a scope for
+an annotation. In the beginning Anvil was simpler and it was easy to branch the logic with
+if-else statements, but this became especially problematic with code generation in the frontend
+through custom code generators. You have to constantly switch between PSI and Descriptors.
 
 `ClassReference` is an abstraction for all the compiler APIs and provides an API for commonly
 shared functionality, e.g. get all annotations for a class or give me the scope of this annotation.

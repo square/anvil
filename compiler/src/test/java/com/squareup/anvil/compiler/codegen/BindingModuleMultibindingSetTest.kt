@@ -5,7 +5,6 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.anvilModule
-import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
@@ -363,8 +362,6 @@ class BindingModuleMultibindingSetTest(
   }
 
   @Test fun `the Dagger multibinding method is generated for multiple contributed bindings`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -406,8 +403,6 @@ class BindingModuleMultibindingSetTest(
   }
 
   @Test fun `multiple contributions can have different bound types`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -448,8 +443,6 @@ class BindingModuleMultibindingSetTest(
   }
 
   @Test fun `multiple contributions can have the same scope but different bound types`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -487,8 +480,6 @@ class BindingModuleMultibindingSetTest(
   }
 
   @Test fun `multiple contributions to the same scope can be replaced at once`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test

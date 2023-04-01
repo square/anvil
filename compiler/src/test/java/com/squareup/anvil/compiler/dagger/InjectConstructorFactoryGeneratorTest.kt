@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.USE_IR
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
@@ -2710,7 +2709,6 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     // Many constructor parameters are unused.
     allWarningsAsErrors = false,
     previousCompilationResult = previousCompilationResult,
-    useIR = USE_IR,
     block = block
   )
 }

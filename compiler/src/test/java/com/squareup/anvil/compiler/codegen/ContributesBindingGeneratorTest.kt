@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.assumeIrBackend
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.hintBinding
@@ -332,8 +331,6 @@ class ContributesBindingGeneratorTest {
   }
 
   @Test fun `there are multiple hints for multiple contributed bindings`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -353,8 +350,6 @@ class ContributesBindingGeneratorTest {
   }
 
   @Test fun `the scopes for multiple contributions have a stable sort`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -383,8 +378,6 @@ class ContributesBindingGeneratorTest {
   }
 
   @Test fun `there are multiple hints for contributed bindings with fully qualified names`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -404,8 +397,6 @@ class ContributesBindingGeneratorTest {
   }
 
   @Test fun `multiple annotations with the same scope and bound type aren't allowed`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -432,8 +423,6 @@ class ContributesBindingGeneratorTest {
   }
 
   @Test fun `multiple annotations with the same scope and different bound type are allowed`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
