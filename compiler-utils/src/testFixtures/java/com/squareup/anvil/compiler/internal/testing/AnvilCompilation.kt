@@ -48,6 +48,8 @@ public class AnvilCompilation internal constructor(
     if (!enableAnvil) return@apply
 
     kotlinCompilation.apply {
+      // Deprecation tracked in https://github.com/square/anvil/issues/672
+      @Suppress("DEPRECATION")
       componentRegistrars = listOf(
         AnvilComponentRegistrar().also { it.addCodeGenerators(codeGenerators) }
       )
