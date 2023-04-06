@@ -6,11 +6,24 @@
 
 ### Changed
 
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+### Custom Code Generator
+
+
+## [2.4.5] - 2023-04-06
+
+### Changed
+
 - Raise minimum Kotlin version to 1.8.20.
 - Raise minimum AGP version to 7.1.0.
 - The Kotlin Gradle Plugin (both the core plugin and the API artifact) are no longer a dependency of the Anvil Gradle Plugin. Instead, it's now a `compileOnly` dependency, allowing the plugin to defer to whatever version the user already has. If you were accidentally depending on KGP through Anvil, you'll need to explicitly add the plugin yourself now.
-
-### Deprecated
 
 ### Removed
 
@@ -21,11 +34,10 @@
 - Fix duplicate generated binding method names. If a class contributes multiple bindings and the bound types have the same short name, then Anvil would generate methods with duplicate names that clash in the end.
 - Support `Any` as bound type when using `@ContributesBinding` or `@ContributesMultibinding`, see #680.
 
-### Security
-
 ### Custom Code Generator
 
 - Add option to change the JVM target when testing code generators with the custom `AnvilCompilation` class, see #682.
+
 
 # [2.4.4] - 2023-01-12
 
@@ -575,7 +587,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.4.4...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.4.5...HEAD
+[2.4.5]: https://github.com/square/anvil/releases/tag/v2.4.5
 [2.4.4]: https://github.com/square/anvil/releases/tag/v2.4.4
 [2.4.3]: https://github.com/square/anvil/releases/tag/v2.4.3
 [2.4.2]: https://github.com/square/anvil/releases/tag/v2.4.2
