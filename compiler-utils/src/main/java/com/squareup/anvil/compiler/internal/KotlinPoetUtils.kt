@@ -25,7 +25,7 @@ import java.io.ByteArrayOutputStream
 public fun ClassDescriptor.asClassName(): ClassName =
   ClassName(
     packageName = parents.filterIsInstance<PackageFragmentDescriptor>().first()
-      .fqName.safePackageString(),
+      .fqName.safePackageString(dotSuffix = false),
     simpleNames = parentsWithSelf.filterIsInstance<ClassDescriptor>()
       .map { it.name.asString() }
       .toList()

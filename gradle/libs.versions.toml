@@ -77,7 +77,7 @@ kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.5.0"
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 
-kotlinpoet = "com.squareup:kotlinpoet:1.12.0"
+kotlinpoet = "com.squareup:kotlinpoet:1.13.0"
 
 ktlintRaw = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlintPlugin" }
 
