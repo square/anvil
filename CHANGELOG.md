@@ -16,6 +16,16 @@
 
 ### Custom Code Generator
 
+### Other Notes
+
+
+## [2.4.6] - 2023-05-25
+
+### Changed
+
+- Upgrade KotlinPoet to `1.13.0` and fix bug uncovered by new TypeName#equals/hashCode changes, see #699.
+- Upgrade Kotlin to `1.8.21`.
+
 
 ## [2.4.5] - 2023-04-06
 
@@ -58,6 +68,10 @@
 - Add ability to query top-level functions and properties. The entry point is `projectFiles.topLevelFunctionReferences(module)` and `projectFiles.topLevelPropertyReferences(module)`. This allows you write code generators reacting to top-level functions and properties and not only classes, see #644.
 - The `FunctionReference` type has been renamed to `MemberFunctionReference` and a new super type `FunctionReference` has been introduced for `TopLevelFunctionReference` and `MemberFunctionReference`.
 - The `PropertyReference` type has been renamed to `MemberPropertyReference` and a new super type `PropertyReference` has been introduced for `TopLevelPropertyReference` and `MemberPropertyReference`.
+
+### Other Notes
+
+- We received a report from one project that there were issues with using Dagger 2.42 with this release. You may need to use Dagger 2.44+ when upgrading to Anvil 2.4.4.
 
 
 ## [2.4.3] - 2022-12-16
@@ -587,7 +601,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.4.5...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.4.6...HEAD
+[2.4.6]: https://github.com/square/anvil/releases/tag/v2.4.6
 [2.4.5]: https://github.com/square/anvil/releases/tag/v2.4.5
 [2.4.4]: https://github.com/square/anvil/releases/tag/v2.4.4
 [2.4.3]: https://github.com/square/anvil/releases/tag/v2.4.3
