@@ -598,7 +598,15 @@ public final class AssistedService_Factory {
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Types may only contain one injected constructor")
+      assertThat(
+        messages.lines()
+          .first { it.startsWith("e:") }
+          .removeParametersAndSort()
+      ).contains(
+        "Type com.squareup.test.AssistedService may only contain one injected constructor. " +
+          "Found: [@dagger.assisted.AssistedInject com.squareup.test.AssistedService, " +
+          "@dagger.assisted.AssistedInject com.squareup.test.AssistedService]"
+      )
     }
   }
 
@@ -620,7 +628,15 @@ public final class AssistedService_Factory {
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Types may only contain one injected constructor")
+      assertThat(
+        messages.lines()
+          .first { it.startsWith("e:") }
+          .removeParametersAndSort()
+      ).contains(
+        "Type com.squareup.test.AssistedService may only contain one injected constructor. " +
+          "Found: [@Inject com.squareup.test.AssistedService, " +
+          "@dagger.assisted.AssistedInject com.squareup.test.AssistedService]"
+      )
     }
   }
 

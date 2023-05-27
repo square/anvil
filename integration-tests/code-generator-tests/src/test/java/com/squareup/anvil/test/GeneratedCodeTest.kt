@@ -20,11 +20,12 @@ class GeneratedCodeTest {
       .forName("generated.test.com.squareup.anvil.test.MergedComponent")
       .kotlin
 
-    val generatedComponent = Class
+    val generatedComponentCreator = Class
       .forName("generated.test.com.squareup.anvil.test.DaggerMergedComponent")
-      .kotlin
+      .methods
+      .find { it.name == "create" && it.returnType.kotlin == generatedInterface }
 
-    assertThat(generatedComponent extends generatedInterface).isTrue()
+    assertThat(generatedComponentCreator).isNotNull()
   }
 
   @Test fun `the generated interface is contributed to the scope`() {
