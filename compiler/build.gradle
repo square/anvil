@@ -13,16 +13,19 @@ dependencies {
   implementation project(':compiler-api')
   implementation project(':compiler-utils')
   implementation libs.dagger2
+  implementation libs.dagger2.compiler
   implementation libs.jsr250
   implementation libs.kotlinpoet
+  implementation libs.kotlinpoet.ksp
 
   compileOnly libs.auto.service.annotations
   compileOnly libs.kotlin.compiler
+  compileOnly libs.ksp.api
+  compileOnly libs.ksp.compilerPlugin // TODO just for reference to get underlying APIs
 
   kapt libs.auto.service.processor
 
   testImplementation testFixtures(project(":compiler-utils"))
-  testImplementation libs.dagger2.compiler
   testImplementation libs.kotlin.annotationProcessingEmbeddable
   testImplementation libs.kotlin.compileTesting
   testImplementation libs.kotlin.compiler
