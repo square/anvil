@@ -69,4 +69,5 @@ dependencies {
   compileOnly libs.kotlin.gradlePlugin
   compileOnly libs.kotlin.gradlePluginApi
   compileOnly libs.agp
+  compileOnly libs.ksp.gradlePlugin
 }

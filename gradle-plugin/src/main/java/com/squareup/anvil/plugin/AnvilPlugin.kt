@@ -11,6 +11,7 @@ import com.android.build.gradle.TestedExtension
 import com.android.build.gradle.api.BaseVariant
 import com.android.build.gradle.api.TestVariant
 import com.android.build.gradle.api.UnitTestVariant
+import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -41,7 +42,19 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   private val variantCache = ConcurrentHashMap<String, Variant>()
 
   override fun apply(target: Project) {
-    target.extensions.create("anvil", AnvilExtension::class.java)
+    val anvilExtension = target.extensions.create("anvil", AnvilExtension::class.java)
+
+    target.pluginManager.withPlugin("com.google.devtools.ksp") {
+      // TODO would be nice if KSP made this a property so these
+      //  could be chained nicely without afterEvaluate
+      target.afterEvaluate {
+        if (anvilExtension.useKsp.get()) {
+          target.extensions.configure(KspExtension::class.java) { kspExtension ->
+            kspExtension.excludeProcessor("dagger.internal.codegen.KspComponentProcessor")
+          }
+        }
+      }
+    }
 
     // Create a configuration for collecting CodeGenerator dependencies. We need to create all
     // configurations eagerly and cannot wait for applyToCompilation(..) below, because this
