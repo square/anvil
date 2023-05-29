@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm
-import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
@@ -389,7 +388,7 @@ internal class Variant private constructor(
           TaskProvider<KotlinCompile>,
         androidVariant = androidVariant,
         androidSourceSets = androidSourceSets,
-        compilerPluginClasspathName = PLUGIN_CLASSPATH_CONFIGURATION_NAME +
+        compilerPluginClasspathName = "kotlinCompilerPluginClasspath" +
           kotlinCompilation.target.targetName.replaceFirstChar(Char::uppercase) +
           kotlinCompilation.name.replaceFirstChar(Char::uppercase),
         variantFilter = variantFilter
