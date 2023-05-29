@@ -222,9 +222,20 @@ public fun KtAnnotationEntry.toAnnotationReference(
   declaringClass: ClassReference.Psi?,
   module: ModuleDescriptor
 ): Psi {
+  return toAnnotationReference(
+    classReference = requireFqName(module).toClassReference(module),
+    declaringClass = declaringClass
+  )
+}
+
+@ExperimentalAnvilApi
+public fun KtAnnotationEntry.toAnnotationReference(
+  declaringClass: ClassReference.Psi?,
+  classReference: ClassReference
+): Psi {
   return Psi(
     annotation = this,
-    classReference = requireFqName(module).toClassReference(module),
+    classReference = classReference,
     declaringClass = declaringClass
   )
 }
@@ -237,10 +248,17 @@ public fun AnnotationDescriptor.toAnnotationReference(
   val annotationClass = annotationClass ?: throw AnvilCompilationException(
     message = "Couldn't find the annotation class for $fqName",
   )
+  return toAnnotationReference(declaringClass, annotationClass.toClassReference(module))
+}
 
+@ExperimentalAnvilApi
+public fun AnnotationDescriptor.toAnnotationReference(
+  declaringClass: ClassReference.Descriptor?,
+  classReference: ClassReference
+): Descriptor {
   return Descriptor(
     annotation = this,
-    classReference = annotationClass.toClassReference(module),
+    classReference = classReference,
     declaringClass = declaringClass
   )
 }
