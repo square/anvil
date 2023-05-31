@@ -6,6 +6,9 @@
 
 ### Changed
 
+- Upgrade to Dagger `2.46.1`
+- Upgrade to kotlinx-metadata `0.6.0`
+
 ### Deprecated
 
 ### Removed

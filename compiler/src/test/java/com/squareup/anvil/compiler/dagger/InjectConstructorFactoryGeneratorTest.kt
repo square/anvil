@@ -2522,7 +2522,14 @@ public class InjectClass_Factory<T : List<String>>(
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Types may only contain one injected constructor")
+      assertThat(
+        messages.lines()
+          .first { it.startsWith("e:") }
+          .removeParametersAndSort()
+      ).contains(
+        "Type com.squareup.test.InjectClass may only contain one injected constructor. " +
+          "Found: [@Inject com.squareup.test.InjectClass, @Inject com.squareup.test.InjectClass]"
+      )
     }
   }
 
