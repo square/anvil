@@ -332,6 +332,18 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
       |  id("com.squareup.anvil")
       |}
       |
+      |kapt {
+      |  // Explicitly use Java 8 for benchmarks until we raise our min target and/or add Java 17
+      |  // support. This is needed because our benchmarks machine now primarily uses JDK 17 and 
+      |  // auto-service/auto-value picks it up and uses a different @Generated annotation than
+      |  // we're expecting (due to it being moved to a new package). Related (old) ticket:
+      |  // https://github.com/google/dagger/issues/1449
+      |  javacOptions {
+      |    option("-source", "8")
+      |    option("-target", "8")
+      |  }
+      |}
+      |
       |dependencies {
       |  api libs.dagger2
       |  kapt libs.dagger2.compiler
