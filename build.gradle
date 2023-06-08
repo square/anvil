@@ -1,11 +1,11 @@
 import com.squareup.anvil.benchmark.CreateBenchmarkProjectTask
-import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.internal.project.DefaultProject
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
   dependencies {
+    classpath libs.mavenPublishRaw
     classpath("com.squareup.anvil:gradle-plugin:${findProperty("VERSION_NAME")}",)
   }
 }
@@ -18,25 +18,24 @@ plugins {
   alias(libs.plugins.kotlin.kapt) apply false
   alias(libs.plugins.kotlin.dokka) apply false
   alias(libs.plugins.kotlin.multiplatform) apply false
-  alias(libs.plugins.mavenPublish) apply false
   alias(libs.plugins.gradlePublish) apply false
   alias(libs.plugins.ktlint) apply false
 }
 
 boolean isCi = (System.getenv('CI') ?: 'false').toBoolean()
 String kotlinVersion = libs.versions.kotlin.get()
-boolean useKotlinIr =  libs.versions.config.useIr.get().toBoolean()
+
 ext {
   ci = isCi
-  kotlinPreview = !kotlinVersion.startsWith('1.8.0')
-  kotlinUseIR = useKotlinIr
+  kotlinPreview = !kotlinVersion.startsWith('1.8.21')
   fullTestRun = libs.versions.config.fullTestRun.get().toBoolean()
+  warningsAsErrors = isCi
 }
 
 println "Versions: " + [
     "Kotlin": kotlinVersion,
     "Gradle": gradle.gradleVersion,
-    "Kotlin use IR in tests": useKotlinIr
+    "Full test run": ext.fullTestRun,
 ]
 
 boolean configureOnDemandEnabled = getProperty("org.gradle.configureondemand", "false").toBoolean()
@@ -91,9 +90,7 @@ subprojects {
         jvmTarget.set(JvmTarget.JVM_1_8)
       }
 
-      // TODO: Remove when we remove the old backend.
-      // TODO Repeatable: After cleaning up all deprecated methods remove the `&& false`.
-      allWarningsAsErrors.set(isCi && (useKotlinIr) && false)
+      allWarningsAsErrors.set(warningsAsErrors)
       freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
 
       boolean optInExperimental = project.name != "annotations"
@@ -128,14 +125,6 @@ subprojects {
   // is good enough for now.
   if (configureOnDemandEnabled) {
     (it as DefaultProject).evaluate()
-  }
-
-  plugins.withId("com.vanniktech.maven.publish") {
-    apply plugin: 'org.jetbrains.dokka'
-    mavenPublishing {
-      publishToMavenCentral(SonatypeHost.S01)
-      signAllPublications()
-    }
   }
 }
 

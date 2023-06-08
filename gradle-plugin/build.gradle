@@ -1,17 +1,28 @@
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+buildscript {
+  repositories {
+    google()
+    gradlePluginPortal()
+    mavenCentral()
+  }
 
-plugins {
-  id 'java-gradle-plugin'
-  alias(libs.plugins.kotlin.jvm)
-  alias(libs.plugins.kotlin.dokka)
-  alias(libs.plugins.gradlePublish)
-  alias(libs.plugins.mavenPublish)
-  alias(libs.plugins.ktlint)
+  dependencies {
+    classpath libs.kotlin.dokka
+    classpath libs.kotlin.gradlePlugin
+    classpath libs.mavenPublishRaw
+    classpath libs.gradlePublishRaw
+    classpath libs.ktlintRaw
+  }
 }
 
 apply from: rootProject.file('copy_properties.gradle')
+
+apply plugin: 'java-gradle-plugin'
+apply plugin: 'org.jetbrains.kotlin.jvm'
+apply plugin: 'com.gradle.plugin-publish'
+apply plugin: 'org.jlleitschuh.gradle.ktlint'
+
 apply from: rootProject.file('generate_build_properties.gradle')
+apply from: rootProject.file('../publishing.gradle')
 
 // Pull from the GROUP property and assign to the project
 group = GROUP
@@ -44,9 +55,9 @@ tasks.withType(JavaCompile).configureEach {
   options.release.set(8)
 }
 
-tasks.withType(KotlinCompile).configureEach {
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
   compilerOptions {
-    jvmTarget.set(JvmTarget.JVM_1_8)
+    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
 
     // Because Gradle hardcodes Kotlin versions we have warnings during compilation.
     allWarningsAsErrors = false

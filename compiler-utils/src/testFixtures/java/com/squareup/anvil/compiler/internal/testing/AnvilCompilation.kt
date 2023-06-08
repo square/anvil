@@ -48,6 +48,8 @@ public class AnvilCompilation internal constructor(
     if (!enableAnvil) return@apply
 
     kotlinCompilation.apply {
+      // Deprecation tracked in https://github.com/square/anvil/issues/672
+      @Suppress("DEPRECATION")
       componentRegistrars = listOf(
         AnvilComponentRegistrar().also { it.addCodeGenerators(codeGenerators) }
       )
@@ -87,28 +89,6 @@ public class AnvilCompilation internal constructor(
           "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
         )
       }
-    }
-  }
-
-  /**
-   * Helpful shim to configure both [KotlinCompilation.useIR] and [KotlinCompilation.useOldBackend]
-   * accordingly.
-   */
-  public fun useIR(useIR: Boolean) = apply {
-    checkNotCompiled()
-    kotlinCompilation.useIR = useIR
-
-    if (!useIR) {
-      // To suppress:
-      //  w: Language version is automatically inferred to 1.5 when using the old JVM backend.
-      //    Consider specifying -language-version explicitly, or remove -Xuse-old-backend
-      //  e: warnings found and -Werror specified
-      kotlinCompilation.languageVersion = "1.5"
-
-      // To suppress:
-      //  w: -Xuse-old-backend is deprecated and will be removed in a future release
-      //  e: warnings found and -Werror specified
-      kotlinCompilation.allWarningsAsErrors = false
     }
   }
 
@@ -218,7 +198,6 @@ public fun compileAnvil(
   generateDaggerFactoriesOnly: Boolean = false,
   disableComponentMerging: Boolean = false,
   allWarningsAsErrors: Boolean = true,
-  useIR: Boolean = true,
   messageOutputStream: OutputStream = System.out,
   workingDir: File? = null,
   enableExperimentalAnvilApis: Boolean = true,
@@ -257,7 +236,6 @@ public fun compileAnvil(
       enableExperimentalAnvilApis = enableExperimentalAnvilApis,
       codeGenerators = codeGenerators,
     )
-    .useIR(useIR)
     .compile(*sources)
     .also(block)
 }

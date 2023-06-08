@@ -2,9 +2,9 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
   alias(libs.plugins.kotlin.jvm)
-  alias(libs.plugins.mavenPublish)
   id 'java-test-fixtures'
 }
+apply from: rootProject.file('publishing.gradle')
 
 kotlin {
   explicitApi()

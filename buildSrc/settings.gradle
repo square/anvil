@@ -20,7 +20,7 @@ dependencyResolutionManagement {
       for (Map.Entry<String, String> entry : overrides.entrySet()) {
         String key = entry.getKey()
         String value = entry.getValue()
-        String catalogKey = key.substring("override_".length()).toLowerCase(Locale.US)
+        String catalogKey = key.substring("override_".length())
         println("Overriding $catalogKey with $value")
         version(catalogKey, value)
       }

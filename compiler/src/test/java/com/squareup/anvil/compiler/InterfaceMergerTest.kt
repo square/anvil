@@ -647,8 +647,6 @@ class InterfaceMergerTest(
   }
 
   @Test fun `interfaces contributed to multiple scopes are merged successfully`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -679,8 +677,6 @@ class InterfaceMergerTest(
 
   @Test
   fun `interfaces contributed to multiple scopes are merged successfully with multiple compilations`() {
-    assumeIrBackend()
-
     val firstResult = compile(
       """
       package com.squareup.test
@@ -721,8 +717,6 @@ class InterfaceMergerTest(
   }
 
   @Test fun `interfaces contributed to multiple scopes can be replaced`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -753,8 +747,6 @@ class InterfaceMergerTest(
 
   @Test
   fun `replaced interfaces contributed to multiple scopes must use the same scope`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -789,8 +781,6 @@ class InterfaceMergerTest(
   }
 
   @Test fun `interfaces contributed to multiple scopes can be excluded in one scope`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -821,7 +811,6 @@ class InterfaceMergerTest(
 
   @Test fun `contributed interfaces in the old format are picked up`() {
     val result = AnvilCompilation()
-      .useIR(USE_IR)
       .configureAnvil(enableAnvil = false)
       .compile(
         """

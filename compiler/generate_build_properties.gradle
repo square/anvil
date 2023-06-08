@@ -7,24 +7,21 @@ sourceSets {
 def generateBuildProperties = project.tasks.register('generateBuildProperties') {
   File buildPropertiesFile = new File(new File(project.buildDir, generatedDirPath), 'BuildProperties.kt')
 
-  inputs.property 'useIR', libs.versions.config.useIr.get()
   inputs.property 'fullTestRun', libs.versions.config.fullTestRun.get()
   inputs.property 'kotlinVersion', libs.versions.kotlin.get()
   inputs.property 'kotlinPreview', rootProject.ext.kotlinPreview
+  inputs.property 'warningsAsErrors', rootProject.ext.warningsAsErrors
 
   outputs.file buildPropertiesFile
 
-  // TODO: consider removing WARNINGS_AS_ERRORS when we no longer support the old backend.
   doLast {
     buildPropertiesFile.parentFile.mkdirs()
     buildPropertiesFile.write """\
       package com.squareup.anvil.compiler
       
-      internal const val USE_IR = ${rootProject.ext.kotlinUseIR}
       internal const val KOTLIN_PREVIEW = ${rootProject.ext.kotlinPreview}
 
-      // With Kotlin 1.6 the old backend triggers deprecation warnings.
-      internal const val WARNINGS_AS_ERRORS = ${rootProject.ext.kotlinUseIR && !rootProject.ext.kotlinPreview}
+      internal const val WARNINGS_AS_ERRORS = ${rootProject.ext.warningsAsErrors}
      
       internal const val FULL_TEST_RUN = ${rootProject.ext.fullTestRun}
     """.stripIndent()

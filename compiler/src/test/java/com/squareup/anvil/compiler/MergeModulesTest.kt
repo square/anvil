@@ -914,8 +914,6 @@ class MergeModulesTest {
   }
 
   @Test fun `modules contributed to multiple scopes are merged`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -948,8 +946,6 @@ class MergeModulesTest {
   }
 
   @Test fun `modules contributed to multiple scopes can be replaced`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -982,8 +978,6 @@ class MergeModulesTest {
   }
 
   @Test fun `modules contributed to multiple scopes can be excluded in one scope`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test

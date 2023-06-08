@@ -1,40 +1,54 @@
+# You can override any of these versions or configs below with a system property:
+#
+#   > ./gradlew tasks -Doverride_kotlin=1.7.22
+#
+# To override a version in a gradle.properties file, use the `systemProp.` prefix:
+#
+#   systemProp.override_config-fullTestRun=false
+#
+
 [versions]
 agp = "7.1.0"
 autoService = "1.0.1"
 autoValue = "1.10"
 dagger = "2.44.2"
 espresso = "3.5.1"
+<<<<<<< HEAD
 kotlin = "1.8.10"
 kotlinpoet = "1.12.0"
 ktlint = "0.41.0"
 kct = "0.2.1"
 ksp = "1.8.10-1.0.9"
+=======
+gradlePublish = "0.15.0"
+kotlin = "1.8.21"
+ktlint = "0.41.0"
+ktlintPlugin = "10.2.0"
+mavenPublish = "0.18.0"
+>>>>>>> main
 
 #
 # Configs that we can override in CI. Not exactly "versions" but useful to repurpose it here.
 #
-# Example: ./gradlew tasks -Doverride_kotlin=1.7.22
-#
 
-# We don't need to run all tests for sanity checks. If the flag is
-# false, then we run each test with one annotation instead of all options. We also skip tests
-# that run the Dagger annotation processor (KAPT is slow).
+# We don't need to run all tests for sanity checks. If the flag is false, then we run each test
+# with one annotation instead of all options. We also skip tests that run the Dagger annotation
+# processor (KAPT is slow).
 config-fullTestRun = "true"
 config-generateDaggerFactoriesWithAnvil = "true"
-config-useIr = "true"
 
 [plugins]
 agp-application = { id = "com.android.application", version.ref = "agp" }
 agp-library = { id = "com.android.library", version.ref = "agp" }
-gradlePublish = { id = "com.gradle.plugin-publish", version = "0.15.0" }
+gradlePublish = { id = "com.gradle.plugin-publish", version.ref = "gradlePublish" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-dokka = { id = "org.jetbrains.dokka", version = "1.7.20" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-ktlint = { id = "org.jlleitschuh.gradle.ktlint", version = "10.2.0" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-mavenPublish = { id = "com.vanniktech.maven.publish", version = "0.22.0" }
+mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
 
 [libraries]
 androidx-appcompat = "androidx.appcompat:appcompat:1.1.0"
@@ -56,6 +70,8 @@ auto-value-processor = { module = "com.google.auto.value:auto-value", version.re
 dagger2 = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger2-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
 
+gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", version.ref = "gradlePublish" }
+
 inject = "javax.inject:javax.inject:1"
 jsr250 = "javax.annotation:jsr250-api:1.0"
 junit = "junit:junit:4.13"
@@ -71,11 +87,19 @@ kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.5.0"
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 
+<<<<<<< HEAD
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
 
 ksp-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
 ksp-compilerPlugin = { module = "com.google.devtools.ksp:symbol-processing", version.ref = "ksp" }
 ksp-gradlePlugin = { module = "com.google.devtools.ksp:symbol-processing-gradle-plugin", version.ref = "ksp" }
+=======
+kotlinpoet = "com.squareup:kotlinpoet:1.13.0"
+
+ktlintRaw = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlintPlugin" }
+
+mavenPublishRaw = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
+>>>>>>> main
 
 truth = "com.google.truth:truth:1.1.3"

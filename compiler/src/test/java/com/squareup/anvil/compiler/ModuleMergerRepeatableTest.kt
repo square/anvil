@@ -7,7 +7,6 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerComponent
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -36,8 +35,6 @@ class ModuleMergerRepeatableTest(
   }
 
   @Test fun `duplicate scopes are an error`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -58,8 +55,7 @@ class ModuleMergerRepeatableTest(
   }
 
   @Test fun `different kind of merge annotations are forbidden`() {
-    assumeIrBackend()
-    assumeTrue(annotationClass == MergeComponent::class)
+    assumeMergeComponent(annotationClass)
 
     compile(
       """
@@ -83,8 +79,6 @@ class ModuleMergerRepeatableTest(
   }
 
   @Test fun `modules from different scopes are merged successfully`() {
-    assumeIrBackend()
-
     compile(
       """
         package com.squareup.test
@@ -113,8 +107,6 @@ class ModuleMergerRepeatableTest(
   }
 
   @Test fun `there are no duplicated modules`() {
-    assumeIrBackend()
-
     compile(
       """
         package com.squareup.test
@@ -145,8 +137,6 @@ class ModuleMergerRepeatableTest(
   }
 
   @Test fun `a module replaced in one scope is not included by another scope`() {
-    assumeIrBackend()
-
     compile(
       """
         package com.squareup.test
@@ -178,8 +168,6 @@ class ModuleMergerRepeatableTest(
   }
 
   @Test fun `a contributed binding replaced in one scope is not included by another scope`() {
-    assumeIrBackend()
-
     compile(
       """
         package com.squareup.test
@@ -216,8 +204,6 @@ class ModuleMergerRepeatableTest(
 
   @Test
   fun `a contributed module replaced by a binding in one scope is not included by another scope`() {
-    assumeIrBackend()
-
     compile(
       """
         package com.squareup.test
@@ -252,8 +238,6 @@ class ModuleMergerRepeatableTest(
   }
 
   @Test fun `a contributed module excluded in one scope is not included by another scope`() {
-    assumeIrBackend()
-
     compile(
       """
         package com.squareup.test
@@ -286,8 +270,6 @@ class ModuleMergerRepeatableTest(
   }
 
   @Test fun `a contributed binding excluded in one scope is not included by another scope`() {
-    assumeIrBackend()
-
     compile(
       """
         package com.squareup.test
@@ -317,7 +299,6 @@ class ModuleMergerRepeatableTest(
 
   @Test
   fun `modules and dependencies are added in the Dagger component with multiple merge annotations`() {
-    assumeIrBackend()
     assumeMergeComponent(annotationClass)
 
     compile(

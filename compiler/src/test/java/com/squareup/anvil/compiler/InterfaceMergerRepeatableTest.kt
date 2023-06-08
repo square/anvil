@@ -5,7 +5,6 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.compiler.internal.testing.extends
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -34,8 +33,6 @@ class InterfaceMergerRepeatableTest(
   }
 
   @Test fun `duplicate scopes are an error`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -56,8 +53,7 @@ class InterfaceMergerRepeatableTest(
   }
 
   @Test fun `different kind of merge annotations are forbidden`() {
-    assumeIrBackend()
-    assumeTrue(annotationClass == MergeComponent::class)
+    assumeMergeComponent(annotationClass)
 
     compile(
       """
@@ -81,8 +77,6 @@ class InterfaceMergerRepeatableTest(
   }
 
   @Test fun `interfaces from different scopes are merged successfully`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -107,8 +101,6 @@ class InterfaceMergerRepeatableTest(
   }
 
   @Test fun `there are no duplicated interfaces`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -135,8 +127,6 @@ class InterfaceMergerRepeatableTest(
   }
 
   @Test fun `a contributed interface replaced in one scope is not included by another scope`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
@@ -165,8 +155,6 @@ class InterfaceMergerRepeatableTest(
   }
 
   @Test fun `a contributed interface excluded in one scope is not included by another scope`() {
-    assumeIrBackend()
-
     compile(
       """
       package com.squareup.test
