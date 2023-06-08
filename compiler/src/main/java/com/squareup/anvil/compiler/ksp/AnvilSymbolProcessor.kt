@@ -12,23 +12,36 @@ import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSDeclaration
 import com.google.devtools.ksp.symbol.KSName
+import com.google.devtools.ksp.symbol.KSNode
+import com.google.devtools.ksp.symbol.KSReferenceElement
+import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.KSValueArgument
+import com.google.devtools.ksp.symbol.KSVisitor
+import com.google.devtools.ksp.symbol.Location
+import com.google.devtools.ksp.symbol.Modifier
+import com.google.devtools.ksp.symbol.NonExistLocation
+import com.google.devtools.ksp.symbol.Origin
 import com.google.devtools.ksp.symbol.impl.binary.KSAnnotationDescriptorImpl
 import com.google.devtools.ksp.symbol.impl.java.KSAnnotationJavaImpl
 import com.google.devtools.ksp.symbol.impl.kotlin.KSAnnotationImpl
+import com.google.devtools.ksp.symbol.impl.kotlin.KSTypeImpl
 import com.squareup.anvil.compiler.ClassScanner
+import com.squareup.anvil.compiler.InterfaceMerger
 import com.squareup.anvil.compiler.ModuleMerger
 import com.squareup.anvil.compiler.ModuleMerger.MergeResult
+import com.squareup.anvil.compiler.codegen.findAll
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.toAnnotationReference
 import com.squareup.anvil.compiler.mergeComponentFqName
+import com.squareup.anvil.compiler.mergeInterfacesFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
 import dagger.internal.codegen.KspComponentProcessor
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.types.SimpleType
 
 class AnvilSymbolProcessor(
   private val delegate: SymbolProcessor,
@@ -96,8 +109,72 @@ class DecoratedResolver(private val delegate: Resolver) : Resolver by delegate {
     annotationClassReference: ClassReference,
     clazz: ClassReference,
   ): KSClassDeclaration {
-    // TODO
-    return this
+    val mergeAnnotations = clazz.annotations
+      .findAll(mergeComponentFqName, mergeSubcomponentFqName, mergeInterfacesFqName)
+      .ifEmpty { return this@processMergeInterfaces }
+
+    val result = InterfaceMerger.mergeInterfaces(
+      classScanner = classScanner,
+      module = module,
+      mergeAnnotatedClass = annotationClassReference,
+      annotations = mergeAnnotations,
+      supertypes = clazz.directSuperTypeReferences()
+        .map { it.asClassReference() }
+    )
+
+    val newSupertypes = result.contributesAnnotations
+      .asSequence()
+      .map { it.declaringClass() }
+      .filter { declaringClass ->
+        declaringClass !in result.replacedClasses && declaringClass !in result.excludedClasses
+      }
+      .plus(result.contributedSubcomponentInterfaces())
+      // Avoids an error for repeated interfaces.
+      .distinct()
+      .map { (it as ClassReference.Descriptor).clazz.defaultType }
+      .map { it.toKsTypeReference() }
+      .toList()
+
+    if (newSupertypes.isEmpty()) {
+      return this@processMergeInterfaces
+    }
+
+    // Remap the class to include the new supertypes
+    val delegate = this
+    val newSuperTypes = delegate.superTypes + newSupertypes
+    return object : KSClassDeclaration by delegate {
+      override val superTypes get() = newSuperTypes
+    }
+  }
+
+  private fun SimpleType.toKsTypeReference(): KSTypeReference {
+    return NoLocationTypeReference(
+      // TODO what about ksTypeArguments and annotations?
+      KSTypeImpl.getCached(this)
+    )
+  }
+
+  private class NoLocationTypeReference(
+    val resolved: KSType
+  ) : KSTypeReference {
+    override val annotations: Sequence<KSAnnotation>
+      get() = emptySequence()
+    override val element: KSReferenceElement?
+      get() = null
+    override val location: Location
+      get() = NonExistLocation
+    override val modifiers: Set<Modifier>
+      get() = emptySet()
+    override val origin: Origin
+      get() = Origin.SYNTHETIC
+    override val parent: KSNode?
+      get() = null
+
+    override fun <D, R> accept(visitor: KSVisitor<D, R>, data: D): R {
+      return visitor.visitTypeReference(this, data)
+    }
+
+    override fun resolve(): KSType = resolved
   }
 
   private fun KSClassDeclaration.processMergeAnnotations(
