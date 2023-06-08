@@ -182,7 +182,9 @@ class DecoratedResolver(private val delegate: Resolver) : Resolver by delegate {
     clazz: ClassReference,
   ): KSClassDeclaration {
     val filteredMergeAnnotations = annotations
-      .filter { it.annotationType.resolve().declaration.qualifiedName?.asString() in mergeAnnotationNames }
+      .filter {
+        it.annotationType.resolve().declaration.qualifiedName?.asString() in mergeAnnotationNames
+      }
       .toList()
     val mergeAnnotationReferences = filteredMergeAnnotations
       .map { it.toAnnotationReference(annotationClassReference, clazz) }
@@ -242,9 +244,12 @@ private fun KSAnnotation.toAnnotationReference(
 }
 
 /**
- * Returns a new [KSClassDeclaration] with its [KSClassDeclaration.annotations] replaced with [newAnnotations].
+ * Returns a new [KSClassDeclaration] with its [KSClassDeclaration.annotations] replaced
+ * with [newAnnotations].
  */
-private fun KSClassDeclaration.replaceAnnotations(newAnnotations: List<KSAnnotation>): KSClassDeclaration {
+private fun KSClassDeclaration.replaceAnnotations(
+  newAnnotations: List<KSAnnotation>
+): KSClassDeclaration {
   return object : KSClassDeclaration by this {
     override val annotations: Sequence<KSAnnotation> get() = newAnnotations.asSequence()
   }

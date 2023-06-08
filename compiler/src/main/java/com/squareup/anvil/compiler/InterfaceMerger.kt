@@ -157,10 +157,13 @@ internal class InterfaceMerger(
                 .any { scope -> scope in scopes }
 
               if (!contributesToOurScope) {
+                val scopesString = scopes.joinToString(prefix = "[", postfix = "]") {
+                  it.fqName.asString()
+                }
                 throw AnvilCompilationExceptionClassReference(
                   classReference = contributedClass,
                   message = "${contributedClass.fqName} with scopes " +
-                    "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
+                    "$scopesString " +
                     "wants to replace ${classToReplace.fqName}, but the replaced class isn't " +
                     "contributed to the same scope."
                 )
@@ -202,8 +205,9 @@ internal class InterfaceMerger(
           throw AnvilCompilationExceptionClassReference(
             classReference = mergeAnnotatedClass,
             message = "${mergeAnnotatedClass.fqName} excludes types that it implements or " +
-              "extends. These types cannot be excluded. Look at all the super types to find these " +
-              "classes: ${intersect.joinToString { it.fqName.asString() }}."
+              "extends. These types cannot be excluded. Look at all the super" +
+              " types to find these classes: " +
+              "${intersect.joinToString { it.fqName.asString() }}."
           )
         }
       }
