@@ -5,6 +5,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
@@ -20,7 +21,7 @@ import kotlin.reflect.KClass
 internal fun compile(
   @Language("kotlin") vararg sources: String,
   previousCompilationResult: Result? = null,
-  enableDaggerAnnotationProcessor: Boolean = false,
+  daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode? = null,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
   block: Result.() -> Unit = { }
@@ -28,7 +29,7 @@ internal fun compile(
   sources = sources,
   allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
-  enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+  daggerAnnotationProcessingMode = daggerAnnotationProcessingMode,
   codeGenerators = codeGenerators,
   block = block
 )

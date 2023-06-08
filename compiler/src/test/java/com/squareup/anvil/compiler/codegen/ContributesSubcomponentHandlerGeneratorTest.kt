@@ -12,6 +12,7 @@ import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule1
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.extends
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
@@ -644,7 +645,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @MergeComponent(Unit::class)
         interface ComponentInterface
       """,
-      enableDaggerAnnotationProcessor = true
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       val daggerComponent = componentInterface.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -702,7 +703,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface2
       """,
       // Keep Dagger enabled, because it complained initially.
-      enableDaggerAnnotationProcessor = true
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       assertThat(componentInterface1 extends subcomponentInterface1.anyParentComponentInterface)
       assertThat(
@@ -1034,7 +1035,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @MergeComponent(Unit::class)
         interface ComponentInterface
       """,
-      enableDaggerAnnotationProcessor = true
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       val daggerComponent = componentInterface.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1094,7 +1095,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
         class TestClass @Inject constructor(val factory: SubcomponentInterface.ComponentFactory)
       """,
-      enableDaggerAnnotationProcessor = true
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       val daggerComponent = componentInterface.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1156,7 +1157,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
         class TestClass @Inject constructor(val factory: SubcomponentInterface.ComponentFactory)
       """,
-      enableDaggerAnnotationProcessor = true
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       val daggerComponent = componentInterface2.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1221,7 +1222,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @MergeComponent(Unit::class)
         interface ComponentInterface1
       """.trimIndent(),
-      enableDaggerAnnotationProcessor = true
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       assertThat(exitCode).isEqualTo(OK)
 
@@ -1240,7 +1241,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface2
       """.trimIndent(),
       previousCompilationResult = firstCompilationResult,
-      enableDaggerAnnotationProcessor = true
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       assertThat(exitCode).isEqualTo(OK)
 
@@ -1354,7 +1355,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
         class TestClass @Inject constructor(val factory: SubcomponentInterface.ComponentFactory)
       """,
-      enableDaggerAnnotationProcessor = true
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       val daggerComponent1 = componentInterface1.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1485,7 +1486,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @MergeComponent(Unit::class)
         interface ComponentInterface1
       """,
-      enableDaggerAnnotationProcessor = true
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       val daggerComponent = componentInterface1.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1531,7 +1532,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @MergeComponent(Unit::class)
         interface ComponentInterface2
       """,
-      enableDaggerAnnotationProcessor = true,
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT,
       previousCompilationResult = firstResult
     ) {
       val daggerComponent = componentInterface2.daggerComponent.declaredMethods
@@ -1621,7 +1622,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @ContributesSubcomponent(scope = Any::class, parentScope = Unit::class)
         interface SubcomponentInterfacewithVeryVeryVeryVeryVeryVeryVeryLongName
       """,
-      enableDaggerAnnotationProcessor = true
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }

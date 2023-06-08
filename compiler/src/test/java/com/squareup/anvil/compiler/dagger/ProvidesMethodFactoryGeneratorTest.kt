@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercaseP
 import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
@@ -3507,7 +3508,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     block: Result.() -> Unit = { },
   ): Result = compileAnvil(
     sources = sources,
-    enableDaggerAnnotationProcessor = enableDagger,
+    daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT.takeIf { useDagger },
     generateDaggerFactories = !enableDagger,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block,

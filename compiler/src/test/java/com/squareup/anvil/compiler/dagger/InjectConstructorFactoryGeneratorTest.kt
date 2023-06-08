@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.injectClass
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
@@ -2711,7 +2712,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
-    enableDaggerAnnotationProcessor = useDagger,
+    daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT.takeIf { useDagger },
     generateDaggerFactories = !useDagger,
     // Many constructor parameters are unused.
     allWarningsAsErrors = false,

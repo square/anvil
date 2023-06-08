@@ -5,11 +5,13 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
 import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.ksp.AnvilSymbolProcessor
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.addPreviousResultToClasspath
+import com.tschuchort.compiletesting.symbolProcessorProviders
 import dagger.internal.codegen.ComponentProcessor
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.config.JvmTarget
@@ -32,7 +34,7 @@ public class AnvilCompilation internal constructor(
   @Suppress("SuspiciousCollectionReassignment")
   @ExperimentalAnvilApi
   public fun configureAnvil(
-    enableDaggerAnnotationProcessor: Boolean = false,
+    daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode? = null,
     generateDaggerFactories: Boolean = false,
     generateDaggerFactoriesOnly: Boolean = false,
     disableComponentMerging: Boolean = false,
@@ -53,8 +55,17 @@ public class AnvilCompilation internal constructor(
       componentRegistrars = listOf(
         AnvilComponentRegistrar().also { it.addCodeGenerators(codeGenerators) }
       )
-      if (enableDaggerAnnotationProcessor) {
-        annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
+
+      when (daggerAnnotationProcessingMode) {
+        DaggerAnnotationProcessingMode.KAPT -> {
+          annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
+        }
+        DaggerAnnotationProcessingMode.KSP -> {
+          symbolProcessorProviders = listOf(AnvilSymbolProcessor.Provider())
+        }
+        null -> {
+          // Do nothing
+        }
       }
 
       val anvilCommandLineProcessor = AnvilCommandLineProcessor()
@@ -183,6 +194,12 @@ public class AnvilCompilation internal constructor(
   }
 }
 
+/** Available Dagger annotation processing modes. */
+enum class DaggerAnnotationProcessingMode {
+  KAPT,
+  KSP
+}
+
 /**
  * Helpful for testing code generators in unit tests end to end.
  *
@@ -193,7 +210,7 @@ public class AnvilCompilation internal constructor(
 @ExperimentalAnvilApi
 public fun compileAnvil(
   @Language("kotlin") vararg sources: String,
-  enableDaggerAnnotationProcessor: Boolean = false,
+  daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode? = null,
   generateDaggerFactories: Boolean = false,
   generateDaggerFactoriesOnly: Boolean = false,
   disableComponentMerging: Boolean = false,
@@ -229,7 +246,7 @@ public fun compileAnvil(
       }
     }
     .configureAnvil(
-      enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+      daggerAnnotationProcessingMode = daggerAnnotationProcessingMode,
       generateDaggerFactories = generateDaggerFactories,
       generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
       disableComponentMerging = disableComponentMerging,

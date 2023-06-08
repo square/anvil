@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.assistedServiceFactory
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
@@ -2019,7 +2020,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         kotlinCompilation.allWarningsAsErrors = WARNINGS_AS_ERRORS
       }
       .configureAnvil(
-        enableDaggerAnnotationProcessor = useDagger,
+        daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT.takeIf { useDagger },
         generateDaggerFactories = !useDagger,
       )
   }
