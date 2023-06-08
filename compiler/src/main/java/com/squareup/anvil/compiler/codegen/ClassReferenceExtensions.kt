@@ -122,9 +122,18 @@ internal fun <T : MemberFunctionReference> Collection<T>.injectConstructor(): T?
   return when (constructors.size) {
     0 -> null
     1 -> constructors[0]
-    else -> throw AnvilCompilationExceptionClassReference(
-      classReference = constructors[0].declaringClass,
-      message = "Types may only contain one injected constructor."
-    )
+    else -> {
+      val constructorsErrorMessage = constructors.map { constructor ->
+        constructor.annotations.joinToString(" ", postfix = " ")
+          // We special-case @Inject to match Dagger using the non-fully-qualified name
+          .replace("@javax.inject.Inject", "@Inject") +
+          constructor.fqName.toString().replace(".<init>", "")
+      }.joinToString()
+      throw AnvilCompilationExceptionClassReference(
+        classReference = constructors[0].declaringClass,
+        message = "Type ${constructors[0].declaringClass.fqName} may only contain one injected " +
+          "constructor. Found: [$constructorsErrorMessage]"
+      )
+    }
   }
 }

@@ -271,7 +271,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
         val foundFunctions = assistedFunctions
           .sortedBy { it.function.name }
           .joinToString { func ->
-            "${func.function.name}(${func.parameterPairs.map { it.first.name }})"
+            "${func.function.fqName}(${func.parameterPairs.map { it.first.name }})"
           }
         throw AnvilCompilationExceptionClassReference(
           message = "The @AssistedFactory-annotated type should contain a single abstract, " +

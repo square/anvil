@@ -1595,9 +1595,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages.lines().first { it.startsWith("e:") }.removeParameters()).contains(
+      assertThat(
+        messages.lines()
+          .first { it.startsWith("e:") }
+          .removeParametersAndSort()
+          .removeNullabilityAnnotations()
+      ).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
-          "method but found multiple: [create, create2]"
+          "method but found multiple: [com.squareup.test.AssistedServiceFactory.create, " +
+          "com.squareup.test.AssistedServiceFactory.create2]"
       )
     }
   }
@@ -1627,9 +1633,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages.lines().first { it.startsWith("e:") }.removeParameters()).contains(
+      assertThat(
+        messages.lines()
+          .first { it.startsWith("e:") }
+          .removeParametersAndSort()
+          .removeNullabilityAnnotations()
+      ).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
-          "method but found multiple: [create, createParent]"
+          "method but found multiple: [com.squareup.test.AssistedServiceFactory.create, " +
+          "com.squareup.test.AssistedServiceFactory1.createParent]"
       )
     }
   }
@@ -1656,9 +1668,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       """
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages.lines().first { it.startsWith("e:") }.removeParameters()).contains(
+      assertThat(
+        messages.lines()
+          .first { it.startsWith("e:") }
+          .removeParametersAndSort()
+          .removeNullabilityAnnotations()
+      ).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
-          "method but found multiple: [create, get]"
+          "method but found multiple: [com.squareup.test.AssistedServiceFactory.create, " +
+          "javax.inject.Provider.get]"
       )
     }
   }
@@ -2016,23 +2034,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   }
 
   /**
-   * Removes parameters of the functions in a String like
-   * ```
-   * [create([string]), get([])]
-   * ```
-   * That's necessary, because the output of the parameters is slightly different between Anvil
-   * and Dagger. Dagger also doesn't guarantee any order of functions.
+   * Removes Java nullability annotations like @NotNull.
+   *
+   * We do this because Dagger started including them in duplicate assisted factory function errors,
+   * but only the annotation and not the associated return type. We don't really care about this.
    */
-  private fun String.removeParameters(): String {
-    val start = 1 + (indexOf('[').takeIf { it >= 0 } ?: return this)
-    val end = indexOfLast { it == ']' }.takeIf { it >= 0 } ?: return this
-
-    val sortedMethodNames = substring(start, end)
-      .split(',')
-      .map { it.trim() }
-      .sorted()
-      .joinToString { it.substringBefore('(') }
-
-    return replaceRange(start, end, sortedMethodNames)
+  private fun String.removeNullabilityAnnotations(): String {
+    return this.replace("@org.jetbrains.annotations.NotNull ", "")
   }
 }
