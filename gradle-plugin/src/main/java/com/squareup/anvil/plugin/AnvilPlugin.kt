@@ -27,7 +27,6 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm
-import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
@@ -335,6 +334,11 @@ private val agpPlugins = listOf(
 )
 
 private const val KAPT_PLUGIN_ID = "org.jetbrains.kotlin.kapt"
+
+// TODO: Replace hardcoding when we're on 1.9.0-RC+ https://youtrack.jetbrains.com/issue/KT-58916
+// This value was made internal in 1.9.0-Beta so we cannot reference it directly anymore.
+// https://github.com/JetBrains/kotlin/commit/1e0eccba354d8c85602da3ce1bd5239665cd4b59
+internal const val PLUGIN_CLASSPATH_CONFIGURATION_NAME = "kotlinCompilerPluginClasspath"
 
 internal class Variant private constructor(
   val name: String,
