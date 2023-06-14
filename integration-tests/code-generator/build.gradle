@@ -22,3 +22,8 @@ tasks.withType(KotlinCompile).configureEach {
     freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
   }
 }
+
+// Temporary work-around for https://youtrack.jetbrains.com/issue/KT-59256/1.9.0-Beta-ServiceLoader-does-not-pick-up-classes-defined-in-the-same-project
+tasks.named("test", Test.class).configure {
+  classpath.from(file("build/tmp/kapt3/classes/main"))
+}
