@@ -27,6 +27,7 @@ internal class CodeGenerationExtension(
 ) : AnalysisHandlerExtension {
 
   private var didRecompile = false
+  private var compilationRound = 0
 
   private val codeGenerators = codeGenerators
     .onEach {
@@ -59,6 +60,7 @@ internal class CodeGenerationExtension(
     bindingTrace: BindingTrace,
     files: Collection<KtFile>
   ): AnalysisResult? {
+    compilationRound++
     if (didRecompile) return null
     didRecompile = true
 
@@ -70,12 +72,16 @@ internal class CodeGenerationExtension(
 
     val anvilContext = commandLineOptions.toAnvilContext(anvilModule)
 
-    codeGenDir.listFiles()
-      ?.forEach {
-        check(it.deleteRecursively()) {
-          "Could not clean file: $it"
+    if (compilationRound == 1) {
+      // Only clear the output directory the first round
+      // https://github.com/square/anvil/issues/693#issuecomment-1585545532
+      codeGenDir.listFiles()
+        ?.forEach {
+          check(it.deleteRecursively()) {
+            "Could not clean file: $it"
+          }
         }
-      }
+    }
 
     val generatedFiles = mutableMapOf<String, GeneratedFile>()
 
