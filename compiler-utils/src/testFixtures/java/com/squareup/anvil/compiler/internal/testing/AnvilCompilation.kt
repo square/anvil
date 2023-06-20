@@ -11,6 +11,7 @@ import com.tschuchort.compiletesting.KotlinCompilation.Result
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.addPreviousResultToClasspath
+import com.tschuchort.compiletesting.kspWithCompilation
 import com.tschuchort.compiletesting.symbolProcessorProviders
 import dagger.internal.codegen.ComponentProcessor
 import org.intellij.lang.annotations.Language
@@ -62,6 +63,9 @@ public class AnvilCompilation internal constructor(
         }
         DaggerAnnotationProcessingMode.KSP -> {
           symbolProcessorProviders = listOf(AnvilSymbolProcessor.Provider())
+          // Run KSP in a single-pass
+          // https://kotlinlang.slack.com/archives/C013BA8EQSE/p1639462548225400?thread_ts=1639433474.224900&cid=C013BA8EQSE
+          kspWithCompilation = true
         }
         null -> {
           // Do nothing
@@ -224,7 +228,49 @@ public fun compileAnvil(
   jvmTarget: JvmTarget? = null,
   block: Result.() -> Unit = { },
 ): Result {
-  return AnvilCompilation()
+  return compileAnvilWithCompilation(
+          sources = sources,
+          daggerAnnotationProcessingMode = daggerAnnotationProcessingMode,
+          generateDaggerFactories = generateDaggerFactories,
+          generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
+          disableComponentMerging = disableComponentMerging,
+          allWarningsAsErrors = allWarningsAsErrors,
+          messageOutputStream = messageOutputStream,
+          workingDir = workingDir,
+          enableExperimentalAnvilApis = enableExperimentalAnvilApis,
+          previousCompilationResult = previousCompilationResult,
+          codeGenerators = codeGenerators,
+          moduleName = moduleName,
+          jvmTarget = jvmTarget,
+          block = { block() }
+  )
+}
+
+/**
+ * Helpful for testing code generators in unit tests end to end.
+ *
+ * This covers common cases, but is built upon reusable logic in [AnvilCompilation] and
+ * [AnvilCompilation.configureAnvil]. Consider using those APIs if more advanced configuration
+ * is needed.
+ */
+@ExperimentalAnvilApi
+public fun compileAnvilWithCompilation(
+  @Language("kotlin") vararg sources: String,
+  daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode? = null,
+  generateDaggerFactories: Boolean = false,
+  generateDaggerFactoriesOnly: Boolean = false,
+  disableComponentMerging: Boolean = false,
+  allWarningsAsErrors: Boolean = true,
+  messageOutputStream: OutputStream = System.out,
+  workingDir: File? = null,
+  enableExperimentalAnvilApis: Boolean = true,
+  previousCompilationResult: Result? = null,
+  codeGenerators: List<CodeGenerator> = emptyList(),
+  moduleName: String? = null,
+  jvmTarget: JvmTarget? = null,
+  block: Result.(AnvilCompilation) -> Unit = { },
+): Result {
+  val compilation = AnvilCompilation()
     .apply {
       kotlinCompilation.apply {
         this.allWarningsAsErrors = allWarningsAsErrors
@@ -253,6 +299,10 @@ public fun compileAnvil(
       enableExperimentalAnvilApis = enableExperimentalAnvilApis,
       codeGenerators = codeGenerators,
     )
+
+  return compilation
     .compile(*sources)
-    .also(block)
+    .also { result ->
+      result.block(compilation)
+    }
 }

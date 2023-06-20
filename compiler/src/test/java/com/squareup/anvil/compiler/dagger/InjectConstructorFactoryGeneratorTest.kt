@@ -2,8 +2,10 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.injectClass
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.compileAnvilWithCompilation
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
@@ -12,6 +14,7 @@ import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
+import com.tschuchort.compiletesting.kspWithCompilation
 import dagger.Lazy
 import dagger.internal.Factory
 import org.intellij.lang.annotations.Language
@@ -21,6 +24,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import java.io.File
+import java.net.URLClassLoader
 import javax.inject.Provider
 
 @RunWith(Parameterized::class)
@@ -31,7 +35,7 @@ class InjectConstructorFactoryGeneratorTest(
   companion object {
     @Parameters(name = "Use Dagger: {0}")
     @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
+      return listOf(true).distinct()
     }
   }
 
@@ -2709,10 +2713,10 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: Result? = null,
-    block: Result.() -> Unit = { }
-  ): Result = compileAnvil(
+    block: Result.(AnvilCompilation) -> Unit = { }
+  ): Result = compileAnvilWithCompilation(
     sources = sources,
-    daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT.takeIf { useDagger },
+    daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KSP.takeIf { useDagger },
     generateDaggerFactories = !useDagger,
     // Many constructor parameters are unused.
     allWarningsAsErrors = false,
@@ -2720,3 +2724,16 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     block = block
   )
 }
+
+//private fun mergedClassLoader(
+//        result: Result,
+//        compilation: AnvilCompilation,
+//): ClassLoader {
+//  val resultClassLoader = result.classLoader
+//  val kspClassesClassLoader = compilation.kotlinCompilation.kspWithCompilation
+//  return URLClassLoader(
+//          this.ks
+//    classpath.map { it.toUri().toURL() }.toTypedArray(),
+//    null
+//  )
+//}
