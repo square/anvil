@@ -9,12 +9,13 @@
 
 [versions]
 agp = "7.1.0"
-autoService = "1.0.1"
-autoValue = "1.10"
+autoService = "1.1.1"
+autoValue = "1.10.1"
 dagger = "2.46.1"
+dokka = "1.8.20"
 espresso = "3.5.1"
 gradlePublish = "0.15.0"
-kotlin = "1.8.21"
+kotlin = "1.9.0-RC"
 ktlint = "0.41.0"
 ktlintPlugin = "10.2.0"
 mavenPublish = "0.18.0"
@@ -34,7 +35,7 @@ agp-application = { id = "com.android.application", version.ref = "agp" }
 agp-library = { id = "com.android.library", version.ref = "agp" }
 gradlePublish = { id = "com.gradle.plugin-publish", version.ref = "gradlePublish" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
-kotlin-dokka = { id = "org.jetbrains.dokka", version = "1.7.20" }
+kotlin-dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
@@ -70,10 +71,10 @@ junit = "junit:junit:4.13"
 kotlin-annotationProcessingEmbeddable = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable", version.ref = "kotlin" }
 kotlin-compileTesting = "dev.zacsweers.kctfork:core:0.2.0"
 kotlin-compiler = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
-kotlin-dokka = "org.jetbrains.dokka:dokka-gradle-plugin:1.7.20"
+kotlin-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradlePluginApi = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
-kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.6.0"
+kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.6.2"
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 
