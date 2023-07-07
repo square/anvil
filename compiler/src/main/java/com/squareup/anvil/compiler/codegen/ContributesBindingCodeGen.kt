@@ -1,6 +1,17 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.auto.service.AutoService
+import com.google.devtools.ksp.KspExperimental
+import com.google.devtools.ksp.getAnnotationsByType
+import com.google.devtools.ksp.getVisibility
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.processing.SymbolProcessor
+import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
+import com.google.devtools.ksp.processing.SymbolProcessorProvider
+import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.Visibility
+import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
@@ -8,6 +19,7 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
+import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.asClassName
@@ -20,6 +32,8 @@ import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.writeTo
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -33,7 +47,7 @@ import kotlin.reflect.KClass
 internal object ContributesBindingCodeGen {
   fun generate(
     originClass: ClassName,
-    scopes: List<ClassName>,
+    scopes: Iterable<ClassName>,
   ): FileSpec {
     val fileName = originClass.generateClassName().simpleName
     val generatedPackage = HINT_BINDING_PACKAGE_PREFIX +
@@ -64,6 +78,66 @@ internal object ContributesBindingCodeGen {
         )
       }
     }
+  }
+
+  internal class KspGenerator(
+    private val environment: SymbolProcessorEnvironment,
+    private val context: AnvilContext,
+  ) : SymbolProcessor {
+    @OptIn(KspExperimental::class)
+    override fun process(resolver: Resolver): List<KSAnnotated> {
+      if (!context.generateFactoriesOnly) return emptyList()
+
+      resolver
+        .getSymbolsWithAnnotation(contributesBindingFqName.asString())
+        .mapNotNull { annotated ->
+          when {
+            annotated !is KSClassDeclaration -> {
+              environment.logger.error(
+                "Only classes can be annotated with @ContributesBinding.", annotated
+              )
+              return@mapNotNull null
+            }
+            annotated.getVisibility() != Visibility.PUBLIC -> {
+              environment.logger.error(
+                "${annotated.simpleName} is binding a type, but the class is not public. " +
+                  "Only public types are supported.",
+                annotated
+              )
+              return@mapNotNull null
+            }
+            // TODO
+            //  clazz.checkNotMoreThanOneQualifier(contributesBindingFqName)
+            //  clazz.checkSingleSuperType(contributesBindingFqName)
+            //  clazz.checkClassExtendsBoundType(contributesBindingFqName)
+            else -> annotated
+          }
+        }
+        .forEach { clazz ->
+          val className = clazz.toClassName()
+
+          val scopes = clazz.getAnnotationsByType(ContributesBinding::class)
+            // TODO
+//            .also { it.checkNoDuplicateScopeAndBoundType() }
+            .distinctBy { it.scope }
+            .map { it.scope.asClassName() }
+            // Give it a stable sort.
+            .sortedBy { it.canonicalName }
+
+          val spec = generate(className, scopes.asIterable())
+
+          spec.writeTo(
+            environment.codeGenerator,
+            aggregating = false,
+            originatingKSFiles = listOf(clazz.containingFile!!)
+          )
+        }
+
+      return emptyList()
+    }
+
+    @AutoService(SymbolProcessorProvider::class)
+    class Provider : AnvilSymbolProcessorProvider(::KspGenerator)
   }
 
   @AutoService(CodeGenerator::class)
