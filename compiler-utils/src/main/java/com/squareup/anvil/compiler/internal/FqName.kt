@@ -51,6 +51,13 @@ public val KClass<*>.fqName: FqName get() = FqName(
   }
 )
 
+/** @see String.safePackageString */
+@ExperimentalAnvilApi
+public fun FqName.safePackageString(
+  dotPrefix: Boolean = false,
+  dotSuffix: Boolean = true
+): String = toString().safePackageString(isRoot, dotPrefix, dotSuffix)
+
 /**
  * This function should only be used for package names. If the FqName is the root (no package at
  * all), then this function returns an empty string whereas `toString()` would return "<root>". For
@@ -58,7 +65,8 @@ public val KClass<*>.fqName: FqName get() = FqName(
  * additional dot. The root package never will use a prefix or suffix.
  */
 @ExperimentalAnvilApi
-public fun FqName.safePackageString(
+public fun String.safePackageString(
+  isRoot: Boolean = isEmpty(),
   dotPrefix: Boolean = false,
   dotSuffix: Boolean = true
 ): String =
