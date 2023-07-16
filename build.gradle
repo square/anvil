@@ -94,6 +94,7 @@ subprojects {
       freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
 
       boolean optInExperimental = project.name != "annotations"
+          && project.name != "annotations-optional"
           && project.name != "scopes"
           && project.name != "dagger-factories-only"
       if (optInExperimental) {

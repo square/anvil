@@ -39,6 +39,7 @@ dependencyResolutionManagement {
 }
 
 include ':annotations'
+include ':annotations-optional'
 include ':compiler'
 include ':compiler-api'
 include ':compiler-utils'
