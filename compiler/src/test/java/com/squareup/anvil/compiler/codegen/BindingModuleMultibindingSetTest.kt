@@ -12,13 +12,13 @@ import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.isAbstract
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.parentInterface1
 import com.squareup.anvil.compiler.parentInterface2
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import dagger.Binds
 import dagger.Provides
 import dagger.multibindings.IntoSet
@@ -26,6 +26,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
+import java.io.File
 import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
@@ -255,7 +256,7 @@ class BindingModuleMultibindingSetTest(
     }
   }
 
-  @Test fun `the contributed multibinding class must not have a generic type parameter`() {
+  @Test fun `the Dagger multibinding method with star type is generated for generic type parameters`() {
     compile(
       """
       package com.squareup.test
@@ -275,14 +276,18 @@ class BindingModuleMultibindingSetTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isError()
+      assertThat(exitCode).isEqualTo(ExitCode.OK)
 
-      assertThat(messages).contains("Source0.kt:6:11")
-      assertThat(messages).contains(
-        "Class com.squareup.test.ContributingInterface binds com.squareup.test.ParentInterface, " +
-          "but the bound type contains type parameter(s) <T, S>. Type parameters in bindings " +
-          "are not supported. This binding needs to be contributed in a Dagger module manually."
-      )
+      // Because of type erasure, we cannot check through the type system that generated type
+      // is the right one. Instead, we can check generated string.
+
+      val generatedModuleFile = File(outputDirectory.parent, "build/anvil")
+        .walk()
+        .single { it.isFile && it.name == "ComponentInterface.kt" }
+
+      assertThat(generatedModuleFile.readText().replace(Regex("\\s"), ""))
+        .contains("bindParentInterfaceMulti(contributingInterface:ContributingInterface):" +
+          "ParentInterface<*,*>")
     }
   }
 

@@ -79,7 +79,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
           .asSequence()
           .flatMap { it.properties }
           .filter { property ->
-            // Must be '@get:Provides'.
+            // Must be '@get:"Provides"'.
             property.annotations.singleOrNull {
               it.fqName == daggerProvidesFqName
             }?.annotation?.useSiteTarget?.text == "get"

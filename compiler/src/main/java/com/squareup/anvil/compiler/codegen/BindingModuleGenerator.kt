@@ -28,6 +28,8 @@ import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.ABSTRACT
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeSpec
 import dagger.Binds
 import dagger.Module
@@ -354,6 +356,15 @@ private fun ContributedBinding.toGeneratedMethod(
     }
   }
 
+  val boundTypeWithStarGenerics = boundType.asClassName()
+    .let {
+      if (boundType.typeParameters.isEmpty()) {
+        it
+      } else {
+        it.parameterizedBy(boundType.typeParameters.map { STAR })
+      }
+    }
+
   return if (contributedClass.isObject()) {
     ProviderMethod(
       spec = FunSpec.builder(name = "provide$methodNameSuffix")
@@ -366,7 +377,7 @@ private fun ContributedBinding.toGeneratedMethod(
         }
         .addAnnotations(qualifiers)
         .addAnnotations(mapKeys)
-        .returns(boundType.asClassName())
+        .returns(boundTypeWithStarGenerics)
         .addStatement("return %T", contributedClass.asClassName())
         .build(),
       contributedClass = contributedClass,
@@ -389,7 +400,7 @@ private fun ContributedBinding.toGeneratedMethod(
           name = contributedClass.shortName.decapitalize(),
           type = contributedClass.asClassName()
         )
-        .returns(boundType.asClassName())
+        .returns(boundTypeWithStarGenerics)
         .build(),
       contributedClass = contributedClass,
       boundType = boundType
