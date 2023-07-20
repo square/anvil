@@ -20,8 +20,17 @@ jobs :
           java-version : '11'
           check-latest : true
 
-      - name : Publish Release
+      - name : Publish Release 1.9
         run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace && cd ..
+        env :
+          ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
+          ORG_GRADLE_PROJECT_signingInMemoryKey : ${{ secrets.ARTIFACT_SIGNING_PRIVATE_KEY }}
+          ORG_GRADLE_PROJECT_signingInMemoryKeyPassword : ''
+
+      # TODO: Remove when we drop Kotlin 1.8 support
+      - name : Publish Release 1.8
+        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel -Doverride_kotlin=1.8.22 -PVERSION_NAME=2.4.7-1-8 && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=1.8.22 -PVERSION_NAME=2.4.7-1-8 && cd ..
         env :
           ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
