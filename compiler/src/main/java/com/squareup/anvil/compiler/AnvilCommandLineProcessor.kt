@@ -18,6 +18,10 @@ internal const val generateDaggerFactoriesOnlyName = "generate-dagger-factories-
 internal val generateDaggerFactoriesOnlyKey =
   CompilerConfigurationKey.create<Boolean>("anvil $generateDaggerFactoriesOnlyName")
 
+internal const val generateDaggerFactoriesPathWhitelistName = "generate-dagger-factories-path-whitelist"
+internal val generateDaggerFactoriesPathWhitelistKey =
+  CompilerConfigurationKey.create<List<String>>("anvil $generateDaggerFactoriesPathWhitelistName")
+
 internal const val disableComponentMergingName = "disable-component-merging"
 internal val disableComponentMergingKey =
   CompilerConfigurationKey.create<Boolean>("anvil $disableComponentMergingName")
@@ -55,6 +59,15 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
       allowMultipleOccurrences = false
     ),
     CliOption(
+      optionName = generateDaggerFactoriesPathWhitelistName,
+      valueDescription = "Colon separated list",
+      description = "List of absolute paths that anvil should generate Factory classes in. " +
+      "When empty or ommited, Anvil applies no filtering and generates factories " +
+        "in all available files",
+      required = false,
+      allowMultipleOccurrences = false
+    ),
+    CliOption(
       optionName = disableComponentMergingName,
       valueDescription = "<true|false>",
       description = "Whether Anvil should generate code only and not transform code for " +
@@ -77,6 +90,11 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
         configuration.put(generateDaggerFactoriesOnlyKey, value.toBoolean())
       disableComponentMergingName ->
         configuration.put(disableComponentMergingKey, value.toBoolean())
+      generateDaggerFactoriesPathWhitelistName ->
+        configuration.put(
+          generateDaggerFactoriesPathWhitelistKey,
+          value.split(":").filter { it.isNotBlank() }
+        )
     }
   }
 }

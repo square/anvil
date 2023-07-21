@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 internal data class RealAnvilContext(
   override val generateFactories: Boolean,
   override val generateFactoriesOnly: Boolean,
+  override val generateFactoriesPathWhitelist: List<String>,
   override val disableComponentMerging: Boolean,
   override val module: ModuleDescriptor
 ) : AnvilContext
@@ -16,6 +17,7 @@ internal fun CommandLineOptions.toAnvilContext(
 ): RealAnvilContext = RealAnvilContext(
   generateFactories = generateFactories,
   generateFactoriesOnly = generateFactoriesOnly,
+  generateFactoriesPathWhitelist = generateFactoriesPathWhitelist,
   disableComponentMerging = disableComponentMerging,
   module = module
 )

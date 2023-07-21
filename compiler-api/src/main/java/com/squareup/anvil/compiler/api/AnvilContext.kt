@@ -35,6 +35,13 @@ public interface AnvilContext {
   public val generateFactoriesOnly: Boolean
 
   /**
+   * List of absolute paths that anvil should generate Factory classes in.
+   * When empty or ommited, Anvil applies no filtering and
+   * generates factories in all available files.
+   */
+  public val generateFactoriesPathWhitelist: List<String>
+
+  /**
    * Enabling this indicates that only code generation should run and no component merging should
    * run. This is useful for cases where you want to use `@ContributesTo`, `@ContributesBinding`,
    * or similar annotations but _not_ `@MergeComponent` or `@MergeSubcomponent` functionality.
