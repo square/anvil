@@ -237,6 +237,17 @@ sources either.
 When you enable this feature, don't forget to remove the Dagger annotation processor. You should
 keep all other dependencies.
 
+If you want to only enable Dagger factory generation on some source sets 
+(such as only in main source set or only in tests), you can add those source sets
+to the whitelist:
+
+```groovy
+anvil {
+  generateDaggerFactoriesSourceSetWhitelist.add("main")
+}
+```
+
+
 ## Extending Anvil
 
 Every codebase has its own dependency injection patterns where certain code structures need to be
