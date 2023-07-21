@@ -25,6 +25,14 @@ public interface VariantFilter : Named {
   public var generateDaggerFactoriesOnly: Boolean
 
   /**
+   * Whitelist of all source sets (such as main, test etc.) that Anvil should generate dagger
+   * factories in, if factory generation is enabled.
+   *
+   * When empty, Anvil will generate factories in all source sets.
+   */
+  public var generateDaggerFactoriesSourceSetWhitelist: List<String>
+
+  /**
    * Indicate whether component merging for this variant should be disabled. The default
    * value comes from the [AnvilExtension]. See [AnvilExtension.disableComponentMerging] for more
    * details.
@@ -36,6 +44,7 @@ public interface VariantFilter : Named {
    * IDE. This can be useful in debugging and is disabled by default.
    */
   public var syncGeneratedSources: Boolean
+
 }
 
 internal class CommonFilter(
@@ -57,6 +66,14 @@ internal class CommonFilter(
     get() = generateDaggerFactoriesOnlyOverride ?: extension.generateDaggerFactoriesOnly.get()
     set(value) {
       generateDaggerFactoriesOnlyOverride = value
+    }
+
+  private var generateDaggerFactoriesSourceSetWhitelistOverride: List<String>? = null
+  override var generateDaggerFactoriesSourceSetWhitelist: List<String>
+    get() = generateDaggerFactoriesSourceSetWhitelistOverride
+      ?: extension.generateDaggerFactoriesSourceSetWhitelist.get()
+    set(value) {
+      generateDaggerFactoriesSourceSetWhitelistOverride = value
     }
 
   private var disableComponentMergingOverride: Boolean? = null

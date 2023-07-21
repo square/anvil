@@ -20,6 +20,7 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
+import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.FilesSubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
@@ -27,6 +28,7 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
@@ -153,6 +155,14 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       }
     }
 
+    val variantWhitelist = variant.variantFilter.generateDaggerFactoriesSourceSetWhitelist.flatMap {sourceSetName ->
+      val sourceSet = variant.kotlinSourceSets.singleOrNull { it.name == sourceSetName }
+        ?: throw GradleException("Unknown variant $sourceSetName. Available variants: " +
+          "${variant.kotlinSourceSets.joinToString { it.name }}")
+
+      sourceSet.kotlin.srcDirs
+    }
+
     return project.provider {
       listOf(
         FilesSubpluginOption(
@@ -162,6 +172,10 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         SubpluginOption(
           key = "generate-dagger-factories",
           lazy { variant.variantFilter.generateDaggerFactories.toString() }
+        ),
+        SubpluginOption(
+          key = "generate-dagger-factories-path-whitelist",
+          lazy { variantWhitelist.joinToString(":") { it.absolutePath } }
         ),
         SubpluginOption(
           key = "generate-dagger-factories-only",
@@ -342,6 +356,7 @@ internal class Variant private constructor(
   val compileTaskProvider: TaskProvider<KotlinCompile>,
   val androidVariant: BaseVariant?,
   val androidSourceSets: List<AndroidSourceSet>?,
+  val kotlinSourceSets: List<KotlinSourceSet>,
   val compilerPluginClasspathName: String,
   val variantFilter: VariantFilter,
 ) {
@@ -374,6 +389,8 @@ internal class Variant private constructor(
         null
       }
 
+      val kotlinSourceSets = project.kotlinExtension.sourceSets.toList()
+
       val commonFilter = CommonFilter(kotlinCompilation.name, extension)
       val variantFilter = if (androidVariant != null) {
         AndroidVariantFilter(commonFilter, androidVariant)
@@ -389,6 +406,7 @@ internal class Variant private constructor(
           TaskProvider<KotlinCompile>,
         androidVariant = androidVariant,
         androidSourceSets = androidSourceSets,
+        kotlinSourceSets = kotlinSourceSets,
         compilerPluginClasspathName = PLUGIN_CLASSPATH_CONFIGURATION_NAME +
           kotlinCompilation.target.targetName.replaceFirstChar(Char::uppercase) +
           kotlinCompilation.name.replaceFirstChar(Char::uppercase),
