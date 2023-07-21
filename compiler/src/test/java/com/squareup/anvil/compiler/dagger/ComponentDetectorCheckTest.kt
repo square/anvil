@@ -2,6 +2,10 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.BLACKLISTED
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.EMPTY
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.WHITELISTED
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -91,12 +95,55 @@ class ComponentDetectorCheckTest {
     }
   }
 
+  @Test fun `a Dagger component causes an error in whitelisted source`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Component
+      
+      @Component
+      interface ComponentInterface
+      """,
+      whitelist = WHITELISTED
+    ) {
+      assertThat(exitCode).isError()
+      // Position to the class.
+      assertThat(messages).contains("Source0.kt:6:11")
+      assertThat(messages).contains(
+        "Anvil cannot generate the code for Dagger components or subcomponents. In these " +
+          "cases the Dagger annotation processor is required. Enabling the Dagger " +
+          "annotation processor and turning on Anvil to generate Dagger factories is " +
+          "redundant. Set 'generateDaggerFactories' to false."
+      )
+    }
+  }
+
+  @Test fun `a Dagger component does not cause an error in blacklisted source`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Component
+      
+      @Component
+      interface ComponentInterface
+      """,
+      whitelist = BLACKLISTED
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+
   private fun compile(
     @Language("kotlin") vararg sources: String,
+    whitelist: TestWhitelistType = EMPTY,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
     generateDaggerFactories = true,
+    generateDaggerFactoriesWhitelist = whitelist,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block
   )

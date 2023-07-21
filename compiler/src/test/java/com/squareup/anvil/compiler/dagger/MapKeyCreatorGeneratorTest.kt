@@ -2,9 +2,15 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
+import com.squareup.anvil.compiler.assistedService
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.BLACKLISTED
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.EMPTY
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isFullTestRun
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.descriptors.runtime.components.tryLoadClass
@@ -13,6 +19,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
+import kotlin.test.assertFails
 
 @RunWith(Parameterized::class)
 class MapKeyCreatorGeneratorTest(
@@ -215,13 +222,71 @@ class MapKeyCreatorGeneratorTest(
     }
   }
 
+  @Test fun `a creator class is is not generated when blacklisted`() {
+    if (useDagger) {
+      // Creator will always get generated with dagger involved
+      return
+    }
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.MapKey
+      import kotlin.reflect.KClass
+      import com.squareup.anvil.compiler.dagger.TestEnum
+      import com.squareup.anvil.compiler.dagger.TestAnnotation
+
+      @MapKey(unwrapValue = false)
+      annotation class ExampleMapKey(
+        val stringValue: String,
+        val stringArrayValue: Array<String>,
+        val annotationValue: TestAnnotation,
+        val annotationArrayValue: Array<TestAnnotation>,
+        val enumValue: TestEnum,
+        val enumArrayValue: Array<TestEnum>,
+        val kClassValue: KClass<out String>,
+        val kClassStarValue: KClass<*>,
+        val kClassArrayValue: Array<KClass<*>>,
+        val booleanValue: Boolean,
+        val byteValue: Byte,
+        val charValue: Char,
+        val shortValue: Short,
+        val intValue: Int,
+        val longValue: Long,
+        val floatValue: Float,
+        val doubleValue: Double,
+        val booleanArrayValue: BooleanArray,
+        val byteArrayValue: ByteArray,
+        val charArrayValue: CharArray,
+        val shortArrayValue: ShortArray,
+        val intArrayValue: IntArray,
+        val longArrayValue: LongArray,
+        val floatArrayValue: FloatArray,
+        val doubleArrayValue: DoubleArray,
+      )
+      """,
+      whitelist = BLACKLISTED
+    ) {
+      assertThat(exitCode).isEqualTo(ExitCode.OK)
+
+      val exception = assertFails {
+        classLoader.loadClass("com.squareup.test.ExampleMapKeyCreator")
+      }
+
+      assertThat(exception).isInstanceOf(ClassNotFoundException::class.java)
+    }
+  }
+
   private fun compile(
     @Language("kotlin") vararg sources: String,
+    whitelist: TestWhitelistType = EMPTY,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
+    generateDaggerFactoriesWhitelist = whitelist,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block
   )

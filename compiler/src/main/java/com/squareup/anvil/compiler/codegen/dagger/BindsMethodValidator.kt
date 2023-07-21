@@ -25,11 +25,9 @@ import java.io.File
  * when Anvil generates Dagger factories.
  */
 @AutoService(CodeGenerator::class)
-internal class BindsMethodValidator : PrivateCodeGenerator() {
+internal class BindsMethodValidator : DaggerFactoryGenerator() {
 
-  override fun isApplicable(context: AnvilContext) = context.generateFactories
-
-  override fun generateCodePrivate(
+  override fun generateCodeInDaggerFactoryWhitelistedFiles(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>

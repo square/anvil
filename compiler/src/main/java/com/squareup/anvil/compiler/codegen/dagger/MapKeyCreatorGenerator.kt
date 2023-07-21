@@ -56,11 +56,9 @@ import kotlin.reflect.KClass
  * Implemented from eyeballing https://github.com/google/dagger/blob/b5990a0641a7860b760aa9055b90a99d06186af6/javatests/dagger/internal/codegen/MapKeyProcessorTest.java
  */
 @AutoService(CodeGenerator::class)
-internal class MapKeyCreatorGenerator : PrivateCodeGenerator() {
+internal class MapKeyCreatorGenerator : DaggerFactoryGenerator() {
 
-  override fun isApplicable(context: AnvilContext) = context.generateFactories
-
-  override fun generateCodePrivate(
+  override fun generateCodeInDaggerFactoryWhitelistedFiles(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>

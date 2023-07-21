@@ -5,6 +5,9 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
 import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.BLACKLISTED
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.EMPTY
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.WHITELISTED
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import com.tschuchort.compiletesting.PluginOption
@@ -35,6 +38,7 @@ public class AnvilCompilation internal constructor(
     enableDaggerAnnotationProcessor: Boolean = false,
     generateDaggerFactories: Boolean = false,
     generateDaggerFactoriesOnly: Boolean = false,
+    generateDaggerFactoriesPathWhitelist: List<String> = emptyList(),
     disableComponentMerging: Boolean = false,
     enableExperimentalAnvilApis: Boolean = true,
     codeGenerators: List<CodeGenerator> = emptyList(),
@@ -70,6 +74,11 @@ public class AnvilCompilation internal constructor(
           pluginId = anvilCommandLineProcessor.pluginId,
           optionName = "generate-dagger-factories",
           optionValue = generateDaggerFactories.toString()
+        ),
+        PluginOption(
+          pluginId = anvilCommandLineProcessor.pluginId,
+          optionName = "generate-dagger-factories-path-whitelist",
+          optionValue = generateDaggerFactoriesPathWhitelist.joinToString()
         ),
         PluginOption(
           pluginId = anvilCommandLineProcessor.pluginId,
@@ -195,6 +204,7 @@ public fun compileAnvil(
   @Language("kotlin") vararg sources: String,
   enableDaggerAnnotationProcessor: Boolean = false,
   generateDaggerFactories: Boolean = false,
+  generateDaggerFactoriesWhitelist: TestWhitelistType = EMPTY,
   generateDaggerFactoriesOnly: Boolean = false,
   disableComponentMerging: Boolean = false,
   allWarningsAsErrors: Boolean = true,
@@ -207,6 +217,8 @@ public fun compileAnvil(
   jvmTarget: JvmTarget? = null,
   block: Result.() -> Unit = { },
 ): Result {
+  val whitelist: List<String>
+
   return AnvilCompilation()
     .apply {
       kotlinCompilation.apply {
@@ -227,10 +239,17 @@ public fun compileAnvil(
       if (previousCompilationResult != null) {
         addPreviousCompilationResult(previousCompilationResult)
       }
+
+      whitelist = when (generateDaggerFactoriesWhitelist) {
+        EMPTY -> emptyList()
+        WHITELISTED -> listOf(kotlinCompilation.workingDir.absolutePath)
+        BLACKLISTED -> listOf("some-other-folder")
+      }
     }
     .configureAnvil(
       enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
       generateDaggerFactories = generateDaggerFactories,
+      generateDaggerFactoriesPathWhitelist = whitelist,
       generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
       disableComponentMerging = disableComponentMerging,
       enableExperimentalAnvilApis = enableExperimentalAnvilApis,
@@ -238,4 +257,10 @@ public fun compileAnvil(
     )
     .compile(*sources)
     .also(block)
+}
+
+enum class TestWhitelistType {
+  EMPTY,
+  WHITELISTED,
+  BLACKLISTED
 }

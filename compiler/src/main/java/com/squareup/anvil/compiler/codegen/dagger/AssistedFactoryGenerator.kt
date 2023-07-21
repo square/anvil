@@ -43,11 +43,9 @@ import java.io.File
 import javax.inject.Provider
 
 @AutoService(CodeGenerator::class)
-internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
+internal class AssistedFactoryGenerator : DaggerFactoryGenerator() {
 
-  override fun isApplicable(context: AnvilContext) = context.generateFactories
-
-  override fun generateCodePrivate(
+  override fun generateCodeInDaggerFactoryWhitelistedFiles(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>

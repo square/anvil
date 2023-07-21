@@ -33,11 +33,9 @@ import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
 @AutoService(CodeGenerator::class)
-internal class MembersInjectorGenerator : PrivateCodeGenerator() {
+internal class MembersInjectorGenerator : DaggerFactoryGenerator() {
 
-  override fun isApplicable(context: AnvilContext) = context.generateFactories
-
-  override fun generateCodePrivate(
+  override fun generateCodeInDaggerFactoryWhitelistedFiles(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>

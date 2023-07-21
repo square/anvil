@@ -2,10 +2,15 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
+import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.BLACKLISTED
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.EMPTY
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
+import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
@@ -13,6 +18,7 @@ import com.squareup.anvil.compiler.internal.testing.membersInjector
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.nestedInjectClass
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
@@ -27,6 +33,7 @@ import java.lang.reflect.Method
 import javax.inject.Named
 import javax.inject.Provider
 import kotlin.reflect.KClass
+import kotlin.test.assertFails
 import kotlin.test.assertFailsWith
 
 @Suppress("UNCHECKED_CAST")
@@ -1237,69 +1244,69 @@ public final class OuterClass_InjectClass_MembersInjector implements MembersInje
 
   @Test
   fun `a factory class is generated for a field injection on a super class`() {
-/*
-package com.squareup.test;
+    /*
+    package com.squareup.test;
 
-import dagger.MembersInjector;
-import dagger.internal.DaggerGenerated;
-import dagger.internal.InjectedFieldSignature;
-import java.util.List;
-import java.util.Set;
-import javax.annotation.processing.Generated;
-import javax.inject.Provider;
+    import dagger.MembersInjector;
+    import dagger.internal.DaggerGenerated;
+    import dagger.internal.InjectedFieldSignature;
+    import java.util.List;
+    import java.util.Set;
+    import javax.annotation.processing.Generated;
+    import javax.inject.Provider;
 
-@DaggerGenerated
-@Generated(
-    value = "dagger.internal.codegen.ComponentProcessor",
-    comments = "https://dagger.dev"
-)
-@SuppressWarnings({
-    "unchecked",
-    "rawtypes"
-})
-public final class InjectClass_MembersInjector implements MembersInjector<InjectClass> {
-  private final Provider<List<Integer>> base1Provider;
+    @DaggerGenerated
+    @Generated(
+        value = "dagger.internal.codegen.ComponentProcessor",
+        comments = "https://dagger.dev"
+    )
+    @SuppressWarnings({
+        "unchecked",
+        "rawtypes"
+    })
+    public final class InjectClass_MembersInjector implements MembersInjector<InjectClass> {
+      private final Provider<List<Integer>> base1Provider;
 
-  private final Provider<List<String>> base2Provider;
+      private final Provider<List<String>> base2Provider;
 
-  private final Provider<Set<Integer>> middle1Provider;
+      private final Provider<Set<Integer>> middle1Provider;
 
-  private final Provider<Set<String>> middle2Provider;
+      private final Provider<Set<String>> middle2Provider;
 
-  private final Provider<String> nameProvider;
+      private final Provider<String> nameProvider;
 
-  public InjectClass_MembersInjector(Provider<List<Integer>> base1Provider,
-      Provider<List<String>> base2Provider, Provider<Set<Integer>> middle1Provider,
-      Provider<Set<String>> middle2Provider, Provider<String> nameProvider) {
-    this.base1Provider = base1Provider;
-    this.base2Provider = base2Provider;
-    this.middle1Provider = middle1Provider;
-    this.middle2Provider = middle2Provider;
-    this.nameProvider = nameProvider;
-  }
+      public InjectClass_MembersInjector(Provider<List<Integer>> base1Provider,
+          Provider<List<String>> base2Provider, Provider<Set<Integer>> middle1Provider,
+          Provider<Set<String>> middle2Provider, Provider<String> nameProvider) {
+        this.base1Provider = base1Provider;
+        this.base2Provider = base2Provider;
+        this.middle1Provider = middle1Provider;
+        this.middle2Provider = middle2Provider;
+        this.nameProvider = nameProvider;
+      }
 
-  public static MembersInjector<InjectClass> create(Provider<List<Integer>> base1Provider,
-      Provider<List<String>> base2Provider, Provider<Set<Integer>> middle1Provider,
-      Provider<Set<String>> middle2Provider, Provider<String> nameProvider) {
-    return new InjectClass_MembersInjector(base1Provider, base2Provider, middle1Provider, middle2Provider, nameProvider);
-  }
+      public static MembersInjector<InjectClass> create(Provider<List<Integer>> base1Provider,
+          Provider<List<String>> base2Provider, Provider<Set<Integer>> middle1Provider,
+          Provider<Set<String>> middle2Provider, Provider<String> nameProvider) {
+        return new InjectClass_MembersInjector(base1Provider, base2Provider, middle1Provider, middle2Provider, nameProvider);
+      }
 
-  @Override
-  public void injectMembers(InjectClass instance) {
-    Base_MembersInjector.injectBase1(instance, base1Provider.get());
-    Base_MembersInjector.injectBase2(instance, base2Provider.get());
-    Middle_MembersInjector.injectMiddle1(instance, middle1Provider.get());
-    Middle_MembersInjector.injectMiddle2(instance, middle2Provider.get());
-    injectName(instance, nameProvider.get());
-  }
+      @Override
+      public void injectMembers(InjectClass instance) {
+        Base_MembersInjector.injectBase1(instance, base1Provider.get());
+        Base_MembersInjector.injectBase2(instance, base2Provider.get());
+        Middle_MembersInjector.injectMiddle1(instance, middle1Provider.get());
+        Middle_MembersInjector.injectMiddle2(instance, middle2Provider.get());
+        injectName(instance, nameProvider.get());
+      }
 
-  @InjectedFieldSignature("com.squareup.test.InjectClass.name")
-  public static void injectName(InjectClass instance, String name) {
-    instance.name = name;
-  }
-}
+      @InjectedFieldSignature("com.squareup.test.InjectClass.name")
+      public static void injectName(InjectClass instance, String name) {
+        instance.name = name;
+      }
+    }
 
- */
+     */
     compile(
       """
       package com.squareup.test
@@ -1457,7 +1464,8 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
     }
   }
 
-  @Test fun `a factory class is generated for a field injection in a class with a parent class with a generic field injection`() {
+  @Test
+  fun `a factory class is generated for a field injection in a class with a parent class with a generic field injection`() {
     compile(
       """
       package com.squareup.test
@@ -1517,7 +1525,8 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
     }
   }
 
-  @Test fun `a factory class is generated for a field injection in a class with an ancestor class with a generic field injection`() {
+  @Test
+  fun `a factory class is generated for a field injection in a class with an ancestor class with a generic field injection`() {
     compile(
       """
       package com.squareup.test
@@ -2494,6 +2503,76 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     }
   }
 
+  @Test fun `a factory class is not generated when blacklisted`() {
+    if (useDagger) {
+      // Factory will always get generated with dagger involved
+      return
+    }
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      import javax.inject.Named
+      
+      typealias StringList = List<String>
+      
+      // Generate a factory too to cover for https://github.com/square/anvil/issues/362
+      class InjectClass @Inject constructor() {
+        @Inject lateinit var string: String
+        @Named("qualified") @Inject lateinit var qualifiedString: String
+        @Inject lateinit var charSequence: CharSequence
+        @Inject lateinit var list: List<String>
+        @Inject lateinit var pair: Pair<Pair<String, Int>, Set<String>>
+        @Inject lateinit var set: @JvmSuppressWildcards Set<(StringList) -> StringList>
+        var setterAnnotated: Map<String, String> = emptyMap()
+          @Inject set
+        @set:Inject var setterAnnotated2: Map<String, Boolean> = emptyMap()
+        
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+      
+          other as InjectClass
+      
+          if (string != other.string) return false
+          if (qualifiedString != other.qualifiedString) return false
+          if (charSequence != other.charSequence) return false
+          if (list != other.list) return false
+          if (pair != other.pair) return false
+          if (set.single().invoke(emptyList())[0] != other.set.single().invoke(emptyList())[0]) return false
+          if (setterAnnotated != other.setterAnnotated) return false
+          if (setterAnnotated2 != other.setterAnnotated2) return false
+      
+          return true
+        }
+      
+        override fun hashCode(): Int {
+          var result = string.hashCode()
+          result = 31 * result + qualifiedString.hashCode()
+          result = 31 * result + charSequence.hashCode()
+          result = 31 * result + list.hashCode()
+          result = 31 * result + pair.hashCode()
+          result = 31 * result + set.single().invoke(emptyList())[0].hashCode()
+          result = 31 * result + setterAnnotated.hashCode()
+          result = 31 * result + setterAnnotated2.hashCode()
+          return result
+        }
+      }
+      """,
+      whitelist = BLACKLISTED
+    ) {
+      assertThat(exitCode).isEqualTo(ExitCode.OK)
+
+      val exception = assertFails {
+        injectClass.membersInjector()
+      }
+
+      assertThat(exception).isInstanceOf(ClassNotFoundException::class.java)
+    }
+  }
+
   private fun Class<*>.staticInjectMethod(memberName: String): Method {
     // We can't check the @InjectedFieldSignature annotation unfortunately, because it has class
     // retention.
@@ -2505,11 +2584,13 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: Result? = null,
+    whitelist: TestWhitelistType = EMPTY,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
+    generateDaggerFactoriesWhitelist = whitelist,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
     block = block

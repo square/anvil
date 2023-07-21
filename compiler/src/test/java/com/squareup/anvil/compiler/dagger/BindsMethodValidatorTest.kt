@@ -2,6 +2,9 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.BLACKLISTED
+import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.EMPTY
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
@@ -375,15 +378,50 @@ class BindsMethodValidatorTest(
     }
   }
 
+  @Test
+  fun `a binding with an incompatible parameter type does not fail to compile when blacklisted`() {
+    if (useDagger) {
+      // Dagger does not use the whitelist, so ignore errors made by it
+      return
+    }
+
+    compile(
+      """
+      package com.squareup.test
+ 
+      import dagger.Binds
+      import dagger.Module
+      import javax.inject.Inject
+
+      interface Lorem
+      open class Ipsum
+      class Foo @Inject constructor() : Ipsum(), Lorem
+      interface Bar
+
+      @Module
+      abstract class BarModule {
+        @Binds
+        abstract fun bindsBar(impl: Foo): Bar
+      }
+      """,
+      whitelist = BLACKLISTED
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: Result? = null,
+    whitelist: TestWhitelistType = EMPTY,
     enableDagger: Boolean = useDagger,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = enableDagger,
     generateDaggerFactories = !enableDagger,
+    generateDaggerFactoriesWhitelist = whitelist,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
     block = block

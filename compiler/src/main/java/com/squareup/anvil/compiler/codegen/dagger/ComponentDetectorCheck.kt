@@ -12,11 +12,8 @@ import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
 @AutoService(CodeGenerator::class)
-internal class ComponentDetectorCheck : PrivateCodeGenerator() {
-
-  override fun isApplicable(context: AnvilContext) = context.generateFactories
-
-  override fun generateCodePrivate(
+internal class ComponentDetectorCheck : DaggerFactoryGenerator() {
+  override fun generateCodeInDaggerFactoryWhitelistedFiles(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>
