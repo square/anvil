@@ -227,7 +227,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       .addFunction(
         FunSpec
           .builder("bindSubcomponentFactory")
-          .addAnnotation(Binds::class.java)
+          .addAnnotation(Binds::class)
           .addModifiers(ABSTRACT)
           .addParameter("factory", ClassName.bestGuess(SUBCOMPONENT_FACTORY))
           .returns(factoryReference.asClassName())
