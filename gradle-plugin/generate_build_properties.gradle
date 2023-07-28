@@ -9,11 +9,11 @@ sourceSets {
 }
 
 def generateBuildProperties = project.tasks.register('generateBuildProperties') {
-  def version = project.findProperty('VERSION_NAME')
-  def group = project.findProperty('GROUP')
+  def version = getProperty('VERSION_NAME').toString()
+  def group = getProperty('GROUP').toString()
 
-  File buildPropertiesFile =
-      new File(new File(project.buildDir, generatedDirPath), 'BuildProperties.kt')
+  File buildPropertiesFile = layout.buildDirectory.file(generatedDirPath + '/BuildProperties.kt')
+      .get().asFile
 
   inputs.property 'version', version
   inputs.property 'group', group
@@ -51,7 +51,8 @@ afterEvaluate {
       tasks.named(taskName).configure {
         it.dependsOn(generateBuildProperties)
       }
-    } catch (UnknownTaskException ignored) { }
+    } catch (UnknownTaskException ignored) {
+    }
   }
 
   // javaSourcesJar is registered even later. Gradle is love.
