@@ -15,8 +15,8 @@ import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
-import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.internal.Factory
 import org.intellij.lang.annotations.Language
@@ -3502,10 +3502,10 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
   private fun compile(
     @Language("kotlin") vararg sources: String,
     enableDagger: Boolean = useDagger,
-    previousCompilationResult: Result? = null,
+    previousCompilationResult: JvmCompilationResult? = null,
     moduleName: String? = null,
-    block: Result.() -> Unit = { },
-  ): Result = compileAnvil(
+    block: JvmCompilationResult.() -> Unit = { },
+  ): JvmCompilationResult = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = enableDagger,
     generateDaggerFactories = !enableDagger,

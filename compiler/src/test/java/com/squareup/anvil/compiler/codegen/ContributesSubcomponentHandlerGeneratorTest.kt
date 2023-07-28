@@ -20,8 +20,8 @@ import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Component
 import org.junit.Test
 import javax.inject.Singleton
@@ -1980,18 +1980,18 @@ class ContributesSubcomponentHandlerGeneratorTest {
   private val Class<*>.daggerComponent: Class<*>
     get() = classLoader.loadClass("$packageName.Dagger$simpleName")
 
-  private val Result.componentInterface1: Class<*>
+  private val JvmCompilationResult.componentInterface1: Class<*>
     get() = classLoader.loadClass("com.squareup.test.ComponentInterface1")
 
-  private val Result.componentInterface2: Class<*>
+  private val JvmCompilationResult.componentInterface2: Class<*>
     get() = classLoader.loadClass("com.squareup.test.ComponentInterface2")
 
-  private val Result.subcomponentInterface1: Class<*>
+  private val JvmCompilationResult.subcomponentInterface1: Class<*>
     get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface1")
 
-  private val Result.subcomponentInterface2: Class<*>
+  private val JvmCompilationResult.subcomponentInterface2: Class<*>
     get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface2")
 
-  private val Result.subcomponentInterface3: Class<*>
+  private val JvmCompilationResult.subcomponentInterface3: Class<*>
     get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface3")
 }
