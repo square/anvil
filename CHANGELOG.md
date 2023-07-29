@@ -6,9 +6,6 @@
 
 ### Changed
 
-- Upgrade to Dagger `2.46.1`
-- Upgrade to kotlinx-metadata `0.6.0`
-
 ### Deprecated
 
 ### Removed
@@ -20,6 +17,16 @@
 ### Custom Code Generator
 
 ### Other Notes
+
+
+## [2.4.7] - 2023-07-28
+
+### Changed
+
+- Upgrade to Kotlin `1.9.0` as the primary supported version
+- Upgrade to Kotlin `1.8.22` for dual-release artifacts. Use Anvil version `2.4.7-1-8` if your project is using Kotlin `1.8.x`.
+- Upgrade to Dagger `2.46.1`
+- Upgrade to kotlinx-metadata `0.6.2`
 
 
 ## [2.4.6] - 2023-05-25
@@ -604,7 +611,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.4.6...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.4.7...HEAD
+[2.4.7]: https://github.com/square/anvil/releases/tag/v2.4.7
 [2.4.6]: https://github.com/square/anvil/releases/tag/v2.4.6
 [2.4.5]: https://github.com/square/anvil/releases/tag/v2.4.5
 [2.4.4]: https://github.com/square/anvil/releases/tag/v2.4.4
