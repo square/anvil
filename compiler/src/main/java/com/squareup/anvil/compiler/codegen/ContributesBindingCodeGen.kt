@@ -19,6 +19,7 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
+import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.createAnvilSpec
@@ -81,11 +82,12 @@ internal object ContributesBindingCodeGen {
   }
 
   internal class KspGenerator(
-    private val environment: SymbolProcessorEnvironment,
+    env: SymbolProcessorEnvironment,
     private val context: AnvilContext,
-  ) : SymbolProcessor {
+  ) : AnvilSymbolProcessor(env) {
+
     @OptIn(KspExperimental::class)
-    override fun process(resolver: Resolver): List<KSAnnotated> {
+    override fun processChecked(resolver: Resolver): List<KSAnnotated> {
       if (!context.generateFactoriesOnly) return emptyList()
 
       resolver
@@ -93,13 +95,13 @@ internal object ContributesBindingCodeGen {
         .mapNotNull { annotated ->
           when {
             annotated !is KSClassDeclaration -> {
-              environment.logger.error(
+              env.logger.error(
                 "Only classes can be annotated with @ContributesBinding.", annotated
               )
               return@mapNotNull null
             }
             annotated.getVisibility() != Visibility.PUBLIC -> {
-              environment.logger.error(
+              env.logger.error(
                 "${annotated.simpleName} is binding a type, but the class is not public. " +
                   "Only public types are supported.",
                 annotated
@@ -127,7 +129,7 @@ internal object ContributesBindingCodeGen {
           val spec = generate(className, scopes.asIterable())
 
           spec.writeTo(
-            environment.codeGenerator,
+            env.codeGenerator,
             aggregating = false,
             originatingKSFiles = listOf(clazz.containingFile!!)
           )
