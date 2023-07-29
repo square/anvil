@@ -13,7 +13,6 @@ import com.squareup.anvil.compiler.walkGeneratedFiles
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import java.io.File
 
 @Suppress("RemoveRedundantQualifierName")
 @RunWith(Parameterized::class)
@@ -155,9 +154,8 @@ class ContributesBindingGeneratorTest(
       assertThat(contributingClass.hintBinding?.java).isEqualTo(contributingClass)
       assertThat(contributingClass.hintBindingScope).isEqualTo(Any::class)
 
-      val generatedFile = File(outputDirectory.parent, "build/anvil")
-        .walk()
-        .single { it.isFile && it.extension == "kt" }
+      val generatedFile = walkGeneratedFiles(mode)
+        .single()
 
       assertThat(generatedFile.name).isEqualTo("Abc_ContributingClass.kt")
     }

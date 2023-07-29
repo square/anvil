@@ -7,8 +7,8 @@ import kotlin.reflect.KClass
 /**
  * Returns a sequence of [KSAnnotations][KSAnnotation] of the given [annotationKClass] type.
  */
-internal fun KSAnnotated.getKSAnnotationsByType(
-  annotationKClass: KClass<*>
+internal fun <T : Annotation> KSAnnotated.getKSAnnotationsByType(
+  annotationKClass: KClass<T>
 ): Sequence<KSAnnotation> {
   return annotations.filter {
     it.shortName.getShortName() == annotationKClass.simpleName &&
@@ -16,3 +16,20 @@ internal fun KSAnnotated.getKSAnnotationsByType(
       .declaration.qualifiedName?.asString() == annotationKClass.qualifiedName
   }
 }
+
+/**
+ * Returns a sequence of [KSAnnotations][KSAnnotation] of the given [qualifiedName].
+ */
+internal fun KSAnnotated.getKSAnnotationsByQualifiedName(
+  qualifiedName: String
+): Sequence<KSAnnotation> {
+  val simpleName = qualifiedName.substringAfterLast(".")
+  return annotations.filter {
+    it.shortName.getShortName() == simpleName &&
+      it.annotationType.resolve()
+      .declaration.qualifiedName?.asString() == qualifiedName
+  }
+}
+
+internal fun KSAnnotated.isAnnotationPresent(qualifiedName: String): Boolean =
+  getKSAnnotationsByQualifiedName(qualifiedName).firstOrNull() != null

@@ -1,13 +1,11 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.auto.service.AutoService
-import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
@@ -18,7 +16,11 @@ import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
+import com.squareup.anvil.compiler.codegen.ksp.checkClassExtendsBoundType
+import com.squareup.anvil.compiler.codegen.ksp.checkClassIsPublic
 import com.squareup.anvil.compiler.codegen.ksp.checkNoDuplicateScopeAndBoundType
+import com.squareup.anvil.compiler.codegen.ksp.checkNotMoreThanOneQualifier
+import com.squareup.anvil.compiler.codegen.ksp.checkSingleSuperType
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesBindingFqName
@@ -99,21 +101,17 @@ internal object ContributesBindingCodeGen {
               )
               return@mapNotNull null
             }
-
-            annotated.getVisibility() != Visibility.PUBLIC -> {
-              env.logger.error(
-                "${annotated.simpleName} is binding a type, but the class is not public. " +
-                  "Only public types are supported.",
-                annotated
-              )
-              return@mapNotNull null
-            }
-            // TODO
-            // clazz.checkNotMoreThanOneQualifier(contributesBindingFqName)
-            // clazz.checkSingleSuperType(contributesBindingFqName)
-            // clazz.checkClassExtendsBoundType(contributesBindingFqName)
             else -> annotated
           }
+        }
+        .onEach {
+          it.checkClassIsPublic {
+            "${it.qualifiedName?.asString()} is binding a type, but the class is not public. " +
+              "Only public types are supported."
+          }
+          it.checkNotMoreThanOneQualifier(contributesBindingFqName)
+          it.checkSingleSuperType(contributesBindingFqName, resolver)
+          it.checkClassExtendsBoundType(contributesBindingFqName, resolver)
         }
         .forEach { clazz ->
           val className = clazz.toClassName()

@@ -1,11 +1,15 @@
+@file:Suppress("invisible_reference", "invisible_member")
 package com.squareup.anvil.compiler.codegen.ksp
 
+import com.google.devtools.ksp.isDefault
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueArgument
-
-private const val DEFAULT_SCOPE_INDEX = 0
+import com.squareup.anvil.compiler.internal.daggerScopeFqName
+import com.squareup.anvil.compiler.internal.mapKeyFqName
+import com.squareup.anvil.compiler.qualifierFqName
+import org.jetbrains.kotlin.name.FqName
 
 internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScopeAndBoundType(
   annotatedType: KSClassDeclaration
@@ -39,25 +43,33 @@ internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScopeAndBoundType(
   }
 }
 
-internal fun KSAnnotation.scope(
-  parameterIndex: Int = DEFAULT_SCOPE_INDEX
-): KSType =
-  scopeOrNull(parameterIndex)
+internal fun KSAnnotation.scope(): KSType =
+  scopeOrNull()
     ?: throw KspAnvilException(
       message = "Couldn't find scope for ${annotationType.resolve().declaration.qualifiedName}.",
       this,
     )
 
-internal fun KSAnnotation.scopeOrNull(parameterIndex: Int = DEFAULT_SCOPE_INDEX): KSType? {
-  return argumentAt("scope", parameterIndex)?.value as? KSType?
+internal fun KSAnnotation.scopeOrNull(): KSType? {
+  return argumentAt("scope")?.value as? KSType?
 }
 
-internal fun KSAnnotation.boundTypeOrNull(): KSType? = argumentAt("boundType", 1)?.value as? KSType?
+internal fun KSAnnotation.boundTypeOrNull(): KSType? = argumentAt("boundType")?.value as? KSType?
 
 internal fun KSAnnotation.argumentAt(
   name: String,
-  index: Int
 ): KSValueArgument? {
-  return arguments.singleOrNull { it.name?.asString() == name }
-    ?: arguments.elementAtOrNull(index)?.takeIf { it.name == null }
+  arguments
+  return arguments.find { it.name?.asString() == name }
+    ?.takeUnless { it.isDefault() }
 }
+
+private fun KSAnnotation.isTypeAnnotatedWith(
+  annotationFqName: FqName
+): Boolean = annotationType.resolve()
+  .declaration
+  .isAnnotationPresent(annotationFqName.asString())
+
+internal fun KSAnnotation.isQualifier(): Boolean = isTypeAnnotatedWith(qualifierFqName)
+internal fun KSAnnotation.isMapKey(): Boolean = isTypeAnnotatedWith(mapKeyFqName)
+internal fun KSAnnotation.isDaggerScope(): Boolean = isTypeAnnotatedWith(daggerScopeFqName)
