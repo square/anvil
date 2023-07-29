@@ -1,11 +1,8 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.auto.service.AutoService
-import com.google.devtools.ksp.KspExperimental
-import com.google.devtools.ksp.getAnnotationsByType
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
@@ -21,6 +18,9 @@ import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
+import com.squareup.anvil.compiler.codegen.ksp.checkNoDuplicateScopeAndBoundType
+import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
+import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.asClassName
@@ -86,9 +86,8 @@ internal object ContributesBindingCodeGen {
     private val context: AnvilContext,
   ) : AnvilSymbolProcessor(env) {
 
-    @OptIn(KspExperimental::class)
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      if (!context.generateFactoriesOnly) return emptyList()
+      if (context.generateFactoriesOnly) return emptyList()
 
       resolver
         .getSymbolsWithAnnotation(contributesBindingFqName.asString())
@@ -100,6 +99,7 @@ internal object ContributesBindingCodeGen {
               )
               return@mapNotNull null
             }
+
             annotated.getVisibility() != Visibility.PUBLIC -> {
               env.logger.error(
                 "${annotated.simpleName} is binding a type, but the class is not public. " +
@@ -109,24 +109,24 @@ internal object ContributesBindingCodeGen {
               return@mapNotNull null
             }
             // TODO
-            //  clazz.checkNotMoreThanOneQualifier(contributesBindingFqName)
-            //  clazz.checkSingleSuperType(contributesBindingFqName)
-            //  clazz.checkClassExtendsBoundType(contributesBindingFqName)
+            // clazz.checkNotMoreThanOneQualifier(contributesBindingFqName)
+            // clazz.checkSingleSuperType(contributesBindingFqName)
+            // clazz.checkClassExtendsBoundType(contributesBindingFqName)
             else -> annotated
           }
         }
         .forEach { clazz ->
           val className = clazz.toClassName()
 
-          val scopes = clazz.getAnnotationsByType(ContributesBinding::class)
-            // TODO
-//            .also { it.checkNoDuplicateScopeAndBoundType() }
-            .distinctBy { it.scope }
-            .map { it.scope.asClassName() }
+          val scopes = clazz.getKSAnnotationsByType(ContributesBinding::class)
+            .toList()
+            .also { it.checkNoDuplicateScopeAndBoundType(clazz) }
+            .map { it.scope().toClassName() }
+            .distinct()
             // Give it a stable sort.
             .sortedBy { it.canonicalName }
 
-          val spec = generate(className, scopes.asIterable())
+          val spec = generate(className, scopes)
 
           spec.writeTo(
             env.codeGenerator,
