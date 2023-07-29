@@ -10,6 +10,7 @@ import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
+import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
@@ -47,7 +48,10 @@ import kotlin.reflect.KClass
  * the compiler plugin to find all contributed bindings a lot faster when merging modules and
  * component interfaces.
  */
-internal object ContributesBindingCodeGen {
+internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
+
+  override fun isApplicable(context: AnvilContext) = !context.generateFactoriesOnly
+
   fun generate(
     originClass: ClassName,
     scopes: Iterable<ClassName>,
@@ -85,12 +89,13 @@ internal object ContributesBindingCodeGen {
 
   internal class KspGenerator(
     env: SymbolProcessorEnvironment,
-    private val context: AnvilContext,
-  ) : AnvilSymbolProcessor(env) {
+    context: AnvilContext,
+  ) : AnvilSymbolProcessor(env, context) {
+
+    override fun isApplicable(context: AnvilContext) =
+      ContributesBindingCodeGen.isApplicable(context)
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      if (context.generateFactoriesOnly) return emptyList()
-
       resolver
         .getSymbolsWithAnnotation(contributesBindingFqName.asString())
         .mapNotNull { annotated ->
@@ -143,7 +148,8 @@ internal object ContributesBindingCodeGen {
   @AutoService(CodeGenerator::class)
   internal class AnvilGenerator : CodeGenerator {
 
-    override fun isApplicable(context: AnvilContext) = !context.generateFactoriesOnly
+    override fun isApplicable(context: AnvilContext) =
+      ContributesBindingCodeGen.isApplicable(context)
 
     override fun generateCode(
       codeGenDir: File,

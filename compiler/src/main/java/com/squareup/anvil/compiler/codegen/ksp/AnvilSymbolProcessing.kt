@@ -18,10 +18,12 @@ internal abstract class AnvilSymbolProcessorProvider(
 }
 
 internal abstract class AnvilSymbolProcessor(
-  protected val env: SymbolProcessorEnvironment
+  protected val env: SymbolProcessorEnvironment,
+  private val context: AnvilContext,
 ) : SymbolProcessor {
 
   final override fun process(resolver: Resolver): List<KSAnnotated> {
+    if (!isApplicable(context)) return emptyList()
     return try {
       processChecked(resolver)
     } catch (e: KspAnvilException) {
@@ -31,5 +33,7 @@ internal abstract class AnvilSymbolProcessor(
     }
   }
 
-  internal abstract fun processChecked(resolver: Resolver): List<KSAnnotated>
+  protected abstract fun isApplicable(context: AnvilContext): Boolean
+
+  protected abstract fun processChecked(resolver: Resolver): List<KSAnnotated>
 }

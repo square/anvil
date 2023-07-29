@@ -1,9 +1,17 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
+import com.google.devtools.ksp.processing.SymbolProcessorProvider
+import com.google.devtools.ksp.symbol.KSAnnotated
+import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
+import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
+import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
+import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
@@ -17,36 +25,71 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
-@AutoService(CodeGenerator::class)
-internal class AnvilAnnotationDetectorCheck : PrivateCodeGenerator() {
+internal object AnvilAnnotationDetectorCheck : AnvilApplicabilityChecker {
+
+  private const val MESSAGE = "This Gradle module is configured to ONLY " +
+    "generate Dagger factories with the `generateDaggerFactoriesOnly`" +
+    " flag. However, this module contains code that " +
+    "uses other Anvil annotations. That's not supported."
+  private val ANNOTATIONS_TO_CHECK = setOf(
+    mergeComponentFqName,
+    mergeSubcomponentFqName,
+    mergeInterfacesFqName,
+    mergeModulesFqName,
+    contributesToFqName,
+    contributesSubcomponentFqName,
+    contributesBindingFqName
+  )
 
   override fun isApplicable(context: AnvilContext) = context.generateFactoriesOnly &&
     !context.disableComponentMerging
 
-  override fun generateCodePrivate(
-    codeGenDir: File,
-    module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
-  ) {
-    val clazz = projectFiles
-      .classAndInnerClassReferences(module)
-      .firstOrNull {
-        it.isAnnotatedWith(mergeComponentFqName) ||
-          it.isAnnotatedWith(mergeSubcomponentFqName) ||
-          it.isAnnotatedWith(mergeInterfacesFqName) ||
-          it.isAnnotatedWith(mergeModulesFqName) ||
-          it.isAnnotatedWith(contributesToFqName) ||
-          it.isAnnotatedWith(contributesSubcomponentFqName) ||
-          it.isAnnotatedWith(contributesBindingFqName)
-      }
+  internal class KspGenerator(
+    env: SymbolProcessorEnvironment,
+    context: AnvilContext,
+  ) : AnvilSymbolProcessor(env, context) {
+    @AutoService(SymbolProcessorProvider::class)
+    class Provider : AnvilSymbolProcessorProvider(::KspGenerator)
 
-    if (clazz != null) {
-      throw AnvilCompilationExceptionClassReference(
-        message = "This Gradle module is configured to ONLY generate Dagger factories with " +
-          "the `generateDaggerFactoriesOnly` flag. However, this module contains code that " +
-          "uses other Anvil annotations. That's not supported.",
-        classReference = clazz
+    override fun isApplicable(context: AnvilContext) =
+      AnvilAnnotationDetectorCheck.isApplicable(context)
+
+    override fun processChecked(resolver: Resolver): List<KSAnnotated> {
+      val clazz = ANNOTATIONS_TO_CHECK.flatMap {
+        resolver.getSymbolsWithAnnotation(it.asString())
+      }
+        .firstOrNull() ?: return emptyList()
+
+      throw KspAnvilException(
+        message = MESSAGE,
+        node = clazz
       )
+    }
+  }
+
+  @AutoService(CodeGenerator::class)
+  internal class AnvilGenerator : PrivateCodeGenerator() {
+
+    override fun isApplicable(context: AnvilContext) =
+      AnvilAnnotationDetectorCheck.isApplicable(context)
+
+    override fun generateCodePrivate(
+      codeGenDir: File,
+      module: ModuleDescriptor,
+      projectFiles: Collection<KtFile>
+    ) {
+      val clazz = projectFiles
+        .classAndInnerClassReferences(module)
+        .firstOrNull { clazz ->
+          ANNOTATIONS_TO_CHECK.any { clazz.isAnnotatedWith(it) }
+        }
+
+      if (clazz != null) {
+        throw AnvilCompilationExceptionClassReference(
+          message = MESSAGE,
+          classReference = clazz
+        )
+      }
     }
   }
 }
