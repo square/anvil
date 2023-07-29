@@ -6,13 +6,15 @@ class CommandLineOptions private constructor(
   val generateFactories: Boolean,
   val generateFactoriesOnly: Boolean,
   val disableComponentMerging: Boolean,
+  val compilationMode: String,
 ) {
   companion object {
     val CompilerConfiguration.commandLineOptions: CommandLineOptions
       get() = CommandLineOptions(
         generateFactories = get(generateDaggerFactoriesKey, false),
         generateFactoriesOnly = get(generateDaggerFactoriesOnlyKey, false),
-        disableComponentMerging = get(disableComponentMergingKey, false)
+        disableComponentMerging = get(disableComponentMergingKey, false),
+        compilationMode = get(compilationModeKey, "embedded"),
       )
   }
 }

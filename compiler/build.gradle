@@ -28,6 +28,7 @@ dependencies {
   testImplementation libs.kotlin.annotationProcessingEmbeddable
   testImplementation libs.kotlin.compileTesting
   testImplementation libs.kotlin.compileTesting.ksp
+  testImplementation libs.ksp.compilerPlugin
   testImplementation libs.kotlin.compiler
   testImplementation libs.kotlin.test
   testImplementation libs.truth

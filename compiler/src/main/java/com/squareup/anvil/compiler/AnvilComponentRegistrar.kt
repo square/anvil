@@ -20,6 +20,7 @@ import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.io.File
 import java.util.ServiceLoader
+import kotlin.LazyThreadSafetyMode.NONE
 
 /**
  * Entry point for the Anvil Kotlin compiler plugin. It registers several callbacks for the
@@ -34,17 +35,39 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     project: MockProject,
     configuration: CompilerConfiguration
   ) {
-    val sourceGenFolder = File(configuration.getNotNull(srcGenDirKey))
-    val scanner = ClassScanner()
     val commandLineOptions = configuration.commandLineOptions
+    val scanner by lazy(NONE) {
+      ClassScanner()
+    }
+    val moduleDescriptorFactory by lazy(NONE) {
+      RealAnvilModuleDescriptor.Factory()
+    }
+
+    if (!commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging) {
+      SyntheticResolveExtension.registerExtension(
+        project,
+        InterfaceMerger(scanner, moduleDescriptorFactory)
+      )
+
+      IrGenerationExtension.registerExtension(
+        project,
+        ModuleMergerIr(scanner, moduleDescriptorFactory)
+      )
+    }
+
+    // Everything below this point is only when running in embedded compilation mode. If running in
+    // KSP, there's nothing else to do.
+    if (commandLineOptions.compilationMode != "embedded") {
+      return
+    }
+
+    val sourceGenFolder = File(configuration.getNotNull(srcGenDirKey))
 
     val codeGenerators = loadCodeGenerators() +
       manuallyAddedCodeGenerators +
       // We special case these due to the ClassScanner requirement.
       BindingModuleGenerator(scanner) +
       ContributesSubcomponentHandlerGenerator(scanner)
-
-    val moduleDescriptorFactory = RealAnvilModuleDescriptor.Factory()
 
     // It's important to register our extension at the first position. The compiler calls each
     // extension one by one. If an extension returns a result, then the compiler won't call any
@@ -63,18 +86,6 @@ class AnvilComponentRegistrar : ComponentRegistrar {
         moduleDescriptorFactory = moduleDescriptorFactory
       )
     )
-
-    if (!commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging) {
-      SyntheticResolveExtension.registerExtension(
-        project,
-        InterfaceMerger(scanner, moduleDescriptorFactory)
-      )
-
-      IrGenerationExtension.registerExtension(
-        project,
-        ModuleMergerIr(scanner, moduleDescriptorFactory)
-      )
-    }
   }
 
   private fun AnalysisHandlerExtension.Companion.registerExtensionFirst(
