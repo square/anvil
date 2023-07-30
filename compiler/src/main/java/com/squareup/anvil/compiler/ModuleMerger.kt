@@ -20,7 +20,6 @@ import org.jetbrains.kotlin.codegen.ImplementationBodyCodegen
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.resolve.descriptorUtil.module
 import org.jetbrains.org.objectweb.asm.Type
 
 /**
@@ -32,17 +31,12 @@ import org.jetbrains.org.objectweb.asm.Type
  */
 internal object ModuleMerger {
 
-  internal data class MergeResult(
-    val predefinedModules: List<ClassReference>,
-    val contributedModuleTypes: Set<ClassReference>
-  )
-
   fun mergeModules(
     classScanner: ClassScanner,
     module: RealAnvilModuleDescriptor,
     clazz: ClassReference,
     annotations: List<AnnotationReference>
-  ): MergeResult {
+  ): Set<ClassReference> {
     val scopes = annotations.map { it.scope() }
 
     val predefinedModules = annotations.flatMap {
@@ -203,10 +197,12 @@ internal object ModuleMerger {
       .minus(replacedModulesByContributedBindings.toSet())
       .minus(replacedModulesByContributedMultibindings.toSet())
       .minus(excludedModules.toSet())
+      .plus(predefinedModules)
       .plus(contributedSubcomponentModules)
+      .distinct()
       .toSet()
 
-    return MergeResult(predefinedModules, contributedModuleTypes)
+    return contributedModuleTypes
   }
 
   @Suppress("UNCHECKED_CAST")

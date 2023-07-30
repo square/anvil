@@ -1,17 +1,18 @@
 package com.squareup.anvil.compiler.ksp
 
 import com.google.auto.service.AutoService
+import com.google.devtools.ksp.getClassDeclarationByName
 import com.google.devtools.ksp.isLocal
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessor
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
+import com.google.devtools.ksp.processing.impl.KSNameImpl
 import com.google.devtools.ksp.processing.impl.ResolverImpl
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSDeclaration
-import com.google.devtools.ksp.symbol.KSName
 import com.google.devtools.ksp.symbol.KSNode
 import com.google.devtools.ksp.symbol.KSReferenceElement
 import com.google.devtools.ksp.symbol.KSType
@@ -26,10 +27,10 @@ import com.google.devtools.ksp.symbol.impl.binary.KSAnnotationDescriptorImpl
 import com.google.devtools.ksp.symbol.impl.java.KSAnnotationJavaImpl
 import com.google.devtools.ksp.symbol.impl.kotlin.KSAnnotationImpl
 import com.google.devtools.ksp.symbol.impl.kotlin.KSTypeImpl
+import com.google.devtools.ksp.symbol.impl.kotlin.KSValueArgumentLiteImpl
 import com.squareup.anvil.compiler.ClassScanner
 import com.squareup.anvil.compiler.InterfaceMerger
 import com.squareup.anvil.compiler.ModuleMerger
-import com.squareup.anvil.compiler.ModuleMerger.MergeResult
 import com.squareup.anvil.compiler.codegen.findAll
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
@@ -193,14 +194,14 @@ class DecoratedResolver(private val delegate: Resolver) : Resolver by delegate {
       return this
     }
 
-    val moduleMergeResult = ModuleMerger.mergeModules(
+    val mergedModules = ModuleMerger.mergeModules(
       classScanner,
       module,
       clazz,
       mergeAnnotationReferences,
     )
-    val newAnnotations = annotations + moduleMergeResult
-      .toModuleAnnotation(annotationClassReference, filteredMergeAnnotations[0])
+    val newAnnotations = annotations +
+      ModuleKSAnnotation(filteredMergeAnnotations[0], mergedModules, delegate)
 
     return replaceAnnotations(newAnnotations.toList())
   }
@@ -261,19 +262,24 @@ private fun KSDeclaration.shouldIgnore(): Boolean {
   return qualifiedName == null || isLocal()
 }
 
-// TODO implement this
-private fun MergeResult.toModuleAnnotation(
-  classReference: ClassReference,
-  delegate: KSAnnotation,
-): KSAnnotation {
-  return object : KSAnnotation by delegate {
-    override val annotationType: KSTypeReference
-      get() = TODO("Not yet implemented")
-    override val arguments: List<KSValueArgument>
-      get() = TODO("Not yet implemented")
-    override val defaultArguments: List<KSValueArgument>
-      get() = TODO("Not yet implemented")
-    override val shortName: KSName
-      get() = TODO("Not yet implemented")
-  }
+class ModuleKSAnnotation(
+  private val delegate: KSAnnotation,
+  private val mergedModules: Set<ClassReference>,
+  private val resolver: Resolver,
+) : KSAnnotation by delegate {
+  override val arguments: List<KSValueArgument>
+    get() = listOf(
+      KSValueArgumentLiteImpl.getCached(
+        name = KSNameImpl.getCached("modules"),
+        value = listOf(
+          mergedModules.map { type ->
+            resolver.getClassDeclarationByName(type.fqName.asString())!!.asType(emptyList())
+          }
+        ),
+        parent = this,
+        origin = origin
+      )
+    )
+  override val defaultArguments: List<KSValueArgument>
+    get() = emptyList()
 }

@@ -229,20 +229,20 @@ public fun compileAnvil(
   block: Result.() -> Unit = { },
 ): Result {
   return compileAnvilWithCompilation(
-          sources = sources,
-          daggerAnnotationProcessingMode = daggerAnnotationProcessingMode,
-          generateDaggerFactories = generateDaggerFactories,
-          generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
-          disableComponentMerging = disableComponentMerging,
-          allWarningsAsErrors = allWarningsAsErrors,
-          messageOutputStream = messageOutputStream,
-          workingDir = workingDir,
-          enableExperimentalAnvilApis = enableExperimentalAnvilApis,
-          previousCompilationResult = previousCompilationResult,
-          codeGenerators = codeGenerators,
-          moduleName = moduleName,
-          jvmTarget = jvmTarget,
-          block = { block() }
+    sources = sources,
+    daggerAnnotationProcessingMode = daggerAnnotationProcessingMode,
+    generateDaggerFactories = generateDaggerFactories,
+    generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
+    disableComponentMerging = disableComponentMerging,
+    allWarningsAsErrors = allWarningsAsErrors,
+    messageOutputStream = messageOutputStream,
+    workingDir = workingDir,
+    enableExperimentalAnvilApis = enableExperimentalAnvilApis,
+    previousCompilationResult = previousCompilationResult,
+    codeGenerators = codeGenerators,
+    moduleName = moduleName,
+    jvmTarget = jvmTarget,
+    block = { block() }
   )
 }
 
