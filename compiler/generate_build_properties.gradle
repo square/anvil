@@ -9,7 +9,6 @@ def generateBuildProperties = project.tasks.register('generateBuildProperties') 
 
   inputs.property 'fullTestRun', libs.versions.config.fullTestRun.get()
   inputs.property 'kotlinVersion', libs.versions.kotlin.get()
-  inputs.property 'kotlinPreview', rootProject.ext.kotlinPreview
   inputs.property 'warningsAsErrors', rootProject.ext.warningsAsErrors
 
   outputs.file buildPropertiesFile
@@ -18,8 +17,6 @@ def generateBuildProperties = project.tasks.register('generateBuildProperties') 
     buildPropertiesFile.parentFile.mkdirs()
     buildPropertiesFile.write """\
       package com.squareup.anvil.compiler
-      
-      internal const val KOTLIN_PREVIEW = ${rootProject.ext.kotlinPreview}
 
       internal const val WARNINGS_AS_ERRORS = ${rootProject.ext.warningsAsErrors}
      
