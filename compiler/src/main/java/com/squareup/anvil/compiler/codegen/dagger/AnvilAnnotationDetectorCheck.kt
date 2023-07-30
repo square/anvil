@@ -45,20 +45,18 @@ internal object AnvilAnnotationDetectorCheck : AnvilApplicabilityChecker {
     !context.disableComponentMerging
 
   internal class KspGenerator(
-    env: SymbolProcessorEnvironment,
-    context: AnvilContext,
-  ) : AnvilSymbolProcessor(env, context) {
+    override val env: SymbolProcessorEnvironment,
+  ) : AnvilSymbolProcessor() {
     @AutoService(SymbolProcessorProvider::class)
-    class Provider : AnvilSymbolProcessorProvider(::KspGenerator)
-
-    override fun isApplicable(context: AnvilContext) =
-      AnvilAnnotationDetectorCheck.isApplicable(context)
+    class Provider : AnvilSymbolProcessorProvider(AnvilAnnotationDetectorCheck, ::KspGenerator)
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      val clazz = ANNOTATIONS_TO_CHECK.flatMap {
-        resolver.getSymbolsWithAnnotation(it.asString())
-      }
-        .firstOrNull() ?: return emptyList()
+      val clazz = ANNOTATIONS_TO_CHECK
+        .flatMap {
+          resolver.getSymbolsWithAnnotation(it.asString())
+        }
+        .firstOrNull()
+        ?: return emptyList()
 
       throw KspAnvilException(
         message = MESSAGE,

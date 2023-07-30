@@ -88,12 +88,8 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
   }
 
   internal class KspGenerator(
-    env: SymbolProcessorEnvironment,
-    context: AnvilContext,
-  ) : AnvilSymbolProcessor(env, context) {
-
-    override fun isApplicable(context: AnvilContext) =
-      ContributesBindingCodeGen.isApplicable(context)
+    override val env: SymbolProcessorEnvironment,
+  ) : AnvilSymbolProcessor() {
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
       resolver
@@ -142,7 +138,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
     }
 
     @AutoService(SymbolProcessorProvider::class)
-    class Provider : AnvilSymbolProcessorProvider(::KspGenerator)
+    class Provider : AnvilSymbolProcessorProvider(ContributesBindingCodeGen, ::KspGenerator)
   }
 
   @AutoService(CodeGenerator::class)
