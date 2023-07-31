@@ -3,16 +3,12 @@ package com.squareup.anvil.compiler.dagger
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.assistedService
-import com.squareup.anvil.compiler.internal.testing.TestWhitelistType
-import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.BLACKLISTED
-import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.EMPTY
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -20,7 +16,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import javax.inject.Provider
-import kotlin.test.assertFails
 
 @RunWith(Parameterized::class)
 class AssistedInjectGeneratorTest(
@@ -645,45 +640,13 @@ public final class AssistedService_Factory {
     }
   }
 
-  @Test fun `a factory class is not generated when blacklisted`() {
-    if (useDagger) {
-      // Factory will always get generated with dagger involved
-      return
-    }
-
-    compile(
-      """
-      package com.squareup.test
-      
-      import dagger.assisted.Assisted
-      import dagger.assisted.AssistedInject
-      
-      data class AssistedService @AssistedInject constructor(
-        val int: Int,
-        @Assisted val string: String
-      )
-      """,
-      whitelist = BLACKLISTED
-    ) {
-      assertThat(exitCode).isEqualTo(ExitCode.OK)
-
-      val exception = assertFails {
-        assistedService.factoryClass()
-      }
-
-      assertThat(exception).isInstanceOf(ClassNotFoundException::class.java)
-    }
-  }
-
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    whitelist: TestWhitelistType = EMPTY,
     block: Result.() -> Unit = { }
   ): Result = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
-    generateDaggerFactoriesWhitelist = whitelist,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block
   )

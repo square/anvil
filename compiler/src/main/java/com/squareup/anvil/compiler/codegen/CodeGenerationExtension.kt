@@ -8,7 +8,6 @@ import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.analyzer.AnalysisResult.RetryWithAdditionalRoots
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
-import org.jetbrains.kotlin.com.intellij.openapi.util.Key
 import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.com.intellij.testFramework.LightVirtualFile
 import org.jetbrains.kotlin.container.ComponentProvider
@@ -94,9 +93,7 @@ internal class CodeGenerationExtension(
             content
           )
 
-          psiManager.findFile(virtualFile)?.also {
-            it.putUserData(IS_GENERATED_BY_ANVIL, true)
-          }
+          psiManager.findFile(virtualFile)
         }
         .filterIsInstance<KtFile>()
         .also { anvilModule.addFiles(it) }
@@ -163,5 +160,3 @@ internal class CodeGenerationExtension(
     )
   }
 }
-
-val IS_GENERATED_BY_ANVIL = Key<Boolean>("generated_by_anvil")

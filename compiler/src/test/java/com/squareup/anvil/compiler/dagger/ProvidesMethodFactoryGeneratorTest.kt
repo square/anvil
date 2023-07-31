@@ -3,19 +3,14 @@ package com.squareup.anvil.compiler.dagger
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.anvilModule
-import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
 import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
 import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
-import com.squareup.anvil.compiler.internal.testing.TestWhitelistType
-import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.BLACKLISTED
-import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.EMPTY
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
-import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.isError
@@ -33,7 +28,6 @@ import org.junit.runners.Parameterized.Parameters
 import java.io.File
 import java.util.Date
 import javax.inject.Provider
-import kotlin.test.assertFails
 
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
@@ -3505,45 +3499,16 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     }
   }
 
-  @Test fun `a factory class is not generated when blacklisted`() {
-    if (useDagger) {
-      // Factory will always get generated with dagger involved
-      return
-    }
-
-    compile(
-      """
-      package com.squareup.test
-      
-      @dagger.Module
-      class DaggerModule1 {
-        @dagger.Provides fun provideString(): String = "abc"
-      }
-      """,
-      whitelist = BLACKLISTED
-    ) {
-      assertThat(exitCode).isEqualTo(ExitCode.OK)
-
-      val exception = assertFails {
-        daggerModule1.moduleFactoryClass("provideString")
-      }
-
-      assertThat(exception).isInstanceOf(ClassNotFoundException::class.java)
-    }
-  }
-
   private fun compile(
     @Language("kotlin") vararg sources: String,
     enableDagger: Boolean = useDagger,
     previousCompilationResult: Result? = null,
     moduleName: String? = null,
-    whitelist: TestWhitelistType = EMPTY,
     block: Result.() -> Unit = { },
   ): Result = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = enableDagger,
     generateDaggerFactories = !enableDagger,
-    generateDaggerFactoriesWhitelist = whitelist,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block,
     previousCompilationResult = previousCompilationResult,

@@ -6,10 +6,6 @@ import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.assistedServiceFactory
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
-import com.squareup.anvil.compiler.internal.testing.TestWhitelistType
-import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.BLACKLISTED
-import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.EMPTY
-import com.squareup.anvil.compiler.internal.testing.TestWhitelistType.WHITELISTED
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
@@ -19,7 +15,6 @@ import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
@@ -28,7 +23,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import javax.inject.Provider
-import kotlin.test.assertFails
 
 @RunWith(Parameterized::class)
 class AssistedFactoryGeneratorTest(
@@ -2019,71 +2013,22 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
-  @Test fun `an implementation for a factory class is not generated when blacklisted`() {
-    if (useDagger) {
-      // Factory will always get generated with dagger involved
-      return
-    }
-
-    compile(
-      """
-      package com.squareup.test
-      
-      import dagger.assisted.Assisted
-      import dagger.assisted.AssistedFactory
-      import dagger.assisted.AssistedInject
-      import javax.inject.Inject
-      
-      data class AssistedService @AssistedInject constructor(
-        val int: Int,
-        @Assisted val string: String
-      ) {
-        @Inject lateinit var member: List<String>
-      }
-      
-      @AssistedFactory
-      interface AssistedServiceFactory {
-        fun create(string: String): AssistedService
-      }
-      """,
-      whitelistType = BLACKLISTED
-    ) {
-      assertThat(exitCode).isEqualTo(ExitCode.OK)
-
-      val exception = assertFails {
-        assistedServiceFactory.implClass()
-      }
-
-      assertThat(exception).isInstanceOf(ClassNotFoundException::class.java)
-    }
-  }
-
-  private fun prepareCompilation(whitelistType: TestWhitelistType = EMPTY): AnvilCompilation {
-    val whitelist: List<String>
-
+  private fun prepareCompilation(): AnvilCompilation {
     return AnvilCompilation()
       .apply {
         kotlinCompilation.allWarningsAsErrors = WARNINGS_AS_ERRORS
-
-        whitelist = when (whitelistType) {
-          EMPTY -> emptyList()
-          WHITELISTED -> listOf(kotlinCompilation.workingDir.absolutePath)
-          BLACKLISTED -> listOf("some-other-folder")
-        }
       }
       .configureAnvil(
         enableDaggerAnnotationProcessor = useDagger,
         generateDaggerFactories = !useDagger,
-        generateDaggerFactoriesPathWhitelist = whitelist,
       )
   }
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    whitelistType: TestWhitelistType = EMPTY,
     block: Result.() -> Unit = { }
   ): Result {
-    return prepareCompilation(whitelistType)
+    return prepareCompilation()
       .compile(*sources)
       .apply(block)
   }
