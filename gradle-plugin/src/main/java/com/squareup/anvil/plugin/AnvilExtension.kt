@@ -35,12 +35,12 @@ public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory)
     .convention(false)
 
   /**
-   * Whitelist of all source sets (such as main, test etc.) that Anvil should generate dagger
+   * Allowlist of all source sets (such as main, test etc.) that Anvil should generate dagger
    * factories in, if factory generation is enabled.
    *
    * When empty, Anvil will generate factories in all source sets.
    */
-  public var generateDaggerFactoriesSourceSetWhitelist: ListProperty<String> =
+  public var generateDaggerFactoriesSourceSetAllowlist: ListProperty<String> =
     objects.listProperty(String::class.java)
 
   /**

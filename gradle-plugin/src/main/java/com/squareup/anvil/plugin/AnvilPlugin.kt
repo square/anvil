@@ -155,8 +155,8 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       }
     }
 
-    val whitelistedVariants = variant.variantFilter
-      .generateDaggerFactoriesSourceSetWhitelist.map { sourceSetName ->
+    val allowlistedVariants = variant.variantFilter
+      .generateDaggerFactoriesSourceSetAllowlist.map { sourceSetName ->
       val sourceSet = variant.kotlinSourceSets.singleOrNull { it.name == sourceSetName }
         ?: throw GradleException("Unknown variant $sourceSetName. Available variants: " +
                 "${variant.kotlinSourceSets.joinToString { it.name }}"
@@ -165,10 +165,10 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       sourceSet
     }
 
-    val enableDaggerFactoriesInThisVariant = whitelistedVariants.isEmpty() ||
+    val enableDaggerFactoriesInThisVariant = allowlistedVariants.isEmpty() ||
       variant.androidSourceSets?.any { androidSourceSet ->
-        whitelistedVariants.any { whitelistedSourceSet ->
-          whitelistedSourceSet.name == androidSourceSet.name
+        allowlistedVariants.any { allowlistedSourceSet ->
+          allowlistedSourceSet.name == androidSourceSet.name
         }
       } == true
 

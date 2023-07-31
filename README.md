@@ -239,11 +239,11 @@ keep all other dependencies.
 
 If you want to only enable Dagger factory generation on some source sets 
 (such as only in main source set or only in tests), you can add those source sets
-to the whitelist:
+to the allowlist:
 
 ```groovy
 anvil {
-  generateDaggerFactoriesSourceSetWhitelist.add("main")
+  generateDaggerFactoriesSourceSetAllowlist.add("main")
 }
 ```
 
