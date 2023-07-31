@@ -12,6 +12,10 @@ if (libs.versions.config.generateDaggerFactoriesWithAnvil.get().toBoolean()) {
 
   dependencies {
     kapt libs.dagger2.compiler
+
+    // Necessary because this is what dagger uses when it runs to support instantiating annotations at runtime
+    implementation libs.auto.value.annotations
+    kapt libs.auto.value.processor
   }
 }
 
