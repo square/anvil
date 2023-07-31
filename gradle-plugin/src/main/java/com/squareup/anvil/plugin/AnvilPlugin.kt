@@ -155,13 +155,22 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       }
     }
 
-    val variantWhitelist = variant.variantFilter.generateDaggerFactoriesSourceSetWhitelist.flatMap {sourceSetName ->
+    val whitelistedVariants = variant.variantFilter
+      .generateDaggerFactoriesSourceSetWhitelist.map { sourceSetName ->
       val sourceSet = variant.kotlinSourceSets.singleOrNull { it.name == sourceSetName }
         ?: throw GradleException("Unknown variant $sourceSetName. Available variants: " +
-          "${variant.kotlinSourceSets.joinToString { it.name }}")
+                "${variant.kotlinSourceSets.joinToString { it.name }}"
+        )
 
-      sourceSet.kotlin.srcDirs
+      sourceSet
     }
+
+    val enableDaggerFactoriesInThisVariant = whitelistedVariants.isEmpty() ||
+      variant.androidSourceSets?.any { androidSourceSet ->
+        whitelistedVariants.any { whitelistedSourceSet ->
+          whitelistedSourceSet.name == androidSourceSet.name
+        }
+      } == true
 
     return project.provider {
       listOf(
@@ -171,15 +180,13 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         ),
         SubpluginOption(
           key = "generate-dagger-factories",
-          lazy { variant.variantFilter.generateDaggerFactories.toString() }
-        ),
-        SubpluginOption(
-          key = "generate-dagger-factories-path-whitelist",
-          lazy { variantWhitelist.joinToString(":") { it.absolutePath } }
+          lazy { (variant.variantFilter.generateDaggerFactories &&
+                  enableDaggerFactoriesInThisVariant).toString() }
         ),
         SubpluginOption(
           key = "generate-dagger-factories-only",
-          lazy { variant.variantFilter.generateDaggerFactoriesOnly.toString() }
+          lazy { (variant.variantFilter.generateDaggerFactoriesOnly &&
+                  enableDaggerFactoriesInThisVariant).toString() }
         ),
         SubpluginOption(
           key = "disable-component-merging",
