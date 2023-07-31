@@ -27,7 +27,6 @@ String kotlinVersion = libs.versions.kotlin.get()
 
 ext {
   ci = isCi
-  kotlinPreview = !kotlinVersion.startsWith('1.8.21')
   fullTestRun = libs.versions.config.fullTestRun.get().toBoolean()
   warningsAsErrors = isCi
 }

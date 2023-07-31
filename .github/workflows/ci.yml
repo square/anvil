@@ -16,7 +16,7 @@ jobs :
     strategy :
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.8.21 ]
+        kotlin-version : [ 1.8.22, 1.9.0 ]
 
     steps :
       - uses : actions/checkout@v3
@@ -135,8 +135,15 @@ jobs :
           java-version : '11'
           check-latest : true
 
-      - name : Publish Snapshots
+      - name : Publish Snapshots 1.9
         run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace && cd ..
+        env :
+          ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
+
+      # TODO: Remove when we drop Kotlin 1.8 support
+      - name : Publish Snapshots 1.8
+        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel -Doverride_kotlin=1.8.22 -PVERSION_NAME=2.4.8-1-8-SNAPSHOT && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=1.8.22 -PVERSION_NAME=2.4.8-1-8-SNAPSHOT && cd ..
         env :
           ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
@@ -155,7 +162,7 @@ jobs :
       # solution.
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.8.21 ]
+        kotlin-version : [ 1.8.22, 1.9.0 ]
         agp-version : [ 7.1.1, 7.2.0, 7.3.1 ]
 
     steps :
@@ -206,7 +213,7 @@ jobs :
       # solution.
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.8.21 ]
+        kotlin-version : [ 1.8.22, 1.9.0 ]
 
     steps :
       - uses : actions/checkout@v3
