@@ -10,20 +10,21 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesMultibindingFqName
-import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 import kotlin.reflect.KClass
+import org.jetbrains.kotlin.descriptors.ModuleDescriptor
+import org.jetbrains.kotlin.psi.KtFile
 
 /**
  * Generates a hint for each contributed class in the `anvil.hint.multibinding` package. This
@@ -31,6 +32,43 @@ import kotlin.reflect.KClass
  * modules and component interfaces.
  */
 internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
+
+  fun generate(
+    className: ClassName,
+    scopes: List<ClassName>
+  ): FileSpec {
+    val fileName = className.generateClassName().simpleName
+    val generatedPackage = HINT_MULTIBINDING_PACKAGE_PREFIX +
+            className.packageName.safePackageString(dotPrefix = true)
+    val classFqName = className.canonicalName
+    val propertyName = classFqName.replace('.', '_')
+
+    return FileSpec.createAnvilSpec(generatedPackage, fileName) {
+      addProperty(
+        PropertySpec
+          .builder(
+            name = propertyName + REFERENCE_SUFFIX,
+            type = KClass::class.asClassName().parameterizedBy(className)
+          )
+          .initializer("%T::class", className)
+          .addModifiers(PUBLIC)
+          .build()
+      )
+
+      scopes.forEachIndexed { index, scope ->
+        addProperty(
+          PropertySpec
+            .builder(
+              name = propertyName + SCOPE_SUFFIX + index,
+              type = KClass::class.asClassName().parameterizedBy(scope)
+            )
+            .initializer("%T::class", scope)
+            .addModifiers(PUBLIC)
+            .build()
+        )
+      }
+    }
+  }
 
   override fun isApplicable(context: AnvilContext) = !context.generateFactoriesOnly
 
@@ -58,13 +96,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
           clazz.checkClassExtendsBoundType(contributesMultibindingFqName)
         }
         .map { clazz ->
-          val fileName = clazz.generateClassName().relativeClassName.asString()
-          val generatedPackage = HINT_MULTIBINDING_PACKAGE_PREFIX +
-            clazz.packageFqName.safePackageString(dotPrefix = true)
           val className = clazz.asClassName()
-          val classFqName = clazz.fqName.toString()
-          val propertyName = classFqName.replace('.', '_')
-
           val scopes = clazz.annotations
             .find(contributesMultibindingFqName)
             .also { it.checkNoDuplicateScopeAndBoundType() }
@@ -73,38 +105,14 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
             .sortedBy { it.scope() }
             .map { it.scope().asClassName() }
 
-          val content =
-            FileSpec.buildFile(generatedPackage, fileName) {
-              addProperty(
-                PropertySpec
-                  .builder(
-                    name = propertyName + REFERENCE_SUFFIX,
-                    type = KClass::class.asClassName().parameterizedBy(className)
-                  )
-                  .initializer("%T::class", className)
-                  .addModifiers(PUBLIC)
-                  .build()
-              )
 
-              scopes.forEachIndexed { index, scope ->
-                addProperty(
-                  PropertySpec
-                    .builder(
-                      name = propertyName + SCOPE_SUFFIX + index,
-                      type = KClass::class.asClassName().parameterizedBy(scope)
-                    )
-                    .initializer("%T::class", scope)
-                    .addModifiers(PUBLIC)
-                    .build()
-                )
-              }
-            }
+          val spec = generate(className, scopes)
 
           createGeneratedFile(
             codeGenDir = codeGenDir,
-            packageName = generatedPackage,
-            fileName = fileName,
-            content = content
+            packageName = spec.packageName,
+            fileName = spec.name,
+            content = spec.toString()
           )
         }
         .toList()
