@@ -50,6 +50,13 @@ public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory)
   public val syncGeneratedSources: Property<Boolean> = objects.property(Boolean::class.java)
     .convention(false)
 
+  /**
+   * Add the `annotations-optional` artifact as a dependency to make `SingleIn` and `ForScope` 
+   * available to use.
+   */
+  public val addOptionalAnnotations: Property<Boolean> = objects.property(Boolean::class.java)
+    .convention(false)
+
   @Suppress("PropertyName")
   internal var _variantFilter: Action<VariantFilter>? = null
 

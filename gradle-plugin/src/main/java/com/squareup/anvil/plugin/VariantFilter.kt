@@ -36,6 +36,12 @@ public interface VariantFilter : Named {
    * IDE. This can be useful in debugging and is disabled by default.
    */
   public var syncGeneratedSources: Boolean
+
+  /**
+   * Add the `annotations-optional` artifact as a dependency to make `SingleIn` and `ForScope` 
+   * available to use.
+   */
+  public var addOptionalAnnotations: Boolean
 }
 
 internal class CommonFilter(
@@ -71,6 +77,13 @@ internal class CommonFilter(
     get() = syncGeneratedSourcesOverride ?: extension.syncGeneratedSources.get()
     set(value) {
       syncGeneratedSourcesOverride = value
+    }
+
+  private var addOptionalAnnotationsOverride: Boolean? = null
+  override var addOptionalAnnotations: Boolean
+    get() = addOptionalAnnotationsOverride ?: extension.addOptionalAnnotations.get()
+    set(value) {
+      addOptionalAnnotationsOverride = value
     }
 }
 

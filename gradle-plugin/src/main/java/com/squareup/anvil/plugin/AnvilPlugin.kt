@@ -124,6 +124,11 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         implementation("$GROUP:annotations:$VERSION")
       }
     }
+    if (variant.variantFilter.addOptionalAnnotations) {
+      kotlinCompilation.dependencies {
+        implementation("$GROUP:annotations-optional:$VERSION")
+      }
+    }
 
     // Notice that we use the name of the variant as a directory name. Generated code
     // for this specific compile task will be included in the task output. The output of different
