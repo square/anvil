@@ -364,9 +364,24 @@ public fun ClassReference.generateClassName(
   separator: String = "_",
   suffix: String = ""
 ): ClassId {
-  val className = enclosingClassesWithSelf().joinToString(separator = separator) { it.shortName }
-  return ClassId(packageFqName, FqName(className + suffix), false)
+  return asClassName().generateClassName(separator, suffix).asClassId()
 }
+
+@ExperimentalAnvilApi
+public fun ClassName.generateClassName(
+  separator: String = "_",
+  suffix: String = ""
+): ClassName {
+  val className = simpleNames.joinToString(separator = separator)
+  return ClassName(packageName, className + suffix)
+}
+
+@ExperimentalAnvilApi
+public fun ClassName.asClassId(local: Boolean = false): ClassId = ClassId(
+  FqName(packageName),
+  FqName(simpleNames.joinToString(".")),
+  local
+)
 
 @ExperimentalAnvilApi
 public fun ClassReference.asClassName(): ClassName = classId.asClassName()

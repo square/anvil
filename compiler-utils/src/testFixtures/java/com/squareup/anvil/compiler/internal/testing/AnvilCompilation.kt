@@ -1,21 +1,28 @@
 package com.squareup.anvil.compiler.internal.testing
 
 import com.google.auto.value.processor.AutoAnnotationProcessor
+import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
-import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.addPreviousResultToClasspath
+import com.tschuchort.compiletesting.kspArgs
+import com.tschuchort.compiletesting.kspWithCompilation
+import com.tschuchort.compiletesting.symbolProcessorProviders
 import dagger.internal.codegen.ComponentProcessor
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.config.JvmTarget
 import java.io.File
 import java.io.OutputStream
 import java.nio.file.Files
+import java.util.Locale
+import java.util.ServiceLoader
 
 /**
  * A simple API over a [KotlinCompilation] with extra configuration support for Anvil.
@@ -37,7 +44,7 @@ public class AnvilCompilation internal constructor(
     generateDaggerFactoriesOnly: Boolean = false,
     disableComponentMerging: Boolean = false,
     enableExperimentalAnvilApis: Boolean = true,
-    codeGenerators: List<CodeGenerator> = emptyList(),
+    mode: AnvilCompilationMode = Embedded(emptyList()),
     enableAnvil: Boolean = true,
   ) = apply {
     checkNotCompiled()
@@ -48,11 +55,10 @@ public class AnvilCompilation internal constructor(
     if (!enableAnvil) return@apply
 
     kotlinCompilation.apply {
+      val anvilComponentRegistrar = AnvilComponentRegistrar()
       // Deprecation tracked in https://github.com/square/anvil/issues/672
       @Suppress("DEPRECATION")
-      componentRegistrars = listOf(
-        AnvilComponentRegistrar().also { it.addCodeGenerators(codeGenerators) }
-      )
+      componentRegistrars = listOf(anvilComponentRegistrar)
       if (enableDaggerAnnotationProcessor) {
         annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
       }
@@ -60,28 +66,57 @@ public class AnvilCompilation internal constructor(
       val anvilCommandLineProcessor = AnvilCommandLineProcessor()
       commandLineProcessors = listOf(anvilCommandLineProcessor)
 
-      pluginOptions = listOf(
-        PluginOption(
-          pluginId = anvilCommandLineProcessor.pluginId,
-          optionName = "src-gen-dir",
-          optionValue = File(workingDir, "build/anvil").absolutePath
-        ),
-        PluginOption(
-          pluginId = anvilCommandLineProcessor.pluginId,
-          optionName = "generate-dagger-factories",
-          optionValue = generateDaggerFactories.toString()
-        ),
-        PluginOption(
-          pluginId = anvilCommandLineProcessor.pluginId,
-          optionName = "generate-dagger-factories-only",
-          optionValue = generateDaggerFactoriesOnly.toString()
-        ),
+      pluginOptions = mutableListOf(
         PluginOption(
           pluginId = anvilCommandLineProcessor.pluginId,
           optionName = "disable-component-merging",
           optionValue = disableComponentMerging.toString()
+        ),
+        PluginOption(
+          pluginId = anvilCommandLineProcessor.pluginId,
+          optionName = "backend",
+          optionValue = mode.backend.name.lowercase(Locale.US)
         )
       )
+
+      when (mode) {
+        is Embedded -> {
+          anvilComponentRegistrar.addCodeGenerators(mode.codeGenerators)
+          pluginOptions +=
+            listOf(
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "src-gen-dir",
+                optionValue = File(workingDir, "build/anvil").absolutePath
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "generate-dagger-factories",
+                optionValue = generateDaggerFactories.toString()
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "generate-dagger-factories-only",
+                optionValue = generateDaggerFactoriesOnly.toString()
+              )
+            )
+        }
+        is Ksp -> {
+          symbolProcessorProviders += buildList {
+            addAll(
+              ServiceLoader.load(
+                SymbolProcessorProvider::class.java,
+                SymbolProcessorProvider::class.java.classLoader
+              )
+            )
+            addAll(mode.symbolProcessorProviders)
+          }
+          // Run KSP embedded directly within this kotlinc invocation
+          kspWithCompilation = true
+          kspArgs["generate-dagger-factories"] = generateDaggerFactories.toString()
+          kspArgs["generate-dagger-factories-only"] = generateDaggerFactoriesOnly.toString()
+        }
+      }
 
       if (enableExperimentalAnvilApis) {
         kotlincArguments += listOf(
@@ -202,11 +237,11 @@ public fun compileAnvil(
   workingDir: File? = null,
   enableExperimentalAnvilApis: Boolean = true,
   previousCompilationResult: Result? = null,
-  codeGenerators: List<CodeGenerator> = emptyList(),
+  mode: AnvilCompilationMode = Embedded(emptyList()),
   moduleName: String? = null,
   jvmTarget: JvmTarget? = null,
-  block: Result.() -> Unit = { },
-): Result {
+  block: KotlinCompilation.Result.() -> Unit = { },
+): KotlinCompilation.Result {
   return AnvilCompilation()
     .apply {
       kotlinCompilation.apply {
@@ -234,7 +269,7 @@ public fun compileAnvil(
       generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
       disableComponentMerging = disableComponentMerging,
       enableExperimentalAnvilApis = enableExperimentalAnvilApis,
-      codeGenerators = codeGenerators,
+      mode = mode,
     )
     .compile(*sources)
     .also(block)

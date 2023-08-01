@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
+import com.squareup.anvil.compiler.api.AnvilBackend
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
@@ -22,6 +23,10 @@ internal const val disableComponentMergingName = "disable-component-merging"
 internal val disableComponentMergingKey =
   CompilerConfigurationKey.create<Boolean>("anvil $disableComponentMergingName")
 
+internal const val backendName = "backend"
+internal val backendKey =
+  CompilerConfigurationKey.create<String>("anvil $backendName")
+
 /**
  * Parses arguments from the Gradle plugin for the compiler plugin.
  */
@@ -34,7 +39,7 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
       optionName = srcGenDirName,
       valueDescription = "<file-path>",
       description = "Path to directory in which Anvil specific code should be generated",
-      required = true,
+      required = false,
       allowMultipleOccurrences = false
     ),
     CliOption(
@@ -61,6 +66,14 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
         "@MergeComponent or @MergeSubcomponent.",
       required = false,
       allowMultipleOccurrences = false
+    ),
+    @Suppress("EnumValuesSoftDeprecate") // Can't use Enum.entries while targeting Kotlin 1.8
+    CliOption(
+      optionName = backendName,
+      valueDescription = AnvilBackend.values().joinToString("|", "<", ">"),
+      description = "Controls whether Anvil is running as an embedded plugin or as KSP.",
+      required = false,
+      allowMultipleOccurrences = false
     )
   )
 
@@ -77,6 +90,7 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
         configuration.put(generateDaggerFactoriesOnlyKey, value.toBoolean())
       disableComponentMergingName ->
         configuration.put(disableComponentMergingKey, value.toBoolean())
+      backendName -> configuration.put(backendKey, value)
     }
   }
 }

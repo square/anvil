@@ -6,13 +6,29 @@ import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.hintBinding
 import com.squareup.anvil.compiler.hintBindingScope
 import com.squareup.anvil.compiler.hintBindingScopes
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.secondContributingInterface
+import com.squareup.anvil.compiler.walkGeneratedFiles
 import org.junit.Test
-import java.io.File
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 
 @Suppress("RemoveRedundantQualifierName")
-class ContributesBindingGeneratorTest {
+@RunWith(Parameterized::class)
+class ContributesBindingGeneratorTest(
+  private val mode: AnvilCompilationMode
+) {
+
+  companion object {
+    @Parameterized.Parameters(name = "{0}")
+    @JvmStatic fun modes(): Collection<Any> {
+      return buildList {
+        add(AnvilCompilationMode.Embedded())
+        add(AnvilCompilationMode.Ksp())
+      }
+    }
+  }
 
   @Test fun `there is a hint for a contributed binding for interfaces`() {
     compile(
@@ -25,14 +41,14 @@ class ContributesBindingGeneratorTest {
 
       @ContributesBinding(Any::class, ParentInterface::class)
       interface ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
 
-      val generatedFile = File(outputDirectory.parent, "build/anvil")
-        .walk()
-        .single { it.isFile && it.extension == "kt" }
+      val generatedFile = walkGeneratedFiles(mode)
+        .single()
 
       assertThat(generatedFile.name).isEqualTo("ContributingInterface.kt")
     }
@@ -49,7 +65,8 @@ class ContributesBindingGeneratorTest {
 
       @ContributesBinding(Any::class, ParentInterface::class)
       class ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
@@ -67,7 +84,8 @@ class ContributesBindingGeneratorTest {
 
       @ContributesBinding(Any::class, ParentInterface::class)
       object ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
@@ -85,7 +103,8 @@ class ContributesBindingGeneratorTest {
 
       @ContributesBinding(boundType = ParentInterface::class, scope = Int::class)
       class ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Int::class)
     }
@@ -104,7 +123,8 @@ class ContributesBindingGeneratorTest {
         @ContributesBinding(Any::class, ParentInterface::class)
         interface ContributingInterface : ParentInterface
       }
-      """
+      """,
+      mode = mode,
     ) {
       val contributingInterface =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingInterface")
@@ -126,16 +146,16 @@ class ContributesBindingGeneratorTest {
         @ContributesBinding(Any::class, ParentInterface::class)
         class ContributingClass : ParentInterface
       }
-      """
+      """,
+      mode = mode,
     ) {
       val contributingClass =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingClass")
       assertThat(contributingClass.hintBinding?.java).isEqualTo(contributingClass)
       assertThat(contributingClass.hintBindingScope).isEqualTo(Any::class)
 
-      val generatedFile = File(outputDirectory.parent, "build/anvil")
-        .walk()
-        .single { it.isFile && it.extension == "kt" }
+      val generatedFile = walkGeneratedFiles(mode)
+        .single()
 
       assertThat(generatedFile.name).isEqualTo("Abc_ContributingClass.kt")
     }
@@ -159,7 +179,8 @@ class ContributesBindingGeneratorTest {
 
         @ContributesBinding(Any::class, ParentInterface::class)
         $visibility class ContributingInterface : ParentInterface
-        """
+        """,
+        mode = mode,
       ) {
         assertThat(exitCode).isError()
         // Position to the class.
@@ -191,7 +212,8 @@ class ContributesBindingGeneratorTest {
       @AnyQualifier1 
       @AnyQualifier2
       interface ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -211,7 +233,8 @@ class ContributesBindingGeneratorTest {
       
       @ContributesBinding(Any::class)
       interface ContributingInterface : ParentInterface, CharSequence
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -236,7 +259,8 @@ class ContributesBindingGeneratorTest {
       
       @ContributesBinding(Any::class)
       interface ContributingInterface : Abc(), ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -257,7 +281,8 @@ class ContributesBindingGeneratorTest {
 
       @ContributesBinding(Any::class)
       object ContributingInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -280,7 +305,8 @@ class ContributesBindingGeneratorTest {
 
       @ContributesBinding(Int::class, ParentInterface::class)
       interface ContributingInterface : ParentInterface, CharSequence
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Int::class)
@@ -298,7 +324,8 @@ class ContributesBindingGeneratorTest {
 
       @ContributesBinding(Any::class, ParentInterface::class)
       interface ContributingInterface : CharSequence
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -323,7 +350,8 @@ class ContributesBindingGeneratorTest {
         scope = Int::class,
       )
       interface ComponentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScope).isEqualTo(Int::class)
@@ -342,7 +370,8 @@ class ContributesBindingGeneratorTest {
       @ContributesBinding(Any::class)
       @ContributesBinding(Unit::class)
       class ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScopes).containsExactly(Any::class, Unit::class)
@@ -365,7 +394,8 @@ class ContributesBindingGeneratorTest {
       @ContributesBinding(Unit::class)
       @ContributesBinding(Any::class)
       class SecondContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintBindingScopes)
         .containsExactly(Any::class, Unit::class)
@@ -389,7 +419,8 @@ class ContributesBindingGeneratorTest {
       @ContributesBinding(Any::class)
       @com.squareup.anvil.annotations.ContributesBinding(Unit::class)
       class ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScopes).containsExactly(Any::class, Unit::class)
@@ -410,7 +441,8 @@ class ContributesBindingGeneratorTest {
       @ContributesBinding(Unit::class)
       @ContributesBinding(Unit::class, replaces = [Int::class])
       class ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -437,7 +469,8 @@ class ContributesBindingGeneratorTest {
       @ContributesBinding(Unit::class, boundType = ParentInterface1::class)
       @ContributesBinding(Unit::class, boundType = ParentInterface2::class)
       class ContributingInterface : ParentInterface1, ParentInterface2
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintBindingScopes).containsExactly(Any::class, Unit::class)

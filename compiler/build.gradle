@@ -15,9 +15,11 @@ dependencies {
   implementation libs.dagger2
   implementation libs.jsr250
   implementation libs.kotlinpoet
+  implementation libs.kotlinpoet.ksp
 
   compileOnly libs.auto.service.annotations
   compileOnly libs.kotlin.compiler
+  compileOnly libs.ksp.api
 
   kapt libs.auto.service.processor
 
@@ -25,6 +27,8 @@ dependencies {
   testImplementation libs.dagger2.compiler
   testImplementation libs.kotlin.annotationProcessingEmbeddable
   testImplementation libs.kotlin.compileTesting
+  testImplementation libs.kotlin.compileTesting.ksp
+  testImplementation libs.ksp.compilerPlugin
   testImplementation libs.kotlin.compiler
   testImplementation libs.kotlin.test
   testImplementation libs.truth

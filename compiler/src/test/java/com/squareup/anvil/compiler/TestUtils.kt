@@ -5,6 +5,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
@@ -15,6 +16,7 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.junit.Assume.assumeTrue
+import java.io.File
 import kotlin.reflect.KClass
 
 internal fun compile(
@@ -23,13 +25,14 @@ internal fun compile(
   enableDaggerAnnotationProcessor: Boolean = false,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
+  mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
   block: Result.() -> Unit = { }
 ): Result = compileAnvil(
   sources = sources,
   allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
   enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
-  codeGenerators = codeGenerators,
+  mode = mode,
   block = block
 )
 
@@ -174,3 +177,12 @@ internal fun ComparableSubject<ExitCode>.isError() {
 
 internal fun isFullTestRun(): Boolean = FULL_TEST_RUN
 internal fun checkFullTestRun() = assumeTrue(isFullTestRun())
+
+internal fun Result.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
+  val dirToSearch = when (mode) {
+    is AnvilCompilationMode.Embedded -> outputDirectory.parentFile.resolve("build/anvil")
+    is AnvilCompilationMode.Ksp -> outputDirectory.parentFile.resolve("ksp/sources")
+  }
+  return dirToSearch.walkTopDown()
+    .filter { it.isFile && it.extension == "kt" }
+}
