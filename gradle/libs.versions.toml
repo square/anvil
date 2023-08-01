@@ -69,7 +69,7 @@ jsr250 = "javax.annotation:jsr250-api:1.0"
 junit = "junit:junit:4.13"
 
 kotlin-annotationProcessingEmbeddable = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable", version.ref = "kotlin" }
-kotlin-compileTesting = "dev.zacsweers.kctfork:core:0.2.0"
+kotlin-compileTesting = "dev.zacsweers.kctfork:core:0.3.1"
 kotlin-compiler = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
 kotlin-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }

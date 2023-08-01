@@ -9,7 +9,7 @@ import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
-import com.tschuchort.compiletesting.KotlinCompilation.Result
+import com.tschuchort.compiletesting.JvmCompilationResult
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -642,8 +642,8 @@ public final class AssistedService_Factory {
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    block: Result.() -> Unit = { }
-  ): Result = compileAnvil(
+    block: JvmCompilationResult.() -> Unit = { }
+  ): JvmCompilationResult = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,

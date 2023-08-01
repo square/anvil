@@ -4,8 +4,8 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 
@@ -93,8 +93,8 @@ class ComponentDetectorCheckTest {
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    block: Result.() -> Unit = { }
-  ): Result = compileAnvil(
+    block: JvmCompilationResult.() -> Unit = { }
+  ): JvmCompilationResult = compileAnvil(
     sources = sources,
     generateDaggerFactories = true,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,

@@ -7,7 +7,7 @@ import com.squareup.anvil.compiler.hintSubcomponent
 import com.squareup.anvil.compiler.hintSubcomponentParentScope
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.subcomponentInterface
-import com.tschuchort.compiletesting.KotlinCompilation.Result
+import com.tschuchort.compiletesting.JvmCompilationResult
 import org.junit.Test
 import java.io.File
 
@@ -527,9 +527,9 @@ class ContributesSubcomponentGeneratorTest {
   private val Class<*>.parentComponentInterface: Class<*>
     get() = classLoader.loadClass("$canonicalName\$AnyParentComponent")
 
-  private val Result.subcomponentInterface1: Class<*>
+  private val JvmCompilationResult.subcomponentInterface1: Class<*>
     get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface1")
 
-  private val Result.subcomponentInterface2: Class<*>
+  private val JvmCompilationResult.subcomponentInterface2: Class<*>
     get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface2")
 }

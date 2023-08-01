@@ -13,8 +13,8 @@ import com.squareup.anvil.compiler.internal.testing.membersInjector
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.nestedInjectClass
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.MembersInjector
 import org.intellij.lang.annotations.Language
@@ -2504,9 +2504,9 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    previousCompilationResult: Result? = null,
-    block: Result.() -> Unit = { }
-  ): Result = compileAnvil(
+    previousCompilationResult: JvmCompilationResult? = null,
+    block: JvmCompilationResult.() -> Unit = { }
+  ): JvmCompilationResult = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
