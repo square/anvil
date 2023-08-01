@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.HINT_MULTIBINDING_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
+import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
@@ -29,79 +30,84 @@ import kotlin.reflect.KClass
  * allows the compiler plugin to find all contributed multibindings a lot faster when merging
  * modules and component interfaces.
  */
-@AutoService(CodeGenerator::class)
-internal class ContributesMultibindingGenerator : CodeGenerator {
+internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
 
   override fun isApplicable(context: AnvilContext) = !context.generateFactoriesOnly
 
-  override fun generateCode(
-    codeGenDir: File,
-    module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
-  ): Collection<GeneratedFile> {
-    return projectFiles
-      .classAndInnerClassReferences(module)
-      .filter { it.isAnnotatedWith(contributesMultibindingFqName) }
-      .onEach { clazz ->
-        clazz.checkClassIsPublic {
-          "${clazz.fqName} is binding a type, but the class is not public. " +
-            "Only public types are supported."
+  @AutoService(CodeGenerator::class)
+  internal class EmbeddedGenerator : CodeGenerator {
+
+    override fun isApplicable(context: AnvilContext): Boolean = ContributesMultibindingCodeGen.isApplicable(context)
+
+    override fun generateCode(
+      codeGenDir: File,
+      module: ModuleDescriptor,
+      projectFiles: Collection<KtFile>
+    ): Collection<GeneratedFile> {
+      return projectFiles
+        .classAndInnerClassReferences(module)
+        .filter { it.isAnnotatedWith(contributesMultibindingFqName) }
+        .onEach { clazz ->
+          clazz.checkClassIsPublic {
+            "${clazz.fqName} is binding a type, but the class is not public. " +
+              "Only public types are supported."
+          }
+          clazz.checkNotMoreThanOneQualifier(contributesMultibindingFqName)
+          clazz.checkNotMoreThanOneMapKey()
+          clazz.checkSingleSuperType(contributesMultibindingFqName)
+          clazz.checkClassExtendsBoundType(contributesMultibindingFqName)
         }
-        clazz.checkNotMoreThanOneQualifier(contributesMultibindingFqName)
-        clazz.checkNotMoreThanOneMapKey()
-        clazz.checkSingleSuperType(contributesMultibindingFqName)
-        clazz.checkClassExtendsBoundType(contributesMultibindingFqName)
-      }
-      .map { clazz ->
-        val fileName = clazz.generateClassName().relativeClassName.asString()
-        val generatedPackage = HINT_MULTIBINDING_PACKAGE_PREFIX +
-          clazz.packageFqName.safePackageString(dotPrefix = true)
-        val className = clazz.asClassName()
-        val classFqName = clazz.fqName.toString()
-        val propertyName = classFqName.replace('.', '_')
+        .map { clazz ->
+          val fileName = clazz.generateClassName().relativeClassName.asString()
+          val generatedPackage = HINT_MULTIBINDING_PACKAGE_PREFIX +
+            clazz.packageFqName.safePackageString(dotPrefix = true)
+          val className = clazz.asClassName()
+          val classFqName = clazz.fqName.toString()
+          val propertyName = classFqName.replace('.', '_')
 
-        val scopes = clazz.annotations
-          .find(contributesMultibindingFqName)
-          .also { it.checkNoDuplicateScopeAndBoundType() }
-          .distinctBy { it.scope() }
-          // Give it a stable sort.
-          .sortedBy { it.scope() }
-          .map { it.scope().asClassName() }
+          val scopes = clazz.annotations
+            .find(contributesMultibindingFqName)
+            .also { it.checkNoDuplicateScopeAndBoundType() }
+            .distinctBy { it.scope() }
+            // Give it a stable sort.
+            .sortedBy { it.scope() }
+            .map { it.scope().asClassName() }
 
-        val content =
-          FileSpec.buildFile(generatedPackage, fileName) {
-            addProperty(
-              PropertySpec
-                .builder(
-                  name = propertyName + REFERENCE_SUFFIX,
-                  type = KClass::class.asClassName().parameterizedBy(className)
-                )
-                .initializer("%T::class", className)
-                .addModifiers(PUBLIC)
-                .build()
-            )
-
-            scopes.forEachIndexed { index, scope ->
+          val content =
+            FileSpec.buildFile(generatedPackage, fileName) {
               addProperty(
                 PropertySpec
                   .builder(
-                    name = propertyName + SCOPE_SUFFIX + index,
-                    type = KClass::class.asClassName().parameterizedBy(scope)
+                    name = propertyName + REFERENCE_SUFFIX,
+                    type = KClass::class.asClassName().parameterizedBy(className)
                   )
-                  .initializer("%T::class", scope)
+                  .initializer("%T::class", className)
                   .addModifiers(PUBLIC)
                   .build()
               )
-            }
-          }
 
-        createGeneratedFile(
-          codeGenDir = codeGenDir,
-          packageName = generatedPackage,
-          fileName = fileName,
-          content = content
-        )
-      }
-      .toList()
+              scopes.forEachIndexed { index, scope ->
+                addProperty(
+                  PropertySpec
+                    .builder(
+                      name = propertyName + SCOPE_SUFFIX + index,
+                      type = KClass::class.asClassName().parameterizedBy(scope)
+                    )
+                    .initializer("%T::class", scope)
+                    .addModifiers(PUBLIC)
+                    .build()
+                )
+              }
+            }
+
+          createGeneratedFile(
+            codeGenDir = codeGenDir,
+            packageName = generatedPackage,
+            fileName = fileName,
+            content = content
+          )
+        }
+        .toList()
+    }
   }
 }
