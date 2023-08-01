@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
+import com.squareup.anvil.compiler.api.AnvilBackend
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
@@ -68,7 +69,7 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
     ),
     CliOption(
       optionName = compilationModeName,
-      valueDescription = "<embedded|ksp>",
+      valueDescription = AnvilBackend.entries.joinToString("|", "<", ">"),
       description = "Controls whether Anvil is running as an embedded plugin or as KSP.",
       required = false,
       allowMultipleOccurrences = false
