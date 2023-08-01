@@ -111,6 +111,7 @@ public class AnvilCompilation internal constructor(
             )
             addAll(mode.symbolProcessorProviders)
           }
+          // Run KSP embedded directly within this kotlinc invocation
           kspWithCompilation = true
           kspArgs["generate-dagger-factories"] = generateDaggerFactories.toString()
           kspArgs["generate-dagger-factories-only"] = generateDaggerFactoriesOnly.toString()
