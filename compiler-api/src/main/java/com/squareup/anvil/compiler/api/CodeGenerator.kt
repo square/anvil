@@ -17,13 +17,13 @@ import java.io.File
  * supported.
  */
 @ExperimentalAnvilApi
-public interface CodeGenerator {
+public interface CodeGenerator : AnvilApplicabilityChecker {
 
   /**
    * Returns true if this code generator is applicable for the given [context] or false if not. This
    * will only be called _once_.
    */
-  public fun isApplicable(context: AnvilContext): Boolean
+  public override fun isApplicable(context: AnvilContext): Boolean
 
   /**
    * Called multiple times in order to create new code. Note that instances should not rely on

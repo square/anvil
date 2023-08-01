@@ -4,12 +4,17 @@ sourceSets {
   test.java.srcDirs += "$buildDir/$generatedDirPath"
 }
 
-def generateBuildProperties = project.tasks.register('generateBuildProperties') {
-  File buildPropertiesFile = new File(new File(project.buildDir, generatedDirPath), 'BuildProperties.kt')
+def warningsAsErrors = rootProject.ext.warningsAsErrors
 
-  inputs.property 'fullTestRun', libs.versions.config.fullTestRun.get()
+def generateBuildProperties = project.tasks.register('generateBuildProperties') {
+  File buildPropertiesFile = layout.buildDirectory.file(generatedDirPath + '/BuildProperties.kt')
+      .get().asFile
+
+  def fullTestRun = libs.versions.config.fullTestRun.get()
+
+  inputs.property 'fullTestRun', fullTestRun
   inputs.property 'kotlinVersion', libs.versions.kotlin.get()
-  inputs.property 'warningsAsErrors', rootProject.ext.warningsAsErrors
+  inputs.property 'warningsAsErrors', warningsAsErrors
 
   outputs.file buildPropertiesFile
 
@@ -18,9 +23,9 @@ def generateBuildProperties = project.tasks.register('generateBuildProperties') 
     buildPropertiesFile.write """\
       package com.squareup.anvil.compiler
 
-      internal const val WARNINGS_AS_ERRORS = ${rootProject.ext.warningsAsErrors}
+      internal const val WARNINGS_AS_ERRORS = $warningsAsErrors
      
-      internal const val FULL_TEST_RUN = ${rootProject.ext.fullTestRun}
+      internal const val FULL_TEST_RUN = $fullTestRun
     """.stripIndent()
   }
 }

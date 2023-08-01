@@ -15,21 +15,21 @@ import com.squareup.anvil.compiler.internal.safePackageString
 import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.lower.createIrBuilder
+import org.jetbrains.kotlin.backend.jvm.ir.kClassReference
 import org.jetbrains.kotlin.ir.IrStatement
-import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
+import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
+import org.jetbrains.kotlin.ir.builders.irCallConstructor
+import org.jetbrains.kotlin.ir.builders.irVararg
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
+import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
-import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
-import org.jetbrains.kotlin.ir.expressions.impl.IrVarargImpl
-import org.jetbrains.kotlin.ir.types.defaultType
-import org.jetbrains.kotlin.ir.types.impl.IrDynamicTypeImpl
+import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
-import org.jetbrains.kotlin.types.Variance.INVARIANT
 
 internal class ModuleMergerIr(
   private val classScanner: ClassScanner,
@@ -53,7 +53,13 @@ internal class ModuleMergerIr(
             .findAll(mergeComponentFqName, mergeSubcomponentFqName, mergeModulesFqName)
             .ifEmpty { return super.visitClass(declaration) }
 
-          generateDaggerAnnotation(annotations, moduleFragment, pluginContext, declarationReference)
+          pluginContext.irBuiltIns.createIrBuilder(declaration.symbol)
+            .generateDaggerAnnotation(
+              annotations = annotations,
+              moduleFragment = moduleFragment,
+              pluginContext = pluginContext,
+              declaration = declarationReference
+            )
           return super.visitClass(declaration)
         }
       },
@@ -61,7 +67,7 @@ internal class ModuleMergerIr(
     )
   }
 
-  private fun generateDaggerAnnotation(
+  private fun IrBuilderWithScope.generateDaggerAnnotation(
     annotations: List<AnnotationReferenceIr>,
     moduleFragment: IrModuleFragment,
     pluginContext: IrPluginContext,
@@ -253,30 +259,20 @@ internal class ModuleMergerIr(
       .distinct()
       .map { it.clazz.owner }
 
-    val annotationConstructorCall = IrConstructorCallImpl
-      .fromSymbolOwner(
-        startOffset = UNDEFINED_OFFSET,
-        endOffset = UNDEFINED_OFFSET,
-        type = pluginContext.requireReferenceClass(daggerAnnotationFqName).defaultType,
-        constructorSymbol = pluginContext
-          .referenceConstructors(daggerAnnotationFqName.classIdBestGuess())
-          .single { it.owner.isPrimary }
-      )
+    val annotationConstructorCall = irCallConstructor(
+      callee = pluginContext
+        .referenceConstructors(daggerAnnotationFqName.classIdBestGuess())
+        .single { it.owner.isPrimary },
+      typeArguments = emptyList()
+    )
       .apply {
         putValueArgument(
           index = 0,
-          valueArgument = IrVarargImpl(
-            startOffset = UNDEFINED_OFFSET,
-            endOffset = UNDEFINED_OFFSET,
-            type = pluginContext.symbols.array.defaultType,
-            varargElementType = IrDynamicTypeImpl(null, emptyList(), INVARIANT),
-            elements = contributedModules
+          valueArgument = irVararg(
+            elementType = pluginContext.irBuiltIns.kClassClass.starProjectedType,
+            values = contributedModules
               .map {
-                IrClassReferenceImpl(
-                  startOffset = UNDEFINED_OFFSET,
-                  endOffset = UNDEFINED_OFFSET,
-                  type = it.defaultType,
-                  symbol = it.symbol,
+                kClassReference(
                   classType = it.defaultType
                 )
               }
@@ -291,12 +287,11 @@ internal class ModuleMergerIr(
 
           putValueArgument(
             index = 1,
-            valueArgument = IrVarargImpl(
-              startOffset = 0,
-              endOffset = 0,
-              type = varargArguments[0].type,
-              varargElementType = varargArguments[0].varargElementType,
-              elements = varargArguments.flatMap { it.elements }
+            valueArgument = irVararg(
+              elementType = varargArguments[0].varargElementType,
+              // These are always IrExpression instances too
+              values = varargArguments.flatMap { it.elements }
+                .filterIsInstance<IrExpression>()
             )
           )
         }
