@@ -142,7 +142,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
   }
 
   @AutoService(CodeGenerator::class)
-  internal class AnvilGenerator : CodeGenerator {
+  internal class EmbeddedGenerator : CodeGenerator {
 
     override fun isApplicable(context: AnvilContext) =
       ContributesBindingCodeGen.isApplicable(context)

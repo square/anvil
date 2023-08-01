@@ -66,7 +66,7 @@ internal object AnvilAnnotationDetectorCheck : AnvilApplicabilityChecker {
   }
 
   @AutoService(CodeGenerator::class)
-  internal class AnvilGenerator : PrivateCodeGenerator() {
+  internal class EmbeddedGenerator : PrivateCodeGenerator() {
 
     override fun isApplicable(context: AnvilContext) =
       AnvilAnnotationDetectorCheck.isApplicable(context)
