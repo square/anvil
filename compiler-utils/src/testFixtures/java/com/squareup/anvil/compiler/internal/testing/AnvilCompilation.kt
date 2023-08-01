@@ -183,6 +183,8 @@ public class AnvilCompilation internal constructor(
   }
 }
 
+data object TestObj
+
 /**
  * Helpful for testing code generators in unit tests end to end.
  *
