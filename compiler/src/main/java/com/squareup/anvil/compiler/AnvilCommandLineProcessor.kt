@@ -23,9 +23,9 @@ internal const val disableComponentMergingName = "disable-component-merging"
 internal val disableComponentMergingKey =
   CompilerConfigurationKey.create<Boolean>("anvil $disableComponentMergingName")
 
-internal const val compilationModeName = "compilation-mode"
-internal val compilationModeKey =
-  CompilerConfigurationKey.create<String>("anvil $compilationModeName")
+internal const val backendName = "backend"
+internal val backendKey =
+  CompilerConfigurationKey.create<String>("anvil $backendName")
 
 /**
  * Parses arguments from the Gradle plugin for the compiler plugin.
@@ -68,7 +68,7 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
       allowMultipleOccurrences = false
     ),
     CliOption(
-      optionName = compilationModeName,
+      optionName = backendName,
       valueDescription = AnvilBackend.entries.joinToString("|", "<", ">"),
       description = "Controls whether Anvil is running as an embedded plugin or as KSP.",
       required = false,
@@ -89,8 +89,7 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
         configuration.put(generateDaggerFactoriesOnlyKey, value.toBoolean())
       disableComponentMergingName ->
         configuration.put(disableComponentMergingKey, value.toBoolean())
-      compilationModeName ->
-        configuration.put(compilationModeKey, value)
+      backendName -> configuration.put(backendKey, value)
     }
   }
 }

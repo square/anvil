@@ -16,7 +16,7 @@ class CommandLineOptions private constructor(
         generateFactories = get(generateDaggerFactoriesKey, false),
         generateFactoriesOnly = get(generateDaggerFactoriesOnlyKey, false),
         disableComponentMerging = get(disableComponentMergingKey, false),
-        backend = get(compilationModeKey, AnvilBackend.EMBEDDED.name)
+        backend = get(backendKey, AnvilBackend.EMBEDDED.name)
           .uppercase(Locale.US)
           .let { value -> AnvilBackend.entries.find { it.name == value } }
           ?: error("Unknown backend option: $this"),
