@@ -16,10 +16,16 @@ class CommandLineOptions private constructor(
         generateFactories = get(generateDaggerFactoriesKey, false),
         generateFactoriesOnly = get(generateDaggerFactoriesOnlyKey, false),
         disableComponentMerging = get(disableComponentMergingKey, false),
-        backend = get(backendKey, AnvilBackend.EMBEDDED.name)
-          .uppercase(Locale.US)
-          .let { value -> AnvilBackend.entries.find { it.name == value } }
-          ?: error("Unknown backend option: $this"),
+        backend = parseBackend(),
       )
+
+    @Suppress("EnumValuesSoftDeprecate") // Can't use Enum.entries while targeting Kotlin 1.8
+    private fun CompilerConfiguration.parseBackend(): AnvilBackend {
+      val config = get(backendKey, AnvilBackend.EMBEDDED.name)
+      return config
+        .uppercase(Locale.US)
+        .let { value -> AnvilBackend.values().find { it.name == value } }
+        ?: error("Unknown backend option: '$config'")
+    }
   }
 }

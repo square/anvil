@@ -74,7 +74,7 @@ public class AnvilCompilation internal constructor(
         ),
         PluginOption(
           pluginId = anvilCommandLineProcessor.pluginId,
-          optionName = "compilation-mode",
+          optionName = "backend",
           optionValue = mode.backend.name.lowercase(Locale.US)
         )
       )
