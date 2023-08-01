@@ -7,8 +7,8 @@ import com.squareup.anvil.compiler.AnvilCommandLineProcessor
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
-import com.tschuchort.compiletesting.KotlinCompilation.Result
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.addPreviousResultToClasspath
@@ -147,7 +147,7 @@ public class AnvilCompilation internal constructor(
     }
   }
 
-  public fun addPreviousCompilationResult(result: Result) = apply {
+  public fun addPreviousCompilationResult(result: JvmCompilationResult) = apply {
     checkNotCompiled()
     kotlinCompilation.addPreviousResultToClasspath(result)
   }
@@ -191,8 +191,8 @@ public class AnvilCompilation internal constructor(
    */
   public fun compile(
     @Language("kotlin") vararg sources: String,
-    block: Result.() -> Unit = {}
-  ): Result {
+    block: JvmCompilationResult.() -> Unit = {}
+  ): JvmCompilationResult {
     checkNotCompiled()
     if (!anvilConfigured) {
       // Configure with default behaviors
@@ -236,12 +236,12 @@ public fun compileAnvil(
   messageOutputStream: OutputStream = System.out,
   workingDir: File? = null,
   enableExperimentalAnvilApis: Boolean = true,
-  previousCompilationResult: Result? = null,
+  previousCompilationResult: JvmCompilationResult? = null,
   mode: AnvilCompilationMode = Embedded(emptyList()),
   moduleName: String? = null,
   jvmTarget: JvmTarget? = null,
-  block: KotlinCompilation.Result.() -> Unit = { },
-): KotlinCompilation.Result {
+  block: JvmCompilationResult.() -> Unit = { },
+): JvmCompilationResult {
   return AnvilCompilation()
     .apply {
       kotlinCompilation.apply {

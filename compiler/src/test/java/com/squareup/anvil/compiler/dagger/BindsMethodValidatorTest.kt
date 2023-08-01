@@ -5,8 +5,8 @@ import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -377,10 +377,10 @@ class BindsMethodValidatorTest(
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    previousCompilationResult: Result? = null,
+    previousCompilationResult: JvmCompilationResult? = null,
     enableDagger: Boolean = useDagger,
-    block: Result.() -> Unit = { }
-  ): Result = compileAnvil(
+    block: JvmCompilationResult.() -> Unit = { }
+  ): JvmCompilationResult = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = enableDagger,
     generateDaggerFactories = !enableDagger,

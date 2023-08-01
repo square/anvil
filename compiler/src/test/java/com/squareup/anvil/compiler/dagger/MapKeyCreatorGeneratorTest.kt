@@ -5,7 +5,7 @@ import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isFullTestRun
-import com.tschuchort.compiletesting.KotlinCompilation.Result
+import com.tschuchort.compiletesting.JvmCompilationResult
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.descriptors.runtime.components.tryLoadClass
 import org.junit.Ignore
@@ -217,8 +217,8 @@ class MapKeyCreatorGeneratorTest(
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    block: Result.() -> Unit = { }
-  ): Result = compileAnvil(
+    block: JvmCompilationResult.() -> Unit = { }
+  ): JvmCompilationResult = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
