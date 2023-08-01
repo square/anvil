@@ -178,7 +178,7 @@ internal fun ComparableSubject<ExitCode>.isError() {
 internal fun isFullTestRun(): Boolean = FULL_TEST_RUN
 internal fun checkFullTestRun() = assumeTrue(isFullTestRun())
 
-internal fun Result.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
+internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
   val dirToSearch = when (mode) {
     is AnvilCompilationMode.Embedded -> outputDirectory.parentFile.resolve("build/anvil")
     is AnvilCompilationMode.Ksp -> outputDirectory.parentFile.resolve("ksp/sources")
