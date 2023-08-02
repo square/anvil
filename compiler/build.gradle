@@ -21,13 +21,16 @@ dependencies {
   compileOnly libs.auto.service.annotations
   compileOnly libs.kotlin.compiler
   compileOnly libs.ksp.api
-  compileOnly libs.ksp.compilerPlugin // TODO just for reference to get underlying APIs
+  // just for reference to get underlying APIs
+  compileOnly libs.ksp.compilerPlugin
 
   kapt libs.auto.service.processor
 
   testImplementation testFixtures(project(":compiler-utils"))
   testImplementation libs.kotlin.annotationProcessingEmbeddable
   testImplementation libs.kotlin.compileTesting
+  testImplementation libs.kotlin.compileTesting.ksp
+  testImplementation libs.ksp.compilerPlugin
   testImplementation libs.kotlin.compiler
   testImplementation libs.kotlin.test
   testImplementation libs.ksp.api

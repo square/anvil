@@ -4,8 +4,8 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 
@@ -129,7 +129,7 @@ class AnvilAnnotationDetectorCheckTest {
     }
   }
 
-  private fun Result.assertError() {
+  private fun JvmCompilationResult.assertError() {
     assertThat(exitCode).isError()
     assertThat(messages).contains("Source0.kt:6:7")
     assertThat(messages).contains(
@@ -141,8 +141,8 @@ class AnvilAnnotationDetectorCheckTest {
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    block: Result.() -> Unit = { }
-  ): Result = compileAnvil(
+    block: JvmCompilationResult.() -> Unit = { }
+  ): JvmCompilationResult = compileAnvil(
     sources = sources,
     generateDaggerFactories = true,
     generateDaggerFactoriesOnly = true,

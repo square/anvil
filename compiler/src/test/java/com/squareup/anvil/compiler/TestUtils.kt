@@ -6,90 +6,94 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
-import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.junit.Assume.assumeTrue
+import java.io.File
 import kotlin.reflect.KClass
 
 internal fun compile(
   @Language("kotlin") vararg sources: String,
-  previousCompilationResult: Result? = null,
+  previousCompilationResult: JvmCompilationResult? = null,
   daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode? = null,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
-  block: Result.() -> Unit = { }
-): Result = compileAnvil(
+  mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
+  block: JvmCompilationResult.() -> Unit = { }
+): JvmCompilationResult = compileAnvil(
   sources = sources,
   allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
   daggerAnnotationProcessingMode = daggerAnnotationProcessingMode,
   codeGenerators = codeGenerators,
+  mode = mode,
   block = block
 )
 
-internal val Result.contributingInterface: Class<*>
+internal val JvmCompilationResult.contributingInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ContributingInterface")
 
-internal val Result.secondContributingInterface: Class<*>
+internal val JvmCompilationResult.secondContributingInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.SecondContributingInterface")
 
-internal val Result.innerInterface: Class<*>
+internal val JvmCompilationResult.innerInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.SomeClass\$InnerInterface")
 
-internal val Result.parentInterface: Class<*>
+internal val JvmCompilationResult.parentInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ParentInterface")
 
-internal val Result.parentInterface1: Class<*>
+internal val JvmCompilationResult.parentInterface1: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ParentInterface1")
 
-internal val Result.parentInterface2: Class<*>
+internal val JvmCompilationResult.parentInterface2: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ParentInterface2")
 
-internal val Result.componentInterface: Class<*>
+internal val JvmCompilationResult.componentInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ComponentInterface")
 
-internal val Result.subcomponentInterface: Class<*>
+internal val JvmCompilationResult.subcomponentInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface")
 
-internal val Result.daggerModule1: Class<*>
+internal val JvmCompilationResult.daggerModule1: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule1")
 
-internal val Result.assistedService: Class<*>
+internal val JvmCompilationResult.assistedService: Class<*>
   get() = classLoader.loadClass("com.squareup.test.AssistedService")
 
-internal val Result.assistedServiceFactory: Class<*>
+internal val JvmCompilationResult.assistedServiceFactory: Class<*>
   get() = classLoader.loadClass("com.squareup.test.AssistedServiceFactory")
 
-internal val Result.daggerModule2: Class<*>
+internal val JvmCompilationResult.daggerModule2: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule2")
 
-internal val Result.daggerModule3: Class<*>
+internal val JvmCompilationResult.daggerModule3: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule3")
 
-internal val Result.daggerModule4: Class<*>
+internal val JvmCompilationResult.daggerModule4: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule4")
 
-internal val Result.innerModule: Class<*>
+internal val JvmCompilationResult.innerModule: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ComponentInterface\$InnerModule")
 
-internal val Result.nestedInjectClass: Class<*>
+internal val JvmCompilationResult.nestedInjectClass: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ParentClass\$NestedInjectClass")
 
-internal val Result.injectClass: Class<*>
+internal val JvmCompilationResult.injectClass: Class<*>
   get() = classLoader.loadClass("com.squareup.test.InjectClass")
 
-internal val Result.anyQualifier: Class<*>
+internal val JvmCompilationResult.anyQualifier: Class<*>
   get() = classLoader.loadClass("com.squareup.test.AnyQualifier")
 
 @Suppress("UNCHECKED_CAST")
-internal val Result.bindingKey: Class<out Annotation>
+internal val JvmCompilationResult.bindingKey: Class<out Annotation>
   get() = classLoader.loadClass("com.squareup.test.BindingKey") as Class<out Annotation>
 
 internal val Class<*>.hintContributes: KClass<*>?
@@ -175,3 +179,12 @@ internal fun ComparableSubject<ExitCode>.isError() {
 
 internal fun isFullTestRun(): Boolean = FULL_TEST_RUN
 internal fun checkFullTestRun() = assumeTrue(isFullTestRun())
+
+internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
+  val dirToSearch = when (mode) {
+    is AnvilCompilationMode.Embedded -> outputDirectory.parentFile.resolve("build/anvil")
+    is AnvilCompilationMode.Ksp -> outputDirectory.parentFile.resolve("ksp/sources")
+  }
+  return dirToSearch.walkTopDown()
+    .filter { it.isFile && it.extension == "kt" }
+}

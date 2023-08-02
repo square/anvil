@@ -21,6 +21,8 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.FilesSubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
@@ -111,6 +113,16 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   override fun applyToCompilation(
     kotlinCompilation: KotlinCompilation<*>
   ): Provider<List<SubpluginOption>> {
+    kotlinCompilation.compilerOptions.options.let {
+      if (it.useK2.get() || it.languageVersion.getOrElse(KOTLIN_1_9) >= KOTLIN_2_0) {
+        kotlinCompilation.project.logger
+          .error(
+            "NOTE: Anvil is currently incompatible with the K2 compiler. Related GH issue:" +
+              "https://github.com/square/anvil/issues/733"
+          )
+      }
+    }
+
     val variant = getVariant(kotlinCompilation)
     val project = variant.project
 
