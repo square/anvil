@@ -97,6 +97,32 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
+  /**
+   * Covers a bug that previously led to conflicting imports in the generated code:
+   * https://github.com/square/anvil/issues/738
+   */
+  @Test fun `a factory class is generated without conflicting imports`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      
+      class InjectClass @Inject constructor() {
+        interface Factory {
+          fun doSomething()
+        }
+      }
+
+      class InjectClassFactory @Inject constructor(val factory: InjectClass.Factory)
+      """
+    ) {
+      // Loading one of the classes is all that's necessary to verify no conflicting imports were
+      // generated
+      injectClass.factoryClass()
+    }
+  }
+
   @Test fun `a factory class is generated for an inject constructor with arguments`() {
     /*
 package com.squareup.test;
