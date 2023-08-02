@@ -17,6 +17,7 @@ import com.tschuchort.compiletesting.kspArgs
 import com.tschuchort.compiletesting.kspWithCompilation
 import com.tschuchort.compiletesting.symbolProcessorProviders
 import dagger.internal.codegen.ComponentProcessor
+import dagger.internal.codegen.KspComponentProcessor
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.config.JvmTarget
 import java.io.File
@@ -117,10 +118,13 @@ public class AnvilCompilation internal constructor(
         is Ksp -> {
           symbolProcessorProviders += buildList {
             addAll(
-              ServiceLoader.load(
-                SymbolProcessorProvider::class.java,
-                SymbolProcessorProvider::class.java.classLoader
-              )
+              ServiceLoader
+                .load(
+                  SymbolProcessorProvider::class.java,
+                  SymbolProcessorProvider::class.java.classLoader
+                )
+                // Exclude the Dagger KSP processor, we have special handling for that as we decorate it
+                .filterNot { it is KspComponentProcessor.Provider }
             )
             addAll(mode.symbolProcessorProviders)
           }
