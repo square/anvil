@@ -261,50 +261,7 @@ public fun compileAnvil(
   jvmTarget: JvmTarget? = null,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult {
-  return compileAnvilWithCompilation(
-    sources = sources,
-    daggerAnnotationProcessingMode = daggerAnnotationProcessingMode,
-    generateDaggerFactories = generateDaggerFactories,
-    generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
-    disableComponentMerging = disableComponentMerging,
-    allWarningsAsErrors = allWarningsAsErrors,
-    messageOutputStream = messageOutputStream,
-    workingDir = workingDir,
-    enableExperimentalAnvilApis = enableExperimentalAnvilApis,
-    previousCompilationResult = previousCompilationResult,
-    mode = mode,
-    moduleName = moduleName,
-    jvmTarget = jvmTarget,
-    block = { block() }
-  )
-}
-
-/**
- * Helpful for testing code generators in unit tests end to end.
- *
- * This covers common cases, but is built upon reusable logic in [AnvilCompilation] and
- * [AnvilCompilation.configureAnvil]. Consider using those APIs if more advanced configuration
- * is needed.
- */
-@ExperimentalAnvilApi
-public fun compileAnvilWithCompilation(
-  @Language("kotlin") vararg sources: String,
-  daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode? = null,
-  generateDaggerFactories: Boolean = false,
-  generateDaggerFactoriesOnly: Boolean = false,
-  disableComponentMerging: Boolean = false,
-  allWarningsAsErrors: Boolean = true,
-  messageOutputStream: OutputStream = System.out,
-  workingDir: File? = null,
-  enableExperimentalAnvilApis: Boolean = true,
-  previousCompilationResult: JvmCompilationResult? = null,
-  mode: AnvilCompilationMode = Embedded(emptyList()),
-  moduleName: String? = null,
-  jvmTarget: JvmTarget? = null,
-  block: JvmCompilationResult.(AnvilCompilation) -> Unit = { },
-): JvmCompilationResult {
-  val compilation = AnvilCompilation()
-  compilation
+  return AnvilCompilation()
     .apply {
       kotlinCompilation.apply {
         this.allWarningsAsErrors = allWarningsAsErrors
@@ -333,10 +290,8 @@ public fun compileAnvilWithCompilation(
       enableExperimentalAnvilApis = enableExperimentalAnvilApis,
       mode = mode,
     )
-
-  return compilation
     .compile(*sources)
     .also { result ->
-      result.block(compilation)
+      result.block()
     }
 }

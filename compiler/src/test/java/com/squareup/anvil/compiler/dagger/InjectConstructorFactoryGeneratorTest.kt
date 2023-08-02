@@ -2,9 +2,8 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.injectClass
-import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
-import com.squareup.anvil.compiler.internal.testing.compileAnvilWithCompilation
+import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
@@ -14,14 +13,14 @@ import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
 import dagger.internal.Factory
+import java.io.File
+import javax.inject.Provider
 import org.intellij.lang.annotations.Language
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
-import java.io.File
-import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class InjectConstructorFactoryGeneratorTest(
@@ -2735,8 +2734,8 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
-    block: JvmCompilationResult.(AnvilCompilation) -> Unit = { }
-  ): JvmCompilationResult = compileAnvilWithCompilation(
+    block: JvmCompilationResult.() -> Unit = { }
+  ): JvmCompilationResult = compileAnvil(
     sources = sources,
     daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KSP.takeIf { useDagger },
     generateDaggerFactories = !useDagger,
