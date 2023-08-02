@@ -2746,16 +2746,3 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     block = block
   )
 }
-
-// private fun mergedClassLoader(
-//        result: Result,
-//        compilation: AnvilCompilation,
-// ): ClassLoader {
-//  val resultClassLoader = result.classLoader
-//  val kspClassesClassLoader = compilation.kotlinCompilation.kspWithCompilation
-//  return URLClassLoader(
-//          this.ks
-//    classpath.map { it.toUri().toURL() }.toTypedArray(),
-//    null
-//  )
-// }
