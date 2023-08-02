@@ -66,7 +66,7 @@ public class AnvilCompilation internal constructor(
           annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
         }
         DaggerAnnotationProcessingMode.KSP -> {
-          symbolProcessorProviders = listOf(AnvilSymbolProcessor.Provider())
+          symbolProcessorProviders += listOf(AnvilSymbolProcessor.Provider())
           // Run KSP in a single-pass
           // https://kotlinlang.slack.com/archives/C013BA8EQSE/p1639462548225400?thread_ts=1639433474.224900&cid=C013BA8EQSE
           kspWithCompilation = true
@@ -261,7 +261,8 @@ public fun compileAnvil(
   jvmTarget: JvmTarget? = null,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult {
-  return AnvilCompilation()
+  val compilation = AnvilCompilation()
+  return compilation
     .apply {
       kotlinCompilation.apply {
         this.allWarningsAsErrors = allWarningsAsErrors
