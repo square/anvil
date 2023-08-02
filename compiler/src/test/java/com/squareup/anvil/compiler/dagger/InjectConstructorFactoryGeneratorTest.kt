@@ -10,7 +10,6 @@ import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
@@ -2735,15 +2734,9 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-<<<<<<< HEAD
-    previousCompilationResult: Result? = null,
-    block: Result.(AnvilCompilation) -> Unit = { }
-  ): Result = compileAnvilWithCompilation(
-=======
     previousCompilationResult: JvmCompilationResult? = null,
-    block: JvmCompilationResult.() -> Unit = { }
-  ): JvmCompilationResult = compileAnvil(
->>>>>>> main
+    block: JvmCompilationResult.(AnvilCompilation) -> Unit = { }
+  ): JvmCompilationResult = compileAnvilWithCompilation(
     sources = sources,
     daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KSP.takeIf { useDagger },
     generateDaggerFactories = !useDagger,

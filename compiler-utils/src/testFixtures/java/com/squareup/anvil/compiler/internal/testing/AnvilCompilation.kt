@@ -5,10 +5,9 @@ import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
-import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
+import com.squareup.anvil.compiler.ksp.AnvilSymbolProcessor
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
