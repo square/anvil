@@ -33,7 +33,6 @@ internal fun compile(
   allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
   daggerAnnotationProcessingMode = daggerAnnotationProcessingMode,
-  codeGenerators = codeGenerators,
   mode = mode,
   block = block
 )
