@@ -47,17 +47,15 @@ private fun FqName.asClassNameOrNull(module: ModuleDescriptor): ClassName? {
     return ClassName.bestGuess(asString())
   }
 
-  for (index in (segments.size - 1) downTo 1) {
-    val packageSegments = segments.subList(0, index)
-    val classSegments = segments.subList(index, segments.size)
-
-    val validFqName = FqName.fromSegments(packageSegments + classSegments)
-      .canResolveFqName(module)
-
+  for (index in 1..segments.size) {
+    // Try to resolve each segment chunk starting from the base package segment
+    // e.g. try resolving 'com', then 'com.squareup', then 'com.squareup.Foo'
+    val validFqName = FqName.fromSegments(segments.subList(0, index)).canResolveFqName(module)
     if (validFqName) {
+      // If we found a valid name, it means the package is one segment back from the current index
       return ClassName(
-        packageName = packageSegments.joinToString(separator = "."),
-        simpleNames = classSegments
+        packageName = segments.subList(0, index - 1).joinToString(separator = "."),
+        simpleNames = segments.subList(index - 1, segments.size)
       )
     }
   }
