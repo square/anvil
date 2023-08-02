@@ -304,7 +304,7 @@ public fun compileAnvilWithCompilation(
   block: JvmCompilationResult.(AnvilCompilation) -> Unit = { },
 ): JvmCompilationResult {
   val compilation = AnvilCompilation()
-  return AnvilCompilation()
+  compilation
     .apply {
       kotlinCompilation.apply {
         this.allWarningsAsErrors = allWarningsAsErrors
