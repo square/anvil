@@ -33,6 +33,9 @@ import com.squareup.anvil.compiler.InterfaceMerger
 import com.squareup.anvil.compiler.ModuleMerger
 import com.squareup.anvil.compiler.codegen.findAll
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
+import com.squareup.anvil.compiler.daggerComponentFqName
+import com.squareup.anvil.compiler.daggerModuleFqName
+import com.squareup.anvil.compiler.daggerSubcomponentFqName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.toAnnotationReference
@@ -83,9 +86,18 @@ private class InterceptingResolver(private val delegate: Resolver) : Resolver by
     annotationName: String,
     inDepth: Boolean
   ): Sequence<KSAnnotated> {
-    val symbols = delegate.getSymbolsWithAnnotation(annotationName, inDepth)
-    if (annotationName !in mergeAnnotationNames) return symbols
-    val annotationFqName = FqName(annotationName)
+    if (annotationName !in annotationNames) {
+      return delegate.getSymbolsWithAnnotation(annotationName, inDepth)
+    }
+
+    // Dagger's asking for a mergable annotation. Intercept and go look up
+    // components with the corresponding merge analogue.
+    val mergeAnnotationName = annotationMapping[annotationName]
+      ?: error("Expected to find a corresponding merge annotation for $annotationName")
+
+    val symbols = delegate.getSymbolsWithAnnotation(mergeAnnotationName, inDepth)
+
+    val annotationFqName = FqName(mergeAnnotationName)
 
     // Dagger's asking for a mergable annotation, remap them with contributed bindings
     return symbols.map { remapAnnotated(annotationFqName, it) }
@@ -104,14 +116,10 @@ private class InterceptingResolver(private val delegate: Resolver) : Resolver by
     return annotated.processMergeAnnotations(
       annotationClassReference = annotationClassReference,
       clazz = clazz,
-    ).processMergeInterfaces(
-      annotationClassReference = annotationClassReference,
-      clazz = clazz,
-    )
+    ).processMergeInterfaces(clazz)
   }
 
   private fun KSClassDeclaration.processMergeInterfaces(
-    annotationClassReference: ClassReference,
     clazz: ClassReference,
   ): KSClassDeclaration {
     val mergeAnnotations = clazz.annotations
@@ -121,7 +129,7 @@ private class InterceptingResolver(private val delegate: Resolver) : Resolver by
     val result = InterfaceMerger.mergeInterfaces(
       classScanner = classScanner,
       module = module,
-      mergeAnnotatedClass = annotationClassReference,
+      mergeAnnotatedClass = clazz,
       annotations = mergeAnnotations,
       supertypes = clazz.directSuperTypeReferences()
         .map { it.asClassReference() }
@@ -191,6 +199,9 @@ private class InterceptingResolver(private val delegate: Resolver) : Resolver by
         it.annotationType.resolve().declaration.qualifiedName?.asString() in mergeAnnotationNames
       }
       .toList()
+    check(filteredMergeAnnotations.isNotEmpty()) {
+      "Expected to find at least one @MergeComponent annotation on $clazz"
+    }
     val mergeAnnotationReferences = filteredMergeAnnotations
       .map { it.toAnnotationReference(annotationClassReference, clazz) }
       .toList()
@@ -211,11 +222,25 @@ private class InterceptingResolver(private val delegate: Resolver) : Resolver by
   }
 
   private companion object {
+    private val moduleName = daggerModuleFqName.asString()
+    private val componentName = daggerComponentFqName.asString()
+    private val subcomponentName = daggerSubcomponentFqName.asString()
+    private val annotationNames =
+      setOf(moduleName, componentName, subcomponentName)
     private val mergeModulesName = mergeModulesFqName.asString()
     private val mergeComponentName = mergeComponentFqName.asString()
     private val mergeSubcomponentName = mergeSubcomponentFqName.asString()
-    private val mergeAnnotationNames =
-      setOf(mergeModulesName, mergeComponentName, mergeSubcomponentName)
+    private val annotationMapping =
+      mapOf(
+        moduleName to mergeModulesName,
+        componentName to mergeComponentName,
+        subcomponentName to mergeSubcomponentName,
+      )
+    private val mergeAnnotationNames = setOf(
+      mergeModulesName,
+      mergeComponentName,
+      mergeSubcomponentName,
+    )
   }
 }
 
@@ -225,22 +250,21 @@ private fun KSAnnotation.toAnnotationReference(
 ): AnnotationReference {
   return when (this) {
     is KSAnnotationDescriptorImpl -> {
-      check(classReference is ClassReference.Descriptor)
       descriptor.toAnnotationReference(
-        classReference,
-        declaringClass
+        declaringClass = declaringClass,
+        classReference = classReference,
       )
     }
 
     is KSAnnotationImpl -> {
-      check(classReference is ClassReference.Psi)
       ktAnnotationEntry.toAnnotationReference(
-        classReference,
-        declaringClass
+        declaringClass = declaringClass,
+        classReference = classReference,
       )
     }
 
     is KSAnnotationJavaImpl -> {
+      // TODO implement PsiAnnotation.toAnnotationReference()?
       error("Java annotations are not supported: $this")
     }
 
