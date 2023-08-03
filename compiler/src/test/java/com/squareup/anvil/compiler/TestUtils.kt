@@ -178,6 +178,38 @@ internal fun ComparableSubject<ExitCode>.isError() {
 
 internal fun isFullTestRun(): Boolean = FULL_TEST_RUN
 internal fun checkFullTestRun() = assumeTrue(isFullTestRun())
+internal fun daggerProcessingModesForTests(includeNull: Boolean = true) = buildList {
+  if (isFullTestRun()) {
+    add(DaggerAnnotationProcessingMode.KSP)
+    add(DaggerAnnotationProcessingMode.KAPT)
+  }
+  if (includeNull) {
+    add(null)
+  }
+}
+
+/**
+ * Dagger KSP does not support wildcard types on the DI graph. Dagger 2.47 added a flag to ignore these, but it doesn't
+ * appear to actually enforce things. KSP code gen does behave as expected though, so we disable tests that require
+ * wildcards support when using KSP.
+ *
+ * See https://dagger.dev/dev-guide/compiler-options#ignore-provision-key-wildcards.
+ *
+ * This function calls [assumeTrue] under the hood and should be used to ignore tests that require wildcards.
+ */
+internal fun testRequiresWildcards(mode: DaggerAnnotationProcessingMode?) =
+  assumeTrue(mode != DaggerAnnotationProcessingMode.KSP)
+
+/**
+ * Dagger KSP is a work in progress and there may occasionally be bugs that are not working yet upstream. This function
+ * is here to track such cases. The second parameter is solely for documentation purposes.
+ *
+ * This function calls [assumeTrue] under the hood and should be used to ignore tests that are not ready for KSP yet.
+ */
+internal fun testIsNotYetCompatibleWithKsp(
+  mode: DaggerAnnotationProcessingMode?,
+  @Suppress("UNUSED_PARAMETER") reason: String
+) = assumeTrue(mode != DaggerAnnotationProcessingMode.KSP)
 
 internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
   val dirToSearch = when (mode) {

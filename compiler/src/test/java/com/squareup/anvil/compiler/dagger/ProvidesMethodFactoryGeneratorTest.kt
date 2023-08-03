@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
 import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
 import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
 import com.squareup.anvil.compiler.daggerModule1
+import com.squareup.anvil.compiler.daggerProcessingModesForTests
 import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
@@ -15,13 +16,13 @@ import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import dagger.Lazy
 import dagger.internal.Factory
 import org.intellij.lang.annotations.Language
 import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -33,14 +34,13 @@ import javax.inject.Provider
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
 class ProvidesMethodFactoryGeneratorTest(
-  private val useDagger: Boolean
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode?
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
-    @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
-    }
+    @Parameters(name = "Dagger processing mode: {0}")
+    @JvmStatic
+    fun daggerProcessingModes() = daggerProcessingModesForTests()
   }
 
   @Test fun `a factory class is generated for a provider method`() {
@@ -1777,7 +1777,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       }
       """
     ) {
-      if (useDagger) {
+      if (daggerProcessingMode != null) {
         assertThat(sourcesGeneratedByAnnotationProcessor).isEmpty()
       }
     }
@@ -2024,7 +2024,7 @@ public final class ComponentInterface_InnerModule_Companion_ProvideStringFactory
       }
       """
     ) {
-      if (useDagger) {
+      if (daggerProcessingMode != null) {
         assertThat(sourcesGeneratedByAnnotationProcessor).isEmpty()
       }
     }
@@ -2556,7 +2556,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       }
       """
     ) {
-      assumeFalse(useDagger)
+      assumeFalse(daggerProcessingMode != null)
 
       assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:5:3")
@@ -3219,6 +3219,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
 }
      */
 
+    assumeTrue(daggerProcessingMode != null)
     val otherModuleResult = compile(
       """
       package com.squareup.test
@@ -3259,7 +3260,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
         fun providesSomething(): Preference<Map<String, Boolean>>
       }
       """,
-      enableDagger = true,
+      daggerProcessingMode = daggerProcessingMode,
       previousCompilationResult = otherModuleResult
     ) {
       // We are not able to directly assert that @JvmSuppressWildcards was added because it is
@@ -3308,6 +3309,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
 }
      */
 
+    assumeTrue(daggerProcessingMode != null)
     val otherModuleResult = compile(
       """
       package com.squareup.test
@@ -3342,7 +3344,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
         fun providesSomething(): Set<String>
       }
       """,
-      enableDagger = true,
+      daggerProcessingMode = daggerProcessingMode,
       previousCompilationResult = otherModuleResult
     ) {
       // We are not able to directly assert that @JvmSuppressWildcards was added because it is
@@ -3502,14 +3504,14 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    enableDagger: Boolean = useDagger,
+    daggerProcessingMode: DaggerAnnotationProcessingMode? = null,
     previousCompilationResult: JvmCompilationResult? = null,
     moduleName: String? = null,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
-    daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT.takeIf { useDagger },
-    generateDaggerFactories = !enableDagger,
+    daggerAnnotationProcessingMode = daggerProcessingMode,
+    generateDaggerFactories = daggerProcessingMode == null,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block,
     previousCompilationResult = previousCompilationResult,

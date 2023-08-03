@@ -2,10 +2,11 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
+import com.squareup.anvil.compiler.daggerProcessingModesForTests
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.isStatic
-import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.testIsNotYetCompatibleWithKsp
 import com.tschuchort.compiletesting.JvmCompilationResult
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.descriptors.runtime.components.tryLoadClass
@@ -17,17 +18,20 @@ import org.junit.runners.Parameterized.Parameters
 
 @RunWith(Parameterized::class)
 class MapKeyCreatorGeneratorTest(
-  private val useDagger: Boolean
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode?
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
-    @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
-    }
+    @Parameters(name = "Dagger processing mode: {0}")
+    @JvmStatic
+    fun daggerProcessingModes() = daggerProcessingModesForTests()
   }
 
   @Test fun `a creator class is generated`() {
+    testIsNotYetCompatibleWithKsp(
+      daggerProcessingMode,
+      "https://github.com/google/dagger/issues/3993"
+    )
     compile(
       """
       package com.squareup.test
@@ -115,6 +119,10 @@ class MapKeyCreatorGeneratorTest(
   }
 
   @Test fun `a recursive annotation still works`() {
+    testIsNotYetCompatibleWithKsp(
+      daggerProcessingMode,
+      "https://github.com/google/dagger/issues/3993"
+    )
     compile(
       """
       package com.squareup.test
@@ -221,8 +229,8 @@ class MapKeyCreatorGeneratorTest(
     block: JvmCompilationResult.() -> Unit = { }
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
-    daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT.takeIf { useDagger },
-    generateDaggerFactories = !useDagger,
+    daggerAnnotationProcessingMode = daggerProcessingMode,
+    generateDaggerFactories = daggerProcessingMode == null,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block
   )

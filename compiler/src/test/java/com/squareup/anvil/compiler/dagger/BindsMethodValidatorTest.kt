@@ -2,13 +2,15 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
+import com.squareup.anvil.compiler.daggerProcessingModesForTests
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.testIsNotYetCompatibleWithKsp
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -16,14 +18,13 @@ import org.junit.runners.Parameterized.Parameters
 
 @RunWith(Parameterized::class)
 class BindsMethodValidatorTest(
-  private val useDagger: Boolean
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode?
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
-    @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
-    }
+    @Parameters(name = "Dagger processing mode: {0}")
+    @JvmStatic
+    fun daggerProcessingModes() = daggerProcessingModesForTests()
   }
 
   @Test
@@ -52,7 +53,7 @@ class BindsMethodValidatorTest(
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type"
       )
-      if (!useDagger) {
+      if (daggerProcessingMode == null) {
         assertThat(messages).contains(
           "Expected binding of type Bar but impl parameter of type Foo only has the following " +
             "supertypes: [Ipsum, Lorem]"
@@ -85,7 +86,7 @@ class BindsMethodValidatorTest(
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type"
       )
-      if (!useDagger) {
+      if (daggerProcessingMode == null) {
         assertThat(messages).contains(
           "Expected binding of type Bar but impl parameter of type Foo has no supertypes."
         )
@@ -235,6 +236,7 @@ class BindsMethodValidatorTest(
 
   @Test
   fun `an extension function binding is valid`() {
+    assumeTrue(daggerProcessingMode != null)
     val moduleResult = compile(
       """
       package com.squareup.test
@@ -269,7 +271,7 @@ class BindsMethodValidatorTest(
       }
       """,
       previousCompilationResult = moduleResult,
-      enableDagger = true,
+      daggerProcessingMode = daggerProcessingMode,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -277,6 +279,7 @@ class BindsMethodValidatorTest(
 
   @Test
   fun `a binding for a back-ticked-package type is valid`() {
+    assumeTrue(daggerProcessingMode != null)
     val moduleResult = compile(
       """
       package com.squareup.`impl`
@@ -315,7 +318,7 @@ class BindsMethodValidatorTest(
       }
       """,
       previousCompilationResult = moduleResult,
-      enableDagger = true,
+      daggerProcessingMode = daggerProcessingMode,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -323,6 +326,11 @@ class BindsMethodValidatorTest(
 
   @Test
   fun `an extension function binding with a qualifier is valid`() {
+    assumeTrue(daggerProcessingMode != null)
+    testIsNotYetCompatibleWithKsp(
+      daggerProcessingMode,
+      "https://github.com/google/dagger/issues/3990"
+    )
     val moduleResult = compile(
       """
       package com.squareup.test
@@ -370,7 +378,7 @@ class BindsMethodValidatorTest(
       }
       """,
       previousCompilationResult = moduleResult,
-      enableDagger = true,
+      daggerProcessingMode = daggerProcessingMode,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -379,12 +387,12 @@ class BindsMethodValidatorTest(
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
-    enableDagger: Boolean = useDagger,
+    daggerProcessingMode: DaggerAnnotationProcessingMode? = null,
     block: JvmCompilationResult.() -> Unit = { }
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
-    daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT.takeIf { useDagger },
-    generateDaggerFactories = !enableDagger,
+    daggerAnnotationProcessingMode = daggerProcessingMode,
+    generateDaggerFactories = daggerProcessingMode == null,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
     block = block

@@ -3,13 +3,14 @@ package com.squareup.anvil.compiler.dagger
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.assistedService
+import com.squareup.anvil.compiler.daggerProcessingModesForTests
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.testIsNotYetCompatibleWithKsp
 import com.tschuchort.compiletesting.JvmCompilationResult
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -20,14 +21,13 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class AssistedInjectGeneratorTest(
-  private val useDagger: Boolean
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode?
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
-    @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
-    }
+    @Parameters(name = "Dagger processing mode: {0}")
+    @JvmStatic
+    fun daggerProcessingModes() = daggerProcessingModesForTests()
   }
 
   @Test fun `a factory class is generated with one assisted parameter`() {
@@ -583,6 +583,10 @@ public final class AssistedService_Factory {
   }
 
   @Test fun `two assisted inject constructors aren't supported`() {
+    testIsNotYetCompatibleWithKsp(
+      daggerProcessingMode,
+      "https://github.com/google/dagger/issues/3992"
+    )
     compile(
       """
       package com.squareup.test
@@ -612,6 +616,10 @@ public final class AssistedService_Factory {
   }
 
   @Test fun `one inject and one assisted inject constructor aren't supported`() {
+    testIsNotYetCompatibleWithKsp(
+      daggerProcessingMode,
+      "https://github.com/google/dagger/issues/3991"
+    )
     compile(
       """
       package com.squareup.test
@@ -646,8 +654,8 @@ public final class AssistedService_Factory {
     block: JvmCompilationResult.() -> Unit = { }
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
-    daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT.takeIf { useDagger },
-    generateDaggerFactories = !useDagger,
+    daggerAnnotationProcessingMode = daggerProcessingMode,
+    generateDaggerFactories = daggerProcessingMode == null,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block
   )

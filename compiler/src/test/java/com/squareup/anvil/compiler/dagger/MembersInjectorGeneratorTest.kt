@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
+import com.squareup.anvil.compiler.daggerProcessingModesForTests
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
@@ -12,7 +13,6 @@ import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.membersInjector
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.nestedInjectClass
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -33,14 +33,13 @@ import kotlin.test.assertFailsWith
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
 class MembersInjectorGeneratorTest(
-  private val useDagger: Boolean
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode?
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
-    @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
-    }
+    @Parameters(name = "Dagger processing mode: {0}")
+    @JvmStatic
+    fun daggerProcessingModes() = daggerProcessingModesForTests()
   }
 
   @Test fun `a factory class is generated for a field injection`() {
@@ -2509,8 +2508,8 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     block: JvmCompilationResult.() -> Unit = { }
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
-    daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT.takeIf { useDagger },
-    generateDaggerFactories = !useDagger,
+    daggerAnnotationProcessingMode = daggerProcessingMode,
+    generateDaggerFactories = daggerProcessingMode == null,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
     block = block

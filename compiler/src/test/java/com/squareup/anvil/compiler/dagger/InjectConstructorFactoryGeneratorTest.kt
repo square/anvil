@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.daggerProcessingModesForTests
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
@@ -9,30 +10,29 @@ import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.testRequiresWildcards
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
 import dagger.internal.Factory
-import java.io.File
-import javax.inject.Provider
 import org.intellij.lang.annotations.Language
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
+import java.io.File
+import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class InjectConstructorFactoryGeneratorTest(
-  private val useDagger: Boolean
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode?
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
-    @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), true).distinct()
-    }
+    @Parameters(name = "Dagger processing mode: {0}")
+    @JvmStatic
+    fun daggerProcessingModes() = daggerProcessingModesForTests()
   }
 
   @Test fun `a factory class is generated for an inject constructor without arguments`() {
@@ -2327,6 +2327,7 @@ public class InjectClass_Factory<T, R : Set<String>>(
 }
      */
 
+    testRequiresWildcards(daggerProcessingMode)
     compile(
       """
       package com.squareup.test
@@ -2410,6 +2411,7 @@ public class InjectClass_Factory<T>(
     // empty list.  So, improperly handling `TypeVariableName` can result in a constraint like:
     // `where T : Any?, T : Appendable, T : Other`
     // This won't compile since a type can only have one bound which is a class.
+    testRequiresWildcards(daggerProcessingMode)
     compile(
       """
       package com.squareup.test
@@ -2441,6 +2443,7 @@ public class InjectClass_Factory<T>(
   }
 
   @Test fun `a factory class is generated for a type parameter which extends a generic`() {
+    testRequiresWildcards(daggerProcessingMode)
     /*
 package com.squareup.test
 
@@ -2550,7 +2553,8 @@ public class InjectClass_Factory<T : List<String>>(
     ) {
       assertThat(exitCode).isError()
       assertThat(
-        messages.lines()
+        messages.lineSequence()
+          .filterOutKspErrorPrefix()
           .first { it.startsWith("e:") }
           .removeParametersAndSort()
       ).contains(
@@ -2738,8 +2742,8 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     block: JvmCompilationResult.() -> Unit = { }
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
-    daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KSP.takeIf { useDagger },
-    generateDaggerFactories = !useDagger,
+    daggerAnnotationProcessingMode = daggerProcessingMode,
+    generateDaggerFactories = daggerProcessingMode == null,
     // Many constructor parameters are unused.
     allWarningsAsErrors = false,
     previousCompilationResult = previousCompilationResult,

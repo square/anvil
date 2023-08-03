@@ -1,5 +1,15 @@
 package com.squareup.anvil.compiler.dagger
 
+private const val KSP_ERROR_MESSAGE_PREFIX = "e: Error occurred in KSP, check log for detail"
+private const val KSP_ERROR_TAG_PREFIX = "e: [ksp]"
+
+/**
+ * Remove KSP's initial `e: Error occurred in KSP, check log for detail` prefix from a log.
+ */
+internal fun Sequence<String>.filterOutKspErrorPrefix(): Sequence<String> {
+  return asSequence().filterNot { KSP_ERROR_MESSAGE_PREFIX in it }
+}
+
 /**
  * Removes parameters of the functions in a String like
  * ```
@@ -12,6 +22,9 @@ package com.squareup.anvil.compiler.dagger
  * Dagger also doesn't guarantee any order of functions.
  */
 internal fun String.removeParametersAndSort(): String {
+  if (startsWith(KSP_ERROR_TAG_PREFIX)) {
+    return removePrefix(KSP_ERROR_TAG_PREFIX).removeParametersAndSort()
+  }
   val start = 1 + (indexOf('[').takeIf { it >= 0 } ?: return this)
   val end = indexOfLast { it == ']' }.takeIf { it >= 0 } ?: return this
 

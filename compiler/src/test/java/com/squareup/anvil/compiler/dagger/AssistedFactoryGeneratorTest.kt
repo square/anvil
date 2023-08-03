@@ -5,6 +5,7 @@ import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.assistedServiceFactory
 import com.squareup.anvil.compiler.daggerModule1
+import com.squareup.anvil.compiler.daggerProcessingModesForTests
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.createInstance
@@ -15,7 +16,7 @@ import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.testIsNotYetCompatibleWithKsp
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
@@ -27,14 +28,13 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class AssistedFactoryGeneratorTest(
-  private val useDagger: Boolean
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode?
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
-    @JvmStatic fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
-    }
+    @Parameters(name = "Dagger processing mode: {0}")
+    @JvmStatic
+    fun daggerProcessingModes() = daggerProcessingModesForTests()
   }
 
   @Test fun `an implementation for a factory class is generated`() {
@@ -1282,6 +1282,10 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   }
 }
      */
+    testIsNotYetCompatibleWithKsp(
+      daggerProcessingMode,
+      "TODO link an issue. SOmething about not a valid name: long"
+    )
     compile(
       """
       package com.squareup.test
@@ -1597,7 +1601,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     ) {
       assertThat(exitCode).isError()
       assertThat(
-        messages.lines()
+        messages.lineSequence()
+          .filterOutKspErrorPrefix()
           .first { it.startsWith("e:") }
           .removeParametersAndSort()
           .removeNullabilityAnnotations()
@@ -1635,7 +1640,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     ) {
       assertThat(exitCode).isError()
       assertThat(
-        messages.lines()
+        messages.lineSequence()
+          .filterOutKspErrorPrefix()
           .first { it.startsWith("e:") }
           .removeParametersAndSort()
           .removeNullabilityAnnotations()
@@ -1670,7 +1676,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     ) {
       assertThat(exitCode).isError()
       assertThat(
-        messages.lines()
+        messages.lineSequence()
+          .filterOutKspErrorPrefix()
           .first { it.startsWith("e:") }
           .removeParametersAndSort()
           .removeNullabilityAnnotations()
@@ -2020,8 +2027,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         kotlinCompilation.allWarningsAsErrors = WARNINGS_AS_ERRORS
       }
       .configureAnvil(
-        daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT.takeIf { useDagger },
-        generateDaggerFactories = !useDagger,
+        daggerAnnotationProcessingMode = daggerProcessingMode,
+        generateDaggerFactories = daggerProcessingMode == null,
       )
   }
 
