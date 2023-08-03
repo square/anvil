@@ -16,7 +16,6 @@ import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.testIsNotYetCompatibleWithKsp
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
