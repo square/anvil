@@ -1284,7 +1284,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
      */
     testIsNotYetCompatibleWithKsp(
       daggerProcessingMode,
-      "TODO link an issue. SOmething about not a valid name: long"
+      "https://github.com/google/dagger/issues/3995"
     )
     compile(
       """
