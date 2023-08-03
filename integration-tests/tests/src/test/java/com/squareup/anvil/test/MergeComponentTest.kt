@@ -57,6 +57,16 @@ internal class MergeComponentTest {
 
     assertThat(appComponent.mapBindings()).containsExactly("1", MapBinding1, "3", MapBinding3)
     assertThat(appComponent.mapBindingsNamed()).containsExactly("2", MapBinding2)
+    assertThat(appComponent.mapBindingsWrapped()).containsExactly(
+      WrappedBindingKey("1"),
+      WrappedMapBinding1,
+      WrappedBindingKey("3"),
+      WrappedMapBinding3
+    )
+    assertThat(appComponent.mapBindingsWrappedNamed()).containsExactly(
+      WrappedBindingKey("2"),
+      WrappedMapBinding2
+    )
   }
 
   @Test fun `the binding with the highest priority is bound`() {
@@ -75,6 +85,8 @@ internal class MergeComponentTest {
     fun parentTypes(): Set<ParentType>
     fun mapBindings(): Map<String, ParentType>
     @Named("abc") fun mapBindingsNamed(): Map<String, ParentType>
+    fun mapBindingsWrapped(): Map<WrappedBindingKey, ParentType>
+    @Named("def") fun mapBindingsWrappedNamed(): Map<WrappedBindingKey, ParentType>
     fun priorityBinding(): PriorityBinding
   }
 
