@@ -1273,8 +1273,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   }
 
   @Override
-  public AssistedService create(long p0_1663806, String other) {
-    return delegateFactory.get(other, p0_1663806);
+  public AssistedService create(long longValue, String other) {
+    return delegateFactory.get(other, longValue);
   }
 
   public static Provider<AssistedServiceFactory> create(AssistedService_Factory delegateFactory) {
@@ -1282,10 +1282,6 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   }
 }
      */
-    testIsNotYetCompatibleWithKsp(
-      daggerProcessingMode,
-      "https://github.com/google/dagger/issues/3995"
-    )
     compile(
       """
       package com.squareup.test
@@ -1297,12 +1293,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String,
-        @Assisted val long: Long
+        @Assisted val longValue: Long
       )
       
       @AssistedFactory
       interface AssistedServiceFactory {
-        fun create(long: Long, other: String): AssistedService
+        fun create(longValue: Long, other: String): AssistedService
       }
       """
     ) {
