@@ -51,7 +51,7 @@ public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory)
     .convention(false)
 
   /**
-   * Add the `annotations-optional` artifact as a dependency to make annotations like `@SingleIn` and `@ForScope` 
+   * Add the `annotations-optional` artifact as a dependency to make annotations like `@SingleIn` and `@ForScope`
    * available to use. These are annotations that are not strictly required but which we've found to be helpful with managing larger dependency graphs.
    */
   public val addOptionalAnnotations: Property<Boolean> = objects.property(Boolean::class.java)
