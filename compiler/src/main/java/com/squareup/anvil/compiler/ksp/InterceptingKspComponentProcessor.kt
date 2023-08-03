@@ -46,7 +46,7 @@ import org.jetbrains.kotlin.types.SimpleType
 
 /**
  * An intercepting [SymbolProcessor] that intercepts [process] calls
- * to a [KspComponentProcessor] with a [DecoratedResolver] that adds merged
+ * to a [KspComponentProcessor] with a [InterceptingResolver] that adds merged
  * Dagger modules and component interfaces to returned annotated elements.
  */
 internal class InterceptingKspComponentProcessor(
@@ -54,7 +54,7 @@ internal class InterceptingKspComponentProcessor(
 ) : SymbolProcessor {
 
   override fun process(resolver: Resolver) =
-    delegate.process(DecoratedResolver(resolver))
+    delegate.process(InterceptingResolver(resolver))
 
   @AutoService(SymbolProcessorProvider::class)
   class Provider : SymbolProcessorProvider {
@@ -69,7 +69,7 @@ internal class InterceptingKspComponentProcessor(
  * A [Resolver] that intercepts calls to mergeable annotated symbols (e.g. `@Component`, `@Module`,
  * etc.), and rewrites them to add merged information.
  */
-private class DecoratedResolver(private val delegate: Resolver) : Resolver by delegate {
+private class InterceptingResolver(private val delegate: Resolver) : Resolver by delegate {
   private val module by lazy {
     val delegateModule =
       (delegate as? ResolverImpl)?.module ?: error("Could not load ModuleDescriptor")
