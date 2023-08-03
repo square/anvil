@@ -38,8 +38,9 @@ public interface VariantFilter : Named {
   public var syncGeneratedSources: Boolean
 
   /**
-   * Add the `annotations-optional` artifact as a dependency to make `SingleIn` and `ForScope` 
-   * available to use.
+   * Add the `annotations-optional` artifact as a dependency. The default
+   * value comes from the [AnvilExtension]. See [AnvilExtension.addOptionalAnnotations] for more
+   * details.
    */
   public var addOptionalAnnotations: Boolean
 }
