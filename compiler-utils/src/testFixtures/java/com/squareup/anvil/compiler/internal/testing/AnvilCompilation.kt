@@ -7,7 +7,7 @@ import com.squareup.anvil.compiler.AnvilCommandLineProcessor
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
-import com.squareup.anvil.compiler.ksp.AnvilSymbolProcessor
+import com.squareup.anvil.compiler.ksp.InterceptingKspComponentProcessor
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
@@ -67,7 +67,7 @@ public class AnvilCompilation internal constructor(
           annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
         }
         DaggerAnnotationProcessingMode.KSP -> {
-          symbolProcessorProviders += listOf(AnvilSymbolProcessor.Provider())
+          symbolProcessorProviders += listOf(InterceptingKspComponentProcessor.Provider())
           // Run KSP in a single-pass
           // https://kotlinlang.slack.com/archives/C013BA8EQSE/p1639462548225400?thread_ts=1639433474.224900&cid=C013BA8EQSE
           kspWithCompilation = true

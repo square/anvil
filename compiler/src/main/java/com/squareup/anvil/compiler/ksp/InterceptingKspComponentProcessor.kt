@@ -44,20 +44,24 @@ import dagger.internal.codegen.KspComponentProcessor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.SimpleType
 
-class AnvilSymbolProcessor(
+/**
+ * An intercepting [SymbolProcessor] that intercepts [process] calls
+ * to a [KspComponentProcessor] with a [DecoratedResolver] that adds merged
+ * Dagger modules and component interfaces to returned annotated elements.
+ */
+internal class InterceptingKspComponentProcessor(
   private val delegate: SymbolProcessor,
 ) : SymbolProcessor {
 
-  override fun process(resolver: Resolver): List<KSAnnotated> {
-    return delegate.process(DecoratedResolver(resolver))
-  }
+  override fun process(resolver: Resolver) =
+    delegate.process(DecoratedResolver(resolver))
 
   @AutoService(SymbolProcessorProvider::class)
   class Provider : SymbolProcessorProvider {
-    override fun create(environment: SymbolProcessorEnvironment): SymbolProcessor {
-      val delegate = KspComponentProcessor.Provider().create(environment)
-      return AnvilSymbolProcessor(delegate)
-    }
+    override fun create(environment: SymbolProcessorEnvironment) =
+      InterceptingKspComponentProcessor(
+        KspComponentProcessor.Provider().create(environment)
+      )
   }
 }
 
@@ -65,7 +69,7 @@ class AnvilSymbolProcessor(
  * A [Resolver] that intercepts calls to mergeable annotated symbols (e.g. `@Component`, `@Module`,
  * etc.), and rewrites them to add merged information.
  */
-class DecoratedResolver(private val delegate: Resolver) : Resolver by delegate {
+private class DecoratedResolver(private val delegate: Resolver) : Resolver by delegate {
   private val module by lazy {
     val delegateModule =
       (delegate as? ResolverImpl)?.module ?: error("Could not load ModuleDescriptor")
@@ -262,7 +266,7 @@ private fun KSDeclaration.shouldIgnore(): Boolean {
   return qualifiedName == null || isLocal()
 }
 
-class ModuleKSAnnotation(
+private class ModuleKSAnnotation(
   private val delegate: KSAnnotation,
   private val mergedModules: Set<ClassReference>,
   private val resolver: Resolver,
