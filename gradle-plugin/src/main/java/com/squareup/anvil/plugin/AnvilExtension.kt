@@ -51,10 +51,10 @@ public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory)
     .convention(false)
 
   /**
-   * Enables experimental KSP support. This is only useful if using Dagger with KSP and if
-   * [disableComponentMerging] is set to `false`.
+   * Enables experimental KSP support in component merging. This is only
+   * useful if using Dagger with KSP and if [disableComponentMerging] is set to `false`.
    */
-  public val useKsp: Property<Boolean> = objects.property(Boolean::class.java)
+  public val enableKspComponentMerging: Property<Boolean> = objects.property(Boolean::class.java)
     .convention(false)
 
   @Suppress("PropertyName")

@@ -50,10 +50,12 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       // TODO would be nice if KSP made this a property so these
       //  could be chained nicely without afterEvaluate
       target.afterEvaluate {
-        if (anvilExtension.useKsp.get()) {
+        if (anvilExtension.enableKspComponentMerging.get()) {
           target.extensions.configure(KspExtension::class.java) { kspExtension ->
             kspExtension.excludeProcessor("dagger.internal.codegen.KspComponentProcessor")
           }
+
+          target.dependencies.add("ksp", "$GROUP:compiler:$VERSION")
         }
       }
     }
@@ -140,9 +142,11 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     project.configurations.getByName(variant.compilerPluginClasspathName)
       .extendsFrom(getConfiguration(project, variant.name))
 
-    disableIncrementalKotlinCompilation(variant)
+    if (!variant.variantFilter.enableKspComponentMerging) {
+     disableIncrementalKotlinCompilation(variant)
+    }
 
-    if (!variant.variantFilter.generateDaggerFactoriesOnly) {
+    if (!variant.variantFilter.generateDaggerFactoriesOnly || !variant.variantFilter.enableKspComponentMerging) {
       disableCorrectErrorTypes(variant)
 
       kotlinCompilation.dependencies {
