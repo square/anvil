@@ -215,7 +215,7 @@ public sealed class TypeReference {
 
       fun KtUserType.isTypeParameter(): Boolean {
         return parents.filterIsInstance<KtClassOrObject>().first().typeParameters.any {
-          val typeParameter = it.text.split(":").first().trim()
+          val typeParameter = it.text.split(":").first().removePrefix("out").removePrefix("in").trim()
           typeParameter == text
         }
       }
