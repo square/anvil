@@ -10,8 +10,10 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.descriptors.CallableMemberDescriptor.Kind.DECLARATION
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ClassKind
@@ -398,6 +400,56 @@ public fun ClassReference.allSuperTypeClassReferences(
     superTypes
       .flatMap { classRef ->
         classRef.directSuperTypeReferences().mapNotNull { it.asClassReferenceOrNull() }
+      }
+      .takeIf { it.isNotEmpty() }
+  }
+    .drop(if (includeSelf) 0 else 1)
+    .flatten()
+    .distinct()
+}
+
+/**
+ * This will return all super types as [ClassReferenceWithGenericParameters], whether they're parsed as [KtClassOrObject]
+ * or [ClassDescriptor]. This will include generated code, assuming it has already been generated.
+ * The returned sequence will be distinct by FqName, and Psi types are preferred over Descriptors.
+ *
+ * The first elements in the returned sequence represent the direct superclass to the receiver. The
+ * last elements represent the types which are furthest up-stream.
+ *
+ * @param includeSelf If true, the receiver class is the first element of the sequence
+ */
+@ExperimentalAnvilApi
+public fun ClassReference.allSuperTypeClassReferencesWithGenericParameters(
+  includeSelf: Boolean = false
+): Sequence<ClassReferenceWithGenericParameters> {
+  return generateSequence(listOf(
+    ClassReferenceWithGenericParameters(this, emptyList())
+  )) { superTypes ->
+    superTypes
+      .flatMap { classRefWithGenericParames ->
+        val classReference = classRefWithGenericParames.classReference
+        classReference.directSuperTypeReferences().mapNotNull { typeRef ->
+          typeRef.asClassReferenceOrNull()
+            ?.let { clasRef ->
+              val rawTypeArguments = (typeRef.asTypeName() as? ParameterizedTypeName)?.typeArguments ?: emptyList()
+
+              // Type arguments will only contain direct references to their parents. For example
+              // interface MiddleInterface<out OutputT : Any> : ParentInterface<OutputT>
+              // Type argument of the ParentInterface will be OutputT, instead of actual provided value by the
+              // parent class
+              // This attempts to resolve the actual type provided from parent
+              val parentResolvedTypeArguments = rawTypeArguments.map {rawArgument ->
+                  if (rawArgument is TypeVariableName) {
+                    val parentIndex = classReference.typeParameters.indexOfFirst { it.name == rawArgument.name }
+                    classRefWithGenericParames.typeArguments.elementAt(parentIndex)
+                  } else {
+                    rawArgument
+                  }
+              }
+
+              ClassReferenceWithGenericParameters(clasRef, parentResolvedTypeArguments)
+            }
+        }
       }
       .takeIf { it.isNotEmpty() }
   }
