@@ -15,8 +15,8 @@ import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import com.tschuchort.compiletesting.KotlinCompilation.Result
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -2026,8 +2026,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    block: Result.() -> Unit = { }
-  ): Result {
+    block: JvmCompilationResult.() -> Unit = { }
+  ): JvmCompilationResult {
     return prepareCompilation()
       .compile(*sources)
       .apply(block)

@@ -178,6 +178,7 @@ internal class MapKeyCreatorGenerator : PrivateCodeGenerator() {
         className,
         properties.entries.map { it.value.callExpression }.joinToCode()
       )
+      .returns(className)
       .build()
   }
 }

@@ -9,8 +9,8 @@ import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import com.tschuchort.compiletesting.KotlinCompilation.Result
 import dagger.Lazy
 import dagger.internal.Factory
 import org.intellij.lang.annotations.Language
@@ -94,6 +94,32 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
       assertThat(instance).isNotNull()
       assertThat((factoryInstance as Factory<*>).get()).isNotNull()
+    }
+  }
+
+  /**
+   * Covers a bug that previously led to conflicting imports in the generated code:
+   * https://github.com/square/anvil/issues/738
+   */
+  @Test fun `a factory class is generated without conflicting imports`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import javax.inject.Inject
+      
+      class InjectClass @Inject constructor() {
+        interface Factory {
+          fun doSomething()
+        }
+      }
+
+      class InjectClassFactory @Inject constructor(val factory: InjectClass.Factory)
+      """
+    ) {
+      // Loading one of the classes is all that's necessary to verify no conflicting imports were
+      // generated
+      injectClass.factoryClass()
     }
   }
 
@@ -2707,9 +2733,9 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    previousCompilationResult: Result? = null,
-    block: Result.() -> Unit = { }
-  ): Result = compileAnvil(
+    previousCompilationResult: JvmCompilationResult? = null,
+    block: JvmCompilationResult.() -> Unit = { }
+  ): JvmCompilationResult = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,

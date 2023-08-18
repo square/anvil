@@ -45,6 +45,12 @@ public interface VariantFilter : Named {
    */
   public var syncGeneratedSources: Boolean
 
+  /**
+   * Add the `annotations-optional` artifact as a dependency. The default
+   * value comes from the [AnvilExtension]. See [AnvilExtension.addOptionalAnnotations] for more
+   * details.
+   */
+  public var addOptionalAnnotations: Boolean
 }
 
 internal class CommonFilter(
@@ -88,6 +94,13 @@ internal class CommonFilter(
     get() = syncGeneratedSourcesOverride ?: extension.syncGeneratedSources.get()
     set(value) {
       syncGeneratedSourcesOverride = value
+    }
+
+  private var addOptionalAnnotationsOverride: Boolean? = null
+  override var addOptionalAnnotations: Boolean
+    get() = addOptionalAnnotationsOverride ?: extension.addOptionalAnnotations.get()
+    set(value) {
+      addOptionalAnnotationsOverride = value
     }
 }
 
