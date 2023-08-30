@@ -180,8 +180,9 @@ internal fun checkFullTestRun() = assumeTrue(isFullTestRun())
 
 internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
   val dirToSearch = when (mode) {
-    is AnvilCompilationMode.Embedded -> outputDirectory.parentFile.resolve("build/anvil")
-    is AnvilCompilationMode.Ksp -> outputDirectory.parentFile.resolve("ksp/sources")
+    is AnvilCompilationMode.Embedded ->
+      outputDirectory.parentFile.resolve("build${File.separator}anvil")
+    is AnvilCompilationMode.Ksp -> outputDirectory.parentFile.resolve("ksp${File.separator}sources")
   }
   return dirToSearch.walkTopDown()
     .filter { it.isFile && it.extension == "kt" }
