@@ -6,4 +6,13 @@ public interface AnvilApplicabilityChecker {
    * will only be called _once_.
    */
   public fun isApplicable(context: AnvilContext): Boolean
+
+  public companion object {
+    /** Returns an instance that always returns true. */
+    public fun always(): AnvilApplicabilityChecker = Always
+  }
+
+  private object Always : AnvilApplicabilityChecker {
+    override fun isApplicable(context: AnvilContext): Boolean = true
+  }
 }
