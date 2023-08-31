@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.codegen.ksp
 
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.Visibility.PUBLIC
@@ -105,3 +106,7 @@ internal fun KSClassDeclaration.superTypesExcludingAny(
   resolver: Resolver
 ): Sequence<KSTypeReference> = superTypes
   .filterNot { it.resolve() == resolver.builtIns.anyType }
+
+internal fun KSClassDeclaration.isInterface(): Boolean {
+  return classKind == ClassKind.INTERFACE
+}

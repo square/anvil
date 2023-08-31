@@ -11,12 +11,25 @@ import com.squareup.anvil.compiler.hintContributesScope
 import com.squareup.anvil.compiler.hintContributesScopes
 import com.squareup.anvil.compiler.innerInterface
 import com.squareup.anvil.compiler.innerModule
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.walkGeneratedFiles
 import org.junit.Test
-import java.io.File
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 
 @Suppress("RemoveRedundantQualifierName")
-class ContributesToGeneratorTest {
+@RunWith(Parameterized::class)
+class ContributesToCodeGenTest(
+  private val mode: AnvilCompilationMode,
+) {
+
+  companion object {
+    @Parameterized.Parameters(name = "{0}")
+    @JvmStatic fun modes(): Collection<Any> {
+      return listOf(AnvilCompilationMode.Embedded(), AnvilCompilationMode.Ksp())
+    }
+  }
 
   @Test fun `there is no hint for merge annotations`() {
     compile(
@@ -27,7 +40,8 @@ class ContributesToGeneratorTest {
       
       @MergeComponent(Any::class)
       interface ComponentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(componentInterface.hintContributes).isNull()
       assertThat(componentInterface.hintContributesScope).isNull()
@@ -41,7 +55,8 @@ class ContributesToGeneratorTest {
       
       @MergeSubcomponent(Any::class)
       interface ComponentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(componentInterface.hintContributes).isNull()
       assertThat(componentInterface.hintContributesScope).isNull()
@@ -58,14 +73,13 @@ class ContributesToGeneratorTest {
       @ContributesTo(Any::class)
       @dagger.Module
       abstract class DaggerModule1
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
       assertThat(daggerModule1.hintContributesScope).isEqualTo(Any::class)
 
-      val generatedFile = File(outputDirectory.parent, "build/anvil")
-        .walk()
-        .single { it.isFile && it.extension == "kt" }
+      val generatedFile = walkGeneratedFiles(mode).single()
 
       assertThat(generatedFile.name).isEqualTo("DaggerModule1.kt")
     }
@@ -83,7 +97,8 @@ class ContributesToGeneratorTest {
       @ContributesTo(Unit::class)
       @Module
       abstract class DaggerModule1
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
       assertThat(daggerModule1.hintContributesScopes).containsExactly(Any::class, Unit::class)
@@ -107,7 +122,8 @@ class ContributesToGeneratorTest {
       @ContributesTo(Any::class)
       @Module
       abstract class DaggerModule2
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(daggerModule1.hintContributesScopes)
         .containsExactly(Any::class, Unit::class)
@@ -129,7 +145,8 @@ class ContributesToGeneratorTest {
       @com.squareup.anvil.annotations.ContributesTo(Unit::class)
       @dagger.Module
       abstract class DaggerModule1
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
       assertThat(daggerModule1.hintContributesScopes).containsExactly(Any::class, Unit::class)
@@ -147,7 +164,8 @@ class ContributesToGeneratorTest {
       @com.squareup.anvil.annotations.ContributesTo(Unit::class)
       @dagger.Module
       abstract class DaggerModule1
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
       assertThat(daggerModule1.hintContributesScopes).containsExactly(Any::class, Unit::class)
@@ -167,7 +185,8 @@ class ContributesToGeneratorTest {
       @ContributesTo(Unit::class, replaces = [Int::class])
       @dagger.Module
       abstract class DaggerModule1
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -193,7 +212,8 @@ class ContributesToGeneratorTest {
       
       @PublishedApi
       internal class FailAnvil
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
       assertThat(daggerModule1.hintContributesScope).isEqualTo(Any::class)
@@ -209,7 +229,8 @@ class ContributesToGeneratorTest {
 
       @ContributesTo(Any::class)
       interface ContributingInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintContributes?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintContributesScope).isEqualTo(Any::class)
@@ -225,7 +246,8 @@ class ContributesToGeneratorTest {
 
       @ContributesTo(replaces = [Unit::class], scope = Int::class)
       interface ContributingInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintContributesScope).isEqualTo(Int::class)
     }
@@ -243,14 +265,13 @@ class ContributesToGeneratorTest {
         @dagger.Module
         abstract class InnerModule
       }
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(innerModule.hintContributes?.java).isEqualTo(innerModule)
       assertThat(innerModule.hintContributesScope).isEqualTo(Any::class)
 
-      val generatedFile = File(outputDirectory.parent, "build/anvil")
-        .walk()
-        .single { it.isFile && it.extension == "kt" }
+      val generatedFile = walkGeneratedFiles(mode).single()
 
       assertThat(generatedFile.name).isEqualTo("ComponentInterface_InnerModule.kt")
     }
@@ -267,7 +288,8 @@ class ContributesToGeneratorTest {
         @ContributesTo(Any::class)
         interface InnerInterface
       }
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(innerInterface.hintContributes?.java).isEqualTo(innerInterface)
       assertThat(innerInterface.hintContributesScope).isEqualTo(Any::class)
@@ -283,11 +305,16 @@ class ContributesToGeneratorTest {
 
       @ContributesTo(Any::class)
       abstract class DaggerModule1
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
-      assertThat(messages).contains("Source0.kt:6:16")
+      assertThat(messages).contains("Source0.kt:6")
+      assertThat(messages).contains(
+        "com.squareup.test.DaggerModule1 is annotated with @ContributesTo, but this class " +
+          "is neither an interface nor a Dagger module. Did you forget to add @Module?"
+      )
     }
   }
 
@@ -308,11 +335,16 @@ class ContributesToGeneratorTest {
         @ContributesTo(Any::class)
         @dagger.Module
         $visibility abstract class DaggerModule1
-        """
+        """,
+        mode = mode,
       ) {
         assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:7")
+        assertThat(messages).contains(
+          "com.squareup.test.DaggerModule1 is contributed to the Dagger graph, but the " +
+            "module is not public. Only public modules are supported."
+        )
       }
     }
   }
@@ -333,11 +365,16 @@ class ContributesToGeneratorTest {
 
         @ContributesTo(Any::class)
         $visibility interface ContributingInterface
-        """
+        """,
+        mode = mode,
       ) {
         assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:6")
+        assertThat(messages).contains(
+          "com.squareup.test.ContributingInterface is contributed to the Dagger graph, but the " +
+            "module is not public. Only public modules are supported."
+        )
       }
     }
   }

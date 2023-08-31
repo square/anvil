@@ -83,9 +83,10 @@ internal const val SUBCOMPONENT_MODULE = "SubcomponentModule"
 internal const val REFERENCE_SUFFIX = "_reference"
 internal const val SCOPE_SUFFIX = "_scope"
 
-internal fun FqName.isAnvilModule(): Boolean {
-  val name = asString()
-  return name.startsWith(MODULE_PACKAGE_PREFIX) && name.endsWith(ANVIL_MODULE_SUFFIX)
+internal fun FqName.isAnvilModule(): Boolean = asString().isAnvilModule()
+
+internal fun String.isAnvilModule(): Boolean {
+  return startsWith(MODULE_PACKAGE_PREFIX) && endsWith(ANVIL_MODULE_SUFFIX)
 }
 
 @Suppress("UNCHECKED_CAST")
