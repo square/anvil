@@ -8,6 +8,7 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSFile
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.internal.testing.parseSimpleFileContents
+import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
@@ -32,19 +33,19 @@ private class SimpleSymbolProcessor(
           sources = listOfNotNull(result.originatingFile).toTypedArray()
         )
         val file = env.codeGenerator.createNewFile(dependencies, packageName, fileName)
-
-        // Don't use writeTo(file) because that tries to handle directories under the hood
-        OutputStreamWriter(file, StandardCharsets.UTF_8)
-          .buffered()
-          .use { writer ->
-            writer.write(result.content)
-            writer.flush()
-            env.logger.info("Content written to file")
-          }
+        file.appendText(result.content)
+        env.logger.info("Content written to file")
       }
       .toList()
+    val files = resolver.getAllFiles().toList()
+    env.logger.info("All files : ${files.joinToString { it.fileName }}")
+
     return emptyList()
   }
+}
+
+fun OutputStream.appendText(str: String) {
+  this.write(str.toByteArray())
 }
 
 internal data class SimpleMapperResult(
