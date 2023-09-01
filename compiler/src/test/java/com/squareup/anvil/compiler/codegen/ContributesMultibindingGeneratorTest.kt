@@ -1,9 +1,12 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.google.devtools.ksp.containingFile
 import com.squareup.anvil.annotations.MergeComponent
+import com.squareup.anvil.compiler.codegen.ksp.SimpleMapperResult
 import com.squareup.anvil.compiler.codegen.ksp.simpleSymbolProcessor
 import com.squareup.anvil.compiler.compile
+import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.hintMultibinding
 import com.squareup.anvil.compiler.hintMultibindingScope
@@ -368,12 +371,9 @@ class ContributesMultibindingGeneratorTest(
           package com.squareup.test
 
           import com.squareup.anvil.annotations.ContributesMultibinding
-          import dagger.MapKey
-          import javax.inject.Singleton
 
           @ContributesMultibinding(Any::class)
           @BindingKey("abc")
-          @Singleton
           interface ContributingInterface : ParentInterface
       """.trimIndent()
 
@@ -381,15 +381,23 @@ class ContributesMultibindingGeneratorTest(
       is AnvilCompilationMode.Embedded -> {
         val codeGenerator = simpleCodeGenerator { clazz ->
           clazz
-            .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
+            .takeIf { it.isAnnotatedWith(contributesBindingFqName) }
             ?.let { stubContentToGenerate }
         }
         AnvilCompilationMode.Embedded(listOf(codeGenerator))
       }
+
       is AnvilCompilationMode.Ksp -> {
-        val processor = simpleSymbolProcessor { resolver ->
-          resolver.getSymbolsWithAnnotation(MergeComponent::class.qualifiedName!!)
-            .map { stubContentToGenerate }
+        val processor = simpleSymbolProcessor { resolver, env ->
+          env.logger.info("Simple processor ran")
+          resolver.getSymbolsWithAnnotation(contributesBindingFqName.toString())
+            .map { clazz ->
+              env.logger.info("Mapping to stub content")
+              SimpleMapperResult(
+                content = stubContentToGenerate,
+                originatingFile = clazz.containingFile
+              )
+            }
             .toList()
         }
         AnvilCompilationMode.Ksp(listOf(processor))
@@ -400,16 +408,18 @@ class ContributesMultibindingGeneratorTest(
       """
         package com.squareup.test
   
-        import com.squareup.anvil.annotations.MergeComponent
+        import com.squareup.anvil.annotations.ContributesBinding
         import dagger.MapKey
         
         @MapKey
         annotation class BindingKey(val value: String)
         
         interface ParentInterface
+
+        interface OtherInterface
   
-        @MergeComponent(Any::class)
-        interface ComponentInterface
+        @ContributesBinding(Any::class)
+        interface ComponentInterface : OtherInterface
       """,
       mode = localMode
     ) {
@@ -426,7 +436,6 @@ class ContributesMultibindingGeneratorTest(
 
           import com.squareup.anvil.annotations.ContributesMultibinding
           import dagger.MapKey
-          import javax.inject.Singleton
 
           interface ParentInterface
 
@@ -435,7 +444,6 @@ class ContributesMultibindingGeneratorTest(
       
           @ContributesMultibinding(Any::class)
           @BindingKey1("abc")
-          @Singleton
           interface ContributingInterface : ParentInterface
       """.trimIndent()
 
@@ -443,17 +451,25 @@ class ContributesMultibindingGeneratorTest(
       is AnvilCompilationMode.Embedded -> {
         val codeGenerator = simpleCodeGenerator { clazz ->
           clazz
-            .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
+            .takeIf { it.isAnnotatedWith(contributesBindingFqName) }
             ?.let {
               stubContentToGenerate
             }
         }
         AnvilCompilationMode.Embedded(listOf(codeGenerator))
       }
+
       is AnvilCompilationMode.Ksp -> {
-        val processor = simpleSymbolProcessor { resolver ->
-          resolver.getSymbolsWithAnnotation(MergeComponent::class.qualifiedName!!)
-            .map { stubContentToGenerate }
+        val processor = simpleSymbolProcessor { resolver, env ->
+          env.logger.info("Simple processor ran")
+          resolver.getSymbolsWithAnnotation(contributesBindingFqName.toString())
+            .map { clazz ->
+              env.logger.info("Mapping to stub content")
+              SimpleMapperResult(
+                content = stubContentToGenerate,
+                originatingFile = clazz.containingFile
+              )
+            }
             .toList()
         }
         AnvilCompilationMode.Ksp(listOf(processor))
@@ -464,10 +480,12 @@ class ContributesMultibindingGeneratorTest(
       """
         package com.squareup.test
   
-        import com.squareup.anvil.annotations.MergeComponent
+        import com.squareup.anvil.annotations.ContributesBinding
         
-        @MergeComponent(Any::class)
-        interface ComponentInterface
+        interface OtherInterface
+  
+        @ContributesBinding(Any::class)
+        interface ComponentInterface : OtherInterface
       """,
       mode = localMode
     ) {
