@@ -25,7 +25,6 @@ private class SimpleSymbolProcessor(
   override fun processChecked(resolver: Resolver): List<KSAnnotated> {
     this.mapper(resolver, env)
       .map { result ->
-        env.logger.info("Content received")
         val (packageName, fileName) = parseSimpleFileContents(result.content)
 
         val dependencies = Dependencies(
