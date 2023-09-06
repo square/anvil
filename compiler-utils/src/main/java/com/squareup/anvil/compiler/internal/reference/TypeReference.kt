@@ -35,6 +35,7 @@ import org.jetbrains.kotlin.psi.KtTypeReference
 import org.jetbrains.kotlin.psi.KtUserType
 import org.jetbrains.kotlin.psi.psiUtil.containingClass
 import org.jetbrains.kotlin.psi.psiUtil.getChildOfType
+import org.jetbrains.kotlin.psi.psiUtil.hasSuspendModifier
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.types.DefinitelyNotNullType
@@ -304,6 +305,8 @@ public sealed class TypeReference {
                 ?: emptyList(),
               returnType = (returnTypeReference ?: fail())
                 .requireTypeName()
+            ).copy(
+              suspending = type.modifierList?.hasSuspendModifier() ?: false
             )
           is KtNullableType -> {
             (innerType ?: fail()).requireTypeName().copy(nullable = true)
@@ -644,6 +647,15 @@ private fun TypeName.lambdaFix(): TypeName {
   // must be converted or their signatures won't match.
   // see https://github.com/square/anvil/issues/400
   val lambdaTypeName = this as? LambdaTypeName ?: return this
+  if (lambdaTypeName.isSuspending) {
+    // We short-circuit for suspend lambdas because otherwise we would need to represent them as
+    // something like `Function1<Continuation<String?>, *>`. This works fine when generating Java
+    // code like in Dagger, but proves problematic when generating Kotlin code and ends up requiring
+    // continuous casting of the arg to make the compiler happy again. It's possible this could end
+    // up failing for a Psi vs Descriptor use-case like the original ticket that required this
+    // lambda fix method but I haven't been able to find a failing repro for that yet.
+    return this
+  }
 
   val allTypes = listOfNotNull(lambdaTypeName.receiver) +
     lambdaTypeName.parameters.map { it.type } +
