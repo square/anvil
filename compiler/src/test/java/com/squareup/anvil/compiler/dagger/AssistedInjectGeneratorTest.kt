@@ -96,6 +96,38 @@ public final class AssistedService_Factory {
     }
   }
 
+  @Test fun `a factory class is generated with a suspend lambda assisted parameter`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService @AssistedInject constructor(
+        @Assisted val action: suspend () -> String?
+      )
+      """,
+    ) {
+      val factoryClass = assistedService.factoryClass()
+
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
+
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      assertThat(staticMethods).hasSize(2)
+
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val action: suspend () -> String? = { "Hello " }
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, action)
+      assertThat(factoryInstance.invokeGet(action)).isEqualTo(newInstance)
+    }
+  }
+
   @Test fun `a factory class is generated without any parameter`() {
     compile(
       """
@@ -642,7 +674,7 @@ public final class AssistedService_Factory {
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    block: JvmCompilationResult.() -> Unit = { }
+    block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
