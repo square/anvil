@@ -15,7 +15,12 @@ dependencyResolutionManagement {
         overrides.put(keyString, value.toString())
         if (keyString.endsWith("_kotlin")) {
           // TODO hardcoded to match what's in libs.versions.toml, but kinda ugly
-          overrides.put("override_ksp", "$value-1.0.11")
+          String kspPartialVersion = "1.0.13"
+          if (value.toString().startsWith("1.8")) {
+            // Latest KSP releases currently don't support Kotlin 1.8.x
+            kspPartialVersion = "1.0.11"
+          }
+          overrides.put("override_ksp", "$value-$kspPartialVersion")
         }
       }
     }
