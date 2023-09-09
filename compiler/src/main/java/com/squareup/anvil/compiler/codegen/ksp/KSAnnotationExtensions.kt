@@ -1,4 +1,5 @@
 @file:Suppress("invisible_reference", "invisible_member")
+
 package com.squareup.anvil.compiler.codegen.ksp
 
 import com.google.devtools.ksp.isDefault
@@ -8,8 +9,44 @@ import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueArgument
 import com.squareup.anvil.compiler.internal.daggerScopeFqName
 import com.squareup.anvil.compiler.internal.mapKeyFqName
+import com.squareup.anvil.compiler.isAnvilModule
 import com.squareup.anvil.compiler.qualifierFqName
+import com.squareup.kotlinpoet.ksp.toClassName
 import org.jetbrains.kotlin.name.FqName
+
+internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScope(
+  annotatedType: KSClassDeclaration,
+  isContributeAnnotation: Boolean,
+) {
+  // Exit early to avoid allocating additional collections.
+  if (size < 2) return
+  if (size == 2 && this[0].scope() != this[1].scope()) return
+
+  // Ignore generated Anvil modules. We'll throw a better error later for @Merge* annotations.
+  if (annotatedType.qualifiedName?.asString().orEmpty().isAnvilModule()) return
+
+  // Check for duplicate scopes. Multiple contributions to the same scope are forbidden.
+  val duplicates = groupBy { it.scope() }.filterValues { it.size > 1 }
+
+  if (duplicates.isNotEmpty()) {
+    val annotatedClass = annotatedType.qualifiedName!!.asString()
+    val duplicateScopesMessage =
+      duplicates.keys.joinToString(prefix = "[", postfix = "]") { it.toClassName().simpleName }
+
+    throw KspAnvilException(
+      message = if (isContributeAnnotation) {
+        "$annotatedClass contributes multiple times to the same scope: $duplicateScopesMessage. " +
+          "Contributing multiple times to the same scope is forbidden and all scopes must " +
+          "be distinct."
+      } else {
+        "$annotatedClass merges multiple times to the same scope: $duplicateScopesMessage. " +
+          "Merging multiple times to the same scope is forbidden and all scopes must " +
+          "be distinct."
+      },
+      node = annotatedType,
+    )
+  }
+}
 
 internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScopeAndBoundType(
   annotatedType: KSClassDeclaration

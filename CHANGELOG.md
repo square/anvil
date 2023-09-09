@@ -16,7 +16,22 @@
 
 ### Custom Code Generator
 
-### Other Notes
+### Other Notes & Contributions
+
+
+## [2.4.8] - 2023-09-07
+
+### Added
+- Anvil now provides an `annotations-optional` artifact for non-required annotations that we've found to be helpful with managing larger dependency graphs, including `@SingleIn` and `@ForScope` (#692).
+
+### Fixed
+- Support explicit API mode for complex map keys (#735).
+- Fix a bug where conflicting imports could be generated (#738).
+- Fix suspend lambda parameters not being supported (#745).
+
+### Other Notes & Contributions
+- Thanks to @gabrielittner and @bddckr for contributing to this release.
+- Use Anvil version `2.4.8-1-8` if your project is using Kotlin `1.8.x`.
 
 
 ## [2.4.7] - 2023-07-28
@@ -611,7 +626,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.4.7...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.4.8...HEAD
+[2.4.8]: https://github.com/square/anvil/releases/tag/v2.4.8
 [2.4.7]: https://github.com/square/anvil/releases/tag/v2.4.7
 [2.4.6]: https://github.com/square/anvil/releases/tag/v2.4.6
 [2.4.5]: https://github.com/square/anvil/releases/tag/v2.4.5

@@ -38,6 +38,13 @@ public interface VariantFilter : Named {
   public var syncGeneratedSources: Boolean
 
   /**
+   * Add the `annotations-optional` artifact as a dependency. The default
+   * value comes from the [AnvilExtension]. See [AnvilExtension.addOptionalAnnotations] for more
+   * details.
+   */
+  public var addOptionalAnnotations: Boolean
+
+  /**
    * Enables experimental KSP support in component merging. This is only
    * useful if using Dagger with KSP and if [disableComponentMerging] is set to `false`.
    */
@@ -77,6 +84,13 @@ internal class CommonFilter(
     get() = syncGeneratedSourcesOverride ?: extension.syncGeneratedSources.get()
     set(value) {
       syncGeneratedSourcesOverride = value
+    }
+
+  private var addOptionalAnnotationsOverride: Boolean? = null
+  override var addOptionalAnnotations: Boolean
+    get() = addOptionalAnnotationsOverride ?: extension.addOptionalAnnotations.get()
+    set(value) {
+      addOptionalAnnotationsOverride = value
     }
 
   private var useKspOverride: Boolean? = null
