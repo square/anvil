@@ -70,12 +70,17 @@ internal class CodeGenerationExtension(
 
     val anvilContext = commandLineOptions.toAnvilContext(anvilModule)
 
-    codeGenDir.listFiles()
-      ?.forEach {
-        check(it.deleteRecursively()) {
-          "Could not clean file: $it"
+    if (files.isNotEmpty()) {
+      codeGenDir.listFiles()
+        ?.forEach {
+          check(it.deleteRecursively()) {
+            "Could not clean file: $it"
+          }
         }
-      }
+    } else {
+      // No files to analyze indicates either empty module or incremental compilation. We should
+      // not clear generated code if there are no changes in the incremental build.
+    }
 
     val generatedFiles = mutableMapOf<String, GeneratedFile>()
 
