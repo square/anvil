@@ -32,7 +32,7 @@ internal object AnvilMergeAnnotationDetectorCheck : AnvilApplicabilityChecker {
     mergeInterfacesFqName,
     mergeModulesFqName
   )
-  override fun isApplicable(context: AnvilContext): Boolean = context.disableComponentMerging
+  override fun isApplicable(context: AnvilContext) = context.disableComponentMerging
 
   internal class KspGenerator(
     override val env: SymbolProcessorEnvironment,
@@ -41,7 +41,10 @@ internal object AnvilMergeAnnotationDetectorCheck : AnvilApplicabilityChecker {
     class Provider : AnvilSymbolProcessorProvider(AnvilMergeAnnotationDetectorCheck, ::KspGenerator)
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      val clazz = ANNOTATIONS_TO_CHECK.flatMap { resolver.getSymbolsWithAnnotation(it.asString()) }
+      val clazz = ANNOTATIONS_TO_CHECK
+        .flatMap {
+          resolver.getSymbolsWithAnnotation(it.asString())
+        }
         .firstOrNull()
         ?: return emptyList()
 
