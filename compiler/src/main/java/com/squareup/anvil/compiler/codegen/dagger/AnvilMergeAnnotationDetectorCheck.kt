@@ -42,6 +42,7 @@ internal object AnvilMergeAnnotationDetectorCheck : AnvilApplicabilityChecker {
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
       val clazz = ANNOTATIONS_TO_CHECK
+        .asSequence()
         .flatMap {
           resolver.getSymbolsWithAnnotation(it.asString())
         }
