@@ -8,7 +8,7 @@
 #
 
 [versions]
-agp = "7.1.0"
+agp = "7.3.1"
 autoService = "1.1.1"
 autoValue = "1.10.1"
 dagger = "2.48"
@@ -16,9 +16,10 @@ dokka = "1.8.20"
 espresso = "3.5.1"
 gradlePublish = "0.15.0"
 kct = "0.3.2"
-kotlin = "1.9.0"
+kotlin = "1.9.10"
 kotlinpoet = "1.14.2"
-ksp = "1.9.0-1.0.12"
+# If updating KSP version, we currently have ksp override logic in settings.gradle that needs to be updated too
+ksp = "1.9.10-1.0.13"
 ktlint = "0.41.0"
 ktlintPlugin = "10.2.0"
 mavenPublish = "0.18.0"
