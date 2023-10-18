@@ -10,6 +10,7 @@ import com.google.devtools.ksp.symbol.KSValueArgument
 import com.squareup.anvil.compiler.internal.daggerScopeFqName
 import com.squareup.anvil.compiler.internal.mapKeyFqName
 import com.squareup.anvil.compiler.isAnvilModule
+import com.squareup.anvil.compiler.ksp.classDeclaration
 import com.squareup.anvil.compiler.qualifierFqName
 import com.squareup.kotlinpoet.ksp.toClassName
 import org.jetbrains.kotlin.name.FqName
@@ -80,15 +81,15 @@ internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScopeAndBoundType(
   }
 }
 
-internal fun KSAnnotation.scope(): KSType =
+internal fun KSAnnotation.scope(): KSClassDeclaration =
   scopeOrNull()
     ?: throw KspAnvilException(
       message = "Couldn't find scope for ${annotationType.resolve().declaration.qualifiedName}.",
       this,
     )
 
-internal fun KSAnnotation.scopeOrNull(): KSType? {
-  return argumentAt("scope")?.value as? KSType?
+internal fun KSAnnotation.scopeOrNull(): KSClassDeclaration? {
+  return (argumentAt("scope")?.value as? KSType?)?.classDeclaration
 }
 
 internal fun KSAnnotation.boundTypeOrNull(): KSType? = argumentAt("boundType")?.value as? KSType?

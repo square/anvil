@@ -201,12 +201,6 @@ private fun KSClassDeclaration.replaceAnnotations(
   }
 }
 
-// If we're evaluating an anonymous inner class, it cannot merge anything and will cause
-// a failure if we try to resolve its [ClassId]
-private fun KSDeclaration.shouldIgnore(): Boolean {
-  return qualifiedName == null || isLocal()
-}
-
 private class ModuleKSAnnotation(
   private val delegate: KSAnnotation,
   private val mergedModules: Set<ClassReference>,
