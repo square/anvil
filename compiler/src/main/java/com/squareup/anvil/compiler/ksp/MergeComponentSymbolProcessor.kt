@@ -30,6 +30,7 @@ import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
+import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -129,29 +130,37 @@ internal class MergeComponentSymbolProcessor(
     val anvilComponent = TypeSpec.interfaceBuilder(anvilComponentName)
       .addAnnotation(daggerAnnotation)
       .addSuperinterface(originClassName)
-      .addSuperinterfaces(mergedInterfaces.map { it.toClassName() })
-      // Add the creator function
-      .addType(
-        TypeSpec.companionObjectBuilder()
-          .addFunction(creator)
-          .build()
-      )
+      .addSuperinterfaces(mergedInterfaces.map { it.toClassName() }.filterNot { it == ANY })
+      .apply {
+        creator?.let {
+          // Add the creator function
+          addType(
+            TypeSpec.companionObjectBuilder()
+              .addFunction(it)
+              .build()
+          )
+        }
+      }
       // TODO generate extension of creator interface?
       .addOriginatingKSFile(originatingFile)
       .build()
 
-    val daggerShim = generateDaggerComponentShim(
-      originClassName,
-      creator,
-      originatingFile
-    )
+    val daggerShim = creator?.let {
+      generateDaggerComponentShim(
+        originClassName,
+        it,
+        originatingFile
+      )
+    }
 
     val fileSpec = FileSpec.createAnvilSpec(
       originClassName.packageName,
       anvilComponentName
     ) {
       addType(anvilComponent)
-      addType(daggerShim)
+      daggerShim?.let {
+        addType(it)
+      }
     }
 
     fileSpec.writeTo(env.codeGenerator, aggregating = true)
@@ -161,7 +170,7 @@ internal class MergeComponentSymbolProcessor(
   private fun createFactoryOrBuilderFunSpec(
     origin: KSClassDeclaration,
     generatedAnvilClassName: ClassName
-  ): FunSpec {
+  ): FunSpec? {
     val (className, functionName) = origin.declarations
       .filterIsInstance<KSClassDeclaration>()
       .filter { it.isInterface() }
@@ -177,10 +186,7 @@ internal class MergeComponentSymbolProcessor(
         }
       }
       .firstOrNull()
-      ?: throw KspAnvilException(
-        "No @Component.Factory or @Component.Builder found for ${origin.qualifiedName?.asString()}",
-        node = origin
-      )
+      ?: return null
 
     return FunSpec.builder(functionName)
       .jvmStatic()
