@@ -41,15 +41,7 @@ internal class ClassScannerKSP {
   ): Sequence<KSClassDeclaration> {
     val module = (resolver as ResolverImpl).module
     val propertyGroups = cache.getOrPut(CacheKey(annotation, module.hashCode())) {
-      val packageName = when (annotation) {
-        contributesToFqName -> HINT_CONTRIBUTES_PACKAGE_PREFIX
-        contributesBindingFqName -> HINT_BINDING_PACKAGE_PREFIX
-        contributesMultibindingFqName -> HINT_MULTIBINDING_PACKAGE_PREFIX
-        contributesSubcomponentFqName -> HINT_SUBCOMPONENTS_PACKAGE_PREFIX
-        else -> throw AnvilCompilationException(message = "Cannot find hints for $annotation.")
-      }
-
-      module.hintPackages(FqName(packageName))
+      module.hintPackages(annotation)
         .flatMap { resolver.getDeclarationsFromPackage(it) }
         .filterIsInstance<KSPropertyDeclaration>()
         .mapNotNull { GeneratedProperty.fromDeclaration(it) }
