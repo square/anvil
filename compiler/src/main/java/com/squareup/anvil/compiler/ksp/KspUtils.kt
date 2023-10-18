@@ -42,7 +42,12 @@ import javax.inject.Scope
 import kotlin.reflect.KClass
 
 val KSClassDeclaration.fqName: FqName get() {
-  return FqName(qualifiedName!!.asString())
+  return qualifiedName?.let {
+    FqName(it.asString())
+  } ?: throw KspAnvilException(
+    message = "Couldn't find qualified name for '$this'.",
+    node = this
+  )
 }
 
 val KSClassDeclaration.classId: ClassId get() {
