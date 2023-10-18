@@ -1,4 +1,4 @@
-package com.squareup.anvil.compiler.ksp.v2
+package com.squareup.anvil.compiler.ksp
 
 import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.processing.Resolver
@@ -17,11 +17,8 @@ import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
-import com.squareup.anvil.compiler.ksp.classDeclaration
-import com.squareup.anvil.compiler.ksp.fqName
-import com.squareup.anvil.compiler.ksp.singleArgumentType
-import com.squareup.anvil.compiler.ksp.v2.GeneratedProperty.ReferenceProperty
-import com.squareup.anvil.compiler.ksp.v2.GeneratedProperty.ScopeProperty
+import com.squareup.anvil.compiler.ksp.GeneratedProperty.ReferenceProperty
+import com.squareup.anvil.compiler.ksp.GeneratedProperty.ScopeProperty
 import com.squareup.anvil.compiler.singleOrEmpty
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.descriptors.PackageViewDescriptor

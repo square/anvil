@@ -1,6 +1,6 @@
 @file:OptIn(KspExperimental::class)
 
-package com.squareup.anvil.compiler.ksp.v2
+package com.squareup.anvil.compiler.ksp
 
 import com.google.auto.service.AutoService
 import com.google.devtools.ksp.KspExperimental
@@ -27,9 +27,6 @@ import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.createAnvilSpec
-import com.squareup.anvil.compiler.ksp.classDeclaration
-import com.squareup.anvil.compiler.ksp.fqName
-import com.squareup.anvil.compiler.ksp.shouldIgnore
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName

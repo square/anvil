@@ -1,4 +1,4 @@
-package com.squareup.anvil.compiler.ksp.v2
+package com.squareup.anvil.compiler.ksp
 
 import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.getAllSuperTypes
@@ -22,17 +22,6 @@ import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
-import com.squareup.anvil.compiler.ksp.atLeastOneAnnotation
-import com.squareup.anvil.compiler.ksp.classDeclaration
-import com.squareup.anvil.compiler.ksp.classDeclarationOrNull
-import com.squareup.anvil.compiler.ksp.classId
-import com.squareup.anvil.compiler.ksp.declaringClass
-import com.squareup.anvil.compiler.ksp.exclude
-import com.squareup.anvil.compiler.ksp.findAllKSAnnotations
-import com.squareup.anvil.compiler.ksp.fqName
-import com.squareup.anvil.compiler.ksp.parentScope
-import com.squareup.anvil.compiler.ksp.replaces
-import com.squareup.anvil.compiler.ksp.shouldIgnore
 import dagger.Module
 import org.jetbrains.kotlin.name.Name
 

@@ -1,4 +1,4 @@
-package com.squareup.anvil.compiler.ksp.v2
+package com.squareup.anvil.compiler.ksp
 
 import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.isAnnotationPresent
@@ -14,7 +14,6 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.ANVIL_MODULE_SUFFIX
 import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
-import com.squareup.anvil.compiler.classReferenceOrNull
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.argumentAt
@@ -27,21 +26,8 @@ import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
-import com.squareup.anvil.compiler.internal.classIdBestGuess
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.isAnvilModule
-import com.squareup.anvil.compiler.ksp.atLeastOneAnnotation
-import com.squareup.anvil.compiler.ksp.classDeclaration
-import com.squareup.anvil.compiler.ksp.classDeclarationOrNull
-import com.squareup.anvil.compiler.ksp.classId
-import com.squareup.anvil.compiler.ksp.declaringClass
-import com.squareup.anvil.compiler.ksp.exclude
-import com.squareup.anvil.compiler.ksp.findAllKSAnnotations
-import com.squareup.anvil.compiler.ksp.fqName
-import com.squareup.anvil.compiler.ksp.generateClassName
-import com.squareup.anvil.compiler.ksp.parentScope
-import com.squareup.anvil.compiler.ksp.replaces
-import com.squareup.anvil.compiler.ksp.safePackageString
 import com.squareup.kotlinpoet.ksp.toClassName
 import dagger.Module
 import org.jetbrains.kotlin.codegen.ImplementationBodyCodegen
