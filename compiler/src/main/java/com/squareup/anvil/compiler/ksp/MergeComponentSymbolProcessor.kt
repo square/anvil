@@ -220,9 +220,15 @@ internal class MergeComponentSymbolProcessor(
     daggerAnnotation: ClassName,
     contributedModules: Set<KSClassDeclaration>
   ): AnnotationSpec {
+    val modulesParamName = if (daggerAnnotation == Module::class.asClassName()) {
+      "includes"
+    } else {
+      "modules"
+    }
+
     val builder = AnnotationSpec.builder(daggerAnnotation)
       .addMember(
-        "modules = [%L]",
+        "$modulesParamName = [%L]",
         contributedModules.map { CodeBlock.of("%T::class", it.toClassName()) }
           .joinToCode()
       )
