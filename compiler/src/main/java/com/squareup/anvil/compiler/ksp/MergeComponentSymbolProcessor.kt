@@ -86,10 +86,12 @@ internal class MergeComponentSymbolProcessor(
     return deferred
   }
 
+  @OptIn(KspExperimental::class)
   private fun generateComponents(
     resolver: Resolver,
     clazz: KSClassDeclaration
   ) {
+    val isMergeModules = clazz.isAnnotationPresent(MergeModules::class)
     val annotations = clazz.annotations.toList()
     val originalAnnotation = annotations.first()
     val daggerAnnotationFqName = originalAnnotation.daggerAnnotationFqName
@@ -103,12 +105,6 @@ internal class MergeComponentSymbolProcessor(
         annotations,
         scopes,
       )
-    val mergedInterfaces = InterfaceMergerKSP(classScanner)
-      .computeSyntheticSupertypes(
-        clazz,
-        resolver,
-        scopes,
-      )
 
     val daggerAnnotation = createAnnotation(
       originalAnnotation,
@@ -116,50 +112,67 @@ internal class MergeComponentSymbolProcessor(
       contributedModules
     )
 
+    val typesToAdd = mutableListOf<TypeSpec>()
     val originClassName = clazz.toClassName()
-    val anvilComponentName = "Anvil${clazz.simpleName.asString().capitalize()}"
-    val anvilClassName = ClassName(originClassName.packageName, anvilComponentName)
-    val generatedDaggerComponentName = anvilClassName.generatedDaggerComponentName()
-
-    val creator = createFactoryOrBuilderFunSpec(clazz, generatedDaggerComponentName)
-
+    val generatedClassName = "Anvil${clazz.simpleName.asString().capitalize()}"
     val originatingFile = clazz.containingFile ?: throw KspAnvilException(
       "No containing file found for ${clazz.qualifiedName?.asString()}",
       node = clazz
     )
-    val anvilComponent = TypeSpec.interfaceBuilder(anvilComponentName)
-      .addAnnotation(daggerAnnotation)
-      .addSuperinterface(originClassName)
-      .addSuperinterfaces(mergedInterfaces.map { it.toClassName() }.filterNot { it == ANY })
-      .apply {
-        creator?.let {
-          // Add the creator function
-          addType(
-            TypeSpec.companionObjectBuilder()
-              .addFunction(it)
-              .build()
-          )
-        }
-      }
-      // TODO generate extension of creator interface?
-      .addOriginatingKSFile(originatingFile)
-      .build()
+    if (isMergeModules) {
+      // Generate a module with the annotation and be done
+      typesToAdd += TypeSpec.interfaceBuilder(generatedClassName)
+        .addAnnotation(daggerAnnotation)
+        .addOriginatingKSFile(originatingFile)
+        .build()
+    } else {
+      val anvilClassName = ClassName(originClassName.packageName, generatedClassName)
+      val generatedDaggerComponentName = anvilClassName.generatedDaggerComponentName()
 
-    val daggerShim = creator?.let {
-      generateDaggerComponentShim(
-        originClassName,
-        it,
-        originatingFile
-      )
+      val creator = createFactoryOrBuilderFunSpec(clazz, generatedDaggerComponentName)
+
+      val mergedInterfaces = InterfaceMergerKSP(classScanner)
+        .computeSyntheticSupertypes(
+          clazz,
+          resolver,
+          scopes,
+        )
+
+      // Build the component
+      typesToAdd += TypeSpec.interfaceBuilder(generatedClassName)
+        .addAnnotation(daggerAnnotation)
+        .addSuperinterface(originClassName)
+        .addSuperinterfaces(mergedInterfaces.map { it.toClassName() }.filterNot { it == ANY })
+        .apply {
+          creator?.let {
+            // Add the creator function
+            addType(
+              TypeSpec.companionObjectBuilder()
+                .addFunction(it)
+                .build()
+            )
+          }
+        }
+        // TODO generate extension of creator interface?
+        .addOriginatingKSFile(originatingFile)
+        .build()
+
+      if (creator != null) {
+        typesToAdd += generateDaggerComponentShim(
+          originClassName,
+          creator,
+          originatingFile
+        )
+      }
     }
+
 
     val fileSpec = FileSpec.createAnvilSpec(
       originClassName.packageName,
-      anvilComponentName
+      generatedClassName
     ) {
-      addType(anvilComponent)
-      daggerShim?.let {
-        addType(it)
+      for (type in typesToAdd) {
+        addType(type)
       }
     }
 
