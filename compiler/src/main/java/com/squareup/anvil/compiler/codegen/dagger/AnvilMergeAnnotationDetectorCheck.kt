@@ -70,7 +70,8 @@ internal object AnvilMergeAnnotationDetectorCheck : AnvilApplicabilityChecker {
       val clazz = projectFiles
         .classAndInnerClassReferences(module)
         .firstOrNull {
-          clazz -> ANNOTATIONS_TO_CHECK.any { clazz.isAnnotatedWith(it) }
+          clazz ->
+          ANNOTATIONS_TO_CHECK.any { clazz.isAnnotatedWith(it) }
         }
 
       if (clazz != null) {
