@@ -70,13 +70,6 @@ internal class CodeGenerationExtension(
 
     val anvilContext = commandLineOptions.toAnvilContext(anvilModule)
 
-    codeGenDir.listFiles()
-      ?.forEach {
-        check(it.deleteRecursively()) {
-          "Could not clean file: $it"
-        }
-      }
-
     val generatedFiles = mutableMapOf<String, GeneratedFile>()
 
     val (privateCodeGenerators, nonPrivateCodeGenerators) =
