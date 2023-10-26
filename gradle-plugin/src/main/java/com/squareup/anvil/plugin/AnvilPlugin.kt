@@ -145,10 +145,16 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     // Notice that we use the name of the variant as a directory name. Generated code
     // for this specific compile task will be included in the task output. The output of different
     // compile tasks shouldn't be mixed.
-    val srcGenDir = File(
-      project.buildDir,
+    val srcGenDir = project.layout.buildDirectory.dir(
       "anvil${File.separator}src-gen-${variant.name}"
     )
+
+    // Add the generated code to the kotlin compile task outputs so that Anvil-generated code
+    // is picked up by Kotlin's incremental compilation logic. For a longer explanation, see here:
+    // https://github.com/square/anvil/issues/693#issuecomment-1744013947
+    kotlinCompilation.compileTaskProvider.configure {
+      it.outputs.dir(srcGenDir)
+    }
 
     if (variant.variantFilter.syncGeneratedSources) {
       val isIdeSyncProvider = project.providers
@@ -160,12 +166,12 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         // explanation why this is a bad idea, see here:
         // https://github.com/square/anvil/pull/207#issuecomment-850768750
         kotlinCompilation.defaultSourceSet {
-          kotlin.srcDir(srcGenDir)
+          kotlin.srcDir(srcGenDir.get().asFile)
         }
 
         // For Android and AGP the above code doesn't work for some reason. This is the workaround.
         variant.androidSourceSets?.forEach { sourceSet ->
-          sourceSet.java.srcDir(srcGenDir)
+          sourceSet.java.srcDir(srcGenDir.get().asFile)
         }
       }
     }
@@ -174,7 +180,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       listOf(
         FilesSubpluginOption(
           key = "src-gen-dir",
-          files = listOf(srcGenDir)
+          files = listOf(srcGenDir.get().asFile)
         ),
         SubpluginOption(
           key = "generate-dagger-factories",
