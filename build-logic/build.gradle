@@ -1,0 +1,34 @@
+plugins {
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.ktlint)
+  id 'java-gradle-plugin'
+}
+
+gradlePlugin {
+  plugins {
+    module {
+      id = "library"
+      implementationClass = "com.squareup.anvil.LibraryPlugin"
+    }
+    root {
+      id = "root"
+      implementationClass = "com.squareup.anvil.RootPlugin"
+    }
+  }
+}
+
+kotlin {
+  jvmToolchain {
+    languageVersion.set(JavaLanguageVersion.of(11))
+  }
+}
+
+dependencies {
+  compileOnly(gradleApi())
+  implementation libs.ktlintRaw
+  implementation libs.kotlinpoet
+}
+
+ktlint {
+  version = libs.versions.ktlint.get()
+}

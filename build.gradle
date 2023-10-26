@@ -1,4 +1,3 @@
-import com.squareup.anvil.benchmark.CreateBenchmarkProjectTask
 import org.gradle.api.internal.project.DefaultProject
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
@@ -136,6 +135,3 @@ task clean(type: Delete) {
 def getProperty(String name, String defaultValue) {
   return project.hasProperty(name) ? project.getProperty(name) : defaultValue
 }
-
-// Register the task that can create the benchmark project.
-tasks.register("createBenchmarkProject", CreateBenchmarkProjectTask)

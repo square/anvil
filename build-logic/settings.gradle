@@ -6,6 +6,8 @@ pluginManagement {
   }
 }
 
+rootProject.name = "build-logic"
+
 dependencyResolutionManagement {
   versionCatalogs {
     Map<String, String> overrides = new LinkedHashMap()
@@ -29,6 +31,7 @@ dependencyResolutionManagement {
 
   repositories {
     google()
+    gradlePluginPortal()
     mavenCentral()
     if (hasProperty("anvil.allowSnapshots")) {
       maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev' }
