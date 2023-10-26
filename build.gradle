@@ -4,7 +4,6 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 buildscript {
   dependencies {
-    classpath libs.mavenPublishRaw
     classpath("com.squareup.anvil:gradle-plugin:${findProperty("VERSION_NAME")}",)
   }
 }
@@ -12,13 +11,15 @@ buildscript {
 plugins {
   alias(libs.plugins.agp.application) apply false
   alias(libs.plugins.agp.library) apply false
-  alias(libs.plugins.kotlin.jvm) apply false
-  alias(libs.plugins.kotlin.android) apply false
-  alias(libs.plugins.kotlin.kapt) apply false
-  alias(libs.plugins.kotlin.dokka) apply false
-  alias(libs.plugins.kotlin.multiplatform) apply false
   alias(libs.plugins.gradlePublish) apply false
+  alias(libs.plugins.kotlin.android) apply false
+  alias(libs.plugins.kotlin.dokka) apply false
+  alias(libs.plugins.kotlin.jvm) apply false
+  alias(libs.plugins.kotlin.kapt) apply false
+  alias(libs.plugins.kotlin.multiplatform) apply false
   alias(libs.plugins.ktlint) apply false
+  alias(libs.plugins.mavenPublishBase) apply false
+  id 'root'
 }
 
 boolean isCi = (System.getenv('CI') ?: 'false').toBoolean()
@@ -39,14 +40,6 @@ println "Versions: " + [
 boolean configureOnDemandEnabled = getProperty("org.gradle.configureondemand", "false").toBoolean()
 
 subprojects {
-  if (buildFile.exists()) {
-    apply plugin: 'org.jlleitschuh.gradle.ktlint'
-
-    ktlint {
-      version = libs.versions.ktlint.get()
-      verbose = true
-    }
-  }
 
   tasks.withType(Test).configureEach {
     testLogging {
@@ -128,8 +121,11 @@ subprojects {
   }
 }
 
-task clean(type: Delete) {
-  delete rootProject.buildDir
+// For any publish task invoked in the main build, there's a corresponding task in the gradle-plugin
+// included build.  Gradle doesn't invoke those included build tasks when the main build's tasks are
+// run, and that's annoying. This fixes that behavior.
+tasks.withType(PublishToMavenRepository).configureEach { mainTask ->
+  mainTask.dependsOn(gradle.includedBuild("gradle-plugin").task(":${mainTask.name}"))
 }
 
 def getProperty(String name, String defaultValue) {

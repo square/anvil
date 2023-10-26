@@ -1,7 +1,15 @@
 plugins {
-  alias(libs.plugins.kotlin.jvm)
+  id 'library'
+  id 'publish'
 }
-apply from: rootProject.file('publishing.gradle')
+
+publish {
+  configurePom(
+      artifactId: 'compiler-api',
+      pomName: 'Anvil Compiler API',
+      pomDescription: 'API definitions for creating custom code generators that integrate with Anvil'
+  )
+}
 
 kotlin {
   explicitApi()

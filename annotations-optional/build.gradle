@@ -1,10 +1,14 @@
 plugins {
-  alias(libs.plugins.kotlin.jvm)
+  id 'library'
+  id 'publish'
 }
-apply from: rootProject.file('publishing.gradle')
 
-kotlin {
-  explicitApi()
+publish {
+  configurePom(
+      artifactId: 'annotations-optional',
+      pomName: 'Anvil Optional Annotations',
+      pomDescription: 'Optional annotations that we\'ve found to be helpful with managing larger dependency graphs'
+  )
 }
 
 dependencies {

@@ -14,6 +14,10 @@ gradlePlugin {
       id = "root"
       implementationClass = "com.squareup.anvil.RootPlugin"
     }
+    publish {
+      id = "publish"
+      implementationClass = "com.squareup.anvil.PublishConventionPlugin"
+    }
   }
 }
 
@@ -26,7 +30,11 @@ kotlin {
 dependencies {
   compileOnly(gradleApi())
   implementation libs.ktlintRaw
+  implementation libs.kgx
   implementation libs.kotlinpoet
+  implementation libs.kotlin.dokka
+  implementation libs.kotlin.gradlePlugin
+  implementation libs.mavenPublishRaw
 }
 
 ktlint {

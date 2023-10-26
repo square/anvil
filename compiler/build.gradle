@@ -1,12 +1,29 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  alias(libs.plugins.kotlin.jvm)
-  alias(libs.plugins.kotlin.kapt)
+  id 'library'
+  alias libs.plugins.kotlin.kapt
+  alias libs.plugins.buildconfig
+  id 'publish'
 }
-apply from: rootProject.file('publishing.gradle')
 
-apply from: project.file('generate_build_properties.gradle')
+buildConfig {
+  className('BuildProperties')
+  packageName('com.squareup.anvil.compiler')
+  useKotlinOutput { topLevelConstants = true }
+
+  buildConfigField('boolean', 'WARNINGS_AS_ERRORS',"${rootProject.ext.warningsAsErrors}")
+  buildConfigField('boolean', 'FULL_TEST_RUN', "${libs.versions.config.fullTestRun.get()}")
+}
+
+publish {
+  configurePom(
+      artifactId: 'compiler',
+      pomName: 'Anvil Compiler',
+      pomDescription: 'The core implementation module for Anvil, responsible for hooking into ' +
+          'the Kotlin compiler and orchestrating code generation'
+  )
+}
 
 dependencies {
   implementation project(':annotations')
@@ -33,6 +50,11 @@ dependencies {
   testImplementation libs.kotlin.test
   testImplementation libs.truth
 }
+
+// Fixes:
+// Reason: Task ':compiler:dokkaHtml' uses this output of task ':compiler:kaptKotlin'
+// without declaring an explicit or implicit dependency.
+tasks.named("dokkaHtml") { mustRunAfter("kaptKotlin") }
 
 tasks.withType(KotlinCompile).configureEach {
   compilerOptions {
