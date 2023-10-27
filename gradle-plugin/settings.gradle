@@ -16,6 +16,7 @@ dependencyResolutionManagement {
       }
     }
     libs {
+      from(files("../gradle/libs.versions.toml"))
       for (Map.Entry<String, String> entry : overrides.entrySet()) {
         String key = entry.getKey()
         String value = entry.getValue()
