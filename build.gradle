@@ -2,12 +2,6 @@ import org.gradle.api.internal.project.DefaultProject
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-buildscript {
-  dependencies {
-    classpath("com.squareup.anvil:gradle-plugin:${findProperty("VERSION_NAME")}",)
-  }
-}
-
 plugins {
   alias(libs.plugins.agp.application) apply false
   alias(libs.plugins.agp.library) apply false
@@ -20,6 +14,11 @@ plugins {
   alias(libs.plugins.ktlint) apply false
   alias(libs.plugins.mavenPublishBase) apply false
   id 'com.squareup.anvil.root'
+  id 'com.squareup.anvil' apply false
+}
+
+allprojects {
+  version = property("VERSION_NAME")
 }
 
 boolean isCi = (System.getenv('CI') ?: 'false').toBoolean()
@@ -119,13 +118,6 @@ subprojects {
   if (configureOnDemandEnabled) {
     (it as DefaultProject).evaluate()
   }
-}
-
-// For any publish task invoked in the main build, there's a corresponding task in the gradle-plugin
-// included build.  Gradle doesn't invoke those included build tasks when the main build's tasks are
-// run, and that's annoying. This fixes that behavior.
-tasks.withType(PublishToMavenRepository).configureEach { mainTask ->
-  mainTask.dependsOn(gradle.includedBuild("gradle-plugin").task(":${mainTask.name}"))
 }
 
 def getProperty(String name, String defaultValue) {

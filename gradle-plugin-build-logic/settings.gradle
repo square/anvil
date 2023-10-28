@@ -8,27 +8,24 @@ pluginManagement {
   includeBuild('../build-logic')
 }
 
+rootProject.name = "gradle-plugin-build-logic"
+
 dependencyResolutionManagement {
   versionCatalogs {
-    Map<String, String> overrides = new LinkedHashMap()
-    System.getProperties().forEach { key, value ->
-      String keyString = key.toString()
-      if (keyString.startsWith("override_")) {
-        overrides.put(keyString, value.toString())
-      }
-    }
     libs {
-      for (Map.Entry<String, String> entry : overrides.entrySet()) {
-        String key = entry.getKey()
-        String value = entry.getValue()
-        String catalogKey = key.substring("override_".length())
-        println("Overriding $catalogKey with $value")
-        version(catalogKey, value)
+      from(files("../gradle/libs.versions.toml"))
+      System.properties.each { key, value ->
+        if (key.toString().startsWith("override_")) {
+          String catalogKey = key.substring("override_".length())
+          println "Overriding $catalogKey with $value"
+          version(catalogKey, value.toString())
+        }
       }
     }
   }
 
   repositories {
+    gradlePluginPortal()
     google()
     mavenCentral()
     if (hasProperty("anvil.allowSnapshots")) {
@@ -40,4 +37,5 @@ dependencyResolutionManagement {
   }
 }
 
-rootProject.name = "gradle-plugin"
+include ':gradle-plugin'
+project(':gradle-plugin').projectDir = new File('../gradle-plugin')
