@@ -1,7 +1,15 @@
 plugins {
-  alias(libs.plugins.kotlin.jvm)
+  id 'com.squareup.anvil.library'
+  id 'com.squareup.anvil.publish'
 }
-apply from: rootProject.file('publishing.gradle')
+
+publish {
+  configurePom(
+      artifactId: 'annotations',
+      pomName: 'Anvil Annotations',
+      pomDescription: 'Annotations used to mark classes and methods for code generation in Anvil'
+  )
+}
 
 kotlin {
   explicitApi()

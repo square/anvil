@@ -11,18 +11,20 @@
 agp = "7.3.1"
 autoService = "1.1.1"
 autoValue = "1.10.1"
+buildconfig = "4.1.2"
 dagger = "2.46.1"
 dokka = "1.8.20"
 espresso = "3.5.1"
-gradlePublish = "0.15.0"
-kotlin = "1.9.10"
+gradlePublish = "1.2.1"
 kct = "0.3.1"
+kgx = "0.1.7"
+kotlin = "1.9.10"
 kotlinpoet = "1.14.2"
 # If updating KSP version, we currently have ksp override logic in settings.gradle that needs to be updated too
 ksp = "1.9.10-1.0.13"
 ktlint = "0.41.0"
-ktlintPlugin = "10.2.0"
-mavenPublish = "0.18.0"
+ktlintPlugin = "11.3.2"
+mavenPublish = "0.25.3"
 
 #
 # Configs that we can override in CI. Not exactly "versions" but useful to repurpose it here.
@@ -37,6 +39,7 @@ config-generateDaggerFactoriesWithAnvil = "true"
 [plugins]
 agp-application = { id = "com.android.application", version.ref = "agp" }
 agp-library = { id = "com.android.library", version.ref = "agp" }
+buildconfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildconfig" }
 gradlePublish = { id = "com.gradle.plugin-publish", version.ref = "gradlePublish" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
@@ -45,7 +48,7 @@ kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
+mavenPublishBase = { id = "com.vanniktech.maven.publish.base", version.ref = "mavenPublish" }
 
 [libraries]
 androidx-appcompat = "androidx.appcompat:appcompat:1.1.0"
@@ -86,6 +89,8 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref =
 
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
+
+kgx = { module = "com.rickbusarow.kgx:kotlin-gradle-extensions", version.ref = "kgx" }
 
 ksp-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
 ksp-compilerPlugin = { module = "com.google.devtools.ksp:symbol-processing", version.ref = "ksp" }

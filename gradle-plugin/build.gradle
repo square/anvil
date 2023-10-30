@@ -1,75 +1,44 @@
-buildscript {
-  repositories {
-    google()
-    gradlePluginPortal()
-    mavenCentral()
-  }
-
-  dependencies {
-    classpath libs.kotlin.dokka
-    classpath libs.kotlin.gradlePlugin
-    classpath libs.mavenPublishRaw
-    classpath libs.gradlePublishRaw
-    classpath libs.ktlintRaw
-  }
+plugins {
+  id 'com.squareup.anvil.library'
+  alias libs.plugins.gradlePublish
+  alias libs.plugins.buildconfig
+  id 'java-gradle-plugin'
+  id 'com.squareup.anvil.publish'
 }
 
-apply from: rootProject.file('copy_properties.gradle')
+buildConfig {
+  className('BuildProperties')
+  packageName('com.squareup.anvil.plugin')
+  useKotlinOutput { topLevelConstants = true }
 
-apply plugin: 'java-gradle-plugin'
-apply plugin: 'org.jetbrains.kotlin.jvm'
-apply plugin: 'com.gradle.plugin-publish'
-apply plugin: 'org.jlleitschuh.gradle.ktlint'
+  buildConfigField('String', 'GROUP', "\"$GROUP\"")
+  buildConfigField('String', 'VERSION', "\"$VERSION_NAME\"")
+}
 
-apply from: rootProject.file('generate_build_properties.gradle')
-apply from: rootProject.file('../publishing.gradle')
+def pomName = 'Anvil Gradle Plugin'
+def pomDescription = 'A Kotlin compiler plugin to make dependency injection with Dagger 2 ' +
+    'easier by automatically merging Dagger modules and component interfaces.'
 
-// Pull from the GROUP property and assign to the project
-group = GROUP
+publish {
+  configurePom(
+      artifactId: 'gradle-plugin',
+      pomName: pomName,
+      pomDescription: pomDescription
+  )
+}
 
 gradlePlugin {
+  website = project.findProperty('POM_URL') as String
+  vcsUrl = project.findProperty('POM_SCM_URL') as String
   plugins {
     anvilPlugin {
       id = "com.squareup.anvil"
-      displayName = project.findProperty('POM_NAME')
+      displayName = pomName
       implementationClass = "com.squareup.anvil.plugin.AnvilPlugin"
-      description = project.findProperty('POM_DESCRIPTION')
+      description = pomDescription
+      tags.addAll('dagger2', 'dagger2-android', 'kotlin', 'kotlin-compiler-plugin')
     }
   }
-}
-
-pluginBundle {
-  website = project.findProperty('POM_URL')
-  vcsUrl = project.findProperty('POM_SCM_URL')
-  tags = ['dagger2', 'dagger2-android', 'kotlin', 'kotlin-compiler-plugin']
-}
-
-// Use JDK 11 but target Java 8 for maximum compatibility.
-java {
-  toolchain {
-    languageVersion.set(JavaLanguageVersion.of(11))
-  }
-}
-
-tasks.withType(JavaCompile).configureEach {
-  options.release.set(8)
-}
-
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).configureEach {
-  compilerOptions {
-    jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8)
-
-    // Because Gradle hardcodes Kotlin versions we have warnings during compilation.
-    allWarningsAsErrors = false
-  }
-}
-
-kotlin {
-  explicitApi()
-}
-
-ktlint {
-  version = libs.versions.ktlint.get()
 }
 
 dependencies {
