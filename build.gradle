@@ -19,7 +19,7 @@ plugins {
   alias(libs.plugins.kotlin.multiplatform) apply false
   alias(libs.plugins.ktlint) apply false
   alias(libs.plugins.mavenPublishBase) apply false
-  id 'root'
+  id 'com.squareup.anvil.root'
 }
 
 boolean isCi = (System.getenv('CI') ?: 'false').toBoolean()

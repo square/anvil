@@ -1,9 +1,9 @@
 plugins {
-  id 'library'
+  id 'com.squareup.anvil.library'
   alias libs.plugins.gradlePublish
   alias libs.plugins.buildconfig
   id 'java-gradle-plugin'
-  id 'publish'
+  id 'com.squareup.anvil.publish'
 }
 
 buildConfig {

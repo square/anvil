@@ -12,8 +12,6 @@ open class KtlintConventionPlugin : Plugin<Project> {
   override fun apply(target: Project) {
     target.plugins.apply(KtlintPlugin::class.java)
 
-    target.plugins.apply(org.jlleitschuh.gradle.ktlint.KtlintPlugin::class.java)
-
     target.extensions.configure(KtlintExtension::class.java) { ktlint ->
       ktlint.version.set(target.libsCatalog.version("ktlint"))
       ktlint.verbose.set(true)

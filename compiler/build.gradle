@@ -1,10 +1,10 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  id 'library'
+  id 'com.squareup.anvil.library'
   alias libs.plugins.kotlin.kapt
   alias libs.plugins.buildconfig
-  id 'publish'
+  id 'com.squareup.anvil.publish'
 }
 
 buildConfig {

@@ -1,6 +1,6 @@
 plugins {
-  id 'library'
-  id 'publish'
+  id 'com.squareup.anvil.library'
+  id 'com.squareup.anvil.publish'
 }
 
 publish {

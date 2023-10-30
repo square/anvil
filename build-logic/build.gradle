@@ -6,16 +6,16 @@ plugins {
 
 gradlePlugin {
   plugins {
-    module {
-      id = "library"
+    library {
+      id = "com.squareup.anvil.library"
       implementationClass = "com.squareup.anvil.LibraryPlugin"
     }
     root {
-      id = "root"
+      id = "com.squareup.anvil.root"
       implementationClass = "com.squareup.anvil.RootPlugin"
     }
     publish {
-      id = "publish"
+      id = "com.squareup.anvil.publish"
       implementationClass = "com.squareup.anvil.PublishConventionPlugin"
     }
   }
