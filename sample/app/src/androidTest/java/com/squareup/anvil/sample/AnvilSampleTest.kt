@@ -4,8 +4,8 @@ import androidx.test.espresso.Espresso.onView
 import androidx.test.espresso.assertion.ViewAssertions.matches
 import androidx.test.espresso.matcher.ViewMatchers.isDisplayed
 import androidx.test.espresso.matcher.ViewMatchers.withText
+import androidx.test.ext.junit.rules.ActivityScenarioRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.rule.ActivityTestRule
 import com.google.common.truth.Truth.assertThat
 import com.squareup.scopes.ComponentHolder
 import org.junit.Rule
@@ -16,7 +16,7 @@ import org.junit.runner.RunWith
 class AnvilSampleTest {
 
   @Rule @JvmField
-  val activityRule = ActivityTestRule(MainActivity::class.java)
+  val activityRule = ActivityScenarioRule(MainActivity::class.java)
 
   @Test fun text_is_displayed() {
     onView(withText("Hephaestus, son of (No Father) and Hera")).check(matches(isDisplayed()))
