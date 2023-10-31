@@ -53,7 +53,8 @@ subprojects {
 
   // Dynamically configure JVM targets because Dagger compiler always uses the java 11 @Generated
   // annotation regardless of release target
-  boolean isIntegrationTestOrSample = project.path.startsWith(":integration-test") || project.path.startsWith(":sample")
+  boolean isIntegrationTestOrSample = project.path.startsWith(":integration-test") ||
+      project.path.startsWith(":sample")
 
   pluginManager.withPlugin("java") {
     // Use JDK 11 but target Java 8 for maximum compatibility.
@@ -87,7 +88,7 @@ subprojects {
           && project.name != "annotations-optional"
           && project.name != "scopes"
           && project.name != "dagger-factories-only"
-      if (optInExperimental) {
+      if (project.path != ':gradle-plugin' && optInExperimental) {
         freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
       }
     }

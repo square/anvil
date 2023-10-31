@@ -8,9 +8,6 @@ import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.TestExtension
 import com.android.build.gradle.TestedExtension
-import com.android.build.gradle.api.BaseVariant
-import com.android.build.gradle.api.TestVariant
-import com.android.build.gradle.api.UnitTestVariant
 import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -36,6 +33,15 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+
+@Suppress("DEPRECATION")
+internal typealias BaseVariantDeprecated = com.android.build.gradle.api.BaseVariant
+
+@Suppress("DEPRECATION")
+private typealias TestVariantDeprecated = com.android.build.gradle.api.TestVariant
+
+@Suppress("DEPRECATION")
+private typealias UnitTestVariantDeprecated = com.android.build.gradle.api.UnitTestVariant
 
 @Suppress("unused")
 internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
@@ -69,9 +75,10 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
           // E.g. "anvilDebug", "anvilTestRelease", ...
           val configuration = getConfiguration(target, buildType = variant.name)
 
+          @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
           when (variant) {
-            is UnitTestVariant -> configuration.extendsFrom(testConfiguration)
-            is TestVariant -> configuration.extendsFrom(androidTestVariant)
+            is UnitTestVariantDeprecated -> configuration.extendsFrom(testConfiguration)
+            is TestVariantDeprecated -> configuration.extendsFrom(androidTestVariant)
             // non-test variants like "debug" extend the main config
             else -> configuration.extendsFrom(commonConfiguration)
           }
@@ -101,7 +108,9 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     kotlinCompilation: KotlinCompilation<*>
   ): Provider<List<SubpluginOption>> {
     kotlinCompilation.compilerOptions.options.let {
-      if (it.useK2.get() || it.languageVersion.getOrElse(KOTLIN_1_9) >= KOTLIN_2_0) {
+      @Suppress("DEPRECATION")
+      val useK2 = it.useK2.get()
+      if (useK2 || it.languageVersion.getOrElse(KOTLIN_1_9) >= KOTLIN_2_0) {
         kotlinCompilation.project.logger
           .error(
             "NOTE: Anvil is currently incompatible with the K2 compiler. Related GH issue:" +
@@ -145,10 +154,8 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     // Notice that we use the name of the variant as a directory name. Generated code
     // for this specific compile task will be included in the task output. The output of different
     // compile tasks shouldn't be mixed.
-    val srcGenDir = File(
-      project.buildDir,
-      "anvil${File.separator}src-gen-${variant.name}"
-    )
+    val srcGenDir = project.layout.buildDirectory.get().asFile
+      .resolve("anvil${File.separator}src-gen-${variant.name}")
 
     if (variant.variantFilter.syncGeneratedSources) {
       val isIdeSyncProvider = project.providers
@@ -322,7 +329,11 @@ private inline fun <reified T : Task> Project.namedLazy(
 /**
  * Runs the given [action] for each Android variant including androidTest and unit test variants.
  */
-private fun Project.androidVariantsConfigure(action: (BaseVariant) -> Unit) {
+
+private fun Project.androidVariantsConfigure(
+  @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
+  action: (BaseVariantDeprecated) -> Unit
+) {
   val androidExtension = extensions.findByName("android")
 
   when (androidExtension) {
@@ -348,7 +359,7 @@ private val agpPlugins = listOf(
   "com.android.library",
   "com.android.application",
   "com.android.test",
-  "com.android.dynamic-feature",
+  "com.android.dynamic-feature"
 )
 
 private const val KAPT_PLUGIN_ID = "org.jetbrains.kotlin.kapt"
@@ -357,10 +368,11 @@ internal class Variant private constructor(
   val name: String,
   val project: Project,
   val compileTaskProvider: TaskProvider<KotlinCompile>,
-  val androidVariant: BaseVariant?,
+  @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
+  val androidVariant: BaseVariantDeprecated?,
   val androidSourceSets: List<AndroidSourceSet>?,
   val compilerPluginClasspathName: String,
-  val variantFilter: VariantFilter,
+  val variantFilter: VariantFilter
 ) {
   // E.g. compileKotlin, compileKotlinJvm, compileDebugKotlin.
   private val taskSuffix = compileTaskProvider.name.substringAfter("compile")

@@ -1,6 +1,5 @@
 package com.squareup.anvil.plugin
 
-import com.android.build.gradle.api.BaseVariant
 import org.gradle.api.Named
 
 public interface VariantFilter : Named {
@@ -94,5 +93,6 @@ public class JvmVariantFilter internal constructor(
 
 public class AndroidVariantFilter internal constructor(
   commonFilter: CommonFilter,
-  public val androidVariant: BaseVariant
+  @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
+  public val androidVariant: BaseVariantDeprecated
 ) : VariantFilter by commonFilter
