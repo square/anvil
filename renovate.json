@@ -26,7 +26,6 @@
     }
   ],
   "labels" : [
-    "dependencies",
-    "automerge"
+    "dependencies"
   ]
 }
