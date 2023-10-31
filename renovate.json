@@ -1,0 +1,31 @@
+{
+  "$schema" : "https://docs.renovatebot.com/renovate-schema.json",
+  "extends" : [
+    "config:base"
+  ],
+  "rebaseWhen" : "conflicted",
+  "rebaseLabel" : "rebase",
+  "packageRules" : [
+    {
+      "groupName" : "Kotlin and compiler plugins",
+      "matchPackagePatterns" : [
+        "^org\\.jetbrains\\.kotlin:",
+        "^com\\.google\\.devtools\\.ksp:",
+        "^com\\.square\\.anvil:",
+        "^dev\\.zacsweers\\.kctfork:"
+      ]
+    },
+    {
+      "groupName" : "androidx.test and friends",
+      "matchPackagePatterns" : [
+        "^androidx\\.test:",
+        "^androidx\\.test\\.ext:",
+        "^com\\.google\\.truth:",
+        "^junit:junit:"
+      ]
+    }
+  ],
+  "labels" : [
+    "dependencies"
+  ]
+}
