@@ -78,7 +78,7 @@ gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", versio
 
 inject = "javax.inject:javax.inject:1"
 jsr250 = "javax.annotation:jsr250-api:1.0"
-junit = "junit:junit:4.13"
+junit = "junit:junit:4.13.2"
 
 kotlin-annotationProcessingEmbeddable = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable", version.ref = "kotlin" }
 kotlin-compileTesting = { module = "dev.zacsweers.kctfork:core", version.ref = "kct" }
