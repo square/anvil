@@ -36,7 +36,6 @@ jobs :
           name : test-results-${{ matrix.kotlin-version }}
           path : ./**/build/reports/tests/
 
-
   test-windows :
     runs-on : windows-latest
     timeout-minutes : 25
@@ -274,3 +273,26 @@ jobs :
 
       - name : "Build Benchmark Project"
         run : ./gradlew :benchmark:app:assemble
+
+  all-checks:
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - test-ubuntu
+      - test-windows
+      - ktlint
+      - lint
+      - publish-maven-local
+      - publish-snapshot
+      - test-gradle-plugin
+      - kapt-for-dagger-factories
+      - instrumentation-tests
+      - gradle-wrapper-validation
+      - build-benchmark-project
+
+    steps:
+      - name: require that all other jobs have passed
+        uses: re-actors/alls-green@release/v1
+        with:
+          allowed-skips: publish-snapshot
+          jobs: ${{ toJSON(needs) }}
