@@ -6,33 +6,31 @@ pluginManagement {
   }
 
   includeBuild('build-logic')
+  includeBuild('gradle-plugin-build-logic')
 }
+
+rootProject.name = 'anvil'
 
 dependencyResolutionManagement {
   versionCatalogs {
-    Map<String, String> overrides = new LinkedHashMap()
-    System.getProperties().forEach { key, value ->
-      String keyString = key.toString()
-      if (keyString.startsWith("override_")) {
-        overrides.put(keyString, value.toString())
-        if (keyString.endsWith("_kotlin")) {
-          // TODO hardcoded to match what's in libs.versions.toml, but kinda ugly
-          String kspPartialVersion = "1.0.13"
-          if (value.toString().startsWith("1.8")) {
-            // Latest KSP releases currently don't support Kotlin 1.8.x
-            kspPartialVersion = "1.0.11"
-          }
-          overrides.put("override_ksp", "$value-$kspPartialVersion")
-        }
-      }
-    }
     libs {
-      for (Map.Entry<String, String> entry : overrides.entrySet()) {
-        String key = entry.getKey()
-        String value = entry.getValue()
-        String catalogKey = key.substring("override_".length())
-        println("Overriding $catalogKey with $value")
-        version(catalogKey, value)
+      System.properties.each { key, value ->
+        if (key.toString().startsWith("override_")) {
+          String catalogKey = key.substring("override_".length())
+          println "Overriding $catalogKey with $value"
+          version(catalogKey, value.toString())
+
+          if (catalogKey == "kotlin") {
+            // TODO hardcoded to match what's in libs.versions.toml, but kinda ugly
+            String kspPartialVersion = "1.0.13"
+            if (value.toString().startsWith("1.8")) {
+              // Latest KSP releases currently don't support Kotlin 1.8.x
+              kspPartialVersion = "1.0.11"
+            }
+            println "Overriding ksp with $value-$kspPartialVersion"
+            version("ksp", "$value-$kspPartialVersion")
+          }
+        }
       }
     }
   }
@@ -65,12 +63,9 @@ include ':sample:app'
 include ':sample:library'
 include ':sample:scopes'
 
-// Use the local version instead of a remote artifact.
-includeBuild('gradle-plugin') {
-  dependencySubstitution {
-    substitute module('com.squareup.anvil:gradle-plugin') using project(':')
-  }
-}
+include ':gradle-plugin'
+
+includeBuild('gradle-plugin-build-logic')
 
 // Include the benchmark modules if they exist.
 def benchmarkSettingsFile = file('benchmark/settings.gradle')

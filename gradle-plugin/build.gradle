@@ -3,28 +3,41 @@ plugins {
   alias libs.plugins.gradlePublish
   alias libs.plugins.buildconfig
   id 'java-gradle-plugin'
-  id 'com.squareup.anvil.publish'
-}
-
-buildConfig {
-  className('BuildProperties')
-  packageName('com.squareup.anvil.plugin')
-  useKotlinOutput { topLevelConstants = true }
-
-  buildConfigField('String', 'GROUP', "\"$GROUP\"")
-  buildConfigField('String', 'VERSION', "\"$VERSION_NAME\"")
 }
 
 def pomName = 'Anvil Gradle Plugin'
 def pomDescription = 'A Kotlin compiler plugin to make dependency injection with Dagger 2 ' +
     'easier by automatically merging Dagger modules and component interfaces.'
 
-publish {
-  configurePom(
-      artifactId: 'gradle-plugin',
-      pomName: pomName,
-      pomDescription: pomDescription
-  )
+// This module is part of two builds:
+// 1. The main build, which publishes the plugin to the Gradle plugin portal.
+// 2. The included build, which is used by the main build to test the plugin.
+// Only the main build should publish the plugin.
+if (rootProject.name == 'anvil') {
+  apply plugin: 'com.squareup.anvil.publish'
+
+  publish {
+    configurePom(
+        artifactId: 'gradle-plugin',
+        pomName: pomName,
+        pomDescription: pomDescription
+    )
+  }
+  layout.buildDirectory.set(file('build-anvil'))
+} else {
+  layout.buildDirectory.set(file('build-composite-wrapper'))
+}
+
+buildConfig {
+  className('BuildProperties')
+  packageName('com.squareup.anvil.plugin')
+  useKotlinOutput {
+    internalVisibility = true
+    topLevelConstants = true
+  }
+
+  buildConfigField('String', 'GROUP', "\"$GROUP\"")
+  buildConfigField('String', 'VERSION', "\"$VERSION_NAME\"")
 }
 
 gradlePlugin {

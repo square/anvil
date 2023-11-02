@@ -42,3 +42,7 @@ out
 
 # Ignore the generated project.
 /benchmark/
+
+# Since :gradle-plugin is in two builds, it has two build directories
+/gradle-plugin/build-anvil/
+/gradle-plugin/build-composite-wrapper/

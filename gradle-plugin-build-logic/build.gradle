@@ -1,0 +1,9 @@
+plugins {
+  id 'java-base'
+}
+
+java {
+  toolchain {
+    languageVersion.set(JavaLanguageVersion.of(11))
+  }
+}

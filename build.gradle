@@ -2,12 +2,6 @@ import org.gradle.api.internal.project.DefaultProject
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
-buildscript {
-  dependencies {
-    classpath("com.squareup.anvil:gradle-plugin:${findProperty("VERSION_NAME")}",)
-  }
-}
-
 plugins {
   alias(libs.plugins.agp.application) apply false
   alias(libs.plugins.agp.library) apply false
@@ -20,6 +14,11 @@ plugins {
   alias(libs.plugins.ktlint) apply false
   alias(libs.plugins.mavenPublishBase) apply false
   id 'com.squareup.anvil.root'
+  id 'com.squareup.anvil' apply false
+}
+
+allprojects {
+  version = property("VERSION_NAME")
 }
 
 boolean isCi = (System.getenv('CI') ?: 'false').toBoolean()
@@ -54,7 +53,8 @@ subprojects {
 
   // Dynamically configure JVM targets because Dagger compiler always uses the java 11 @Generated
   // annotation regardless of release target
-  boolean isIntegrationTestOrSample = project.path.startsWith(":integration-test") || project.path.startsWith(":sample")
+  boolean isIntegrationTestOrSample = project.path.startsWith(":integration-test") ||
+      project.path.startsWith(":sample")
 
   pluginManager.withPlugin("java") {
     // Use JDK 11 but target Java 8 for maximum compatibility.
@@ -88,7 +88,7 @@ subprojects {
           && project.name != "annotations-optional"
           && project.name != "scopes"
           && project.name != "dagger-factories-only"
-      if (optInExperimental) {
+      if (project.path != ':gradle-plugin' && optInExperimental) {
         freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
       }
     }
@@ -119,13 +119,6 @@ subprojects {
   if (configureOnDemandEnabled) {
     (it as DefaultProject).evaluate()
   }
-}
-
-// For any publish task invoked in the main build, there's a corresponding task in the gradle-plugin
-// included build.  Gradle doesn't invoke those included build tasks when the main build's tasks are
-// run, and that's annoying. This fixes that behavior.
-tasks.withType(PublishToMavenRepository).configureEach { mainTask ->
-  mainTask.dependsOn(gradle.includedBuild("gradle-plugin").task(":${mainTask.name}"))
 }
 
 def getProperty(String name, String defaultValue) {
