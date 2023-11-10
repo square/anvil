@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.hintMultibinding
 import com.squareup.anvil.compiler.hintMultibindingScope
 import com.squareup.anvil.compiler.hintMultibindingScopes
+import com.squareup.anvil.compiler.includeKspTests
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.anvil.compiler.isError
@@ -30,7 +31,9 @@ class ContributesMultibindingGeneratorTest(
     @JvmStatic fun modes(): Collection<Any> {
       return buildList {
         add(AnvilCompilationMode.Embedded())
-        add(AnvilCompilationMode.Ksp())
+        if (includeKspTests()) {
+          add(AnvilCompilationMode.Ksp())
+        }
       }
     }
   }

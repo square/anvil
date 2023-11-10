@@ -38,6 +38,10 @@ mavenPublish = "0.25.3"
 # with one annotation instead of all options. We also skip tests that run the Dagger annotation
 # processor (KAPT is slow).
 config-fullTestRun = "true"
+# This is exclusively used to work-around an issue with certain KSP tests on Windows on CI.
+# We've run the same tests without issue on local Windows machines, so this just allows us to
+# unblock KSP work for the moment until the source of the Git-Windows-CI jank can be identified.
+config-includeKspTests = "true"
 config-generateDaggerFactoriesWithAnvil = "true"
 
 [plugins]
