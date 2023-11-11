@@ -17,6 +17,7 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
+import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
@@ -26,6 +27,7 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm
+import org.jetbrains.kotlin.gradle.plugin.KotlinSourceSet
 import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
@@ -177,6 +179,23 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       }
     }
 
+    val allowlistedVariants = variant.variantFilter
+      .generateDaggerFactoriesSourceSetAllowlist.map { sourceSetName ->
+      val sourceSet = variant.kotlinSourceSets.singleOrNull { it.name == sourceSetName }
+        ?: throw GradleException("Unknown variant $sourceSetName. Available variants: " +
+                "${variant.kotlinSourceSets.joinToString { it.name }}"
+        )
+
+      sourceSet
+    }
+
+    val enableDaggerFactoriesInThisVariant = allowlistedVariants.isEmpty() ||
+      variant.androidSourceSets?.any { androidSourceSet ->
+        allowlistedVariants.any { allowlistedSourceSet ->
+          allowlistedSourceSet.name == androidSourceSet.name
+        }
+      } == true
+
     return project.provider {
       listOf(
         FilesSubpluginOption(
@@ -185,11 +204,13 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         ),
         SubpluginOption(
           key = "generate-dagger-factories",
-          lazy { variant.variantFilter.generateDaggerFactories.toString() }
+          lazy { (variant.variantFilter.generateDaggerFactories &&
+                  enableDaggerFactoriesInThisVariant).toString() }
         ),
         SubpluginOption(
           key = "generate-dagger-factories-only",
-          lazy { variant.variantFilter.generateDaggerFactoriesOnly.toString() }
+          lazy { (variant.variantFilter.generateDaggerFactoriesOnly &&
+                  enableDaggerFactoriesInThisVariant).toString() }
         ),
         SubpluginOption(
           key = "disable-component-merging",
@@ -371,6 +392,7 @@ internal class Variant private constructor(
   @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
   val androidVariant: BaseVariantDeprecated?,
   val androidSourceSets: List<AndroidSourceSet>?,
+  val kotlinSourceSets: List<KotlinSourceSet>,
   val compilerPluginClasspathName: String,
   val variantFilter: VariantFilter
 ) {
@@ -403,6 +425,8 @@ internal class Variant private constructor(
         null
       }
 
+      val kotlinSourceSets = project.kotlinExtension.sourceSets.toList()
+
       val commonFilter = CommonFilter(kotlinCompilation.name, extension)
       val variantFilter = if (androidVariant != null) {
         AndroidVariantFilter(commonFilter, androidVariant)
@@ -418,6 +442,7 @@ internal class Variant private constructor(
           TaskProvider<KotlinCompile>,
         androidVariant = androidVariant,
         androidSourceSets = androidSourceSets,
+        kotlinSourceSets = kotlinSourceSets,
         compilerPluginClasspathName = PLUGIN_CLASSPATH_CONFIGURATION_NAME +
           kotlinCompilation.target.targetName.replaceFirstChar(Char::uppercase) +
           kotlinCompilation.name.replaceFirstChar(Char::uppercase),

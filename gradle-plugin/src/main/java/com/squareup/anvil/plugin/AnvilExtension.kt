@@ -2,6 +2,7 @@ package com.squareup.anvil.plugin
 
 import org.gradle.api.Action
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.ListProperty
 import org.gradle.api.provider.Property
 import javax.inject.Inject
 
@@ -32,6 +33,15 @@ public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory)
    */
   public val generateDaggerFactoriesOnly: Property<Boolean> = objects.property(Boolean::class.java)
     .convention(false)
+
+  /**
+   * Allowlist of all source sets (such as main, test etc.) that Anvil should generate dagger
+   * factories in, if factory generation is enabled.
+   *
+   * When empty, Anvil will generate factories in all source sets.
+   */
+  public var generateDaggerFactoriesSourceSetAllowlist: ListProperty<String> =
+    objects.listProperty(String::class.java)
 
   /**
    * Enabling this indicates that only code generation should run and no component merging should
