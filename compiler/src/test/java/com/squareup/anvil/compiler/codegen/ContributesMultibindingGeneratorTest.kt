@@ -1,21 +1,42 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.annotations.MergeComponent
+import com.squareup.anvil.compiler.codegen.ksp.simpleSymbolProcessor
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.hintMultibinding
 import com.squareup.anvil.compiler.hintMultibindingScope
 import com.squareup.anvil.compiler.hintMultibindingScopes
+import com.squareup.anvil.compiler.includeKspTests
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.secondContributingInterface
+import com.squareup.anvil.compiler.walkGeneratedFiles
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.junit.Test
-import java.io.File
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 
 @Suppress("RemoveRedundantQualifierName")
-class ContributesMultibindingGeneratorTest {
+@RunWith(Parameterized::class)
+class ContributesMultibindingGeneratorTest(
+  private val mode: AnvilCompilationMode
+) {
+
+  companion object {
+    @Parameterized.Parameters(name = "{0}")
+    @JvmStatic fun modes(): Collection<Any> {
+      return buildList {
+        add(AnvilCompilationMode.Embedded())
+        if (includeKspTests()) {
+          add(AnvilCompilationMode.Ksp())
+        }
+      }
+    }
+  }
 
   @Test fun `there is a hint for a contributed multibinding for interfaces`() {
     compile(
@@ -28,14 +49,14 @@ class ContributesMultibindingGeneratorTest {
 
       @ContributesMultibinding(Any::class, ParentInterface::class)
       interface ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintMultibindingScope).isEqualTo(Any::class)
 
-      val generatedFile = File(outputDirectory.parent, "build/anvil")
-        .walk()
-        .single { it.isFile && it.extension == "kt" }
+      val generatedFile = walkGeneratedFiles(mode)
+        .single()
 
       assertThat(generatedFile.name).isEqualTo("ContributingInterface.kt")
     }
@@ -52,7 +73,8 @@ class ContributesMultibindingGeneratorTest {
 
       @ContributesMultibinding(Any::class, ParentInterface::class)
       class ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintMultibindingScope).isEqualTo(Any::class)
@@ -70,7 +92,8 @@ class ContributesMultibindingGeneratorTest {
 
       @ContributesMultibinding(Any::class, ParentInterface::class)
       object ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintMultibindingScope).isEqualTo(Any::class)
@@ -88,7 +111,8 @@ class ContributesMultibindingGeneratorTest {
 
       @ContributesMultibinding(boundType = ParentInterface::class, scope = Int::class)
       class ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintMultibindingScope).isEqualTo(Int::class)
     }
@@ -107,7 +131,8 @@ class ContributesMultibindingGeneratorTest {
         @ContributesMultibinding(Any::class, ParentInterface::class)
         interface ContributingInterface : ParentInterface
       }
-      """
+      """,
+      mode = mode,
     ) {
       val contributingInterface =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingInterface")
@@ -129,16 +154,16 @@ class ContributesMultibindingGeneratorTest {
         @ContributesMultibinding(Any::class, ParentInterface::class)
         class ContributingClass : ParentInterface
       }
-      """
+      """,
+      mode = mode,
     ) {
       val contributingClass =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingClass")
       assertThat(contributingClass.hintMultibinding?.java).isEqualTo(contributingClass)
       assertThat(contributingClass.hintMultibindingScope).isEqualTo(Any::class)
 
-      val generatedFile = File(outputDirectory.parent, "build/anvil")
-        .walk()
-        .single { it.isFile && it.extension == "kt" }
+      val generatedFile = walkGeneratedFiles(mode)
+        .single()
 
       assertThat(generatedFile.name).isEqualTo("Abc_ContributingClass.kt")
     }
@@ -195,7 +220,8 @@ class ContributesMultibindingGeneratorTest {
       @AnyQualifier1 
       @AnyQualifier2
       interface ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -215,7 +241,8 @@ class ContributesMultibindingGeneratorTest {
 
       @ContributesMultibinding(Any::class)
       interface ContributingInterface : ParentInterface, CharSequence
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -240,7 +267,8 @@ class ContributesMultibindingGeneratorTest {
 
       @ContributesMultibinding(Any::class)
       interface ContributingInterface : Abc(), ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -261,7 +289,8 @@ class ContributesMultibindingGeneratorTest {
 
       @ContributesMultibinding(Any::class)
       object ContributingInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -288,7 +317,8 @@ class ContributesMultibindingGeneratorTest {
         boundType = ParentInterface::class
       )
       interface ContributingInterface : ParentInterface, CharSequence
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintMultibindingScope).isEqualTo(Int::class)
@@ -306,7 +336,8 @@ class ContributesMultibindingGeneratorTest {
 
       @ContributesMultibinding(Any::class, ParentInterface::class)
       interface ContributingInterface : CharSequence
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -325,7 +356,8 @@ class ContributesMultibindingGeneratorTest {
 
       @ContributesMultibinding(Int::class, boundType = Any::class)
       interface ContributingInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintMultibindingScope).isEqualTo(Int::class)
@@ -333,24 +365,38 @@ class ContributesMultibindingGeneratorTest {
   }
 
   @Test fun `a contributed multibinding can be generated`() {
-    val codeGenerator = simpleCodeGenerator { clazz ->
-      clazz
-        .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
-        ?.let {
-          //language=kotlin
-          """
-            package com.squareup.test
-                
-            import com.squareup.anvil.annotations.ContributesMultibinding
-            import dagger.MapKey
-            import javax.inject.Singleton
+    val stubContentToGenerate =
+      //language=kotlin
+      """
+          package com.squareup.test
+              
+          import com.squareup.anvil.annotations.ContributesMultibinding
+          import dagger.MapKey
+          import javax.inject.Singleton
+       
+          @ContributesMultibinding(Any::class)
+          @BindingKey("abc")
+          @Singleton
+          interface ContributingInterface : ParentInterface
+      """.trimIndent()
 
-            @ContributesMultibinding(Any::class)
-            @BindingKey("abc")
-            @Singleton
-            interface ContributingInterface : ParentInterface
-          """.trimIndent()
+    val localMode = when (mode) {
+      is AnvilCompilationMode.Embedded -> {
+        val codeGenerator = simpleCodeGenerator { clazz ->
+          clazz
+            .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
+            ?.let { stubContentToGenerate }
         }
+        AnvilCompilationMode.Embedded(listOf(codeGenerator))
+      }
+      is AnvilCompilationMode.Ksp -> {
+        val processor = simpleSymbolProcessor { resolver ->
+          resolver.getSymbolsWithAnnotation(MergeComponent::class.qualifiedName!!)
+            .map { stubContentToGenerate }
+            .toList()
+        }
+        AnvilCompilationMode.Ksp(listOf(processor))
+      }
     }
 
     compile(
@@ -368,7 +414,7 @@ class ContributesMultibindingGeneratorTest {
         @MergeComponent(Any::class)
         interface ComponentInterface
       """,
-      codeGenerators = listOf(codeGenerator)
+      mode = localMode
     ) {
       assertThat(exitCode).isEqualTo(OK)
       assertThat(contributingInterface.hintMultibindingScope).isEqualTo(Any::class)
@@ -376,29 +422,45 @@ class ContributesMultibindingGeneratorTest {
   }
 
   @Test fun `a contributed multibinding can be generated with map keys being generated`() {
-    val codeGenerator = simpleCodeGenerator { clazz ->
-      clazz
-        .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
-        ?.let {
-          //language=kotlin
-          """
-            package com.squareup.test
-                
-            import com.squareup.anvil.annotations.ContributesMultibinding
-            import dagger.MapKey
-            import javax.inject.Singleton
+    val stubContentToGenerate =
+      //language=kotlin
+      """
+          package com.squareup.test
+              
+          import com.squareup.anvil.annotations.ContributesMultibinding
+          import dagger.MapKey
+          import javax.inject.Singleton
 
-            interface ParentInterface
+          interface ParentInterface
 
-            @MapKey
-            annotation class BindingKey1(val value: String)
+          @MapKey
+          annotation class BindingKey1(val value: String)
       
-            @ContributesMultibinding(Any::class)
-            @BindingKey1("abc")
-            @Singleton
-            interface ContributingInterface : ParentInterface
-          """.trimIndent()
+          @ContributesMultibinding(Any::class)
+          @BindingKey1("abc")
+          @Singleton
+          interface ContributingInterface : ParentInterface
+      """.trimIndent()
+
+    val localMode = when (mode) {
+      is AnvilCompilationMode.Embedded -> {
+        val codeGenerator = simpleCodeGenerator { clazz ->
+          clazz
+            .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
+            ?.let {
+              stubContentToGenerate
+            }
         }
+        AnvilCompilationMode.Embedded(listOf(codeGenerator))
+      }
+      is AnvilCompilationMode.Ksp -> {
+        val processor = simpleSymbolProcessor { resolver ->
+          resolver.getSymbolsWithAnnotation(MergeComponent::class.qualifiedName!!)
+            .map { stubContentToGenerate }
+            .toList()
+        }
+        AnvilCompilationMode.Ksp(listOf(processor))
+      }
     }
 
     compile(
@@ -410,7 +472,7 @@ class ContributesMultibindingGeneratorTest {
         @MergeComponent(Any::class)
         interface ComponentInterface
       """,
-      codeGenerators = listOf(codeGenerator)
+      mode = localMode
     ) {
       assertThat(exitCode).isEqualTo(OK)
       assertThat(contributingInterface.hintMultibindingScope).isEqualTo(Any::class)
@@ -429,7 +491,8 @@ class ContributesMultibindingGeneratorTest {
       @ContributesMultibinding(Any::class)
       @ContributesMultibinding(Unit::class)
       class ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintMultibindingScopes)
@@ -453,7 +516,8 @@ class ContributesMultibindingGeneratorTest {
       @ContributesMultibinding(Unit::class)
       @ContributesMultibinding(Any::class)
       class SecondContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintMultibindingScopes)
         .containsExactly(Any::class, Unit::class)
@@ -477,7 +541,8 @@ class ContributesMultibindingGeneratorTest {
       @ContributesMultibinding(Any::class)
       @com.squareup.anvil.annotations.ContributesMultibinding(Unit::class)
       class ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintMultibindingScopes)
@@ -499,7 +564,8 @@ class ContributesMultibindingGeneratorTest {
       @ContributesMultibinding(Unit::class)
       @ContributesMultibinding(Unit::class, replaces = [Int::class])
       class ContributingInterface : ParentInterface
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -526,7 +592,8 @@ class ContributesMultibindingGeneratorTest {
       @ContributesMultibinding(Unit::class, boundType = ParentInterface1::class)
       @ContributesMultibinding(Unit::class, boundType = ParentInterface2::class)
       class ContributingInterface : ParentInterface1, ParentInterface2
-      """
+      """,
+      mode = mode,
     ) {
       assertThat(contributingInterface.hintMultibinding?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintMultibindingScopes)
