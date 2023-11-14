@@ -177,6 +177,7 @@ internal fun ComparableSubject<ExitCode>.isError() {
 
 internal fun isFullTestRun(): Boolean = FULL_TEST_RUN
 internal fun checkFullTestRun() = assumeTrue(isFullTestRun())
+internal fun includeKspTests(): Boolean = INCLUDE_KSP_TESTS
 
 internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
   val dirToSearch = when (mode) {
