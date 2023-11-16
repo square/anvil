@@ -28,6 +28,8 @@ import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.ABSTRACT
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.STAR
 import com.squareup.kotlinpoet.TypeSpec
 import dagger.Binds
 import dagger.Module
@@ -330,7 +332,7 @@ private fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBi
   if (bindings.size > 1) {
     throw AnvilCompilationException(
       "There are multiple contributed bindings with the same bound type. The bound type is " +
-        "${bindings[0].boundType.fqName}. The contributed binding classes are: " +
+        "${bindings[0].boundType.classReference.fqName}. The contributed binding classes are: " +
         bindings.joinToString(
           prefix = "[",
           postfix = "]"
@@ -344,15 +346,25 @@ private fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBi
 private fun ContributedBinding.toGeneratedMethod(
   isMultibinding: Boolean
 ): GeneratedMethod {
-
   val isMapMultibinding = mapKeys.isNotEmpty()
 
   val methodNameSuffix = buildString {
-    append(boundType.shortName.capitalize())
+    append(boundType.classReference.shortName.capitalize())
     if (isMultibinding) {
       append("Multi")
     }
   }
+
+  val boundTypeWithTypeParameters = boundType.classReference.asClassName()
+    .let {
+      if (boundType.classReference.typeParameters.isEmpty()) {
+        it
+      } else if (isMultibinding) {
+        it.parameterizedBy(boundType.classReference.typeParameters.map { STAR })
+      } else {
+        it.parameterizedBy(boundType.typeArguments)
+      }
+    }
 
   return if (contributedClass.isObject()) {
     ProviderMethod(
@@ -366,11 +378,11 @@ private fun ContributedBinding.toGeneratedMethod(
         }
         .addAnnotations(qualifiers)
         .addAnnotations(mapKeys)
-        .returns(boundType.asClassName())
+        .returns(boundTypeWithTypeParameters)
         .addStatement("return %T", contributedClass.asClassName())
         .build(),
       contributedClass = contributedClass,
-      boundType = boundType
+      boundType = boundType.classReference
     )
   } else {
     BindingMethod(
@@ -389,10 +401,10 @@ private fun ContributedBinding.toGeneratedMethod(
           name = contributedClass.shortName.decapitalize(),
           type = contributedClass.asClassName()
         )
-        .returns(boundType.asClassName())
+        .returns(boundTypeWithTypeParameters)
         .build(),
       contributedClass = contributedClass,
-      boundType = boundType
+      boundType = boundType.classReference
     )
   }
 }

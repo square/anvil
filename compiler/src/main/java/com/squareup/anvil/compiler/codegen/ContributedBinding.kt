@@ -5,20 +5,19 @@ import com.squareup.anvil.compiler.anyFqName
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
-import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
-import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
+import com.squareup.anvil.compiler.internal.reference.ClassReferenceWithGenericParameters
+import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferencesWithGenericParameters
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.types.KotlinType
 import kotlin.LazyThreadSafetyMode.NONE
 
 internal data class ContributedBinding(
   val contributedClass: ClassReference,
   val mapKeys: List<AnnotationSpec>,
   val qualifiers: List<AnnotationSpec>,
-  val boundType: ClassReference,
+  val boundType: ClassReferenceWithGenericParameters,
   val priority: Priority,
   val qualifiersKeyLazy: Lazy<String>
 )
@@ -48,33 +47,35 @@ internal fun AnnotationReference.toContributedBinding(
     qualifiers = qualifiers,
     boundType = boundType,
     priority = priority(),
-    qualifiersKeyLazy = declaringClass().qualifiersKeyLazy(boundType, ignoreQualifier)
+    qualifiersKeyLazy = declaringClass().qualifiersKeyLazy(boundType.classReference, ignoreQualifier)
   )
 }
 
-private fun AnnotationReference.requireBoundType(module: ModuleDescriptor): ClassReference {
+private fun AnnotationReference.requireBoundType(module: ModuleDescriptor): ClassReferenceWithGenericParameters {
   val boundFromAnnotation = boundTypeOrNull()
 
   if (boundFromAnnotation != null) {
     // Since all classes extend Any, we can stop here.
-    if (boundFromAnnotation.fqName == anyFqName) return anyFqName.toClassReference(module)
+    if (boundFromAnnotation.fqName == anyFqName) return ClassReferenceWithGenericParameters(
+      anyFqName.toClassReference(module),
+      emptyList()
+    )
 
     // ensure that the bound type is actually a supertype of the contributing class
-    val boundType = declaringClass().allSuperTypeClassReferences()
-      .firstOrNull { it.fqName == boundFromAnnotation.fqName }
+    val boundType = declaringClass().allSuperTypeClassReferencesWithGenericParameters()
+      .firstOrNull {
+        it.classReference.fqName == boundFromAnnotation.fqName
+      }
       ?: throw AnvilCompilationException(
         "$fqName contributes a binding for ${boundFromAnnotation.fqName}, " +
           "but doesn't extend this type."
       )
-
-    boundType.checkNotGeneric(contributedClass = declaringClass())
     return boundType
   }
 
   // If there's no bound type in the annotation,
   // it must be the only supertype of the contributing class
   val boundType = declaringClass().directSuperTypeReferences().singleOrNull()
-    ?.asClassReference()
     ?: throw AnvilCompilationException(
       message = "$fqName contributes a binding, but does not " +
         "specify the bound type. This is only allowed with exactly one direct super type. " +
@@ -82,48 +83,8 @@ private fun AnnotationReference.requireBoundType(module: ModuleDescriptor): Clas
         "the @$shortName annotation."
     )
 
-  boundType.checkNotGeneric(contributedClass = declaringClass())
-  return boundType
-}
-
-private fun ClassReference.checkNotGeneric(
-  contributedClass: ClassReference
-) {
-  fun exceptionText(typeString: String): String {
-    return "Class ${contributedClass.fqName} binds $fqName," +
-      " but the bound type contains type parameter(s) $typeString." +
-      " Type parameters in bindings are not supported. This binding needs" +
-      " to be contributed in a Dagger module manually."
-  }
-
-  fun KotlinType.describeTypeParameters(): String = arguments
-    .ifEmpty { return "" }
-    .joinToString(prefix = "<", postfix = ">") { typeArgument ->
-      typeArgument.type.toString() + typeArgument.type.describeTypeParameters()
-    }
-
-  when (this) {
-    is Descriptor -> {
-      if (clazz.declaredTypeParameters.isNotEmpty()) {
-
-        throw AnvilCompilationException(
-          classDescriptor = clazz,
-          message = exceptionText(clazz.defaultType.describeTypeParameters())
-        )
-      }
-    }
-    is Psi -> {
-      if (clazz.typeParameters.isNotEmpty()) {
-        val typeString = clazz.typeParameters
-          .joinToString(prefix = "<", postfix = ">") { it.name!! }
-
-        throw AnvilCompilationException(
-          message = exceptionText(typeString),
-          element = clazz.nameIdentifier
-        )
-      }
-    }
-  }
+  val typeArguments = (boundType.asTypeNameOrNull() as? ParameterizedTypeName)?.typeArguments ?: emptyList()
+  return ClassReferenceWithGenericParameters(boundType.asClassReference(), typeArguments.map { it })
 }
 
 private fun ClassReference.qualifiersKeyLazy(

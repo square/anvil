@@ -14,13 +14,13 @@ import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.isAbstract
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.parentInterface1
 import com.squareup.anvil.compiler.parentInterface2
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Binds
 import dagger.Provides
@@ -28,6 +28,7 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
+import java.io.File
 import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
@@ -373,7 +374,7 @@ class BindingModuleGeneratorTest(
     }
   }
 
-  @Test fun `the contributed binding class must not have a generic type parameter`() {
+  @Test fun `the Dagger binding method with parent type is generated for generic type parameters`() {
     compile(
       """
       package com.squareup.test
@@ -393,19 +394,25 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isError()
+      assertThat(exitCode).isEqualTo(OK)
 
-      assertThat(messages).contains("Source0.kt:6:11")
-      assertThat(messages).contains(
-        "Class com.squareup.test.ContributingInterface binds com.squareup.test.ParentInterface, " +
-          "but the bound type contains type parameter(s) <T, S>. Type parameters in bindings " +
-          "are not supported. This binding needs to be contributed in a Dagger module manually."
-      )
+      // Because of type erasure, we cannot check through the type system that generated type
+      // is the right one. Instead, we can check generated string.
+
+      val generatedModuleFile = File(outputDirectory.parent, "build/anvil")
+        .walk()
+        .single { it.isFile && it.name == "ComponentInterface.kt" }
+
+      assertThat(generatedModuleFile.readText().replace(Regex("\\s"), ""))
+        .contains(
+          "bindParentInterface(contributingInterface:ContributingInterface):" +
+            "ParentInterface<Map<String,List<Pair<String,Int>>>,SomeOtherType>"
+        )
     }
   }
 
   @Test
-  fun `the contributed binding class must not have a generic type parameter with super type chain`() {
+  fun `the Dagger binding method with parent type is generated for a super type chain`() {
     compile(
       """
       package com.squareup.test
@@ -425,15 +432,20 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """
     ) {
-      assertThat(exitCode).isError()
+      assertThat(exitCode).isEqualTo(OK)
 
-      assertThat(messages).contains("Source0.kt:6:11")
-      assertThat(messages).contains(
-        "Class com.squareup.test.ContributingInterface binds com.squareup.test.ParentInterface, " +
-          "but the bound type contains type parameter(s) <OutputT>. Type parameters in " +
-          "bindings are not supported. This binding needs to be contributed in a Dagger module " +
-          "manually."
-      )
+      // Because of type erasure, we cannot check through the type system that generated type
+      // is the right one. Instead, we can check generated string.
+
+      val generatedModuleFile = File(outputDirectory.parent, "build/anvil")
+        .walk()
+        .single { it.isFile && it.name == "ComponentInterface.kt" }
+
+      assertThat(generatedModuleFile.readText().replace(Regex("\\s"), ""))
+        .contains(
+          "bindParentInterface(contributingInterface:ContributingInterface):" +
+            "ParentInterface<SomeOtherType>"
+        )
     }
   }
 
@@ -780,6 +792,43 @@ class BindingModuleGeneratorTest(
       """
     ) {
       assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+    }
+  }
+
+  @Test fun `fill in parent type when boundType parameter is used for generic type parameters`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      $import
+
+      interface ParentInterface1<T>
+      interface ParentInterface2
+
+      class SomeOtherType
+      
+      @ContributesBinding(Any::class, boundType = ParentInterface1::class)
+      interface ContributingInterface : ParentInterface1<SomeOtherType>, ParentInterface2
+      
+      $annotation(Any::class)
+      interface ComponentInterface
+      """
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+
+      // Because of type erasure, we cannot check through the type system that generated type
+      // is the right one. Instead, we can check generated string.
+
+      val generatedModuleFile = File(outputDirectory.parent, "build/anvil")
+        .walk()
+        .single { it.isFile && it.name == "ComponentInterface.kt" }
+
+      assertThat(generatedModuleFile.readText().replace(Regex("\\s"), ""))
+        .contains(
+          "bindParentInterface1(contributingInterface:ContributingInterface):" +
+            "ParentInterface1<SomeOtherType>"
+        )
     }
   }
 
