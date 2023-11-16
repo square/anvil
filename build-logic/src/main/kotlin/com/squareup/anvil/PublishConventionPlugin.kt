@@ -1,9 +1,14 @@
 package com.squareup.anvil
 
+import com.rickbusarow.kgx.libsCatalog
+import com.rickbusarow.kgx.version
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import com.vanniktech.maven.publish.MavenPublishBasePlugin
 import com.vanniktech.maven.publish.Platform
+import dev.adamko.dokkatoo.DokkatooExtension
+import dev.adamko.dokkatoo.DokkatooPlugin
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.PublishingExtension
@@ -14,9 +19,9 @@ import javax.inject.Inject
 
 open class PublishConventionPlugin : Plugin<Project> {
   override fun apply(target: Project) {
+    target.plugins.apply(MavenPublishBasePlugin::class.java)
 
-    target.plugins.apply("com.vanniktech.maven.publish.base")
-    target.plugins.apply("org.jetbrains.dokka")
+    target.applyDokkatoo()
 
     target.extensions.create("publish", PublishExtension::class.java)
 
@@ -30,7 +35,6 @@ open class PublishConventionPlugin : Plugin<Project> {
     mavenPublishing.signAllPublications()
 
     target.plugins.withId("org.jetbrains.kotlin.jvm") {
-
       when {
         target.plugins.hasPlugin(pluginPublishId) -> {
           // Gradle's 'plugin-publish' plugin creates its own publication.  We only apply this plugin
@@ -41,10 +45,20 @@ open class PublishConventionPlugin : Plugin<Project> {
           configurePublication(
             target,
             mavenPublishing,
-            KotlinJvm(javadocJar = JavadocJar.Dokka("dokkaHtml"), sourcesJar = true),
+            KotlinJvm(
+              javadocJar = JavadocJar.Dokka("dokkatooGeneratePublicationHtml"),
+              sourcesJar = true,
+            ),
           )
         }
       }
+    }
+  }
+
+  private fun Project.applyDokkatoo() {
+    plugins.apply(DokkatooPlugin::class.java)
+    extensions.configure(DokkatooExtension::class.java) {
+      it.versions.jetbrainsDokka.set(libsCatalog.version("dokka"))
     }
   }
 

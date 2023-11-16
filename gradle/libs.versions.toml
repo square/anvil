@@ -18,6 +18,7 @@ autoValue = "1.10.4"
 buildconfig = "4.1.2"
 dagger = "2.46.1"
 dokka = "1.9.10"
+dokkatoo = "2.0.0"
 espresso = "3.5.1"
 gradlePublish = "1.2.1"
 kct = "0.3.1"
@@ -48,6 +49,7 @@ config-generateDaggerFactoriesWithAnvil = "true"
 agp-application = { id = "com.android.application", version.ref = "agp" }
 agp-library = { id = "com.android.library", version.ref = "agp" }
 buildconfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildconfig" }
+dokkatoo = { id = "dev.adamko.dokkatoo", version.ref = "dokkatoo" }
 gradlePublish = { id = "com.gradle.plugin-publish", version.ref = "gradlePublish" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
@@ -77,6 +79,8 @@ auto-value-processor = { module = "com.google.auto.value:auto-value", version.re
 
 dagger2 = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger2-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
+
+dokkatoo-plugin = { module = "dev.adamko.dokkatoo:dokkatoo-plugin", version.ref = "dokkatoo" }
 
 gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", version.ref = "gradlePublish" }
 

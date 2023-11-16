@@ -31,6 +31,7 @@ dependencies {
   compileOnly(gradleApi())
   implementation libs.ktlintRaw
   implementation libs.kgx
+  implementation libs.dokkatoo.plugin
   implementation libs.kotlinpoet
   implementation libs.kotlin.dokka
   implementation libs.kotlin.gradlePlugin
