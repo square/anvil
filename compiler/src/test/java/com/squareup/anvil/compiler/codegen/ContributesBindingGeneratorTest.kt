@@ -17,12 +17,13 @@ import org.junit.runners.Parameterized
 @Suppress("RemoveRedundantQualifierName")
 @RunWith(Parameterized::class)
 class ContributesBindingGeneratorTest(
-  private val mode: AnvilCompilationMode
+  private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
     @Parameterized.Parameters(name = "{0}")
-    @JvmStatic fun modes(): Collection<Any> {
+    @JvmStatic
+    fun modes(): Collection<Any> {
       return buildList {
         add(AnvilCompilationMode.Embedded())
         add(AnvilCompilationMode.Ksp())
@@ -165,7 +166,7 @@ class ContributesBindingGeneratorTest(
     val visibilities = setOf(
       "internal",
       "private",
-      "protected"
+      "protected",
     )
 
     visibilities.forEach { visibility ->
@@ -187,7 +188,7 @@ class ContributesBindingGeneratorTest(
         assertThat(messages).contains("Source0.kt:8")
         assertThat(messages).contains(
           "com.squareup.test.ContributingInterface is binding a type, but the class is not " +
-            "public. Only public types are supported."
+            "public. Only public types are supported.",
         )
       }
     }
@@ -217,7 +218,7 @@ class ContributesBindingGeneratorTest(
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
-        "Classes annotated with @ContributesBinding may not use more than one @Qualifier."
+        "Classes annotated with @ContributesBinding may not use more than one @Qualifier.",
       )
     }
   }
@@ -241,7 +242,7 @@ class ContributesBindingGeneratorTest(
         "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
           "the bound type. This is only allowed with exactly one direct super type. If there " +
           "are multiple or none, then the bound type must be explicitly defined in the " +
-          "@ContributesBinding annotation."
+          "@ContributesBinding annotation.",
       )
     }
   }
@@ -267,7 +268,7 @@ class ContributesBindingGeneratorTest(
         "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
           "the bound type. This is only allowed with exactly one direct super type. If there " +
           "are multiple or none, then the bound type must be explicitly defined in the " +
-          "@ContributesBinding annotation."
+          "@ContributesBinding annotation.",
       )
     }
   }
@@ -289,7 +290,7 @@ class ContributesBindingGeneratorTest(
         "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
           "the bound type. This is only allowed with exactly one direct super type. If there " +
           "are multiple or none, then the bound type must be explicitly defined in the " +
-          "@ContributesBinding annotation."
+          "@ContributesBinding annotation.",
       )
     }
   }
@@ -330,7 +331,7 @@ class ContributesBindingGeneratorTest(
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface contributes a binding for " +
-          "com.squareup.test.ParentInterface, but doesn't extend this type."
+          "com.squareup.test.ParentInterface, but doesn't extend this type.",
       )
     }
   }
@@ -449,7 +450,7 @@ class ContributesBindingGeneratorTest(
         "com.squareup.test.ContributingInterface contributes multiple times to the same scope " +
           "using the same bound type: [ParentInterface]. Contributing multiple times to the " +
           "same scope with the same bound type is forbidden and all scope - bound type " +
-          "combinations must be distinct."
+          "combinations must be distinct.",
       )
     }
   }

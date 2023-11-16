@@ -72,11 +72,11 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
         PropertySpec
           .builder(
             name = propertyName + REFERENCE_SUFFIX,
-            type = KClass::class.asClassName().parameterizedBy(className)
+            type = KClass::class.asClassName().parameterizedBy(className),
           )
           .initializer("%T::class", className)
           .addModifiers(PUBLIC)
-          .build()
+          .build(),
       )
 
       scopes.forEachIndexed { index, scope ->
@@ -84,11 +84,11 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
           PropertySpec
             .builder(
               name = propertyName + SCOPE_SUFFIX + index,
-              type = KClass::class.asClassName().parameterizedBy(scope)
+              type = KClass::class.asClassName().parameterizedBy(scope),
             )
             .initializer("%T::class", scope)
             .addModifiers(PUBLIC)
-            .build()
+            .build(),
         )
       }
     }
@@ -157,7 +157,7 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
     override fun generateCode(
       codeGenDir: File,
       module: ModuleDescriptor,
-      projectFiles: Collection<KtFile>
+      projectFiles: Collection<KtFile>,
     ): Collection<GeneratedFile> {
       return projectFiles
         .classAndInnerClassReferences(module)
@@ -197,7 +197,7 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
             codeGenDir = codeGenDir,
             packageName = spec.packageName,
             fileName = spec.name,
-            content = spec.toString()
+            content = spec.toString(),
           )
         }
         .toList()

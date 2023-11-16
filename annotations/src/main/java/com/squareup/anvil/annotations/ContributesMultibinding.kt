@@ -126,5 +126,5 @@ public annotation class ContributesMultibinding(
    * are used together for the same class. If not, simply remove the qualifier from the class and
    * don't use this parameter.
    */
-  val ignoreQualifier: Boolean = false
+  val ignoreQualifier: Boolean = false,
 )

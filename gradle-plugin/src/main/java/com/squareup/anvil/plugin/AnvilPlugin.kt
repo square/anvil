@@ -105,7 +105,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   }
 
   override fun applyToCompilation(
-    kotlinCompilation: KotlinCompilation<*>
+    kotlinCompilation: KotlinCompilation<*>,
   ): Provider<List<SubpluginOption>> {
     kotlinCompilation.compilerOptions.options.let {
       @Suppress("DEPRECATION")
@@ -114,7 +114,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         kotlinCompilation.project.logger
           .error(
             "NOTE: Anvil is currently incompatible with the K2 compiler. Related GH issue:" +
-              "https://github.com/square/anvil/issues/733"
+              "https://github.com/square/anvil/issues/733",
           )
       }
     }
@@ -127,7 +127,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     ) {
       throw GradleException(
         "You cannot set generateDaggerFactories to false and generateDaggerFactoriesOnly " +
-          "to true at the same time for variant ${variant.name}."
+          "to true at the same time for variant ${variant.name}.",
       )
     }
 
@@ -181,20 +181,20 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       listOf(
         FilesSubpluginOption(
           key = "src-gen-dir",
-          files = listOf(srcGenDir)
+          files = listOf(srcGenDir),
         ),
         SubpluginOption(
           key = "generate-dagger-factories",
-          lazy { variant.variantFilter.generateDaggerFactories.toString() }
+          lazy { variant.variantFilter.generateDaggerFactories.toString() },
         ),
         SubpluginOption(
           key = "generate-dagger-factories-only",
-          lazy { variant.variantFilter.generateDaggerFactoriesOnly.toString() }
+          lazy { variant.variantFilter.generateDaggerFactoriesOnly.toString() },
         ),
         SubpluginOption(
           key = "disable-component-merging",
-          lazy { variant.variantFilter.disableComponentMerging.toString() }
-        )
+          lazy { variant.variantFilter.disableComponentMerging.toString() },
+        ),
       )
     }
   }
@@ -204,7 +204,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
     groupId = GROUP,
     artifactId = "compiler",
-    version = VERSION
+    version = VERSION,
   )
 
   private fun disableCorrectErrorTypes(variant: Variant) {
@@ -238,7 +238,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
               stubsTask.doFirstCompat {
                 stubsTask.incremental = false
                 stubsTask.log(
-                  "Anvil: Incremental compilation enabled: ${stubsTask.incremental} (stub)"
+                  "Anvil: Incremental compilation enabled: ${stubsTask.incremental} (stub)",
                 )
               }
             }
@@ -249,7 +249,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
   private fun getConfiguration(
     project: Project,
-    buildType: String
+    buildType: String,
   ): Configuration {
     val name =
       if (buildType.isEmpty()) "anvil" else "anvil${buildType.replaceFirstChar(Char::uppercase)}"
@@ -302,7 +302,7 @@ private fun <T : Task> T.doFirstCompat(block: (T) -> Unit) {
  */
 private inline fun <reified T : Task> Project.namedLazy(
   name: String,
-  crossinline action: (TaskProvider<T>) -> Unit
+  crossinline action: (TaskProvider<T>) -> Unit,
 ) {
   try {
     action(tasks.named(name, T::class.java))
@@ -332,7 +332,7 @@ private inline fun <reified T : Task> Project.namedLazy(
 
 private fun Project.androidVariantsConfigure(
   @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
-  action: (BaseVariantDeprecated) -> Unit
+  action: (BaseVariantDeprecated) -> Unit,
 ) {
   val androidExtension = extensions.findByName("android")
 
@@ -352,14 +352,14 @@ private fun Project.androidVariantsConfigure(
 // the 'java' plugin implicitly. One could also apply the 'java' plugin alone without the
 // application or library plugin, so 'java' must be included in this list.
 private val jvmPlugins = listOf(
-  "java"
+  "java",
 )
 
 private val agpPlugins = listOf(
   "com.android.library",
   "com.android.application",
   "com.android.test",
-  "com.android.dynamic-feature"
+  "com.android.dynamic-feature",
 )
 
 private const val KAPT_PLUGIN_ID = "org.jetbrains.kotlin.kapt"
@@ -372,7 +372,7 @@ internal class Variant private constructor(
   val androidVariant: BaseVariantDeprecated?,
   val androidSourceSets: List<AndroidSourceSet>?,
   val compilerPluginClasspathName: String,
-  val variantFilter: VariantFilter
+  val variantFilter: VariantFilter,
 ) {
   // E.g. compileKotlin, compileKotlinJvm, compileDebugKotlin.
   private val taskSuffix = compileTaskProvider.name.substringAfter("compile")
@@ -383,7 +383,7 @@ internal class Variant private constructor(
       // Sanity check.
       require(
         kotlinCompilation.platformType != androidJvm ||
-          kotlinCompilation is KotlinJvmAndroidCompilation
+          kotlinCompilation is KotlinJvmAndroidCompilation,
       ) {
         "The KotlinCompilation is KotlinJvmAndroidCompilation, but the platform type " +
           "is different."
@@ -421,7 +421,7 @@ internal class Variant private constructor(
         compilerPluginClasspathName = PLUGIN_CLASSPATH_CONFIGURATION_NAME +
           kotlinCompilation.target.targetName.replaceFirstChar(Char::uppercase) +
           kotlinCompilation.name.replaceFirstChar(Char::uppercase),
-        variantFilter = variantFilter
+        variantFilter = variantFilter,
       ).also {
         // Sanity check.
         check(it.compileTaskProvider.name.startsWith("compile"))

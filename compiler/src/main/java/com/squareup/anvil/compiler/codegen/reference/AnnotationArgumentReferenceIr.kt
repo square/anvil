@@ -11,7 +11,7 @@ import kotlin.LazyThreadSafetyMode.NONE
 internal class AnnotationArgumentReferenceIr(
   val argumentParameter: IrValueParameter,
   val argumentExpression: IrExpression,
-  val annotation: AnnotationReferenceIr
+  val annotation: AnnotationReferenceIr,
 ) {
   val name: String = argumentParameter.name.toString()
 
@@ -64,11 +64,11 @@ internal class AnnotationArgumentReferenceIr(
 }
 
 internal fun Pair<IrValueParameter, IrExpression>.toAnnotationArgumentReference(
-  annotation: AnnotationReferenceIr
+  annotation: AnnotationReferenceIr,
 ): AnnotationArgumentReferenceIr {
   return AnnotationArgumentReferenceIr(
     argumentParameter = this.first,
     argumentExpression = this.second,
-    annotation = annotation
+    annotation = annotation,
   )
 }

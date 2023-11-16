@@ -45,7 +45,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
   override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ) {
     projectFiles
       .classAndInnerClassReferences(module)
@@ -62,7 +62,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
   private fun generateFactoryClass(
     codeGenDir: File,
     clazz: ClassReference.Psi,
-    constructor: MemberFunctionReference.Psi
+    constructor: MemberFunctionReference.Psi,
   ): GeneratedFile {
     val packageName = clazz.packageFqName.safePackageString()
     val classIdName = clazz.generateClassName(suffix = "_Factory")
@@ -95,7 +95,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
                   addParameter(parameter.name, parameter.providerTypeName)
                 }
               }
-              .build()
+              .build(),
           )
 
           parametersNotAssisted.forEach { parameter ->
@@ -103,7 +103,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
               PropertySpec.builder(parameter.name, parameter.providerTypeName)
                 .initializer(parameter.name)
                 .addModifiers(PRIVATE)
-                .build()
+                .build(),
             )
           }
         }
@@ -117,7 +117,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
 
               val argumentList = constructorParameters.asArgumentList(
                 asProvider = true,
-                includeModule = false
+                includeModule = false,
               )
 
               if (memberInjectParameters.isEmpty()) {
@@ -129,7 +129,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
                 addStatement("return $instanceName")
               }
             }
-            .build()
+            .build(),
         )
         .apply {
           TypeSpec.companionObjectBuilder()
@@ -146,16 +146,16 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
 
                   val argumentList = parametersNotAssisted.asArgumentList(
                     asProvider = false,
-                    includeModule = false
+                    includeModule = false,
                   )
 
                   addStatement(
                     "return %T($argumentList)",
-                    factoryClassParameterized
+                    factoryClassParameterized,
                   )
                 }
                 .returns(factoryClassParameterized)
-                .build()
+                .build(),
             )
             .addFunction(
               FunSpec.builder("newInstance")
@@ -167,7 +167,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
                   constructorParameters.forEach { parameter ->
                     addParameter(
                       name = parameter.name,
-                      type = parameter.originalTypeName
+                      type = parameter.originalTypeName,
                     )
                   }
                   val argumentsWithoutModule = constructorParameters.joinToString { it.name }
@@ -175,7 +175,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
                   addStatement("return %T($argumentsWithoutModule)", classType)
                 }
                 .returns(classType)
-                .build()
+                .build(),
             )
             .build()
             .let {
@@ -191,7 +191,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
 
   private fun checkAssistedParametersAreDistinct(
     clazz: ClassReference,
-    parameters: List<Parameter>
+    parameters: List<Parameter>,
   ) {
     // Parameters are identical, if there types and identifier match.
     val duplicateAssistedParameters = parameters

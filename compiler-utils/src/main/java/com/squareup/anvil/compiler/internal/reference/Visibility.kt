@@ -7,5 +7,5 @@ public enum class Visibility {
   PUBLIC,
   INTERNAL,
   PROTECTED,
-  PRIVATE
+  PRIVATE,
 }

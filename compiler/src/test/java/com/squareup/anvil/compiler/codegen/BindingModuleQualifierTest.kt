@@ -25,7 +25,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class BindingModuleQualifierTest(
-  annotationClass: KClass<*>
+  annotationClass: KClass<*>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -33,7 +33,8 @@ class BindingModuleQualifierTest(
 
   companion object {
     @Parameters(name = "{0}")
-    @JvmStatic fun annotationClasses(): Collection<Any> {
+    @JvmStatic
+    fun annotationClasses(): Collection<Any> {
       return buildList {
         add(MergeComponent::class)
         if (isFullTestRun()) {
@@ -64,7 +65,7 @@ class BindingModuleQualifierTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -99,7 +100,7 @@ class BindingModuleQualifierTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -134,7 +135,7 @@ class BindingModuleQualifierTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -169,7 +170,7 @@ class BindingModuleQualifierTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -201,7 +202,7 @@ class BindingModuleQualifierTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -241,7 +242,7 @@ class BindingModuleQualifierTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -288,7 +289,7 @@ class BindingModuleQualifierTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -331,7 +332,7 @@ class BindingModuleQualifierTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -368,7 +369,7 @@ class BindingModuleQualifierTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -402,7 +403,7 @@ class BindingModuleQualifierTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
       val annotations = bindingMethod.annotations.map { it.annotationClass }
@@ -432,7 +433,7 @@ class BindingModuleQualifierTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
       val annotations = bindingMethod.annotations.map { it.annotationClass }
@@ -466,7 +467,7 @@ class BindingModuleQualifierTest(
       
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       with(componentInterface.anvilModule.declaredMethods.single()) {
         assertThat(returnType).isEqualTo(parentInterface)

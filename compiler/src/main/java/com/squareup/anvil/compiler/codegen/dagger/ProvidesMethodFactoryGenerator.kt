@@ -50,7 +50,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
   override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ) {
     projectFiles
       .classAndInnerClassReferences(module)
@@ -71,7 +71,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
               codeGenDir,
               module,
               clazz,
-              CallableReference(function = function)
+              CallableReference(function = function),
             )
           }
 
@@ -89,7 +89,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
               codeGenDir,
               module,
               clazz,
-              CallableReference(property = property)
+              CallableReference(property = property),
             )
           }
       }
@@ -99,7 +99,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     codeGenDir: File,
     module: ModuleDescriptor,
     clazz: ClassReference.Psi,
-    declaration: CallableReference
+    declaration: CallableReference,
   ): GeneratedFile {
     val isCompanionObject = declaration.declaringClass.isCompanion()
     val isObject = isCompanionObject || clazz.isObject()
@@ -169,7 +169,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
                     addParameter(parameter.name, parameter.providerTypeName)
                   }
                 }
-                .build()
+                .build(),
             )
 
             if (!isObject) {
@@ -177,7 +177,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
                 PropertySpec.builder("module", moduleClass)
                   .initializer("module")
                   .addModifiers(PRIVATE)
-                  .build()
+                  .build(),
               )
             }
 
@@ -186,7 +186,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
                 PropertySpec.builder(parameter.name, parameter.providerTypeName)
                   .initializer(parameter.name)
                   .addModifiers(PRIVATE)
-                  .build()
+                  .build(),
               )
             }
           }
@@ -198,11 +198,11 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
             .apply {
               val argumentList = parameters.asArgumentList(
                 asProvider = true,
-                includeModule = !isObject
+                includeModule = !isObject,
               )
               addStatement("return %N($argumentList)", byteCodeFunctionName)
             }
-            .build()
+            .build(),
         )
         .apply {
           val builder = if (canGenerateAnObject) this else TypeSpec.companionObjectBuilder()
@@ -223,14 +223,14 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
                     val argumentList = parameters.asArgumentList(
                       asProvider = false,
-                      includeModule = !isObject
+                      includeModule = !isObject,
                     )
 
                     addStatement("return %T($argumentList)", factoryClass)
                   }
                 }
                 .returns(factoryClass)
-                .build()
+                .build(),
             )
             .addFunction(
               FunSpec.builder(byteCodeFunctionName)
@@ -243,7 +243,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
                   parameters.forEach { parameter ->
                     addParameter(
                       name = parameter.name,
-                      type = parameter.originalTypeName
+                      type = parameter.originalTypeName,
                     )
                   }
 
@@ -257,7 +257,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
                     isObject && returnTypeIsNullable ->
                       addStatement(
                         "return %T.$callableName$argumentsWithoutModule",
-                        moduleClass
+                        moduleClass,
                       )
                     isObject && !returnTypeIsNullable ->
                       addStatement(
@@ -265,23 +265,23 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
                           "$argumentsWithoutModule, %S)",
                         Preconditions::class,
                         moduleClass,
-                        "Cannot return null from a non-@Nullable @Provides method"
+                        "Cannot return null from a non-@Nullable @Provides method",
                       )
                     !isObject && returnTypeIsNullable ->
                       addStatement(
-                        "return module.$callableName$argumentsWithoutModule"
+                        "return module.$callableName$argumentsWithoutModule",
                       )
                     !isObject && !returnTypeIsNullable ->
                       addStatement(
                         "return %T.checkNotNull(module.$callableName" +
                           "$argumentsWithoutModule, %S)",
                         Preconditions::class,
-                        "Cannot return null from a non-@Nullable @Provides method"
+                        "Cannot return null from a non-@Nullable @Provides method",
                       )
                   }
                 }
                 .returns(returnType)
-                .build()
+                .build(),
             )
             .build()
             .let {
@@ -299,11 +299,11 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
   private fun checkFunctionIsNotAbstract(
     clazz: ClassReference.Psi,
-    function: MemberFunctionReference.Psi
+    function: MemberFunctionReference.Psi,
   ) {
     fun fail(): Nothing = throw AnvilCompilationExceptionFunctionReference(
       message = "@Provides methods cannot be abstract",
-      functionReference = function
+      functionReference = function,
     )
 
     // If the function is abstract, then it's an error.
@@ -332,14 +332,14 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
   private class CallableReference(
     private val function: MemberFunctionReference.Psi? = null,
-    private val property: MemberPropertyReference.Psi? = null
+    private val property: MemberPropertyReference.Psi? = null,
   ) {
 
     init {
       if (function == null && property == null) {
         throw AnvilCompilationException(
           "Cannot create a CallableReference wrapper without a " +
-            "function OR a property"
+            "function OR a property",
         )
       }
     }
@@ -361,7 +361,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
       it.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
         message = "Dagger provider methods must specify the return type explicitly when using " +
           "Anvil. The return type cannot be inferred implicitly.",
-        functionReference = it
+        functionReference = it,
       )
     } ?: property!!.type()
     val annotationReference: AnnotatedReference = function ?: property!!

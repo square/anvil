@@ -38,7 +38,7 @@ internal object AnvilAnnotationDetectorCheck : AnvilApplicabilityChecker {
     mergeModulesFqName,
     contributesToFqName,
     contributesSubcomponentFqName,
-    contributesBindingFqName
+    contributesBindingFqName,
   )
 
   override fun isApplicable(context: AnvilContext) = context.generateFactoriesOnly &&
@@ -60,7 +60,7 @@ internal object AnvilAnnotationDetectorCheck : AnvilApplicabilityChecker {
 
       throw KspAnvilException(
         message = MESSAGE,
-        node = clazz
+        node = clazz,
       )
     }
   }
@@ -74,7 +74,7 @@ internal object AnvilAnnotationDetectorCheck : AnvilApplicabilityChecker {
     override fun generateCodePrivate(
       codeGenDir: File,
       module: ModuleDescriptor,
-      projectFiles: Collection<KtFile>
+      projectFiles: Collection<KtFile>,
     ) {
       val clazz = projectFiles
         .classAndInnerClassReferences(module)
@@ -85,7 +85,7 @@ internal object AnvilAnnotationDetectorCheck : AnvilApplicabilityChecker {
       if (clazz != null) {
         throw AnvilCompilationExceptionClassReference(
           message = MESSAGE,
-          classReference = clazz
+          classReference = clazz,
         )
       }
     }

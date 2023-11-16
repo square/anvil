@@ -41,7 +41,7 @@ open class PublishConventionPlugin : Plugin<Project> {
           configurePublication(
             target,
             mavenPublishing,
-            KotlinJvm(javadocJar = JavadocJar.Dokka("dokkaHtml"), sourcesJar = true)
+            KotlinJvm(javadocJar = JavadocJar.Dokka("dokkaHtml"), sourcesJar = true),
           )
         }
       }
@@ -52,7 +52,7 @@ open class PublishConventionPlugin : Plugin<Project> {
   private fun configurePublication(
     target: Project,
     mavenPublishing: MavenPublishBaseExtension,
-    platform: Platform
+    platform: Platform,
   ) {
     mavenPublishing.configure(platform)
 

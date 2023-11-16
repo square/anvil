@@ -26,7 +26,7 @@ public sealed interface PropertyReference {
   public fun type(): TypeReference = typeOrNull()
     ?: throw AnvilCompilationExceptionPropertyReference(
       propertyReference = this,
-      message = "Unable to get type for property $fqName."
+      message = "Unable to get type for property $fqName.",
     )
 
   public sealed interface Psi : PropertyReference {
@@ -43,16 +43,16 @@ public sealed interface PropertyReference {
 public fun AnvilCompilationExceptionPropertyReference(
   propertyReference: PropertyReference,
   message: String,
-  cause: Throwable? = null
+  cause: Throwable? = null,
 ): AnvilCompilationException = when (propertyReference) {
   is Psi -> AnvilCompilationException(
     element = propertyReference.property,
     message = message,
-    cause = cause
+    cause = cause,
   )
   is Descriptor -> AnvilCompilationException(
     propertyDescriptor = propertyReference.property,
     message = message,
-    cause = cause
+    cause = cause,
   )
 }

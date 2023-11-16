@@ -21,7 +21,7 @@ public sealed interface FunctionReference {
   public fun returnType(): TypeReference = returnTypeOrNull()
     ?: throw AnvilCompilationExceptionFunctionReference(
       functionReference = this,
-      message = "Unable to get the return type for function $fqName."
+      message = "Unable to get the return type for function $fqName.",
     )
 
   public fun visibility(): Visibility
@@ -40,16 +40,16 @@ public sealed interface FunctionReference {
 public fun AnvilCompilationExceptionFunctionReference(
   functionReference: FunctionReference,
   message: String,
-  cause: Throwable? = null
+  cause: Throwable? = null,
 ): AnvilCompilationException = when (functionReference) {
   is Psi -> AnvilCompilationException(
     element = functionReference.function,
     message = message,
-    cause = cause
+    cause = cause,
   )
   is Descriptor -> AnvilCompilationException(
     functionDescriptor = functionReference.function,
     message = message,
-    cause = cause
+    cause = cause,
   )
 }

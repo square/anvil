@@ -32,7 +32,7 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
   override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ) {
     projectFiles
       .classAndInnerClassReferences(module)
@@ -55,7 +55,7 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
     if (!function.isAbstract()) {
       throw AnvilCompilationExceptionFunctionReference(
         message = "@Binds methods must be abstract",
-        functionReference = function
+        functionReference = function,
       )
     }
 
@@ -66,13 +66,13 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
       throw AnvilCompilationExceptionFunctionReference(
         message = "@Binds methods must have exactly one parameter, " +
           "whose type is assignable to the return type",
-        functionReference = function
+        functionReference = function,
       )
     }
 
     function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
       message = "@Binds methods must return a value (not void)",
-      functionReference = function
+      functionReference = function,
     )
 
     if (!function.parameterMatchesReturnType() && !function.receiverMatchesReturnType()) {
@@ -90,7 +90,7 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
         message = "@Binds methods' parameter type must be assignable to the return type. " +
           "Expected binding of type $returnType but impl parameter of type " +
           "${paramSuperTypes.first()} $superTypesMessage",
-        functionReference = function
+        functionReference = function,
       )
     }
   }

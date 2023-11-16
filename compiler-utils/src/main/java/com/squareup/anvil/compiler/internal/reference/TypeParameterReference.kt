@@ -22,13 +22,13 @@ public sealed class TypeParameterReference {
   public class Psi internal constructor(
     override val name: String,
     override val upperBounds: List<TypeReference.Psi>,
-    override val declaringClass: ClassReference.Psi
+    override val declaringClass: ClassReference.Psi,
   ) : TypeParameterReference()
 
   public class Descriptor internal constructor(
     override val name: String,
     override val upperBounds: List<TypeReference.Descriptor>,
-    override val declaringClass: ClassReference.Descriptor
+    override val declaringClass: ClassReference.Descriptor,
   ) : TypeParameterReference()
 
   override fun toString(): String {
@@ -74,11 +74,11 @@ public fun ClassReference.Psi.getTypeParameterReferences(): List<Psi> {
 
 @ExperimentalAnvilApi
 public fun TypeParameterDescriptor.toTypeParameterReference(
-  declaringClass: ClassReference.Descriptor
+  declaringClass: ClassReference.Descriptor,
 ): Descriptor {
   return Descriptor(
     name = name.asString(),
     upperBounds = upperBounds.map { it.toTypeReference(declaringClass, declaringClass.module) },
-    declaringClass = declaringClass
+    declaringClass = declaringClass,
   )
 }

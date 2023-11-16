@@ -65,7 +65,7 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
 
     val appModule = AppModule(
       name = "app",
-      path = ":${rootDir.name}:app"
+      path = ":${rootDir.name}:app",
     )
 
     createSettingsGradleFile(libraryModules.values + appModule)
@@ -111,7 +111,7 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
 
   private fun createLibraryModule(
     module: LibraryModule,
-    allLibraryModules: Map<Int, LibraryModule>
+    allLibraryModules: Map<Int, LibraryModule>,
   ) {
     val moduleDir = File(rootDir, module.name)
     createLibraryBuildGradleFile(module, allLibraryModules, moduleDir)
@@ -121,7 +121,7 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
   private fun createLibraryBuildGradleFile(
     module: LibraryModule,
     allLibraryModules: Map<Int, LibraryModule>,
-    moduleDir: File
+    moduleDir: File,
   ) {
     val libDependency = allLibraryModules[module.index - 10]
       ?.let {
@@ -153,7 +153,7 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
 
   private fun createLibraryModuleSourceFiles(
     module: LibraryModule,
-    moduleDir: File
+    moduleDir: File,
   ) {
     val index = module.index
     val group = index % 10
@@ -186,16 +186,16 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
                 AnnotationSpec
                   .builder(contributesTo)
                   .addMember("scope = %T::class", scopeComponent)
-                  .build()
+                  .build(),
               )
               .addFunction(
                 FunSpec
                   .builder("boundInterface$index")
                   .addModifiers(ABSTRACT)
                   .returns(boundInterface)
-                  .build()
+                  .build(),
               )
-              .build()
+              .build(),
           )
 
           addType(TypeSpec.interfaceBuilder(injectedInterface).build())
@@ -207,9 +207,9 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
                   .builder(contributesSubcomponent)
                   .addMember("scope = %T::class", scopeSubcomponent)
                   .addMember("parentScope = %T::class", scopeComponent)
-                  .build()
+                  .build(),
               )
-              .build()
+              .build(),
           )
           addType(
             TypeSpec
@@ -218,16 +218,16 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
                 AnnotationSpec
                   .builder(contributesTo)
                   .addMember("scope = %T::class", scopeSubcomponent)
-                  .build()
+                  .build(),
               )
               .addFunction(
                 FunSpec
                   .builder("injectedInterface$index")
                   .addModifiers(ABSTRACT)
                   .returns(injectedInterface)
-                  .build()
+                  .build(),
               )
-              .build()
+              .build(),
           )
         }
       }
@@ -250,10 +250,10 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
                   addMember("replaces = [$template]", *replacedImpls.toTypedArray())
                 }
               }
-              .build()
+              .build(),
           )
           .addSuperinterface(boundInterface)
-          .build()
+          .build(),
       )
       .addType(
         TypeSpec
@@ -269,13 +269,13 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
                     AnnotationSpec
                       .builder(Suppress::class)
                       .addMember("\"UNUSED_PARAMETER\"")
-                      .build()
+                      .build(),
                   )
-                  .build()
+                  .build(),
               )
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .addType(
         TypeSpec
@@ -285,7 +285,7 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
             AnnotationSpec
               .builder(contributesTo)
               .addMember("scope = %T::class", scopeSubcomponent)
-              .build()
+              .build(),
           )
           .addFunction(
             FunSpec
@@ -294,9 +294,9 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
               .addParameter("injectedInterfaceImpl", injectedInterfaceImpl)
               .addStatement("return injectedInterfaceImpl")
               .returns(injectedInterface)
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .build()
       .let { fileSpec ->
@@ -309,7 +309,7 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
 
   private fun createAppModule(
     module: AppModule,
-    allLibraryModules: Map<Int, LibraryModule>
+    allLibraryModules: Map<Int, LibraryModule>,
   ) {
     val moduleDir = File(rootDir, module.name)
     createAppBuildGradleFile(allLibraryModules, moduleDir)
@@ -318,7 +318,7 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
 
   private fun createAppBuildGradleFile(
     allLibraryModules: Map<Int, LibraryModule>,
-    moduleDir: File
+    moduleDir: File,
   ) {
     val libDependencies = allLibraryModules.keys.sorted()
       .let { it.subList(it.size - 10, it.size) }
@@ -356,7 +356,7 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
 
   private fun createAppModuleSourceFiles(
     allLibraryModules: Map<Int, LibraryModule>,
-    moduleDir: File
+    moduleDir: File,
   ) {
     val packageName = "com.squareup.anvil.benchmark.app"
 
@@ -377,9 +377,9 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
                 AnnotationSpec
                   .builder(mergeComponent)
                   .addMember("scope = %T::class", scopeComponent)
-                  .build()
+                  .build(),
               )
-              .build()
+              .build(),
           )
         }
       }
@@ -400,9 +400,9 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
                 }
                 addMember("replaces = [$template]", *replacedModules.toTypedArray())
               }
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
       .build()
       .let { fileSpec ->

@@ -10,5 +10,5 @@ import java.io.File
  */
 public data class GeneratedFile(
   val file: File,
-  val content: String
+  val content: String,
 )

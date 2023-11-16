@@ -21,7 +21,7 @@ internal class MergeAnnotationsCheckGenerator : PrivateCodeGenerator() {
   override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ) {
     projectFiles
       .classAndInnerClassReferences(module)
@@ -31,7 +31,7 @@ internal class MergeAnnotationsCheckGenerator : PrivateCodeGenerator() {
             mergeComponentFqName,
             mergeSubcomponentFqName,
             mergeModulesFqName,
-            mergeInterfacesFqName
+            mergeInterfacesFqName,
           )
           .ifEmpty { return@forEach }
 
@@ -58,7 +58,7 @@ internal class MergeAnnotationsCheckGenerator : PrivateCodeGenerator() {
           distinctAnnotations.joinToString(prefix = "[", postfix = "]") {
             it.fqName.shortName().asString()
           } +
-          " and this is forbidden."
+          " and this is forbidden.",
       )
     }
   }
@@ -69,7 +69,7 @@ internal class MergeAnnotationsCheckGenerator : PrivateCodeGenerator() {
         classReference = declaringClass(),
         message = "When using @${fqName.shortName()} it's not allowed to " +
           "annotate the same class with @${daggerAnnotationFqName.shortName()}. " +
-          "The Dagger annotation will be generated."
+          "The Dagger annotation will be generated.",
       )
     }
   }

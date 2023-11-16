@@ -53,18 +53,17 @@ internal object ComponentDetectorCheck : AnvilApplicabilityChecker {
     override fun generateCodePrivate(
       codeGenDir: File,
       module: ModuleDescriptor,
-      projectFiles: Collection<KtFile>
+      projectFiles: Collection<KtFile>,
     ) {
       val clazz =
-        projectFiles.classAndInnerClassReferences(module).firstOrNull {
-          clazz ->
+        projectFiles.classAndInnerClassReferences(module).firstOrNull { clazz ->
           ANNOTATIONS_TO_CHECK.any { clazz.isAnnotatedWith(it) }
         }
 
       if (clazz != null) {
         throw AnvilCompilationExceptionClassReference(
           message = MESSAGE,
-          classReference = clazz
+          classReference = clazz,
         )
       }
     }

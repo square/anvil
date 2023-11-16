@@ -67,7 +67,7 @@ public sealed class TopLevelFunctionReference : AnnotatedReference, FunctionRefe
         KtTokens.PRIVATE_KEYWORD -> PRIVATE
         else -> throw AnvilCompilationExceptionFunctionReference(
           functionReference = this,
-          message = "Couldn't get visibility $visibility for function $fqName."
+          message = "Couldn't get visibility $visibility for function $fqName.",
         )
       }
     }
@@ -101,7 +101,7 @@ public sealed class TopLevelFunctionReference : AnnotatedReference, FunctionRefe
         DescriptorVisibilities.PRIVATE -> PRIVATE
         else -> throw AnvilCompilationExceptionFunctionReference(
           functionReference = this,
-          message = "Couldn't get visibility $visibility for function $fqName."
+          message = "Couldn't get visibility $visibility for function $fqName.",
         )
       }
     }

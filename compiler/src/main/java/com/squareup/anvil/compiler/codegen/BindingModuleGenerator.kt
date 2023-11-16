@@ -42,11 +42,11 @@ import java.io.File
 private val supportedFqNames = listOf(
   mergeComponentFqName,
   mergeSubcomponentFqName,
-  mergeModulesFqName
+  mergeModulesFqName,
 )
 
 internal class BindingModuleGenerator(
-  private val classScanner: ClassScanner
+  private val classScanner: ClassScanner,
 ) : FlushingCodeGenerator {
 
   override fun isApplicable(context: AnvilContext): Boolean = !context.generateFactoriesOnly
@@ -62,7 +62,7 @@ internal class BindingModuleGenerator(
   override fun generateCode(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ): Collection<GeneratedFile> {
     val classes = projectFiles.classAndInnerClassReferences(module).toList()
 
@@ -107,7 +107,7 @@ internal class BindingModuleGenerator(
         val content = daggerModuleContent(
           scopes = mergeAnnotations.map { it.scope() },
           clazz = clazz,
-          generatedMethods = emptyList()
+          generatedMethods = emptyList(),
         )
 
         mergedClasses[clazz] = file
@@ -119,7 +119,7 @@ internal class BindingModuleGenerator(
 
   override fun flush(
     codeGenDir: File,
-    module: ModuleDescriptor
+    module: ModuleDescriptor,
   ): Collection<GeneratedFile> {
     return mergedClasses.map { (mergedClass, daggerModuleFile) ->
       val annotations = mergedClass.annotations.filter { it.fqName in supportedFqNames }
@@ -139,10 +139,10 @@ internal class BindingModuleGenerator(
               .findContributedClasses(
                 module = module,
                 annotation = contributesToFqName,
-                scope = scope.fqName
+                scope = scope.fqName,
               )
               .filter { it.isAnnotatedWith(daggerModuleFqName) }
-          }
+          },
         )
         // Ignore replaced bindings specified by excluded modules for this scope.
         .filter { clazz -> clazz !in excludedClasses }
@@ -162,14 +162,14 @@ internal class BindingModuleGenerator(
       fun getContributedBindingClasses(
         collectedClasses: List<ClassReference>,
         annotationFqName: FqName,
-        isMultibinding: Boolean
+        isMultibinding: Boolean,
       ): List<GeneratedMethod> {
 
         val contributedBindingsDependencies = scopes.flatMap { scope ->
           classScanner.findContributedClasses(
             module,
             annotation = annotationFqName,
-            scope = scope.fqName
+            scope = scope.fqName,
           )
         }
 
@@ -214,14 +214,14 @@ internal class BindingModuleGenerator(
         getContributedBindingClasses(
           collectedClasses = contributedBindingClasses,
           annotationFqName = contributesBindingFqName,
-          isMultibinding = false
+          isMultibinding = false,
         )
           .plus(
             getContributedBindingClasses(
               collectedClasses = contributedMultibindingClasses,
               annotationFqName = contributesMultibindingFqName,
-              isMultibinding = true
-            )
+              isMultibinding = true,
+            ),
           )
           .renameDuplicateFunctions()
           .sorted()
@@ -229,7 +229,7 @@ internal class BindingModuleGenerator(
       val content = daggerModuleContent(
         scopes = scopes,
         clazz = mergedClass,
-        generatedMethods = generatedMethods
+        generatedMethods = generatedMethods,
       )
 
       daggerModuleFile.writeText(content)
@@ -241,7 +241,7 @@ internal class BindingModuleGenerator(
   private fun daggerModuleContent(
     scopes: List<ClassReference>,
     clazz: ClassReference,
-    generatedMethods: List<GeneratedMethod>
+    generatedMethods: List<GeneratedMethod>,
   ): String {
     val className = clazz.generateClassName(separator = "", suffix = ANVIL_MODULE_SUFFIX)
       .relativeClassName
@@ -263,7 +263,7 @@ internal class BindingModuleGenerator(
               addType(
                 TypeSpec.companionObjectBuilder()
                   .addFunctions(providerMethods.specs)
-                  .build()
+                  .build(),
               )
             }
           }
@@ -278,11 +278,11 @@ internal class BindingModuleGenerator(
                 AnnotationSpec
                   .builder(ContributesTo::class)
                   .addMember("%T::class", scope.asClassName())
-                  .build()
+                  .build(),
               )
             }
           }
-          .build()
+          .build(),
       )
     }
   }
@@ -312,7 +312,9 @@ private sealed class GeneratedMethod : Comparable<GeneratedMethod> {
 
   companion object {
     val COMPARATOR = compareBy<GeneratedMethod>(
-      { it.spec.name }, { it.contributedClass }, { it.boundType }
+      { it.spec.name },
+      { it.contributedClass },
+      { it.boundType },
     )
   }
 }
@@ -333,8 +335,8 @@ private fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBi
         "${bindings[0].boundType.fqName}. The contributed binding classes are: " +
         bindings.joinToString(
           prefix = "[",
-          postfix = "]"
-        ) { it.contributedClass.fqName.asString() }
+          postfix = "]",
+        ) { it.contributedClass.fqName.asString() },
     )
   }
 
@@ -342,7 +344,7 @@ private fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBi
 }
 
 private fun ContributedBinding.toGeneratedMethod(
-  isMultibinding: Boolean
+  isMultibinding: Boolean,
 ): GeneratedMethod {
 
   val isMapMultibinding = mapKeys.isNotEmpty()
@@ -370,7 +372,7 @@ private fun ContributedBinding.toGeneratedMethod(
         .addStatement("return %T", contributedClass.asClassName())
         .build(),
       contributedClass = contributedClass,
-      boundType = boundType
+      boundType = boundType,
     )
   } else {
     BindingMethod(
@@ -387,12 +389,12 @@ private fun ContributedBinding.toGeneratedMethod(
         .addModifiers(ABSTRACT)
         .addParameter(
           name = contributedClass.shortName.decapitalize(),
-          type = contributedClass.asClassName()
+          type = contributedClass.asClassName(),
         )
         .returns(boundType.asClassName())
         .build(),
       contributedClass = contributedClass,
-      boundType = boundType
+      boundType = boundType,
     )
   }
 }

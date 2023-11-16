@@ -32,7 +32,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class BindingModuleGeneratorTest(
-  private val annotationClass: KClass<*>
+  private val annotationClass: KClass<*>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -40,7 +40,8 @@ class BindingModuleGeneratorTest(
 
   companion object {
     @Parameters(name = "{0}")
-    @JvmStatic fun annotationClasses(): Collection<Any> {
+    @JvmStatic
+    fun annotationClasses(): Collection<Any> {
       return buildList {
         add(MergeComponent::class)
         if (isFullTestRun()) {
@@ -60,7 +61,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -85,7 +86,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -110,7 +111,7 @@ class BindingModuleGeneratorTest(
 
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       if (annotationClass == MergeModules::class) {
         assertThat(componentInterface.daggerModule.includes.toList())
@@ -138,10 +139,10 @@ class BindingModuleGeneratorTest(
         $annotation(Any::class)
         interface ComponentInterface
       }
-      """
+      """,
     ) {
       assertThat(
-        classLoader.loadClass("com.squareup.test.SomeClass\$ComponentInterface").anvilModule
+        classLoader.loadClass("com.squareup.test.SomeClass\$ComponentInterface").anvilModule,
       ).isNotNull()
     }
   }
@@ -163,7 +164,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -201,7 +202,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -244,7 +245,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -286,7 +287,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -328,7 +329,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -357,7 +358,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         classLoader.loadClass("ComponentInterface").daggerModule.includes.toList()
@@ -368,7 +369,7 @@ class BindingModuleGeneratorTest(
         classLoader
           .loadClass("ComponentInterface")
           .anvilModule
-          .kotlin
+          .kotlin,
       )
     }
   }
@@ -391,7 +392,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
 
@@ -399,7 +400,7 @@ class BindingModuleGeneratorTest(
       assertThat(messages).contains(
         "Class com.squareup.test.ContributingInterface binds com.squareup.test.ParentInterface, " +
           "but the bound type contains type parameter(s) <T, S>. Type parameters in bindings " +
-          "are not supported. This binding needs to be contributed in a Dagger module manually."
+          "are not supported. This binding needs to be contributed in a Dagger module manually.",
       )
     }
   }
@@ -423,7 +424,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
 
@@ -432,7 +433,7 @@ class BindingModuleGeneratorTest(
         "Class com.squareup.test.ContributingInterface binds com.squareup.test.ParentInterface, " +
           "but the bound type contains type parameter(s) <OutputT>. Type parameters in " +
           "bindings are not supported. This binding needs to be contributed in a Dagger module " +
-          "manually."
+          "manually.",
       )
     }
   }
@@ -460,7 +461,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Any::class, exclude = [DaggerModule1::class])
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -503,7 +504,7 @@ class BindingModuleGeneratorTest(
         exclude = [ContributingInterface::class]
       )
       interface ComponentInterface2
-      """
+      """,
     ) {
       val anvilModule1 = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -541,7 +542,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -581,7 +582,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       listOf(componentInterface, subcomponentInterface).forEach { component ->
         with(component.anvilModule.declaredMethods.single()) {
@@ -607,7 +608,7 @@ class BindingModuleGeneratorTest(
       @ContributesBinding(Any::class)
       @ContributesBinding(Unit::class)
       interface ContributingInterface : ParentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -624,7 +625,7 @@ class BindingModuleGeneratorTest(
       $annotation(Unit::class)
       interface SubcomponentInterface
       """,
-      previousCompilationResult = previousResult
+      previousCompilationResult = previousResult,
     ) {
       listOf(componentInterface, subcomponentInterface).forEach { component ->
         with(component.anvilModule.declaredMethods.single()) {
@@ -657,7 +658,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       with(componentInterface.anvilModule.declaredMethods.single()) {
         assertThat(returnType).isEqualTo(parentInterface1)
@@ -692,7 +693,7 @@ class BindingModuleGeneratorTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val methods = componentInterface.anvilModule.declaredMethods.sortedBy { it.name }
       assertThat(methods).hasSize(2)
@@ -733,7 +734,7 @@ class BindingModuleGeneratorTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val methods = componentInterface.anvilModule.declaredMethods.sortedBy { it.name }
       assertThat(methods).hasSize(2)
@@ -746,7 +747,7 @@ class BindingModuleGeneratorTest(
       }
       with(methods[1]) {
         assertThat(returnType).isEqualTo(
-          classLoader.loadClass("com.squareup.test.other.ParentInterface")
+          classLoader.loadClass("com.squareup.test.other.ParentInterface"),
         )
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -777,7 +778,7 @@ class BindingModuleGeneratorTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
     }
@@ -809,7 +810,7 @@ class BindingModuleGeneratorTest(
       
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       with(componentInterface.anvilModule.declaredMethods.single()) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -850,7 +851,7 @@ class BindingModuleGeneratorTest(
         exclude = [ContributingInterface::class]
       )
       interface SubcomponentInterface
-      """
+      """,
     ) {
       with(componentInterface.anvilModule.declaredMethods.single()) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -887,7 +888,7 @@ class BindingModuleGeneratorTest(
         
         // Note that the number is missing after the scope. 
         public val com_squareup_test_ContributingInterface_scope: KClass<Any> = Any::class
-        """.trimIndent()
+        """.trimIndent(),
       ) {
         assertThat(exitCode).isEqualTo(OK)
       }
@@ -901,7 +902,7 @@ class BindingModuleGeneratorTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
-      previousCompilationResult = result
+      previousCompilationResult = result,
     ) {
       with(componentInterface.anvilModule.declaredMethods.single()) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -932,7 +933,7 @@ class BindingModuleGeneratorTest(
       $annotation(Int::class)
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       listOf(componentInterface, subcomponentInterface).forEach { component ->
         with(component.anvilModule.declaredMethods.single()) {
@@ -966,7 +967,7 @@ class BindingModuleGeneratorTest(
       $annotation(Any::class)
       $annotation(Unit::class, exclude = [ContributingInterface::class])
       interface SubcomponentInterface
-      """
+      """,
     ) {
       with(componentInterface.anvilModule.declaredMethods.single()) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -996,7 +997,7 @@ class BindingModuleGeneratorTest(
       @`Fancy${'$'}DslMarker`
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()

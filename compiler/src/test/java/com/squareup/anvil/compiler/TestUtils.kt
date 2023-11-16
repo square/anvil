@@ -26,14 +26,14 @@ internal fun compile(
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
   mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
-  block: JvmCompilationResult.() -> Unit = { }
+  block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult = compileAnvil(
   sources = sources,
   allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
   enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
   mode = mode,
-  block = block
+  block = block,
 )
 
 internal val JvmCompilationResult.contributingInterface: Class<*>
@@ -132,7 +132,7 @@ internal val Class<*>.hintSubcomponentParentScopes: List<KClass<*>>
 
 internal val Class<*>.anvilModule: Class<*>
   get() = classLoader.loadClass(
-    "$MODULE_PACKAGE_PREFIX.${generatedClassesString(separator = "")}$ANVIL_MODULE_SUFFIX"
+    "$MODULE_PACKAGE_PREFIX.${generatedClassesString(separator = "")}$ANVIL_MODULE_SUFFIX",
   )
 
 private fun Class<*>.getHint(prefix: String): KClass<*>? = contributedProperties(prefix)

@@ -40,7 +40,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
   override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ) {
     projectFiles
       .classAndInnerClassReferences(module)
@@ -57,7 +57,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
         generateMembersInjectorClass(
           codeGenDir = codeGenDir,
           clazz = clazz,
-          parameters = clazz.memberInjectParameters()
+          parameters = clazz.memberInjectParameters(),
         )
       }
   }
@@ -65,7 +65,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
   private fun generateMembersInjectorClass(
     codeGenDir: File,
     clazz: ClassReference.Psi,
-    parameters: List<MemberInjectParameter>
+    parameters: List<MemberInjectParameter>,
   ): GeneratedFile {
     val classId = clazz.generateClassName(suffix = "_MembersInjector")
     val packageName = classId.packageFqName.safePackageString()
@@ -110,7 +110,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                     addParameter(parameter.name, parameter.resolvedProviderTypeName)
                   }
                 }
-                .build()
+                .build(),
             )
 
             parameters.forEach { parameter ->
@@ -118,7 +118,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                 PropertySpec.builder(parameter.name, parameter.resolvedProviderTypeName)
                   .initializer(parameter.name)
                   .addModifiers(PRIVATE)
-                  .build()
+                  .build(),
               )
             }
           }
@@ -127,7 +127,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
               .addModifiers(OVERRIDE)
               .addParameter("instance", classType)
               .addMemberInjection(parameters, "instance")
-              .build()
+              .build(),
           )
           .addType(
             TypeSpec
@@ -146,11 +146,11 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
 
                     addStatement(
                       "return %T(${createArgumentList(false)})",
-                      memberInjectorClass
+                      memberInjectorClass,
                     )
                   }
                   .returns(membersInjectorType)
-                  .build()
+                  .build(),
               )
               .apply {
                 parameters
@@ -173,7 +173,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                             addAnnotation(
                               AnnotationSpec.builder(InjectedFieldSignature::class)
                                 .addMember("%S", parameter.injectedFieldSignature)
-                                .build()
+                                .build(),
                             )
                           }
                         }
@@ -181,13 +181,13 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                         .addParameter("instance", classType)
                         .addParameter(name, parameter.originalTypeName)
                         .addStatement("instance.${parameter.originalName} = $name")
-                        .build()
+                        .build(),
                     )
                   }
               }
-              .build()
+              .build(),
           )
-          .build()
+          .build(),
       )
     }
 

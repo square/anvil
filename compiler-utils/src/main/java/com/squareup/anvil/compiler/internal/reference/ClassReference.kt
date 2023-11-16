@@ -127,7 +127,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
   public class Psi(
     public val clazz: KtClassOrObject,
     override val classId: ClassId,
-    override val module: AnvilModuleDescriptor
+    override val module: AnvilModuleDescriptor,
   ) : ClassReference() {
     override val fqName: FqName = classId.asSingleFqName()
 
@@ -211,7 +211,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
         PRIVATE_KEYWORD -> PRIVATE
         else -> throw AnvilCompilationExceptionClassReference(
           classReference = this,
-          message = "Couldn't get visibility $visibility for class $fqName."
+          message = "Couldn't get visibility $visibility for class $fqName.",
         )
       }
     }
@@ -235,7 +235,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
   public class Descriptor(
     public val clazz: ClassDescriptor,
     override val classId: ClassId,
-    override val module: AnvilModuleDescriptor
+    override val module: AnvilModuleDescriptor,
   ) : ClassReference() {
     override val fqName: FqName = classId.asSingleFqName()
 
@@ -314,7 +314,7 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
         DescriptorVisibilities.PRIVATE -> PRIVATE
         else -> throw AnvilCompilationExceptionClassReference(
           classReference = this,
-          message = "Couldn't get visibility $visibility for class $fqName."
+          message = "Couldn't get visibility $visibility for class $fqName.",
         )
       }
     }
@@ -362,7 +362,7 @@ public fun FqName.toClassReference(module: ModuleDescriptor): ClassReference {
 @ExperimentalAnvilApi
 public fun ClassReference.generateClassName(
   separator: String = "_",
-  suffix: String = ""
+  suffix: String = "",
 ): ClassId {
   return asClassName().generateClassName(separator, suffix).asClassId()
 }
@@ -370,7 +370,7 @@ public fun ClassReference.generateClassName(
 @ExperimentalAnvilApi
 public fun ClassName.generateClassName(
   separator: String = "_",
-  suffix: String = ""
+  suffix: String = "",
 ): ClassName {
   val className = simpleNames.joinToString(separator = separator)
   return ClassName(packageName, className + suffix)
@@ -380,7 +380,7 @@ public fun ClassName.generateClassName(
 public fun ClassName.asClassId(local: Boolean = false): ClassId = ClassId(
   FqName(packageName),
   FqName(simpleNames.joinToString(".")),
-  local
+  local,
 )
 
 @ExperimentalAnvilApi
@@ -407,7 +407,7 @@ public fun ClassReference.asTypeName(): TypeName {
  */
 @ExperimentalAnvilApi
 public fun ClassReference.allSuperTypeClassReferences(
-  includeSelf: Boolean = false
+  includeSelf: Boolean = false,
 ): Sequence<ClassReference> {
   return generateSequence(listOf(this)) { superTypes ->
     superTypes
@@ -426,16 +426,16 @@ public fun ClassReference.allSuperTypeClassReferences(
 public fun AnvilCompilationExceptionClassReference(
   classReference: ClassReference,
   message: String,
-  cause: Throwable? = null
+  cause: Throwable? = null,
 ): AnvilCompilationException = when (classReference) {
   is Psi -> AnvilCompilationException(
     element = classReference.clazz.identifyingElement ?: classReference.clazz,
     message = message,
-    cause = cause
+    cause = cause,
   )
   is Descriptor -> AnvilCompilationException(
     classDescriptor = classReference.clazz,
     message = message,
-    cause = cause
+    cause = cause,
   )
 }

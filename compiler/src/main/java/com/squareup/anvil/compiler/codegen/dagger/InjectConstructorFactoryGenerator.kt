@@ -38,7 +38,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
   override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ) {
     projectFiles
       .classAndInnerClassReferences(module)
@@ -55,7 +55,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
   private fun generateFactoryClass(
     codeGenDir: File,
     clazz: ClassReference.Psi,
-    constructor: MemberFunctionReference.Psi
+    constructor: MemberFunctionReference.Psi,
   ): GeneratedFile {
     val classId = clazz.generateClassName(suffix = "_Factory")
 
@@ -93,7 +93,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                     addParameter(parameter.name, parameter.providerTypeName)
                   }
                 }
-                .build()
+                .build(),
             )
 
             allParameters.forEach { parameter ->
@@ -101,7 +101,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                 PropertySpec.builder(parameter.name, parameter.providerTypeName)
                   .initializer(parameter.name)
                   .addModifiers(PRIVATE)
-                  .build()
+                  .build(),
               )
             }
           }
@@ -113,7 +113,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
             .apply {
               val newInstanceArgumentList = constructorParameters.asArgumentList(
                 asProvider = true,
-                includeModule = false
+                includeModule = false,
               )
 
               if (memberInjectParameters.isEmpty()) {
@@ -125,7 +125,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                 addStatement("return $instanceName")
               }
             }
-            .build()
+            .build(),
         )
         .apply {
           val builder = if (canGenerateAnObject) this else TypeSpec.companionObjectBuilder()
@@ -146,17 +146,17 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
 
                     val argumentList = allParameters.asArgumentList(
                       asProvider = false,
-                      includeModule = false
+                      includeModule = false,
                     )
 
                     addStatement(
                       "return %T($argumentList)",
-                      factoryClassParameterized
+                      factoryClassParameterized,
                     )
                   }
                 }
                 .returns(factoryClassParameterized)
-                .build()
+                .build(),
             )
             .addFunction(
               FunSpec.builder("newInstance")
@@ -168,7 +168,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                   constructorParameters.forEach { parameter ->
                     addParameter(
                       name = parameter.name,
-                      type = parameter.originalTypeName
+                      type = parameter.originalTypeName,
                     )
                   }
                   val argumentsWithoutModule = constructorParameters.joinToString { it.name }
@@ -176,7 +176,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                   addStatement("return %T($argumentsWithoutModule)", classType)
                 }
                 .returns(classType)
-                .build()
+                .build(),
             )
             .build()
             .let {

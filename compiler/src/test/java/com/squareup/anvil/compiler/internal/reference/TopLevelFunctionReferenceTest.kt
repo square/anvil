@@ -28,7 +28,7 @@ class TopLevelFunctionReferenceTest {
       package com.squareup.test
 
       private fun abc() = Unit
-      """
+      """,
     ) { ref ->
       assertThat(ref.fqName).isEqualTo(FqName("com.squareup.test.abc"))
       assertThat(ref.parameters).isEmpty()
@@ -51,7 +51,7 @@ class TopLevelFunctionReferenceTest {
       package com.squareup.test
 
       fun abc(string: String): String = string
-      """
+      """,
     ) { ref ->
       assertThat(ref.fqName).isEqualTo(FqName("com.squareup.test.abc"))
       assertThat(ref.parameters.single().type().asClassReference().fqName.asString())
@@ -70,7 +70,7 @@ class TopLevelFunctionReferenceTest {
 
       @PublishedApi
       internal fun abc(): Int? = null
-      """
+      """,
     ) { ref ->
       assertThat(ref.fqName).isEqualTo(FqName("com.squareup.test.abc"))
       assertThat(ref.parameters).isEmpty()
@@ -89,7 +89,7 @@ class TopLevelFunctionReferenceTest {
       package com.squareup.test
 
       fun <T : CharSequence> abc(): T = throw NotImplementedError()
-      """
+      """,
     ) { ref ->
       assertThat(ref.fqName).isEqualTo(FqName("com.squareup.test.abc"))
       assertThat(ref.parameters).isEmpty()
@@ -105,7 +105,7 @@ class TopLevelFunctionReferenceTest {
       package com.squareup.test
 
       fun <T : CharSequence> abc(param1: T, param2: () -> T): T? = null
-      """
+      """,
     ) { ref ->
       assertThat(ref.fqName).isEqualTo(FqName("com.squareup.test.abc"))
       assertThat(ref.parameters).hasSize(2)
@@ -120,7 +120,7 @@ class TopLevelFunctionReferenceTest {
 
   private fun functionTest(
     @Language("kotlin") vararg sources: String,
-    assert: (TopLevelFunctionReference) -> Unit
+    assert: (TopLevelFunctionReference) -> Unit,
   ) {
     compile(
       *sources,
@@ -132,7 +132,7 @@ class TopLevelFunctionReferenceTest {
           override fun generateCode(
             codeGenDir: File,
             module: ModuleDescriptor,
-            projectFiles: Collection<KtFile>
+            projectFiles: Collection<KtFile>,
           ): Collection<GeneratedFile> {
             projectFiles
               .topLevelFunctionReferences(module)
@@ -141,8 +141,8 @@ class TopLevelFunctionReferenceTest {
 
             return emptyList()
           }
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }

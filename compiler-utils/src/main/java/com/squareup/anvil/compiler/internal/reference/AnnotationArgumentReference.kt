@@ -122,7 +122,7 @@ public sealed class AnnotationArgumentReference {
     public val argument: KtValueArgument,
     override val annotation: AnnotationReference.Psi,
     override val name: String?,
-    override val resolvedName: String
+    override val resolvedName: String,
   ) : AnnotationArgumentReference() {
     protected override val value: Any by lazy(NONE) {
       fun fail(): Nothing {
@@ -314,7 +314,7 @@ public sealed class AnnotationArgumentReference {
     public val argument: ConstantValue<*>,
     override val annotation: AnnotationReference.Descriptor,
     override val name: String,
-    override val resolvedName: String = name
+    override val resolvedName: String = name,
   ) : AnnotationArgumentReference() {
 
     protected override val value: Any by lazy(NONE) {
@@ -352,7 +352,7 @@ public sealed class AnnotationArgumentReference {
 @ExperimentalAnvilApi
 public fun KtValueArgument.toAnnotationArgumentReference(
   annotationReference: AnnotationReference.Psi,
-  indexOfArgument: Int
+  indexOfArgument: Int,
 ): Psi {
   val children = children
   val name = (children.firstOrNull() as? KtValueArgumentName)?.asName?.asString()
@@ -368,17 +368,17 @@ public fun KtValueArgument.toAnnotationArgumentReference(
     argument = this,
     annotation = annotationReference,
     name = name,
-    resolvedName = resolvedName
+    resolvedName = resolvedName,
   )
 }
 
 @ExperimentalAnvilApi
 public fun Pair<Name, ConstantValue<*>>.toAnnotationArgumentReference(
-  annotationReference: AnnotationReference.Descriptor
+  annotationReference: AnnotationReference.Descriptor,
 ): Descriptor {
   return Descriptor(
     argument = second,
     annotation = annotationReference,
-    name = first.asString()
+    name = first.asString(),
   )
 }

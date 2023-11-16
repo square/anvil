@@ -28,14 +28,14 @@ class MemberPropertyReferenceTest {
             assertThat(ref.propertyTypeNames())
               .containsExactly(
                 "name: kotlin.String",
-                "age: kotlin.Int"
+                "age: kotlin.Int",
               )
               .inOrder()
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -61,14 +61,14 @@ class MemberPropertyReferenceTest {
             assertThat(ref.propertyTypeNames())
               .containsExactly(
                 "name: kotlin.String",
-                "age: kotlin.Int"
+                "age: kotlin.Int",
               )
               .inOrder()
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -94,14 +94,14 @@ class MemberPropertyReferenceTest {
             assertThat(ref.propertyTypeNames())
               .containsExactly(
                 "name: kotlin.String",
-                "age: kotlin.Int"
+                "age: kotlin.Int",
               )
               .inOrder()
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -134,8 +134,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -168,8 +168,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -196,8 +196,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -233,8 +233,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -270,8 +270,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -307,8 +307,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -335,14 +335,14 @@ class MemberPropertyReferenceTest {
             assertThat(ref.propertyTypeNames())
               .containsExactly(
                 "age: kotlin.Int",
-                "name: kotlin.String"
+                "name: kotlin.String",
               )
               .inOrder()
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -376,8 +376,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -408,8 +408,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -449,8 +449,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -483,8 +483,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -523,8 +523,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -557,8 +557,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -597,8 +597,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -630,8 +630,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -671,8 +671,8 @@ class MemberPropertyReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -699,14 +699,14 @@ class MemberPropertyReferenceTest {
             assertThat(ref.propertyTypeNames())
               .containsExactly(
                 "name: kotlin.String",
-                "age: kotlin.Int"
+                "age: kotlin.Int",
               )
               .inOrder()
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -738,14 +738,14 @@ class MemberPropertyReferenceTest {
             assertThat(ref.propertyTypeNames())
               .containsExactly(
                 "name: kotlin.String",
-                "age: kotlin.Int"
+                "age: kotlin.Int",
               )
               .inOrder()
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }

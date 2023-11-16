@@ -62,7 +62,7 @@ public sealed class MemberPropertyReference : AnnotatedReference, PropertyRefere
     public override val property: KtCallableDeclaration,
     override val declaringClass: ClassReference.Psi,
     override val fqName: FqName,
-    override val name: String
+    override val name: String,
   ) : MemberPropertyReference(), PropertyReference.Psi {
 
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
@@ -102,7 +102,7 @@ public sealed class MemberPropertyReference : AnnotatedReference, PropertyRefere
         KtTokens.PRIVATE_KEYWORD -> PRIVATE
         else -> throw AnvilCompilationExceptionClassReference(
           classReference = declaringClass,
-          message = "Couldn't get visibility $visibility for property $fqName."
+          message = "Couldn't get visibility $visibility for property $fqName.",
         )
       }
     }
@@ -118,13 +118,13 @@ public sealed class MemberPropertyReference : AnnotatedReference, PropertyRefere
         property: T,
         declaringClass: ClassReference.Psi,
         fqName: FqName = property.requireFqName(),
-        name: String = fqName.shortName().asString()
+        name: String = fqName.shortName().asString(),
       ): Psi where T : KtCallableDeclaration,
                    T : KtValVarKeywordOwner = Psi(
         property = property,
         declaringClass = declaringClass,
         fqName = fqName,
-        name = name
+        name = name,
       )
     }
   }
@@ -133,7 +133,7 @@ public sealed class MemberPropertyReference : AnnotatedReference, PropertyRefere
     public override val property: PropertyDescriptor,
     override val declaringClass: ClassReference.Descriptor,
     override val fqName: FqName = property.fqNameSafe,
-    override val name: String = fqName.shortName().asString()
+    override val name: String = fqName.shortName().asString(),
   ) : MemberPropertyReference(), PropertyReference.Descriptor {
 
     override val annotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
@@ -170,7 +170,7 @@ public sealed class MemberPropertyReference : AnnotatedReference, PropertyRefere
         DescriptorVisibilities.PRIVATE -> PRIVATE
         else -> throw AnvilCompilationExceptionClassReference(
           classReference = declaringClass,
-          message = "Couldn't get visibility $visibility for property $fqName."
+          message = "Couldn't get visibility $visibility for property $fqName.",
         )
       }
     }
@@ -181,12 +181,12 @@ public sealed class MemberPropertyReference : AnnotatedReference, PropertyRefere
 
 @ExperimentalAnvilApi
 public fun KtParameter.toPropertyReference(
-  declaringClass: ClassReference.Psi
+  declaringClass: ClassReference.Psi,
 ): Psi {
   if (!isPropertyParameter()) {
     throw AnvilCompilationException(
       element = this,
-      message = "A KtParameter may only be turned into a PropertyReference if it's a val or var."
+      message = "A KtParameter may only be turned into a PropertyReference if it's a val or var.",
     )
   }
   return Psi(this, declaringClass)
@@ -194,10 +194,10 @@ public fun KtParameter.toPropertyReference(
 
 @ExperimentalAnvilApi
 public fun KtProperty.toPropertyReference(
-  declaringClass: ClassReference.Psi
+  declaringClass: ClassReference.Psi,
 ): Psi = Psi(this, declaringClass)
 
 @ExperimentalAnvilApi
 public fun PropertyDescriptor.toPropertyReference(
-  declaringClass: ClassReference.Descriptor
+  declaringClass: ClassReference.Descriptor,
 ): Descriptor = Descriptor(this, declaringClass)

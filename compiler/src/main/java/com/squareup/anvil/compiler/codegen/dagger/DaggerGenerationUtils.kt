@@ -46,7 +46,7 @@ internal fun List<ParameterReference>.mapToConstructorParameters(): List<Constru
 }
 
 private fun ParameterReference.toConstructorParameter(
-  uniqueName: String
+  uniqueName: String,
 ): ConstructorParameter {
   val type = type()
 
@@ -78,13 +78,13 @@ private fun ParameterReference.toConstructorParameter(
     isWrappedInLazy = isWrappedInLazy,
     isLazyWrappedInProvider = isLazyWrappedInProvider,
     isAssisted = assistedAnnotation != null,
-    assistedIdentifier = assistedIdentifier
+    assistedIdentifier = assistedIdentifier,
   )
 }
 
 internal fun FunSpec.Builder.addMemberInjection(
   memberInjectParameters: List<MemberInjectParameter>,
-  instanceName: String
+  instanceName: String,
 ): FunSpec.Builder = apply {
 
   memberInjectParameters.forEach { parameter ->
@@ -133,7 +133,7 @@ internal fun ClassReference.memberInjectParameters(): List<MemberInjectParameter
  */
 private fun ClassReference.declaredMemberInjectParameters(
   superParameters: List<Parameter>,
-  implementingClass: ClassReference
+  implementingClass: ClassReference,
 ): List<MemberInjectParameter> {
   return properties
     .filter { it.isAnnotatedWith(injectFqName) }
@@ -142,7 +142,7 @@ private fun ClassReference.declaredMemberInjectParameters(
       val uniqueName = property.name.uniqueParameterName(superParameters, acc)
       acc + property.toMemberInjectParameter(
         uniqueName = uniqueName,
-        implementingClass = implementingClass
+        implementingClass = implementingClass,
       )
     }
 }
@@ -163,7 +163,7 @@ private fun ClassReference.declaredMemberInjectParameters(
  */
 internal fun List<Parameter>.asArgumentList(
   asProvider: Boolean,
-  includeModule: Boolean
+  includeModule: Boolean,
 ): String {
   return this
     .let { list ->
@@ -183,7 +183,9 @@ internal fun List<Parameter>.asArgumentList(
             else -> "${parameter.name}.get()"
           }
         }
-      } else list.map { it.name }
+      } else {
+        list.map { it.name }
+      }
     }
     .let {
       if (includeModule) {
@@ -199,7 +201,7 @@ internal fun List<Parameter>.asArgumentList(
 
 private fun MemberPropertyReference.toMemberInjectParameter(
   uniqueName: String,
-  implementingClass: ClassReference
+  implementingClass: ClassReference,
 ): MemberInjectParameter {
   if (
     !isLateinit() &&
@@ -211,7 +213,7 @@ private fun MemberPropertyReference.toMemberInjectParameter(
     throw AnvilCompilationExceptionPropertyReference(
       propertyReference = this,
       message = "Dagger does not support injection into private fields. Either use a " +
-        "'lateinit var' or '@JvmField'."
+        "'lateinit var' or '@JvmField'.",
     )
   }
 
@@ -235,7 +237,7 @@ private fun MemberPropertyReference.toMemberInjectParameter(
       ?.optionallyParameterizedByNames(
         unwrappedType.unwrappedTypes.mapNotNull {
           it.resolveGenericTypeNameOrNull(implementingClass)
-        }
+        },
       )
       ?.withJvmSuppressWildcardsIfNeeded(this, unwrappedType)
   } else {
@@ -255,7 +257,8 @@ private fun MemberPropertyReference.toMemberInjectParameter(
     .asString()
 
   val memberInjectorClass = ClassName(
-    declaringClass.packageFqName.asString(), memberInjectorClassName
+    declaringClass.packageFqName.asString(),
+    memberInjectorClassName,
   )
 
   val isSetterInjected = this.setterAnnotations.any { it.fqName == injectFqName }
@@ -289,7 +292,7 @@ private fun MemberPropertyReference.toMemberInjectParameter(
     accessName = accessName,
     qualifierAnnotationSpecs = qualifierAnnotations,
     injectedFieldSignature = fqName,
-    resolvedProviderTypeName = resolvedTypeName?.wrapInProvider() ?: providerTypeName
+    resolvedProviderTypeName = resolvedTypeName?.wrapInProvider() ?: providerTypeName,
   )
 }
 
@@ -300,7 +303,7 @@ private fun TypeReference.isGenericExcludingTypeAliases(): Boolean {
 }
 
 private fun ClassName.optionallyParameterizedByNames(
-  typeNames: List<TypeName>
+  typeNames: List<TypeName>,
 ): TypeName {
   return if (typeNames.isEmpty()) {
     this
@@ -310,7 +313,7 @@ private fun ClassName.optionallyParameterizedByNames(
 }
 
 internal fun ClassName.optionallyParameterizedBy(
-  typeParameters: List<TypeParameterReference>
+  typeParameters: List<TypeParameterReference>,
 ): TypeName {
   return if (typeParameters.isEmpty()) {
     this
@@ -321,7 +324,7 @@ internal fun ClassName.optionallyParameterizedBy(
 
 internal fun assertNoDuplicateFunctions(
   declaringClass: ClassReference,
-  functions: Sequence<MemberFunctionReference.Psi>
+  functions: Sequence<MemberFunctionReference.Psi>,
 ) {
   // Check for duplicate function names.
   val duplicateFunctions = functions
@@ -332,7 +335,7 @@ internal fun assertNoDuplicateFunctions(
     throw AnvilCompilationExceptionClassReference(
       classReference = declaringClass,
       message = "Cannot have more than one binding method with the same name in " +
-        "a single module: ${duplicateFunctions.keys.joinToString()}"
+        "a single module: ${duplicateFunctions.keys.joinToString()}",
     )
   }
 }

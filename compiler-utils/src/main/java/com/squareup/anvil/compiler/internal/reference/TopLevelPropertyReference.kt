@@ -95,7 +95,7 @@ public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyRefe
         KtTokens.PRIVATE_KEYWORD -> PRIVATE
         else -> throw AnvilCompilationExceptionPropertyReference(
           propertyReference = this,
-          message = "Couldn't get visibility $visibility for property $fqName."
+          message = "Couldn't get visibility $visibility for property $fqName.",
         )
       }
     }
@@ -117,7 +117,7 @@ public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyRefe
         property = property,
         fqName = fqName,
         name = name,
-        module = module
+        module = module,
       )
     }
   }
@@ -163,7 +163,7 @@ public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyRefe
         DescriptorVisibilities.PRIVATE -> PRIVATE
         else -> throw AnvilCompilationExceptionPropertyReference(
           propertyReference = this,
-          message = "Couldn't get visibility $visibility for property $fqName."
+          message = "Couldn't get visibility $visibility for property $fqName.",
         )
       }
     }
@@ -179,7 +179,7 @@ public fun KtParameter.toTopLevelPropertyReference(
   if (!isPropertyParameter()) {
     throw AnvilCompilationException(
       element = this,
-      message = "A KtParameter may only be turned into a PropertyReference if it's a val or var."
+      message = "A KtParameter may only be turned into a PropertyReference if it's a val or var.",
     )
   }
   return Psi(property = this, module = module)

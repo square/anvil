@@ -63,7 +63,7 @@ internal class MapKeyCreatorGenerator : PrivateCodeGenerator() {
   override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ) {
     projectFiles
       .classAndInnerClassReferences(module)
@@ -82,7 +82,7 @@ internal class MapKeyCreatorGenerator : PrivateCodeGenerator() {
 
   private fun generateCreatorClass(
     codeGenDir: File,
-    clazz: ClassReference
+    clazz: ClassReference,
   ): GeneratedFile {
     // // Given this
     // @MapKey(unwrapValue = false)
@@ -107,7 +107,7 @@ internal class MapKeyCreatorGenerator : PrivateCodeGenerator() {
     if (!clazz.isAnnotationClass()) {
       throw AnvilCompilationExceptionClassReference(
         message = "@MapKey is only applicable to annotation classes.",
-        classReference = clazz
+        classReference = clazz,
       )
     }
 
@@ -137,7 +137,7 @@ internal class MapKeyCreatorGenerator : PrivateCodeGenerator() {
         annotationClass.asTypeName().rawTypeOrNull()
           ?: throw AnvilCompilationExceptionClassReference(
             message = "@MapKey is only applicable to non-generic annotation classes.",
-            classReference = annotationClass
+            classReference = annotationClass,
           )
       }
       .toSortedMap()
@@ -149,7 +149,7 @@ internal class MapKeyCreatorGenerator : PrivateCodeGenerator() {
       addType(
         TypeSpec.objectBuilder(generatedClassName)
           .addFunctions(creatorFunctions)
-          .build()
+          .build(),
       )
     }
 
@@ -176,7 +176,7 @@ internal class MapKeyCreatorGenerator : PrivateCodeGenerator() {
       .addStatement(
         "return %T(%L)",
         className,
-        properties.entries.map { it.value.callExpression }.joinToCode()
+        properties.entries.map { it.value.callExpression }.joinToCode(),
       )
       .returns(className)
       .build()
@@ -186,11 +186,11 @@ internal class MapKeyCreatorGenerator : PrivateCodeGenerator() {
 private class AnnotationProperty(
   val name: String,
   val javaType: TypeName,
-  val callExpression: CodeBlock
+  val callExpression: CodeBlock,
 ) {
   companion object {
     operator fun invoke(
-      property: MemberPropertyReference
+      property: MemberPropertyReference,
     ): AnnotationProperty {
       val name = property.name
       val typeName = property.type().asTypeName()
@@ -209,7 +209,7 @@ private class AnnotationProperty(
       return AnnotationProperty(
         name,
         javaType,
-        codeBlock
+        codeBlock,
       )
     }
   }
