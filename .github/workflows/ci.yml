@@ -248,6 +248,37 @@ jobs :
           name : insrumentation-test-results
           path : ./**/build/reports/androidTests/connected/**
 
+  plugin-integration-tests :
+    name : Instrumentation tests
+    runs-on : macos-latest
+    timeout-minutes : 20
+    strategy :
+      # Allow tests to continue on other devices if they fail on one device.
+      fail-fast : false
+      matrix :
+        kotlin-version : [ 1.8.22, 1.9.10 ]
+        agp-version : [ 7.3.1, 8.1.0 ]
+        gradle-version : [ 7.6.1, 8.2.1, 8.4 ]
+
+    steps :
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
+        with :
+          distribution : 'temurin'
+          java-version : '11'
+          check-latest : true
+
+      - name : Gradle integration tests
+        run : ./gradlew integrationTest --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_gradle=${{ matrix.kotlin-version }} -Doverride_agp=${{ matrix.agp-version }}
+
+      - name : Upload Test Results
+        uses : actions/upload-artifact@v3
+        if : ${{ failure() }}
+        with :
+          # Use the Kotlin version to prevent overrides.
+          name : test-results-gradle-integration-${{ matrix.kotlin-version }}-${{ matrix.gradle-version }}-${{ matrix.agp-version }}
+          path : ./**/build/reports/tests/
+
   gradle-wrapper-validation :
     name : "Validate the Gradle Wrapper"
     runs-on : ubuntu-latest
@@ -287,6 +318,7 @@ jobs :
       - test-gradle-plugin
       - kapt-for-dagger-factories
       - instrumentation-tests
+      - plugin-integration-tests
       - gradle-wrapper-validation
       - build-benchmark-project
 

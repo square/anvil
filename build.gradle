@@ -2,6 +2,12 @@ import org.gradle.api.internal.project.DefaultProject
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
+buildscript {
+  dependencies {
+    classpath 'com.squareup.anvil:gradle-plugin'
+  }
+}
+
 plugins {
   alias(libs.plugins.agp.application) apply false
   alias(libs.plugins.agp.library) apply false
@@ -14,7 +20,6 @@ plugins {
   alias(libs.plugins.ktlint) apply false
   alias(libs.plugins.mavenPublishBase) apply false
   id 'com.squareup.anvil.root'
-  id 'com.squareup.anvil' apply false
 }
 
 allprojects {
@@ -35,6 +40,15 @@ println "Versions: " + [
     "Gradle": gradle.gradleVersion,
     "Full test run": ext.fullTestRun,
 ]
+
+// This task is registered in all projects in order to simplify publishing before the
+// `:gradle-plugin` integration tests.
+// Since the plugin doesn't actually directly depend upon the other projects, it doesn't force the
+// other projects to be configured.  This task is a simple hook to force that configuration in the
+// integration test workflow.
+tasks.register("publishToBuildM2") {
+  it.group = 'Publishing'
+}
 
 boolean configureOnDemandEnabled = getProperty("org.gradle.configureondemand", "false").toBoolean()
 

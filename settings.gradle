@@ -6,7 +6,6 @@ pluginManagement {
   }
 
   includeBuild('build-logic')
-  includeBuild('gradle-plugin-build-logic')
 }
 
 rootProject.name = 'anvil'
@@ -65,7 +64,17 @@ include ':sample:scopes'
 
 include ':gradle-plugin'
 
-includeBuild('gradle-plugin-build-logic')
+includeBuild('gradle-plugin-build-logic') {
+  dependencySubstitution {
+    substitute module("com.squareup.anvil:annotations") using project(':annotations')
+    substitute module("com.squareup.anvil:annotations-optional") using project(
+        ':annotations-optional')
+    substitute module("com.squareup.anvil:compiler") using project(':compiler')
+    substitute module("com.squareup.anvil:compiler-api") using project(':compiler-api')
+    substitute module("com.squareup.anvil:compiler-utils") using project(':compiler-utils')
+    substitute module("com.squareup.anvil:gradle-plugin") using project(':gradle-plugin')
+  }
+}
 
 // Include the benchmark modules if they exist.
 def benchmarkSettingsFile = file('benchmark/settings.gradle')

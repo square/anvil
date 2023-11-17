@@ -1,7 +1,10 @@
 plugins {
   id 'com.squareup.anvil.library'
-  alias libs.plugins.gradlePublish
+  id 'com.squareup.anvil.itegration-tests'
   alias libs.plugins.buildconfig
+  alias libs.plugins.gradlePublish
+  id 'com.squareup.anvil.publish'
+  id 'idea'
   id 'java-gradle-plugin'
 }
 
@@ -14,18 +17,38 @@ def pomDescription = 'A Kotlin compiler plugin to make dependency injection with
 // 2. The included build, which is used by the main build to test the plugin.
 // Only the main build should publish the plugin.
 if (rootProject.name == 'anvil') {
-  apply plugin: 'com.squareup.anvil.publish'
+//  apply plugin: 'com.squareup.anvil.publish'
 
-  publish {
-    configurePom(
-        artifactId: 'gradle-plugin',
-        pomName: pomName,
-        pomDescription: pomDescription
-    )
-  }
+
   layout.buildDirectory.set(file('build-anvil'))
 } else {
   layout.buildDirectory.set(file('build-composite-wrapper'))
+}
+
+publish {
+  configurePom(
+      artifactId: 'gradle-plugin',
+      pomName: pomName,
+      pomDescription: pomDescription
+  )
+}
+
+tasks.named("integrationTest", Test) {
+  useJUnitPlatform()
+
+  def publishTasks = rootProject
+      .subprojects
+      .findAll { it.plugins.hasPlugin('com.squareup.anvil.publish') }
+      .collect { it.tasks.named("publishToBuildM2") }
+  it.dependsOn(publishTasks)
+}
+
+idea {
+  module {
+    project.sourceSets.integrationTest.allSource.srcDirs.each { srcDir ->
+      testSources.from(srcDir)
+    }
+  }
 }
 
 buildConfig {
@@ -38,6 +61,27 @@ buildConfig {
 
   buildConfigField('String', 'GROUP', "\"$GROUP\"")
   buildConfigField('String', 'VERSION', "\"$VERSION_NAME\"")
+
+  sourceSets.named('integrationTest') {
+    className 'BuildPropertiesIntegrationTest'
+    packageName 'com.squareup.anvil.plugin'
+    useKotlinOutput {
+      internalVisibility = true
+    }
+
+    buildConfigField(
+        'java.io.File',
+        'localBuildM2Dir',
+        rootProject.layout.buildDirectory.dir('m2')
+            .map { "File(\"${it}\")".toString() }
+        // publishing.repositories
+        //     .named('buildM2', MavenArtifactRepository)
+        //     .map { "File(\"${it.url.path}\")".toString() }
+    )
+
+    buildConfigField('String', 'autoServiceVersion', "\"${libs.versions.autoService.get()}\"")
+    buildConfigField('String', 'daggerVersion', "\"${libs.versions.dagger.get()}\"")
+  }
 }
 
 gradlePlugin {
@@ -58,8 +102,21 @@ dependencies {
   // Necessary to bump a transitive dependency.
   compileOnly libs.kotlin.reflect
 
-  // Compile only so we don't pre-empty what the consuming project actually uses
+  // Compile only so we don't preempt what the consuming project actually uses
   compileOnly libs.kotlin.gradlePlugin
   compileOnly libs.kotlin.gradlePluginApi
   compileOnly libs.agp
+
+  testImplementation libs.junit
+  testImplementation libs.truth
+
+  integrationTestImplementation gradleTestKit()
+  integrationTestImplementation libs.junit
+  integrationTestImplementation libs.junit5.engine
+  integrationTestImplementation libs.junit5.jupiter
+  integrationTestImplementation libs.junit5.jupiter.api
+  integrationTestImplementation libs.kase
+  integrationTestImplementation libs.kase.gradle
+  integrationTestImplementation libs.kotlin.test
+  integrationTestImplementation libs.truth
 }

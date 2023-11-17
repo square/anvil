@@ -38,4 +38,17 @@ dependencyResolutionManagement {
 }
 
 include ':gradle-plugin'
-project(':gradle-plugin').projectDir = new File('../gradle-plugin')
+project(':gradle-plugin').projectDir = file('../gradle-plugin')
+include ':annotations'
+project(':annotations').projectDir = file('../annotations')
+include ':annotations-optional'
+project(':annotations-optional').projectDir = file('../annotations-optional')
+include ':compiler'
+project(':compiler').projectDir = file('../compiler')
+include ':compiler-api'
+project(':compiler-api').projectDir = file('../compiler-api')
+include ':compiler-utils'
+project(':compiler-utils').projectDir = file('../compiler-utils')
+
+// TODO delete me
+includeBuild '../../kase'

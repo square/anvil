@@ -18,6 +18,10 @@ gradlePlugin {
       id = "com.squareup.anvil.publish"
       implementationClass = "com.squareup.anvil.PublishConventionPlugin"
     }
+    itegration {
+      id = "com.squareup.anvil.itegration-tests"
+      implementationClass = "com.squareup.anvil.IntegrationTestsConventionPlugin"
+    }
   }
 }
 

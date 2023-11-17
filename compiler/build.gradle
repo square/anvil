@@ -52,11 +52,6 @@ dependencies {
   testImplementation libs.truth
 }
 
-// Fixes:
-// Reason: Task ':compiler:dokkaHtml' uses this output of task ':compiler:kaptKotlin'
-// without declaring an explicit or implicit dependency.
-tasks.named("dokkaHtml") { mustRunAfter("kaptKotlin") }
-
 tasks.withType(KotlinCompile).configureEach {
   compilerOptions {
     // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin

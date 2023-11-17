@@ -1,5 +1,13 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 plugins {
   id 'java-base'
+  alias(libs.plugins.kotlin.android) apply false
+  alias(libs.plugins.kotlin.dokka) apply false
+  alias(libs.plugins.kotlin.jvm) apply false
+  alias(libs.plugins.kotlin.kapt) apply false
+  alias(libs.plugins.kotlin.multiplatform) apply false
 }
 
 java {
@@ -18,4 +26,56 @@ Properties mainBuildProperties = new Properties().tap { props ->
 }
 mainBuildProperties.each { key, value ->
   ext[key.toString()] = value
+}
+
+boolean isCi = (System.getenv('CI') ?: 'false').toBoolean()
+
+ext {
+  ci = isCi
+  fullTestRun = libs.versions.config.fullTestRun.get().toBoolean()
+  warningsAsErrors = isCi
+}
+
+subprojects {
+
+  tasks.withType(Test).configureEach {
+    testLogging {
+      events 'passed', 'failed', 'skipped', 'standardOut', 'standardError'
+      exceptionFormat 'FULL'
+      showCauses true
+      showExceptions true
+      showStackTraces true
+      showStandardStreams true
+    }
+  }
+
+  pluginManager.withPlugin("java") {
+    // Use JDK 11 but target Java 8 for maximum compatibility.
+    java {
+      toolchain {
+        languageVersion.set(JavaLanguageVersion.of(11))
+      }
+    }
+
+    tasks.withType(JavaCompile).configureEach {
+      options.release.set(8)
+    }
+  }
+
+  tasks.withType(KotlinCompile).configureEach {
+    compilerOptions {
+      jvmTarget.set(JvmTarget.JVM_1_8)
+
+      allWarningsAsErrors.set(warningsAsErrors)
+      freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
+
+      boolean optInExperimental = project.name != "annotations"
+          && project.name != "annotations-optional"
+          && project.name != "scopes"
+          && project.name != "dagger-factories-only"
+      if (project.path != ':gradle-plugin' && optInExperimental) {
+        freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
+      }
+    }
+  }
 }
