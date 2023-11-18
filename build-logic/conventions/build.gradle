@@ -1,0 +1,48 @@
+plugins {
+  alias libs.plugins.kotlin.jvm
+  alias libs.plugins.ktlint
+  id 'java-gradle-plugin'
+}
+
+gradlePlugin {
+  plugins {
+    root {
+      id = "com.squareup.anvil.root"
+      implementationClass = "com.squareup.anvil.conventions.RootPlugin"
+    }
+    library {
+      id = "com.squareup.anvil.library"
+      implementationClass = "com.squareup.anvil.conventions.LibraryPlugin"
+    }
+    publish {
+      id = "com.squareup.anvil.publish"
+      implementationClass = "com.squareup.anvil.conventions.PublishConventionPlugin"
+    }
+    itegrationTests {
+      id = "com.squareup.anvil.itegration-tests"
+      implementationClass = "com.squareup.anvil.conventions.IntegrationTestsConventionPlugin"
+    }
+  }
+}
+
+kotlin {
+  jvmToolchain {
+    languageVersion.set(JavaLanguageVersion.of(11))
+  }
+}
+
+ktlint {
+  version = libs.versions.ktlint.get()
+}
+
+dependencies {
+  compileOnly gradleApi()
+
+  api libs.ktlintRaw
+  api libs.kotlinpoet
+  api libs.kgx
+
+  api libs.kotlin.dokka
+  api libs.kotlin.gradlePlugin
+  api libs.mavenPublishRaw
+}

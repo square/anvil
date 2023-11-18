@@ -1,0 +1,28 @@
+pluginManagement {
+  repositories {
+    google()
+    gradlePluginPortal()
+    mavenCentral()
+  }
+
+  includeBuild '../conventions'
+  includeBuild '../settings'
+}
+
+plugins {
+  id 'com.squareup.anvil.gradle-settings'
+}
+
+rootProject.name = "delegate"
+
+[
+  'annotations',
+  'annotations-optional',
+  'compiler',
+  'compiler-api',
+  'compiler-utils',
+  'gradle-plugin'
+].each { name ->
+  include ":$name"
+  project(":$name").projectDir = file("../../$name")
+}

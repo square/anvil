@@ -5,46 +5,15 @@ pluginManagement {
     mavenCentral()
   }
 
-  includeBuild('build-logic')
+  includeBuild('build-logic/conventions')
+  includeBuild('build-logic/settings')
+}
+
+plugins {
+  id 'com.squareup.anvil.gradle-settings'
 }
 
 rootProject.name = 'anvil'
-
-dependencyResolutionManagement {
-  versionCatalogs {
-    libs {
-      System.properties.each { key, value ->
-        if (key.toString().startsWith("override_")) {
-          String catalogKey = key.substring("override_".length())
-          println "Overriding $catalogKey with $value"
-          version(catalogKey, value.toString())
-
-          if (catalogKey == "kotlin") {
-            // TODO hardcoded to match what's in libs.versions.toml, but kinda ugly
-            String kspPartialVersion = "1.0.13"
-            if (value.toString().startsWith("1.8")) {
-              // Latest KSP releases currently don't support Kotlin 1.8.x
-              kspPartialVersion = "1.0.11"
-            }
-            println "Overriding ksp with $value-$kspPartialVersion"
-            version("ksp", "$value-$kspPartialVersion")
-          }
-        }
-      }
-    }
-  }
-
-  repositories {
-    google()
-    mavenCentral()
-    if (hasProperty("anvil.allowSnapshots")) {
-      maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev' }
-      maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap' }
-      maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
-      maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-    }
-  }
-}
 
 include ':annotations'
 include ':annotations-optional'
@@ -64,15 +33,18 @@ include ':sample:scopes'
 
 include ':gradle-plugin'
 
-includeBuild('gradle-plugin-build-logic') {
+includeBuild('build-logic/delegate') {
   dependencySubstitution {
-    substitute module("com.squareup.anvil:annotations") using project(':annotations')
-    substitute module("com.squareup.anvil:annotations-optional") using project(
-        ':annotations-optional')
-    substitute module("com.squareup.anvil:compiler") using project(':compiler')
-    substitute module("com.squareup.anvil:compiler-api") using project(':compiler-api')
-    substitute module("com.squareup.anvil:compiler-utils") using project(':compiler-utils')
-    substitute module("com.squareup.anvil:gradle-plugin") using project(':gradle-plugin')
+    [
+      'annotations',
+      'annotations-optional',
+      'compiler',
+      'compiler-api',
+      'compiler-utils',
+      'gradle-plugin'
+    ].each { name ->
+      substitute module("com.squareup.anvil:$name") using project(":$name")
+    }
   }
 }
 

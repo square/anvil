@@ -2,7 +2,6 @@ plugins {
   id 'com.squareup.anvil.library'
   id 'com.squareup.anvil.itegration-tests'
   alias libs.plugins.buildconfig
-  alias libs.plugins.gradlePublish
   id 'com.squareup.anvil.publish'
   id 'idea'
   id 'java-gradle-plugin'
@@ -10,26 +9,13 @@ plugins {
 
 def pomName = 'Anvil Gradle Plugin'
 def pomDescription = 'A Kotlin compiler plugin to make dependency injection with Dagger 2 ' +
-    'easier by automatically merging Dagger modules and component interfaces.'
-
-// This module is part of two builds:
-// 1. The main build, which publishes the plugin to the Gradle plugin portal.
-// 2. The included build, which is used by the main build to test the plugin.
-// Only the main build should publish the plugin.
-if (rootProject.name == 'anvil') {
-//  apply plugin: 'com.squareup.anvil.publish'
-
-
-  layout.buildDirectory.set(file('build-anvil'))
-} else {
-  layout.buildDirectory.set(file('build-composite-wrapper'))
-}
+  'easier by automatically merging Dagger modules and component interfaces.'
 
 publish {
   configurePom(
-      artifactId: 'gradle-plugin',
-      pomName: pomName,
-      pomDescription: pomDescription
+    artifactId: 'gradle-plugin',
+    pomName: pomName,
+    pomDescription: pomDescription
   )
 }
 
@@ -37,18 +23,10 @@ tasks.named("integrationTest", Test) {
   useJUnitPlatform()
 
   def publishTasks = rootProject
-      .subprojects
-      .findAll { it.plugins.hasPlugin('com.squareup.anvil.publish') }
-      .collect { it.tasks.named("publishToBuildM2") }
+    .subprojects
+    .findAll { it.plugins.hasPlugin('com.squareup.anvil.publish') }
+    .collect { it.tasks.named("publishToBuildM2") }
   it.dependsOn(publishTasks)
-}
-
-idea {
-  module {
-    project.sourceSets.integrationTest.allSource.srcDirs.each { srcDir ->
-      testSources.from(srcDir)
-    }
-  }
 }
 
 buildConfig {
@@ -63,30 +41,42 @@ buildConfig {
   buildConfigField('String', 'VERSION', "\"$VERSION_NAME\"")
 
   sourceSets.named('integrationTest') {
-    className 'BuildPropertiesIntegrationTest'
+    className 'BuildProperties'
     packageName 'com.squareup.anvil.plugin'
     useKotlinOutput {
       internalVisibility = true
+      topLevelConstants = true
     }
 
     buildConfigField(
-        'java.io.File',
-        'localBuildM2Dir',
-        rootProject.layout.buildDirectory.dir('m2')
-            .map { "File(\"${it}\")".toString() }
-        // publishing.repositories
-        //     .named('buildM2', MavenArtifactRepository)
-        //     .map { "File(\"${it.url.path}\")".toString() }
+      'java.io.File',
+      'localBuildM2Dir',
+      rootProject.layout.buildDirectory.dir('m2')
+        .map { "File(\"${it}\")".toString() }
     )
 
-    buildConfigField('String', 'autoServiceVersion', "\"${libs.versions.autoService.get()}\"")
+    buildConfigField('String', 'anvilVersion', "\"$VERSION_NAME\"")
+    buildConfigField('String', 'kotlinVersion', "\"${libs.versions.kotlin.get()}\"")
+    buildConfigField('String', 'gradleVersion', "\"${gradle.gradleVersion}\"")
     buildConfigField('String', 'daggerVersion', "\"${libs.versions.dagger.get()}\"")
   }
+}
+
+// Make sure that the BuildProperties files are generated during an IDE sync,
+// so that references to them will be resolved.
+rootProject.tasks.named("prepareKotlinBuildScriptModel") {
+  //noinspection UnnecessaryQualifiedReference
+  dependsOn(tasks.withType(com.github.gmazzo.gradle.plugins.BuildConfigTask))
 }
 
 gradlePlugin {
   website = project.findProperty('POM_URL') as String
   vcsUrl = project.findProperty('POM_SCM_URL') as String
+
+  // Tells the `java-gradle-plugin` plugin to inject its TestKit logic into the `integrationTest`
+  // source set.
+  testSourceSets(java.sourceSets.integrationTest)
+
   plugins {
     anvilPlugin {
       id = "com.squareup.anvil"
@@ -115,8 +105,6 @@ dependencies {
   integrationTestImplementation libs.junit5.engine
   integrationTestImplementation libs.junit5.jupiter
   integrationTestImplementation libs.junit5.jupiter.api
-  integrationTestImplementation libs.kase
-  integrationTestImplementation libs.kase.gradle
   integrationTestImplementation libs.kotlin.test
   integrationTestImplementation libs.truth
 }

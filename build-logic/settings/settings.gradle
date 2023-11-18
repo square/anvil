@@ -1,0 +1,21 @@
+rootProject.name = "settings"
+
+dependencyResolutionManagement {
+  repositories {
+    mavenCentral()
+    gradlePluginPortal()
+    google()
+  }
+  versionCatalogs {
+    libs {
+      from(files('../../gradle/libs.versions.toml'))
+      System.properties.each { key, value ->
+        if (key.toString().startsWith("override_")) {
+          String catalogKey = key.substring("override_".length())
+          println "Overriding $catalogKey with $value"
+          version(catalogKey, value.toString())
+        }
+      }
+    }
+  }
+}

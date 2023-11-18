@@ -301,6 +301,7 @@ ij_shell_redirect_followed_by_space = false
 ij_shell_switch_cases_indented = false
 
 [{*.gant,*.gradle,*.groovy,*.gy}]
+ij_continuation_indent_size = 2
 ij_groovy_align_group_field_declarations = false
 ij_groovy_align_multiline_array_initializer_expression = false
 ij_groovy_align_multiline_assignment = false

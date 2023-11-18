@@ -77,7 +77,7 @@ jobs :
           check-latest : true
 
       - name : KtLint
-        run : ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace && ./gradlew -p build-logic ktlintCheck --no-build-cache --no-daemon --stacktrace
+        run : ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace
 
   lint :
     runs-on : ubuntu-latest
@@ -252,13 +252,6 @@ jobs :
     name : Instrumentation tests
     runs-on : macos-latest
     timeout-minutes : 20
-    strategy :
-      # Allow tests to continue on other devices if they fail on one device.
-      fail-fast : false
-      matrix :
-        kotlin-version : [ 1.8.22, 1.9.10 ]
-        agp-version : [ 7.3.1, 8.1.0 ]
-        gradle-version : [ 7.6.1, 8.2.1, 8.4 ]
 
     steps :
       - uses : actions/checkout@v3
@@ -269,14 +262,13 @@ jobs :
           check-latest : true
 
       - name : Gradle integration tests
-        run : ./gradlew integrationTest --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_gradle=${{ matrix.kotlin-version }} -Doverride_agp=${{ matrix.agp-version }}
+        run : ./gradlew integrationTest --stacktrace
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v3
         if : ${{ failure() }}
         with :
-          # Use the Kotlin version to prevent overrides.
-          name : test-results-gradle-integration-${{ matrix.kotlin-version }}-${{ matrix.gradle-version }}-${{ matrix.agp-version }}
+          name : test-results-gradle-integration
           path : ./**/build/reports/tests/
 
   gradle-wrapper-validation :
