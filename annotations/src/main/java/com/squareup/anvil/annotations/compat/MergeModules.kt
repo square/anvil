@@ -72,5 +72,5 @@ public annotation class MergeModules(
    * List of bindings, multibindings and modules that are contributed to the same scope, but
    * should be excluded from the merged module.
    */
-  val exclude: Array<KClass<*>> = []
+  val exclude: Array<KClass<*>> = [],
 )

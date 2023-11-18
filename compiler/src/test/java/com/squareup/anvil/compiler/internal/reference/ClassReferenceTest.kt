@@ -73,8 +73,8 @@ class ClassReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -152,8 +152,8 @@ class ClassReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -191,10 +191,10 @@ class ClassReferenceTest {
               assertThat(descriptorRef.isGenericClass()).isTrue()
 
               assertThat(
-                psiRef.constructors.single().parameters.single().type().isGenericType()
+                psiRef.constructors.single().parameters.single().type().isGenericType(),
               ).isTrue()
               assertThat(
-                descriptorRef.constructors.single().parameters.single().type().isGenericType()
+                descriptorRef.constructors.single().parameters.single().type().isGenericType(),
               ).isTrue()
             }
             "SomeClass2" -> {
@@ -205,21 +205,21 @@ class ClassReferenceTest {
               assertThat(
                 descriptorRef.functions.single { it.name == "string" }
                   .returnType()
-                  .isGenericType()
+                  .isGenericType(),
               ).isFalse()
 
               assertThat(
-                psiRef.directSuperTypeReferences().single().isGenericType()
+                psiRef.directSuperTypeReferences().single().isGenericType(),
               ).isTrue()
               assertThat(
-                psiRef.directSuperTypeReferences().single().asClassReference().isGenericClass()
+                psiRef.directSuperTypeReferences().single().asClassReference().isGenericClass(),
               ).isTrue()
               assertThat(
-                descriptorRef.directSuperTypeReferences().single().isGenericType()
+                descriptorRef.directSuperTypeReferences().single().isGenericType(),
               ).isTrue()
               assertThat(
                 descriptorRef.directSuperTypeReferences().single().asClassReference()
-                  .isGenericClass()
+                  .isGenericClass(),
               ).isTrue()
             }
             "SomeClass3" -> {
@@ -227,7 +227,7 @@ class ClassReferenceTest {
               assertThat(
                 descriptorRef.functions.single { it.name == "list" }
                   .returnType()
-                  .isGenericType()
+                  .isGenericType(),
               ).isTrue()
             }
             "SomeClass4" -> {
@@ -235,15 +235,15 @@ class ClassReferenceTest {
               assertThat(
                 descriptorRef.functions.single { it.name == "list" }
                   .returnType()
-                  .isGenericType()
+                  .isGenericType(),
               ).isTrue()
             }
             else -> throw NotImplementedError(psiRef.shortName)
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -264,20 +264,20 @@ class ClassReferenceTest {
       codeGenerators = listOf(
         simpleCodeGenerator { psiRef ->
           assertThat(
-            psiRef.module.resolveFqNameOrNull(FqName("com.squareup.test.AnyQualifier"))
+            psiRef.module.resolveFqNameOrNull(FqName("com.squareup.test.AnyQualifier")),
           ).isNotNull()
 
           assertThat(
-            psiRef.module.resolveFqNameOrNull(FqName("com.squareup.test.AnyQualifier.Values"))
+            psiRef.module.resolveFqNameOrNull(FqName("com.squareup.test.AnyQualifier.Values")),
           ).isNotNull()
 
           assertThat(
-            psiRef.module.resolveFqNameOrNull(FqName("com.squareup.test.AnyQualifier.Values.ABC"))
+            psiRef.module.resolveFqNameOrNull(FqName("com.squareup.test.AnyQualifier.Values.ABC")),
           ).isNotNull()
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -306,18 +306,18 @@ class ClassReferenceTest {
             "Other" -> Unit
             "SomeClass1" -> {
               assertThat(
-                psiRef.directSuperTypeReferences().single().asClassReference().fqName
+                psiRef.directSuperTypeReferences().single().asClassReference().fqName,
               ).isEqualTo(FqName("com.squareup.other.Other"))
               assertThat(
-                descriptorRef.directSuperTypeReferences().single().asClassReference().fqName
+                descriptorRef.directSuperTypeReferences().single().asClassReference().fqName,
               ).isEqualTo(FqName("com.squareup.other.Other"))
             }
             else -> throw NotImplementedError(psiRef.shortName)
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -397,19 +397,19 @@ class ClassReferenceTest {
 
               assertThat(psiTypeSpec.toString()).contains(
                 "public class Class<T : kotlin.String, " +
-                  "S : kotlin.collections.Map<kotlin.collections.List<kotlin.String>, kotlin.Int>>"
+                  "S : kotlin.collections.Map<kotlin.collections.List<kotlin.String>, kotlin.Int>>",
               )
               assertThat(descriptorTypeSpec.toString()).contains(
                 "public class Class<T : kotlin.String, " +
-                  "S : kotlin.collections.Map<kotlin.collections.List<kotlin.String>, kotlin.Int>>"
+                  "S : kotlin.collections.Map<kotlin.collections.List<kotlin.String>, kotlin.Int>>",
               )
             }
             else -> throw NotImplementedError(psiRef.shortName)
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -495,8 +495,8 @@ class ClassReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -543,8 +543,8 @@ class ClassReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }

@@ -98,7 +98,7 @@ public annotation class ContributesSubcomponent(
    * This contributed subcomponent will replace these contributed subcomponents. All replaced
    * subcomponents must use the same scope.
    */
-  val replaces: Array<KClass<*>> = []
+  val replaces: Array<KClass<*>> = [],
 ) {
   /**
    * A factory for a contributed subcomponent.

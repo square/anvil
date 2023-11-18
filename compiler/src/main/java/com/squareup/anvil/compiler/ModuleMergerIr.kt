@@ -33,14 +33,14 @@ import org.jetbrains.kotlin.name.Name
 
 internal class ModuleMergerIr(
   private val classScanner: ClassScanner,
-  private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory
+  private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
 ) : IrGenerationExtension {
   // https://youtrack.jetbrains.com/issue/KT-56635
   override val shouldAlsoBeAppliedInKaptStubGenerationMode: Boolean get() = true
 
   override fun generate(
     moduleFragment: IrModuleFragment,
-    pluginContext: IrPluginContext
+    pluginContext: IrPluginContext,
   ) {
     moduleFragment.transform(
       object : IrElementTransformerVoid() {
@@ -58,12 +58,12 @@ internal class ModuleMergerIr(
               annotations = annotations,
               moduleFragment = moduleFragment,
               pluginContext = pluginContext,
-              declaration = declarationReference
+              declaration = declarationReference,
             )
           return super.visitClass(declaration)
         }
       },
-      null
+      null,
     )
   }
 
@@ -71,7 +71,7 @@ internal class ModuleMergerIr(
     annotations: List<AnnotationReferenceIr>,
     moduleFragment: IrModuleFragment,
     pluginContext: IrPluginContext,
-    declaration: ClassReferenceIr
+    declaration: ClassReferenceIr,
   ) {
     val daggerAnnotationFqName = annotations[0].daggerAnnotationFqName
 
@@ -90,7 +90,7 @@ internal class ModuleMergerIr(
             moduleFragment = moduleFragment,
             annotation = contributesToFqName,
             scope = annotation.scope,
-            moduleDescriptorFactory = moduleDescriptorFactory
+            moduleDescriptorFactory = moduleDescriptorFactory,
           )
       }
       .filter {
@@ -122,7 +122,7 @@ internal class ModuleMergerIr(
             message = "${contributedClass.fqName} is annotated with " +
               "@${ContributesTo::class.simpleName}, but this class is neither an interface " +
               "nor a Dagger module. Did you forget to add @${Module::class.simpleName}?",
-            classReference = contributedClass
+            classReference = contributedClass,
           )
         }
 
@@ -134,7 +134,7 @@ internal class ModuleMergerIr(
           throw AnvilCompilationExceptionClassReferenceIr(
             message = "${contributedClass.fqName} is contributed to the Dagger graph, but the " +
               "module is not public. Only public modules are supported.",
-            classReference = contributedClass
+            classReference = contributedClass,
           )
         }
       }
@@ -153,7 +153,7 @@ internal class ModuleMergerIr(
           .plus(
             excludedClass.annotations
               .find(contributesSubcomponentFqName)
-              .map { it.parentScope }
+              .map { it.parentScope },
           )
           .any { scope -> scope in scopes }
 
@@ -163,7 +163,7 @@ internal class ModuleMergerIr(
               "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
               "wants to exclude ${excludedClass.fqName}, but the excluded class isn't " +
               "contributed to the same scope.",
-            classReference = declaration
+            classReference = declaration,
           )
         }
       }
@@ -187,7 +187,7 @@ internal class ModuleMergerIr(
                 message = "${contributedClass.fqName} wants to replace " +
                   "${classToReplace.fqName}, but the class being " +
                   "replaced is not a Dagger module.",
-                classReference = contributedClass
+                classReference = contributedClass,
               )
             }
 
@@ -196,7 +196,7 @@ internal class ModuleMergerIr(
       }
 
     fun replacedModulesByContributedBinding(
-      annotationFqName: FqName
+      annotationFqName: FqName,
     ): Sequence<ClassReferenceIr> {
       return scopes.asSequence()
         .flatMap { scope ->
@@ -206,7 +206,7 @@ internal class ModuleMergerIr(
               moduleFragment = moduleFragment,
               annotation = annotationFqName,
               scope = scope,
-              moduleDescriptorFactory = moduleDescriptorFactory
+              moduleDescriptorFactory = moduleDescriptorFactory,
             )
         }
         .flatMap { contributedClass ->
@@ -221,11 +221,11 @@ internal class ModuleMergerIr(
     }
 
     val replacedModulesByContributedBindings = replacedModulesByContributedBinding(
-      annotationFqName = contributesBindingFqName
+      annotationFqName = contributesBindingFqName,
     )
 
     val replacedModulesByContributedMultibindings = replacedModulesByContributedBinding(
-      annotationFqName = contributesMultibindingFqName
+      annotationFqName = contributesMultibindingFqName,
     )
 
     if (predefinedModules.isNotEmpty()) {
@@ -234,7 +234,7 @@ internal class ModuleMergerIr(
         throw AnvilCompilationExceptionClassReferenceIr(
           message = "${declaration.fqName} includes and excludes modules " +
             "at the same time: ${intersect.joinToString { it.fqName.asString() }}",
-          classReference = declaration
+          classReference = declaration,
         )
       }
     }
@@ -244,7 +244,7 @@ internal class ModuleMergerIr(
         declaration,
         scopes,
         pluginContext,
-        moduleFragment
+        moduleFragment,
       )
 
     val contributedModules = contributesAnnotations
@@ -263,7 +263,7 @@ internal class ModuleMergerIr(
       callee = pluginContext
         .referenceConstructors(daggerAnnotationFqName.classIdBestGuess())
         .single { it.owner.isPrimary },
-      typeArguments = emptyList()
+      typeArguments = emptyList(),
     )
       .apply {
         putValueArgument(
@@ -273,11 +273,11 @@ internal class ModuleMergerIr(
             values = contributedModules
               .map {
                 kClassReference(
-                  classType = it.defaultType
+                  classType = it.defaultType,
                 )
               }
-              .toList()
-          )
+              .toList(),
+          ),
         )
 
         fun copyArrayValue(name: String) {
@@ -291,8 +291,8 @@ internal class ModuleMergerIr(
               elementType = varargArguments[0].varargElementType,
               // These are always IrExpression instances too
               values = varargArguments.flatMap { it.elements }
-                .filterIsInstance<IrExpression>()
-            )
+                .filterIsInstance<IrExpression>(),
+            ),
           )
         }
 
@@ -324,7 +324,7 @@ internal class ModuleMergerIr(
   private fun checkSameScope(
     contributedClass: ClassReferenceIr,
     classToReplace: ClassReferenceIr,
-    scopes: List<ClassReferenceIr>
+    scopes: List<ClassReferenceIr>,
   ) {
     val contributesToOurScope = classToReplace.annotations
       .findAll(contributesToFqName, contributesBindingFqName, contributesMultibindingFqName)
@@ -337,7 +337,7 @@ internal class ModuleMergerIr(
         message = "${contributedClass.fqName} with scopes " +
           "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
           "wants to replace ${classToReplace.fqName}, but the replaced class isn't " +
-          "contributed to the same scope."
+          "contributed to the same scope.",
       )
     }
   }
@@ -346,7 +346,7 @@ internal class ModuleMergerIr(
     declaration: ClassReferenceIr,
     scopes: List<ClassReferenceIr>,
     pluginContext: IrPluginContext,
-    moduleFragment: IrModuleFragment
+    moduleFragment: IrModuleFragment,
   ): Sequence<ClassReferenceIr> {
     return classScanner
       .findContributedClasses(
@@ -354,7 +354,7 @@ internal class ModuleMergerIr(
         moduleFragment = moduleFragment,
         annotation = contributesSubcomponentFqName,
         scope = null,
-        moduleDescriptorFactory = moduleDescriptorFactory
+        moduleDescriptorFactory = moduleDescriptorFactory,
       )
       .filter { clazz ->
         clazz.annotations.find(contributesSubcomponentFqName).any { it.parentScope in scopes }

@@ -30,10 +30,6 @@ ij_formatter_tags_enabled = false
 ij_smart_tabs = false
 ij_wrap_on_typing = false
 
-# Back-ticked method names are allowed to exceed the line length. That's especially helpful for
-# test methods with descriptive names.
-ktlint_ignore_back_ticked_identifier=true
-
 [*.java]
 ij_java_align_consecutive_assignments = false
 ij_java_align_consecutive_variable_declarations = false
@@ -483,7 +479,30 @@ ij_groovy_while_brace_force = if_multiline
 ij_groovy_while_on_new_line = false
 ij_groovy_wrap_long_lines = false
 
-[{*.gradle.kts,*.kt,*.kts,*.main.kts}]
+# These KtLint-specific settings have their own section so that we can suppress the
+# 'EditorConfigKeyCorrectness' warning in one place. IntelliJ doesn't recognize the KtLint settings.
+# noinspection EditorConfigKeyCorrectness
+# noinspection EditorConfigHeaderUniqueness
+[{*.kt,*.kts}]
+kotlin_imports_layout = *,java.**,javax.**,kotlin.**,^
+# Back-ticked method names are allowed to exceed the line length. That's especially helpful for
+# test methods with descriptive names.
+ktlint_ignore_back_ticked_identifier = true
+
+ktlint_code_style = intellij_idea
+
+ktlint_standard_class-naming = disabled
+ktlint_standard_class-signature = disabled
+ktlint_standard_filename = disabled
+ktlint_standard_function-expression-body = disabled
+ktlint_standard_function-naming = disabled
+ktlint_standard_function-signature = disabled
+ktlint_standard_max-line-length = disabled
+ktlint_standard_no-empty-first-line-in-method-block = disabled
+ktlint_standard_property-naming = disabled
+
+# noinspection EditorConfigHeaderUniqueness
+[{*.kt,*.kts}]
 ij_continuation_indent_size = 2
 ij_kotlin_align_in_columns_case_branch = false
 ij_kotlin_align_multiline_binary_operation = false
@@ -491,8 +510,8 @@ ij_kotlin_align_multiline_extends_list = false
 ij_kotlin_align_multiline_method_parentheses = false
 ij_kotlin_align_multiline_parameters = false
 ij_kotlin_align_multiline_parameters_in_calls = false
-ij_kotlin_allow_trailing_comma = false
-ij_kotlin_allow_trailing_comma_on_call_site = false
+ij_kotlin_allow_trailing_comma = true
+ij_kotlin_allow_trailing_comma_on_call_site = true
 ij_kotlin_assignment_wrap = normal
 ij_kotlin_blank_lines_after_class_header = 0
 ij_kotlin_blank_lines_around_block_when_branches = 0

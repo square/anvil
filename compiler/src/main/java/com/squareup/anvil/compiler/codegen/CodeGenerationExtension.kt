@@ -23,7 +23,7 @@ internal class CodeGenerationExtension(
   private val codeGenDir: File,
   codeGenerators: List<CodeGenerator>,
   private val commandLineOptions: CommandLineOptions,
-  private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory
+  private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
 ) : AnalysisHandlerExtension {
 
   private var didRecompile = false
@@ -46,7 +46,7 @@ internal class CodeGenerationExtension(
     projectContext: ProjectContext,
     files: Collection<KtFile>,
     bindingTrace: BindingTrace,
-    componentProvider: ComponentProvider
+    componentProvider: ComponentProvider,
   ): AnalysisResult? {
     // Tell the compiler that we have something to do in the analysisCompleted() method if
     // necessary.
@@ -57,7 +57,7 @@ internal class CodeGenerationExtension(
     project: Project,
     module: ModuleDescriptor,
     bindingTrace: BindingTrace,
-    files: Collection<KtFile>
+    files: Collection<KtFile>,
   ): AnalysisResult? {
     if (didRecompile) return null
     didRecompile = true
@@ -90,7 +90,7 @@ internal class CodeGenerationExtension(
           val virtualFile = LightVirtualFile(
             file.relativeTo(codeGenDir).path,
             KotlinFileType.INSTANCE,
-            content
+            content,
           )
 
           psiManager.findFile(virtualFile)
@@ -121,7 +121,7 @@ internal class CodeGenerationExtension(
                   "\n\nThe content of the new file is:\n\n" +
                   generatedFile.content.lines().joinToString(separator = "\n") {
                     "\t$it"
-                  }
+                  },
               )
             }
 
@@ -156,7 +156,7 @@ internal class CodeGenerationExtension(
       moduleDescriptor = anvilModule,
       additionalJavaRoots = emptyList(),
       additionalKotlinRoots = listOf(codeGenDir),
-      addToEnvironment = true
+      addToEnvironment = true,
     )
   }
 }

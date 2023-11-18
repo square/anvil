@@ -32,12 +32,13 @@ import javax.inject.Provider
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
 class ProvidesMethodFactoryGeneratorTest(
-  private val useDagger: Boolean
+  private val useDagger: Boolean,
 ) {
 
   companion object {
     @Parameters(name = "Use Dagger: {0}")
-    @JvmStatic fun useDagger(): Collection<Any> {
+    @JvmStatic
+    fun useDagger(): Collection<Any> {
       return listOf(isFullTestRun(), false).distinct()
     }
   }
@@ -88,7 +89,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       class DaggerModule1 {
         @dagger.Provides fun provideString(): String = "abc"
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -159,7 +160,7 @@ public final class DaggerModule1_ProvideFactoryFactory implements Factory<com.sq
       class DaggerModule1 {
         @dagger.Provides fun provideFactory(): Factory = Factory
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFactory")
 
@@ -231,7 +232,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       class DaggerModule1 {
         @Provides fun provideString(): String = "abc"
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -306,7 +307,7 @@ public final class DaggerModule1_ProvideFileFactory implements Factory<File> {
       class DaggerModule1 {
         @Provides fun provideFile(): java.io.File = java.io.File("")
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFile")
 
@@ -380,7 +381,7 @@ public final class DaggerModule1_ProvideFileFactory implements Factory<File> {
       class DaggerModule1 {
         @Provides fun provideFile(): File = File("")
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFile")
 
@@ -451,7 +452,7 @@ public final class DaggerModule1_ProvideStringListFactory implements Factory<Lis
       class DaggerModule1 {
         @dagger.Provides fun provideStringList(): List<String> = listOf("abc")
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideStringList")
 
@@ -525,7 +526,7 @@ public final class DaggerModule1_ProvidePairFactory implements Factory<Pair<Pair
       class DaggerModule1 {
         @Provides fun providePair(): Pair<Pair<String, Int>, List<String>> = Pair(Pair("", 1), listOf(""))
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("providePair")
 
@@ -632,11 +633,11 @@ public final class DaggerModule1_ProvideIntFactory implements Factory<Integer> {
         @dagger.Provides fun provideString(): String = "abc"
         @dagger.Provides fun provideInt(): Int = 5
       }
-      """
+      """,
     ) {
       fun <T> verifyClassGenerated(
         providerMethodName: String,
-        expectedResult: T
+        expectedResult: T,
       ) {
         val factoryClass = daggerModule1.moduleFactoryClass(providerMethodName)
 
@@ -708,7 +709,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       object DaggerModule1 {
         @dagger.Provides fun provideString(): String = "abc"
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -738,7 +739,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       class DaggerModule1 {
         @dagger.Provides internal fun provideString(): String = "abc"
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString\$main")
 
@@ -807,7 +808,7 @@ public final class DaggerModule1_ProvideString$mainFactory implements Factory<St
       object DaggerModule1 {
         @dagger.Provides internal fun provideString(): String = "abc"
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString\$main")
 
@@ -840,7 +841,7 @@ public final class DaggerModule1_ProvideString$mainFactory implements Factory<St
           @dagger.Provides internal fun provideString(): String = "abc"
         }
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString\$main", companion = true)
 
@@ -903,7 +904,7 @@ public final class DaggerModule1_ProvideString$mainFactory implements Factory<St
       object DaggerModule1 {
         @dagger.Provides @PublishedApi internal fun provideString(): String = "abc"
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -986,7 +987,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
           param2: CharSequence 
         ): String = param1 + param2
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1081,7 +1082,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
           param3: Provider<List<String>> 
         ): String = param1 + param2.get() + param3.get()[0]
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1091,7 +1092,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
           daggerModule1,
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
         .inOrder()
 
@@ -1184,7 +1185,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
           param3: Lazy<List<String>> 
         ): String = param1 + param2.get() + param3.get()[0]
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1194,7 +1195,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
           daggerModule1,
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
         .inOrder()
 
@@ -1232,7 +1233,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
           param: dagger.Lazy<String> 
         ): String = param.get()
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1326,7 +1327,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
           param2: Pair<Pair<String, Int>, List<String>> 
         ): String = param1[0] + param2.first.first + param2.second[0]
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1344,7 +1345,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
           null,
           module,
           Provider { listOf("a") },
-          Provider { Pair(Pair("b", 1), listOf("c")) }
+          Provider { Pair(Pair("b", 1), listOf("c")) },
         )
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
@@ -1415,7 +1416,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
           param2: CharSequence 
         ): String = param1 + param2
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1502,7 +1503,7 @@ public final class DaggerModule1_Companion_ProvideStringFactory implements Facto
           ): String = param1 + param2
         }
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString", companion = true)
 
@@ -1577,7 +1578,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       class DaggerModule1 {
         @Provides fun provideString(): String? = null
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1650,7 +1651,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       object DaggerModule1 {
         @Provides fun provideString(): String? = null
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1740,7 +1741,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
           return null
         }
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -1774,7 +1775,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       abstract class DaggerModule1 {
         @dagger.Binds abstract fun bindString(string: String): CharSequence
       }
-      """
+      """,
     ) {
       if (useDagger) {
         assertThat(sourcesGeneratedByAnnotationProcessor).isEmpty()
@@ -1830,7 +1831,7 @@ public final class DaggerModule1_Companion_ProvideStringFactory implements Facto
           @dagger.Provides fun provideString(): String = "abc"
         }
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString", companion = true)
 
@@ -1897,7 +1898,7 @@ public final class ComponentInterface_InnerModule_ProvideStringFactory implement
           @dagger.Provides fun provideString(): String = "abc"
         }
       }
-      """
+      """,
     ) {
       val factoryClass = innerModule.moduleFactoryClass("provideString")
 
@@ -1931,7 +1932,7 @@ public final class ComponentInterface_InnerModule_ProvideStringFactory implement
       object DaggerModule1 {
         @Provides fun provideInnerClass(): OuterClass.InnerClass = OuterClass.InnerClass()
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideInnerClass")
 
@@ -1991,7 +1992,7 @@ public final class ComponentInterface_InnerModule_Companion_ProvideStringFactory
           }
         }
       }
-      """
+      """,
     ) {
       val factoryClass = innerModule.moduleFactoryClass("provideString", companion = true)
 
@@ -2021,7 +2022,7 @@ public final class ComponentInterface_InnerModule_Companion_ProvideStringFactory
       abstract class DaggerModule1 {
         @dagger.Binds @dagger.multibindings.IntoSet abstract fun bindString(string: String): CharSequence
       }
-      """
+      """,
     ) {
       if (useDagger) {
         assertThat(sourcesGeneratedByAnnotationProcessor).isEmpty()
@@ -2073,7 +2074,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       object DaggerModule1 {
         @dagger.Provides @dagger.multibindings.IntoSet fun provideString(): String = "abc"
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -2139,7 +2140,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<Set<Str
       object DaggerModule1 {
         @dagger.Provides @dagger.multibindings.ElementsIntoSet fun provideString(): Set<String> = setOf("abc")
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
@@ -2210,7 +2211,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Funct
           return { string -> string.length }
         }
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFunction")
 
@@ -2293,7 +2294,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<F
           return setOf { listOf(string) }
         }
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFunction")
 
@@ -2416,7 +2417,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       
       @MergeComponent(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val factoryClass = componentInterface.anvilModule
         .moduleFactoryClass("provideParentInterface")
@@ -2454,11 +2455,11 @@ public final class DaggerComponentInterface implements ComponentInterface {
           @Provides fun provideString(): String = ""
           @Provides fun provideString(s: String): Int = 1
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
-        "Cannot have more than one binding method with the same name in a single module"
+        "Cannot have more than one binding method with the same name in a single module",
       )
     }
   }
@@ -2476,7 +2477,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       object DaggerModule1 {
         @Provides fun provideClass(): Class<*> = java.lang.Runnable::class.java
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideClass")
 
@@ -2499,7 +2500,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       object DaggerModule1 {
         @Provides fun provideRunner(): NamedRunnable = NamedRunnable {}
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideRunner")
 
@@ -2523,7 +2524,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       object DaggerModule1 {
         @Provides fun provideDate(): Date = Date(1000)
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideDate")
 
@@ -2553,7 +2554,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       class DaggerModule1 {
         @dagger.Provides fun provideString() = "abc"
       }
-      """
+      """,
     ) {
       assumeFalse(useDagger)
 
@@ -2561,7 +2562,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       assertThat(messages).contains("Source0.kt:5:3")
       assertThat(messages).contains(
         "Dagger provider methods must specify the return type explicitly when using Anvil. " +
-          "The return type cannot be inferred implicitly."
+          "The return type cannot be inferred implicitly.",
       )
     }
   }
@@ -2580,7 +2581,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       object DaggerModule1 {
         @Provides fun provideThing(): TestClassInUppercasePackage = TestClassInUppercasePackage()
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideThing")
 
@@ -2610,7 +2611,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
           return lowerCaseClassInUppercasePackage()
         }
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideThing")
 
@@ -2639,7 +2640,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       object DaggerModule1 {
         @Provides fun provideThing(): InnerClass = InnerClass()
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideThing")
 
@@ -2681,7 +2682,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       object DaggerModule1 {
         @Provides fun user(): User = User()
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("user")
 
@@ -2743,7 +2744,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       class DaggerModule1 {
         @get:Provides val string: String = "abc"
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString")
 
@@ -2812,7 +2813,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       object DaggerModule1 {
         @get:Provides val string: String = "abc"
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString")
 
@@ -2884,7 +2885,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
           @get:Provides val string: String = "abc"
         }
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString", companion = true)
 
@@ -2955,7 +2956,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       class DaggerModule1 {
         @get:Provides val string: String? = null
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString")
 
@@ -3026,7 +3027,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       object DaggerModule1 {
         @get:Provides val string: String? = null
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString")
 
@@ -3064,7 +3065,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       class DaggerModule1 {
         @Provides fun provideType(): Type = Type
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideType")
 
@@ -3095,7 +3096,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       class DaggerModule1 {
         @dagger.Provides fun provideString(): String = "abc"
       }
-      """
+      """,
     ) {
       val daggerModule1 = classLoader.loadClass("DaggerModule1")
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
@@ -3132,7 +3133,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       abstract class DaggerModule1 {
         @Provides abstract fun provideString(): String
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("@Provides methods cannot be abstract")
@@ -3151,7 +3152,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       interface DaggerModule1 {
         @Provides fun provideString(): String = ""
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("@Provides methods cannot be abstract")
@@ -3172,7 +3173,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
           @Provides fun provideString(): String = ""
         }      
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString", companion = true)
       assertThat(factoryClass).isNotNull()
@@ -3240,7 +3241,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
       interface Preference<T> {
         fun get(): T
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(ExitCode.OK)
     }
@@ -3259,7 +3260,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
       }
       """,
       enableDagger = true,
-      previousCompilationResult = otherModuleResult
+      previousCompilationResult = otherModuleResult,
     ) {
       // We are not able to directly assert that @JvmSuppressWildcards was added because it is
       // lost as part of converting to bytecode. However, we know that this would fail with an
@@ -3323,7 +3324,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
           return setOf("ipsum")
         }
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(ExitCode.OK)
     }
@@ -3342,7 +3343,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
       }
       """,
       enableDagger = true,
-      previousCompilationResult = otherModuleResult
+      previousCompilationResult = otherModuleResult,
     ) {
       // We are not able to directly assert that @JvmSuppressWildcards was added because it is
       // lost as part of converting to bytecode. However, we know that this would fail with an
@@ -3365,7 +3366,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
         @get:Provides
         val isValidCache: BooleanArray = booleanArrayOf(false)
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("isValidCache")
 
@@ -3403,7 +3404,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
         @get:Provides
         val is_valid_cache: BooleanArray = booleanArrayOf(false)
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("is_valid_cache")
 
@@ -3441,7 +3442,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
         @get:Provides
         val issues: List<String> = listOf("a")
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getIssues")
 
@@ -3478,7 +3479,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
         @get:Provides
         val isValidCache: Boolean = false
       }
-      """
+      """,
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("isValidCache")
 
@@ -3512,6 +3513,6 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block,
     previousCompilationResult = previousCompilationResult,
-    moduleName = moduleName
+    moduleName = moduleName,
   )
 }

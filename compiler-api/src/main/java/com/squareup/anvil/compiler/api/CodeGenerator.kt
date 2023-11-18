@@ -37,7 +37,7 @@ public interface CodeGenerator : AnvilApplicabilityChecker {
   public fun generateCode(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ): Collection<GeneratedFile>
 }
 
@@ -51,7 +51,7 @@ public fun CodeGenerator.createGeneratedFile(
   codeGenDir: File,
   packageName: String,
   fileName: String,
-  content: String
+  content: String,
 ): GeneratedFile {
   val directory = File(codeGenDir, packageName.replace('.', File.separatorChar))
   val file = File(directory, "$fileName.kt")

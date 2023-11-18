@@ -44,7 +44,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
   override fun generateCode(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ): Collection<GeneratedFile> {
     return projectFiles
       .classAndInnerClassReferences(module)
@@ -54,7 +54,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
           throw AnvilCompilationExceptionClassReference(
             message = "${clazz.fqName} is annotated with " +
               "@${ContributesSubcomponent::class.simpleName}, but this class is not an interface.",
-            classReference = clazz
+            classReference = clazz,
           )
         }
 
@@ -62,7 +62,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
           throw AnvilCompilationExceptionClassReference(
             message = "${clazz.fqName} is contributed to the Dagger graph, but the " +
               "interface is not public. Only public interfaces are supported.",
-            classReference = clazz
+            classReference = clazz,
           )
         }
 
@@ -95,22 +95,22 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
               PropertySpec
                 .builder(
                   name = propertyName + REFERENCE_SUFFIX,
-                  type = KClass::class.asClassName().parameterizedBy(className)
+                  type = KClass::class.asClassName().parameterizedBy(className),
                 )
                 .initializer("%T::class", className)
                 .addModifiers(PUBLIC)
-                .build()
+                .build(),
             )
 
             addProperty(
               PropertySpec
                 .builder(
                   name = propertyName + SCOPE_SUFFIX,
-                  type = KClass::class.asClassName().parameterizedBy(parentScope)
+                  type = KClass::class.asClassName().parameterizedBy(parentScope),
                 )
                 .initializer("%T::class", parentScope)
                 .addModifiers(PUBLIC)
-                .build()
+                .build(),
             )
           }
 
@@ -118,7 +118,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
           codeGenDir = codeGenDir,
           packageName = generatedPackage,
           fileName = fileName,
-          content = content
+          content = content,
         )
       }
       .toList()
@@ -126,7 +126,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
 
   private fun ClassReference.checkParentComponentInterface(
     innerClasses: List<ClassReference>,
-    parentScope: ClassReference
+    parentScope: ClassReference,
   ) {
     val parentComponents = innerClasses
       .filter {
@@ -141,7 +141,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
       else -> throw AnvilCompilationExceptionClassReference(
         classReference = this,
         message = "Expected zero or one parent component interface within " +
-          "$fqName being contributed to the parent scope."
+          "$fqName being contributed to the parent scope.",
       )
     }
 
@@ -151,7 +151,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
     if (functions.size >= 2) {
       throw AnvilCompilationExceptionClassReference(
         classReference = componentInterface,
-        message = "Expected zero or one function returning the subcomponent $fqName."
+        message = "Expected zero or one function returning the subcomponent $fqName.",
       )
     }
   }
@@ -164,7 +164,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
           classReference = factoryClass,
           message = "Within a class using @${ContributesSubcomponent::class.simpleName} you " +
             "must use $contributesSubcomponentFactoryFqName and not " +
-            "$daggerSubcomponentFactoryFqName."
+            "$daggerSubcomponentFactoryFqName.",
         )
       }
 
@@ -175,7 +175,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
           classReference = factoryClass,
           message = "Within a class using @${ContributesSubcomponent::class.simpleName} you " +
             "must use $contributesSubcomponentFactoryFqName and not " +
-            "$daggerSubcomponentBuilderFqName. Builders aren't supported."
+            "$daggerSubcomponentBuilderFqName. Builders aren't supported.",
         )
       }
 
@@ -187,14 +187,14 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
       1 -> factories[0]
       else -> throw AnvilCompilationExceptionClassReference(
         classReference = this,
-        message = "Expected zero or one factory within $fqName."
+        message = "Expected zero or one factory within $fqName.",
       )
     }
 
     if (!factory.isInterface() && !factory.isAbstract()) {
       throw AnvilCompilationExceptionClassReference(
         classReference = factory,
-        message = "A factory must be an interface or an abstract class."
+        message = "A factory must be an interface or an abstract class.",
       )
     }
 
@@ -211,21 +211,21 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
       throw AnvilCompilationExceptionClassReference(
         classReference = factory,
         message = "A factory must have exactly one abstract function returning the " +
-          "subcomponent $fqName."
+          "subcomponent $fqName.",
       )
     }
   }
 
   private fun ClassReference.checkUsesSameScope(
     scope: ClassReference,
-    subcomponent: ClassReference
+    subcomponent: ClassReference,
   ) {
     annotations
       .filter { it.fqName == contributesSubcomponentFqName }
       .ifEmpty {
         throw AnvilCompilationExceptionClassReference(
           classReference = subcomponent,
-          message = "Couldn't find the annotation @ContributesSubcomponent for $fqName."
+          message = "Couldn't find the annotation @ContributesSubcomponent for $fqName.",
         )
       }
       .forEach { annotation ->
@@ -234,7 +234,7 @@ internal class ContributesSubcomponentGenerator : CodeGenerator {
           throw AnvilCompilationExceptionClassReference(
             classReference = subcomponent,
             message = "${subcomponent.fqName} with scope ${scope.fqName} wants to replace " +
-              "$fqName with scope ${otherScope.fqName}. The replacement must use the same scope."
+              "$fqName with scope ${otherScope.fqName}. The replacement must use the same scope.",
           )
         }
       }

@@ -15,12 +15,13 @@ import org.junit.runners.Parameterized
 
 @RunWith(Parameterized::class)
 class AnvilMergeAnnotationDetectorCheckTest(
-  private val mode: AnvilCompilationMode
+  private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
     @Parameterized.Parameters(name = "{0}")
-    @JvmStatic fun modes(): Collection<Any> {
+    @JvmStatic
+    fun modes(): Collection<Any> {
       return listOf(AnvilCompilationMode.Embedded(), AnvilCompilationMode.Ksp())
     }
   }
@@ -36,7 +37,7 @@ class AnvilMergeAnnotationDetectorCheckTest(
       @com.squareup.anvil.annotations.ContributesTo(Any::class)
       object AnyClass
       """,
-      mode = mode
+      mode = mode,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -52,7 +53,7 @@ class AnvilMergeAnnotationDetectorCheckTest(
       @com.squareup.anvil.annotations.ContributesBinding(Any::class)
       class AnyClass : BaseType
       """,
-      mode = mode
+      mode = mode,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -68,7 +69,7 @@ class AnvilMergeAnnotationDetectorCheckTest(
       @com.squareup.anvil.annotations.MergeComponent(Any::class)
       class AnyClass
       """,
-      mode = mode
+      mode = mode,
     ) {
       assertError()
     }
@@ -84,7 +85,7 @@ class AnvilMergeAnnotationDetectorCheckTest(
       @com.squareup.anvil.annotations.MergeSubcomponent(Any::class)
       class AnyClass
       """,
-      mode = mode
+      mode = mode,
     ) {
       assertError()
     }
@@ -100,7 +101,7 @@ class AnvilMergeAnnotationDetectorCheckTest(
       @com.squareup.anvil.annotations.compat.MergeModules(Any::class)
       class AnyClass
       """,
-      mode = mode
+      mode = mode,
     ) {
       assertError()
     }
@@ -116,7 +117,7 @@ class AnvilMergeAnnotationDetectorCheckTest(
       @com.squareup.anvil.annotations.compat.MergeInterfaces(Any::class)
       class AnyClass
       """,
-      mode = mode
+      mode = mode,
     ) {
       assertError()
     }
@@ -128,7 +129,7 @@ class AnvilMergeAnnotationDetectorCheckTest(
     assertThat(messages).contains(
       "This Gradle module is configured to ONLY generate code with the " +
         "`disableComponentMerging` flag. However, this module contains code that uses " +
-        "Anvil @Merge* annotations. That's not supported."
+        "Anvil @Merge* annotations. That's not supported.",
     )
   }
 
@@ -136,12 +137,12 @@ class AnvilMergeAnnotationDetectorCheckTest(
     @Language("kotlin") vararg sources: String,
     codeGenerators: List<CodeGenerator> = emptyList(),
     mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
-    block: JvmCompilationResult.() -> Unit = { }
+    block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     disableComponentMerging = true,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block,
-    mode = mode
+    mode = mode,
   )
 }

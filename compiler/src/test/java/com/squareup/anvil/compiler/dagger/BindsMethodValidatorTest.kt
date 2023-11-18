@@ -15,12 +15,13 @@ import org.junit.runners.Parameterized.Parameters
 
 @RunWith(Parameterized::class)
 class BindsMethodValidatorTest(
-  private val useDagger: Boolean
+  private val useDagger: Boolean,
 ) {
 
   companion object {
     @Parameters(name = "Use Dagger: {0}")
-    @JvmStatic fun useDagger(): Collection<Any> {
+    @JvmStatic
+    fun useDagger(): Collection<Any> {
       return listOf(isFullTestRun(), false).distinct()
     }
   }
@@ -45,16 +46,16 @@ class BindsMethodValidatorTest(
         @Binds
         abstract fun bindsBar(impl: Foo): Bar
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
-        "@Binds methods' parameter type must be assignable to the return type"
+        "@Binds methods' parameter type must be assignable to the return type",
       )
       if (!useDagger) {
         assertThat(messages).contains(
           "Expected binding of type Bar but impl parameter of type Foo only has the following " +
-            "supertypes: [Ipsum, Lorem]"
+            "supertypes: [Ipsum, Lorem]",
         )
       }
     }
@@ -78,15 +79,15 @@ class BindsMethodValidatorTest(
         @Binds
         abstract fun bindsBar(impl: Foo): Bar
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
-        "@Binds methods' parameter type must be assignable to the return type"
+        "@Binds methods' parameter type must be assignable to the return type",
       )
       if (!useDagger) {
         assertThat(messages).contains(
-          "Expected binding of type Bar but impl parameter of type Foo has no supertypes."
+          "Expected binding of type Bar but impl parameter of type Foo has no supertypes.",
         )
       }
     }
@@ -112,7 +113,7 @@ class BindsMethodValidatorTest(
           return impl
         }
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("@Binds methods must be abstract")
@@ -137,12 +138,12 @@ class BindsMethodValidatorTest(
         @Binds
         abstract fun bindsBar(): Bar
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@Binds methods must have exactly one parameter, " +
-          "whose type is assignable to the return type"
+          "whose type is assignable to the return type",
       )
     }
   }
@@ -166,12 +167,12 @@ class BindsMethodValidatorTest(
         @Binds
         abstract fun bindsBar(impl1: Foo, impl2: Hammer): Bar
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@Binds methods must have exactly one parameter, " +
-          "whose type is assignable to the return type"
+          "whose type is assignable to the return type",
       )
     }
   }
@@ -195,12 +196,12 @@ class BindsMethodValidatorTest(
         @Binds
         abstract fun Foo.bindsBar(impl2: Hammer): Bar
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@Binds methods must have exactly one parameter, " +
-          "whose type is assignable to the return type"
+          "whose type is assignable to the return type",
       )
     }
   }
@@ -223,11 +224,11 @@ class BindsMethodValidatorTest(
         @Binds
         abstract fun bindsBar(impl1: Foo)
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
-        "@Binds methods must return a value (not void)"
+        "@Binds methods must return a value (not void)",
       )
     }
   }
@@ -250,7 +251,7 @@ class BindsMethodValidatorTest(
         @Binds
         abstract fun Foo.bindsBar(): Bar
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -351,7 +352,7 @@ class BindsMethodValidatorTest(
             fun providesFoo(): Foo = Foo()
         }
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -379,13 +380,13 @@ class BindsMethodValidatorTest(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
     enableDagger: Boolean = useDagger,
-    block: JvmCompilationResult.() -> Unit = { }
+    block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = enableDagger,
     generateDaggerFactories = !enableDagger,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
-    block = block
+    block = block,
   )
 }

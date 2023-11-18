@@ -21,7 +21,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class BindingModulePriorityTest(
-  annotationClass: KClass<*>
+  annotationClass: KClass<*>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -29,7 +29,8 @@ class BindingModulePriorityTest(
 
   companion object {
     @Parameters(name = "{0}")
-    @JvmStatic fun annotationClasses(): Collection<Any> {
+    @JvmStatic
+    fun annotationClasses(): Collection<Any> {
       return buildList {
         add(MergeComponent::class)
         if (isFullTestRun()) {
@@ -63,7 +64,7 @@ class BindingModulePriorityTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -97,7 +98,7 @@ class BindingModulePriorityTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -126,13 +127,13 @@ class BindingModulePriorityTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
 
       assertThat(messages).contains(
         "There are multiple contributed bindings with the same bound type. The bound type is " +
-          "com.squareup.test.ParentInterface. The contributed binding classes are: ["
+          "com.squareup.test.ParentInterface. The contributed binding classes are: [",
       )
       // Check the contributed bindings separately, we cannot rely on the order in the string.
       assertThat(messages).contains("com.squareup.test.ContributingInterface")
@@ -158,7 +159,7 @@ class BindingModulePriorityTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -187,7 +188,7 @@ class BindingModulePriorityTest(
       
       $annotation(Any::class, exclude = [ContributingInterface::class])
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -219,7 +220,7 @@ class BindingModulePriorityTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethods = componentInterface.anvilModule.declaredMethods
         .filter { it.returnType == parentInterface }
@@ -227,10 +228,10 @@ class BindingModulePriorityTest(
       assertThat(bindingMethods).hasSize(2)
 
       assertThat(
-        bindingMethods.singleOrNull { it.parameterTypes.contains(contributingInterface) }
+        bindingMethods.singleOrNull { it.parameterTypes.contains(contributingInterface) },
       ).isNotNull()
       assertThat(
-        bindingMethods.singleOrNull { it.parameterTypes.contains(secondContributingInterface) }
+        bindingMethods.singleOrNull { it.parameterTypes.contains(secondContributingInterface) },
       ).isNotNull()
     }
   }
@@ -256,13 +257,13 @@ class BindingModulePriorityTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
 
       assertThat(messages).contains(
         "There are multiple contributed bindings with the same bound type. The bound type is " +
-          "com.squareup.test.ParentInterface. The contributed binding classes are: ["
+          "com.squareup.test.ParentInterface. The contributed binding classes are: [",
       )
       // Check the contributed bindings separately, we cannot rely on the order in the string.
       assertThat(messages).contains("com.squareup.test.ContributingInterface")
@@ -291,13 +292,13 @@ class BindingModulePriorityTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
 
       assertThat(messages).contains(
         "There are multiple contributed bindings with the same bound type. The bound type is " +
-          "com.squareup.test.ParentInterface. The contributed binding classes are: ["
+          "com.squareup.test.ParentInterface. The contributed binding classes are: [",
       )
       // Check the contributed bindings separately, we cannot rely on the order in the string.
       assertThat(messages).contains("com.squareup.test.ContributingInterface")
@@ -326,7 +327,7 @@ class BindingModulePriorityTest(
       
       $annotation(Any::class, exclude = [ContributingInterface::class])
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
 
@@ -355,7 +356,7 @@ class BindingModulePriorityTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val bindingMethods = componentInterface.anvilModule.declaredMethods
       assertThat(bindingMethods).hasLength(2)
@@ -389,7 +390,7 @@ class BindingModulePriorityTest(
       
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       with(componentInterface.anvilModule.declaredMethods.single()) {
         assertThat(returnType).isEqualTo(parentInterface)

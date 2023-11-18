@@ -91,7 +91,7 @@ internal fun String.isAnvilModule(): Boolean {
 
 @Suppress("UNCHECKED_CAST")
 internal fun <T : ClassReference> ClassId.classReferenceOrNull(
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
 ): T? = asSingleFqName().toClassReferenceOrNull(module) as T?
 
 // If we're evaluating an anonymous inner class, it cannot merge anything and will cause
@@ -109,9 +109,11 @@ internal inline fun <T> Iterable<T>.singleOrEmpty(predicate: (T) -> Boolean): T?
   var found = false
   for (element in this) {
     if (predicate(element)) {
-      if (found) throw IllegalArgumentException(
-        "Collection contains more than one matching element."
-      )
+      if (found) {
+        throw IllegalArgumentException(
+          "Collection contains more than one matching element.",
+        )
+      }
       single = element
       found = true
     }

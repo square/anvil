@@ -42,7 +42,7 @@ public sealed class MemberFunctionReference : AnnotatedReference, FunctionRefere
   public abstract fun isAbstract(): Boolean
   public abstract fun isConstructor(): Boolean
   public fun resolveGenericReturnTypeOrNull(
-    implementingClass: ClassReference
+    implementingClass: ClassReference,
   ): ClassReference? {
     return returnType
       ?.resolveGenericTypeOrNull(implementingClass)
@@ -54,7 +54,7 @@ public sealed class MemberFunctionReference : AnnotatedReference, FunctionRefere
       ?: throw AnvilCompilationExceptionFunctionReference(
         functionReference = this,
         message = "Unable to resolve return type for function $fqName with the implementing " +
-          "class ${implementingClass.fqName}."
+          "class ${implementingClass.fqName}.",
       )
 
   override fun toString(): String = "$fqName()"
@@ -75,7 +75,7 @@ public sealed class MemberFunctionReference : AnnotatedReference, FunctionRefere
   public class Psi internal constructor(
     public override val function: KtFunction,
     override val declaringClass: ClassReference.Psi,
-    override val fqName: FqName
+    override val fqName: FqName,
   ) : MemberFunctionReference(), FunctionReference.Psi {
 
     override val annotations: List<AnnotationReference.Psi> by lazy(NONE) {
@@ -106,7 +106,7 @@ public sealed class MemberFunctionReference : AnnotatedReference, FunctionRefere
         KtTokens.PRIVATE_KEYWORD -> PRIVATE
         else -> throw AnvilCompilationExceptionClassReference(
           classReference = declaringClass,
-          message = "Couldn't get visibility $visibility for function $fqName."
+          message = "Couldn't get visibility $visibility for function $fqName.",
         )
       }
     }
@@ -115,7 +115,7 @@ public sealed class MemberFunctionReference : AnnotatedReference, FunctionRefere
   public class Descriptor internal constructor(
     public override val function: FunctionDescriptor,
     override val declaringClass: ClassReference.Descriptor,
-    override val fqName: FqName = function.fqNameSafe
+    override val fqName: FqName = function.fqNameSafe,
   ) : MemberFunctionReference(), FunctionReference.Descriptor {
 
     override val annotations: List<AnnotationReference.Descriptor> by lazy(NONE) {
@@ -144,7 +144,7 @@ public sealed class MemberFunctionReference : AnnotatedReference, FunctionRefere
         DescriptorVisibilities.PRIVATE -> PRIVATE
         else -> throw AnvilCompilationExceptionClassReference(
           classReference = declaringClass,
-          message = "Couldn't get visibility $visibility for function $fqName."
+          message = "Couldn't get visibility $visibility for function $fqName.",
         )
       }
     }
@@ -153,7 +153,7 @@ public sealed class MemberFunctionReference : AnnotatedReference, FunctionRefere
 
 @ExperimentalAnvilApi
 public fun KtFunction.toFunctionReference(
-  declaringClass: ClassReference.Psi
+  declaringClass: ClassReference.Psi,
 ): Psi {
   val fqName = if (this is KtConstructor<*>) {
     declaringClass.fqName.child(Name.identifier("<init>"))

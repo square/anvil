@@ -31,7 +31,7 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
 class RealAnvilModuleDescriptor private constructor(
-  delegate: ModuleDescriptor
+  delegate: ModuleDescriptor,
 ) : AnvilModuleDescriptor, ModuleDescriptor by delegate {
 
   private val ktFileToClassReferenceMap = mutableMapOf<String, List<Psi>>()
@@ -100,7 +100,7 @@ class RealAnvilModuleDescriptor private constructor(
 
   override fun resolveFqNameOrNull(
     fqName: FqName,
-    lookupLocation: LookupLocation
+    lookupLocation: LookupLocation,
   ): ClassDescriptor? {
     return resolveDescriptorCache.getOrPut(fqName) {
       // In the case of a typealias, we need to look up the original reference instead.
@@ -125,7 +125,7 @@ class RealAnvilModuleDescriptor private constructor(
         classDescriptor = descriptor,
         message = "Couldn't find the classId for $fqNameSafe. Are we stuck in a loop while " +
           "resolving super types? Note that it's not supported to contribute an inner class to " +
-          "a scope that is merged in an outer class."
+          "a scope that is merged in an outer class.",
       )
       Descriptor(descriptor, classId, this)
     } as Descriptor
@@ -161,7 +161,7 @@ class RealAnvilModuleDescriptor private constructor(
 
   private data class ClassReferenceCacheKey(
     private val fqName: FqName,
-    private val type: Type
+    private val type: Type,
   ) {
     enum class Type {
       PSI,

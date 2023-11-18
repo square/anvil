@@ -50,7 +50,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
   override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ) {
     projectFiles
       .classAndInnerClassReferences(module)
@@ -62,7 +62,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
 
   private fun generateFactoryClass(
     codeGenDir: File,
-    clazz: ClassReference.Psi
+    clazz: ClassReference.Psi,
   ): GeneratedFile {
     val packageName = clazz.packageFqName.safePackageString()
     val delegateFactoryName = "delegateFactory"
@@ -77,7 +77,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
         message = "Invalid return type: ${clazz.fqName}. An assisted factory's " +
           "abstract method must return a type with an @AssistedInject-annotated constructor.",
         functionReference = function.function,
-        cause = e
+        cause = e,
       )
     }
 
@@ -88,7 +88,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
       ?: throw AnvilCompilationExceptionClassReference(
         message = "Invalid return type: ${returnType.fqName}. An assisted factory's abstract " +
           "method must return a type with an @AssistedInject-annotated constructor.",
-        classReference = clazz
+        classReference = clazz,
       )
 
     val functionParameters = function.parameterKeys
@@ -101,7 +101,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
       throw AnvilCompilationExceptionClassReference(
         message = "The parameters in the factory method must match the @Assisted parameters in " +
           "${returnType.fqName}.",
-        classReference = clazz
+        classReference = clazz,
       )
     }
 
@@ -128,7 +128,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
           }
           append(key.typeName)
         },
-        classReference = clazz
+        classReference = clazz,
       )
     }
 
@@ -144,7 +144,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
       throw AnvilCompilationExceptionClassReference(
         message = "The parameters in the factory method must match the @Assisted parameters in " +
           "${returnType.fqName}.",
-        classReference = clazz
+        classReference = clazz,
       )
     }
 
@@ -178,14 +178,14 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
           primaryConstructor(
             FunSpec.constructorBuilder()
               .addParameter(delegateFactoryName, generatedFactoryTypeName)
-              .build()
+              .build(),
           )
 
           addProperty(
             PropertySpec.builder(delegateFactoryName, generatedFactoryTypeName)
               .initializer(delegateFactoryName)
               .addModifiers(PRIVATE)
-              .build()
+              .build(),
           )
         }
         .addFunction(
@@ -213,7 +213,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
 
               addStatement("return $delegateFactoryName.get($argumentList)")
             }
-            .build()
+            .build(),
         )
         .apply {
           TypeSpec.companionObjectBuilder()
@@ -226,9 +226,9 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
                 .addStatement(
                   "return %T.create(%T($delegateFactoryName))",
                   InstanceFactory::class,
-                  implParameterizedTypeName
+                  implParameterizedTypeName,
                 )
-                .build()
+                .build(),
             )
             .build()
             .let {
@@ -264,7 +264,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
       0 -> throw AnvilCompilationExceptionClassReference(
         message = "The @AssistedFactory-annotated type is missing an abstract, non-default " +
           "method whose return type matches the assisted injection type.",
-        classReference = this
+        classReference = this,
       )
       1 -> assistedFunctions[0]
       else -> {
@@ -276,7 +276,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
         throw AnvilCompilationExceptionClassReference(
           message = "The @AssistedFactory-annotated type should contain a single abstract, " +
             "non-default method but found multiple: [$foundFunctions]",
-          classReference = this
+          classReference = this,
         )
       }
     }
@@ -291,16 +291,16 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
     /**
      * Pair of parameter reference to parameter type.
      */
-    val parameterPairs: List<Pair<ParameterReference, TypeName>>
+    val parameterPairs: List<Pair<ParameterReference, TypeName>>,
   ) {
     companion object {
       fun MemberFunctionReference.toAssistedFactoryFunction(
-        factoryClass: ClassReference.Psi
+        factoryClass: ClassReference.Psi,
       ): AssistedFactoryFunction {
         return AssistedFactoryFunction(
           function = this,
           parameterKeys = parameters.map { it.toAssistedParameterKey(factoryClass) },
-          parameterPairs = parameters.map { it to it.resolveTypeName(factoryClass) }
+          parameterPairs = parameters.map { it to it.resolveTypeName(factoryClass) },
         )
       }
     }
@@ -312,7 +312,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
   // @Assisted("...") annotation. For each parameter the key must be unique.
   private data class AssistedParameterKey(
     val typeName: TypeName,
-    val identifier: String
+    val identifier: String,
   ) {
 
     // Key value is similar to a hash function.  There used to be a special case for KotlinTypes
@@ -322,7 +322,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
 
     companion object {
       fun ParameterReference.toAssistedParameterKey(
-        factoryClass: ClassReference.Psi
+        factoryClass: ClassReference.Psi,
       ): AssistedParameterKey {
         return AssistedParameterKey(
           typeName = resolveTypeName(factoryClass),
@@ -331,7 +331,7 @@ internal class AssistedFactoryGenerator : PrivateCodeGenerator() {
             ?.let { annotation ->
               annotation.argumentAt("value", index = 0)?.value<String>()
             }
-            .orEmpty()
+            .orEmpty(),
         )
       }
     }

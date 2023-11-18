@@ -49,5 +49,5 @@ public annotation class ContributesTo(
    * include other contributed bindings, multibindings and Dagger modules. All replaced classes
    * must use the same scope.
    */
-  val replaces: Array<KClass<*>> = []
+  val replaces: Array<KClass<*>> = [],
 )

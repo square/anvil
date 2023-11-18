@@ -58,5 +58,5 @@ public annotation class MergeInterfaces(
    * List of component interfaces that are contributed to the same scope, but should be excluded
    * from the merged interface.
    */
-  val exclude: Array<KClass<*>> = []
+  val exclude: Array<KClass<*>> = [],
 )

@@ -11,14 +11,14 @@ import java.io.OutputStreamWriter
 import java.nio.charset.StandardCharsets
 
 internal fun simpleSymbolProcessor(
-  mapper: AnvilSymbolProcessor.(resolver: Resolver) -> List<String>
+  mapper: AnvilSymbolProcessor.(resolver: Resolver) -> List<String>,
 ): SymbolProcessorProvider = AnvilSymbolProcessorProvider(
-  AnvilApplicabilityChecker.always()
+  AnvilApplicabilityChecker.always(),
 ) { env -> SimpleSymbolProcessor(env, mapper) }
 
 private class SimpleSymbolProcessor(
   override val env: SymbolProcessorEnvironment,
-  private val mapper: AnvilSymbolProcessor.(resolver: Resolver) -> List<String>
+  private val mapper: AnvilSymbolProcessor.(resolver: Resolver) -> List<String>,
 ) : AnvilSymbolProcessor() {
   override fun processChecked(resolver: Resolver): List<KSAnnotated> {
     this.mapper(resolver)

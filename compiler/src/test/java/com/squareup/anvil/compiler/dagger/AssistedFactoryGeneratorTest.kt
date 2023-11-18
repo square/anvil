@@ -26,12 +26,13 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class AssistedFactoryGeneratorTest(
-  private val useDagger: Boolean
+  private val useDagger: Boolean,
 ) {
 
   companion object {
     @Parameters(name = "Use Dagger: {0}")
-    @JvmStatic fun useDagger(): Collection<Any> {
+    @JvmStatic
+    fun useDagger(): Collection<Any> {
       return listOf(isFullTestRun(), false).distinct()
     }
   }
@@ -127,7 +128,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(string: String): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass()
@@ -175,7 +176,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
           charSequence: CharSequence
         ): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -218,7 +219,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       
       @AssistedFactory
       interface AssistedServiceFactory : AssistedServiceFactorySuper
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -262,7 +263,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       
       @AssistedFactory
       interface AssistedServiceFactory : Mid<AssistedService>
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -302,7 +303,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(stringFactory: (Int) -> String): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -344,7 +345,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(stringFactory: suspend (Int) -> String): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -386,7 +387,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(stringFactory: Function1<Int, String>): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -428,7 +429,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(stringFactory: (Int) -> String): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -470,7 +471,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(callback: ((Int) -> String)?): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance()
@@ -511,7 +512,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(stringFactory: Function1<Int, String>): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -553,7 +554,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       
       @AssistedFactory
       interface AssistedServiceFactory : ReadOnlyProperty<String, AssistedService> 
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance()
@@ -591,7 +592,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       
       @AssistedFactory
       interface AssistedServiceFactory : Function1<@JvmSuppressWildcards List<String>, AssistedService> 
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -634,7 +635,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       
       @AssistedFactory
       interface AssistedServiceFactory : AssistedServiceFactorySuper
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -674,7 +675,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       abstract class AssistedServiceFactory {
         abstract fun create(string: String): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -714,7 +715,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       abstract class AssistedServiceFactory {
         protected abstract fun create(string: String): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -756,7 +757,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(strings: List<String>): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -865,7 +866,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       interface AssistedServiceFactory<T : CharSequence> {
         fun create(string: T): AssistedService<T>
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -905,7 +906,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       interface AssistedServiceFactory<T : List<String>> {
         fun create(strings: T): AssistedService<T>
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -926,8 +927,8 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       assertThat(assistedServiceInstance).isEqualTo(
         assistedService.createInstance(
           5,
-          listOf("Hello")
-        )
+          listOf("Hello"),
+        ),
       )
     }
   }
@@ -962,7 +963,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       interface AssistedServiceFactory<T> where T : Appendable, T : CharSequence {
         fun create(stringBuilder: T): AssistedService<T>
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -983,8 +984,8 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       assertThat(assistedServiceInstance).isEqualTo(
         assistedService.createInstance(
           5,
-          StringBuilder("Hello")
-        )
+          StringBuilder("Hello"),
+        ),
       )
     }
   }
@@ -1007,7 +1008,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
           fun create(string: String): AssistedService
         }
       }
-      """
+      """,
     ) {
       val factoryImplClass = classLoader
         .loadClass("com.squareup.test.AssistedService\$Factory").implClass()
@@ -1050,7 +1051,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
           }
         }
       }
-      """
+      """,
     ) {
       val factoryImplClass = classLoader
         .loadClass("com.squareup.test.Outer\$AssistedService\$Factory").implClass()
@@ -1159,7 +1160,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(string: String?): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -1197,12 +1198,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface Factory {
         fun create(string: String): AssistedService
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "Invalid return type: com.squareup.test.AssistedService. An assisted factory's " +
-          "abstract method must return a type with an @AssistedInject-annotated constructor."
+          "abstract method must return a type with an @AssistedInject-annotated constructor.",
       )
     }
   }
@@ -1223,13 +1224,13 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface Factory {
         fun create(string: String)
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Invalid return type:")
       assertThat(messages).contains(
         "An assisted factory's abstract method must return a type with an " +
-          "@AssistedInject-annotated constructor."
+          "@AssistedInject-annotated constructor.",
       )
     }
   }
@@ -1252,12 +1253,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(charSequence: CharSequence, other: String): AssistedService
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The parameters in the factory method must match the @Assisted parameters " +
-          "in com.squareup.test.AssistedService."
+          "in com.squareup.test.AssistedService.",
       )
     }
   }
@@ -1280,12 +1281,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(charSequence: CharSequence, other: String): AssistedService
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The parameters in the factory method must match the @Assisted parameters " +
-          "in com.squareup.test.AssistedService."
+          "in com.squareup.test.AssistedService.",
       )
     }
   }
@@ -1341,7 +1342,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(long: Long, other: String): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -1390,7 +1391,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
           @Assisted("two") long22: Long
         ): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance()
@@ -1432,7 +1433,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(ints: List<Int>, strings: List<String>): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance()
@@ -1474,7 +1475,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory<T : CharSequence, S : Number> {
         fun create(number: S, string: T): AssistedService<T, S>
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance()
@@ -1493,7 +1494,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(factoryImplInstance, 1, "Hello")
 
       assertThat(assistedServiceInstance).isEqualTo(
-        assistedService.createInstance("Hello", 1)
+        assistedService.createInstance("Hello", 1),
       )
     }
   }
@@ -1519,7 +1520,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
           @Assisted("one") string1: String
         ): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance()
@@ -1558,7 +1559,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(string: String): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = classLoader.loadClass("AssistedServiceFactory").implClass()
       val generatedFactoryInstance = classLoader.loadClass("AssistedService")
@@ -1605,12 +1606,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
           @Assisted("one") type2: Type
         ): AssistedService
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@AssistedFactory method has duplicate @Assisted types: " +
-          "@Assisted(\"one\") com.squareup.test.Type"
+          "@Assisted(\"one\") com.squareup.test.Type",
       )
     }
   }
@@ -1634,18 +1635,18 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         fun create(string: String): AssistedService
         fun create2(string: String): AssistedService
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(
         messages.lines()
           .first { it.startsWith("e:") }
           .removeParametersAndSort()
-          .removeNullabilityAnnotations()
+          .removeNullabilityAnnotations(),
       ).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
           "method but found multiple: [com.squareup.test.AssistedServiceFactory.create, " +
-          "com.squareup.test.AssistedServiceFactory.create2]"
+          "com.squareup.test.AssistedServiceFactory.create2]",
       )
     }
   }
@@ -1672,18 +1673,18 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory : AssistedServiceFactory1 {
         fun create(string: String): AssistedService
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(
         messages.lines()
           .first { it.startsWith("e:") }
           .removeParametersAndSort()
-          .removeNullabilityAnnotations()
+          .removeNullabilityAnnotations(),
       ).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
           "method but found multiple: [com.squareup.test.AssistedServiceFactory.create, " +
-          "com.squareup.test.AssistedServiceFactory1.createParent]"
+          "com.squareup.test.AssistedServiceFactory1.createParent]",
       )
     }
   }
@@ -1707,18 +1708,18 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory : Provider<AssistedService>{
         fun create(string: String): AssistedService
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(
         messages.lines()
           .first { it.startsWith("e:") }
           .removeParametersAndSort()
-          .removeNullabilityAnnotations()
+          .removeNullabilityAnnotations(),
       ).contains(
         "The @AssistedFactory-annotated type should contain a single abstract, non-default " +
           "method but found multiple: [com.squareup.test.AssistedServiceFactory.create, " +
-          "javax.inject.Provider.get]"
+          "javax.inject.Provider.get]",
       )
     }
   }
@@ -1751,7 +1752,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
             return create()
           }
         }
-        """
+        """,
       ) {
         assertThat(exitCode).isEqualTo(OK)
       }
@@ -1773,12 +1774,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       
       @AssistedFactory
       interface AssistedServiceFactory
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The @AssistedFactory-annotated type is missing an abstract, non-default method " +
-          "whose return type matches the assisted injection type."
+          "whose return type matches the assisted injection type.",
       )
     }
   }
@@ -1801,12 +1802,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       abstract class AssistedServiceFactory {
         fun create(string: String): AssistedService = throw NotImplementedError()
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The @AssistedFactory-annotated type is missing an abstract, non-default method " +
-          "whose return type matches the assisted injection type."
+          "whose return type matches the assisted injection type.",
       )
     }
   }
@@ -1837,7 +1838,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       object DaggerModule1 {
         @Provides @Named("") fun provideService(): AssistedService = AssistedService(5, "Hello")
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass().createInstance(Provider { 5 })
@@ -1901,7 +1902,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(string: Lazy<String>): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass()
@@ -1967,7 +1968,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(string: Provider<String>): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass()
@@ -2031,7 +2032,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       interface AssistedServiceFactory {
         fun create(list: List<Class<out String>>): AssistedService
       }
-      """
+      """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
       val generatedFactoryInstance = assistedService.factoryClass()
@@ -2068,7 +2069,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    block: JvmCompilationResult.() -> Unit = { }
+    block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult {
     return prepareCompilation()
       .compile(*sources)

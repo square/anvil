@@ -28,7 +28,7 @@ class TopLevelPropertyReferenceTest {
       package com.squareup.test
       
       private val prop = Unit 
-      """
+      """,
     ) { ref ->
       assertThat(ref.fqName).isEqualTo(FqName("com.squareup.test.prop"))
       assertThat(ref.annotations).isEmpty()
@@ -53,7 +53,7 @@ class TopLevelPropertyReferenceTest {
       package com.squareup.test
       
       var prop: String = "" 
-      """
+      """,
     ) { ref ->
       assertThat(ref.fqName).isEqualTo(FqName("com.squareup.test.prop"))
       assertThat(ref.annotations).isEmpty()
@@ -73,7 +73,7 @@ class TopLevelPropertyReferenceTest {
       
       @PublishedApi
       internal val prop: Int? = null 
-      """
+      """,
     ) { ref ->
       assertThat(ref.fqName).isEqualTo(FqName("com.squareup.test.prop"))
       assertThat(ref.annotations.single().fqName.asString())
@@ -96,7 +96,7 @@ class TopLevelPropertyReferenceTest {
       import javax.inject.Inject
       
       @set:Inject var prop: String = "" 
-      """
+      """,
     ) { ref ->
       assertThat(ref.fqName).isEqualTo(FqName("com.squareup.test.prop"))
       assertThat(ref.annotations.single().fqName.asString())
@@ -119,7 +119,7 @@ class TopLevelPropertyReferenceTest {
       import javax.inject.Inject
       
       @get:Inject var prop: String = "" 
-      """
+      """,
     ) { ref ->
       assertThat(ref.fqName).isEqualTo(FqName("com.squareup.test.prop"))
       assertThat(ref.annotations.single().fqName.asString())
@@ -140,7 +140,7 @@ class TopLevelPropertyReferenceTest {
       package com.squareup.test
 
       lateinit var prop6: String
-      """
+      """,
     ) { ref ->
       assertThat(ref.fqName).isEqualTo(FqName("com.squareup.test.prop6"))
       assertThat(ref.annotations).isEmpty()
@@ -155,7 +155,7 @@ class TopLevelPropertyReferenceTest {
 
   private fun propertyTest(
     @Language("kotlin") vararg sources: String,
-    assert: (TopLevelPropertyReference) -> Unit
+    assert: (TopLevelPropertyReference) -> Unit,
   ) {
     compile(
       sources = sources,
@@ -167,7 +167,7 @@ class TopLevelPropertyReferenceTest {
           override fun generateCode(
             codeGenDir: File,
             module: ModuleDescriptor,
-            projectFiles: Collection<KtFile>
+            projectFiles: Collection<KtFile>,
           ): Collection<GeneratedFile> {
             projectFiles
               .topLevelPropertyReferences(module)
@@ -176,8 +176,8 @@ class TopLevelPropertyReferenceTest {
 
             return emptyList()
           }
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }

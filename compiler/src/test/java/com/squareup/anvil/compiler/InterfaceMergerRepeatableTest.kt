@@ -13,7 +13,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class InterfaceMergerRepeatableTest(
-  private val annotationClass: KClass<*>
+  private val annotationClass: KClass<*>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -21,7 +21,8 @@ class InterfaceMergerRepeatableTest(
 
   companion object {
     @Parameters(name = "{0}")
-    @JvmStatic fun annotationClasses(): Collection<Any> {
+    @JvmStatic
+    fun annotationClasses(): Collection<Any> {
       return buildList {
         add(MergeComponent::class)
         if (isFullTestRun()) {
@@ -42,12 +43,12 @@ class InterfaceMergerRepeatableTest(
       $annotation(Any::class)
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface merges multiple times to the same scope: [Any]. " +
-          "Merging multiple times to the same scope is forbidden and all scopes must be distinct."
+          "Merging multiple times to the same scope is forbidden and all scopes must be distinct.",
       )
     }
   }
@@ -65,13 +66,13 @@ class InterfaceMergerRepeatableTest(
       @MergeComponent(Any::class)
       @MergeSubcomponent(Unit::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "It's only allowed to have one single type of @Merge* annotation, however multiple " +
           "instances of the same annotation are allowed. You mix " +
-          "[MergeComponent, MergeSubcomponent] and this is forbidden."
+          "[MergeComponent, MergeSubcomponent] and this is forbidden.",
       )
     }
   }
@@ -93,7 +94,7 @@ class InterfaceMergerRepeatableTest(
       $annotation(Any::class)
       $annotation(Unit::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -119,7 +120,7 @@ class InterfaceMergerRepeatableTest(
       $annotation(Any::class)
       $annotation(Unit::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -147,7 +148,7 @@ class InterfaceMergerRepeatableTest(
       $annotation(Any::class)
       $annotation(Unit::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -169,7 +170,7 @@ class InterfaceMergerRepeatableTest(
       $annotation(Any::class, exclude = [ContributingInterface::class])
       $annotation(Unit::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
     }

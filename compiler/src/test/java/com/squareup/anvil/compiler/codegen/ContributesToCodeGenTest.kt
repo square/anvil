@@ -26,7 +26,8 @@ class ContributesToCodeGenTest(
 
   companion object {
     @Parameterized.Parameters(name = "{0}")
-    @JvmStatic fun modes(): Collection<Any> {
+    @JvmStatic
+    fun modes(): Collection<Any> {
       return listOf(AnvilCompilationMode.Embedded(), AnvilCompilationMode.Ksp())
     }
   }
@@ -192,7 +193,7 @@ class ContributesToCodeGenTest(
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule1 contributes multiple times to the same scope: " +
           "[Any, Unit]. Contributing multiple times to the same scope is forbidden and all " +
-          "scopes must be distinct."
+          "scopes must be distinct.",
       )
     }
   }
@@ -313,7 +314,7 @@ class ContributesToCodeGenTest(
       assertThat(messages).contains("Source0.kt:6")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule1 is annotated with @ContributesTo, but this class " +
-          "is neither an interface nor a Dagger module. Did you forget to add @Module?"
+          "is neither an interface nor a Dagger module. Did you forget to add @Module?",
       )
     }
   }
@@ -322,7 +323,7 @@ class ContributesToCodeGenTest(
     val visibilities = setOf(
       "internal",
       "private",
-      "protected"
+      "protected",
     )
 
     visibilities.forEach { visibility ->
@@ -343,7 +344,7 @@ class ContributesToCodeGenTest(
         assertThat(messages).contains("Source0.kt:7")
         assertThat(messages).contains(
           "com.squareup.test.DaggerModule1 is contributed to the Dagger graph, but the " +
-            "module is not public. Only public modules are supported."
+            "module is not public. Only public modules are supported.",
         )
       }
     }
@@ -353,7 +354,7 @@ class ContributesToCodeGenTest(
     val visibilities = setOf(
       "internal",
       "private",
-      "protected"
+      "protected",
     )
 
     visibilities.forEach { visibility ->
@@ -373,7 +374,7 @@ class ContributesToCodeGenTest(
         assertThat(messages).contains("Source0.kt:6")
         assertThat(messages).contains(
           "com.squareup.test.ContributingInterface is contributed to the Dagger graph, but the " +
-            "module is not public. Only public modules are supported."
+            "module is not public. Only public modules are supported.",
         )
       }
     }

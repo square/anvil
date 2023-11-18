@@ -46,8 +46,8 @@ class AnnotationReferenceTest {
           assertThat(annotation2).isEqualTo(annotation3)
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -80,8 +80,9 @@ class AnnotationReferenceTest {
       allWarningsAsErrors = false,
       codeGenerators = listOf(
         simpleCodeGenerator { psiRef ->
-          if (psiRef.shortName in listOf("AnyQualifier", "Values", "ABC"))
+          if (psiRef.shortName in listOf("AnyQualifier", "Values", "ABC")) {
             return@simpleCodeGenerator null
+          }
 
           listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
             val argument = ref.annotations.single().arguments.single()
@@ -91,8 +92,8 @@ class AnnotationReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -116,8 +117,9 @@ class AnnotationReferenceTest {
       allWarningsAsErrors = false,
       codeGenerators = listOf(
         simpleCodeGenerator { psiRef ->
-          if (psiRef.shortName in listOf("BindingKey"))
+          if (psiRef.shortName in listOf("BindingKey")) {
             return@simpleCodeGenerator null
+          }
 
           listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
             val argument = ref.annotations.single().arguments.single()
@@ -129,8 +131,8 @@ class AnnotationReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -222,8 +224,9 @@ class AnnotationReferenceTest {
       allWarningsAsErrors = false,
       codeGenerators = listOf(
         simpleCodeGenerator { psiRef ->
-          if (psiRef.shortName in listOf("BindingKey", "SomeObject", "Abc", "Companion"))
+          if (psiRef.shortName in listOf("BindingKey", "SomeObject", "Abc", "Companion")) {
             return@simpleCodeGenerator null
+          }
 
           listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
             when (psiRef.shortName) {
@@ -288,8 +291,8 @@ class AnnotationReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -314,8 +317,9 @@ class AnnotationReferenceTest {
       allWarningsAsErrors = false,
       codeGenerators = listOf(
         simpleCodeGenerator { psiRef ->
-          if (psiRef.shortName in listOf("BindingKey"))
+          if (psiRef.shortName in listOf("BindingKey")) {
             return@simpleCodeGenerator null
+          }
 
           listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
             val arguments = ref.annotations.single().arguments
@@ -326,13 +330,13 @@ class AnnotationReferenceTest {
 
             assertThat(ref.annotations.single().toAnnotationSpec().toString()).isEqualTo(
               "@com.squareup.test.BindingKey(name = \"abc\", " +
-                "implementingClass = kotlin.Unit::class, thresholds = [1, 2, 3])"
+                "implementingClass = kotlin.Unit::class, thresholds = [1, 2, 3])",
             )
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -355,21 +359,22 @@ class AnnotationReferenceTest {
       allWarningsAsErrors = false,
       codeGenerators = listOf(
         simpleCodeGenerator { psiRef ->
-          if (psiRef.shortName in listOf("BindingKey"))
+          if (psiRef.shortName in listOf("BindingKey")) {
             return@simpleCodeGenerator null
+          }
 
           listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
             val arguments = ref.annotations.single().arguments
             assertThat(arguments[0].value<String>()).isEqualTo("Hello, World!")
 
             assertThat(ref.annotations.single().toAnnotationSpec().toString()).isEqualTo(
-              "@com.squareup.test.BindingKey(name = \"Hello, World!\")"
+              "@com.squareup.test.BindingKey(name = \"Hello, World!\")",
             )
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -392,21 +397,22 @@ class AnnotationReferenceTest {
       allWarningsAsErrors = false,
       codeGenerators = listOf(
         simpleCodeGenerator { psiRef ->
-          if (psiRef.shortName in listOf("BindingKey"))
+          if (psiRef.shortName in listOf("BindingKey")) {
             return@simpleCodeGenerator null
+          }
 
           listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
             val arguments = ref.annotations.single().arguments
             assertThat(arguments[0].value<String>()).isEqualTo("World!")
 
             assertThat(ref.annotations.single().toAnnotationSpec().toString()).isEqualTo(
-              "@com.squareup.test.BindingKey(name = \"World!\")"
+              "@com.squareup.test.BindingKey(name = \"World!\")",
             )
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -442,21 +448,22 @@ class AnnotationReferenceTest {
       allWarningsAsErrors = false,
       codeGenerators = listOf(
         simpleCodeGenerator { psiRef ->
-          if (psiRef.shortName in listOf("BindingKey", "SomeObject", "Abc", "Companion"))
+          if (psiRef.shortName in listOf("BindingKey", "SomeObject", "Abc", "Companion")) {
             return@simpleCodeGenerator null
+          }
 
           listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
             val arguments = ref.annotations.single().arguments
             assertThat(arguments[0].value<String>()).isEqualTo("Hello nested, World nested!")
 
             assertThat(ref.annotations.single().toAnnotationSpec().toString()).isEqualTo(
-              "@com.squareup.test.BindingKey(name = \"Hello nested, World nested!\")"
+              "@com.squareup.test.BindingKey(name = \"Hello nested, World nested!\")",
             )
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -489,8 +496,8 @@ class AnnotationReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }

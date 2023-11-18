@@ -19,12 +19,13 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class AssistedInjectGeneratorTest(
-  private val useDagger: Boolean
+  private val useDagger: Boolean,
 ) {
 
   companion object {
     @Parameters(name = "Use Dagger: {0}")
-    @JvmStatic fun useDagger(): Collection<Any> {
+    @JvmStatic
+    fun useDagger(): Collection<Any> {
       return listOf(isFullTestRun(), false).distinct()
     }
   }
@@ -75,7 +76,7 @@ public final class AssistedService_Factory {
         val int: Int,
         @Assisted val string: String
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -146,7 +147,7 @@ public final class AssistedService_Factory {
           return true
         } 
       }
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -178,7 +179,7 @@ public final class AssistedService_Factory {
         @Assisted("one") val string1: String,
         @Assisted("two") val string2: String
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -211,7 +212,7 @@ public final class AssistedService_Factory {
         @Assisted("one") val string1: String,
         @Assisted("two") val string2: String
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -245,12 +246,12 @@ public final class AssistedService_Factory {
         @Assisted val type1: SomeType,
         @Assisted val type2: SomeType
       )
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@AssistedInject constructor has duplicate @Assisted type: " +
-          "@Assisted com.squareup.test.SomeType"
+          "@Assisted com.squareup.test.SomeType",
       )
     }
   }
@@ -269,12 +270,12 @@ public final class AssistedService_Factory {
         @Assisted("one") val type1: SomeType,
         @Assisted(value = "one") val type2: SomeType
       )
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@AssistedInject constructor has duplicate @Assisted type: " +
-          "@Assisted(\"one\") com.squareup.test.SomeType"
+          "@Assisted(\"one\") com.squareup.test.SomeType",
       )
     }
   }
@@ -290,7 +291,7 @@ public final class AssistedService_Factory {
       data class AssistedService @AssistedInject constructor(
         val int: Int
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -323,7 +324,7 @@ public final class AssistedService_Factory {
         val int: Int,
         @Assisted val strings: List<String>
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -356,7 +357,7 @@ public final class AssistedService_Factory {
         val int: Int,
         @Assisted val strings: T
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -389,7 +390,7 @@ public final class AssistedService_Factory {
         val int: Int,
         @Assisted val stringBuilder : T
       ) where T : Appendable, T : CharSequence
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -421,7 +422,7 @@ public final class AssistedService_Factory {
         @Assisted val strings: List<String>,
         @Assisted val ints: List<Int>
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -454,7 +455,7 @@ public final class AssistedService_Factory {
         val int: Int,
         @Assisted val string: T
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -487,7 +488,7 @@ public final class AssistedService_Factory {
         val int: S,
         @Assisted val string: T
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -523,7 +524,7 @@ public final class AssistedService_Factory {
         )
       }
       
-      """
+      """,
     ) {
       val factoryClass = classLoader
         .loadClass("com.squareup.test.Outer\$AssistedService")
@@ -592,7 +593,7 @@ public final class AssistedService_Factory {
         val int: Int?,
         @Assisted val string: String?
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -627,17 +628,17 @@ public final class AssistedService_Factory {
       ) {
         @AssistedInject constructor(@Assisted string: String)
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(
         messages.lines()
           .first { it.startsWith("e:") }
-          .removeParametersAndSort()
+          .removeParametersAndSort(),
       ).contains(
         "Type com.squareup.test.AssistedService may only contain one injected constructor. " +
           "Found: [@dagger.assisted.AssistedInject com.squareup.test.AssistedService, " +
-          "@dagger.assisted.AssistedInject com.squareup.test.AssistedService]"
+          "@dagger.assisted.AssistedInject com.squareup.test.AssistedService]",
       )
     }
   }
@@ -657,17 +658,17 @@ public final class AssistedService_Factory {
       ) {
         @Inject constructor(@Assisted string: String)
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(
         messages.lines()
           .first { it.startsWith("e:") }
-          .removeParametersAndSort()
+          .removeParametersAndSort(),
       ).contains(
         "Type com.squareup.test.AssistedService may only contain one injected constructor. " +
           "Found: [@Inject com.squareup.test.AssistedService, " +
-          "@dagger.assisted.AssistedInject com.squareup.test.AssistedService]"
+          "@dagger.assisted.AssistedInject com.squareup.test.AssistedService]",
       )
     }
   }
@@ -680,6 +681,6 @@ public final class AssistedService_Factory {
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
-    block = block
+    block = block,
   )
 }

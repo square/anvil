@@ -16,7 +16,7 @@ internal fun ClassScanner.findContributedClasses(
   moduleFragment: IrModuleFragment,
   annotation: FqName,
   scope: ClassReferenceIr?,
-  moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory
+  moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
 ): Sequence<ClassReferenceIr> {
   val module = moduleDescriptorFactory.create(moduleFragment.descriptor)
 

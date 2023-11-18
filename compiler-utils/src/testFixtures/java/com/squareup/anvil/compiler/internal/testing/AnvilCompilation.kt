@@ -29,7 +29,7 @@ import java.util.ServiceLoader
  */
 @ExperimentalAnvilApi
 public class AnvilCompilation internal constructor(
-  val kotlinCompilation: KotlinCompilation
+  val kotlinCompilation: KotlinCompilation,
 ) {
 
   private var isCompiled = false
@@ -70,13 +70,13 @@ public class AnvilCompilation internal constructor(
         PluginOption(
           pluginId = anvilCommandLineProcessor.pluginId,
           optionName = "disable-component-merging",
-          optionValue = disableComponentMerging.toString()
+          optionValue = disableComponentMerging.toString(),
         ),
         PluginOption(
           pluginId = anvilCommandLineProcessor.pluginId,
           optionName = "backend",
-          optionValue = mode.backend.name.lowercase(Locale.US)
-        )
+          optionValue = mode.backend.name.lowercase(Locale.US),
+        ),
       )
 
       when (mode) {
@@ -87,18 +87,18 @@ public class AnvilCompilation internal constructor(
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "src-gen-dir",
-                optionValue = File(workingDir, "build/anvil").absolutePath
+                optionValue = File(workingDir, "build/anvil").absolutePath,
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "generate-dagger-factories",
-                optionValue = generateDaggerFactories.toString()
+                optionValue = generateDaggerFactories.toString(),
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "generate-dagger-factories-only",
-                optionValue = generateDaggerFactoriesOnly.toString()
-              )
+                optionValue = generateDaggerFactoriesOnly.toString(),
+              ),
             )
         }
         is Ksp -> {
@@ -106,8 +106,8 @@ public class AnvilCompilation internal constructor(
             addAll(
               ServiceLoader.load(
                 SymbolProcessorProvider::class.java,
-                SymbolProcessorProvider::class.java.classLoader
-              )
+                SymbolProcessorProvider::class.java.classLoader,
+              ),
             )
             addAll(mode.symbolProcessorProviders)
           }
@@ -122,7 +122,7 @@ public class AnvilCompilation internal constructor(
       if (enableExperimentalAnvilApis) {
         kotlincArguments += listOf(
           "-opt-in=kotlin.RequiresOptIn",
-          "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi"
+          "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi",
         )
       }
     }
@@ -164,14 +164,14 @@ public class AnvilCompilation internal constructor(
    */
   public fun generatedAnvilFile(
     packageName: String,
-    fileName: String
+    fileName: String,
   ): File {
     check(isCompiled) {
       "No compilation run yet! Call compile() first."
     }
     return File(
       kotlinCompilation.workingDir,
-      "build/anvil/${packageName.replace('.', File.separatorChar)}/$fileName.kt"
+      "build/anvil/${packageName.replace('.', File.separatorChar)}/$fileName.kt",
     )
       .apply {
         check(exists()) {
@@ -192,7 +192,7 @@ public class AnvilCompilation internal constructor(
    */
   public fun compile(
     @Language("kotlin") vararg sources: String,
-    block: JvmCompilationResult.() -> Unit = {}
+    block: JvmCompilationResult.() -> Unit = {},
   ): JvmCompilationResult {
     checkNotCompiled()
     if (!anvilConfigured) {
@@ -213,7 +213,7 @@ public class AnvilCompilation internal constructor(
           inheritClassPath = true
           jvmTarget = JvmTarget.JVM_1_8.description
           verbose = false
-        }
+        },
       )
     }
   }

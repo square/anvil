@@ -25,7 +25,7 @@ internal class ClassScanner {
   fun findContributedClasses(
     module: ModuleDescriptor,
     annotation: FqName,
-    scope: FqName?
+    scope: FqName?,
   ): Sequence<ClassReference.Descriptor> {
     val propertyGroups = cache.getOrPut(CacheKey(annotation, module.hashCode())) {
       val packageName = when (annotation) {
@@ -61,13 +61,13 @@ internal class ClassScanner {
           .distinctBy { it.baseName }
           .singleOrEmpty()
           ?: throw AnvilCompilationException(
-            message = "Couldn't find the reference for a generated hint: ${properties[0].baseName}."
+            message = "Couldn't find the reference for a generated hint: ${properties[0].baseName}.",
           )
 
         val scopes = properties.filterIsInstance<ScopeProperty>()
           .ifEmpty {
             throw AnvilCompilationException(
-              message = "Couldn't find any scope for a generated hint: ${properties[0].baseName}."
+              message = "Couldn't find any scope for a generated hint: ${properties[0].baseName}.",
             )
           }
           .map { it.descriptor.type.argumentType().classDescriptor().fqNameSafe }
@@ -96,16 +96,16 @@ private fun PackageViewDescriptor.subPackages(): List<PackageViewDescriptor> = m
 
 private sealed class GeneratedProperty(
   val descriptor: PropertyDescriptor,
-  val baseName: String
+  val baseName: String,
 ) {
   class ReferenceProperty(
     descriptor: PropertyDescriptor,
-    baseName: String
+    baseName: String,
   ) : GeneratedProperty(descriptor, baseName)
 
   class ScopeProperty(
     descriptor: PropertyDescriptor,
-    baseName: String
+    baseName: String,
   ) : GeneratedProperty(descriptor, baseName)
 
   companion object {
@@ -135,5 +135,5 @@ private sealed class GeneratedProperty(
 
 private data class CacheKey(
   val fqName: FqName,
-  val moduleHash: Int
+  val moduleHash: Int,
 )

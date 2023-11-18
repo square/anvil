@@ -30,7 +30,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class BindingModuleMultibindingSetTest(
-  private val annotationClass: KClass<*>
+  private val annotationClass: KClass<*>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -38,7 +38,8 @@ class BindingModuleMultibindingSetTest(
 
   companion object {
     @Parameters(name = "{0}")
-    @JvmStatic fun annotationClasses(): Collection<Any> {
+    @JvmStatic
+    fun annotationClasses(): Collection<Any> {
       return buildList {
         add(MergeComponent::class)
         if (isFullTestRun()) {
@@ -66,7 +67,7 @@ class BindingModuleMultibindingSetTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -104,7 +105,7 @@ class BindingModuleMultibindingSetTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -148,7 +149,7 @@ class BindingModuleMultibindingSetTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -190,7 +191,7 @@ class BindingModuleMultibindingSetTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -233,7 +234,7 @@ class BindingModuleMultibindingSetTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -273,7 +274,7 @@ class BindingModuleMultibindingSetTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
 
@@ -281,7 +282,7 @@ class BindingModuleMultibindingSetTest(
       assertThat(messages).contains(
         "Class com.squareup.test.ContributingInterface binds com.squareup.test.ParentInterface, " +
           "but the bound type contains type parameter(s) <T, S>. Type parameters in bindings " +
-          "are not supported. This binding needs to be contributed in a Dagger module manually."
+          "are not supported. This binding needs to be contributed in a Dagger module manually.",
       )
     }
   }
@@ -303,7 +304,7 @@ class BindingModuleMultibindingSetTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -339,7 +340,7 @@ class BindingModuleMultibindingSetTest(
       
       $annotation(Any::class, exclude = [DaggerModule1::class])
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -382,7 +383,7 @@ class BindingModuleMultibindingSetTest(
 
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       with(componentInterface.anvilModule.declaredMethods.single()) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -422,7 +423,7 @@ class BindingModuleMultibindingSetTest(
 
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       with(componentInterface.anvilModule.declaredMethods.single()) {
         assertThat(returnType).isEqualTo(parentInterface1)
@@ -459,7 +460,7 @@ class BindingModuleMultibindingSetTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val methods = componentInterface.anvilModule.declaredMethods.sortedBy { it.name }
       assertThat(methods).hasSize(2)
@@ -501,7 +502,7 @@ class BindingModuleMultibindingSetTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
     }

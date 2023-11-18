@@ -127,13 +127,15 @@ public annotation class ContributesBinding(
    * are used together for the same class. If not, simply remove the qualifier from the class
    * and don't use this parameter.
    */
-  val ignoreQualifier: Boolean = false
+  val ignoreQualifier: Boolean = false,
 ) {
   /**
    * The priority of a contributed binding.
    */
   @Suppress("unused")
   public enum class Priority {
-    NORMAL, HIGH, HIGHEST
+    NORMAL,
+    HIGH,
+    HIGHEST,
   }
 }

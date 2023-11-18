@@ -16,7 +16,7 @@ internal abstract class PrivateCodeGenerator : CodeGenerator {
   final override fun generateCode(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ): Collection<GeneratedFile> {
     generateCodePrivate(codeGenDir, module, projectFiles)
     return emptyList()
@@ -25,6 +25,6 @@ internal abstract class PrivateCodeGenerator : CodeGenerator {
   protected abstract fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   )
 }

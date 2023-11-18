@@ -46,8 +46,8 @@ class TypeReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -86,8 +86,8 @@ class TypeReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -114,7 +114,7 @@ class TypeReferenceTest {
                     .unwrappedTypes
                     .single() // String
                     .resolveGenericTypeNameOrNull(ref)
-                    .toString()
+                    .toString(),
                 ).isEqualTo("kotlin.String")
               }
             }
@@ -122,8 +122,8 @@ class TypeReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -151,7 +151,7 @@ class TypeReferenceTest {
                     .unwrappedTypes
                     .single() // T
                     .resolveGenericTypeNameOrNull(ref)
-                    .toString()
+                    .toString(),
                 ).isEqualTo("T")
               }
             }
@@ -159,8 +159,8 @@ class TypeReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -193,7 +193,7 @@ class TypeReferenceTest {
                     .unwrappedTypes
                     .single() // T
                     .resolveGenericTypeNameOrNull(ref)
-                    .toString()
+                    .toString(),
                 ).isEqualTo("kotlin.Int")
               }
             }
@@ -201,8 +201,8 @@ class TypeReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -228,19 +228,19 @@ class TypeReferenceTest {
               listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
                 assertThat(
                   ref.properties.single { it.name == "map1" }.type().unwrappedTypes
-                    .map { it.asClassReference().shortName }
+                    .map { it.asClassReference().shortName },
                 ).containsExactly("Any", "Any").inOrder()
                 assertThat(
                   ref.properties.single { it.name == "map2" }.type().unwrappedTypes
-                    .map { it.asClassReference().shortName }
+                    .map { it.asClassReference().shortName },
                 ).containsExactly("Int", "Any").inOrder()
                 assertThat(
                   ref.properties.single { it.name == "map3" }.type().unwrappedTypes
-                    .map { it.asClassReference().shortName }
+                    .map { it.asClassReference().shortName },
                 ).containsExactly("Any", "String").inOrder()
                 assertThat(
                   ref.properties.single { it.name == "map4" }.type().unwrappedTypes
-                    .map { it.asClassReference().shortName }
+                    .map { it.asClassReference().shortName },
                 ).containsExactly("Int", "String").inOrder()
               }
             }
@@ -248,8 +248,8 @@ class TypeReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -280,15 +280,15 @@ class TypeReferenceTest {
               listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
                 assertThat(
                   ref.properties.single { it.name == "map" }.type().unwrappedTypes
-                    .map { it.asClassReference().shortName }
+                    .map { it.asClassReference().shortName },
                 ).containsExactly("String", "Int").inOrder()
                 assertThat(
                   ref.properties.single { it.name == "single1" }.type().unwrappedTypes
-                    .map { it.asClassReference().shortName }
+                    .map { it.asClassReference().shortName },
                 ).containsExactly("Int", "String", "Long").inOrder()
                 assertThat(
                   ref.properties.single { it.name == "single2" }.type().unwrappedTypes
-                    .map { it.asClassReference().shortName }
+                    .map { it.asClassReference().shortName },
                 ).containsExactly("Int", "Int", "Int").inOrder()
               }
             }
@@ -296,8 +296,8 @@ class TypeReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }

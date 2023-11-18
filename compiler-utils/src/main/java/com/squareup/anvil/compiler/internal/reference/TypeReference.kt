@@ -74,18 +74,18 @@ public sealed class TypeReference {
   public fun asClassReference(): ClassReference = classReference
     ?: throw AnvilCompilationExceptionTypReference(
       typeReference = this,
-      message = "Unable to convert a type reference to a class reference."
+      message = "Unable to convert a type reference to a class reference.",
     )
 
   public fun asTypeNameOrNull(): TypeName? = typeNameOrNull
   public fun asTypeName(): TypeName = typeName
 
   public abstract fun resolveGenericTypeOrNull(
-    implementingClass: ClassReference
+    implementingClass: ClassReference,
   ): TypeReference?
 
   public fun resolveGenericTypeNameOrNull(
-    implementingClass: ClassReference
+    implementingClass: ClassReference,
   ): TypeName? {
     asClassReferenceOrNull()?.let {
       // Then it's a normal type and not a generic type.
@@ -188,7 +188,7 @@ public sealed class TypeReference {
      * example, this would be `ServiceFactory`.
      */
     internal fun resolveTypeReference(
-      implementingClass: ClassReference
+      implementingClass: ClassReference,
     ): TypeReference {
       // If the element isn't a type variable name like `T`, it can be resolved through imports.
       type.typeElement?.fqNameOrNull(module)
@@ -200,7 +200,7 @@ public sealed class TypeReference {
       // When we fail to resolve the generic type here, we're potentially at the end of a chain of
       // generics, so we return the current type instead of null.
       return resolveGenericTypeReference(
-        implementingClass, declaringClass, type.text, module
+        implementingClass, declaringClass, type.text, module,
       ) ?: this
     }
 
@@ -211,7 +211,7 @@ public sealed class TypeReference {
     private fun KtTypeReference.requireTypeName(): TypeName {
       fun PsiElement.fail(): Nothing = throw AnvilCompilationException(
         message = "Couldn't resolve type: $text",
-        element = this
+        element = this,
       )
 
       fun KtUserType.isTypeParameter(): Boolean {
@@ -241,7 +241,7 @@ public sealed class TypeReference {
                 throw AnvilCompilationException(
                   message = "Couldn't resolve fqName.",
                   element = this,
-                  cause = e
+                  cause = e,
                 )
               }
             }
@@ -266,10 +266,10 @@ public sealed class TypeReference {
                                   .builder(
                                     annotationEntry
                                       .requireFqName(module)
-                                      .asClassName(module)
+                                      .asClassName(module),
                                   )
                                   .build()
-                              }
+                              },
                           )
                         } else {
                           typeName
@@ -287,7 +287,7 @@ public sealed class TypeReference {
                         }
                       }
                   }
-                }
+                },
               )
             } else {
               className
@@ -304,9 +304,9 @@ public sealed class TypeReference {
                 }
                 ?: emptyList(),
               returnType = (returnTypeReference ?: fail())
-                .requireTypeName()
+                .requireTypeName(),
             ).copy(
-              suspending = type.modifierList?.hasSuspendModifier() ?: false
+              suspending = type.modifierList?.hasSuspendModifier() ?: false,
             )
           is KtNullableType -> {
             (innerType ?: fail()).requireTypeName().copy(nullable = true)
@@ -319,7 +319,7 @@ public sealed class TypeReference {
     }
 
     private fun findUnwrappedTypesWithTypeAlias(
-      unwrappedTypes: List<TypeReference>
+      unwrappedTypes: List<TypeReference>,
     ): List<TypeReference> {
       // For Psi we must inspect the type and check if further arguments have been specified in
       // a type alias, e.g.
@@ -372,7 +372,7 @@ public sealed class TypeReference {
       get() = typeNameOrNull ?: throw AnvilCompilationExceptionTypReference(
         typeReference = this,
         message = "Unable to convert the Kotlin type $type to a type name for declaring class " +
-          "${declaringClass?.fqName}."
+          "${declaringClass?.fqName}.",
       )
 
     override val unwrappedTypes: List<Descriptor> by lazy(NONE) {
@@ -402,7 +402,7 @@ public sealed class TypeReference {
      * this would be `SomeFactory`.
      */
     internal fun resolveGenericKotlinTypeOrNull(
-      implementingClass: ClassReference
+      implementingClass: ClassReference,
     ): TypeReference? {
       type.classDescriptorOrNull()?.fqNameOrNull()
         ?.let { return this }
@@ -435,7 +435,7 @@ public sealed class TypeReference {
         implementingClass = implementingClass,
         declaringClass = declaringClass,
         parameterName = parameterKotlinType.toString(),
-        module = module
+        module = module,
       )
     }
 
@@ -470,7 +470,7 @@ public sealed class TypeReference {
 @ExperimentalAnvilApi
 public fun KtTypeReference.toTypeReference(
   declaringClass: ClassReference.Psi?,
-  module: AnvilModuleDescriptor
+  module: AnvilModuleDescriptor,
 ): Psi {
   return Psi(this, declaringClass, module)
 }
@@ -478,7 +478,7 @@ public fun KtTypeReference.toTypeReference(
 @ExperimentalAnvilApi
 public fun KotlinType.toTypeReference(
   declaringClass: ClassReference?,
-  module: AnvilModuleDescriptor
+  module: AnvilModuleDescriptor,
 ): Descriptor {
   return Descriptor(this, declaringClass, module)
 }
@@ -488,18 +488,18 @@ public fun KotlinType.toTypeReference(
 public fun AnvilCompilationExceptionTypReference(
   typeReference: TypeReference,
   message: String,
-  cause: Throwable? = null
+  cause: Throwable? = null,
 ): AnvilCompilationException = when (typeReference) {
   is Psi -> AnvilCompilationException(
     element = typeReference.type,
     message = message,
-    cause = cause
+    cause = cause,
   )
   is Descriptor -> {
     AnvilCompilationException(
       classDescriptor = typeReference.type.classDescriptor(),
       message = message + " Hint: ${typeReference.type}",
-      cause = cause
+      cause = cause,
     )
   }
 }
@@ -551,7 +551,8 @@ private fun resolveGenericTypeReference(
         ?.containingClassReference(implementingClass)
         ?.let { resolvedDeclaringClass ->
           resolvedTypeReference.toTypeReference(
-            resolvedDeclaringClass, module
+            resolvedDeclaringClass,
+            module,
           ).resolveGenericKotlinTypeOrNull(implementingClass)
         }
     }
@@ -579,7 +580,7 @@ private fun resolveGenericTypeReference(
  * resolve `T` to `Something`.
  */
 private fun ClassReference.Psi.superTypeListEntryOrNull(
-  superTypeFqName: FqName
+  superTypeFqName: FqName,
 ): KtSuperTypeListEntry? {
   return allSuperTypeClassReferences(includeSelf = true)
     .filterIsInstance<ClassReference.Psi>()
@@ -591,7 +592,7 @@ private fun ClassReference.Psi.superTypeListEntryOrNull(
 }
 
 private fun ClassReference.Descriptor.superTypeOrNull(
-  superTypeFqName: FqName
+  superTypeFqName: FqName,
 ): KotlinType? {
   return allSuperTypeClassReferences(includeSelf = true)
     .filterIsInstance<ClassReference.Descriptor>()
@@ -619,7 +620,7 @@ private fun ClassReference.Descriptor.superTypeOrNull(
  * @param implementingClass: The lowest descendant implementing class, e.g. Child from
  */
 private fun KotlinType.containingClassReference(
-  implementingClass: ClassReference
+  implementingClass: ClassReference,
 ): ClassReference.Descriptor? {
   val containingClassReference = implementingClass.allSuperTypeClassReferences(true)
     .toList()

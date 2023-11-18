@@ -48,14 +48,14 @@ public fun FqName.descendant(segments: String): FqName =
 public val KClass<*>.fqName: FqName get() = FqName(
   requireNotNull(qualifiedName) {
     "An FqName cannot be created for a local class or class of an anonymous object."
-  }
+  },
 )
 
 /** @see String.safePackageString */
 @ExperimentalAnvilApi
 public fun FqName.safePackageString(
   dotPrefix: Boolean = false,
-  dotSuffix: Boolean = true
+  dotSuffix: Boolean = true,
 ): String = toString().safePackageString(isRoot, dotPrefix, dotSuffix)
 
 /**
@@ -68,7 +68,7 @@ public fun FqName.safePackageString(
 public fun String.safePackageString(
   isRoot: Boolean = isEmpty(),
   dotPrefix: Boolean = false,
-  dotSuffix: Boolean = true
+  dotSuffix: Boolean = true,
 ): String =
   if (isRoot) {
     ""

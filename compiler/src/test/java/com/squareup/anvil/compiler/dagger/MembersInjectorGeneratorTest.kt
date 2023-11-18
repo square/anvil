@@ -32,12 +32,13 @@ import kotlin.test.assertFailsWith
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
 class MembersInjectorGeneratorTest(
-  private val useDagger: Boolean
+  private val useDagger: Boolean,
 ) {
 
   companion object {
     @Parameters(name = "Use Dagger: {0}")
-    @JvmStatic fun useDagger(): Collection<Any> {
+    @JvmStatic
+    fun useDagger(): Collection<Any> {
       return listOf(isFullTestRun(), false).distinct()
     }
   }
@@ -215,7 +216,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           return result
         }
       }
-      """
+      """,
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -229,7 +230,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           Provider::class.java,
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       @Suppress("RedundantLambdaArrow")
@@ -559,7 +560,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       
       @Qualifier
       annotation class StringQualifier(val value: String)
-      """
+      """,
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -674,7 +675,7 @@ public final class ParentClass_NestedInjectClass_MembersInjector implements Memb
           }
         }
       }
-      """
+      """,
     ) {
       val membersInjector = nestedInjectClass.membersInjector()
 
@@ -739,7 +740,7 @@ public final class ParentClass_NestedInjectClass_MembersInjector implements Memb
           }
         }
       }
-      """
+      """,
     ) {
 
       val errorMembersInjector = classLoader.loadClass("com.squareup.test.Base\$Error")
@@ -754,13 +755,13 @@ public final class ParentClass_NestedInjectClass_MembersInjector implements Memb
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val membersInjectorInstance = constructor
         .newInstance(
           Provider { "a" },
-          Provider { listOf(1, 2) }
+          Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -874,7 +875,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
              stringListProvider.get()[0] + lazyString.get()
         }
       }
-      """
+      """,
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -884,7 +885,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           Provider::class.java,
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val membersInjectorInstance = constructor
@@ -892,7 +893,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           Provider { "a" },
           Provider { "b" },
           Provider { listOf("c") },
-          Provider { "d" }
+          Provider { "d" },
         )
         as MembersInjector<Any>
 
@@ -978,7 +979,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
          return lazyStringProvider.get().get()
         }
       }
-      """
+      """,
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -1084,7 +1085,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           return result
         }
       }
-      """
+      """,
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -1205,7 +1206,7 @@ public final class OuterClass_InjectClass_MembersInjector implements MembersInje
           }
         }
       }
-      """
+      """,
     ) {
       val injectClass = classLoader.loadClass("com.squareup.test.OuterClass\$InjectClass")
       val membersInjector = injectClass.membersInjector()
@@ -1330,7 +1331,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
         @Inject
         lateinit var base2: List<String>
       }
-      """
+      """,
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -1341,7 +1342,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           Provider::class.java,
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val name = "name"
@@ -1355,7 +1356,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
         Provider { base2 },
         Provider { middle1 },
         Provider { middle2 },
-        Provider { name }
+        Provider { name },
       )
         as MembersInjector<Any>
 
@@ -1427,7 +1428,7 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
       abstract class InjectClass<T> {
         @Inject lateinit var string: String
       }
-      """
+      """,
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -1447,7 +1448,7 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
       class InjectClass<T, R> {
         @Inject lateinit var unknownItems: List<T>
       }
-      """
+      """,
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -1483,7 +1484,7 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
           return true
         }
       }
-      """
+      """,
     ) {
       val baseMembersInjector = classLoader.loadClass("com.squareup.test.Base")
         .membersInjector()
@@ -1493,13 +1494,13 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val membersInjectorInstance = constructor
         .newInstance(
           Provider { listOf("a", "b") },
-          Provider { listOf(1, 2) }
+          Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -1547,7 +1548,7 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
       class InjectClass : Middle<String>() {
         @Inject lateinit var bools: List<Boolean>
       }
-      """
+      """,
     ) {
       val baseMembersInjector = classLoader.loadClass("com.squareup.test.Base")
         .membersInjector()
@@ -1560,14 +1561,14 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
         .containsExactly(
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val membersInjectorInstance = constructor
         .newInstance(
           Provider { listOf("a", "b") },
           Provider { listOf(1, 2) },
-          Provider { listOf(true) }
+          Provider { listOf(true) },
         ) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -1635,7 +1636,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       abstract class InjectClass<T, U, V> {
         @Inject lateinit var string: String
       }
-      """
+      """,
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -1668,7 +1669,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
           return string.hashCode()
         }
       }
-      """
+      """,
     ) {
       val injectClass = classLoader.loadClass("InjectClass")
       val membersInjector = injectClass.membersInjector()
@@ -1705,7 +1706,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       abstract class Base {
         @Inject lateinit var string: String
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -1732,7 +1733,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
         }
       }
       """,
-      previousCompilationResult = otherModuleResult
+      previousCompilationResult = otherModuleResult,
     ) {
       val baseMembersInjector = classLoader.loadClass("com.squareup.test.Base")
         .membersInjector()
@@ -1743,13 +1744,13 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val membersInjectorInstance = constructor
         .newInstance(
           Provider { "a" },
-          Provider { listOf(1, 2) }
+          Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -1779,7 +1780,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       abstract class Base {
         @Inject lateinit var string: String
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -1811,7 +1812,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
         }
       }
       """,
-      previousCompilationResult = otherModuleResult
+      previousCompilationResult = otherModuleResult,
     ) {
       val baseMembersInjector = classLoader.loadClass("com.squareup.test.Base")
         .membersInjector()
@@ -1825,14 +1826,14 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
         .containsExactly(
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val membersInjectorInstance = constructor
         .newInstance(
           Provider { "a" },
           Provider { listOf("b") },
-          Provider { listOf(1, 2) }
+          Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -1868,7 +1869,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       abstract class Base2 : Base1() {
         @Inject lateinit var chars: List<Char>
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -1900,7 +1901,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
         }
       }
       """,
-      previousCompilationResult = otherModuleResult
+      previousCompilationResult = otherModuleResult,
     ) {
 
       val base1MembersInjector = classLoader.loadClass("com.squareup.test.Base1")
@@ -1918,7 +1919,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
           Provider::class.java,
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val membersInjectorInstance = constructor
@@ -1926,7 +1927,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
           Provider { "a" },
           Provider { listOf('b', 'c') },
           Provider { listOf("d") },
-          Provider { listOf(1, 2) }
+          Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -1964,7 +1965,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       abstract class Base2 : Base1() {
         @Inject override lateinit var string: String
       } 
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -1996,7 +1997,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
         }
       }
       """,
-      previousCompilationResult = otherModuleResult
+      previousCompilationResult = otherModuleResult,
     ) {
 
       val base1MembersInjector = classLoader.loadClass("com.squareup.test.Base1")
@@ -2014,7 +2015,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
           Provider::class.java,
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val membersInjectorInstance = constructor
@@ -2022,7 +2023,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
           Provider { "a" },
           Provider { "b" },
           Provider { listOf("b") },
-          Provider { listOf(1, 2) }
+          Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -2076,7 +2077,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
           return true
         }
       }
-      """
+      """,
     ) {
 
       val baseMembersInjector = classLoader.loadClass("com.squareup.test.Base")
@@ -2091,14 +2092,14 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
         .containsExactly(
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val membersInjectorInstance = constructor
         .newInstance(
           Provider { "a" },
           Provider { "b" },
-          Provider { listOf(1, 2) }
+          Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -2145,7 +2146,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
         
         override fun hashCode() = stringList.hashCode()
       }
-      """
+      """,
     ) {
 
       val injectClassMembersInjector = injectClass.membersInjector()
@@ -2197,7 +2198,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
         
         override fun hashCode() = value.hashCode()
       }
-      """
+      """,
     ) {
       val injectClassMembersInjector = injectClass.membersInjector()
 
@@ -2257,7 +2258,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
           return result
         }
       }
-      """
+      """,
     ) {
 
       val actualBaseMembersInjector = classLoader.loadClass("com.squareup.test.ActualBase")
@@ -2269,13 +2270,13 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val membersInjectorInstance = constructor
         .newInstance(
           Provider { "a" },
-          Provider { listOf(1, 2) }
+          Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -2307,7 +2308,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       }
       
       typealias Base = ActualBase
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -2340,7 +2341,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
         }
       }
       """,
-      previousCompilationResult = otherModuleResult
+      previousCompilationResult = otherModuleResult,
     ) {
 
       val actualBaseMembersInjector = classLoader.loadClass("com.squareup.test.ActualBase")
@@ -2352,13 +2353,13 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val membersInjectorInstance = constructor
         .newInstance(
           Provider { "a" },
-          Provider { listOf(1, 2) }
+          Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -2404,7 +2405,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
         override fun hashCode(): Int = string.hashCode()
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
 
@@ -2426,7 +2427,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
         @Inject
         var injected: String? = null
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Dagger does not support injection into private fields")
@@ -2467,7 +2468,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
           return result
         }
       }
-      """
+      """,
     ) {
       val membersInjector = injectClass.membersInjector()
 
@@ -2505,13 +2506,13 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
-    block: JvmCompilationResult.() -> Unit = { }
+    block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
-    block = block
+    block = block,
   )
 }

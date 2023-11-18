@@ -30,8 +30,9 @@ internal object AnvilMergeAnnotationDetectorCheck : AnvilApplicabilityChecker {
     mergeComponentFqName,
     mergeSubcomponentFqName,
     mergeInterfacesFqName,
-    mergeModulesFqName
+    mergeModulesFqName,
   )
+
   override fun isApplicable(context: AnvilContext) = context.disableComponentMerging
 
   internal class KspGenerator(
@@ -51,7 +52,7 @@ internal object AnvilMergeAnnotationDetectorCheck : AnvilApplicabilityChecker {
 
       throw KspAnvilException(
         message = MESSAGE,
-        node = clazz
+        node = clazz,
       )
     }
   }
@@ -65,19 +66,18 @@ internal object AnvilMergeAnnotationDetectorCheck : AnvilApplicabilityChecker {
     override fun generateCodePrivate(
       codeGenDir: File,
       module: ModuleDescriptor,
-      projectFiles: Collection<KtFile>
+      projectFiles: Collection<KtFile>,
     ) {
       val clazz = projectFiles
         .classAndInnerClassReferences(module)
-        .firstOrNull {
-          clazz ->
+        .firstOrNull { clazz ->
           ANNOTATIONS_TO_CHECK.any { clazz.isAnnotatedWith(it) }
         }
 
       if (clazz != null) {
         throw AnvilCompilationExceptionClassReference(
           message = MESSAGE,
-          classReference = clazz
+          classReference = clazz,
         )
       }
     }

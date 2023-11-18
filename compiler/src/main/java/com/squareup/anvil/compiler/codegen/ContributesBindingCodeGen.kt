@@ -65,11 +65,11 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
         PropertySpec
           .builder(
             name = propertyName + REFERENCE_SUFFIX,
-            type = KClass::class.asClassName().parameterizedBy(originClass)
+            type = KClass::class.asClassName().parameterizedBy(originClass),
           )
           .initializer("%T::class", originClass)
           .addModifiers(PUBLIC)
-          .build()
+          .build(),
       )
 
       scopes.forEachIndexed { index, scope ->
@@ -77,11 +77,11 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
           PropertySpec
             .builder(
               name = propertyName + SCOPE_SUFFIX + index,
-              type = KClass::class.asClassName().parameterizedBy(scope)
+              type = KClass::class.asClassName().parameterizedBy(scope),
             )
             .initializer("%T::class", scope)
             .addModifiers(PUBLIC)
-            .build()
+            .build(),
         )
       }
     }
@@ -98,7 +98,8 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
           when {
             annotated !is KSClassDeclaration -> {
               env.logger.error(
-                "Only classes can be annotated with @ContributesBinding.", annotated
+                "Only classes can be annotated with @ContributesBinding.",
+                annotated,
               )
               return@mapNotNull null
             }
@@ -130,7 +131,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
           spec.writeTo(
             env.codeGenerator,
             aggregating = false,
-            originatingKSFiles = listOf(clazz.containingFile!!)
+            originatingKSFiles = listOf(clazz.containingFile!!),
           )
         }
 
@@ -150,7 +151,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
     override fun generateCode(
       codeGenDir: File,
       module: ModuleDescriptor,
-      projectFiles: Collection<KtFile>
+      projectFiles: Collection<KtFile>,
     ): Collection<GeneratedFile> {
       return projectFiles
         .classAndInnerClassReferences(module)
@@ -181,7 +182,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
             codeGenDir = codeGenDir,
             packageName = spec.packageName,
             fileName = spec.name,
-            content = spec.toString()
+            content = spec.toString(),
           )
         }
         .toList()

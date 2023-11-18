@@ -46,7 +46,7 @@ public interface VariantFilter : Named {
 
 internal class CommonFilter(
   private val name: String,
-  private val extension: AnvilExtension
+  private val extension: AnvilExtension,
 ) : VariantFilter {
   override fun getName(): String = name
   override var ignore: Boolean = false
@@ -88,11 +88,11 @@ internal class CommonFilter(
 }
 
 public class JvmVariantFilter internal constructor(
-  commonFilter: CommonFilter
+  commonFilter: CommonFilter,
 ) : VariantFilter by commonFilter
 
 public class AndroidVariantFilter internal constructor(
   commonFilter: CommonFilter,
   @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
-  public val androidVariant: BaseVariantDeprecated
+  public val androidVariant: BaseVariantDeprecated,
 ) : VariantFilter by commonFilter

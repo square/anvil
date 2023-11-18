@@ -24,7 +24,7 @@ sealed interface Parameter {
   // diffing the parameters easier.
   data class AssistedParameterKey(
     private val typeName: TypeName,
-    private val assistedIdentifier: String
+    private val assistedIdentifier: String,
   )
 
   val originalTypeName: TypeName
@@ -48,7 +48,7 @@ sealed interface Parameter {
  * unique parameter names will be [foo, foo2, foo3].
  */
 internal fun String.uniqueParameterName(
-  vararg superParameters: List<Parameter>
+  vararg superParameters: List<Parameter>,
 ): String {
 
   val numDuplicates = superParameters.sumOf { list ->
@@ -75,8 +75,8 @@ internal data class ConstructorParameter(
   override val assistedIdentifier: String,
   override val assistedParameterKey: AssistedParameterKey = AssistedParameterKey(
     typeName,
-    assistedIdentifier
-  )
+    assistedIdentifier,
+  ),
 ) : Parameter
 
 internal data class MemberInjectParameter(
@@ -97,7 +97,7 @@ internal data class MemberInjectParameter(
   val injectedFieldSignature: FqName,
   override val assistedParameterKey: AssistedParameterKey = AssistedParameterKey(
     typeName,
-    assistedIdentifier
+    assistedIdentifier,
   ),
-  val resolvedProviderTypeName: ParameterizedTypeName = providerTypeName
+  val resolvedProviderTypeName: ParameterizedTypeName = providerTypeName,
 ) : Parameter

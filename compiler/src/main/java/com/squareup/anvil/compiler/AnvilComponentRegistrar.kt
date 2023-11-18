@@ -34,7 +34,7 @@ class AnvilComponentRegistrar : ComponentRegistrar {
 
   override fun registerProjectComponents(
     project: MockProject,
-    configuration: CompilerConfiguration
+    configuration: CompilerConfiguration,
   ) {
     val commandLineOptions = configuration.commandLineOptions
     val scanner by lazy(NONE) {
@@ -47,12 +47,12 @@ class AnvilComponentRegistrar : ComponentRegistrar {
     if (!commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging) {
       SyntheticResolveExtension.registerExtension(
         project,
-        InterfaceMerger(scanner, moduleDescriptorFactory)
+        InterfaceMerger(scanner, moduleDescriptorFactory),
       )
 
       IrGenerationExtension.registerExtension(
         project,
-        ModuleMergerIr(scanner, moduleDescriptorFactory)
+        ModuleMergerIr(scanner, moduleDescriptorFactory),
       )
     }
 
@@ -84,14 +84,14 @@ class AnvilComponentRegistrar : ComponentRegistrar {
         codeGenDir = sourceGenFolder,
         codeGenerators = codeGenerators,
         commandLineOptions = commandLineOptions,
-        moduleDescriptorFactory = moduleDescriptorFactory
-      )
+        moduleDescriptorFactory = moduleDescriptorFactory,
+      ),
     )
   }
 
   private fun AnalysisHandlerExtension.Companion.registerExtensionFirst(
     project: MockProject,
-    extension: AnalysisHandlerExtension
+    extension: AnalysisHandlerExtension,
   ) {
     project.extensionArea
       .getExtensionPoint(AnalysisHandlerExtension.extensionPointName)

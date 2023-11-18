@@ -8,12 +8,12 @@ import kotlin.reflect.KClass
  * Returns a sequence of [KSAnnotations][KSAnnotation] of the given [annotationKClass] type.
  */
 internal fun <T : Annotation> KSAnnotated.getKSAnnotationsByType(
-  annotationKClass: KClass<T>
+  annotationKClass: KClass<T>,
 ): Sequence<KSAnnotation> {
   return annotations.filter {
     it.shortName.getShortName() == annotationKClass.simpleName &&
       it.annotationType.resolve()
-      .declaration.qualifiedName?.asString() == annotationKClass.qualifiedName
+        .declaration.qualifiedName?.asString() == annotationKClass.qualifiedName
   }
 }
 
@@ -21,13 +21,13 @@ internal fun <T : Annotation> KSAnnotated.getKSAnnotationsByType(
  * Returns a sequence of [KSAnnotations][KSAnnotation] of the given [qualifiedName].
  */
 internal fun KSAnnotated.getKSAnnotationsByQualifiedName(
-  qualifiedName: String
+  qualifiedName: String,
 ): Sequence<KSAnnotation> {
   val simpleName = qualifiedName.substringAfterLast(".")
   return annotations.filter {
     it.shortName.getShortName() == simpleName &&
       it.annotationType.resolve()
-      .declaration.qualifiedName?.asString() == qualifiedName
+        .declaration.qualifiedName?.asString() == qualifiedName
   }
 }
 

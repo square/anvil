@@ -64,8 +64,8 @@ class MemberFunctionReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -102,7 +102,9 @@ class MemberFunctionReferenceTest {
               assertThat(psiRef.functions).hasSize(0)
               assertThat(descriptorRef.functions).hasSize(3)
               assertThat(descriptorRef.functions.map { it.name }).containsExactly(
-                "equals", "toString", "hashCode"
+                "equals",
+                "toString",
+                "hashCode",
               )
             }
             "SomeClass2" -> {
@@ -153,8 +155,8 @@ class MemberFunctionReferenceTest {
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -224,21 +226,21 @@ class MemberFunctionReferenceTest {
               assertThat(
                 psiFunction
                   .resolveGenericReturnType(implementingClass2.toPsiReference())
-                  .fqName
+                  .fqName,
               ).isEqualTo(FqName("kotlin.String"))
               assertThat(
                 psiFunction
                   .resolveGenericReturnType(implementingClass2.toDescriptorReference())
-                  .fqName
+                  .fqName,
               ).isEqualTo(FqName("kotlin.String"))
 
               assertThat(
                 descriptorFunction
-                  .resolveGenericReturnType(implementingClass2.toPsiReference()).fqName
+                  .resolveGenericReturnType(implementingClass2.toPsiReference()).fqName,
               ).isEqualTo(FqName("kotlin.String"))
               assertThat(
                 descriptorFunction
-                  .resolveGenericReturnType(implementingClass2.toDescriptorReference()).fqName
+                  .resolveGenericReturnType(implementingClass2.toDescriptorReference()).fqName,
               ).isEqualTo(FqName("kotlin.String"))
 
               val implementingClass3 = FqName("com.squareup.test.SomeClass3")
@@ -246,22 +248,22 @@ class MemberFunctionReferenceTest {
 
               assertThat(
                 psiFunction.resolveGenericReturnType(implementingClass3.toPsiReference())
-                  .fqName
+                  .fqName,
               ).isEqualTo(FqName("kotlin.String"))
               assertThat(
                 psiFunction.resolveGenericReturnType(implementingClass3.toDescriptorReference())
-                  .fqName
+                  .fqName,
               ).isEqualTo(FqName("kotlin.String"))
 
               assertThat(
                 descriptorFunction
                   .resolveGenericReturnType(implementingClass3.toPsiReference())
-                  .fqName
+                  .fqName,
               ).isEqualTo(FqName("kotlin.String"))
               assertThat(
                 descriptorFunction
                   .resolveGenericReturnType(implementingClass3.toDescriptorReference())
-                  .fqName
+                  .fqName,
               ).isEqualTo(FqName("kotlin.String"))
             }
             "GenericInterface2" -> {
@@ -277,20 +279,20 @@ class MemberFunctionReferenceTest {
               assertThat(
                 descriptorFunction
                   .resolveGenericReturnType(implementingClass.toPsiReference())
-                  .fqName
+                  .fqName,
               ).isEqualTo(FqName("kotlin.String"))
               assertThat(
                 descriptorFunction
                   .resolveGenericReturnType(implementingClass.toDescriptorReference())
-                  .fqName
+                  .fqName,
               ).isEqualTo(FqName("kotlin.String"))
             }
             else -> throw NotImplementedError()
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -328,19 +330,19 @@ class MemberFunctionReferenceTest {
               assertThat(
                 psiFunction.parameters.single().typeOrNull()
                   ?.asClassReferenceOrNull()
-                  ?.fqName
+                  ?.fqName,
               ).isEqualTo(FqName("kotlin.String"))
               assertThat(
                 descriptorFunction.parameters.single().typeOrNull()
                   ?.asClassReferenceOrNull()
-                  ?.fqName
+                  ?.fqName,
               ).isEqualTo(FqName("kotlin.String"))
 
               assertThat(
-                psiFunction.parameters.single().typeOrNull()?.asTypeNameOrNull()
+                psiFunction.parameters.single().typeOrNull()?.asTypeNameOrNull(),
               ).isNotNull()
               assertThat(
-                descriptorFunction.parameters.single().typeOrNull()?.asTypeNameOrNull()
+                descriptorFunction.parameters.single().typeOrNull()?.asTypeNameOrNull(),
               ).isNotNull()
             }
             "GenericInterface1" -> {
@@ -357,20 +359,20 @@ class MemberFunctionReferenceTest {
 
               assertThat(
                 psiFunction.parameters.single()
-                  .resolveTypeNameOrNull(implementingClass1.toPsiReference())
+                  .resolveTypeNameOrNull(implementingClass1.toPsiReference()),
               ).isNotNull()
               assertThat(
                 psiFunction.parameters.single()
-                  .resolveTypeNameOrNull(implementingClass1.toDescriptorReference())
+                  .resolveTypeNameOrNull(implementingClass1.toDescriptorReference()),
               ).isNotNull()
 
               assertThat(
                 descriptorFunction.parameters.single()
-                  .resolveTypeNameOrNull(implementingClass1.toPsiReference())
+                  .resolveTypeNameOrNull(implementingClass1.toPsiReference()),
               ).isNotNull()
               assertThat(
                 descriptorFunction.parameters.single()
-                  .resolveTypeNameOrNull(implementingClass1.toDescriptorReference())
+                  .resolveTypeNameOrNull(implementingClass1.toDescriptorReference()),
               ).isNotNull()
 
               val implementingClass2 = FqName("com.squareup.test.SomeClass2")
@@ -378,20 +380,20 @@ class MemberFunctionReferenceTest {
 
               assertThat(
                 psiFunction.parameters.single()
-                  .resolveTypeNameOrNull(implementingClass2.toPsiReference())
+                  .resolveTypeNameOrNull(implementingClass2.toPsiReference()),
               ).isNotNull()
               assertThat(
                 psiFunction.parameters.single()
-                  .resolveTypeNameOrNull(implementingClass2.toDescriptorReference())
+                  .resolveTypeNameOrNull(implementingClass2.toDescriptorReference()),
               ).isNotNull()
 
               assertThat(
                 descriptorFunction.parameters.single()
-                  .resolveTypeNameOrNull(implementingClass2.toPsiReference())
+                  .resolveTypeNameOrNull(implementingClass2.toPsiReference()),
               ).isNotNull()
               assertThat(
                 descriptorFunction.parameters.single()
-                  .resolveTypeNameOrNull(implementingClass2.toDescriptorReference())
+                  .resolveTypeNameOrNull(implementingClass2.toDescriptorReference()),
               ).isNotNull()
             }
             "GenericInterface2" -> {
@@ -400,7 +402,7 @@ class MemberFunctionReferenceTest {
 
               val descriptorFunction = descriptorRef.functions.single { it.name == "hello" }
               assertThat(
-                descriptorFunction.parameters.single().type().asClassReferenceOrNull()
+                descriptorFunction.parameters.single().type().asClassReferenceOrNull(),
               ).isNull()
 
               val implementingClass = FqName("com.squareup.test.SomeClass2")
@@ -408,19 +410,19 @@ class MemberFunctionReferenceTest {
 
               assertThat(
                 descriptorFunction.parameters.single()
-                  .resolveTypeNameOrNull(implementingClass.toPsiReference())
+                  .resolveTypeNameOrNull(implementingClass.toPsiReference()),
               ).isNotNull()
               assertThat(
                 descriptorFunction.parameters.single()
-                  .resolveTypeNameOrNull(implementingClass.toDescriptorReference())
+                  .resolveTypeNameOrNull(implementingClass.toDescriptorReference()),
               ).isNotNull()
             }
             else -> throw NotImplementedError()
           }
 
           null
-        }
-      )
+        },
+      ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }

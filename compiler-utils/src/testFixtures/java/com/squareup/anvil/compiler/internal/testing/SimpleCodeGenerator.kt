@@ -13,14 +13,14 @@ import java.io.File
 private var counter = 0
 
 fun simpleCodeGenerator(
-  mapper: CodeGenerator.(clazz: ClassReference.Psi) -> String?
+  mapper: CodeGenerator.(clazz: ClassReference.Psi) -> String?,
 ): CodeGenerator = object : CodeGenerator {
   override fun isApplicable(context: AnvilContext): Boolean = true
 
   override fun generateCode(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ): Collection<GeneratedFile> {
     return projectFiles
       .classAndInnerClassReferences(module)
@@ -34,7 +34,7 @@ fun simpleCodeGenerator(
           codeGenDir = codeGenDir,
           packageName = packageName,
           fileName = fileName,
-          content = content
+          content = content,
         )
       }
       .toList()

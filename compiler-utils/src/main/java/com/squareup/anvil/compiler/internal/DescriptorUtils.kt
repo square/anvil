@@ -30,7 +30,7 @@ public fun KotlinType.classDescriptorOrNull(): ClassDescriptor? {
 public fun KotlinType.classDescriptor(): ClassDescriptor {
   return classDescriptorOrNull()
     ?: throw AnvilCompilationException(
-      "Unable to resolve type for $this."
+      "Unable to resolve type for $this.",
     )
 }
 
@@ -52,12 +52,12 @@ public fun ConstantValue<*>.argumentType(module: ModuleDescriptor): KotlinType {
       classId = ClassId(
         classId.packageFqName,
         FqName(classId.relativeClassName.asString().replace('$', '.')),
-        false
-      )
+        false,
+      ),
     )
     ?.defaultType
     ?: throw AnvilCompilationException(
-      "Couldn't resolve class across module dependencies for class ID: $classId"
+      "Couldn't resolve class across module dependencies for class ID: $classId",
     )
 }
 

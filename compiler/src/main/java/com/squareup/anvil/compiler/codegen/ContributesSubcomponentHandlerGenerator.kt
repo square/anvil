@@ -62,7 +62,7 @@ import java.io.File
  * ```
  */
 internal class ContributesSubcomponentHandlerGenerator(
-  private val classScanner: ClassScanner
+  private val classScanner: ClassScanner,
 ) : CodeGenerator {
 
   private val triggers = mutableListOf<Trigger>()
@@ -77,7 +77,7 @@ internal class ContributesSubcomponentHandlerGenerator(
   override fun generateCode(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ): Collection<GeneratedFile> {
     if (isFirstRound) {
       isFirstRound = false
@@ -150,7 +150,7 @@ internal class ContributesSubcomponentHandlerGenerator(
                 .apply {
                   fun addClassArrayMember(
                     name: String,
-                    references: List<ClassReference>
+                    references: List<ClassReference>,
                   ) {
                     if (references.isNotEmpty()) {
                       val classes = references.map { it.asClassName() }
@@ -164,12 +164,12 @@ internal class ContributesSubcomponentHandlerGenerator(
                   addClassArrayMember("modules", contribution.annotation.modules())
                   addClassArrayMember("exclude", contribution.annotation.exclude())
                 }
-                .build()
+                .build(),
             )
             .addAnnotations(
               contribution.clazz.annotations
                 .filter { it.isDaggerScope() }
-                .map { it.toAnnotationSpec() }
+                .map { it.toAnnotationSpec() },
             )
             .apply {
               if (factoryClass != null) {
@@ -179,8 +179,10 @@ internal class ContributesSubcomponentHandlerGenerator(
             }
             .addType(
               generateParentComponent(
-                contribution, generatedAnvilSubcomponent, factoryClass
-              )
+                contribution,
+                generatedAnvilSubcomponent,
+                factoryClass,
+              ),
             )
             .build()
             .also { addType(it) }
@@ -190,13 +192,13 @@ internal class ContributesSubcomponentHandlerGenerator(
           codeGenDir = codeGenDir,
           packageName = generatedPackage,
           fileName = componentClassName,
-          content = content
+          content = content,
         )
       }
   }
 
   private fun generateFactory(
-    factoryReference: ClassReference
+    factoryReference: ClassReference,
   ): TypeSpec {
     val superclass = factoryReference.asClassName()
 
@@ -217,7 +219,7 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private fun generateDaggerModule(
-    factoryReference: ClassReference
+    factoryReference: ClassReference,
   ): TypeSpec {
     // This Dagger module will allow injecting the factory instance.
     return TypeSpec
@@ -231,7 +233,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           .addModifiers(ABSTRACT)
           .addParameter("factory", ClassName.bestGuess(SUBCOMPONENT_FACTORY))
           .returns(factoryReference.asClassName())
-          .build()
+          .build(),
       )
       .build()
   }
@@ -242,7 +244,8 @@ internal class ContributesSubcomponentHandlerGenerator(
     factoryClass: FactoryClassHolder?,
   ): TypeSpec {
     val parentComponentInterface = findParentComponentInterface(
-      contribution, factoryClass?.originalReference
+      contribution,
+      factoryClass?.originalReference,
     )
 
     return TypeSpec
@@ -258,7 +261,7 @@ internal class ContributesSubcomponentHandlerGenerator(
             name = parentComponentInterface
               ?.functionName
               ?: factoryClass?.let { "create${it.originalReference.fqName.shortName()}" }
-              ?: "create${generatedAnvilSubcomponent.relativeClassName}"
+              ?: "create${generatedAnvilSubcomponent.relativeClassName}",
           )
           .addModifiers(ABSTRACT)
           .apply {
@@ -272,14 +275,14 @@ internal class ContributesSubcomponentHandlerGenerator(
               returns(generatedAnvilSubcomponent.asClassName())
             }
           }
-          .build()
+          .build(),
       )
       .build()
   }
 
   private fun findParentComponentInterface(
     contribution: Contribution,
-    factoryClass: ClassReference?
+    factoryClass: ClassReference?,
   ): ParentComponentInterfaceHolder? {
     val contributedInnerComponentInterfaces = contribution.clazz
       .innerClasses()
@@ -298,7 +301,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       else -> throw AnvilCompilationExceptionClassReference(
         classReference = contribution.clazz,
         message = "Expected zero or one parent component interface within " +
-          "${contribution.clazz.fqName} being contributed to the parent scope."
+          "${contribution.clazz.fqName} being contributed to the parent scope.",
       )
     }
 
@@ -315,7 +318,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       else -> throw AnvilCompilationExceptionClassReference(
         classReference = contribution.clazz,
         message = "Expected zero or one function returning the " +
-          "subcomponent ${contribution.clazz.fqName}."
+          "subcomponent ${contribution.clazz.fqName}.",
       )
     }
 
@@ -324,7 +327,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private fun findFactoryClass(
     contribution: Contribution,
-    generatedAnvilSubcomponent: ClassId
+    generatedAnvilSubcomponent: ClassId,
   ): FactoryClassHolder? {
     val contributionFqName = contribution.clazz.fqName
 
@@ -337,7 +340,7 @@ internal class ContributesSubcomponentHandlerGenerator(
         if (!factory.isInterface() && !factory.isAbstract()) {
           throw AnvilCompilationExceptionClassReference(
             classReference = factory,
-            message = "A factory must be an interface or an abstract class."
+            message = "A factory must be an interface or an abstract class.",
           )
         }
 
@@ -349,7 +352,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           throw AnvilCompilationExceptionClassReference(
             classReference = factory,
             message = "A factory must have exactly one abstract function returning the " +
-              "subcomponent $contributionFqName."
+              "subcomponent $contributionFqName.",
           )
         }
       }
@@ -360,7 +363,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       1 -> contributedFactories[0]
       else -> throw AnvilCompilationExceptionClassReference(
         classReference = contribution.clazz,
-        message = "Expected zero or one factory within $contributionFqName."
+        message = "Expected zero or one factory within $contributionFqName.",
       )
     }
 
@@ -368,13 +371,13 @@ internal class ContributesSubcomponentHandlerGenerator(
       originalReference = classReference,
       generatedFactoryName = generatedAnvilSubcomponent
         .createNestedClassId(Name.identifier(SUBCOMPONENT_FACTORY))
-        .asClassName()
+        .asClassName(),
     )
   }
 
   private fun checkReplacedSubcomponentWasNotAlreadyGenerated(
     contributedReference: ClassReference,
-    replacedReferences: List<ClassReference>
+    replacedReferences: List<ClassReference>,
   ) {
     replacedReferences.forEach { replacedReference ->
       if (processedEvents.any { it.contribution.clazz == replacedReference }) {
@@ -382,14 +385,14 @@ internal class ContributesSubcomponentHandlerGenerator(
           classReference = contributedReference,
           message = "${contributedReference.fqName} tries to replace " +
             "${replacedReference.fqName}, but the code for ${replacedReference.fqName} was " +
-            "already generated. This is not supported."
+            "already generated. This is not supported.",
         )
       }
     }
   }
 
   private fun populateInitialContributions(
-    module: ModuleDescriptor
+    module: ModuleDescriptor,
   ) {
     // Find all contributed subcomponents from precompiled dependencies and generate the
     // necessary code eventually if there's a trigger.
@@ -397,11 +400,11 @@ internal class ContributesSubcomponentHandlerGenerator(
       .findContributedClasses(
         module = module,
         annotation = contributesSubcomponentFqName,
-        scope = null
+        scope = null,
       )
       .map { clazz ->
         Contribution(
-          annotation = clazz.annotations.single { it.fqName == contributesSubcomponentFqName }
+          annotation = clazz.annotations.single { it.fqName == contributesSubcomponentFqName },
         )
       }
 
@@ -426,7 +429,7 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private class Trigger(
-    annotation: AnnotationReference
+    annotation: AnnotationReference,
   ) {
     val clazz = annotation.declaringClass()
     val scope = annotation.scope()
@@ -457,7 +460,7 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private class Contribution(
-    val annotation: AnnotationReference
+    val annotation: AnnotationReference,
   ) {
     val clazz = annotation.declaringClass()
     val scope = annotation.scope()
@@ -490,7 +493,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private data class GenerateCodeEvent(
     val trigger: Trigger,
-    val contribution: Contribution
+    val contribution: Contribution,
   ) {
     val generatedAnvilSubcomponent = contribution.clazz.classId
       .generatedAnvilSubcomponent(trigger.clazz.classId)
@@ -498,7 +501,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private class ParentComponentInterfaceHolder(
     componentInterface: ClassReference,
-    function: MemberFunctionReference
+    function: MemberFunctionReference,
   ) {
     val componentInterface = componentInterface.asClassName()
     val functionName = function.fqName.shortName().asString()
@@ -506,7 +509,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private class FactoryClassHolder(
     val originalReference: ClassReference,
-    val generatedFactoryName: ClassName
+    val generatedFactoryName: ClassName,
   )
 }
 
