@@ -1,7 +1,9 @@
 package com.squareup.anvil.compiler.codegen.ksp
 
+import com.google.devtools.ksp.symbol.ClassKind.ANNOTATION_CLASS
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
+import com.google.devtools.ksp.symbol.KSClassDeclaration
 import kotlin.reflect.KClass
 
 /**
@@ -33,3 +35,5 @@ internal fun KSAnnotated.getKSAnnotationsByQualifiedName(
 
 internal fun KSAnnotated.isAnnotationPresent(qualifiedName: String): Boolean =
   getKSAnnotationsByQualifiedName(qualifiedName).firstOrNull() != null
+
+internal fun KSClassDeclaration.isAnnotationClass(): Boolean = classKind == ANNOTATION_CLASS
