@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
+import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
@@ -10,19 +11,23 @@ import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PRIVATE
+import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.internal.Factory
@@ -30,57 +35,74 @@ import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
-@AutoService(CodeGenerator::class)
-internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
-
+object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext) = context.generateFactories
 
-  override fun generateCodePrivate(
-    codeGenDir: File,
-    module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>,
-  ) {
-    projectFiles
-      .classAndInnerClassReferences(module)
-      .forEach { clazz ->
-        clazz.constructors
-          .injectConstructor()
-          ?.takeIf { it.isAnnotatedWith(injectFqName) }
-          ?.let {
-            generateFactoryClass(codeGenDir, clazz, it)
-          }
-      }
+  @AutoService(CodeGenerator::class)
+  internal class Embedded : PrivateCodeGenerator() {
+
+    override fun isApplicable(context: AnvilContext) = InjectConstructorFactoryCodeGen.isApplicable(context)
+
+    override fun generateCodePrivate(
+      codeGenDir: File,
+      module: ModuleDescriptor,
+      projectFiles: Collection<KtFile>,
+    ) {
+      projectFiles
+        .classAndInnerClassReferences(module)
+        .forEach { clazz ->
+          clazz.constructors
+            .injectConstructor()
+            ?.takeIf { it.isAnnotatedWith(injectFqName) }
+            ?.let {
+              generateFactoryClass(codeGenDir, clazz, it)
+            }
+        }
+    }
+
+    private fun generateFactoryClass(
+      codeGenDir: File,
+      clazz: ClassReference.Psi,
+      constructor: MemberFunctionReference.Psi,
+    ): GeneratedFile {
+      val constructorParameters = constructor.parameters.mapToConstructorParameters()
+      val memberInjectParameters = clazz.memberInjectParameters()
+      val typeParameters = clazz.typeParameters.map { it.typeVariableName }
+
+      val spec = generateFactoryClass(
+        injectedClassName = clazz.asClassName(),
+        typeParameters = typeParameters,
+        constructorParameters = constructorParameters,
+        memberInjectParameters = memberInjectParameters,
+      )
+
+      return createGeneratedFile(codeGenDir, spec.packageName, spec.name, spec.toString())
+    }
   }
 
   private fun generateFactoryClass(
-    codeGenDir: File,
-    clazz: ClassReference.Psi,
-    constructor: MemberFunctionReference.Psi,
-  ): GeneratedFile {
-    val classId = clazz.generateClassName(suffix = "_Factory")
+    injectedClassName: ClassName,
+    typeParameters: List<TypeVariableName>,
+    constructorParameters: List<ConstructorParameter>,
+    memberInjectParameters: List<MemberInjectParameter>,
+  ): FileSpec {
+    val generatedClassName = injectedClassName.generateClassName(suffix = "_Factory")
 
-    val packageName = classId.packageFqName.safePackageString()
-    val className = classId.relativeClassName.asString()
-
-    val constructorParameters = constructor.parameters.mapToConstructorParameters()
-    val memberInjectParameters = clazz.memberInjectParameters()
+    val packageName = injectedClassName.packageName
 
     val allParameters = constructorParameters + memberInjectParameters
 
-    val typeParameters = clazz.typeParameters
+    val factoryClassParameterized = generatedClassName.optionallyParameterizedByNames(typeParameters)
+    val classType = injectedClassName.optionallyParameterizedByNames(typeParameters)
 
-    val factoryClass = classId.asClassName()
-    val factoryClassParameterized = factoryClass.optionallyParameterizedBy(typeParameters)
-    val classType = clazz.asClassName().optionallyParameterizedBy(typeParameters)
-
-    val content = FileSpec.buildFile(packageName, className) {
+    val spec = FileSpec.createAnvilSpec(packageName, generatedClassName.simpleName) {
       val canGenerateAnObject = allParameters.isEmpty() && typeParameters.isEmpty()
       val classBuilder = if (canGenerateAnObject) {
-        TypeSpec.objectBuilder(factoryClass)
+        TypeSpec.objectBuilder(generatedClassName)
       } else {
-        TypeSpec.classBuilder(factoryClass)
+        TypeSpec.classBuilder(generatedClassName)
       }
-      typeParameters.forEach { classBuilder.addTypeVariable(it.typeVariableName) }
+      typeParameters.forEach { classBuilder.addTypeVariable(it) }
 
       classBuilder
         .addSuperinterface(Factory::class.asClassName().parameterizedBy(classType))
@@ -135,7 +157,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                 .jvmStatic()
                 .apply {
                   if (typeParameters.isNotEmpty()) {
-                    addTypeVariables(typeParameters.map { it.typeVariableName })
+                    addTypeVariables(typeParameters)
                   }
                   if (canGenerateAnObject) {
                     addStatement("return this")
@@ -163,7 +185,7 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
                 .jvmStatic()
                 .apply {
                   if (typeParameters.isNotEmpty()) {
-                    addTypeVariables(typeParameters.map { it.typeVariableName })
+                    addTypeVariables(typeParameters)
                   }
                   constructorParameters.forEach { parameter ->
                     addParameter(
@@ -189,6 +211,6 @@ internal class InjectConstructorFactoryGenerator : PrivateCodeGenerator() {
         .let { addType(it) }
     }
 
-    return createGeneratedFile(codeGenDir, packageName, className, content)
+    return spec
   }
 }

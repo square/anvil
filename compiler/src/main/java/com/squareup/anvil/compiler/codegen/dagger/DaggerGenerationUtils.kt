@@ -302,7 +302,7 @@ private fun TypeReference.isGenericExcludingTypeAliases(): Boolean {
   return isGenericType() && unwrappedTypes.isNotEmpty()
 }
 
-private fun ClassName.optionallyParameterizedByNames(
+internal fun ClassName.optionallyParameterizedByNames(
   typeNames: List<TypeName>,
 ): TypeName {
   return if (typeNames.isEmpty()) {
