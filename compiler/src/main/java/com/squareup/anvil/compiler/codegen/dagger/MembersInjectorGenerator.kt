@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
@@ -18,6 +19,7 @@ import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferenc
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
@@ -25,6 +27,7 @@ import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import dagger.MembersInjector
@@ -71,131 +74,148 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
       clazz: ClassReference.Psi,
       parameters: List<MemberInjectParameter>,
     ): GeneratedFile {
-      val classId = clazz.generateClassName(suffix = "_MembersInjector")
-      val packageName = classId.packageFqName.safePackageString()
-      val className = classId.relativeClassName.asString()
+      val isGeneric = clazz.isGenericClass()
       val typeParameters = clazz.typeParameters
+        .map { it.typeVariableName }
 
-      val classType = clazz.asClassName()
-        .let {
-          if (clazz.isGenericClass()) {
-            it.parameterizedBy(typeParameters.map { typeParameter -> typeParameter.typeVariableName })
-          } else {
-            it
-          }
+      val spec = generateMembersInjectorClass(
+        origin = clazz.asClassName(),
+        isGeneric = isGeneric,
+        typeParameters = typeParameters,
+        parameters = parameters,
+      )
+
+      return createGeneratedFile(codeGenDir, spec.packageName, spec.name, spec.toString())
+    }
+  }
+
+  private fun generateMembersInjectorClass(
+    origin: ClassName,
+    isGeneric: Boolean,
+    typeParameters: List<TypeVariableName>,
+    parameters: List<MemberInjectParameter>,
+  ): FileSpec {
+    val memberInjectorClass = origin.generateClassName(suffix = "_MembersInjector")
+    val packageName = memberInjectorClass.packageName.safePackageString()
+    val fileName = origin.simpleName
+
+    val classType = origin
+      .let {
+        if (isGeneric) {
+          it.parameterizedBy(typeParameters)
+        } else {
+          it
         }
-
-      val membersInjectorType = MembersInjector::class.asClassName().parameterizedBy(classType)
-
-      fun createArgumentList(asProvider: Boolean): String {
-        return parameters
-          .map { it.name }
-          .let { list ->
-            if (asProvider) list.map { "$it.get()" } else list
-          }
-          .joinToString()
       }
 
-      val memberInjectorClass = classId.asClassName()
+    val membersInjectorType = MembersInjector::class.asClassName().parameterizedBy(classType)
 
-      val content = FileSpec.buildFile(packageName, className) {
-        addType(
-          TypeSpec
-            .classBuilder(memberInjectorClass)
-            .addSuperinterface(membersInjectorType)
-            .apply {
-              typeParameters.forEach { typeParameter ->
-                addTypeVariable(typeParameter.typeVariableName)
-              }
-              primaryConstructor(
-                FunSpec.constructorBuilder()
-                  .apply {
-                    parameters.forEach { parameter ->
-                      addParameter(parameter.name, parameter.resolvedProviderTypeName)
-                    }
-                  }
-                  .build(),
-              )
+    fun createArgumentList(asProvider: Boolean): String {
+      return parameters
+        .map { it.name }
+        .let { list ->
+          if (asProvider) list.map { "$it.get()" } else list
+        }
+        .joinToString()
+    }
 
-              parameters.forEach { parameter ->
-                addProperty(
-                  PropertySpec.builder(parameter.name, parameter.resolvedProviderTypeName)
-                    .initializer(parameter.name)
-                    .addModifiers(PRIVATE)
-                    .build(),
-                )
-              }
+    val spec = FileSpec.createAnvilSpec(packageName, fileName) {
+      addType(
+        TypeSpec
+          .classBuilder(memberInjectorClass)
+          .addSuperinterface(membersInjectorType)
+          .apply {
+            typeParameters.forEach { typeParameter ->
+              addTypeVariable(typeParameter)
             }
-            .addFunction(
-              FunSpec.builder("injectMembers")
-                .addModifiers(OVERRIDE)
-                .addParameter("instance", classType)
-                .addMemberInjection(parameters, "instance")
-                .build(),
-            )
-            .addType(
-              TypeSpec
-                .companionObjectBuilder()
-                .addFunction(
-                  FunSpec.builder("create")
-                    .jvmStatic()
-                    .apply {
-                      typeParameters.forEach { typeParameter ->
-                        addTypeVariable(typeParameter.typeVariableName)
-                      }
-
-                      parameters.forEach { parameter ->
-                        addParameter(parameter.name, parameter.resolvedProviderTypeName)
-                      }
-
-                      addStatement(
-                        "return %T(${createArgumentList(false)})",
-                        memberInjectorClass,
-                      )
-                    }
-                    .returns(membersInjectorType)
-                    .build(),
-                )
+            primaryConstructor(
+              FunSpec.constructorBuilder()
                 .apply {
-                  parameters
-                    // Don't generate the static single-property "inject___" functions for super-classes
-                    .filter { it.memberInjectorClassName == memberInjectorClass }
-                    .forEach { parameter ->
-
-                      val name = parameter.name
-
-                      addFunction(
-                        FunSpec.builder("inject${parameter.accessName.capitalize()}")
-                          .jvmStatic()
-                          .apply {
-                            typeParameters.forEach { typeParameter ->
-                              addTypeVariable(typeParameter.typeVariableName)
-                            }
-
-                            // Don't add @InjectedFieldSignature when it's calling a setter method
-                            if (!parameter.isSetterInjected) {
-                              addAnnotation(
-                                AnnotationSpec.builder(InjectedFieldSignature::class)
-                                  .addMember("%S", parameter.injectedFieldSignature)
-                                  .build(),
-                              )
-                            }
-                          }
-                          .addAnnotations(parameter.qualifierAnnotationSpecs)
-                          .addParameter("instance", classType)
-                          .addParameter(name, parameter.originalTypeName)
-                          .addStatement("instance.${parameter.originalName} = $name")
-                          .build(),
-                      )
-                    }
+                  parameters.forEach { parameter ->
+                    addParameter(parameter.name, parameter.resolvedProviderTypeName)
+                  }
                 }
                 .build(),
             )
-            .build(),
-        )
-      }
 
-      return createGeneratedFile(codeGenDir, packageName, className, content)
+            parameters.forEach { parameter ->
+              addProperty(
+                PropertySpec.builder(parameter.name, parameter.resolvedProviderTypeName)
+                  .initializer(parameter.name)
+                  .addModifiers(PRIVATE)
+                  .build(),
+              )
+            }
+          }
+          .addFunction(
+            FunSpec.builder("injectMembers")
+              .addModifiers(OVERRIDE)
+              .addParameter("instance", classType)
+              .addMemberInjection(parameters, "instance")
+              .build(),
+          )
+          .addType(
+            TypeSpec
+              .companionObjectBuilder()
+              .addFunction(
+                FunSpec.builder("create")
+                  .jvmStatic()
+                  .apply {
+                    typeParameters.forEach { typeParameter ->
+                      addTypeVariable(typeParameter)
+                    }
+
+                    parameters.forEach { parameter ->
+                      addParameter(parameter.name, parameter.resolvedProviderTypeName)
+                    }
+
+                    addStatement(
+                      "return %T(${createArgumentList(false)})",
+                      memberInjectorClass,
+                    )
+                  }
+                  .returns(membersInjectorType)
+                  .build(),
+              )
+              .apply {
+                parameters
+                  // Don't generate the static single-property "inject___" functions for super-classes
+                  .filter { it.memberInjectorClassName == memberInjectorClass }
+                  .forEach { parameter ->
+
+                    val name = parameter.name
+
+                    addFunction(
+                      FunSpec.builder("inject${parameter.accessName.capitalize()}")
+                        .jvmStatic()
+                        .apply {
+                          typeParameters.forEach { typeParameter ->
+                            addTypeVariable(typeParameter)
+                          }
+
+                          // Don't add @InjectedFieldSignature when it's calling a setter method
+                          if (!parameter.isSetterInjected) {
+                            addAnnotation(
+                              AnnotationSpec.builder(InjectedFieldSignature::class)
+                                .addMember("%S", parameter.injectedFieldSignature)
+                                .build(),
+                            )
+                          }
+                        }
+                        .addAnnotations(parameter.qualifierAnnotationSpecs)
+                        .addParameter("instance", classType)
+                        .addParameter(name, parameter.originalTypeName)
+                        .addStatement("instance.${parameter.originalName} = $name")
+                        .build(),
+                    )
+                  }
+              }
+              .build(),
+          )
+          .build(),
+      )
     }
+
+    return spec
   }
 }
