@@ -4,6 +4,7 @@ import com.google.common.collect.Lists.cartesianProduct
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
@@ -11,6 +12,7 @@ import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.isFullTestRun
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
@@ -36,11 +38,11 @@ class InjectConstructorFactoryGeneratorTest(
     fun useDagger(): Collection<Any> {
       return cartesianProduct(
         listOf(
-          // isFullTestRun(),
+          isFullTestRun(),
           false,
         ),
         listOf(
-          // Embedded(),
+          Embedded(),
           Ksp(),
         ),
       ).mapNotNull { (useDagger, mode) ->
