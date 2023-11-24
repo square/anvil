@@ -3,8 +3,10 @@ package com.squareup.anvil.compiler.codegen.dagger
 import com.google.devtools.ksp.getAllSuperTypes
 import com.google.devtools.ksp.getDeclaredProperties
 import com.google.devtools.ksp.getVisibility
+import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Visibility
@@ -261,14 +263,19 @@ private fun KSClassDeclaration.declaredMemberInjectParameters(
   superParameters: List<Parameter>,
   implementingClass: KSClassDeclaration,
 ): List<MemberInjectParameter> {
+  val implementingType = implementingClass.asType(emptyList())
   return getDeclaredProperties()
-    .filter { it.isAnnotationPresent(injectFqName.asString()) }
+    .filter {
+      it.isAnnotationPresent<Inject>() ||
+        it.setter?.isAnnotationPresent<Inject>() == true
+    }
     .filter { it.getVisibility() != Visibility.PRIVATE }
     .fold(listOf()) { acc, property ->
       val uniqueName = property.simpleName.asString().uniqueParameterName(superParameters, acc)
       acc + property.toMemberInjectParameter(
         uniqueName = uniqueName,
         declaringClass = this@declaredMemberInjectParameters,
+        implementingType = implementingType,
         implementingClass = implementingClass,
       )
     }
@@ -426,12 +433,13 @@ private fun MemberPropertyReference.toMemberInjectParameter(
 private fun KSPropertyDeclaration.toMemberInjectParameter(
   uniqueName: String,
   declaringClass: KSClassDeclaration,
+  implementingType: KSType,
   implementingClass: KSClassDeclaration,
 ): MemberInjectParameter {
   if (
     !isLateInit() &&
     !isAnnotationPresent<JvmField>() &&
-    setter?.isAnnotationPresent<Inject>() == true
+    setter?.isAnnotationPresent<Inject>() != true
   ) {
     // Technically this works with Anvil and we could remove this check. But we prefer consistency
     // with Dagger.
@@ -444,7 +452,8 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
 
   val originalName = simpleName.asString()
   val classParams = implementingClass.typeParameters.toTypeParameterResolver()
-  val resolvedType = type.resolve()
+  val resolvedType = asMemberOf(implementingType)
+  // TODO do we want to convert function types to lambdas?
   val propertyTypeName = resolvedType.toTypeName(classParams)
   val rawType = propertyTypeName.requireRawType()
 

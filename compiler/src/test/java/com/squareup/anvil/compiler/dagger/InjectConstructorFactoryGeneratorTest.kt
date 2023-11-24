@@ -38,11 +38,11 @@ class InjectConstructorFactoryGeneratorTest(
     fun useDagger(): Collection<Any> {
       return cartesianProduct(
         listOf(
-          // isFullTestRun(),
+          isFullTestRun(),
           false,
         ),
         listOf(
-          // Embedded(),
+          Embedded(),
           Ksp(),
         ),
       ).mapNotNull { (useDagger, mode) ->
