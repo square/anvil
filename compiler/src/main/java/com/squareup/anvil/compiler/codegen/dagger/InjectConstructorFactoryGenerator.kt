@@ -18,10 +18,13 @@ import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
+import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.createAnvilSpec
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.asClassName
@@ -64,7 +67,25 @@ object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
         .plus(resolver.getSymbolsWithAnnotation(assistedInjectFqName.asString()))
         .filterIsInstance<KSFunctionDeclaration>()
         .filter { it.isConstructor() }
-        .forEach { constructor ->
+        .groupBy { it.parentDeclaration as KSClassDeclaration }
+        .forEach { (clazz, constructors) ->
+          if (constructors.size != 1) {
+            val constructorsErrorMessage = constructors.map { constructor ->
+              constructor.annotations.joinToString(" ", postfix = " ")
+                // We special-case @Inject to match Dagger using the non-fully-qualified name
+                .replace("@javax.inject.Inject", "@Inject") +
+                clazz.qualifiedName!!.asString() + constructor.parameters.joinToString(", ", prefix = "(", postfix = ")") { param ->
+                param.type.resolve().resolveKSClassDeclaration()!!.simpleName.getShortName()
+              }
+            }.joinToString()
+            throw KspAnvilException(
+              node = clazz,
+              message = "Type ${clazz.qualifiedName!!.asString()} may only contain one injected " +
+                "constructor. Found: [$constructorsErrorMessage]",
+            )
+          }
+          val constructor = constructors[0]
+
           generateFactoryClass(constructor)
             .writeTo(env.codeGenerator, aggregating = false, originatingKSFiles = listOf(constructor.containingFile!!))
         }

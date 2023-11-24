@@ -133,7 +133,7 @@ private fun KSValueParameter.toConstructorParameter(
   val isWrappedInProvider = rawType == providerClassName
   val isWrappedInLazy = rawType == daggerLazyClassName
   val isLazyWrappedInProvider = isWrappedInProvider &&
-    (paramTypeName.unwrappedTypes.first() as? ClassName) == daggerLazyClassName
+    (paramTypeName.unwrappedTypes.first().requireRawType()) == daggerLazyClassName
 
   val typeName = when {
     isLazyWrappedInProvider -> paramTypeName.unwrappedTypes.first().unwrappedTypes.first()
