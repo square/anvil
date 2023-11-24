@@ -10,7 +10,6 @@ import com.google.devtools.ksp.symbol.KSModifierListOwner
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.Modifier
-import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import kotlin.reflect.KClass
@@ -58,8 +57,7 @@ internal fun KSClassDeclaration.isAnnotationClass(): Boolean = classKind == ANNO
 internal fun KSModifierListOwner.isLateInit(): Boolean = Modifier.LATEINIT in modifiers
 
 @OptIn(KspExperimental::class)
-@ExperimentalAnvilApi
-public fun TypeName.withJvmSuppressWildcardsIfNeeded(
+internal fun TypeName.withJvmSuppressWildcardsIfNeeded(
   annotatedReference: KSAnnotated,
   type: KSType,
 ): TypeName {
@@ -81,7 +79,10 @@ public fun TypeName.withJvmSuppressWildcardsIfNeeded(
   }
 }
 
-tailrec fun KSType.resolveKSClassDeclaration(): KSClassDeclaration? {
+/**
+ * Resolves the [KSClassDeclaration] for this type, including following typealiases as needed.
+ */
+internal tailrec fun KSType.resolveKSClassDeclaration(): KSClassDeclaration? {
   return when (val declaration = declaration) {
     is KSClassDeclaration -> declaration
     is KSTypeAlias -> declaration.type.resolve().resolveKSClassDeclaration()
