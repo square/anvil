@@ -5,6 +5,8 @@ import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSValueParameter
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
@@ -16,11 +18,14 @@ import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryCodeGen.Embedded.AssistedFactoryFunction.Companion.toAssistedFactoryFunction
-import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryCodeGen.Embedded.AssistedParameterKey.Companion.toAssistedParameterKey
+import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryCodeGen.AssistedParameterKey.Companion.toAssistedParameterKey
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
+import com.squareup.anvil.compiler.codegen.ksp.argumentAt
+import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -33,6 +38,7 @@ import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
@@ -41,8 +47,13 @@ import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
+import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.toTypeName
+import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
+import dagger.assisted.Assisted
 import dagger.internal.InstanceFactory
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
@@ -60,7 +71,11 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
     class Provider : AnvilSymbolProcessorProvider(AssistedFactoryCodeGen, ::KspGenerator)
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
+      resolver.getSymbolsWithAnnotation(assistedFactoryFqName.asString())
+        .filterIsInstance<KSClassDeclaration>()
+        .forEach { clazz ->
 
+        }
       return emptyList()
     }
   }
@@ -87,7 +102,6 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
       codeGenDir: File,
       clazz: ClassReference.Psi,
     ): GeneratedFile {
-      val packageName = clazz.packageFqName.safePackageString()
       val delegateFactoryName = "delegateFactory"
 
       val function = clazz.requireSingleAbstractFunction()
@@ -173,96 +187,25 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
 
       val typeParameters = clazz.typeParameters
 
-      val generatedFactoryTypeName = returnType.generateClassName(suffix = "_Factory")
-        .asClassName()
-        .optionallyParameterizedBy(typeParameters)
-
-      val baseFactoryTypeName = clazz.asClassName().optionallyParameterizedBy(typeParameters)
-
-      val returnTypeName = returnType.asClassName().optionallyParameterizedBy(typeParameters)
-
-      val implClassName = clazz.generateClassName(suffix = "_Impl").asClassName()
-      val implParameterizedTypeName = implClassName.optionallyParameterizedBy(typeParameters)
       val functionName = function.function.name
       val baseFactoryIsInterface = clazz.isInterface()
       val functionParameterPairs = function.parameterPairs
 
-      val content = FileSpec.buildFile(packageName, implClassName.simpleName) {
-        TypeSpec.classBuilder(implClassName)
-          .apply {
-            typeParameters.forEach { addTypeVariable(it.typeVariableName) }
+      val spec = buildSpec(
+        originClassNAme = clazz.asClassName(),
+        targetType = returnType.asClassName(),
+        functionName = functionName,
+        typeParameters = typeParameters.map { it.typeVariableName },
+        assistedParameterKeys = assistedParameterKeys,
+        baseFactoryIsInterface = baseFactoryIsInterface,
+        delegateFactoryName = delegateFactoryName,
+        functionParameterPairs = functionParameterPairs.map { (ref, typeName) ->
+          ref.name to typeName
+        },
+        functionParameterKeys = functionParameterKeys,
+      )
 
-            if (baseFactoryIsInterface) {
-              addSuperinterface(baseFactoryTypeName)
-            } else {
-              superclass(baseFactoryTypeName)
-            }
-
-            primaryConstructor(
-              FunSpec.constructorBuilder()
-                .addParameter(delegateFactoryName, generatedFactoryTypeName)
-                .build(),
-            )
-
-            addProperty(
-              PropertySpec.builder(delegateFactoryName, generatedFactoryTypeName)
-                .initializer(delegateFactoryName)
-                .addModifiers(PRIVATE)
-                .build(),
-            )
-          }
-          .addFunction(
-            FunSpec.builder(functionName)
-              .addModifiers(OVERRIDE)
-              .returns(returnTypeName)
-              .apply {
-                functionParameterPairs.forEach { parameter ->
-                  addParameter(parameter.first.name, parameter.second)
-                }
-
-                // We call the @AssistedInject constructor. Therefore, find for each assisted
-                // parameter the function parameter where the keys match.
-                val argumentList = assistedParameterKeys.joinToString { assistedParameterKey ->
-                  val functionIndex = functionParameterKeys.indexOfFirst {
-                    it.key == assistedParameterKey.key
-                  }
-                  check(functionIndex >= 0) {
-                    // Sanity check, this should not happen with the noMatchingKeys list check above.
-                    "Unexpected assistedIndex."
-                  }
-
-                  functionParameterPairs[functionIndex].first.name
-                }
-
-                addStatement("return $delegateFactoryName.get($argumentList)")
-              }
-              .build(),
-          )
-          .apply {
-            TypeSpec.companionObjectBuilder()
-              .addFunction(
-                FunSpec.builder("create")
-                  .jvmStatic()
-                  .addTypeVariables(typeParameters.map { it.typeVariableName })
-                  .addParameter(delegateFactoryName, generatedFactoryTypeName)
-                  .returns(Provider::class.asClassName().parameterizedBy(baseFactoryTypeName))
-                  .addStatement(
-                    "return %T.create(%T($delegateFactoryName))",
-                    InstanceFactory::class,
-                    implParameterizedTypeName,
-                  )
-                  .build(),
-              )
-              .build()
-              .let {
-                addType(it)
-              }
-          }
-          .build()
-          .let { addType(it) }
-      }
-
-      return createGeneratedFile(codeGenDir, packageName, implClassName.simpleName, content)
+      return createGeneratedFile(codeGenDir, spec.packageName, spec.name, spec.toString())
     }
 
     private fun ClassReference.Psi.requireSingleAbstractFunction(): AssistedFactoryFunction {
@@ -328,35 +271,144 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
         }
       }
     }
+  }
 
-    // Dagger matches parameters of the factory function with the parameters of the @AssistedInject
-    // constructor through a key. Initially, they used the order of parameters, but that has changed.
-    // The key is a combination of the type and identifier (value parameter) of the
-    // @Assisted("...") annotation. For each parameter the key must be unique.
-    private data class AssistedParameterKey(
-      val typeName: TypeName,
-      val identifier: String,
-    ) {
+  private fun buildSpec(
+    originClassNAme: ClassName,
+    targetType: ClassName,
+    functionName: String,
+    typeParameters: List<TypeVariableName>,
+    assistedParameterKeys: List<AssistedParameterKey>,
+    baseFactoryIsInterface: Boolean,
+    delegateFactoryName: String,
+    functionParameterPairs: List<Pair<String, TypeName>>,
+    functionParameterKeys: List<AssistedParameterKey>,
+  ): FileSpec {
+    val generatedFactoryTypeName = targetType.generateClassName(suffix = "_Factory")
+      .optionallyParameterizedByNames(typeParameters)
 
-      // Key value is similar to a hash function.  There used to be a special case for KotlinTypes
-      // which were parameterized, but this is now handled by KotlinPoet's TypeName.
-      // `MyType<String>` and `MyType<Int>` now generate different hashCodes.
-      val key: Int = identifier.hashCode() * 31 + typeName.hashCode()
+    val baseFactoryTypeName = originClassNAme.optionallyParameterizedByNames(typeParameters)
+    val returnTypeName = targetType.optionallyParameterizedByNames(typeParameters)
+    val implClassName = originClassNAme.generateClassName(suffix = "_Impl")
+    val implParameterizedTypeName = implClassName.optionallyParameterizedByNames(typeParameters)
 
-      companion object {
-        fun ParameterReference.toAssistedParameterKey(
-          factoryClass: ClassReference.Psi,
-        ): AssistedParameterKey {
-          return AssistedParameterKey(
-            typeName = resolveTypeName(factoryClass),
-            identifier = annotations
-              .singleOrNull { it.fqName == assistedFqName }
-              ?.let { annotation ->
-                annotation.argumentAt("value", index = 0)?.value<String>()
-              }
-              .orEmpty(),
+    return FileSpec.createAnvilSpec(implClassName.packageName, implClassName.simpleName) {
+      TypeSpec.classBuilder(implClassName)
+        .apply {
+          addTypeVariables(typeParameters)
+
+          if (baseFactoryIsInterface) {
+            addSuperinterface(baseFactoryTypeName)
+          } else {
+            superclass(baseFactoryTypeName)
+          }
+
+          primaryConstructor(
+            FunSpec.constructorBuilder()
+              .addParameter(delegateFactoryName, generatedFactoryTypeName)
+              .build(),
+          )
+
+          addProperty(
+            PropertySpec.builder(delegateFactoryName, generatedFactoryTypeName)
+              .initializer(delegateFactoryName)
+              .addModifiers(PRIVATE)
+              .build(),
           )
         }
+        .addFunction(
+          FunSpec.builder(functionName)
+            .addModifiers(OVERRIDE)
+            .returns(returnTypeName)
+            .apply {
+              functionParameterPairs.forEach { parameter ->
+                addParameter(parameter.first, parameter.second)
+              }
+
+              // We call the @AssistedInject constructor. Therefore, find for each assisted
+              // parameter the function parameter where the keys match.
+              val argumentList = assistedParameterKeys.joinToString { assistedParameterKey ->
+                val functionIndex = functionParameterKeys.indexOfFirst {
+                  it.key == assistedParameterKey.key
+                }
+                check(functionIndex >= 0) {
+                  // Sanity check, this should not happen with the noMatchingKeys list check above.
+                  "Unexpected assistedIndex."
+                }
+
+                functionParameterPairs[functionIndex].first
+              }
+
+              addStatement("return $delegateFactoryName.get($argumentList)")
+            }
+            .build(),
+        )
+        .apply {
+          TypeSpec.companionObjectBuilder()
+            .addFunction(
+              FunSpec.builder("create")
+                .jvmStatic()
+                .addTypeVariables(typeParameters)
+                .addParameter(delegateFactoryName, generatedFactoryTypeName)
+                .returns(Provider::class.asClassName().parameterizedBy(baseFactoryTypeName))
+                .addStatement(
+                  "return %T.create(%T($delegateFactoryName))",
+                  InstanceFactory::class,
+                  implParameterizedTypeName,
+                )
+                .build(),
+            )
+            .build()
+            .let {
+              addType(it)
+            }
+        }
+        .build()
+        .let { addType(it) }
+    }
+  }
+
+  // Dagger matches parameters of the factory function with the parameters of the @AssistedInject
+  // constructor through a key. Initially, they used the order of parameters, but that has changed.
+  // The key is a combination of the type and identifier (value parameter) of the
+  // @Assisted("...") annotation. For each parameter the key must be unique.
+  private data class AssistedParameterKey(
+    val typeName: TypeName,
+    val identifier: String,
+  ) {
+
+    // Key value is similar to a hash function.  There used to be a special case for KotlinTypes
+    // which were parameterized, but this is now handled by KotlinPoet's TypeName.
+    // `MyType<String>` and `MyType<Int>` now generate different hashCodes.
+    val key: Int = identifier.hashCode() * 31 + typeName.hashCode()
+
+    companion object {
+      fun KSValueParameter.toAssistedParameterKey(
+        factoryClass: KSClassDeclaration,
+      ): AssistedParameterKey {
+        return AssistedParameterKey(
+          type.toTypeName(factoryClass.typeParameters.toTypeParameterResolver()),
+          getKSAnnotationsByType(Assisted::class)
+            .singleOrNull()
+            ?.let { annotation ->
+              annotation.argumentAt("value")?.value as? String?
+            }
+            .orEmpty()
+        )
+      }
+
+      fun ParameterReference.toAssistedParameterKey(
+        factoryClass: ClassReference.Psi,
+      ): AssistedParameterKey {
+        return AssistedParameterKey(
+          typeName = resolveTypeName(factoryClass),
+          identifier = annotations
+            .singleOrNull { it.fqName == assistedFqName }
+            ?.let { annotation ->
+              annotation.argumentAt("value", index = 0)?.value<String>()
+            }
+            .orEmpty(),
+        )
       }
     }
   }
