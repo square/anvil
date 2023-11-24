@@ -17,6 +17,7 @@ import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
@@ -24,11 +25,13 @@ import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
@@ -86,162 +89,182 @@ object AssistedInjectCodeGen : AnvilApplicabilityChecker {
       clazz: ClassReference.Psi,
       constructor: MemberFunctionReference.Psi,
     ): GeneratedFile {
-      val packageName = clazz.packageFqName.safePackageString()
-      val classIdName = clazz.generateClassName(suffix = "_Factory")
-      val className = classIdName.relativeClassName.asString()
-
       val constructorParameters = constructor.parameters.mapToConstructorParameters()
       val memberInjectParameters = clazz.memberInjectParameters()
-
-      val parameters = constructorParameters + memberInjectParameters
-      val parametersAssisted = parameters.filter { it.isAssisted }
-      val parametersNotAssisted = parameters.filterNot { it.isAssisted }
-
-      checkAssistedParametersAreDistinct(clazz, parametersAssisted)
-
       val typeParameters = clazz.typeParameters
 
-      val factoryClass = classIdName.asClassName()
-      val factoryClassParameterized = factoryClass.optionallyParameterizedBy(typeParameters)
-      val classType = clazz.asClassName().optionallyParameterizedBy(typeParameters)
+      val spec = generateFactoryClass(
+        clazz = clazz.asClassName(),
+        memberInjectParameters = memberInjectParameters,
+        typeParameters = typeParameters.map { it.typeVariableName },
+        constructorParameters = constructorParameters,
+        onError = { message ->
+          throw AnvilCompilationExceptionClassReference(
+            message = message,
+            classReference = clazz,
+          )
+        }
+      )
 
-      val content = FileSpec.buildFile(packageName, className) {
-        TypeSpec.classBuilder(factoryClass)
-          .apply {
-            typeParameters.forEach { addTypeVariable(it.typeVariableName) }
+      return createGeneratedFile(codeGenDir, spec.packageName, spec.name, spec.toString())
+    }
+  }
 
-            primaryConstructor(
-              FunSpec.constructorBuilder()
-                .apply {
-                  parametersNotAssisted.forEach { parameter ->
-                    addParameter(parameter.name, parameter.providerTypeName)
-                  }
-                }
-                .build(),
-            )
+  private fun generateFactoryClass(
+    clazz: ClassName,
+    memberInjectParameters: List<MemberInjectParameter>,
+    typeParameters: List<TypeVariableName>,
+    constructorParameters: List<ConstructorParameter>,
+    onError: (String) -> Nothing
+  ): FileSpec {
+    val packageName = clazz.packageName
+    val factoryClass = clazz.generateClassName(suffix = "_Factory")
 
-            parametersNotAssisted.forEach { parameter ->
-              addProperty(
-                PropertySpec.builder(parameter.name, parameter.providerTypeName)
-                  .initializer(parameter.name)
-                  .addModifiers(PRIVATE)
-                  .build(),
-              )
-            }
-          }
-          .addFunction(
-            FunSpec.builder("get")
-              .returns(classType)
+    val parameters = constructorParameters + memberInjectParameters
+    val parametersAssisted = parameters.filter { it.isAssisted }
+    val parametersNotAssisted = parameters.filterNot { it.isAssisted }
+
+    checkAssistedParametersAreDistinct(parametersAssisted, onError)
+
+    val factoryClassParameterized = factoryClass.optionallyParameterizedByNames(typeParameters)
+    val classType = clazz.optionallyParameterizedByNames(typeParameters)
+
+    val spec = FileSpec.createAnvilSpec(packageName, factoryClass.simpleName) {
+      TypeSpec.classBuilder(factoryClass)
+        .apply {
+          addTypeVariables(typeParameters)
+
+          primaryConstructor(
+            FunSpec.constructorBuilder()
               .apply {
-                parametersAssisted.forEach { parameter ->
-                  addParameter(parameter.name, parameter.originalTypeName)
-                }
-
-                val argumentList = constructorParameters.asArgumentList(
-                  asProvider = true,
-                  includeModule = false,
-                )
-
-                if (memberInjectParameters.isEmpty()) {
-                  addStatement("return newInstance($argumentList)")
-                } else {
-                  val instanceName = "instance"
-                  addStatement("val $instanceName = newInstance($argumentList)")
-                  addMemberInjection(memberInjectParameters, instanceName)
-                  addStatement("return $instanceName")
+                parametersNotAssisted.forEach { parameter ->
+                  addParameter(parameter.name, parameter.providerTypeName)
                 }
               }
               .build(),
           )
-          .apply {
-            TypeSpec.companionObjectBuilder()
-              .addFunction(
-                FunSpec.builder("create")
-                  .jvmStatic()
-                  .apply {
-                    if (typeParameters.isNotEmpty()) {
-                      addTypeVariables(typeParameters.map { it.typeVariableName })
-                    }
-                    parametersNotAssisted.forEach { parameter ->
-                      addParameter(parameter.name, parameter.providerTypeName)
-                    }
 
-                    val argumentList = parametersNotAssisted.asArgumentList(
-                      asProvider = false,
-                      includeModule = false,
-                    )
-
-                    addStatement(
-                      "return %T($argumentList)",
-                      factoryClassParameterized,
-                    )
-                  }
-                  .returns(factoryClassParameterized)
-                  .build(),
-              )
-              .addFunction(
-                FunSpec.builder("newInstance")
-                  .jvmStatic()
-                  .apply {
-                    if (typeParameters.isNotEmpty()) {
-                      addTypeVariables(typeParameters.map { it.typeVariableName })
-                    }
-                    constructorParameters.forEach { parameter ->
-                      addParameter(
-                        name = parameter.name,
-                        type = parameter.originalTypeName,
-                      )
-                    }
-                    val argumentsWithoutModule = constructorParameters.joinToString { it.name }
-
-                    addStatement("return %T($argumentsWithoutModule)", classType)
-                  }
-                  .returns(classType)
-                  .build(),
-              )
-              .build()
-              .let {
-                addType(it)
-              }
+          parametersNotAssisted.forEach { parameter ->
+            addProperty(
+              PropertySpec.builder(parameter.name, parameter.providerTypeName)
+                .initializer(parameter.name)
+                .addModifiers(PRIVATE)
+                .build(),
+            )
           }
-          .build()
-          .let { addType(it) }
-      }
+        }
+        .addFunction(
+          FunSpec.builder("get")
+            .returns(classType)
+            .apply {
+              parametersAssisted.forEach { parameter ->
+                addParameter(parameter.name, parameter.originalTypeName)
+              }
 
-      return createGeneratedFile(codeGenDir, packageName, className, content)
+              val argumentList = constructorParameters.asArgumentList(
+                asProvider = true,
+                includeModule = false,
+              )
+
+              if (memberInjectParameters.isEmpty()) {
+                addStatement("return newInstance($argumentList)")
+              } else {
+                val instanceName = "instance"
+                addStatement("val $instanceName = newInstance($argumentList)")
+                addMemberInjection(memberInjectParameters, instanceName)
+                addStatement("return $instanceName")
+              }
+            }
+            .build(),
+        )
+        .apply {
+          TypeSpec.companionObjectBuilder()
+            .addFunction(
+              FunSpec.builder("create")
+                .jvmStatic()
+                .apply {
+                  if (typeParameters.isNotEmpty()) {
+                    addTypeVariables(typeParameters)
+                  }
+                  parametersNotAssisted.forEach { parameter ->
+                    addParameter(parameter.name, parameter.providerTypeName)
+                  }
+
+                  val argumentList = parametersNotAssisted.asArgumentList(
+                    asProvider = false,
+                    includeModule = false,
+                  )
+
+                  addStatement(
+                    "return %T($argumentList)",
+                    factoryClassParameterized,
+                  )
+                }
+                .returns(factoryClassParameterized)
+                .build(),
+            )
+            .addFunction(
+              FunSpec.builder("newInstance")
+                .jvmStatic()
+                .apply {
+                  if (typeParameters.isNotEmpty()) {
+                    addTypeVariables(typeParameters)
+                  }
+                  constructorParameters.forEach { parameter ->
+                    addParameter(
+                      name = parameter.name,
+                      type = parameter.originalTypeName,
+                    )
+                  }
+                  val argumentsWithoutModule = constructorParameters.joinToString { it.name }
+
+                  addStatement("return %T($argumentsWithoutModule)", classType)
+                }
+                .returns(classType)
+                .build(),
+            )
+            .build()
+            .let {
+              addType(it)
+            }
+        }
+        .build()
+        .let { addType(it) }
     }
 
-    private fun checkAssistedParametersAreDistinct(
-      clazz: ClassReference,
-      parameters: List<Parameter>,
-    ) {
-      // Parameters are identical, if there types and identifier match.
-      val duplicateAssistedParameters = parameters
-        .groupBy { it.assistedParameterKey }
-        .filterValues { parameterList ->
-          parameterList.size > 1
-        }
+    return spec
+  }
 
-      if (duplicateAssistedParameters.isEmpty()) return
-
-      // Pick the first value in the map and report it as error. Dagger only reports the first
-      // error as well. The first value is a list of parameters. Since all parameters in this list
-      // are identical, we can simply use the first to construct the error message.
-      val parameter = duplicateAssistedParameters.values.first().first()
-      val assistedIdentifier = parameter.assistedIdentifier
-
-      val errorMessage = buildString {
-        append("@AssistedInject constructor has duplicate @Assisted type: @Assisted")
-        if (assistedIdentifier.isNotEmpty()) {
-          append("(\"")
-          append(assistedIdentifier)
-          append("\")")
-        }
-        append(' ')
-        append(parameter.typeName)
+  private fun checkAssistedParametersAreDistinct(
+    parameters: List<Parameter>,
+    onError: (String) -> Nothing,
+  ) {
+    // Parameters are identical, if there types and identifier match.
+    val duplicateAssistedParameters = parameters
+      .groupBy { it.assistedParameterKey }
+      .filterValues { parameterList ->
+        parameterList.size > 1
       }
 
-      throw AnvilCompilationExceptionClassReference(message = errorMessage, classReference = clazz)
+    if (duplicateAssistedParameters.isEmpty()) return
+
+    // Pick the first value in the map and report it as error. Dagger only reports the first
+    // error as well. The first value is a list of parameters. Since all parameters in this list
+    // are identical, we can simply use the first to construct the error message.
+    val parameter = duplicateAssistedParameters.values.first().first()
+    val assistedIdentifier = parameter.assistedIdentifier
+
+    val errorMessage = buildString {
+      append("@AssistedInject constructor has duplicate @Assisted type: @Assisted")
+      if (assistedIdentifier.isNotEmpty()) {
+        append("(\"")
+        append(assistedIdentifier)
+        append("\")")
+      }
+      append(' ')
+      append(parameter.typeName)
     }
+
+    onError(errorMessage)
   }
 }
