@@ -1,12 +1,21 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
+import com.google.devtools.ksp.isPrivate
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
+import com.google.devtools.ksp.processing.SymbolProcessorProvider
+import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
+import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
+import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
@@ -30,6 +39,10 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
+import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
+import com.squareup.kotlinpoet.ksp.toTypeVariableName
+import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.MembersInjector
 import dagger.internal.InjectedFieldSignature
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -38,6 +51,36 @@ import java.io.File
 
 internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext) = context.generateFactories
+
+  internal class KspGenerator(
+    override val env: SymbolProcessorEnvironment,
+  ) : AnvilSymbolProcessor() {
+    @AutoService(SymbolProcessorProvider::class)
+    class Provider : AnvilSymbolProcessorProvider(MembersInjectorCodeGen, ::KspGenerator)
+
+    override fun processChecked(resolver: Resolver): List<KSAnnotated> {
+      resolver.getSymbolsWithAnnotation(injectFqName.asString())
+        .filterIsInstance<KSPropertyDeclaration>()
+        .filterNot { it.isPrivate() }
+        .filter { it.parentDeclaration is KSClassDeclaration }
+        .groupBy { it.parentDeclaration as KSClassDeclaration }
+        .forEach { (clazz, _) ->
+          val typeParameters = clazz.typeParameters
+            .map { it.toTypeVariableName() }
+          val isGeneric = typeParameters.isNotEmpty()
+
+          generateMembersInjectorClass(
+            origin = clazz.toClassName(),
+            isGeneric = isGeneric,
+            typeParameters = typeParameters,
+            parameters = clazz.memberInjectParameters(),
+          )
+            .writeTo(env.codeGenerator, aggregating = false, listOf(clazz.containingFile!!))
+        }
+
+      return emptyList()
+    }
+  }
 
   @AutoService(CodeGenerator::class)
   internal class Embedded : PrivateCodeGenerator() {
@@ -97,7 +140,7 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
   ): FileSpec {
     val memberInjectorClass = origin.generateClassName(suffix = "_MembersInjector")
     val packageName = memberInjectorClass.packageName.safePackageString()
-    val fileName = origin.simpleName
+    val fileName = memberInjectorClass.simpleName
 
     val classType = origin
       .let {

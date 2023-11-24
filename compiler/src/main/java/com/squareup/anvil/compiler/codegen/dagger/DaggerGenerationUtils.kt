@@ -5,6 +5,7 @@ import com.google.devtools.ksp.getDeclaredProperties
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.anvil.compiler.assistedFqName
@@ -15,6 +16,7 @@ import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.isLateInit
 import com.squareup.anvil.compiler.codegen.ksp.isQualifier
+import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
 import com.squareup.anvil.compiler.daggerLazyClassName
@@ -236,9 +238,10 @@ private fun ClassReference.declaredMemberInjectParameters(
  */
 internal fun KSClassDeclaration.memberInjectParameters(): List<MemberInjectParameter> {
   // TODO can we use getAllProperties()?
-  return getAllSuperTypes()
+  return sequenceOf(asType(emptyList()))
+    .plus(getAllSuperTypes())
     .mapNotNull {
-      it.declaration as? KSClassDeclaration
+      it.resolveKSClassDeclaration()
     }
     .filterNot {
       it.isInterface()
@@ -265,6 +268,7 @@ private fun KSClassDeclaration.declaredMemberInjectParameters(
       val uniqueName = property.simpleName.asString().uniqueParameterName(superParameters, acc)
       acc + property.toMemberInjectParameter(
         uniqueName = uniqueName,
+        declaringClass = this@declaredMemberInjectParameters,
         implementingClass = implementingClass,
       )
     }
@@ -421,6 +425,7 @@ private fun MemberPropertyReference.toMemberInjectParameter(
 
 private fun KSPropertyDeclaration.toMemberInjectParameter(
   uniqueName: String,
+  declaringClass: KSClassDeclaration,
   implementingClass: KSClassDeclaration,
 ): MemberInjectParameter {
   if (
@@ -446,7 +451,7 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
   val isWrappedInProvider = rawType == providerClassName
   val isWrappedInLazy = rawType == daggerLazyClassName
   val isLazyWrappedInProvider = isWrappedInProvider &&
-    (propertyTypeName.unwrappedTypes.first() as? ClassName) == daggerLazyClassName
+    (propertyTypeName.unwrappedTypes.first().requireRawType()) == daggerLazyClassName
 
   val unwrappedType = when {
     isLazyWrappedInProvider -> propertyTypeName.unwrappedTypes.first().unwrappedTypes.first()
@@ -473,7 +478,7 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
     ?.argumentAt("value")
     ?.value as? String).orEmpty()
 
-  val implementingClassName = implementingClass
+  val implementingClassName = declaringClass
     .toClassName()
   val memberInjectorClassName = implementingClassName
     .generateClassName(separator = "_", suffix = "_MembersInjector")

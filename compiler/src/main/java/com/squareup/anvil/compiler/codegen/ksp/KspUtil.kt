@@ -8,6 +8,7 @@ import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSModifierListOwner
 import com.google.devtools.ksp.symbol.KSType
+import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.Modifier
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.kotlinpoet.TypeName
@@ -79,5 +80,13 @@ public fun TypeName.withJvmSuppressWildcardsIfNeeded(
     hasJvmSuppressWildcards || isGenericType -> this.jvmSuppressWildcards()
     isFunctionType -> this.jvmSuppressWildcards()
     else -> this
+  }
+}
+
+tailrec fun KSType.resolveKSClassDeclaration(): KSClassDeclaration? {
+  return when (val declaration = declaration) {
+    is KSClassDeclaration -> declaration
+    is KSTypeAlias -> declaration.type.resolve().resolveKSClassDeclaration()
+    else -> error("Unrecognized declaration type: $declaration")
   }
 }
