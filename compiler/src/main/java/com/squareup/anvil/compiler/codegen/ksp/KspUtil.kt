@@ -2,14 +2,19 @@ package com.squareup.anvil.compiler.codegen.ksp
 
 import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.isAnnotationPresent
+import com.google.devtools.ksp.isConstructor
+import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.ClassKind.ANNOTATION_CLASS
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSModifierListOwner
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.Modifier
+import com.squareup.anvil.compiler.assistedInjectFqName
+import com.squareup.anvil.compiler.injectFqName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import kotlin.reflect.KClass
@@ -88,4 +93,27 @@ internal tailrec fun KSType.resolveKSClassDeclaration(): KSClassDeclaration? {
     is KSTypeAlias -> declaration.type.resolve().resolveKSClassDeclaration()
     else -> error("Unrecognized declaration type: $declaration")
   }
+}
+
+/**
+ * Returns a sequence of all `@Inject` and `@AssistedInject` constructors visible to this resolver
+ */
+internal fun Resolver.injectConstructors(
+  includeInject: Boolean,
+  includeAssistedInject: Boolean,
+): Sequence<KSFunctionDeclaration> {
+  val injectSequence = if (includeInject) {
+    getSymbolsWithAnnotation(injectFqName.asString())
+  } else {
+    emptySequence()
+  }
+  val assistedInjectSequence = if (includeAssistedInject) {
+    getSymbolsWithAnnotation(assistedInjectFqName.asString())
+  } else {
+    emptySequence()
+  }
+  return injectSequence
+    .plus(assistedInjectSequence)
+    .filterIsInstance<KSFunctionDeclaration>()
+    .filter { it.isConstructor() }
 }

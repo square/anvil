@@ -19,6 +19,7 @@ import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.injectConstructors
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.createAnvilSpec
@@ -57,11 +58,10 @@ object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
     class Provider : AnvilSymbolProcessorProvider(InjectConstructorFactoryCodeGen, ::KspGenerator)
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      // Read both inject and assisted inject constructors
-      resolver.getSymbolsWithAnnotation(injectFqName.asString())
-        .plus(resolver.getSymbolsWithAnnotation(assistedInjectFqName.asString()))
-        .filterIsInstance<KSFunctionDeclaration>()
-        .filter { it.isConstructor() }
+      resolver.injectConstructors(
+        includeInject = true,
+        includeAssistedInject = false,
+      )
         .groupBy { it.parentDeclaration as KSClassDeclaration }
         .forEach { (clazz, constructors) ->
           if (constructors.size != 1) {
