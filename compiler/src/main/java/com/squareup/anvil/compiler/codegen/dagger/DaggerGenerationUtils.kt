@@ -3,11 +3,9 @@ package com.squareup.anvil.compiler.codegen.dagger
 import com.google.devtools.ksp.getAllSuperTypes
 import com.google.devtools.ksp.getDeclaredProperties
 import com.google.devtools.ksp.getVisibility
-import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
-import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.anvil.compiler.assistedFqName
@@ -115,7 +113,7 @@ private fun ParameterReference.toConstructorParameter(
 
 @JvmName("mapToConstructorParametersKsp")
 internal fun List<KSValueParameter>.mapToConstructorParameters(
-  typeParameterResolver: TypeParameterResolver
+  typeParameterResolver: TypeParameterResolver,
 ): List<ConstructorParameter> {
   return fold(listOf()) { acc, callableReference ->
     acc + callableReference.toConstructorParameter(callableReference.name!!.asString().uniqueParameterName(acc), typeParameterResolver)
@@ -144,9 +142,11 @@ private fun KSValueParameter.toConstructorParameter(
   val assistedAnnotation = getKSAnnotationsByType(Assisted::class)
     .singleOrNull()
 
-  val assistedIdentifier = (assistedAnnotation
-    ?.argumentAt("value")
-    ?.value as? String).orEmpty()
+  val assistedIdentifier = (
+    assistedAnnotation
+      ?.argumentAt("value")
+      ?.value as? String
+    ).orEmpty()
 
   return ConstructorParameter(
     name = uniqueName,
@@ -483,9 +483,11 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
   val assistedAnnotation = getKSAnnotationsByType(Assisted::class)
     .singleOrNull()
 
-  val assistedIdentifier = (assistedAnnotation
-    ?.argumentAt("value")
-    ?.value as? String).orEmpty()
+  val assistedIdentifier = (
+    assistedAnnotation
+      ?.argumentAt("value")
+      ?.value as? String
+    ).orEmpty()
 
   val implementingClassName = declaringClass
     .toClassName()

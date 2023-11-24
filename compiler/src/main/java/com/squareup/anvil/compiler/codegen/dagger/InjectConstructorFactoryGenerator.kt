@@ -22,21 +22,17 @@ import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.asClassName
-import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.createAnvilSpec
-import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PRIVATE
-import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
@@ -75,8 +71,8 @@ object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
                 // We special-case @Inject to match Dagger using the non-fully-qualified name
                 .replace("@javax.inject.Inject", "@Inject") +
                 clazz.qualifiedName!!.asString() + constructor.parameters.joinToString(", ", prefix = "(", postfix = ")") { param ->
-                param.type.resolve().resolveKSClassDeclaration()!!.simpleName.getShortName()
-              }
+                  param.type.resolve().resolveKSClassDeclaration()!!.simpleName.getShortName()
+                }
             }.joinToString()
             throw KspAnvilException(
               node = clazz,
@@ -87,7 +83,11 @@ object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
           val constructor = constructors[0]
 
           generateFactoryClass(constructor)
-            .writeTo(env.codeGenerator, aggregating = false, originatingKSFiles = listOf(constructor.containingFile!!))
+            .writeTo(
+              env.codeGenerator,
+              aggregating = false,
+              originatingKSFiles = listOf(constructor.containingFile!!),
+            )
         }
 
       return emptyList()
@@ -97,7 +97,9 @@ object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
       constructor: KSFunctionDeclaration,
     ): FileSpec {
       val clazz = constructor.parentDeclaration as KSClassDeclaration
-      val constructorParameters = constructor.parameters.mapToConstructorParameters(clazz.typeParameters.toTypeParameterResolver())
+      val constructorParameters = constructor.parameters.mapToConstructorParameters(
+        clazz.typeParameters.toTypeParameterResolver(),
+      )
       val memberInjectParameters = clazz.memberInjectParameters()
       val typeParameters = clazz.typeParameters.map { it.toTypeVariableName() }
 
@@ -113,7 +115,9 @@ object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
   @AutoService(CodeGenerator::class)
   internal class Embedded : PrivateCodeGenerator() {
 
-    override fun isApplicable(context: AnvilContext) = InjectConstructorFactoryCodeGen.isApplicable(context)
+    override fun isApplicable(context: AnvilContext) = InjectConstructorFactoryCodeGen.isApplicable(
+      context,
+    )
 
     override fun generateCodePrivate(
       codeGenDir: File,
@@ -164,7 +168,9 @@ object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
 
     val allParameters = constructorParameters + memberInjectParameters
 
-    val factoryClassParameterized = generatedClassName.optionallyParameterizedByNames(typeParameters)
+    val factoryClassParameterized = generatedClassName.optionallyParameterizedByNames(
+      typeParameters,
+    )
     val classType = injectedClassName.optionallyParameterizedByNames(typeParameters)
 
     val spec = FileSpec.createAnvilSpec(packageName, generatedClassName.simpleName) {

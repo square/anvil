@@ -57,8 +57,6 @@ internal fun KSAnnotated.isAnnotationPresent(klass: KClass<*>): Boolean {
 internal fun KSClassDeclaration.isAnnotationClass(): Boolean = classKind == ANNOTATION_CLASS
 internal fun KSModifierListOwner.isLateInit(): Boolean = Modifier.LATEINIT in modifiers
 
-
-
 @OptIn(KspExperimental::class)
 @ExperimentalAnvilApi
 public fun TypeName.withJvmSuppressWildcardsIfNeeded(

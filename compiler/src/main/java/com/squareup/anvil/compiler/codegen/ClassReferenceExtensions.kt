@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.anyFqName
 import com.squareup.anvil.compiler.assistedInjectFqName
-import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
