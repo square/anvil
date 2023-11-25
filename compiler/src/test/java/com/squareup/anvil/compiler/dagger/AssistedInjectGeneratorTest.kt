@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler.dagger
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.assistedService
+import com.squareup.anvil.compiler.compilationErrorLine
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.factoryClass
@@ -632,13 +633,12 @@ public final class AssistedService_Factory {
     ) {
       assertThat(exitCode).isError()
       assertThat(
-        messages.lines()
-          .first { it.startsWith("e:") }
+        compilationErrorLine()
           .removeParametersAndSort(),
       ).contains(
         "Type com.squareup.test.AssistedService may only contain one injected constructor. " +
-          "Found: [@AssistedInject com.squareup.test.AssistedService, " +
-          "@AssistedInject com.squareup.test.AssistedService]",
+          "Found: [@dagger.assisted.AssistedInject com.squareup.test.AssistedService, " +
+          "@dagger.assisted.AssistedInject com.squareup.test.AssistedService]",
       )
     }
   }
@@ -662,13 +662,12 @@ public final class AssistedService_Factory {
     ) {
       assertThat(exitCode).isError()
       assertThat(
-        messages.lines()
-          .first { it.startsWith("e:") }
+        compilationErrorLine()
           .removeParametersAndSort(),
       ).contains(
         "Type com.squareup.test.AssistedService may only contain one injected constructor. " +
           "Found: [@Inject com.squareup.test.AssistedService, " +
-          "@AssistedInject com.squareup.test.AssistedService]",
+          "@dagger.assisted.AssistedInject com.squareup.test.AssistedService]",
       )
     }
   }

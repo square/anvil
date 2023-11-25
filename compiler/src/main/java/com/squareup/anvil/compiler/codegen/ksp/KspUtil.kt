@@ -109,8 +109,9 @@ internal fun Resolver.injectConstructors(): List<Pair<KSClassDeclaration, KSFunc
     .mapNotNull { (clazz, constructors) ->
       if (constructors.size != 1) {
         val constructorsErrorMessage = constructors.joinToString { constructor ->
-          constructor.annotations.joinToString(" ", postfix = " ")
-            // We special-case @Inject to match Dagger using the non-fully-qualified name
+          constructor.annotations.joinToString(" ", postfix = " ") { annotation ->
+            "@${annotation.annotationType.resolve().declaration.qualifiedName!!.asString()}"
+          }
             .replace("@javax.inject.Inject", "@Inject") +
             clazz.qualifiedName!!.asString() + constructor.parameters.joinToString(
               ", ",
