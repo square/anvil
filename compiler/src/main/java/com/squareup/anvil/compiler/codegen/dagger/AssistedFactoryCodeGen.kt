@@ -214,6 +214,7 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
       // `clazz` must be first in the list because of `distinctBy { ... }`, which keeps the first
       // matched element. If the function's inherited, it can be overridden as well. Prioritizing
       // the version from the file we're parsing ensures the correct variance of the referenced types.
+      // TODO can't use getAllFunctions() yet due to https://github.com/google/ksp/issues/1619
       val assistedFunctions = sequenceOf(this)
         .plus(getAllSuperTypes().mapNotNull { it.resolveKSClassDeclaration() })
         .distinctBy { it.qualifiedName?.asString() }

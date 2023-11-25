@@ -239,7 +239,7 @@ private fun ClassReference.declaredMemberInjectParameters(
  * Base -> Middle -> Impl
  */
 internal fun KSClassDeclaration.memberInjectParameters(): List<MemberInjectParameter> {
-  // TODO can we use getAllProperties()?
+  // TODO can we use getAllProperties() after https://github.com/google/ksp/issues/1619?
   return sequenceOf(asType(emptyList()))
     .plus(getAllSuperTypes())
     .mapNotNull {
