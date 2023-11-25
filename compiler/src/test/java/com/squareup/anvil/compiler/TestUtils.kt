@@ -1,6 +1,5 @@
 package com.squareup.anvil.compiler
 
-import com.google.common.collect.Lists
 import com.google.common.collect.Lists.cartesianProduct
 import com.google.common.truth.ComparableSubject
 import com.google.common.truth.Truth.assertThat

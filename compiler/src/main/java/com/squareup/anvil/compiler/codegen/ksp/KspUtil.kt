@@ -12,13 +12,11 @@ import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSModifierListOwner
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
-import com.google.devtools.ksp.symbol.KSTypeParameter
 import com.google.devtools.ksp.symbol.Modifier
 import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
-import com.squareup.kotlinpoet.ksp.TypeParameterResolver
 import kotlin.reflect.KClass
 
 /**

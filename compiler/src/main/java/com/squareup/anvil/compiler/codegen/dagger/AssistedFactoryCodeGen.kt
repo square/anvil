@@ -207,7 +207,7 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
     }
 
     private fun KSClassDeclaration.requireSingleAbstractFunction(
-      typeParameterResolver: TypeParameterResolver
+      typeParameterResolver: TypeParameterResolver,
     ): AssistedFactoryFunction {
       val implementingType = asType(emptyList())
 
@@ -281,7 +281,9 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
             returnType = returnType!!.resolveKSClassDeclaration()!!,
             node = originalDeclaration,
             parameterKeys = originalDeclaration.parameters.mapIndexed { index, param ->
-              param.toAssistedParameterKey(parameterTypes[index]!!.toTypeName(typeParameterResolver))
+              param.toAssistedParameterKey(
+                parameterTypes[index]!!.toTypeName(typeParameterResolver),
+              )
             },
             parameterPairs = originalDeclaration.parameters.mapIndexed { index, param ->
               param to parameterTypes[index]!!.toTypeName(typeParameterResolver)
@@ -595,7 +597,7 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
 
     companion object {
       fun KSValueParameter.toAssistedParameterKey(
-        typeName: TypeName
+        typeName: TypeName,
       ): AssistedParameterKey {
         return AssistedParameterKey(
           typeName,
