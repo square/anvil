@@ -6,6 +6,7 @@ import com.google.devtools.ksp.getAnnotationsByType
 import com.google.devtools.ksp.getDeclaredProperties
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueParameter
@@ -576,6 +577,24 @@ internal fun assertNoDuplicateFunctions(
   if (duplicateFunctions.isNotEmpty()) {
     throw AnvilCompilationExceptionClassReference(
       classReference = declaringClass,
+      message = "Cannot have more than one binding method with the same name in " +
+        "a single module: ${duplicateFunctions.keys.joinToString()}",
+    )
+  }
+}
+
+internal fun assertNoDuplicateFunctions(
+  declaringClass: KSClassDeclaration,
+  functions: Sequence<KSFunctionDeclaration>,
+) {
+  // Check for duplicate function names.
+  val duplicateFunctions = functions
+    .groupBy { it.qualifiedName!!.asString() }
+    .filterValues { it.size > 1 }
+
+  if (duplicateFunctions.isNotEmpty()) {
+    throw KspAnvilException(
+      node = declaringClass,
       message = "Cannot have more than one binding method with the same name in " +
         "a single module: ${duplicateFunctions.keys.joinToString()}",
     )

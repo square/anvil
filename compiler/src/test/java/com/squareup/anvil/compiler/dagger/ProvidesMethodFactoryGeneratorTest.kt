@@ -9,12 +9,14 @@ import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercaseP
 import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import dagger.Lazy
@@ -33,14 +35,13 @@ import javax.inject.Provider
 @RunWith(Parameterized::class)
 class ProvidesMethodFactoryGeneratorTest(
   private val useDagger: Boolean,
+  private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
+    @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
-    }
+    fun params() = useDaggerAndKspParams()
   }
 
   @Test fun `a factory class is generated for a provider method`() {
@@ -3512,6 +3513,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     generateDaggerFactories = !enableDagger,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block,
+    mode = mode,
     previousCompilationResult = previousCompilationResult,
     moduleName = moduleName,
   )

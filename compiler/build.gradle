@@ -37,6 +37,7 @@ dependencies {
 
   compileOnly libs.auto.service.annotations
   compileOnly libs.kotlin.compiler
+  compileOnly libs.ksp.compilerPlugin
   compileOnly libs.ksp.api
 
   kapt libs.auto.service.processor
