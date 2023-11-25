@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
-import com.google.devtools.ksp.isConstructor
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
@@ -13,14 +12,12 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
-import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
-import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.injectConstructors
-import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
+import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -47,6 +44,7 @@ import dagger.internal.Factory
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
+import javax.inject.Inject
 
 object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext) = context.generateFactories
@@ -58,28 +56,12 @@ object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
     class Provider : AnvilSymbolProcessorProvider(InjectConstructorFactoryCodeGen, ::KspGenerator)
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      resolver.injectConstructors(
-        includeInject = true,
-        includeAssistedInject = false,
-      )
-        .groupBy { it.parentDeclaration as KSClassDeclaration }
-        .forEach { (clazz, constructors) ->
-          if (constructors.size != 1) {
-            val constructorsErrorMessage = constructors.map { constructor ->
-              constructor.annotations.joinToString(" ", postfix = " ")
-                // We special-case @Inject to match Dagger using the non-fully-qualified name
-                .replace("@javax.inject.Inject", "@Inject") +
-                clazz.qualifiedName!!.asString() + constructor.parameters.joinToString(", ", prefix = "(", postfix = ")") { param ->
-                  param.type.resolve().resolveKSClassDeclaration()!!.simpleName.getShortName()
-                }
-            }.joinToString()
-            throw KspAnvilException(
-              node = clazz,
-              message = "Type ${clazz.qualifiedName!!.asString()} may only contain one injected " +
-                "constructor. Found: [$constructorsErrorMessage]",
-            )
+      resolver.injectConstructors()
+        .forEach { (_, constructor) ->
+          if (!constructor.isAnnotationPresent<Inject>()) {
+            // Only generating @Inject constructors
+            return@forEach
           }
-          val constructor = constructors[0]
 
           generateFactoryClass(constructor)
             .writeTo(

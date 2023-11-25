@@ -98,22 +98,35 @@ internal tailrec fun KSType.resolveKSClassDeclaration(): KSClassDeclaration? {
 /**
  * Returns a sequence of all `@Inject` and `@AssistedInject` constructors visible to this resolver
  */
-internal fun Resolver.injectConstructors(
-  includeInject: Boolean,
-  includeAssistedInject: Boolean,
-): Sequence<KSFunctionDeclaration> {
-  val injectSequence = if (includeInject) {
-    getSymbolsWithAnnotation(injectFqName.asString())
-  } else {
-    emptySequence()
-  }
-  val assistedInjectSequence = if (includeAssistedInject) {
-    getSymbolsWithAnnotation(assistedInjectFqName.asString())
-  } else {
-    emptySequence()
-  }
-  return injectSequence
-    .plus(assistedInjectSequence)
+internal fun Resolver.injectConstructors(): List<Pair<KSClassDeclaration, KSFunctionDeclaration>> {
+  return getSymbolsWithAnnotation(injectFqName.asString())
+    .plus(getSymbolsWithAnnotation(assistedInjectFqName.asString()))
     .filterIsInstance<KSFunctionDeclaration>()
     .filter { it.isConstructor() }
+    .groupBy {
+      it.parentDeclaration as KSClassDeclaration
+    }
+    .mapNotNull { (clazz, constructors) ->
+      if (constructors.size != 1) {
+        val constructorsErrorMessage = constructors.joinToString { constructor ->
+          constructor.annotations.joinToString(" ", postfix = " ")
+            // We special-case @Inject to match Dagger using the non-fully-qualified name
+            .replace("@javax.inject.Inject", "@Inject") +
+            clazz.qualifiedName!!.asString() + constructor.parameters.joinToString(
+              ", ",
+              prefix = "(",
+              postfix = ")",
+            ) { param ->
+              param.type.resolve().resolveKSClassDeclaration()!!.simpleName.getShortName()
+            }
+        }
+        throw KspAnvilException(
+          node = clazz,
+          message = "Type ${clazz.qualifiedName!!.asString()} may only contain one injected " +
+            "constructor. Found: [$constructorsErrorMessage]",
+        )
+      }
+
+      clazz to constructors[0]
+    }
 }

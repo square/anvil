@@ -1,13 +1,10 @@
 package com.squareup.anvil.compiler.dagger
 
-import com.google.common.collect.Lists
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
-import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
-import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
@@ -15,8 +12,8 @@ import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.membersInjector
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.nestedInjectClass
+import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
@@ -43,25 +40,7 @@ class MembersInjectorGeneratorTest(
   companion object {
     @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun useDagger(): Collection<Any> {
-      return Lists.cartesianProduct(
-        listOf(
-          isFullTestRun(),
-          false,
-        ),
-        listOf(
-          Embedded(),
-          Ksp(),
-        ),
-      ).mapNotNull { (useDagger, mode) ->
-        if (useDagger == true && mode is Ksp) {
-          // TODO Dagger is not supported with KSP in Anvil's tests yet
-          null
-        } else {
-          arrayOf(useDagger, mode)
-        }
-      }.distinct()
-    }
+    fun params() = useDaggerAndKspParams()
   }
 
   @Test fun `a factory class is generated for a field injection`() {

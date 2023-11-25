@@ -24,8 +24,8 @@ import com.squareup.anvil.compiler.assistedFactoryFqName
 import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
-import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryCodeGen.Embedded.AssistedFactoryFunction.Companion.toAssistedFactoryFunction
 import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryCodeGen.AssistedParameterKey.Companion.toAssistedParameterKey
+import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryCodeGen.Embedded.AssistedFactoryFunction.Companion.toAssistedFactoryFunction
 import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryCodeGen.KspGenerator.AssistedFactoryFunction.Companion.toAssistedFactoryFunction
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
@@ -114,7 +114,9 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
       // The return type of the function must have an @AssistedInject constructor.
       val constructor = returnType
         .getConstructors()
-        .singleOrNull { it.isAnnotationPresent<AssistedInject>() }
+        .singleOrNull {
+          it.isAnnotationPresent<AssistedInject>()
+        }
         ?: throw KspAnvilException(
           message = "Invalid return type: ${returnType.qualifiedName?.asString()}. An assisted factory's abstract " +
             "method must return a type with an @AssistedInject-annotated constructor.",
@@ -137,7 +139,9 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
 
       // Compute for each parameter its key.
       val functionParameterKeys = function.parameterKeys
-      val assistedParameterKeys = assistedParameters.map { it.toAssistedParameterKey(typeParameterResolver) }
+      val assistedParameterKeys = assistedParameters.map {
+        it.toAssistedParameterKey(typeParameterResolver)
+      }
 
       // The factory function may not have two or more parameters with the same key.
       val duplicateKeys = functionParameterKeys
@@ -201,7 +205,7 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
     }
 
     private fun KSClassDeclaration.requireSingleAbstractFunction(
-      typeParameterResolver: TypeParameterResolver
+      typeParameterResolver: TypeParameterResolver,
     ): AssistedFactoryFunction {
       // `clazz` must be first in the list because of `distinctBy { ... }`, which keeps the first
       // matched element. If the function's inherited, it can be overridden as well. Prioritizing
@@ -579,7 +583,7 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
             ?.let { annotation ->
               annotation.argumentAt("value")?.value as? String?
             }
-            .orEmpty()
+            .orEmpty(),
         )
       }
 

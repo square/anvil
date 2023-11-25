@@ -19,6 +19,7 @@ import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.injectConstructors
+import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -38,6 +39,7 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
 import com.squareup.kotlinpoet.ksp.writeTo
+import dagger.assisted.AssistedInject
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -63,13 +65,14 @@ object AssistedInjectCodeGen : AnvilApplicabilityChecker {
     class Provider : AnvilSymbolProcessorProvider(AssistedInjectCodeGen, ::KspGenerator)
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      resolver.injectConstructors(
-        includeAssistedInject = true,
-        includeInject = false
-      )
-        .forEach { constructor ->
+      resolver.injectConstructors()
+        .forEach { (clazz, constructor) ->
+          if (!constructor.isAnnotationPresent<AssistedInject>()) {
+            // Only generating @AssistedInject constructors
+            return@forEach
+          }
           generateFactoryClass(
-            clazz = constructor.parentDeclaration as KSClassDeclaration,
+            clazz = clazz,
             constructor = constructor,
           )
             .writeTo(env.codeGenerator, aggregating = false, listOf(constructor.containingFile!!))
@@ -97,7 +100,7 @@ object AssistedInjectCodeGen : AnvilApplicabilityChecker {
             message = message,
             node = constructor,
           )
-        }
+        },
       )
 
       return spec
@@ -145,7 +148,7 @@ object AssistedInjectCodeGen : AnvilApplicabilityChecker {
             message = message,
             classReference = clazz,
           )
-        }
+        },
       )
 
       return createGeneratedFile(codeGenDir, spec.packageName, spec.name, spec.toString())
@@ -157,7 +160,7 @@ object AssistedInjectCodeGen : AnvilApplicabilityChecker {
     memberInjectParameters: List<MemberInjectParameter>,
     typeParameters: List<TypeVariableName>,
     constructorParameters: List<ConstructorParameter>,
-    onError: (String) -> Nothing
+    onError: (String) -> Nothing,
   ): FileSpec {
     val packageName = clazz.packageName
     val factoryClass = clazz.generateClassName(suffix = "_Factory")
