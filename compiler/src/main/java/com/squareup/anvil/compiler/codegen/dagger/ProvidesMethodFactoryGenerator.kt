@@ -33,6 +33,7 @@ import com.squareup.kotlinpoet.KModifier.OVERRIDE
 import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
@@ -72,7 +73,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
               codeGenDir,
               module,
               clazz,
-              CallableReferencePsi.from(function),
+              CallableReference.from(function),
             )
           }
 
@@ -90,7 +91,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
               codeGenDir,
               module,
               clazz,
-              CallableReferencePsi.from(property),
+              CallableReference.from(property),
             )
           }
       }
@@ -100,19 +101,19 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     codeGenDir: File,
     module: ModuleDescriptor,
     clazz: ClassReference.Psi,
-    declaration: CallableReferencePsi,
+    declaration: CallableReference,
   ): GeneratedFile {
-    val isCompanionObject = declaration.declaringClass.isCompanion()
+    val isCompanionObject = declaration.isCompanionObject
     val isObject = isCompanionObject || clazz.isObject()
 
     val isProperty = declaration.isProperty
-    val declarationName = declaration.fqName.shortName().asString()
+    val declarationName = declaration.name
     // omit the `get-` prefix for property names starting with the *word* `is`, like `isProperty`,
     // but not for names which just start with those letters, like `issues`.
     val useGetPrefix = isProperty && !isWordPrefixRegex.matches(declarationName)
 
     val isMangled = !isProperty &&
-      declaration.visibility == INTERNAL &&
+      declaration.isInternal &&
       !declaration.isPublishedApi
 
     val packageName = clazz.packageFqName.safePackageString()
@@ -136,9 +137,8 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
     val parameters = declaration.constructorParameters
 
-    val returnType = declaration.type.asTypeName()
-      .withJvmSuppressWildcardsIfNeeded(declaration.annotatedReference, declaration.type)
-    val returnTypeIsNullable = declaration.type.isNullable()
+    val returnType = declaration.type
+    val returnTypeIsNullable = declaration.isNullable
 
     val factoryClass = ClassName(packageName, className)
     val moduleClass = clazz.asClassName()
@@ -331,45 +331,50 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     }
   }
 
-  private class CallableReferencePsi(
-    val visibility: Visibility,
-    val declaringClass: ClassReference,
-    val fqName: FqName,
+  private class CallableReference(
+    val isInternal: Boolean,
+    val isCompanionObject: Boolean,
     val name: String,
     val isProperty: Boolean,
     val constructorParameters: List<ConstructorParameter>,
-    val type: TypeReference,
-    val annotatedReference: AnnotatedReference,
+    val type: TypeName,
+    val isNullable: Boolean,
     val isPublishedApi: Boolean,
   ) {
 
     companion object {
-      fun from(function: MemberFunctionReference.Psi) = CallableReferencePsi(
-        visibility = function.visibility(),
-        declaringClass = function.declaringClass,
-        fqName = function.fqName,
-        name = function.name,
-        isProperty = false,
-        constructorParameters = function.parameters.mapToConstructorParameters(),
-        type = function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
+      fun from(function: MemberFunctionReference.Psi): CallableReference {
+        val type = function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
           message = "Dagger provider methods must specify the return type explicitly when using " +
             "Anvil. The return type cannot be inferred implicitly.",
           functionReference = function,
-        ),
-        annotatedReference = function,
-        isPublishedApi = function.isAnnotatedWith(publishedApiFqName),
-      )
-      fun from(property: MemberPropertyReference.Psi) = CallableReferencePsi(
-        visibility = property.visibility(),
-        declaringClass = property.declaringClass,
-        fqName = property.fqName,
-        name = property.name,
-        isProperty = true,
-        constructorParameters = emptyList(),
-        type = property.type(),
-        annotatedReference = property,
-        isPublishedApi = property.isAnnotatedWith(publishedApiFqName),
-      )
+        )
+        val typeName = type.asTypeName().withJvmSuppressWildcardsIfNeeded(function, type)
+        return CallableReference(
+          isInternal = function.visibility() == INTERNAL,
+          isCompanionObject = function.declaringClass.isCompanion(),
+          name = function.name,
+          isProperty = false,
+          constructorParameters = function.parameters.mapToConstructorParameters(),
+          type = typeName,
+          isNullable = type.isNullable(),
+          isPublishedApi = function.isAnnotatedWith(publishedApiFqName),
+        )
+      }
+      fun from(property: MemberPropertyReference.Psi): CallableReference {
+        val type = property.type()
+        val typeName = type.asTypeName().withJvmSuppressWildcardsIfNeeded(property, type)
+        return CallableReference(
+          isInternal = property.visibility() == INTERNAL,
+          isCompanionObject = property.declaringClass.isCompanion(),
+          name = property.name,
+          isProperty = true,
+          constructorParameters = emptyList(),
+          type = typeName,
+          isNullable = type.isNullable(),
+          isPublishedApi = property.isAnnotatedWith(publishedApiFqName),
+        )
+      }
     }
   }
 }
