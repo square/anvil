@@ -10,7 +10,9 @@ import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFunction
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
+import com.google.devtools.ksp.symbol.KSNode
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Visibility.PROTECTED
 import com.google.devtools.ksp.symbol.Visibility.PUBLIC
@@ -100,13 +102,13 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
       val function = clazz.requireSingleAbstractFunction(typeParameterResolver)
 
       val returnType = try {
-        function.function.returnType!!.resolve().resolveKSClassDeclaration()!!
+        function.returnType
       } catch (e: Exception) {
         // Catch the exception and throw the same error that Dagger would.
         throw KspAnvilException(
           message = "Invalid return type: ${clazz.qualifiedName?.asString()}. An assisted factory's " +
             "abstract method must return a type with an @AssistedInject-annotated constructor.",
-          node = function.function,
+          node = function.node,
           cause = e,
         )
       }
@@ -140,7 +142,7 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
       // Compute for each parameter its key.
       val functionParameterKeys = function.parameterKeys
       val assistedParameterKeys = assistedParameters.map {
-        it.toAssistedParameterKey(typeParameterResolver)
+        it.toAssistedParameterKey(it.type.toTypeName(typeParameterResolver))
       }
 
       // The factory function may not have two or more parameters with the same key.
@@ -184,7 +186,7 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
 
       val typeParameters = clazz.typeParameters
 
-      val functionName = function.function.simpleName.asString()
+      val functionName = function.simpleName
       val baseFactoryIsInterface = clazz.isInterface()
       val functionParameterPairs = function.parameterPairs
 
@@ -205,8 +207,10 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
     }
 
     private fun KSClassDeclaration.requireSingleAbstractFunction(
-      typeParameterResolver: TypeParameterResolver,
+      typeParameterResolver: TypeParameterResolver
     ): AssistedFactoryFunction {
+      val implementingType = asType(emptyList())
+
       // `clazz` must be first in the list because of `distinctBy { ... }`, which keeps the first
       // matched element. If the function's inherited, it can be overridden as well. Prioritizing
       // the version from the file we're parsing ensures the correct variance of the referenced types.
@@ -221,7 +225,10 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
             }
         }
         .distinctBy { it.simpleName.asString() }
-        .map { it.toAssistedFactoryFunction(typeParameterResolver) }
+        .map {
+          it.asMemberOf(implementingType)
+            .toAssistedFactoryFunction(it, typeParameterResolver)
+        }
         .toList()
 
       // Check for exact number of functions.
@@ -231,12 +238,13 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
             "method whose return type matches the assisted injection type.",
           node = this,
         )
+
         1 -> assistedFunctions[0]
         else -> {
           val foundFunctions = assistedFunctions
-            .sortedBy { it.function.simpleName.asString() }
+            .sortedBy { it.simpleName }
             .joinToString { func ->
-              "${func.function.qualifiedName?.asString()}(${func.parameterPairs.map { it.first.name }})"
+              "${func.qualifiedName}(${func.parameterPairs.map { it.first.name }})"
             }
           throw KspAnvilException(
             message = "The @AssistedFactory-annotated type should contain a single abstract, " +
@@ -251,21 +259,33 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
      * Represents a parsed function in an `@AssistedInject.Factory`-annotated interface.
      */
     private data class AssistedFactoryFunction(
-      val function: KSFunctionDeclaration,
+      val simpleName: String,
+      val qualifiedName: String,
+      val returnType: KSClassDeclaration,
+      val node: KSNode,
       val parameterKeys: List<AssistedParameterKey>,
       /**
        * Pair of parameter reference to parameter type.
        */
       val parameterPairs: List<Pair<KSValueParameter, TypeName>>,
     ) {
+
       companion object {
-        fun KSFunctionDeclaration.toAssistedFactoryFunction(
+        fun KSFunction.toAssistedFactoryFunction(
+          originalDeclaration: KSFunctionDeclaration,
           typeParameterResolver: TypeParameterResolver,
         ): AssistedFactoryFunction {
           return AssistedFactoryFunction(
-            function = this,
-            parameterKeys = parameters.map { it.toAssistedParameterKey(typeParameterResolver) },
-            parameterPairs = parameters.map { it to it.type.toTypeName(typeParameterResolver) },
+            simpleName = originalDeclaration.simpleName.asString(),
+            qualifiedName = originalDeclaration.qualifiedName!!.asString(),
+            returnType = returnType!!.resolveKSClassDeclaration()!!,
+            node = originalDeclaration,
+            parameterKeys = originalDeclaration.parameters.mapIndexed { index, param ->
+              param.toAssistedParameterKey(parameterTypes[index]!!.toTypeName(typeParameterResolver))
+            },
+            parameterPairs = originalDeclaration.parameters.mapIndexed { index, param ->
+              param to parameterTypes[index]!!.toTypeName(typeParameterResolver)
+            },
           )
         }
       }
@@ -421,6 +441,7 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
             "method whose return type matches the assisted injection type.",
           classReference = this,
         )
+
         1 -> assistedFunctions[0]
         else -> {
           val foundFunctions = assistedFunctions
@@ -574,10 +595,10 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
 
     companion object {
       fun KSValueParameter.toAssistedParameterKey(
-        typeParameterResolver: TypeParameterResolver,
+        typeName: TypeName
       ): AssistedParameterKey {
         return AssistedParameterKey(
-          type.toTypeName(typeParameterResolver),
+          typeName,
           getKSAnnotationsByType(Assisted::class)
             .singleOrNull()
             ?.let { annotation ->
