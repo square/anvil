@@ -17,6 +17,7 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.MemberPropertyReference
 import com.squareup.anvil.compiler.internal.reference.TypeReference
+import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
@@ -71,7 +72,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
               codeGenDir,
               module,
               clazz,
-              CallableReference(function = function),
+              CallableReferencePsi.from(function),
             )
           }
 
@@ -89,7 +90,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
               codeGenDir,
               module,
               clazz,
-              CallableReference(property = property),
+              CallableReferencePsi.from(property),
             )
           }
       }
@@ -99,7 +100,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     codeGenDir: File,
     module: ModuleDescriptor,
     clazz: ClassReference.Psi,
-    declaration: CallableReference,
+    declaration: CallableReferencePsi,
   ): GeneratedFile {
     val isCompanionObject = declaration.declaringClass.isCompanion()
     val isObject = isCompanionObject || clazz.isObject()
@@ -136,7 +137,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     val parameters = declaration.constructorParameters
 
     val returnType = declaration.type.asTypeName()
-      .withJvmSuppressWildcardsIfNeeded(declaration.annotationReference, declaration.type)
+      .withJvmSuppressWildcardsIfNeeded(declaration.annotatedReference, declaration.type)
     val returnTypeIsNullable = declaration.type.isNullable()
 
     val factoryClass = ClassName(packageName, className)
@@ -330,42 +331,45 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     }
   }
 
-  private class CallableReference(
-    private val function: MemberFunctionReference.Psi? = null,
-    private val property: MemberPropertyReference.Psi? = null,
+  private class CallableReferencePsi(
+    val visibility: Visibility,
+    val declaringClass: ClassReference,
+    val fqName: FqName,
+    val name: String,
+    val isProperty: Boolean,
+    val constructorParameters: List<ConstructorParameter>,
+    val type: TypeReference,
+    val annotatedReference: AnnotatedReference,
+    val isPublishedApi: Boolean,
   ) {
 
-    init {
-      if (function == null && property == null) {
-        throw AnvilCompilationException(
-          "Cannot create a CallableReference wrapper without a " +
-            "function OR a property",
-        )
-      }
-    }
-
-    val declaringClass = function?.declaringClass ?: property!!.declaringClass
-
-    val visibility
-      get() = function?.visibility() ?: property!!.visibility()
-
-    val fqName = function?.fqName ?: property!!.fqName
-    val name = function?.name ?: property!!.name
-
-    val isProperty = property != null
-
-    val constructorParameters: List<ConstructorParameter> =
-      function?.parameters?.mapToConstructorParameters() ?: emptyList()
-
-    val type: TypeReference = function?.let {
-      it.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
-        message = "Dagger provider methods must specify the return type explicitly when using " +
-          "Anvil. The return type cannot be inferred implicitly.",
-        functionReference = it,
+    companion object {
+      fun from(function: MemberFunctionReference.Psi) = CallableReferencePsi(
+        visibility = function.visibility(),
+        declaringClass = function.declaringClass,
+        fqName = function.fqName,
+        name = function.name,
+        isProperty = false,
+        constructorParameters = function.parameters.mapToConstructorParameters(),
+        type = function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
+          message = "Dagger provider methods must specify the return type explicitly when using " +
+            "Anvil. The return type cannot be inferred implicitly.",
+          functionReference = function,
+        ),
+        annotatedReference = function,
+        isPublishedApi = function.isAnnotatedWith(publishedApiFqName),
       )
-    } ?: property!!.type()
-    val annotationReference: AnnotatedReference = function ?: property!!
-
-    val isPublishedApi: Boolean get() = function?.isAnnotatedWith(publishedApiFqName) ?: property!!.isAnnotatedWith(publishedApiFqName)
+      fun from(property: MemberPropertyReference.Psi) = CallableReferencePsi(
+        visibility = property.visibility(),
+        declaringClass = property.declaringClass,
+        fqName = property.fqName,
+        name = property.name,
+        isProperty = true,
+        constructorParameters = emptyList(),
+        type = property.type(),
+        annotatedReference = property,
+        isPublishedApi = property.isAnnotatedWith(publishedApiFqName),
+      )
+    }
   }
 }
