@@ -17,6 +17,7 @@ import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
@@ -119,199 +120,14 @@ object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       clazz: ClassReference.Psi,
       declaration: CallableReference,
     ): GeneratedFile {
-      val isCompanionObject = declaration.isCompanionObject
-      val isObject = isCompanionObject || clazz.isObject()
+      val spec = generateFactoryClass(
+        module.mangledNameSuffix(),
+        clazz.asClassName(),
+        clazz.isObject(),
+        declaration,
+      )
 
-      val isProperty = declaration.isProperty
-      val declarationName = declaration.name
-      // omit the `get-` prefix for property names starting with the *word* `is`, like `isProperty`,
-      // but not for names which just start with those letters, like `issues`.
-      val useGetPrefix = isProperty && !isWordPrefixRegex.matches(declarationName)
-
-      val isMangled = !isProperty &&
-        declaration.isInternal &&
-        !declaration.isPublishedApi
-
-      val packageName = clazz.packageFqName.safePackageString()
-      val className = buildString {
-        append(clazz.generateClassName().relativeClassName.asString())
-        append('_')
-        if (isCompanionObject) {
-          append("Companion_")
-        }
-        if (useGetPrefix) {
-          append("Get")
-        }
-        append(declarationName.capitalize())
-        if (isMangled) {
-          append("\$${module.mangledNameSuffix()}")
-        }
-        append("Factory")
-      }
-
-      val callableName = declaration.name
-
-      val parameters = declaration.constructorParameters
-
-      val returnType = declaration.type
-      val returnTypeIsNullable = declaration.isNullable
-
-      val factoryClass = ClassName(packageName, className)
-      val moduleClass = clazz.asClassName()
-
-      val byteCodeFunctionName = when {
-        useGetPrefix -> "get" + callableName.capitalize()
-        isMangled -> "$callableName\$${module.mangledNameSuffix()}"
-        else -> callableName
-      }
-
-      val content = FileSpec.buildFile(packageName, className) {
-        val canGenerateAnObject = isObject && parameters.isEmpty()
-        val classBuilder = if (canGenerateAnObject) {
-          TypeSpec.objectBuilder(factoryClass)
-        } else {
-          TypeSpec.classBuilder(factoryClass)
-        }
-
-        classBuilder.addSuperinterface(Factory::class.asClassName().parameterizedBy(returnType))
-          .apply {
-            if (!canGenerateAnObject) {
-              primaryConstructor(
-                FunSpec.constructorBuilder()
-                  .apply {
-                    if (!isObject) {
-                      addParameter("module", moduleClass)
-                    }
-                    parameters.forEach { parameter ->
-                      addParameter(parameter.name, parameter.providerTypeName)
-                    }
-                  }
-                  .build(),
-              )
-
-              if (!isObject) {
-                addProperty(
-                  PropertySpec.builder("module", moduleClass)
-                    .initializer("module")
-                    .addModifiers(PRIVATE)
-                    .build(),
-                )
-              }
-
-              parameters.forEach { parameter ->
-                addProperty(
-                  PropertySpec.builder(parameter.name, parameter.providerTypeName)
-                    .initializer(parameter.name)
-                    .addModifiers(PRIVATE)
-                    .build(),
-                )
-              }
-            }
-          }
-          .addFunction(
-            FunSpec.builder("get")
-              .addModifiers(OVERRIDE)
-              .returns(returnType)
-              .apply {
-                val argumentList = parameters.asArgumentList(
-                  asProvider = true,
-                  includeModule = !isObject,
-                )
-                addStatement("return %N($argumentList)", byteCodeFunctionName)
-              }
-              .build(),
-          )
-          .apply {
-            val builder = if (canGenerateAnObject) this else TypeSpec.companionObjectBuilder()
-            builder
-              .addFunction(
-                FunSpec.builder("create")
-                  .jvmStatic()
-                  .apply {
-                    if (canGenerateAnObject) {
-                      addStatement("return this")
-                    } else {
-                      if (!isObject) {
-                        addParameter("module", moduleClass)
-                      }
-                      parameters.forEach { parameter ->
-                        addParameter(parameter.name, parameter.providerTypeName)
-                      }
-
-                      val argumentList = parameters.asArgumentList(
-                        asProvider = false,
-                        includeModule = !isObject,
-                      )
-
-                      addStatement("return %T($argumentList)", factoryClass)
-                    }
-                  }
-                  .returns(factoryClass)
-                  .build(),
-              )
-              .addFunction(
-                FunSpec.builder(byteCodeFunctionName)
-                  .jvmStatic()
-                  .apply {
-                    if (!isObject) {
-                      addParameter("module", moduleClass)
-                    }
-
-                    parameters.forEach { parameter ->
-                      addParameter(
-                        name = parameter.name,
-                        type = parameter.originalTypeName,
-                      )
-                    }
-
-                    val argumentsWithoutModule = if (isProperty) {
-                      ""
-                    } else {
-                      "(${parameters.joinToString { it.name }})"
-                    }
-
-                    when {
-                      isObject && returnTypeIsNullable ->
-                        addStatement(
-                          "return %T.$callableName$argumentsWithoutModule",
-                          moduleClass,
-                        )
-                      isObject && !returnTypeIsNullable ->
-                        addStatement(
-                          "return %T.checkNotNull(%T.$callableName" +
-                            "$argumentsWithoutModule, %S)",
-                          Preconditions::class,
-                          moduleClass,
-                          "Cannot return null from a non-@Nullable @Provides method",
-                        )
-                      !isObject && returnTypeIsNullable ->
-                        addStatement(
-                          "return module.$callableName$argumentsWithoutModule",
-                        )
-                      !isObject && !returnTypeIsNullable ->
-                        addStatement(
-                          "return %T.checkNotNull(module.$callableName" +
-                            "$argumentsWithoutModule, %S)",
-                          Preconditions::class,
-                          "Cannot return null from a non-@Nullable @Provides method",
-                        )
-                    }
-                  }
-                  .returns(returnType)
-                  .build(),
-              )
-              .build()
-              .let {
-                if (!canGenerateAnObject) {
-                  addType(it)
-                }
-              }
-          }
-          .build()
-          .let { addType(it) }
-      }
-
-      return createGeneratedFile(codeGenDir, packageName, className, content)
+      return createGeneratedFile(codeGenDir, spec.packageName, spec.name, spec.toString())
     }
 
     private fun checkFunctionIsNotAbstract(
@@ -380,6 +196,207 @@ object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         isPublishedApi = property.isAnnotatedWith(publishedApiFqName),
       )
     }
+  }
+
+  private fun generateFactoryClass(
+    mangledNameSuffix: String,
+    moduleClass: ClassName,
+    isInObject: Boolean,
+    declaration: CallableReference,
+  ): FileSpec {
+    val isCompanionObject = declaration.isCompanionObject
+    val isObject = isCompanionObject || isInObject
+
+    val isProperty = declaration.isProperty
+    val declarationName = declaration.name
+    // omit the `get-` prefix for property names starting with the *word* `is`, like `isProperty`,
+    // but not for names which just start with those letters, like `issues`.
+    val useGetPrefix = isProperty && !isWordPrefixRegex.matches(declarationName)
+
+    val isMangled = !isProperty &&
+      declaration.isInternal &&
+      !declaration.isPublishedApi
+
+    val packageName = moduleClass.packageName.safePackageString()
+    val className = buildString {
+      // TODO is this right? What's relativeClassName
+      append(moduleClass.generateClassName().simpleNames.joinToString("_"))
+      append('_')
+      if (isCompanionObject) {
+        append("Companion_")
+      }
+      if (useGetPrefix) {
+        append("Get")
+      }
+      append(declarationName.capitalize())
+      if (isMangled) {
+        append("\$${mangledNameSuffix}")
+      }
+      append("Factory")
+    }
+
+    val callableName = declaration.name
+
+    val parameters = declaration.constructorParameters
+
+    val returnType = declaration.type
+    val returnTypeIsNullable = declaration.isNullable
+
+    val factoryClass = ClassName(packageName, className)
+
+    val byteCodeFunctionName = when {
+      useGetPrefix -> "get" + callableName.capitalize()
+      isMangled -> "$callableName\$${mangledNameSuffix}"
+      else -> callableName
+    }
+
+    val spec = FileSpec.createAnvilSpec(packageName, className) {
+      val canGenerateAnObject = isObject && parameters.isEmpty()
+      val classBuilder = if (canGenerateAnObject) {
+        TypeSpec.objectBuilder(factoryClass)
+      } else {
+        TypeSpec.classBuilder(factoryClass)
+      }
+
+      classBuilder.addSuperinterface(Factory::class.asClassName().parameterizedBy(returnType))
+        .apply {
+          if (!canGenerateAnObject) {
+            primaryConstructor(
+              FunSpec.constructorBuilder()
+                .apply {
+                  if (!isObject) {
+                    addParameter("module", moduleClass)
+                  }
+                  parameters.forEach { parameter ->
+                    addParameter(parameter.name, parameter.providerTypeName)
+                  }
+                }
+                .build(),
+            )
+
+            if (!isObject) {
+              addProperty(
+                PropertySpec.builder("module", moduleClass)
+                  .initializer("module")
+                  .addModifiers(PRIVATE)
+                  .build(),
+              )
+            }
+
+            parameters.forEach { parameter ->
+              addProperty(
+                PropertySpec.builder(parameter.name, parameter.providerTypeName)
+                  .initializer(parameter.name)
+                  .addModifiers(PRIVATE)
+                  .build(),
+              )
+            }
+          }
+        }
+        .addFunction(
+          FunSpec.builder("get")
+            .addModifiers(OVERRIDE)
+            .returns(returnType)
+            .apply {
+              val argumentList = parameters.asArgumentList(
+                asProvider = true,
+                includeModule = !isObject,
+              )
+              addStatement("return %N($argumentList)", byteCodeFunctionName)
+            }
+            .build(),
+        )
+        .apply {
+          val builder = if (canGenerateAnObject) this else TypeSpec.companionObjectBuilder()
+          builder
+            .addFunction(
+              FunSpec.builder("create")
+                .jvmStatic()
+                .apply {
+                  if (canGenerateAnObject) {
+                    addStatement("return this")
+                  } else {
+                    if (!isObject) {
+                      addParameter("module", moduleClass)
+                    }
+                    parameters.forEach { parameter ->
+                      addParameter(parameter.name, parameter.providerTypeName)
+                    }
+
+                    val argumentList = parameters.asArgumentList(
+                      asProvider = false,
+                      includeModule = !isObject,
+                    )
+
+                    addStatement("return %T($argumentList)", factoryClass)
+                  }
+                }
+                .returns(factoryClass)
+                .build(),
+            )
+            .addFunction(
+              FunSpec.builder(byteCodeFunctionName)
+                .jvmStatic()
+                .apply {
+                  if (!isObject) {
+                    addParameter("module", moduleClass)
+                  }
+
+                  parameters.forEach { parameter ->
+                    addParameter(
+                      name = parameter.name,
+                      type = parameter.originalTypeName,
+                    )
+                  }
+
+                  val argumentsWithoutModule = if (isProperty) {
+                    ""
+                  } else {
+                    "(${parameters.joinToString { it.name }})"
+                  }
+
+                  when {
+                    isObject && returnTypeIsNullable ->
+                      addStatement(
+                        "return %T.$callableName$argumentsWithoutModule",
+                        moduleClass,
+                      )
+                    isObject && !returnTypeIsNullable ->
+                      addStatement(
+                        "return %T.checkNotNull(%T.$callableName" +
+                          "$argumentsWithoutModule, %S)",
+                        Preconditions::class,
+                        moduleClass,
+                        "Cannot return null from a non-@Nullable @Provides method",
+                      )
+                    !isObject && returnTypeIsNullable ->
+                      addStatement(
+                        "return module.$callableName$argumentsWithoutModule",
+                      )
+                    !isObject && !returnTypeIsNullable ->
+                      addStatement(
+                        "return %T.checkNotNull(module.$callableName" +
+                          "$argumentsWithoutModule, %S)",
+                        Preconditions::class,
+                        "Cannot return null from a non-@Nullable @Provides method",
+                      )
+                  }
+                }
+                .returns(returnType)
+                .build(),
+            )
+            .build()
+            .let {
+              if (!canGenerateAnObject) {
+                addType(it)
+              }
+            }
+        }
+        .build()
+        .let { addType(it) }
+    }
+
+    return spec
   }
 
   private class CallableReference(
