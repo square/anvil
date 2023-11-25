@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.compilationErrorLine
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
@@ -2551,9 +2552,12 @@ public class InjectClass_Factory<T : List<String>>(
       """,
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains(
+      assertThat(
+        compilationErrorLine()
+          .removeParametersAndSort(),
+      ).contains(
         "Type com.squareup.test.InjectClass may only contain one injected constructor. " +
-          "Found: [@Inject com.squareup.test.InjectClass(), @Inject com.squareup.test.InjectClass(String)]",
+          "Found: [@Inject com.squareup.test.InjectClass, @Inject com.squareup.test.InjectClass]",
       )
     }
   }
