@@ -1,6 +1,8 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
+import com.google.devtools.ksp.KspExperimental
+import com.google.devtools.ksp.getAnnotationsByType
 import com.google.devtools.ksp.getDeclaredProperties
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
@@ -80,14 +82,15 @@ object MapKeyCreatorCodeGen : AnvilApplicabilityChecker {
     @AutoService(SymbolProcessorProvider::class)
     class Provider : AnvilSymbolProcessorProvider(MapKeyCreatorCodeGen, ::KspGenerator)
 
+    @OptIn(KspExperimental::class)
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
       resolver.getSymbolsWithAnnotation(mapKeyFqName.asString())
         .filterIsInstance<KSClassDeclaration>()
         .filter { clazz ->
-          val mapKey = clazz.annotations.find { it.shortName.asString() == "MapKey" }
+          val mapKey = clazz.getAnnotationsByType(MapKey::class)
+            .singleOrNull()
             ?: return@filter false
-          val unwrapValue = mapKey.argumentAt("unwrapValue")?.value as? Boolean ?: true
-          return@filter !unwrapValue
+          return@filter !mapKey.unwrapValue
         }
         .forEach { clazz ->
           generateCreatorClass(clazz)

@@ -1,6 +1,8 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
+import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.getAllSuperTypes
+import com.google.devtools.ksp.getAnnotationsByType
 import com.google.devtools.ksp.getDeclaredProperties
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.symbol.KSClassDeclaration
@@ -120,6 +122,7 @@ internal fun List<KSValueParameter>.mapToConstructorParameters(
   }
 }
 
+@OptIn(KspExperimental::class)
 private fun KSValueParameter.toConstructorParameter(
   uniqueName: String,
   typeParameterResolver: TypeParameterResolver,
@@ -142,11 +145,10 @@ private fun KSValueParameter.toConstructorParameter(
   val assistedAnnotation = getKSAnnotationsByType(Assisted::class)
     .singleOrNull()
 
-  val assistedIdentifier = (
-    assistedAnnotation
-      ?.argumentAt("value")
-      ?.value as? String
-    ).orEmpty()
+  val assistedIdentifier = getAnnotationsByType(Assisted::class)
+    .singleOrNull()
+    ?.value
+    .orEmpty()
 
   return ConstructorParameter(
     name = uniqueName,
@@ -430,6 +432,7 @@ private fun MemberPropertyReference.toMemberInjectParameter(
   )
 }
 
+@OptIn(KspExperimental::class)
 private fun KSPropertyDeclaration.toMemberInjectParameter(
   uniqueName: String,
   declaringClass: KSClassDeclaration,
@@ -480,14 +483,12 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
     null
   }
 
-  val assistedAnnotation = getKSAnnotationsByType(Assisted::class)
+  val assistedAnnotation = getAnnotationsByType(Assisted::class)
     .singleOrNull()
 
-  val assistedIdentifier = (
-    assistedAnnotation
-      ?.argumentAt("value")
-      ?.value as? String
-    ).orEmpty()
+  val assistedIdentifier = assistedAnnotation
+    ?.value
+    .orEmpty()
 
   val implementingClassName = declaringClass
     .toClassName()

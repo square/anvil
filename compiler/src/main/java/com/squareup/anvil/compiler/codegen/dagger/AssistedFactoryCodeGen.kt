@@ -1,7 +1,9 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
+import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.getAllSuperTypes
+import com.google.devtools.ksp.getAnnotationsByType
 import com.google.devtools.ksp.getConstructors
 import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.getVisibility
@@ -33,7 +35,6 @@ import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.argumentAt
-import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
@@ -597,16 +598,15 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
     val key: Int = identifier.hashCode() * 31 + typeName.hashCode()
 
     companion object {
+      @OptIn(KspExperimental::class)
       fun KSValueParameter.toAssistedParameterKey(
         typeName: TypeName,
       ): AssistedParameterKey {
         return AssistedParameterKey(
           typeName,
-          getKSAnnotationsByType(Assisted::class)
+          getAnnotationsByType(Assisted::class)
             .singleOrNull()
-            ?.let { annotation ->
-              annotation.argumentAt("value")?.value as? String?
-            }
+            ?.value
             .orEmpty(),
         )
       }
