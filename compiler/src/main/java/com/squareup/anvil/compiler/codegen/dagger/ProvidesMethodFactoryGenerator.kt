@@ -112,7 +112,7 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
 
     val isMangled = !isProperty &&
       declaration.visibility == INTERNAL &&
-      !declaration.isAnnotatedWith(publishedApiFqName)
+      !declaration.isPublishedApi
 
     val packageName = clazz.packageFqName.safePackageString()
     val className = buildString {
@@ -366,8 +366,6 @@ internal class ProvidesMethodFactoryGenerator : PrivateCodeGenerator() {
     } ?: property!!.type()
     val annotationReference: AnnotatedReference = function ?: property!!
 
-    fun isAnnotatedWith(fqName: FqName): Boolean {
-      return function?.isAnnotatedWith(fqName) ?: property!!.isAnnotatedWith(fqName)
-    }
+    val isPublishedApi: Boolean get() = function?.isAnnotatedWith(publishedApiFqName) ?: property!!.isAnnotatedWith(publishedApiFqName)
   }
 }
