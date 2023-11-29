@@ -249,7 +249,7 @@ jobs :
           path : ./**/build/reports/androidTests/connected/**
 
   plugin-integration-tests :
-    name : Instrumentation tests
+    name : Plugin integration tests
     runs-on : macos-latest
     timeout-minutes : 20
 
