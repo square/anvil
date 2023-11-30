@@ -6,21 +6,25 @@ plugins {
 
 gradlePlugin {
   plugins {
-    root {
-      id = "com.squareup.anvil.root"
-      implementationClass = "com.squareup.anvil.conventions.RootPlugin"
+    gradleTests {
+      id = 'conventions.gradle-tests'
+      implementationClass = 'com.squareup.anvil.conventions.GradleTestsPlugin'
     }
     library {
-      id = "com.squareup.anvil.library"
-      implementationClass = "com.squareup.anvil.conventions.LibraryPlugin"
+      id = 'conventions.library'
+      implementationClass = 'com.squareup.anvil.conventions.LibraryPlugin'
+    }
+    minimalSupport {
+      id = 'conventions.minimal'
+      implementationClass = 'com.squareup.anvil.conventions.MinimalSupportPlugin'
     }
     publish {
-      id = "com.squareup.anvil.publish"
-      implementationClass = "com.squareup.anvil.conventions.PublishConventionPlugin"
+      id = 'conventions.publish'
+      implementationClass = 'com.squareup.anvil.conventions.PublishConventionPlugin'
     }
-    itegrationTests {
-      id = "com.squareup.anvil.itegration-tests"
-      implementationClass = "com.squareup.anvil.conventions.IntegrationTestsConventionPlugin"
+    root {
+      id = 'conventions.root'
+      implementationClass = 'com.squareup.anvil.conventions.RootPlugin'
     }
   }
 }
@@ -45,4 +49,7 @@ dependencies {
   api libs.kotlin.dokka
   api libs.kotlin.gradlePlugin
   api libs.mavenPublishRaw
+
+  // Expose the generated version catalog API to the plugins.
+  implementation files(libs.getClass().superclass.protectionDomain.codeSource.location)
 }

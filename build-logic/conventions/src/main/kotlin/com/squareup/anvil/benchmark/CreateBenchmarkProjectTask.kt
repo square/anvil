@@ -134,8 +134,8 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
 
     val content = """
       |plugins {
-      |  alias(libs.plugins.kotlin.jvm)
-      |  id("com.squareup.anvil")
+      |  alias libs.plugins.kotlin.jvm
+      |  id 'com.squareup.anvil'
       |}
       |
       |anvil {
@@ -327,9 +327,9 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
 
     val content = """
       |plugins {
-      |  alias(libs.plugins.kotlin.jvm)
-      |  alias(libs.plugins.kotlin.kapt)
-      |  id("com.squareup.anvil")
+      |  alias libs.plugins.kotlin.jvm
+      |  alias libs.plugins.kotlin.kapt
+      |  id 'com.squareup.anvil'
       |}
       |
       |kapt {

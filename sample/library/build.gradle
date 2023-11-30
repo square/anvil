@@ -1,6 +1,7 @@
 plugins {
-  alias(libs.plugins.kotlin.jvm)
-  id("com.squareup.anvil")
+  alias libs.plugins.kotlin.jvm
+  id 'com.squareup.anvil'
+  id 'conventions.minimal'
 }
 
 if (libs.versions.config.generateDaggerFactoriesWithAnvil.get().toBoolean()) {

@@ -4,9 +4,10 @@ import com.squareup.anvil.plugin.AndroidVariantFilter
 
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
-  alias(libs.plugins.kotlin.kapt)
+  alias libs.plugins.kotlin.kapt
   alias(libs.plugins.agp.library)
-  id("com.squareup.anvil")
+  id 'com.squareup.anvil'
+  id 'conventions.minimal'
 }
 
 android {

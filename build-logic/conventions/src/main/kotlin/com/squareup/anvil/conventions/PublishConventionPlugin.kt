@@ -4,6 +4,8 @@ import com.rickbusarow.kgx.dependsOn
 import com.rickbusarow.kgx.extras
 import com.rickbusarow.kgx.getOrNullAs
 import com.rickbusarow.kgx.mustRunAfter
+import com.squareup.anvil.conventions.utils.gradlePublishingExtension
+import com.squareup.anvil.conventions.utils.isInMainAnvilBuild
 import com.vanniktech.maven.publish.JavadocJar
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension

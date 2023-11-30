@@ -3,6 +3,7 @@ package com.squareup.anvil.conventions
 import com.rickbusarow.kgx.applyOnce
 import com.rickbusarow.kgx.dependsOn
 import com.rickbusarow.kgx.javaExtension
+import com.squareup.anvil.conventions.utils.javaSourceSet
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.SourceSet
@@ -10,13 +11,13 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 
-abstract class IntegrationTestsConventionPlugin : Plugin<Project> {
+abstract class GradleTestsPlugin : Plugin<Project> {
   override fun apply(target: Project) {
     target.plugins.applyOnce("idea")
 
-    val integrationTestSourceSet = target.javaExtension
+    val gradleTestSourceSet = target.javaExtension
       .sourceSets
-      .register(INTEGRATION_TEST) { ss ->
+      .register(GRADLE_TEST) { ss ->
 
         val main = target.javaSourceSet(SourceSet.MAIN_SOURCE_SET_NAME)
 
@@ -37,46 +38,42 @@ abstract class IntegrationTestsConventionPlugin : Plugin<Project> {
     // The `compileOnlyApi` configuration is added by the `java-library` plugin,
     // which is applied by the kotlin-jvm plugin.
     target.pluginManager.withPlugin("java-library") {
-      val ss = integrationTestSourceSet.get()
+      val ss = gradleTestSourceSet.get()
 
       val main = target.javaSourceSet(SourceSet.MAIN_SOURCE_SET_NAME)
       target.configurations.getByName(ss.compileOnlyConfigurationName)
         .extendsFrom(target.configurations.getByName(main.compileOnlyApiConfigurationName))
     }
 
-    val integrationTestTask = target.tasks
-      .register(INTEGRATION_TEST, Test::class.java) { task ->
+    val gradleTestTask = target.tasks
+      .register(GRADLE_TEST, Test::class.java) { task ->
 
         task.group = "verification"
-        task.description = "tests the '$INTEGRATION_TEST' source set"
+        task.description = "tests the '$GRADLE_TEST' source set"
 
         task.useJUnitPlatform()
 
-        val javaSourceSet = target.javaSourceSet(INTEGRATION_TEST)
+        val javaSourceSet = target.javaSourceSet(GRADLE_TEST)
 
         task.testClassesDirs = javaSourceSet.output.classesDirs
         task.classpath = javaSourceSet.runtimeClasspath
         task.inputs.files(javaSourceSet.allSource)
       }
 
-    // Make `check` depend upon `integrationTest`
-    target.tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME).dependsOn(integrationTestTask)
+    // Make `check` depend upon `gradleTest`
+    target.tasks.named(LifecycleBasePlugin.CHECK_TASK_NAME).dependsOn(gradleTestTask)
 
-    // Make the IDE treat `src/integrationTest/[java|kotlin]` as a test source directory.
+    // Make the IDE treat `src/gradleTest/[java|kotlin]` as a test source directory.
     target.extensions.configure(IdeaModel::class.java) { idea ->
       idea.module { module ->
         module.testSources.from(
-          integrationTestSourceSet.map { it.allSource.srcDirs },
+          gradleTestSourceSet.map { it.allSource.srcDirs },
         )
       }
     }
   }
 
-  private fun Project.javaSourceSet(name: String): SourceSet {
-    return javaExtension.sourceSets.getByName(name)
-  }
-
   companion object {
-    private const val INTEGRATION_TEST = "integrationTest"
+    private const val GRADLE_TEST = "gradleTest"
   }
 }

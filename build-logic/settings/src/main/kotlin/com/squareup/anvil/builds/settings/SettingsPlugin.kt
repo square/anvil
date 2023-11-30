@@ -37,6 +37,8 @@ abstract class SettingsPlugin @Inject constructor(
             catalogBuilder.overrideVersion(alias = "ksp", versionString = "$value-1.0.11")
           }
         }
+
+      catalogBuilder.version("config-warningsAsErrors", System.getenv("CI") ?: "false")
     }
 
     @Suppress("UnstableApiUsage")

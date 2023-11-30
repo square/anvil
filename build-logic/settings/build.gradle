@@ -17,8 +17,8 @@ ktlint {
 gradlePlugin {
   plugins {
     settingsPlugin {
-      id = "com.squareup.anvil.gradle-settings"
-      implementationClass = "com.squareup.anvil.builds.settings.SettingsPlugin"
+      id = 'com.squareup.anvil.gradle-settings'
+      implementationClass = 'com.squareup.anvil.builds.settings.SettingsPlugin'
     }
   }
 }

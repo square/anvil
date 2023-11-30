@@ -1,10 +1,10 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  id 'com.squareup.anvil.library'
+  id 'conventions.library'
   alias libs.plugins.kotlin.kapt
   alias libs.plugins.buildconfig
-  id 'com.squareup.anvil.publish'
+  id 'conventions.publish'
 }
 
 buildConfig {
@@ -12,7 +12,7 @@ buildConfig {
   packageName('com.squareup.anvil.compiler')
   useKotlinOutput { topLevelConstants = true }
 
-  buildConfigField('boolean', 'WARNINGS_AS_ERRORS',"${rootProject.ext.warningsAsErrors}")
+  buildConfigField('boolean', 'WARNINGS_AS_ERRORS',"${libs.versions.config.warningsAsErrors.get()}")
   buildConfigField('boolean', 'FULL_TEST_RUN', "${libs.versions.config.fullTestRun.get()}")
   buildConfigField('boolean', 'INCLUDE_KSP_TESTS', "${libs.versions.config.includeKspTests.get()}")
 }
@@ -58,11 +58,5 @@ tasks.withType(KotlinCompile).configureEach {
     // compiler requires this flag when doing so.
     freeCompilerArgs.add("-Xjvm-default=all")
     freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
-  }
-}
-
-if (!rootProject.ext.ci) {
-  tasks.withType(Test).configureEach {
-    maxParallelForks = Runtime.runtime.availableProcessors()
   }
 }

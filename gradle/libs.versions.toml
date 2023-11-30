@@ -21,6 +21,9 @@ dokka = "1.9.10"
 espresso = "3.5.1"
 gradlePublish = "1.2.1"
 jUnit5 = "5.10.0"
+jvm-toolchain = "11"
+jvm-target-library = "8"
+jvm-target-minimal = "11"
 kct = "0.3.1"
 kgx = "0.1.9"
 kotlin = "1.9.10"
@@ -44,6 +47,7 @@ config-fullTestRun = "true"
 # unblock KSP work for the moment until the source of the Git-Windows-CI jank can be identified.
 config-includeKspTests = "true"
 config-generateDaggerFactoriesWithAnvil = "true"
+config-warningsAsErrors = "false"
 
 [plugins]
 agp-application = { id = "com.android.application", version.ref = "agp" }

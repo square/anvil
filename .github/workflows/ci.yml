@@ -248,8 +248,8 @@ jobs :
           name : insrumentation-test-results
           path : ./**/build/reports/androidTests/connected/**
 
-  plugin-integration-tests :
-    name : Plugin integration tests
+  gradle-integration-tests :
+    name : Gradle integration tests
     runs-on : macos-latest
     timeout-minutes : 20
 
@@ -310,7 +310,7 @@ jobs :
       - test-gradle-plugin
       - kapt-for-dagger-factories
       - instrumentation-tests
-      - plugin-integration-tests
+      - gradle-integration-tests
       - gradle-wrapper-validation
       - build-benchmark-project
 

@@ -1,8 +1,9 @@
 plugins {
-  id 'com.squareup.anvil.library'
-  id 'com.squareup.anvil.itegration-tests'
+  id 'conventions.library'
+  id 'conventions.gradle-tests'
   alias libs.plugins.buildconfig
-  id 'com.squareup.anvil.publish'
+  alias libs.plugins.gradlePublish
+  id 'conventions.publish'
   id 'idea'
   id 'java-gradle-plugin'
 }
@@ -19,7 +20,7 @@ publish {
   )
 }
 
-tasks.named("integrationTest", Test) {
+tasks.named("gradleTest", Test) {
   useJUnitPlatform()
 
   def publishTasks = rootProject
@@ -40,7 +41,7 @@ buildConfig {
   buildConfigField('String', 'GROUP', "\"$GROUP\"")
   buildConfigField('String', 'VERSION', "\"$VERSION_NAME\"")
 
-  sourceSets.named('integrationTest') {
+  sourceSets.named('gradleTest') {
     className 'BuildProperties'
     packageName 'com.squareup.anvil.plugin'
     useKotlinOutput {
@@ -75,7 +76,7 @@ gradlePlugin {
 
   // Tells the `java-gradle-plugin` plugin to inject its TestKit logic into the `integrationTest`
   // source set.
-  testSourceSets(java.sourceSets.integrationTest)
+  testSourceSets(java.sourceSets.gradleTest)
 
   plugins {
     anvilPlugin {
@@ -100,11 +101,11 @@ dependencies {
   testImplementation libs.junit
   testImplementation libs.truth
 
-  integrationTestImplementation gradleTestKit()
-  integrationTestImplementation libs.junit
-  integrationTestImplementation libs.junit5.engine
-  integrationTestImplementation libs.junit5.jupiter
-  integrationTestImplementation libs.junit5.jupiter.api
-  integrationTestImplementation libs.kotlin.test
-  integrationTestImplementation libs.truth
+  gradleTestImplementation gradleTestKit()
+  gradleTestImplementation libs.junit
+  gradleTestImplementation libs.junit5.engine
+  gradleTestImplementation libs.junit5.jupiter
+  gradleTestImplementation libs.junit5.jupiter.api
+  gradleTestImplementation libs.kotlin.test
+  gradleTestImplementation libs.truth
 }

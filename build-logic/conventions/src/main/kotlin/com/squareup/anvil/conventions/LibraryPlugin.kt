@@ -1,49 +1,61 @@
 package com.squareup.anvil.conventions
 
-import com.rickbusarow.kgx.libsCatalog
+import com.rickbusarow.kgx.dependsOn
 import com.rickbusarow.kgx.pluginId
-import org.gradle.api.Plugin
+import com.squareup.anvil.conventions.utils.isInDelegateBuild
+import com.squareup.anvil.conventions.utils.isInMainAnvilBuild
+import com.squareup.anvil.conventions.utils.libs
 import org.gradle.api.Project
+import org.gradle.api.tasks.Delete
 import org.gradle.plugins.ide.idea.model.IdeaModel
 
-open class LibraryPlugin : Plugin<Project> {
-  override fun apply(target: Project) {
+open class LibraryPlugin : BasePlugin() {
+  override fun Project.jvmTargetInt(): Int = libs.versions.jvm.target.library.get().toInt()
 
-    target.plugins.apply(target.libsCatalog.pluginId("kotlin-jvm"))
-    target.plugins.apply(KtlintConventionPlugin::class.java)
+  override fun beforeApply(target: Project) {
+    target.plugins.apply(target.libs.plugins.kotlin.jvm.pluginId)
 
-    when (target.path) {
-      ":annotations",
-      ":annotations-optional",
-      ":compiler",
-      ":compiler-api",
-      ":compiler-utils",
-      ":gradle-plugin",
-      -> target.setBuildDir()
+    target.plugins.apply("idea")
+  }
+
+  override fun afterApply(target: Project) {
+
+    configureBuildDirectory(target)
+
+    if (target.isInMainAnvilBuild()) {
+      configureDeleteBuildDirTask(target)
     }
   }
 
-  private fun Project.setBuildDir() {
+  private fun configureBuildDirectory(target: Project) {
+    val anvilBuildDir = target.file("build-anvil")
+    val delegateDir = target.file("build-delegate")
 
-    if (file("build").exists()) {
-      file("build").deleteRecursively()
-    }
-    val anvilBuildDir = file("build-anvil")
-    val delegateDir = file("build-delegate")
-
-    plugins.apply("idea")
     // Make both the `build-anvil` and `build-delegate` directories show
     // up as build directories within the IDE.
-    extensions.configure(IdeaModel::class.java) { idea ->
+    target.extensions.configure(IdeaModel::class.java) { idea ->
       idea.module { module ->
         module.excludeDirs.addAll(listOf(delegateDir, anvilBuildDir))
       }
     }
 
-    if (isInDelegateBuild()) {
-      layout.buildDirectory.set(delegateDir)
+    if (target.isInDelegateBuild()) {
+      target.layout.buildDirectory.set(delegateDir)
     } else {
-      layout.buildDirectory.set(anvilBuildDir)
+      target.layout.buildDirectory.set(anvilBuildDir)
     }
+  }
+
+  private fun configureDeleteBuildDirTask(target: Project) {
+
+    val deleteTask = target.tasks
+      .register("deleteOldBuildDirs", Delete::class.java) { task ->
+        task.delete(target.file("build"))
+        task.delete(target.file("build-composite-wrapper"))
+      }
+
+    target.rootProject.tasks
+      .named("prepareKotlinBuildScriptModel")
+      .dependsOn(deleteTask)
   }
 }
