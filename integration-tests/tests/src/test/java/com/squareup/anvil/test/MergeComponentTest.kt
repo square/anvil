@@ -61,11 +61,11 @@ internal class MergeComponentTest {
       WrappedBindingKey("1"),
       WrappedMapBinding1,
       WrappedBindingKey("3"),
-      WrappedMapBinding3
+      WrappedMapBinding3,
     )
     assertThat(appComponent.mapBindingsWrappedNamed()).containsExactly(
       WrappedBindingKey("2"),
-      WrappedMapBinding2
+      WrappedMapBinding2,
     )
   }
 
@@ -84,18 +84,25 @@ internal class MergeComponentTest {
     fun charSequence(): CharSequence
     fun parentTypes(): Set<ParentType>
     fun mapBindings(): Map<String, ParentType>
-    @Named("abc") fun mapBindingsNamed(): Map<String, ParentType>
+
+    @Named("abc")
+    fun mapBindingsNamed(): Map<String, ParentType>
     fun mapBindingsWrapped(): Map<WrappedBindingKey, ParentType>
-    @Named("def") fun mapBindingsWrappedNamed(): Map<WrappedBindingKey, ParentType>
+
+    @Named("def")
+    fun mapBindingsWrappedNamed(): Map<WrappedBindingKey, ParentType>
     fun priorityBinding(): PriorityBinding
   }
 
   @MergeSubcomponent(SubScope::class)
   interface SubComponent {
-    @Named("middle") fun middleType(): MiddleType
+    @Named("middle")
+    fun middleType(): MiddleType
     fun parentType(): ParentType
 
     fun middleTypes(): Set<MiddleType>
-    @Named("middle") fun middleTypesNamed(): Set<MiddleType>
+
+    @Named("middle")
+    fun middleTypesNamed(): Set<MiddleType>
   }
 }

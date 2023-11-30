@@ -21,10 +21,10 @@ class TestCodeGeneratorTest {
       package com.squareup.anvil.test
 
       annotation class Trigger
-      """
+      """,
     ) {
       assertThat(
-        classLoader.loadClass("generated.test.com.squareup.test.GeneratedClass").createInstance()
+        classLoader.loadClass("generated.test.com.squareup.test.GeneratedClass").createInstance(),
       ).isNotNull()
     }
   }

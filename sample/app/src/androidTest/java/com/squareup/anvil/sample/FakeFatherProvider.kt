@@ -7,7 +7,7 @@ import com.squareup.scopes.AppScope
 
 @ContributesBinding(
   scope = AppScope::class,
-  replaces = [RealFatherProvider::class]
+  replaces = [RealFatherProvider::class],
 )
 object FakeFatherProvider : FatherProvider {
   override fun father(god: God): String = "(No Father)"

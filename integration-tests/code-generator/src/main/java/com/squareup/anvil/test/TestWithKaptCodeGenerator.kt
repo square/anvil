@@ -25,7 +25,7 @@ class TestWithKaptCodeGenerator : CodeGenerator {
   override fun generateCode(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ): Collection<GeneratedFile> {
     return projectFiles
       .classAndInnerClassReferences(module)
@@ -49,7 +49,7 @@ class TestWithKaptCodeGenerator : CodeGenerator {
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "mergedComponent",
-            content = mergedComponent
+            content = mergedComponent,
           ),
         )
       }

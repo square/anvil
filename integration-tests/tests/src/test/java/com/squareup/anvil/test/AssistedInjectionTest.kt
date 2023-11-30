@@ -27,7 +27,7 @@ internal class AssistedInjectionTest {
 
   @MergeComponent(
     scope = AssistedScope::class,
-    modules = [DaggerModule::class]
+    modules = [DaggerModule::class],
   )
   interface AppComponent {
     fun serviceFactory(): AssistedService.Factory
