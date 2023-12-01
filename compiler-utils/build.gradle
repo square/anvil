@@ -3,15 +3,14 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 plugins {
   id 'conventions.library'
   id 'java-test-fixtures'
-  id 'conventions.publish'
 }
 
 publish {
   configurePom(
-      artifactId: "compiler-utils",
-      pomName: "Anvil Compiler Utils",
-      pomDescription: 'Optional utility and extension functions for working with PSI and descriptors, ' +
-          'designed to simplify code generation tasks in Anvil'
+    artifactId: "compiler-utils",
+    pomName: "Anvil Compiler Utils",
+    pomDescription: 'Optional utility and extension functions for working with PSI and descriptors, ' +
+      'designed to simplify code generation tasks in Anvil'
   )
 }
 

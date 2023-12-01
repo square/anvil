@@ -4,7 +4,6 @@ plugins {
   id 'conventions.library'
   alias libs.plugins.kotlin.kapt
   alias libs.plugins.buildconfig
-  id 'conventions.publish'
 }
 
 buildConfig {
@@ -12,17 +11,18 @@ buildConfig {
   packageName('com.squareup.anvil.compiler')
   useKotlinOutput { topLevelConstants = true }
 
-  buildConfigField('boolean', 'WARNINGS_AS_ERRORS',"${libs.versions.config.warningsAsErrors.get()}")
+  buildConfigField('boolean', 'WARNINGS_AS_ERRORS',
+    "${libs.versions.config.warningsAsErrors.get()}")
   buildConfigField('boolean', 'FULL_TEST_RUN', "${libs.versions.config.fullTestRun.get()}")
   buildConfigField('boolean', 'INCLUDE_KSP_TESTS', "${libs.versions.config.includeKspTests.get()}")
 }
 
 publish {
   configurePom(
-      artifactId: 'compiler',
-      pomName: 'Anvil Compiler',
-      pomDescription: 'The core implementation module for Anvil, responsible for hooking into ' +
-          'the Kotlin compiler and orchestrating code generation'
+    artifactId: 'compiler',
+    pomName: 'Anvil Compiler',
+    pomDescription: 'The core implementation module for Anvil, responsible for hooking into ' +
+      'the Kotlin compiler and orchestrating code generation'
   )
 }
 

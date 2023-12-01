@@ -34,8 +34,6 @@ open class KtlintConventionPlugin : Plugin<Project> {
    */
   private fun propagateToIncludedBuilds(target: Project) {
     target.gradle.includedBuilds
-      // Skip the delegate build since all its code is also in the main build.
-      .filter { it.name != "delegate" }
       .forEach { build ->
         target.tasks.named("ktlintCheck") { task ->
           task.dependsOn(build.task(":ktlintCheck"))

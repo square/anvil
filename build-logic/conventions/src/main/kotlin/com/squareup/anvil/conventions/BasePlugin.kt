@@ -1,21 +1,20 @@
 package com.squareup.anvil.conventions
 
+import com.rickbusarow.kgx.extras
 import com.rickbusarow.kgx.javaExtension
-import com.rickbusarow.kgx.withAny
-import com.squareup.anvil.conventions.utils.allDependenciesSequence
+import com.squareup.anvil.conventions.utils.isInMainAnvilBuild
 import com.squareup.anvil.conventions.utils.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.artifacts.Configuration
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8
-import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
+import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.util.Locale
+import java.util.Properties
 
 abstract class BasePlugin : Plugin<Project> {
 
@@ -26,6 +25,10 @@ abstract class BasePlugin : Plugin<Project> {
 
   final override fun apply(target: Project) {
 
+    if (!target.isInMainAnvilBuild()) {
+      target.copyRootProjectGradleProperties()
+    }
+
     beforeApply(target)
 
     target.plugins.apply("base")
@@ -34,16 +37,13 @@ abstract class BasePlugin : Plugin<Project> {
 
     configureGradleProperties(target)
 
-    target.plugins.withAny(
-      "org.jetbrains.kotlin.android",
-      "org.jetbrains.kotlin.jvm",
-      "org.jetbrains.kotlin.multiplatform",
-    ) {
+    configureJava(target)
+
+    target.plugins.withType(KotlinBasePluginWrapper::class.java) {
       configureKotlin(target)
     }
-    configureTestLogging(target)
 
-    configureJava(target)
+    configureTests(target)
 
     target.configurations.configureEach { config ->
       config.resolutionStrategy {
@@ -54,6 +54,20 @@ abstract class BasePlugin : Plugin<Project> {
     afterApply(target)
   }
 
+  /**
+   * Included builds need the `GROUP` and `VERSION_NAME` values from the main build's
+   * `gradle.properties`. We can't just use a symlink because Windows exists.
+   * See https://github.com/square/anvil/pull/763#discussion_r1379563691
+   */
+  private fun Project.copyRootProjectGradleProperties() {
+    rootProject.file("../../gradle.properties")
+      .inputStream()
+      .use { Properties().apply { load(it) } }
+      .forEach { key, value ->
+        extras.set(key.toString(), value.toString())
+      }
+  }
+
   private fun configureGradleProperties(target: Project) {
     target.version = target.property("VERSION_NAME") as String
     target.group = target.property("GROUP") as String
@@ -62,13 +76,12 @@ abstract class BasePlugin : Plugin<Project> {
   private fun configureKotlin(target: Project) {
     target.tasks.withType(KotlinCompile::class.java).configureEach { task ->
       task.compilerOptions {
-
         allWarningsAsErrors.set(target.libs.versions.config.warningsAsErrors.get().toBoolean())
 
-        val hasIt = task.hasAnnotationsDependency()
-
-        if (hasIt) {
-          optIn.add("com.squareup.anvil.annotations.ExperimentalAnvilApi")
+        // Only add the experimental opt-in if the project has the `annotations` dependency,
+        // otherwise the compiler will throw a warning and fail in CI.
+        if (target.hasAnnotationDependency()) {
+          freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
         }
 
         val fromInt = when (val targetInt = target.jvmTargetInt()) {
@@ -80,14 +93,36 @@ abstract class BasePlugin : Plugin<Project> {
     }
   }
 
-  private fun KotlinCompile.hasAnnotationsDependency(): Boolean {
-    return compileClasspathConfiguration()
-      ?.allDependenciesSequence { resolved ->
-        resolved.moduleVersion?.group == "com.squareup.anvil"
+  /**
+   * This is an imperfect but pretty good heuristic
+   * to determine if the receiver has the `annotations` dependency,
+   * without actually resolving the dependency graph.
+   */
+  private fun Project.hasAnnotationDependency(): Boolean {
+    val seed = sequenceOf(
+      "compileClasspath",
+      "testCompileClasspath",
+      "debugCompileClasspath",
+    )
+      .mapNotNull { configurations.findByName(it) }
+
+    val configs = generateSequence(seed) { configs ->
+      configs.flatMap { it.extendsFrom }
+        .mapNotNull { configurations.findByName(it.name) }
+        .takeIf { it.iterator().hasNext() }
+    }
+      .flatten()
+      .distinct()
+
+    // The -api and -utils projects declare the annotations as an `api` dependency.
+    val providingProjects = setOf("annotations", "compiler-api", "compiler-utils")
+
+    return configs.any { cfg ->
+      cfg.dependencies.any { dep ->
+
+        dep.group == "com.squareup.anvil" && dep.name in providingProjects
       }
-      ?.any { moduleVersion ->
-        moduleVersion.module.toString() == "com.squareup.anvil:annotations"
-      } ?: false
+    }
   }
 
   private fun configureJava(target: Project) {
@@ -101,7 +136,7 @@ abstract class BasePlugin : Plugin<Project> {
     }
   }
 
-  private fun configureTestLogging(target: Project) {
+  private fun configureTests(target: Project) {
     target.tasks.withType(Test::class.java).configureEach { task ->
 
       task.maxParallelForks = Runtime.getRuntime().availableProcessors()
@@ -115,24 +150,5 @@ abstract class BasePlugin : Plugin<Project> {
         logging.showStandardStreams = false
       }
     }
-  }
-
-  private fun KotlinCompile.compileClasspathConfiguration(): Configuration? {
-
-    if (this is KaptGenerateStubsTask) return null
-
-    // The task's `sourceSetName` property is set late in Android projects,
-    // but we can just parse the name out of the task's name.
-    val ssName = name
-      .substringAfter("compile")
-      .substringBefore("Kotlin")
-      .replaceFirstChar { it.lowercase(Locale.US) }
-
-    val compileClasspathName = when {
-      ssName.isEmpty() -> "compileClasspath"
-      else -> "${ssName}CompileClasspath"
-    }
-
-    return project.configurations.getByName(compileClasspathName)
   }
 }

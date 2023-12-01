@@ -201,10 +201,10 @@ jobs :
           check-latest : true
 
       - name : Run integration tests
-        run : ./gradlew -p integration-tests test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
+        run : ./gradlew -p build-logic/delegate test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
 
       - name : Build the sample
-        run : ./gradlew :sample:app:assembleDebug --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
+        run : ./gradlew :delegate:sample:app:assembleDebug --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v3
@@ -262,7 +262,7 @@ jobs :
           check-latest : true
 
       - name : Gradle integration tests
-        run : ./gradlew integrationTest --stacktrace
+        run : ./gradlew gradleTest --stacktrace
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v3

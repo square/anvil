@@ -5,8 +5,8 @@ pluginManagement {
     mavenCentral()
   }
 
-  includeBuild('build-logic/conventions')
-  includeBuild('build-logic/settings')
+  includeBuild 'build-logic/conventions'
+  includeBuild 'build-logic/settings'
 }
 
 plugins {
@@ -20,32 +20,10 @@ include ':annotations-optional'
 include ':compiler'
 include ':compiler-api'
 include ':compiler-utils'
-include ':integration-tests:code-generator'
-include ':integration-tests:code-generator-tests'
-include ':integration-tests:dagger-factories-only'
-include ':integration-tests:library'
-include ':integration-tests:mpp:android-module'
-include ':integration-tests:mpp:jvm-module'
-include ':integration-tests:tests'
-include ':sample:app'
-include ':sample:library'
-include ':sample:scopes'
-
 include ':gradle-plugin'
 
-includeBuild('build-logic/delegate') {
-  dependencySubstitution {
-    [
-      'annotations',
-      'annotations-optional',
-      'compiler',
-      'compiler-api',
-      'compiler-utils',
-      'gradle-plugin'
-    ].each { name ->
-      substitute module("com.squareup.anvil:$name") using project(":$name")
-    }
-  }
+if (gradle.parent == null) {
+  includeBuild 'build-logic/delegate'
 }
 
 // Include the benchmark modules if they exist.

@@ -1,13 +1,11 @@
 package com.squareup.anvil.conventions
 
 import com.rickbusarow.kgx.checkProjectIsRoot
-import com.rickbusarow.kgx.extras
 import com.squareup.anvil.benchmark.BenchmarkPlugin
 import com.squareup.anvil.conventions.utils.isInDelegateBuild
 import com.squareup.anvil.conventions.utils.isInMainAnvilBuild
 import com.squareup.anvil.conventions.utils.libs
 import org.gradle.api.Project
-import java.util.*
 
 open class RootPlugin : BasePlugin() {
   override fun Project.jvmTargetInt(): Int = libs.versions.jvm.target.minimal.get().toInt()
@@ -18,8 +16,8 @@ open class RootPlugin : BasePlugin() {
     target.plugins.apply(BenchmarkPlugin::class.java)
     target.plugins.apply("java-base")
 
-    if (!target.isInMainAnvilBuild()) {
-      target.copyRootProjectGradleProperties()
+    if (target.gradle.includedBuilds.isNotEmpty()) {
+      target.plugins.apply(CompositePlugin::class.java)
     }
   }
 
@@ -60,19 +58,5 @@ open class RootPlugin : BasePlugin() {
       it.group = "publishing"
       it.description = "Publishes all publications to the local Maven repository."
     }
-  }
-
-  /**
-   * Included builds need the `GROUP` and `VERSION_NAME` values from the main build's
-   * `gradle.properties`. We can't just use a symlink because Windows exists.
-   * See https://github.com/square/anvil/pull/763#discussion_r1379563691
-   */
-  private fun Project.copyRootProjectGradleProperties() {
-    file("../../gradle.properties")
-      .inputStream()
-      .use { Properties().apply { load(it) } }
-      .forEach { key, value ->
-        extras.set(key.toString(), value.toString())
-      }
   }
 }

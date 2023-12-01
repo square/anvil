@@ -3,8 +3,6 @@ plugins {
   id 'conventions.gradle-tests'
   alias libs.plugins.buildconfig
   alias libs.plugins.gradlePublish
-  id 'conventions.publish'
-  id 'idea'
   id 'java-gradle-plugin'
 }
 
