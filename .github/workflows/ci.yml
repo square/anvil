@@ -295,7 +295,7 @@ jobs :
         run : ./gradlew :createBenchmarkProject
 
       - name : "Build Benchmark Project"
-        run : ./gradlew :benchmark:app:assemble
+        run : ./gradlew -p benchmark :app:assemble
 
   all-checks:
     if: always()

@@ -54,7 +54,7 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
   @TaskAction fun createProject() {
     val libraryModules = List(MODULE_COUNT) { index ->
       val name = "lib$index"
-      val path = ":${rootDir.name}:$name"
+      val path = ":$name"
 
       LibraryModule(
         name = name,
@@ -69,6 +69,7 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
     )
 
     createSettingsGradleFile(libraryModules.values + appModule)
+    createGradlePropertiesFile()
     createScenariosFile()
     createAppModule(appModule, libraryModules)
 
@@ -78,11 +79,39 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
   }
 
   private fun createSettingsGradleFile(modules: Collection<Module>) {
-    val content = modules.sortedBy { it.path }.joinToString(separator = "\n") {
-      "include '${it.path}'"
+    val content = buildString {
+
+      appendLine(
+        """
+        pluginManagement {
+          repositories {
+            gradlePluginPortal()
+            mavenCentral()
+          }
+          
+          includeBuild '../build-logic/settings'
+        }
+     
+        plugins {
+          id 'com.squareup.anvil.gradle-settings'
+        }
+        
+        includeBuild '..'
+        
+        """.trimIndent(),
+      )
+      modules.sortedBy { it.path }
+        .forEach {
+          appendLine("include '${it.name}'")
+        }
     }
 
     File(rootDir, "settings.gradle").writeTextSafely(content)
+  }
+
+  private fun createGradlePropertiesFile() {
+    rootDir.parentFile.resolve("gradle.properties")
+      .copyTo(rootDir.resolve("gradle.properties"))
   }
 
   private fun createScenariosFile() {
@@ -90,14 +119,14 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
       # Prefix with aa_ to run this scenario first. The Gradle Profiler uses an alphabetical sort
       # for all scenarios. 
       aa_fill_cache {
-        tasks = [":benchmark:app:assemble"]
+        tasks = [":app:assemble"]
         warm-ups = 1
         iterations = 0
       }
       
       anvil_benchmark {
-        tasks = [":benchmark:app:compileKotlin"]
-        cleanup-tasks = [":benchmark:app:cleanCompileKotlin"]
+        tasks = [":app:compileKotlin"]
+        cleanup-tasks = [":app:cleanCompileKotlin"]
 
         warm-ups = 6
         iterations = 10
