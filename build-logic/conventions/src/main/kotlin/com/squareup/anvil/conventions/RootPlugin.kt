@@ -2,7 +2,6 @@ package com.squareup.anvil.conventions
 
 import com.rickbusarow.kgx.checkProjectIsRoot
 import com.squareup.anvil.benchmark.BenchmarkPlugin
-import com.squareup.anvil.conventions.utils.isInDelegateBuild
 import com.squareup.anvil.conventions.utils.isInMainAnvilBuild
 import com.squareup.anvil.conventions.utils.libs
 import org.gradle.api.Project
@@ -13,7 +12,10 @@ open class RootPlugin : BasePlugin() {
 
     target.checkProjectIsRoot { "RootPlugin must only be applied to the root project" }
 
-    target.plugins.apply(BenchmarkPlugin::class.java)
+    if (target.isInMainAnvilBuild()) {
+      target.plugins.apply(BenchmarkPlugin::class.java)
+    }
+
     target.plugins.apply("java-base")
 
     if (target.gradle.includedBuilds.isNotEmpty()) {
