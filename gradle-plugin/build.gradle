@@ -1,5 +1,6 @@
 plugins {
   id 'conventions.library'
+  id 'conventions.publish'
   id 'conventions.gradle-tests'
   alias libs.plugins.buildconfig
   alias libs.plugins.gradlePublish
@@ -16,16 +17,6 @@ publish {
     pomName: pomName,
     pomDescription: pomDescription
   )
-}
-
-tasks.named("gradleTest", Test) {
-  useJUnitPlatform()
-
-  def publishTasks = rootProject
-    .subprojects
-    .findAll { it.plugins.hasPlugin('com.squareup.anvil.publish') }
-    .collect { it.tasks.named("publishToBuildM2") }
-  it.dependsOn(publishTasks)
 }
 
 buildConfig {

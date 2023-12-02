@@ -4,6 +4,7 @@ import org.gradle.api.Plugin
 import org.gradle.api.initialization.Settings
 import org.gradle.api.initialization.dsl.VersionCatalogBuilder
 import org.gradle.api.internal.file.FileOperations
+import java.io.File
 import java.net.URI
 import javax.inject.Inject
 
@@ -17,7 +18,7 @@ abstract class SettingsPlugin @Inject constructor(
       val catalogBuilder = container.maybeCreate("libs")
 
       if (target.rootProject.name != "anvil") {
-        val maybeFile = target.rootDir.resolve("../../gradle/libs.versions.toml")
+        val maybeFile = target.rootDir.resolveInParents("gradle/libs.versions.toml")
         require(maybeFile.exists()) {
           "Expected to find libs.versions.toml at $maybeFile"
         }
@@ -62,5 +63,11 @@ abstract class SettingsPlugin @Inject constructor(
   ) {
     println("Overriding $alias with $versionString")
     version(alias, versionString)
+  }
+
+  private fun File.resolveInParents(relativePath: String): File {
+    return resolve(relativePath).takeIf { it.exists() }
+      ?: parentFile?.resolveInParents(relativePath)
+      ?: error("File $relativePath not found")
   }
 }
