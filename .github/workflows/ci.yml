@@ -92,7 +92,7 @@ jobs :
           check-latest : true
 
       - name : Android Lint
-        run : ./gradlew lint --no-build-cache --no-daemon --stacktrace
+        run : ./gradlew -p build-logic/delegate lint --no-build-cache --no-daemon --stacktrace
 
       - name : Upload Lint Results
         uses : actions/upload-artifact@v3
