@@ -8,6 +8,14 @@ import org.gradle.composite.internal.DefaultIncludedBuild
 import org.gradle.composite.internal.DefaultIncludedBuild.IncludedBuildImpl
 import org.gradle.internal.DefaultTaskExecutionRequest
 
+/**
+ * This plugin propagates unqualified task invocations to included builds. Conceptually, it
+ * behaves as if the included builds were subprojects of the root build.
+ *
+ * For example, if the root project has an included build named `:included`,
+ * and `:included` has a task named `:included:foo`, then the root project can invoke
+ * `./gradlew foo` and the task `:included:foo` will be executed.
+ */
 class CompositePlugin : Plugin<Project> {
 
   override fun apply(target: Project) {
