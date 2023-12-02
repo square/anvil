@@ -27,9 +27,7 @@ open class RootPlugin : BasePlugin() {
 
     target.logVersionInfo()
 
-    if (target.isInMainAnvilBuild() || target.isInDelegateBuild()) {
-      target.registerPublishStubTask()
-    }
+    target.registerPublishStubTask()
   }
 
   private fun Project.logVersionInfo() {

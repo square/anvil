@@ -5,8 +5,7 @@ import com.rickbusarow.kgx.extras
 import com.rickbusarow.kgx.getOrNullAs
 import com.rickbusarow.kgx.mustRunAfter
 import com.squareup.anvil.conventions.utils.gradlePublishingExtension
-import com.squareup.anvil.conventions.utils.isInMainAnvilBuild
-import com.vanniktech.maven.publish.JavadocJar
+import com.vanniktech.maven.publish.JavadocJar.Dokka
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import com.vanniktech.maven.publish.Platform
@@ -38,13 +37,6 @@ open class PublishConventionPlugin : Plugin<Project> {
     mavenPublishing.pomFromGradleProperties()
     mavenPublishing.signAllPublications()
 
-    val javadocJar = if (target.isInMainAnvilBuild()) {
-      JavadocJar.Dokka("dokkaHtml")
-    } else {
-      // skip Dokka if this is just publishing for integration tests
-      JavadocJar.None()
-    }
-
     target.plugins.withId("org.jetbrains.kotlin.jvm") {
       when {
         target.plugins.hasPlugin(pluginPublishId) -> {
@@ -56,13 +48,15 @@ open class PublishConventionPlugin : Plugin<Project> {
           configurePublication(
             target,
             mavenPublishing,
-            KotlinJvm(javadocJar = javadocJar, sourcesJar = true),
+            KotlinJvm(javadocJar = Dokka("dokkaHtml"), sourcesJar = true),
           )
         }
       }
     }
 
     // We publish all artifacts to `anvil/build/m2` for the plugin integration tests.
+    // The generated projects in tests use this repository to get the plugin
+    // and the other published artifacts, so that the tests have a realistic classpath.
     target.gradlePublishingExtension.repositories { repositories ->
       repositories.maven {
         it.name = "buildM2"
@@ -84,7 +78,7 @@ open class PublishConventionPlugin : Plugin<Project> {
    */
   private fun setUpPublishToBuildM2(target: Project) {
 
-    val publishToBuildM2 = target.tasks.register("publishToBuildM2") {
+    val publishToBuildM2 = target.tasks.register(PUBLISH_TO_BUILD_M2) {
       it.group = "Publishing"
       it.description = "Delegates to the publishAllPublicationsToBuildM2Repository task " +
         "on projects where publishing is enabled."
@@ -95,7 +89,7 @@ open class PublishConventionPlugin : Plugin<Project> {
       target.extras["skipDokka"] = true
     }
 
-    target.rootProject.tasks.named("publishToBuildM2").dependsOn(publishToBuildM2)
+    target.rootProject.tasks.named(PUBLISH_TO_BUILD_M2).dependsOn(publishToBuildM2)
   }
 
   @Suppress("UnstableApiUsage")
@@ -109,6 +103,10 @@ open class PublishConventionPlugin : Plugin<Project> {
     target.tasks.withType(GenerateModuleMetadata::class.java).configureEach {
       it.mustRunAfter(target.tasks.withType(Jar::class.java))
     }
+  }
+
+  companion object {
+    internal const val PUBLISH_TO_BUILD_M2 = "publishToBuildM2"
   }
 }
 

@@ -3,6 +3,7 @@ package com.squareup.anvil.conventions
 import com.rickbusarow.kgx.applyOnce
 import com.rickbusarow.kgx.dependsOn
 import com.rickbusarow.kgx.javaExtension
+import com.squareup.anvil.conventions.PublishConventionPlugin.Companion.PUBLISH_TO_BUILD_M2
 import com.squareup.anvil.conventions.utils.javaSourceSet
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -11,6 +12,14 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.language.base.plugins.LifecycleBasePlugin
 import org.gradle.plugins.ide.idea.model.IdeaModel
 
+/**
+ * This plugin will:
+ * - add a `gradleTest` source set to the project.
+ * - declare that source set as a "test" source set in the IDE.
+ * - register a `gradleTest` task that runs the tests in the `gradleTest` source set.
+ * - make the `check` task depend upon the `gradleTest` task.
+ * - make the `gradleTest` task depend upon the `publishToBuildM2` task..
+ */
 abstract class GradleTestsPlugin : Plugin<Project> {
   override fun apply(target: Project) {
     target.plugins.applyOnce("idea")
@@ -58,6 +67,8 @@ abstract class GradleTestsPlugin : Plugin<Project> {
         task.testClassesDirs = javaSourceSet.output.classesDirs
         task.classpath = javaSourceSet.runtimeClasspath
         task.inputs.files(javaSourceSet.allSource)
+
+        task.dependsOn(target.rootProject.tasks.named(PUBLISH_TO_BUILD_M2))
       }
 
     // Make `check` depend upon `gradleTest`
