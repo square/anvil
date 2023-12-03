@@ -81,7 +81,7 @@ dagger2-compiler = { module = "com.google.dagger:dagger-compiler", version.ref =
 gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", version.ref = "gradlePublish" }
 
 inject = "javax.inject:javax.inject:1"
-jsr250 = "javax.annotation:jsr250-api:1.0"
+jsr250 = "javax.annotation:jsr250-api:1.0-20050927.133100"
 junit = "junit:junit:4.13.2"
 
 kotlin-annotationProcessingEmbeddable = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable", version.ref = "kotlin" }
