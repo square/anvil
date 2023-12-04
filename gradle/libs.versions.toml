@@ -23,7 +23,7 @@ gradlePublish = "1.2.1"
 kct = "0.3.1"
 kgx = "0.1.9"
 kotlin = "1.9.10"
-kotlinpoet = "1.15.3"
+kotlinpoet = "1.14.2"
 # If updating KSP version, we currently have ksp override logic in settings.gradle that needs to be updated too
 ksp = "1.9.10-1.0.13"
 ktlint = "1.0.1"
