@@ -29,7 +29,7 @@ class TestCodeGenerator : CodeGenerator {
   override fun generateCode(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
+    projectFiles: Collection<KtFile>,
   ): Collection<GeneratedFile> {
     return projectFiles
       .classAndInnerClassReferences(module)
@@ -135,43 +135,43 @@ class TestCodeGenerator : CodeGenerator {
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "GeneratedClass",
-            content = generatedClass
+            content = generatedClass,
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "ContributedInterface",
-            content = contributedInterface
+            content = contributedInterface,
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "ContributedModule",
-            content = contributedModule
+            content = contributedModule,
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "ContributedBinding",
-            content = contributedBinding
+            content = contributedBinding,
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "InjectClass",
-            content = injectClass
+            content = injectClass,
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "AssistedInject",
-            content = assistedInject
+            content = assistedInject,
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "ContributedSubcomponent",
-            content = contributedSubcomponent
+            content = contributedSubcomponent,
           ),
         )
       }
@@ -195,10 +195,10 @@ class TestCodeGenerator : CodeGenerator {
                 codeGenDir = codeGenDir,
                 packageName = generatedPackage,
                 fileName = "GeneratedFunctionClass",
-                content = generatedClass
+                content = generatedClass,
               ),
             )
-          }
+          },
       )
       .plus(
         projectFiles
@@ -220,10 +220,10 @@ class TestCodeGenerator : CodeGenerator {
                 codeGenDir = codeGenDir,
                 packageName = generatedPackage,
                 fileName = "GeneratedPropertyClass",
-                content = generatedClass
+                content = generatedClass,
               ),
             )
-          }
+          },
       )
       .toList()
   }

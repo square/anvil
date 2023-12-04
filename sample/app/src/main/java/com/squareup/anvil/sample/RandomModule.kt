@@ -16,10 +16,13 @@ object RandomModule {
   @Provides
   fun provideRandomNumber() = Random.nextInt()
 
-  @Provides @Named("random") fun provideString(number: Int): String = "Hello! $number"
+  @Provides
+  @Named("random")
+  fun provideString(number: Int): String = "Hello! $number"
 }
 
 @ContributesTo(AppScope::class)
 interface RandomComponent {
-  @Named("random") fun string(): String
+  @Named("random")
+  fun string(): String
 }

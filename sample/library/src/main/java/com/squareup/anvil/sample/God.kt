@@ -10,5 +10,6 @@ enum class God(val parent: Parent) {
 }
 
 enum class Parent {
-  FATHER, MOTHER
+  FATHER,
+  MOTHER,
 }

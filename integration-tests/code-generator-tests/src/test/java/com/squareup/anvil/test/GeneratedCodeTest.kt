@@ -101,18 +101,18 @@ class GeneratedCodeTest {
   class ContributedBindingClass @Inject constructor(
     // Keep the fully qualified name, otherwise the one specific error from
     // https://github.com/square/anvil/issues/310 can't be reproduced.
-    val binding: generated.test.com.squareup.anvil.test.Binding
+    val binding: generated.test.com.squareup.anvil.test.Binding,
   )
 
   class AssistedClass @Inject constructor(
     // Keep the fully qualified name, otherwise the one specific error from
     // https://github.com/square/anvil/issues/326 can't be reproduced.
-    val sampleAssistedFactory: generated.test.com.squareup.anvil.test.SampleAssistedFactory
+    val sampleAssistedFactory: generated.test.com.squareup.anvil.test.SampleAssistedFactory,
   )
 
   class OtherClass @Inject constructor(
     // Keep the fully qualified name, otherwise the one specific error from
     // https://github.com/square/anvil/issues/283 can't be reproduced.
-    val injectClass: generated.test.com.squareup.anvil.test.InjectClass
+    val injectClass: generated.test.com.squareup.anvil.test.InjectClass,
   )
 }

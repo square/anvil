@@ -11,11 +11,11 @@ public interface MiddleType : ParentType
 
 @ContributesBinding(
   scope = AppScope::class,
-  boundType = ParentType::class
+  boundType = ParentType::class,
 )
 @ContributesMultibinding(
   scope = AppScope::class,
-  boundType = ParentType::class
+  boundType = ParentType::class,
 )
 public class AppBinding @Inject constructor() : MiddleType
 

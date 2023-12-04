@@ -7,7 +7,7 @@ public interface PriorityBinding
 
 @ContributesBinding(
   scope = AppScope::class,
-  priority = HIGH
+  priority = HIGH,
 )
 public object PriorityBindingHigh : PriorityBinding
 
