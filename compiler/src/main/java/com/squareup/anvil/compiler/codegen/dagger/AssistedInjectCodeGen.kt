@@ -1,6 +1,13 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
+import com.google.devtools.ksp.processing.SymbolProcessorProvider
+import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFunctionDeclaration
+import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
@@ -8,21 +15,31 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.injectConstructor
-import com.squareup.anvil.compiler.internal.asClassName
-import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
+import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
+import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.injectConstructors
+import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
+import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.safePackageString
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.jvm.jvmStatic
+import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
+import com.squareup.kotlinpoet.ksp.toTypeVariableName
+import com.squareup.kotlinpoet.ksp.writeTo
+import dagger.assisted.AssistedInject
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -37,56 +54,130 @@ import java.io.File
  * class AssistedService_Factory { .. }
  * ```
  */
-@AutoService(CodeGenerator::class)
-internal class AssistedInjectGenerator : PrivateCodeGenerator() {
+object AssistedInjectCodeGen : AnvilApplicabilityChecker {
 
   override fun isApplicable(context: AnvilContext) = context.generateFactories
 
-  override fun generateCodePrivate(
-    codeGenDir: File,
-    module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>,
-  ) {
-    projectFiles
-      .classAndInnerClassReferences(module)
-      .forEach { clazz ->
-        clazz.constructors
-          .injectConstructor()
-          ?.takeIf { it.isAnnotatedWith(assistedInjectFqName) }
-          ?.let {
-            generateFactoryClass(codeGenDir, clazz, it)
+  internal class KspGenerator(
+    override val env: SymbolProcessorEnvironment,
+  ) : AnvilSymbolProcessor() {
+    @AutoService(SymbolProcessorProvider::class)
+    class Provider : AnvilSymbolProcessorProvider(AssistedInjectCodeGen, ::KspGenerator)
+
+    override fun processChecked(resolver: Resolver): List<KSAnnotated> {
+      resolver.injectConstructors()
+        .forEach { (clazz, constructor) ->
+          if (!constructor.isAnnotationPresent<AssistedInject>()) {
+            // Only generating @AssistedInject constructors
+            return@forEach
           }
-      }
+          generateFactoryClass(
+            clazz = clazz,
+            constructor = constructor,
+          )
+            .writeTo(env.codeGenerator, aggregating = false, listOf(constructor.containingFile!!))
+        }
+      return emptyList()
+    }
+
+    private fun generateFactoryClass(
+      clazz: KSClassDeclaration,
+      constructor: KSFunctionDeclaration,
+    ): FileSpec {
+      val typeParameterResolver = clazz.typeParameters.toTypeParameterResolver()
+      val constructorParameters = constructor.parameters
+        .mapToConstructorParameters(typeParameterResolver)
+      val memberInjectParameters = clazz.memberInjectParameters()
+      val typeParameters = clazz.typeParameters
+
+      val spec = generateFactoryClass(
+        clazz = clazz.toClassName(),
+        memberInjectParameters = memberInjectParameters,
+        typeParameters = typeParameters.map { it.toTypeVariableName(typeParameterResolver) },
+        constructorParameters = constructorParameters,
+        onError = { message ->
+          throw KspAnvilException(
+            message = message,
+            node = constructor,
+          )
+        },
+      )
+
+      return spec
+    }
+  }
+
+  @AutoService(CodeGenerator::class)
+  internal class Embedded : PrivateCodeGenerator() {
+
+    override fun isApplicable(context: AnvilContext) = AssistedInjectCodeGen.isApplicable(context)
+
+    override fun generateCodePrivate(
+      codeGenDir: File,
+      module: ModuleDescriptor,
+      projectFiles: Collection<KtFile>,
+    ) {
+      projectFiles
+        .classAndInnerClassReferences(module)
+        .forEach { clazz ->
+          clazz.constructors
+            .injectConstructor()
+            ?.takeIf { it.isAnnotatedWith(assistedInjectFqName) }
+            ?.let {
+              generateFactoryClass(codeGenDir, clazz, it)
+            }
+        }
+    }
+
+    private fun generateFactoryClass(
+      codeGenDir: File,
+      clazz: ClassReference.Psi,
+      constructor: MemberFunctionReference.Psi,
+    ): GeneratedFile {
+      val constructorParameters = constructor.parameters.mapToConstructorParameters()
+      val memberInjectParameters = clazz.memberInjectParameters()
+      val typeParameters = clazz.typeParameters
+
+      val spec = generateFactoryClass(
+        clazz = clazz.asClassName(),
+        memberInjectParameters = memberInjectParameters,
+        typeParameters = typeParameters.map { it.typeVariableName },
+        constructorParameters = constructorParameters,
+        onError = { message ->
+          throw AnvilCompilationExceptionClassReference(
+            message = message,
+            classReference = clazz,
+          )
+        },
+      )
+
+      return createGeneratedFile(codeGenDir, spec.packageName, spec.name, spec.toString())
+    }
   }
 
   private fun generateFactoryClass(
-    codeGenDir: File,
-    clazz: ClassReference.Psi,
-    constructor: MemberFunctionReference.Psi,
-  ): GeneratedFile {
-    val packageName = clazz.packageFqName.safePackageString()
-    val classIdName = clazz.generateClassName(suffix = "_Factory")
-    val className = classIdName.relativeClassName.asString()
-
-    val constructorParameters = constructor.parameters.mapToConstructorParameters()
-    val memberInjectParameters = clazz.memberInjectParameters()
+    clazz: ClassName,
+    memberInjectParameters: List<MemberInjectParameter>,
+    typeParameters: List<TypeVariableName>,
+    constructorParameters: List<ConstructorParameter>,
+    onError: (String) -> Nothing,
+  ): FileSpec {
+    val packageName = clazz.packageName
+    val factoryClass = clazz.generateClassName(suffix = "_Factory")
 
     val parameters = constructorParameters + memberInjectParameters
     val parametersAssisted = parameters.filter { it.isAssisted }
     val parametersNotAssisted = parameters.filterNot { it.isAssisted }
 
-    checkAssistedParametersAreDistinct(clazz, parametersAssisted)
+    checkAssistedParametersAreDistinct(parametersAssisted, onError)
 
-    val typeParameters = clazz.typeParameters
+    val factoryClassParameterized = factoryClass.optionallyParameterizedByNames(typeParameters)
+    val classType = clazz.optionallyParameterizedByNames(typeParameters)
 
-    val factoryClass = classIdName.asClassName()
-    val factoryClassParameterized = factoryClass.optionallyParameterizedBy(typeParameters)
-    val classType = clazz.asClassName().optionallyParameterizedBy(typeParameters)
-
-    val content = FileSpec.buildFile(packageName, className) {
+    val spec = FileSpec.createAnvilSpec(packageName, factoryClass.simpleName) {
       TypeSpec.classBuilder(factoryClass)
         .apply {
-          typeParameters.forEach { addTypeVariable(it.typeVariableName) }
+          addTypeVariables(typeParameters)
 
           primaryConstructor(
             FunSpec.constructorBuilder()
@@ -138,7 +229,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
                 .jvmStatic()
                 .apply {
                   if (typeParameters.isNotEmpty()) {
-                    addTypeVariables(typeParameters.map { it.typeVariableName })
+                    addTypeVariables(typeParameters)
                   }
                   parametersNotAssisted.forEach { parameter ->
                     addParameter(parameter.name, parameter.providerTypeName)
@@ -162,7 +253,7 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
                 .jvmStatic()
                 .apply {
                   if (typeParameters.isNotEmpty()) {
-                    addTypeVariables(typeParameters.map { it.typeVariableName })
+                    addTypeVariables(typeParameters)
                   }
                   constructorParameters.forEach { parameter ->
                     addParameter(
@@ -186,12 +277,12 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
         .let { addType(it) }
     }
 
-    return createGeneratedFile(codeGenDir, packageName, className, content)
+    return spec
   }
 
   private fun checkAssistedParametersAreDistinct(
-    clazz: ClassReference,
     parameters: List<Parameter>,
+    onError: (String) -> Nothing,
   ) {
     // Parameters are identical, if there types and identifier match.
     val duplicateAssistedParameters = parameters
@@ -219,6 +310,6 @@ internal class AssistedInjectGenerator : PrivateCodeGenerator() {
       append(parameter.typeName)
     }
 
-    throw AnvilCompilationExceptionClassReference(message = errorMessage, classReference = clazz)
+    onError(errorMessage)
   }
 }

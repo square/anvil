@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
@@ -11,8 +12,8 @@ import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.membersInjector
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.nestedInjectClass
+import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
@@ -33,14 +34,13 @@ import kotlin.test.assertFailsWith
 @RunWith(Parameterized::class)
 class MembersInjectorGeneratorTest(
   private val useDagger: Boolean,
+  private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
+    @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
-    }
+    fun params() = useDaggerAndKspParams()
   }
 
   @Test fun `a factory class is generated for a field injection`() {
@@ -2513,6 +2513,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     generateDaggerFactories = !useDagger,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
+    mode = mode,
     block = block,
   )
 }

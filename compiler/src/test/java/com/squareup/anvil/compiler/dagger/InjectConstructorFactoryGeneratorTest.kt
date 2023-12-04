@@ -1,14 +1,16 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.compilationErrorLine
 import com.squareup.anvil.compiler.injectClass
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
@@ -25,14 +27,13 @@ import javax.inject.Provider
 @RunWith(Parameterized::class)
 class InjectConstructorFactoryGeneratorTest(
   private val useDagger: Boolean,
+  private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
+    @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
-    }
+    fun params() = useDaggerAndKspParams()
   }
 
   @Test fun `a factory class is generated for an inject constructor without arguments`() {
@@ -2552,8 +2553,7 @@ public class InjectClass_Factory<T : List<String>>(
     ) {
       assertThat(exitCode).isError()
       assertThat(
-        messages.lines()
-          .first { it.startsWith("e:") }
+        compilationErrorLine()
           .removeParametersAndSort(),
       ).contains(
         "Type com.squareup.test.InjectClass may only contain one injected constructor. " +
@@ -2745,6 +2745,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     // Many constructor parameters are unused.
     allWarningsAsErrors = false,
     previousCompilationResult = previousCompilationResult,
+    mode = mode,
     block = block,
   )
 }

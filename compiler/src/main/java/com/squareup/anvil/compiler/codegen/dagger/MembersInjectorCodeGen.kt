@@ -1,15 +1,24 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
+import com.google.devtools.ksp.isPrivate
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
+import com.google.devtools.ksp.processing.SymbolProcessorProvider
+import com.google.devtools.ksp.symbol.KSAnnotated
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
+import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
+import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.injectFqName
-import com.squareup.anvil.compiler.internal.asClassName
-import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
@@ -17,6 +26,7 @@ import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferenc
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.OVERRIDE
@@ -24,58 +34,115 @@ import com.squareup.kotlinpoet.KModifier.PRIVATE
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
+import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.toTypeVariableName
+import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.MembersInjector
 import dagger.internal.InjectedFieldSignature
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
-@AutoService(CodeGenerator::class)
-internal class MembersInjectorGenerator : PrivateCodeGenerator() {
-
+internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext) = context.generateFactories
 
-  override fun generateCodePrivate(
-    codeGenDir: File,
-    module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>,
-  ) {
-    projectFiles
-      .classAndInnerClassReferences(module)
-      .filterNot { it.isInterface() }
-      .forEach { clazz ->
-        // Only generate a MembersInjector if the target class declares its own member-injected
-        // properties. If it does, then any properties from superclasses must be added as well
-        // (clazz.memberInjectParameters() will do this).
-        clazz.properties
-          .filter { it.visibility() != Visibility.PRIVATE }
-          .filter { it.isAnnotatedWith(injectFqName) }
-          .ifEmpty { return@forEach }
+  internal class KspGenerator(
+    override val env: SymbolProcessorEnvironment,
+  ) : AnvilSymbolProcessor() {
+    @AutoService(SymbolProcessorProvider::class)
+    class Provider : AnvilSymbolProcessorProvider(MembersInjectorCodeGen, ::KspGenerator)
 
-        generateMembersInjectorClass(
-          codeGenDir = codeGenDir,
-          clazz = clazz,
-          parameters = clazz.memberInjectParameters(),
-        )
-      }
+    override fun processChecked(resolver: Resolver): List<KSAnnotated> {
+      resolver.getSymbolsWithAnnotation(injectFqName.asString())
+        .filterIsInstance<KSPropertyDeclaration>()
+        .filterNot { it.isPrivate() }
+        .filter { it.parentDeclaration is KSClassDeclaration }
+        .groupBy { it.parentDeclaration as KSClassDeclaration }
+        .forEach { (clazz, _) ->
+          val typeParameters = clazz.typeParameters
+            .map { it.toTypeVariableName() }
+          val isGeneric = typeParameters.isNotEmpty()
+
+          generateMembersInjectorClass(
+            origin = clazz.toClassName(),
+            isGeneric = isGeneric,
+            typeParameters = typeParameters,
+            parameters = clazz.memberInjectParameters(),
+          )
+            .writeTo(env.codeGenerator, aggregating = false, listOf(clazz.containingFile!!))
+        }
+
+      return emptyList()
+    }
+  }
+
+  @AutoService(CodeGenerator::class)
+  internal class Embedded : PrivateCodeGenerator() {
+
+    override fun isApplicable(context: AnvilContext) = MembersInjectorCodeGen.isApplicable(context)
+
+    override fun generateCodePrivate(
+      codeGenDir: File,
+      module: ModuleDescriptor,
+      projectFiles: Collection<KtFile>,
+    ) {
+      projectFiles
+        .classAndInnerClassReferences(module)
+        .filterNot { it.isInterface() }
+        .forEach { clazz ->
+          // Only generate a MembersInjector if the target class declares its own member-injected
+          // properties. If it does, then any properties from superclasses must be added as well
+          // (clazz.memberInjectParameters() will do this).
+          clazz.properties
+            .filter { it.visibility() != Visibility.PRIVATE }
+            .filter { it.isAnnotatedWith(injectFqName) }
+            .ifEmpty { return@forEach }
+
+          generateMembersInjectorClass(
+            codeGenDir = codeGenDir,
+            clazz = clazz,
+            parameters = clazz.memberInjectParameters(),
+          )
+        }
+    }
+
+    private fun generateMembersInjectorClass(
+      codeGenDir: File,
+      clazz: ClassReference.Psi,
+      parameters: List<MemberInjectParameter>,
+    ): GeneratedFile {
+      val isGeneric = clazz.isGenericClass()
+      val typeParameters = clazz.typeParameters
+        .map { it.typeVariableName }
+
+      val spec = generateMembersInjectorClass(
+        origin = clazz.asClassName(),
+        isGeneric = isGeneric,
+        typeParameters = typeParameters,
+        parameters = parameters,
+      )
+
+      return createGeneratedFile(codeGenDir, spec.packageName, spec.name, spec.toString())
+    }
   }
 
   private fun generateMembersInjectorClass(
-    codeGenDir: File,
-    clazz: ClassReference.Psi,
+    origin: ClassName,
+    isGeneric: Boolean,
+    typeParameters: List<TypeVariableName>,
     parameters: List<MemberInjectParameter>,
-  ): GeneratedFile {
-    val classId = clazz.generateClassName(suffix = "_MembersInjector")
-    val packageName = classId.packageFqName.safePackageString()
-    val className = classId.relativeClassName.asString()
-    val typeParameters = clazz.typeParameters
+  ): FileSpec {
+    val memberInjectorClass = origin.generateClassName(suffix = "_MembersInjector")
+    val packageName = memberInjectorClass.packageName.safePackageString()
+    val fileName = memberInjectorClass.simpleName
 
-    val classType = clazz.asClassName()
+    val classType = origin
       .let {
-        if (clazz.isGenericClass()) {
-          it.parameterizedBy(typeParameters.map { typeParameter -> typeParameter.typeVariableName })
+        if (isGeneric) {
+          it.parameterizedBy(typeParameters)
         } else {
           it
         }
@@ -92,16 +159,14 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
         .joinToString()
     }
 
-    val memberInjectorClass = classId.asClassName()
-
-    val content = FileSpec.buildFile(packageName, className) {
+    val spec = FileSpec.createAnvilSpec(packageName, fileName) {
       addType(
         TypeSpec
           .classBuilder(memberInjectorClass)
           .addSuperinterface(membersInjectorType)
           .apply {
             typeParameters.forEach { typeParameter ->
-              addTypeVariable(typeParameter.typeVariableName)
+              addTypeVariable(typeParameter)
             }
             primaryConstructor(
               FunSpec.constructorBuilder()
@@ -137,7 +202,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                   .jvmStatic()
                   .apply {
                     typeParameters.forEach { typeParameter ->
-                      addTypeVariable(typeParameter.typeVariableName)
+                      addTypeVariable(typeParameter)
                     }
 
                     parameters.forEach { parameter ->
@@ -165,7 +230,7 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
                         .jvmStatic()
                         .apply {
                           typeParameters.forEach { typeParameter ->
-                            addTypeVariable(typeParameter.typeVariableName)
+                            addTypeVariable(typeParameter)
                           }
 
                           // Don't add @InjectedFieldSignature when it's calling a setter method
@@ -191,6 +256,6 @@ internal class MembersInjectorGenerator : PrivateCodeGenerator() {
       )
     }
 
-    return createGeneratedFile(codeGenDir, packageName, className, content)
+    return spec
   }
 }

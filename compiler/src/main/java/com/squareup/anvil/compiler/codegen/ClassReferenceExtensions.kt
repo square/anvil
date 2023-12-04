@@ -127,7 +127,10 @@ internal fun <T : MemberFunctionReference> Collection<T>.injectConstructor(): T?
         constructor.annotations.joinToString(" ", postfix = " ")
           // We special-case @Inject to match Dagger using the non-fully-qualified name
           .replace("@javax.inject.Inject", "@Inject") +
-          constructor.fqName.toString().replace(".<init>", "")
+          constructor.fqName.toString().replace(".<init>", "") +
+          constructor.parameters.joinToString(", ", prefix = "(", postfix = ")") { param ->
+            param.type().asClassReference().shortName
+          }
       }.joinToString()
       throw AnvilCompilationExceptionClassReference(
         classReference = constructors[0].declaringClass,

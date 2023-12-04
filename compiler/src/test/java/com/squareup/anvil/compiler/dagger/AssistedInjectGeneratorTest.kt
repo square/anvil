@@ -3,12 +3,14 @@ package com.squareup.anvil.compiler.dagger
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.assistedService
+import com.squareup.anvil.compiler.compilationErrorLine
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -20,14 +22,13 @@ import javax.inject.Provider
 @RunWith(Parameterized::class)
 class AssistedInjectGeneratorTest(
   private val useDagger: Boolean,
+  private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
+    @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
-    }
+    fun params() = useDaggerAndKspParams()
   }
 
   @Test fun `a factory class is generated with one assisted parameter`() {
@@ -632,8 +633,7 @@ public final class AssistedService_Factory {
     ) {
       assertThat(exitCode).isError()
       assertThat(
-        messages.lines()
-          .first { it.startsWith("e:") }
+        compilationErrorLine()
           .removeParametersAndSort(),
       ).contains(
         "Type com.squareup.test.AssistedService may only contain one injected constructor. " +
@@ -662,8 +662,7 @@ public final class AssistedService_Factory {
     ) {
       assertThat(exitCode).isError()
       assertThat(
-        messages.lines()
-          .first { it.startsWith("e:") }
+        compilationErrorLine()
           .removeParametersAndSort(),
       ).contains(
         "Type com.squareup.test.AssistedService may only contain one injected constructor. " +
@@ -681,6 +680,7 @@ public final class AssistedService_Factory {
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
+    mode = mode,
     block = block,
   )
 }

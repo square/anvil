@@ -1,15 +1,19 @@
 package com.squareup.anvil.compiler
 
+import com.google.common.collect.Lists.cartesianProduct
 import com.google.common.truth.ComparableSubject
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
+import com.tschuchort.compiletesting.CompilationResult
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
@@ -187,4 +191,39 @@ internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode)
   }
   return dirToSearch.walkTopDown()
     .filter { it.isFile && it.extension == "kt" }
+}
+
+/**
+ * Parameters for configuring [AnvilCompilationMode] and whether to run a full test run or not.
+ */
+internal fun useDaggerAndKspParams(
+  embeddedCreator: () -> Embedded? = { Embedded() },
+  kspCreator: () -> Ksp? = { Ksp() },
+): Collection<Any> {
+  return cartesianProduct(
+    listOf(
+      isFullTestRun(),
+      false,
+    ),
+    listOfNotNull(
+      embeddedCreator(),
+      kspCreator(),
+    ),
+  ).mapNotNull { (useDagger, mode) ->
+    if (useDagger == true && mode is Ksp) {
+      // TODO Dagger is not supported with KSP in Anvil's tests yet
+      null
+    } else {
+      arrayOf(useDagger, mode)
+    }
+  }.distinct()
+}
+
+/** In any failing compilation in KSP, it always prints this error line first. */
+private const val KSP_ERROR_HEADER = "e: Error occurred in KSP, check log for detail"
+
+internal fun CompilationResult.compilationErrorLine(): String {
+  return messages
+    .lineSequence()
+    .first { it.startsWith("e:") && KSP_ERROR_HEADER !in it }
 }

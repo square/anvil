@@ -7,10 +7,16 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.AnnotatedReference
 import com.squareup.anvil.compiler.internal.reference.TypeReference
 import com.squareup.anvil.compiler.internal.reference.canResolveFqName
+import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.Dynamic
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.LambdaTypeName
+import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.TypeVariableName
+import com.squareup.kotlinpoet.WildcardTypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import org.jetbrains.kotlin.descriptors.ClassDescriptor
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -140,3 +146,46 @@ public fun FileSpec.Companion.createAnvilSpec(
     }
     .addFileComment(generatorComment)
     .build()
+
+/**
+ * For `Map<String, Int>` this will return [`String`, `Int`]. For star projections like
+ * `List<*>` the result will be mapped to [Any].
+ */
+public val TypeName.unwrappedTypes: List<TypeName> get() {
+  return when (this) {
+    is ParameterizedTypeName -> typeArguments
+    else -> emptyList()
+  }
+}
+
+/**
+ * Returns the result of [findRawType] or throws.
+ */
+public fun TypeName.requireRawType(): ClassName {
+  return findRawType() ?: error("Cannot get raw type from $this")
+}
+
+/**
+ * Returns the raw type for this [TypeName] or null if one can't be resolved.
+ */
+public fun TypeName.findRawType(): ClassName? {
+  return when (this) {
+    is ClassName -> this
+    is ParameterizedTypeName -> rawType
+    is TypeVariableName -> ANY
+    is WildcardTypeName -> outTypes.first().findRawType()
+    is LambdaTypeName -> {
+      var count = parameters.size
+      if (receiver != null) {
+        count++
+      }
+      val functionSimpleName = if (count >= 23) {
+        "FunctionN"
+      } else {
+        "Function$count"
+      }
+      ClassName("kotlin.jvm.functions", functionSimpleName)
+    }
+    Dynamic -> null
+  }
+}
