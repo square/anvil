@@ -1,9 +1,9 @@
 plugins {
+  alias libs.plugins.gradlePublish
+  alias libs.plugins.buildconfig
   id 'conventions.library'
   id 'conventions.publish'
   id 'conventions.gradle-tests'
-  alias libs.plugins.buildconfig
-  alias libs.plugins.gradlePublish
   id 'java-gradle-plugin'
 }
 

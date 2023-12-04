@@ -4,11 +4,12 @@ import com.rickbusarow.kgx.dependsOn
 import com.rickbusarow.kgx.extras
 import com.rickbusarow.kgx.getOrNullAs
 import com.rickbusarow.kgx.mustRunAfter
+import com.rickbusarow.kgx.pluginId
 import com.squareup.anvil.conventions.utils.gradlePublishingExtension
+import com.squareup.anvil.conventions.utils.libs
 import com.vanniktech.maven.publish.JavadocJar.Dokka
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
-import com.vanniktech.maven.publish.Platform
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.maven.MavenPublication
@@ -25,13 +26,13 @@ open class PublishConventionPlugin : Plugin<Project> {
     target.plugins.apply("com.vanniktech.maven.publish.base")
     target.plugins.apply("org.jetbrains.dokka")
 
-    target.tasks.named("dokkaHtml")
+    target.tasks.named(DOKKA_HTML)
       .mustRunAfter(target.tasks.withType(KaptTask::class.java))
 
     val mavenPublishing = target.extensions
       .getByType(MavenPublishBaseExtension::class.java)
 
-    val pluginPublishId = "com.gradle.plugin-publish"
+    val pluginPublishId = target.libs.plugins.gradlePublish.pluginId
 
     @Suppress("UnstableApiUsage")
     mavenPublishing.pomFromGradleProperties()
@@ -45,13 +46,28 @@ open class PublishConventionPlugin : Plugin<Project> {
         }
 
         else -> {
-          configurePublication(
-            target,
-            mavenPublishing,
-            KotlinJvm(javadocJar = Dokka("dokkaHtml"), sourcesJar = true),
+          @Suppress("UnstableApiUsage")
+          mavenPublishing.configure(
+            platform = KotlinJvm(
+              javadocJar = Dokka(DOKKA_HTML),
+              sourcesJar = true,
+            ),
           )
+          target.plugins.withId(pluginPublishId) {
+            error(
+              "The '$pluginPublishId' plugin must be applied before the publishing " +
+                "convention plugin, so that plugin publishing isn't configured twice.",
+            )
+          }
         }
       }
+    }
+
+    // Fixes issues like:
+    // Task 'generateMetadataFileForMavenPublication' uses this output of task 'dokkaJavadocJar'
+    // without declaring an explicit or implicit dependency.
+    target.tasks.withType(GenerateModuleMetadata::class.java).configureEach {
+      it.mustRunAfter(target.tasks.withType(Jar::class.java))
     }
 
     // We publish all artifacts to `anvil/build/m2` for the plugin integration tests.
@@ -92,20 +108,8 @@ open class PublishConventionPlugin : Plugin<Project> {
     target.rootProject.tasks.named(PUBLISH_TO_BUILD_M2).dependsOn(publishToBuildM2)
   }
 
-  @Suppress("UnstableApiUsage")
-  private fun configurePublication(
-    target: Project,
-    mavenPublishing: MavenPublishBaseExtension,
-    platform: Platform,
-  ) {
-    mavenPublishing.configure(platform)
-
-    target.tasks.withType(GenerateModuleMetadata::class.java).configureEach {
-      it.mustRunAfter(target.tasks.withType(Jar::class.java))
-    }
-  }
-
   companion object {
+    internal const val DOKKA_HTML = "dokkaHtml"
     internal const val PUBLISH_TO_BUILD_M2 = "publishToBuildM2"
   }
 }
