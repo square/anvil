@@ -33,8 +33,7 @@ class CompositePlugin : Plugin<Project> {
 
       val newRequests = oldRequests.map { request ->
 
-        val originalSplit = request.args
-          .splitInclusive { !it.startsWith('-') }
+        val originalSplit = request.args.splitTaskArgs()
 
         val taskPaths = originalSplit.mapTo(mutableSetOf()) { it.first() }
 
@@ -57,12 +56,8 @@ class CompositePlugin : Plugin<Project> {
             return@flatMap listOf(taskWithArgs)
           }
 
-          val resolvedInRootBuild = target.tasks.namedOrNull(taskName)
-
           // Don't propagate help tasks
           if (taskName == "help") return@flatMap listOf(taskWithArgs)
-
-          val inRoot = resolvedInRootBuild != null
 
           val included = includedProjects.mapNotNull { includedProject ->
 
@@ -82,7 +77,12 @@ class CompositePlugin : Plugin<Project> {
           }
 
           buildList {
-            if (inRoot) {
+
+            // Looks to see if any project in this build has a task with this name.
+            val resolvedInRootBuild = target.allprojects
+              .any { project -> project.tasks.namedOrNull(taskName) != null }
+
+            if (resolvedInRootBuild) {
               add(taskWithArgs)
             }
             addAll(included)
@@ -96,18 +96,27 @@ class CompositePlugin : Plugin<Project> {
     }
   }
 
-  private inline fun <E> List<E>.splitInclusive(predicate: (E) -> Boolean): List<List<E>> {
+  private fun List<String>.splitTaskArgs(): List<List<String>> {
 
-    val toSplit = this@splitInclusive
+    val toSplit = this@splitTaskArgs
 
     if (toSplit.isEmpty()) return emptyList()
 
-    return toSplit.subList(1, toSplit.size)
-      .fold(mutableListOf(mutableListOf(toSplit[0]))) { acc: MutableList<MutableList<E>>, e ->
-        if (predicate(e)) {
-          acc.add(mutableListOf(e))
-        } else {
-          acc.last().add(e)
+    val args = toSplit.subList(1, toSplit.size)
+
+    return args
+      .fold(
+        mutableListOf(mutableListOf(toSplit[0])),
+      ) { acc: MutableList<MutableList<String>>, arg ->
+
+        val lastArg = acc.last().last()
+
+        when {
+          arg.startsWith('-') -> acc.last().add(arg)
+          // Matches 'foo' in `./gradlew test --tests foo`
+          // Does not match 'foo' in `./gradlew test --tests=foo`
+          lastArg.startsWith('-') && !lastArg.contains('=') -> acc.last().add(arg)
+          else -> acc.add(mutableListOf(arg))
         }
         acc
       }
