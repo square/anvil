@@ -346,7 +346,6 @@ object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
 
     val packageName = moduleClass.packageName.safePackageString()
     val className = buildString {
-      // TODO is this right? What's relativeClassName
       append(moduleClass.generateClassName().simpleNames.joinToString("_"))
       append('_')
       if (isCompanionObject) {
