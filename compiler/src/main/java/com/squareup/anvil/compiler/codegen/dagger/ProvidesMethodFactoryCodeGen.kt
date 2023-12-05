@@ -96,7 +96,7 @@ object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
             }
 
           val properties = classAndCompanion.flatMap { it.getDeclaredProperties() }
-            .filter { it.isAnnotationPresent<Provides>() }
+            .filter { it.isAnnotationPresent<Provides>() || it.getter?.isAnnotationPresent<Provides>() == true }
             .filter { property ->
               // Must be '@get:Provides'.
               (property.getKSAnnotationsByType(Provides::class).singleOrNull()?.useSiteTarget == GET) ||
