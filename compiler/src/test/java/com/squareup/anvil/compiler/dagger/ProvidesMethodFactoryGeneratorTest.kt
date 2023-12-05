@@ -2404,6 +2404,8 @@ public final class DaggerComponentInterface implements ComponentInterface {
 }
      */
 
+    // TODO component merging isn't possible with KSP yet
+    assumeFalse(mode is AnvilCompilationMode.Ksp)
     compile(
       """
       package com.squareup.test
@@ -2557,6 +2559,8 @@ public final class DaggerComponentInterface implements ComponentInterface {
       }
       """,
     ) {
+      // KSP always resolves the inferred return type
+      assumeFalse(mode is AnvilCompilationMode.Ksp)
       assumeFalse(useDagger)
 
       assertThat(exitCode).isError()

@@ -151,8 +151,7 @@ object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
 
     private fun CallableReference.Companion.from(function: KSFunctionDeclaration): CallableReference {
       val type = function.returnType?.resolve() ?: throw KspAnvilException(
-        message = "Dagger provider methods must specify the return type explicitly when using " +
-          "Anvil. The return type cannot be inferred implicitly.",
+        message = "Error occurred in type resolution and could not resolve return type.",
         node = function,
       )
       val typeName = type.toTypeName().withJvmSuppressWildcardsIfNeeded(function, type)
