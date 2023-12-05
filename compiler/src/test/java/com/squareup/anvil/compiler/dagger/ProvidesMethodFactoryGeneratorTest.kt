@@ -15,7 +15,6 @@ import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode

@@ -81,7 +81,9 @@ object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         .filterIsInstance<KSClassDeclaration>()
         .forEach { clazz ->
           val classAndCompanion = sequenceOf(clazz)
-            .plus(clazz.declarations.filterIsInstance<KSClassDeclaration>().filter { it.isCompanionObject })
+            .plus(
+              clazz.declarations.filterIsInstance<KSClassDeclaration>().filter { it.isCompanionObject },
+            )
 
           val functions = classAndCompanion.flatMap { it.getDeclaredFunctions() }
             .filter { it.isAnnotationPresent<Provides>() }
@@ -100,7 +102,7 @@ object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
             .filter { property ->
               // Must be '@get:Provides'.
               (property.getKSAnnotationsByType(Provides::class).singleOrNull()?.useSiteTarget == GET) ||
-              property.getter?.isAnnotationPresent<Provides>() == true
+                property.getter?.isAnnotationPresent<Provides>() == true
             }
             .map { property ->
               CallableReference.from(property)
@@ -124,7 +126,6 @@ object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         }
       return emptyList()
     }
-
 
     private fun checkFunctionIsNotAbstract(
       clazz: KSClassDeclaration,
@@ -160,7 +161,9 @@ object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         isCompanionObject = function.closestClassDeclaration()?.isCompanionObject == true,
         name = function.simpleName.asString(),
         isProperty = false,
-        constructorParameters = function.parameters.mapToConstructorParameters(function.typeParameters.toTypeParameterResolver()),
+        constructorParameters = function.parameters.mapToConstructorParameters(
+          function.typeParameters.toTypeParameterResolver(),
+        ),
         type = typeName,
         isNullable = type.isMarkedNullable,
         isPublishedApi = function.isAnnotationPresent<PublishedApi>(),
@@ -186,7 +189,9 @@ object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
   @AutoService(CodeGenerator::class)
   internal class Embedded : PrivateCodeGenerator() {
 
-    override fun isApplicable(context: AnvilContext) = ProvidesMethodFactoryCodeGen.isApplicable(context)
+    override fun isApplicable(context: AnvilContext) = ProvidesMethodFactoryCodeGen.isApplicable(
+      context,
+    )
 
     override fun generateCodePrivate(
       codeGenDir: File,
@@ -352,7 +357,7 @@ object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       }
       append(declarationName.capitalize())
       if (isMangled) {
-        append("\$${mangledNameSuffix}")
+        append("\$$mangledNameSuffix")
       }
       append("Factory")
     }
@@ -368,7 +373,7 @@ object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
 
     val byteCodeFunctionName = when {
       useGetPrefix -> "get" + callableName.capitalize()
-      isMangled -> "$callableName\$${mangledNameSuffix}"
+      isMangled -> "$callableName\$$mangledNameSuffix"
       else -> callableName
     }
 
