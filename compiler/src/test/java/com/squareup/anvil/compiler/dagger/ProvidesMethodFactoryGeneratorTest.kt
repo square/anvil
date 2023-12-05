@@ -3267,6 +3267,8 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
       enableDagger = true,
       previousCompilationResult = otherModuleResult,
     ) {
+      // TODO component generation isn't possible with KSP yet
+      assumeFalse(mode is AnvilCompilationMode.Ksp)
       // We are not able to directly assert that @JvmSuppressWildcards was added because it is
       // lost as part of converting to bytecode. However, we know that this would fail with an
       // 'incompatible types' error if the annotation had not been included.
@@ -3350,6 +3352,8 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
       enableDagger = true,
       previousCompilationResult = otherModuleResult,
     ) {
+      // TODO component generation isn't possible with KSP yet
+      assumeFalse(mode is AnvilCompilationMode.Ksp)
       // We are not able to directly assert that @JvmSuppressWildcards was added because it is
       // lost as part of converting to bytecode. However, we know that this would fail with an
       // 'incompatible types' error if the annotation had not been included.
