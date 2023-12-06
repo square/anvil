@@ -5,70 +5,26 @@ pluginManagement {
     mavenCentral()
   }
 
-  includeBuild('build-logic')
-  includeBuild('gradle-plugin-build-logic')
+  includeBuild 'build-logic/conventions'
+  includeBuild 'build-logic/settings'
+}
+
+plugins {
+  id 'com.squareup.anvil.gradle-settings'
 }
 
 rootProject.name = 'anvil'
-
-dependencyResolutionManagement {
-  versionCatalogs {
-    libs {
-      System.properties.each { key, value ->
-        if (key.toString().startsWith("override_")) {
-          String catalogKey = key.substring("override_".length())
-          println "Overriding $catalogKey with $value"
-          version(catalogKey, value.toString())
-
-          if (catalogKey == "kotlin") {
-            // TODO hardcoded to match what's in libs.versions.toml, but kinda ugly
-            String kspPartialVersion = "1.0.13"
-            if (value.toString().startsWith("1.8")) {
-              // Latest KSP releases currently don't support Kotlin 1.8.x
-              kspPartialVersion = "1.0.11"
-            }
-            println "Overriding ksp with $value-$kspPartialVersion"
-            version("ksp", "$value-$kspPartialVersion")
-          }
-        }
-      }
-    }
-  }
-
-  repositories {
-    google()
-    mavenCentral()
-    if (hasProperty("anvil.allowSnapshots")) {
-      maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev' }
-      maven { url 'https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap' }
-      maven { url 'https://s01.oss.sonatype.org/content/repositories/snapshots' }
-      maven { url "https://oss.sonatype.org/content/repositories/snapshots" }
-    }
-  }
-}
 
 include ':annotations'
 include ':annotations-optional'
 include ':compiler'
 include ':compiler-api'
 include ':compiler-utils'
-include ':integration-tests:code-generator'
-include ':integration-tests:code-generator-tests'
-include ':integration-tests:dagger-factories-only'
-include ':integration-tests:library'
-include ':integration-tests:mpp:android-module'
-include ':integration-tests:mpp:jvm-module'
-include ':integration-tests:tests'
-include ':sample:app'
-include ':sample:library'
-include ':sample:scopes'
-
 include ':gradle-plugin'
 
-includeBuild('gradle-plugin-build-logic')
-
-// Include the benchmark modules if they exist.
-def benchmarkSettingsFile = file('benchmark/settings.gradle')
-if (benchmarkSettingsFile.exists()) {
-  apply from: benchmarkSettingsFile
+// The delegate build is only necessary for convenience, when this build is the root.
+// If this build is being included elsewhere, there's no need for it. If the root build is actually
+// the delegate build, then including it here would create a circular dependency.
+if (gradle.parent == null) {
+  includeBuild 'build-logic/delegate'
 }

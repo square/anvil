@@ -3,8 +3,9 @@ import com.android.builder.core.BuilderConstants
 plugins {
   alias(libs.plugins.agp.application)
   alias(libs.plugins.kotlin.android)
-  alias(libs.plugins.kotlin.kapt)
-  id("com.squareup.anvil")
+  alias libs.plugins.kotlin.kapt
+  id 'com.squareup.anvil'
+  id 'conventions.minimal'
 }
 
 android {

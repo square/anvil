@@ -1,13 +1,13 @@
 plugins {
-  id 'com.squareup.anvil.library'
-  id 'com.squareup.anvil.publish'
+  id 'conventions.library'
+  id 'conventions.publish'
 }
 
 publish {
   configurePom(
-      artifactId: 'compiler-api',
-      pomName: 'Anvil Compiler API',
-      pomDescription: 'API definitions for creating custom code generators that integrate with Anvil'
+    artifactId: 'compiler-api',
+    pomName: 'Anvil Compiler API',
+    pomDescription: 'API definitions for creating custom code generators that integrate with Anvil'
   )
 }
 

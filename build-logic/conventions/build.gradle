@@ -1,0 +1,55 @@
+plugins {
+  alias libs.plugins.kotlin.jvm
+  alias libs.plugins.ktlint
+  id 'java-gradle-plugin'
+}
+
+gradlePlugin {
+  plugins {
+    gradleTests {
+      id = 'conventions.gradle-tests'
+      implementationClass = 'com.squareup.anvil.conventions.GradleTestsPlugin'
+    }
+    library {
+      id = 'conventions.library'
+      implementationClass = 'com.squareup.anvil.conventions.LibraryPlugin'
+    }
+    minimalSupport {
+      id = 'conventions.minimal'
+      implementationClass = 'com.squareup.anvil.conventions.MinimalSupportPlugin'
+    }
+    publish {
+      id = 'conventions.publish'
+      implementationClass = 'com.squareup.anvil.conventions.PublishConventionPlugin'
+    }
+    root {
+      id = 'conventions.root'
+      implementationClass = 'com.squareup.anvil.conventions.RootPlugin'
+    }
+  }
+}
+
+kotlin {
+  jvmToolchain {
+    languageVersion.set(JavaLanguageVersion.of(11))
+  }
+}
+
+ktlint {
+  version = libs.versions.ktlint.get()
+}
+
+dependencies {
+  compileOnly gradleApi()
+
+  api libs.ktlintRaw
+  api libs.kotlinpoet
+  api libs.kgx
+
+  api libs.kotlin.dokka
+  api libs.kotlin.gradlePlugin
+  api libs.mavenPublishRaw
+
+  // Expose the generated version catalog API to the plugins.
+  implementation files(libs.getClass().superclass.protectionDomain.codeSource.location)
+}

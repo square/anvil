@@ -1,13 +1,13 @@
 plugins {
-  id 'com.squareup.anvil.library'
-  id 'com.squareup.anvil.publish'
+  id 'conventions.library'
+  id 'conventions.publish'
 }
 
 publish {
   configurePom(
-      artifactId: 'annotations',
-      pomName: 'Anvil Annotations',
-      pomDescription: 'Annotations used to mark classes and methods for code generation in Anvil'
+    artifactId: 'annotations',
+    pomName: 'Anvil Annotations',
+    pomDescription: 'Annotations used to mark classes and methods for code generation in Anvil'
   )
 }
 

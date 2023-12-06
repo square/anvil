@@ -1,126 +1,24 @@
-import org.gradle.api.internal.project.DefaultProject
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
-  alias(libs.plugins.agp.application) apply false
-  alias(libs.plugins.agp.library) apply false
-  alias(libs.plugins.gradlePublish) apply false
-  alias(libs.plugins.kotlin.android) apply false
-  alias(libs.plugins.kotlin.dokka) apply false
-  alias(libs.plugins.kotlin.jvm) apply false
-  alias(libs.plugins.kotlin.kapt) apply false
-  alias(libs.plugins.kotlin.multiplatform) apply false
-  alias(libs.plugins.ktlint) apply false
-  alias(libs.plugins.mavenPublishBase) apply false
-  id 'com.squareup.anvil.root'
-  id 'com.squareup.anvil' apply false
+  alias libs.plugins.agp.application apply false
+  alias libs.plugins.agp.library apply false
+  alias libs.plugins.gradlePublish apply false
+  alias libs.plugins.kotlin.android apply false
+  alias libs.plugins.kotlin.dokka apply false
+  alias libs.plugins.kotlin.jvm apply false
+  alias libs.plugins.kotlin.kapt apply false
+  alias libs.plugins.kotlin.multiplatform apply false
+  alias libs.plugins.mavenPublishBase apply false
+  id 'conventions.root'
 }
 
-allprojects {
-  version = property("VERSION_NAME")
+// Delete orphaned files from previous builds.  These directories aren't used by a current project,
+// so `./gradlew clean` doesn't touch them.
+tasks.register('deleteOrphanedDirs', Delete) {
+  delete(
+    'buildSrc',
+    'gradle-plugin-build-logic',
+    'build-logic/.gradle',
+    'build-logic/build',
+  )
 }
-
-boolean isCi = (System.getenv('CI') ?: 'false').toBoolean()
-String kotlinVersion = libs.versions.kotlin.get()
-
-ext {
-  ci = isCi
-  fullTestRun = libs.versions.config.fullTestRun.get().toBoolean()
-  warningsAsErrors = isCi
-}
-
-println "Versions: " + [
-    "Kotlin": kotlinVersion,
-    "Gradle": gradle.gradleVersion,
-    "Full test run": ext.fullTestRun,
-]
-
-boolean configureOnDemandEnabled = getProperty("org.gradle.configureondemand", "false").toBoolean()
-
-subprojects {
-
-  tasks.withType(Test).configureEach {
-    testLogging {
-      events 'passed', 'failed', 'skipped', 'standardOut', 'standardError'
-      exceptionFormat 'FULL'
-      showCauses true
-      showExceptions true
-      showStackTraces true
-      showStandardStreams true
-    }
-  }
-
-  // Dynamically configure JVM targets because Dagger compiler always uses the java 11 @Generated
-  // annotation regardless of release target
-  boolean isIntegrationTestOrSample = project.path.startsWith(":integration-test") ||
-      project.path.startsWith(":sample")
-
-  pluginManager.withPlugin("java") {
-    // Use JDK 11 but target Java 8 for maximum compatibility.
-    java {
-      toolchain {
-        languageVersion.set(JavaLanguageVersion.of(11))
-      }
-    }
-
-    tasks.withType(JavaCompile).configureEach {
-      if (isIntegrationTestOrSample) {
-        options.release.set(11)
-      } else {
-        options.release.set(8)
-      }
-    }
-  }
-
-  tasks.withType(KotlinCompile).configureEach {
-    compilerOptions {
-      if (isIntegrationTestOrSample) {
-        jvmTarget.set(JvmTarget.JVM_11)
-      } else {
-        jvmTarget.set(JvmTarget.JVM_1_8)
-      }
-
-      allWarningsAsErrors.set(warningsAsErrors)
-      freeCompilerArgs.add("-opt-in=kotlin.RequiresOptIn")
-
-      boolean optInExperimental = project.name != "annotations"
-          && project.name != "annotations-optional"
-          && project.name != "scopes"
-          && project.name != "dagger-factories-only"
-      if (project.path != ':gradle-plugin' && optInExperimental) {
-        freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
-      }
-    }
-  }
-
-  configurations.configureEach {
-    resolutionStrategy.dependencySubstitution {
-      substitute module("com.squareup.anvil:annotations") using project(':annotations')
-      substitute module("com.squareup.anvil:annotations-optional") using project(':annotations-optional')
-      substitute module("com.squareup.anvil:compiler") using project(':compiler')
-      substitute module("com.squareup.anvil:compiler-api") using project(':compiler-api')
-      substitute module("com.squareup.anvil:compiler-utils") using project(':compiler-utils')
-    }
-
-    resolutionStrategy {
-      force libs.kotlin.metadata
-    }
-  }
-
-  // We disable configure on demand in the local gradle.properties, but you can override this flag
-  // either in the CLI command or in ~/.gradle/gradle.properties. We really need to disable
-  // configure on demand in order to support the dependency substitution feature above. As a
-  // workaround force the evaluation of subprojects.
-  //
-  // The other option would be to stop the build if we detect configure on the demand, but some
-  // folks (including myself 🙃) set the flag globally in the Gradle home dir. The workaround
-  // is good enough for now.
-  if (configureOnDemandEnabled) {
-    (it as DefaultProject).evaluate()
-  }
-}
-
-def getProperty(String name, String defaultValue) {
-  return project.hasProperty(name) ? project.getProperty(name) : defaultValue
-}
+tasks.prepareKotlinBuildScriptModel { dependsOn('deleteOrphanedDirs') }

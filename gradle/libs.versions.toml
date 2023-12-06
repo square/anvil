@@ -20,6 +20,10 @@ dagger = "2.46.1"
 dokka = "1.9.10"
 espresso = "3.5.1"
 gradlePublish = "1.2.1"
+jUnit5 = "5.10.0"
+jvm-toolchain = "11"
+jvm-target-library = "8"
+jvm-target-minimal = "11"
 kct = "0.3.1"
 kgx = "0.1.9"
 kotlin = "1.9.10"
@@ -43,6 +47,7 @@ config-fullTestRun = "true"
 # unblock KSP work for the moment until the source of the Git-Windows-CI jank can be identified.
 config-includeKspTests = "true"
 config-generateDaggerFactoriesWithAnvil = "true"
+config-warningsAsErrors = "false"
 
 [plugins]
 agp-application = { id = "com.android.application", version.ref = "agp" }
@@ -83,6 +88,10 @@ gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", versio
 inject = "javax.inject:javax.inject:1"
 jsr250 = "javax.annotation:jsr250-api:1.0"
 junit = "junit:junit:4.13.2"
+
+junit5-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "jUnit5" }
+junit5-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "jUnit5" }
+junit5-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "jUnit5" }
 
 kotlin-annotationProcessingEmbeddable = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable", version.ref = "kotlin" }
 kotlin-compileTesting = { module = "dev.zacsweers.kctfork:core", version.ref = "kct" }

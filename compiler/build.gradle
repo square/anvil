@@ -1,10 +1,10 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
-  id 'com.squareup.anvil.library'
+  id 'conventions.library'
+  id 'conventions.publish'
   alias libs.plugins.kotlin.kapt
   alias libs.plugins.buildconfig
-  id 'com.squareup.anvil.publish'
 }
 
 buildConfig {
@@ -12,17 +12,18 @@ buildConfig {
   packageName('com.squareup.anvil.compiler')
   useKotlinOutput { topLevelConstants = true }
 
-  buildConfigField('boolean', 'WARNINGS_AS_ERRORS',"${rootProject.ext.warningsAsErrors}")
+  buildConfigField('boolean', 'WARNINGS_AS_ERRORS',
+    "${libs.versions.config.warningsAsErrors.get()}")
   buildConfigField('boolean', 'FULL_TEST_RUN', "${libs.versions.config.fullTestRun.get()}")
   buildConfigField('boolean', 'INCLUDE_KSP_TESTS', "${libs.versions.config.includeKspTests.get()}")
 }
 
 publish {
   configurePom(
-      artifactId: 'compiler',
-      pomName: 'Anvil Compiler',
-      pomDescription: 'The core implementation module for Anvil, responsible for hooking into ' +
-          'the Kotlin compiler and orchestrating code generation'
+    artifactId: 'compiler',
+    pomName: 'Anvil Compiler',
+    pomDescription: 'The core implementation module for Anvil, responsible for hooking into ' +
+      'the Kotlin compiler and orchestrating code generation'
   )
 }
 
@@ -52,22 +53,11 @@ dependencies {
   testImplementation libs.truth
 }
 
-// Fixes:
-// Reason: Task ':compiler:dokkaHtml' uses this output of task ':compiler:kaptKotlin'
-// without declaring an explicit or implicit dependency.
-tasks.named("dokkaHtml") { mustRunAfter("kaptKotlin") }
-
 tasks.withType(KotlinCompile).configureEach {
   compilerOptions {
     // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin
     // compiler requires this flag when doing so.
     freeCompilerArgs.add("-Xjvm-default=all")
     freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
-  }
-}
-
-if (!rootProject.ext.ci) {
-  tasks.withType(Test).configureEach {
-    maxParallelForks = Runtime.runtime.availableProcessors()
   }
 }
