@@ -69,6 +69,7 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
     )
 
     createSettingsGradleFile(libraryModules.values + appModule)
+    createGradleDirectory()
     createGradlePropertiesFile()
     createScenariosFile()
     createAppModule(appModule, libraryModules)
@@ -109,9 +110,18 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
     File(rootDir, "settings.gradle").writeTextSafely(content)
   }
 
+  // The benchmark build is invoked as its own top-level build,
+  // from the 'benchmark' directory, without involving the 'anvil' build.
+  // We copy the 'gradle' directory from the 'anvil' build so
+  // that the scenarios use the same Gradle version and library catalog.
+  private fun createGradleDirectory() {
+    rootDir.parentFile.resolve("gradle")
+      .copyRecursively(rootDir.resolve("gradle"), overwrite = true)
+  }
+
   private fun createGradlePropertiesFile() {
     rootDir.parentFile.resolve("gradle.properties")
-      .copyTo(rootDir.resolve("gradle.properties"))
+      .copyTo(rootDir.resolve("gradle.properties"), overwrite = true)
   }
 
   private fun createScenariosFile() {
