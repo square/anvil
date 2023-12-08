@@ -4,6 +4,7 @@ import com.rickbusarow.kgx.applyOnce
 import com.rickbusarow.kgx.dependsOn
 import com.rickbusarow.kgx.javaExtension
 import com.squareup.anvil.conventions.PublishConventionPlugin.Companion.PUBLISH_TO_BUILD_M2
+import com.squareup.anvil.conventions.utils.gradlePluginDevelopmentExtension
 import com.squareup.anvil.conventions.utils.javaSourceSet
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -27,6 +28,9 @@ abstract class GradleTestsPlugin : Plugin<Project> {
     val gradleTestSourceSet = target.javaExtension
       .sourceSets
       .register(GRADLE_TEST) { ss ->
+        // Tells the `java-gradle-plugin` plugin to inject its TestKit logic
+        // into the `integrationTest` source set.
+        target.gradlePluginDevelopmentExtension.testSourceSets(ss)
 
         val main = target.javaSourceSet(SourceSet.MAIN_SOURCE_SET_NAME)
 

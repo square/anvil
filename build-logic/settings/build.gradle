@@ -1,13 +1,11 @@
 plugins {
-  alias libs.plugins.kotlin.jvm
-  alias libs.plugins.ktlint
-  id 'java-gradle-plugin'
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.ktlint)
+  id("java-gradle-plugin")
 }
 
 kotlin {
-  jvmToolchain {
-    languageVersion.set(JavaLanguageVersion.of(11))
-  }
+  jvmToolchain(libs.versions.jvm.toolchain.get().toInt())
 }
 
 ktlint {
@@ -16,9 +14,9 @@ ktlint {
 
 gradlePlugin {
   plugins {
-    settingsPlugin {
-      id = 'com.squareup.anvil.gradle-settings'
-      implementationClass = 'com.squareup.anvil.builds.settings.SettingsPlugin'
+    register("settingsPlugin") {
+      id = "com.squareup.anvil.gradle-settings"
+      implementationClass = "com.squareup.anvil.builds.settings.SettingsPlugin"
     }
   }
 }

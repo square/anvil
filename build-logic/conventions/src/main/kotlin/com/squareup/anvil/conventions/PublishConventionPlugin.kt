@@ -12,6 +12,8 @@ import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
+import org.gradle.api.plugins.ExtensionAware
+import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.publish.maven.MavenPublication
 import org.gradle.api.publish.tasks.GenerateModuleMetadata
 import org.gradle.api.tasks.bundling.Jar
@@ -117,10 +119,12 @@ open class PublishConventionPlugin : Plugin<Project> {
 open class PublishExtension @Inject constructor(
   private val target: Project,
 ) {
-  fun configurePom(args: Map<String, Any>) {
-    val artifactId = args.getValue("artifactId") as String
-    val pomName = args.getValue("pomName") as String
-    val pomDescription = args.getValue("pomDescription") as String
+
+  fun configurePom(
+    artifactId: String,
+    pomName: String,
+    pomDescription: String,
+  ) {
 
     target.gradlePublishingExtension
       .publications.withType(MavenPublication::class.java)

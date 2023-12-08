@@ -4,11 +4,11 @@ pluginManagement {
     gradlePluginPortal()
     mavenCentral()
   }
-  includeBuild '../settings'
+  includeBuild("../settings")
 }
 
 plugins {
-  id 'com.squareup.anvil.gradle-settings'
+  id("com.squareup.anvil.gradle-settings")
 }
 
 rootProject.name = "conventions"

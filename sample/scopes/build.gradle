@@ -1,8 +1,8 @@
 plugins {
-  alias libs.plugins.kotlin.jvm
-  id 'conventions.minimal'
+  alias(libs.plugins.kotlin.jvm)
+  id("conventions.minimal")
 }
 
 dependencies {
-  api libs.inject
+  api(libs.inject)
 }

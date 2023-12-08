@@ -1,25 +1,23 @@
-import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-
 plugins {
-  alias libs.plugins.kotlin.jvm
-  alias libs.plugins.kotlin.kapt
-  id 'conventions.minimal'
+  alias(libs.plugins.kotlin.jvm)
+  alias(libs.plugins.kotlin.kapt)
+  id("conventions.minimal")
+}
+
+conventions {
+  kotlinCompilerArgs.add(
+    "-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi",
+  )
 }
 
 dependencies {
-  api 'com.squareup.anvil:compiler-api'
-  implementation 'com.squareup.anvil:compiler-utils'
+  api("com.squareup.anvil:compiler-api")
+  implementation("com.squareup.anvil:compiler-utils")
 
-  compileOnly libs.auto.service.annotations
-  kapt libs.auto.service.processor
+  compileOnly(libs.auto.service.annotations)
+  kapt(libs.auto.service.processor)
 
-  testImplementation testFixtures('com.squareup.anvil:compiler-utils')
-  testImplementation libs.junit
-  testImplementation libs.truth
-}
-
-tasks.withType(KotlinCompile).configureEach {
-  compilerOptions {
-    freeCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
-  }
+  testImplementation(testFixtures("com.squareup.anvil:compiler-utils"))
+  testImplementation(libs.junit)
+  testImplementation(libs.truth)
 }

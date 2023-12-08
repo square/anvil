@@ -1,8 +1,8 @@
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
-  alias libs.plugins.kotlin.kapt
-  id 'com.squareup.anvil'
-  id 'conventions.minimal'
+  alias(libs.plugins.kotlin.kapt)
+  id("com.squareup.anvil")
+  id("conventions.minimal")
 }
 
 kotlin {
@@ -11,21 +11,20 @@ kotlin {
   }
 
   sourceSets {
-    jvmMain {
+
+    val jvmMain by getting {
       dependencies {
-        implementation libs.dagger2
+        val kapt by configurations.getting
+        kapt.dependencies.addLater(libs.dagger2.compiler)
+
+        implementation(libs.dagger2)
       }
     }
-
-    jvmTest {
+    val jvmTest by getting {
       dependencies {
-        implementation libs.junit
-        implementation libs.truth
+        implementation(libs.junit)
+        implementation(libs.truth)
       }
     }
   }
-}
-
-dependencies {
-  kapt libs.dagger2.compiler
 }

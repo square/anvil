@@ -7,13 +7,14 @@ dependencyResolutionManagement {
     google()
   }
   versionCatalogs {
-    libs {
-      from(files('../../gradle/libs.versions.toml'))
-      System.properties.each { key, value ->
-        if (key.toString().startsWith("override_")) {
-          String catalogKey = key.substring("override_".length())
-          println "Overriding $catalogKey with $value"
-          version(catalogKey, value.toString())
+    create("libs") {
+      from(files("../../gradle/libs.versions.toml"))
+      System.getProperties().forEach { entry ->
+        val key = entry.key as String
+        if (key.startsWith("override_")) {
+          val catalogKey = key.substring("override_".length)
+          println("Overriding $catalogKey with ${entry.value}")
+          version(catalogKey, entry.value as String)
         }
       }
     }
