@@ -17,11 +17,9 @@ abstract class SettingsPlugin @Inject constructor(
 
       val catalogBuilder = container.maybeCreate("libs")
 
-      if (target.rootProject.name != "anvil") {
-        val maybeFile = target.rootDir.resolveInParents("gradle/libs.versions.toml")
-        require(maybeFile.exists()) {
-          "Expected to find libs.versions.toml at $maybeFile"
-        }
+      val maybeFile = target.rootDir.resolveInParents("gradle/libs.versions.toml")
+
+      if (maybeFile != target.rootDir.resolve("gradle/libs.versions.toml")) {
         catalogBuilder.from(fileOperations.immutableFiles(maybeFile))
       }
 
