@@ -2558,16 +2558,18 @@ public final class DaggerComponentInterface implements ComponentInterface {
       }
       """,
     ) {
-      // KSP always resolves the inferred return type
-      assumeFalse(mode is AnvilCompilationMode.Ksp)
       assumeFalse(useDagger)
-
-      assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:5:3")
-      assertThat(messages).contains(
-        "Dagger provider methods must specify the return type explicitly when using Anvil. " +
-          "The return type cannot be inferred implicitly.",
-      )
+      if (mode is AnvilCompilationMode.Ksp) {
+        // KSP always resolves the inferred return type
+        assertThat(exitCode).isEqualTo(ExitCode.OK)
+      } else {
+        assertThat(exitCode).isError()
+        assertThat(messages).contains("Source0.kt:5:3")
+        assertThat(messages).contains(
+          "Dagger provider methods must specify the return type explicitly when using Anvil. " +
+            "The return type cannot be inferred implicitly.",
+        )
+      }
     }
   }
 
