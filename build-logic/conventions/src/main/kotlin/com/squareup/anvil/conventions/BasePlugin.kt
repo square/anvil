@@ -2,14 +2,10 @@ package com.squareup.anvil.conventions
 
 import com.rickbusarow.kgx.extras
 import com.rickbusarow.kgx.javaExtension
-import com.squareup.anvil.conventions.utils.addTasksToStartParameter
 import com.squareup.anvil.conventions.utils.isInMainAnvilBuild
 import com.squareup.anvil.conventions.utils.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
-import org.gradle.api.plugins.ExtensionAware
-import org.gradle.api.provider.ListProperty
-import org.gradle.api.provider.Property
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
@@ -18,20 +14,7 @@ import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8
 import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.util.*
-import javax.inject.Inject
-
-abstract class ConventionsExtension @Inject constructor(
-  private val target: Project
-) : ExtensionAware {
-  abstract val warningsAsErrors: Property<Boolean>
-  abstract val explicitApi: Property<Boolean>
-  abstract val kotlinCompilerArgs: ListProperty<String>
-
-  fun addTasksToIdeSync(vararg taskNames: String) {
-    target.addTasksToStartParameter(taskNames.toList())
-  }
-}
+import java.util.Properties
 
 abstract class BasePlugin : Plugin<Project> {
 
@@ -42,7 +25,7 @@ abstract class BasePlugin : Plugin<Project> {
 
   final override fun apply(target: Project) {
 
-    target.extensions.create("conventions", ConventionsExtension::class.java)
+    val extension = target.extensions.create("conventions", ConventionsExtension::class.java)
 
     if (!target.isInMainAnvilBuild()) {
       target.copyRootProjectGradleProperties()
@@ -59,7 +42,7 @@ abstract class BasePlugin : Plugin<Project> {
     configureJava(target)
 
     target.plugins.withType(KotlinBasePluginWrapper::class.java) {
-      configureKotlin(target)
+      configureKotlin(target, extension)
     }
 
     configureTests(target)
@@ -92,15 +75,27 @@ abstract class BasePlugin : Plugin<Project> {
     target.group = target.property("GROUP") as String
   }
 
-  private fun configureKotlin(target: Project) {
+  private fun configureKotlin(
+    target: Project,
+    extension: ConventionsExtension,
+  ) {
+
     target.tasks.withType(KotlinCompile::class.java).configureEach { task ->
       task.compilerOptions {
-        allWarningsAsErrors.set(target.libs.versions.config.warningsAsErrors.get().toBoolean())
+        allWarningsAsErrors.set(
+          target.libs.versions.config.warningsAsErrors.get().toBoolean() ||
+            extension.warningsAsErrors.get(),
+        )
 
         // Only add the experimental opt-in if the project has the `annotations` dependency,
         // otherwise the compiler will throw a warning and fail in CI.
         if (target.hasAnnotationDependency()) {
           freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
+        }
+
+        freeCompilerArgs.addAll(extension.kotlinCompilerArgs.get())
+        if (extension.explicitApi.get()) {
+          freeCompilerArgs.add("-Xexplicit-api=strict")
         }
 
         val fromInt = when (val targetInt = target.jvmTargetInt()) {

@@ -37,7 +37,7 @@ internal fun Project.addTasksToStartParameter(taskNames: Iterable<String>) {
     /* This is an included build. Referencing the task path explicitly */
     val rootBuild = gradle.parents().last()
     val buildId = (project as ProjectInternal).identityPath
-    val absoluteTaskPaths = taskNames.map { "${buildId}:$it" }
+    val absoluteTaskPaths = taskNames.map { "$buildId:$it" }
     rootBuild.startParameter.setTaskNames(
       rootBuild.startParameter.taskNames.toSet() + absoluteTaskPaths,
     )

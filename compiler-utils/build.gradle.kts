@@ -1,3 +1,5 @@
+import com.rickbusarow.kgx.isInIdeaSync
+
 plugins {
   id("conventions.library")
   id("conventions.publish")
