@@ -10,6 +10,7 @@ open class LibraryPlugin : BasePlugin() {
 
   override fun beforeApply(target: Project) {
     target.plugins.apply(target.libs.plugins.kotlin.jvm.pluginId)
+    target.plugins.apply(target.libs.plugins.kotlinx.binaryCompatibility.pluginId)
 
     configureDependencyGuard(target)
   }

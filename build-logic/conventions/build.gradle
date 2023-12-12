@@ -43,6 +43,7 @@ dependencies {
   compileOnly gradleApi()
 
   api libs.dropbox.dependencyGuard
+  api libs.kotlinx.binaryCompatibility
   api libs.ktlintRaw
   api libs.kotlinpoet
   api libs.kgx
