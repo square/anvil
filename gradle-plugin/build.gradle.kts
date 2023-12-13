@@ -44,22 +44,19 @@ buildConfig {
 
   sourceSets.named("gradleTest") {
     className = "BuildProperties"
-    packageName = "com.squareup.anvil.plugin"
+    packageName = "com.squareup.anvil.plugin.buildProperties"
     useKotlinOutput {
       internalVisibility = true
       topLevelConstants = true
     }
 
-    buildConfigField(
-      type = "java.io.File",
-      name = "localBuildM2Dir",
-      value = rootProject.layout.buildDirectory.dir("m2").map { "File(\"${it}\")" },
-    )
-
+    val buildM2 = rootProject.layout.buildDirectory.dir("m2").map { "File(\"${it}\")" }
+    buildConfigField("java.io.File", "localBuildM2Dir", buildM2)
     buildConfigField("String", "anvilVersion", "\"$VERSION_NAME\"")
     buildConfigField("String", "kotlinVersion", "\"${libs.versions.kotlin.get()}\"")
     buildConfigField("String", "gradleVersion", "\"${gradle.gradleVersion}\"")
     buildConfigField("String", "daggerVersion", "\"${libs.versions.dagger.get()}\"")
+    buildConfigField("kotlin.Boolean", "fullTestRun", libs.versions.config.fullTestRun.get())
   }
 }
 
@@ -91,6 +88,9 @@ dependencies {
   testImplementation(libs.truth)
 
   gradleTestImplementation(gradleTestKit())
+  gradleTestImplementation(libs.kase)
+  gradleTestImplementation(libs.kase.gradle)
+  gradleTestImplementation(libs.kase.gradle.dsl)
   gradleTestImplementation(libs.junit)
   gradleTestImplementation(libs.junit5.engine)
   gradleTestImplementation(libs.junit5.jupiter)
