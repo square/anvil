@@ -142,12 +142,12 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       disableCorrectErrorTypes(variant)
 
       kotlinCompilation.dependencies {
-        implementation("$GROUP:annotations:$VERSION")
+        compileOnly("$GROUP:annotations:$VERSION")
       }
     }
     if (variant.variantFilter.addOptionalAnnotations) {
       kotlinCompilation.dependencies {
-        implementation("$GROUP:annotations-optional:$VERSION")
+        compileOnly("$GROUP:annotations-optional:$VERSION")
       }
     }
 
@@ -287,12 +287,14 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
  */
 @Suppress("ObjectLiteralToLambda")
 private fun <T : Task> T.doFirstCompat(block: (T) -> Unit) {
-  doFirst(object : Action<Task> {
-    override fun execute(task: Task) {
-      @Suppress("UNCHECKED_CAST")
-      block(task as T)
-    }
-  })
+  doFirst(
+    object : Action<Task> {
+      override fun execute(task: Task) {
+        @Suppress("UNCHECKED_CAST")
+        block(task as T)
+      }
+    },
+  )
 }
 
 /**
