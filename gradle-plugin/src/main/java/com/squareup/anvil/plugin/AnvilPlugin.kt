@@ -142,12 +142,12 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       disableCorrectErrorTypes(variant)
 
       kotlinCompilation.dependencies {
-        compileOnly("$GROUP:annotations:$VERSION")
+        implementation("$GROUP:annotations:$VERSION")
       }
     }
     if (variant.variantFilter.addOptionalAnnotations) {
       kotlinCompilation.dependencies {
-        compileOnly("$GROUP:annotations-optional:$VERSION")
+        implementation("$GROUP:annotations-optional:$VERSION")
       }
     }
 
