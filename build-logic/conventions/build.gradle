@@ -42,6 +42,7 @@ ktlint {
 dependencies {
   compileOnly gradleApi()
 
+  api libs.dropbox.dependencyGuard
   api libs.ktlintRaw
   api libs.kotlinpoet
   api libs.kgx

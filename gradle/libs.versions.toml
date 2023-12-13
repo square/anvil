@@ -17,6 +17,7 @@ autoService = "1.1.1"
 autoValue = "1.10.4"
 buildconfig = "4.2.0"
 dagger = "2.46.1"
+dropbox-dependencyGuard = "0.4.3"
 dokka = "1.9.10"
 espresso = "3.5.1"
 gradlePublish = "1.2.1"
@@ -53,6 +54,7 @@ config-warningsAsErrors = "false"
 agp-application = { id = "com.android.application", version.ref = "agp" }
 agp-library = { id = "com.android.library", version.ref = "agp" }
 buildconfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildconfig" }
+dependencyGuard = { id = "com.dropbox.dependency-guard", version.ref = "dropbox-dependencyGuard" }
 gradlePublish = { id = "com.gradle.plugin-publish", version.ref = "gradlePublish" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
@@ -82,6 +84,8 @@ auto-value-processor = { module = "com.google.auto.value:auto-value", version.re
 
 dagger2 = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger2-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
+
+dropbox-dependencyGuard = { module = "com.dropbox.dependency-guard:dependency-guard", version.ref = "dropbox-dependencyGuard" }
 
 gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", version.ref = "gradlePublish" }
 
