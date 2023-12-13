@@ -1,7 +1,7 @@
 package com.squareup.anvil.conventions
 
 import com.rickbusarow.kgx.checkProjectIsRoot
-import com.squareup.anvil.conventions.utils.namedOrNull
+import com.squareup.anvil.conventions.utils.hasTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.composite.internal.DefaultIncludedBuild
@@ -66,7 +66,7 @@ class CompositePlugin : Plugin<Project> {
             // Don't include tasks that are already in the task graph
             if (taskPaths.contains(includedPath)) return@mapNotNull null
 
-            includedProject.tasks.namedOrNull(taskName) ?: return@mapNotNull null
+            if (!includedProject.hasTask(taskName)) return@mapNotNull null
 
             target.logger.quiet("The task $taskName will delegate to $includedPath")
 
@@ -79,8 +79,7 @@ class CompositePlugin : Plugin<Project> {
           buildList {
 
             // Looks to see if any project in this build has a task with this name.
-            val resolvedInRootBuild = target.allprojects
-              .any { project -> project.tasks.namedOrNull(taskName) != null }
+            val resolvedInRootBuild = target.allprojects.any { it.hasTask(taskName) }
 
             if (resolvedInRootBuild) {
               add(taskWithArgs)

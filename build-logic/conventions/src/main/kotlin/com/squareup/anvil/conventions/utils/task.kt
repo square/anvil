@@ -1,37 +1,36 @@
 package com.squareup.anvil.conventions.utils
 
 import com.rickbusarow.kgx.getOrPut
-import org.gradle.api.NamedDomainObjectCollectionSchema.NamedDomainObjectSchema
-import org.gradle.api.tasks.TaskCollection
+import com.rickbusarow.kgx.isRootProject
+import org.gradle.api.Project
 import org.jetbrains.kotlin.gradle.plugin.extraProperties
+import java.util.Locale
 
-/** @throws IllegalArgumentException if there are multiple tasks of that name when ignoring its case */
-internal fun TaskCollection<*>.namedOrNull(taskName: String): NamedDomainObjectSchema? {
+internal fun Project.hasTask(taskName: String): Boolean {
 
-  // This will typically be a 1:1 grouping,
-  // but Gradle does allow you to re-use task names with different capitalization,
-  // like 'foo' and 'Foo'.
-  val namesLowercase: Map<String, List<NamedDomainObjectSchema>> =
-    extraProperties.getOrPut("taskNamesLowercaseToSchema") {
-      collectionSchema.elements.groupBy { it.name.lowercase() }
+  if (tasks.names.contains(taskName)) return true
+
+  // ex: [ "foo" : [ "foo", "Foo" ] ]
+  val taskNamesLowercase = extraProperties
+    .getOrPut<Map<String, List<String>>>("taskNamesLowercase") {
+      tasks.names.groupBy { it.lowercase(Locale.US) }
     }
 
-  val taskNameLowercase = taskName.lowercase()
+  val taskNameLowercase = taskName.lowercase(Locale.US)
 
-  // All tasks that match the lowercase name
-  val lowercaseMatches = namesLowercase[taskNameLowercase] ?: return null
+  // All tasks that match the lowercase name. This will almost always be a singleton list or null,
+  // but it can be multiple ambiguously named tasks.
+  val lowercaseMatches = taskNamesLowercase[taskNameLowercase] ?: return false
 
-  // The task with the same case as the requested name, or null
-  val exactMatch = lowercaseMatches.singleOrNull { it.name == taskName }
-
-  if (exactMatch != null) {
-    return exactMatch
+  if (lowercaseMatches.size > 1) {
+    val matchedPaths = lowercaseMatches.map {
+      if (isRootProject()) ":$it" else "$path:$it"
+    }
+    logger.warn(
+      "Cannot match a task with this name because of ambiguous capitalization: " +
+        "'$taskName': $matchedPaths.",
+    )
   }
 
-  require(lowercaseMatches.size == 1) {
-    "Task name '$taskName' is ambiguous.  " +
-      "It matches multiple tasks: ${lowercaseMatches.map { it.name }}"
-  }
-
-  return lowercaseMatches.single()
+  return lowercaseMatches.size == 1
 }
