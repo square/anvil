@@ -117,10 +117,12 @@ open class PublishConventionPlugin : Plugin<Project> {
 open class PublishExtension @Inject constructor(
   private val target: Project,
 ) {
-  fun configurePom(args: Map<String, Any>) {
-    val artifactId = args.getValue("artifactId") as String
-    val pomName = args.getValue("pomName") as String
-    val pomDescription = args.getValue("pomDescription") as String
+
+  fun configurePom(
+    artifactId: String,
+    pomName: String,
+    pomDescription: String,
+  ) {
 
     target.gradlePublishingExtension
       .publications.withType(MavenPublication::class.java)

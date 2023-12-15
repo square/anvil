@@ -25,6 +25,8 @@ abstract class BasePlugin : Plugin<Project> {
 
   final override fun apply(target: Project) {
 
+    val extension = target.extensions.create("conventions", ConventionsExtension::class.java)
+
     if (!target.isInMainAnvilBuild()) {
       target.copyRootProjectGradleProperties()
     }
@@ -40,7 +42,7 @@ abstract class BasePlugin : Plugin<Project> {
     configureJava(target)
 
     target.plugins.withType(KotlinBasePluginWrapper::class.java) {
-      configureKotlin(target)
+      configureKotlin(target, extension)
     }
 
     configureTests(target)
@@ -73,15 +75,27 @@ abstract class BasePlugin : Plugin<Project> {
     target.group = target.property("GROUP") as String
   }
 
-  private fun configureKotlin(target: Project) {
+  private fun configureKotlin(
+    target: Project,
+    extension: ConventionsExtension,
+  ) {
+
     target.tasks.withType(KotlinCompile::class.java).configureEach { task ->
       task.compilerOptions {
-        allWarningsAsErrors.set(target.libs.versions.config.warningsAsErrors.get().toBoolean())
+        allWarningsAsErrors.set(
+          target.libs.versions.config.warningsAsErrors.get().toBoolean() ||
+            extension.warningsAsErrors.get(),
+        )
 
         // Only add the experimental opt-in if the project has the `annotations` dependency,
         // otherwise the compiler will throw a warning and fail in CI.
         if (target.hasAnnotationDependency()) {
           freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
+        }
+
+        freeCompilerArgs.addAll(extension.kotlinCompilerArgs.get())
+        if (extension.explicitApi.get()) {
+          freeCompilerArgs.add("-Xexplicit-api=strict")
         }
 
         val fromInt = when (val targetInt = target.jvmTargetInt()) {
