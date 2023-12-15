@@ -1,0 +1,107 @@
+public final class com/squareup/anvil/compiler/AnvilCommandLineProcessor : org/jetbrains/kotlin/compiler/plugin/CommandLineProcessor {
+	public fun <init> ()V
+	public fun getPluginId ()Ljava/lang/String;
+	public fun getPluginOptions ()Ljava/util/Collection;
+	public fun processOption (Lorg/jetbrains/kotlin/compiler/plugin/AbstractCliOption;Ljava/lang/String;Lorg/jetbrains/kotlin/config/CompilerConfiguration;)V
+}
+
+public final class com/squareup/anvil/compiler/AnvilComponentRegistrar : org/jetbrains/kotlin/compiler/plugin/ComponentRegistrar {
+	public fun <init> ()V
+	public final fun addCodeGenerators (Ljava/util/List;)V
+	public fun registerProjectComponents (Lorg/jetbrains/kotlin/com/intellij/mock/MockProject;Lorg/jetbrains/kotlin/config/CompilerConfiguration;)V
+}
+
+public final class com/squareup/anvil/compiler/CommandLineOptions {
+	public static final field Companion Lcom/squareup/anvil/compiler/CommandLineOptions$Companion;
+	public synthetic fun <init> (ZZZLcom/squareup/anvil/compiler/api/AnvilBackend;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public final fun getBackend ()Lcom/squareup/anvil/compiler/api/AnvilBackend;
+	public final fun getDisableComponentMerging ()Z
+	public final fun getGenerateFactories ()Z
+	public final fun getGenerateFactoriesOnly ()Z
+}
+
+public final class com/squareup/anvil/compiler/CommandLineOptions$Companion {
+	public final fun getCommandLineOptions (Lorg/jetbrains/kotlin/config/CompilerConfiguration;)Lcom/squareup/anvil/compiler/CommandLineOptions;
+}
+
+public final class com/squareup/anvil/compiler/codegen/dagger/AssistedFactoryCodeGen : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
+	public static final field INSTANCE Lcom/squareup/anvil/compiler/codegen/dagger/AssistedFactoryCodeGen;
+	public fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z
+}
+
+public final class com/squareup/anvil/compiler/codegen/dagger/AssistedInjectCodeGen : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
+	public static final field INSTANCE Lcom/squareup/anvil/compiler/codegen/dagger/AssistedInjectCodeGen;
+	public fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z
+}
+
+public final class com/squareup/anvil/compiler/codegen/dagger/InjectConstructorFactoryCodeGen : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
+	public static final field INSTANCE Lcom/squareup/anvil/compiler/codegen/dagger/InjectConstructorFactoryCodeGen;
+	public fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z
+}
+
+public final class com/squareup/anvil/compiler/codegen/dagger/MapKeyCreatorCodeGen : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
+	public static final field INSTANCE Lcom/squareup/anvil/compiler/codegen/dagger/MapKeyCreatorCodeGen;
+	public fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z
+}
+
+public abstract interface class com/squareup/anvil/compiler/codegen/dagger/Parameter {
+	public abstract fun getAssistedIdentifier ()Ljava/lang/String;
+	public abstract fun getAssistedParameterKey ()Lcom/squareup/anvil/compiler/codegen/dagger/Parameter$AssistedParameterKey;
+	public abstract fun getLazyTypeName ()Lcom/squareup/kotlinpoet/ParameterizedTypeName;
+	public abstract fun getName ()Ljava/lang/String;
+	public abstract fun getOriginalName ()Ljava/lang/String;
+	public fun getOriginalTypeName ()Lcom/squareup/kotlinpoet/TypeName;
+	public abstract fun getProviderTypeName ()Lcom/squareup/kotlinpoet/ParameterizedTypeName;
+	public abstract fun getTypeName ()Lcom/squareup/kotlinpoet/TypeName;
+	public abstract fun isAssisted ()Z
+	public abstract fun isLazyWrappedInProvider ()Z
+	public abstract fun isWrappedInLazy ()Z
+	public abstract fun isWrappedInProvider ()Z
+}
+
+public final class com/squareup/anvil/compiler/codegen/dagger/Parameter$AssistedParameterKey {
+	public fun <init> (Lcom/squareup/kotlinpoet/TypeName;Ljava/lang/String;)V
+	public final fun copy (Lcom/squareup/kotlinpoet/TypeName;Ljava/lang/String;)Lcom/squareup/anvil/compiler/codegen/dagger/Parameter$AssistedParameterKey;
+	public static synthetic fun copy$default (Lcom/squareup/anvil/compiler/codegen/dagger/Parameter$AssistedParameterKey;Lcom/squareup/kotlinpoet/TypeName;Ljava/lang/String;ILjava/lang/Object;)Lcom/squareup/anvil/compiler/codegen/dagger/Parameter$AssistedParameterKey;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/squareup/anvil/compiler/codegen/dagger/ProvidesMethodFactoryCodeGen : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
+	public static final field INSTANCE Lcom/squareup/anvil/compiler/codegen/dagger/ProvidesMethodFactoryCodeGen;
+	public fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z
+}
+
+public final class com/squareup/anvil/compiler/codegen/reference/RealAnvilModuleDescriptor : com/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor, org/jetbrains/kotlin/descriptors/ModuleDescriptor {
+	public synthetic fun <init> (Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun accept (Lorg/jetbrains/kotlin/descriptors/DeclarationDescriptorVisitor;Ljava/lang/Object;)Ljava/lang/Object;
+	public fun acceptVoid (Lorg/jetbrains/kotlin/descriptors/DeclarationDescriptorVisitor;)V
+	public final fun addFiles (Ljava/util/Collection;)V
+	public fun assertValid ()V
+	public fun getAllDependencyModules ()Ljava/util/List;
+	public fun getAllExpectedByModules ()Ljava/util/Set;
+	public fun getAnnotations ()Lorg/jetbrains/kotlin/descriptors/annotations/Annotations;
+	public fun getBuiltIns ()Lorg/jetbrains/kotlin/builtins/KotlinBuiltIns;
+	public fun getCapability (Lorg/jetbrains/kotlin/descriptors/ModuleCapability;)Ljava/lang/Object;
+	public fun getClassAndInnerClassReferences (Lorg/jetbrains/kotlin/psi/KtFile;)Ljava/util/List;
+	public fun getClassReference (Lorg/jetbrains/kotlin/descriptors/ClassDescriptor;)Lcom/squareup/anvil/compiler/internal/reference/ClassReference$Descriptor;
+	public fun getClassReference (Lorg/jetbrains/kotlin/psi/KtClassOrObject;)Lcom/squareup/anvil/compiler/internal/reference/ClassReference$Psi;
+	public fun getClassReferenceOrNull (Lorg/jetbrains/kotlin/name/FqName;)Lcom/squareup/anvil/compiler/internal/reference/ClassReference;
+	public fun getContainingDeclaration ()Lorg/jetbrains/kotlin/descriptors/DeclarationDescriptor;
+	public fun getExpectedByModules ()Ljava/util/List;
+	public fun getName ()Lorg/jetbrains/kotlin/name/Name;
+	public fun getOriginal ()Lorg/jetbrains/kotlin/descriptors/DeclarationDescriptor;
+	public fun getPackage (Lorg/jetbrains/kotlin/name/FqName;)Lorg/jetbrains/kotlin/descriptors/PackageViewDescriptor;
+	public fun getPlatform ()Lorg/jetbrains/kotlin/platform/TargetPlatform;
+	public fun getStableName ()Lorg/jetbrains/kotlin/name/Name;
+	public fun getSubPackagesOf (Lorg/jetbrains/kotlin/name/FqName;Lkotlin/jvm/functions/Function1;)Ljava/util/Collection;
+	public fun getTopLevelFunctionReferences (Lorg/jetbrains/kotlin/psi/KtFile;)Ljava/util/List;
+	public fun getTopLevelPropertyReferences (Lorg/jetbrains/kotlin/psi/KtFile;)Ljava/util/List;
+	public fun isValid ()Z
+	public fun resolveClassIdOrNull (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/FqName;
+	public fun resolveFqNameOrNull (Lorg/jetbrains/kotlin/name/FqName;Lorg/jetbrains/kotlin/incremental/components/LookupLocation;)Lorg/jetbrains/kotlin/descriptors/ClassDescriptor;
+	public fun resolveTypeAliasFqNameOrNull (Lorg/jetbrains/kotlin/name/FqName;)Lorg/jetbrains/kotlin/descriptors/TypeAliasDescriptor;
+	public fun shouldSeeInternalsOf (Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;)Z
+}
+

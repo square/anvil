@@ -1,0 +1,96 @@
+public abstract interface annotation class com/squareup/anvil/annotations/ContributesBinding : java/lang/annotation/Annotation {
+	public abstract fun boundType ()Ljava/lang/Class;
+	public abstract fun ignoreQualifier ()Z
+	public abstract fun priority ()Lcom/squareup/anvil/annotations/ContributesBinding$Priority;
+	public abstract fun replaces ()[Ljava/lang/Class;
+	public abstract fun scope ()Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/ContributesBinding$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/ContributesBinding;
+}
+
+public final class com/squareup/anvil/annotations/ContributesBinding$Priority : java/lang/Enum {
+	public static final field HIGH Lcom/squareup/anvil/annotations/ContributesBinding$Priority;
+	public static final field HIGHEST Lcom/squareup/anvil/annotations/ContributesBinding$Priority;
+	public static final field NORMAL Lcom/squareup/anvil/annotations/ContributesBinding$Priority;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/anvil/annotations/ContributesBinding$Priority;
+	public static fun values ()[Lcom/squareup/anvil/annotations/ContributesBinding$Priority;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/ContributesMultibinding : java/lang/annotation/Annotation {
+	public abstract fun boundType ()Ljava/lang/Class;
+	public abstract fun ignoreQualifier ()Z
+	public abstract fun replaces ()[Ljava/lang/Class;
+	public abstract fun scope ()Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/ContributesMultibinding$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/ContributesMultibinding;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/ContributesSubcomponent : java/lang/annotation/Annotation {
+	public abstract fun exclude ()[Ljava/lang/Class;
+	public abstract fun modules ()[Ljava/lang/Class;
+	public abstract fun parentScope ()Ljava/lang/Class;
+	public abstract fun replaces ()[Ljava/lang/Class;
+	public abstract fun scope ()Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/ContributesSubcomponent$Factory : java/lang/annotation/Annotation {
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/ContributesTo : java/lang/annotation/Annotation {
+	public abstract fun replaces ()[Ljava/lang/Class;
+	public abstract fun scope ()Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/ContributesTo$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/ContributesTo;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/ExperimentalAnvilApi : java/lang/annotation/Annotation {
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/MergeComponent : java/lang/annotation/Annotation {
+	public abstract fun dependencies ()[Ljava/lang/Class;
+	public abstract fun exclude ()[Ljava/lang/Class;
+	public abstract fun modules ()[Ljava/lang/Class;
+	public abstract fun scope ()Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/MergeComponent$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/MergeComponent;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/MergeSubcomponent : java/lang/annotation/Annotation {
+	public abstract fun exclude ()[Ljava/lang/Class;
+	public abstract fun modules ()[Ljava/lang/Class;
+	public abstract fun scope ()Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/MergeSubcomponent$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/MergeSubcomponent;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/compat/MergeInterfaces : java/lang/annotation/Annotation {
+	public abstract fun exclude ()[Ljava/lang/Class;
+	public abstract fun scope ()Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/compat/MergeInterfaces$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/compat/MergeInterfaces;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/compat/MergeModules : java/lang/annotation/Annotation {
+	public abstract fun exclude ()[Ljava/lang/Class;
+	public abstract fun includes ()[Ljava/lang/Class;
+	public abstract fun scope ()Ljava/lang/Class;
+	public abstract fun subcomponents ()[Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/compat/MergeModules$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/compat/MergeModules;
+}
+
