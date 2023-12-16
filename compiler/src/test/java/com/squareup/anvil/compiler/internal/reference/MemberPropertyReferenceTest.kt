@@ -1,14 +1,15 @@
 package com.squareup.anvil.compiler.internal.reference
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.DefaultTestEnvironmentTest
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-class MemberPropertyReferenceTest {
+class MemberPropertyReferenceTest : DefaultTestEnvironmentTest {
 
-  @Test fun `primary constructor val properties are properties`() {
+  @Test fun `primary constructor val properties are properties`() = test {
     compile(
       """
       package com.squareup.test
@@ -41,7 +42,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `primary constructor var properties are properties`() {
+  @Test fun `primary constructor var properties are properties`() = test {
     compile(
       """
       package com.squareup.test
@@ -74,7 +75,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `member properties are properties`() {
+  @Test fun `member properties are properties`() = test {
     compile(
       """
       package com.squareup.test
@@ -107,7 +108,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `nested class member properties are not properties of the outer class`() {
+  @Test fun `nested class member properties are not properties of the outer class`() = test {
     compile(
       """
       package com.squareup.test
@@ -141,7 +142,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `nested class constructor properties are not properties of the outer class`() {
+  @Test fun `nested class constructor properties are not properties of the outer class`() = test {
     compile(
       """
       package com.squareup.test
@@ -175,7 +176,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `a stdlib type reference wrapped in backticks resolves to the standard type`() {
+  @Test fun `a stdlib type reference wrapped in backticks resolves to the standard type`() = test {
     compile(
       """
       package com.squareup.test
@@ -203,9 +204,10 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `a property for a nested class with a name wrapped in backticks can be resolved`() {
-    compile(
-      """
+  @Test fun `a property for a nested class with a name wrapped in backticks can be resolved`() =
+    test {
+      compile(
+        """
       package com.squareup.test
 
       class Subject {
@@ -214,35 +216,37 @@ class MemberPropertyReferenceTest {
         class `Nested${'$'}Fancy`
       }
       """,
-      allWarningsAsErrors = false,
-      codeGenerators = listOf(
-        simpleCodeGenerator { psiRef ->
-          val descriptorRef = psiRef.toDescriptorReference()
+        allWarningsAsErrors = false,
+        codeGenerators = listOf(
+          simpleCodeGenerator { psiRef ->
+            val descriptorRef = psiRef.toDescriptorReference()
 
-          if (psiRef.shortName == "Nested\$Fancy") return@simpleCodeGenerator null
+            if (psiRef.shortName == "Nested\$Fancy") return@simpleCodeGenerator null
 
-          listOf(psiRef, descriptorRef).forEach { ref ->
+            listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val propertyType = ref.properties.single().type()
+              val propertyType = ref.properties.single().type()
 
-            assertThat(propertyType.asTypeName().toString())
-              .isEqualTo("com.squareup.test.Subject.`Nested\$Fancy`")
+              assertThat(propertyType.asTypeName().toString())
+                .isEqualTo("com.squareup.test.Subject.`Nested\$Fancy`")
 
-            assertThat(propertyType.asClassReference().fqName.asString())
-              .isEqualTo("com.squareup.test.Subject.Nested\$Fancy")
-          }
+              assertThat(propertyType.asClassReference().fqName.asString())
+                .isEqualTo("com.squareup.test.Subject.Nested\$Fancy")
+            }
 
-          null
-        },
-      ),
-    ) {
-      assertThat(exitCode).isEqualTo(OK)
+            null
+          },
+        ),
+      ) {
+        assertThat(exitCode).isEqualTo(OK)
+      }
     }
-  }
 
-  @Test fun `a property for a partially qualified nested class with a name wrapped in backticks can be resolved`() {
-    compile(
-      """
+  @Test
+  fun `a property for a partially qualified nested class with a name wrapped in backticks can be resolved`() =
+    test {
+      compile(
+        """
       package com.squareup.test
 
       class Subject {
@@ -251,35 +255,37 @@ class MemberPropertyReferenceTest {
         class `Nested${'$'}Fancy`
       }
       """,
-      allWarningsAsErrors = false,
-      codeGenerators = listOf(
-        simpleCodeGenerator { psiRef ->
-          val descriptorRef = psiRef.toDescriptorReference()
+        allWarningsAsErrors = false,
+        codeGenerators = listOf(
+          simpleCodeGenerator { psiRef ->
+            val descriptorRef = psiRef.toDescriptorReference()
 
-          if (psiRef.shortName == "Nested\$Fancy") return@simpleCodeGenerator null
+            if (psiRef.shortName == "Nested\$Fancy") return@simpleCodeGenerator null
 
-          listOf(psiRef, descriptorRef).forEach { ref ->
+            listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val propertyType = ref.properties.single().type()
+              val propertyType = ref.properties.single().type()
 
-            assertThat(propertyType.asTypeName().toString())
-              .isEqualTo("com.squareup.test.Subject.`Nested\$Fancy`")
+              assertThat(propertyType.asTypeName().toString())
+                .isEqualTo("com.squareup.test.Subject.`Nested\$Fancy`")
 
-            assertThat(propertyType.asClassReference().fqName.asString())
-              .isEqualTo("com.squareup.test.Subject.Nested\$Fancy")
-          }
+              assertThat(propertyType.asClassReference().fqName.asString())
+                .isEqualTo("com.squareup.test.Subject.Nested\$Fancy")
+            }
 
-          null
-        },
-      ),
-    ) {
-      assertThat(exitCode).isEqualTo(OK)
+            null
+          },
+        ),
+      ) {
+        assertThat(exitCode).isEqualTo(OK)
+      }
     }
-  }
 
-  @Test fun `a property with fully qualified reference to a nested class with a name wrapped in backticks can be resolved`() {
-    compile(
-      """
+  @Test
+  fun `a property with fully qualified reference to a nested class with a name wrapped in backticks can be resolved`() =
+    test {
+      compile(
+        """
       package com.squareup.test
 
       class Subject {
@@ -288,33 +294,33 @@ class MemberPropertyReferenceTest {
         class `Nested${'$'}Fancy`
       }
       """,
-      allWarningsAsErrors = false,
-      codeGenerators = listOf(
-        simpleCodeGenerator { psiRef ->
-          val descriptorRef = psiRef.toDescriptorReference()
+        allWarningsAsErrors = false,
+        codeGenerators = listOf(
+          simpleCodeGenerator { psiRef ->
+            val descriptorRef = psiRef.toDescriptorReference()
 
-          if (psiRef.shortName == "Nested\$Fancy") return@simpleCodeGenerator null
+            if (psiRef.shortName == "Nested\$Fancy") return@simpleCodeGenerator null
 
-          listOf(psiRef, descriptorRef).forEach { ref ->
+            listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val propertyType = ref.properties.single().type()
+              val propertyType = ref.properties.single().type()
 
-            assertThat(propertyType.asTypeName().toString())
-              .isEqualTo("com.squareup.test.Subject.`Nested\$Fancy`")
+              assertThat(propertyType.asTypeName().toString())
+                .isEqualTo("com.squareup.test.Subject.`Nested\$Fancy`")
 
-            assertThat(propertyType.asClassReference().fqName.asString())
-              .isEqualTo("com.squareup.test.Subject.Nested\$Fancy")
-          }
+              assertThat(propertyType.asClassReference().fqName.asString())
+                .isEqualTo("com.squareup.test.Subject.Nested\$Fancy")
+            }
 
-          null
-        },
-      ),
-    ) {
-      assertThat(exitCode).isEqualTo(OK)
+            null
+          },
+        ),
+      ) {
+        assertThat(exitCode).isEqualTo(OK)
+      }
     }
-  }
 
-  @Test fun `mixed constructor and member properties are all properties`() {
+  @Test fun `mixed constructor and member properties are all properties`() = test {
     compile(
       """
       package com.squareup.test
@@ -348,7 +354,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `overridden member properties are properties`() {
+  @Test fun `overridden member properties are properties`() = test {
     compile(
       """
       package com.squareup.test
@@ -383,7 +389,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `properties in a super class are not properties`() {
+  @Test fun `properties in a super class are not properties`() = test {
     compile(
       """
       package com.squareup.test
@@ -415,7 +421,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `member properties can have annotations`() {
+  @Test fun `member properties can have annotations`() = test {
     compile(
       """
       package com.squareup.test
@@ -456,7 +462,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `member properties can have annotations on a getter delegate`() {
+  @Test fun `member properties can have annotations on a getter delegate`() = test {
     compile(
       """
       package com.squareup.test
@@ -490,7 +496,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `member property getter annotations are included in the field's annotations`() {
+  @Test fun `member property getter annotations are included in the field's annotations`() = test {
     compile(
       """
       package com.squareup.test
@@ -530,7 +536,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `member properties can have annotations on a setter delegate`() {
+  @Test fun `member properties can have annotations on a setter delegate`() = test {
     compile(
       """
       package com.squareup.test
@@ -564,7 +570,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `member property setter annotations are included in the field's annotations`() {
+  @Test fun `member property setter annotations are included in the field's annotations`() = test {
     compile(
       """
       package com.squareup.test
@@ -604,7 +610,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `primary constructor properties return empty accessor delegate annotations`() {
+  @Test fun `primary constructor properties return empty accessor delegate annotations`() = test {
     compile(
       """
       package com.squareup.test
@@ -637,7 +643,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `primary constructor properties can have annotations`() {
+  @Test fun `primary constructor properties can have annotations`() = test {
     compile(
       """
       package com.squareup.test
@@ -678,7 +684,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `primary constructor parameters without val or var are not properties`() {
+  @Test fun `primary constructor parameters without val or var are not properties`() = test {
     compile(
       """
       package com.squareup.test
@@ -712,7 +718,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  @Test fun `secondary constructor parameters are not properties`() {
+  @Test fun `secondary constructor parameters are not properties`() = test {
     compile(
       """
       package com.squareup.test

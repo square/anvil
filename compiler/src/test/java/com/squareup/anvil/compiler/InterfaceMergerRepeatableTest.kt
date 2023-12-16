@@ -5,35 +5,16 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.compiler.internal.testing.extends
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
-import kotlin.reflect.KClass
+import org.junit.jupiter.api.TestFactory
 
-@RunWith(Parameterized::class)
-class InterfaceMergerRepeatableTest(
-  private val annotationClass: KClass<*>,
+class InterfaceMergerRepeatableTest : AnnotationsTest(
+  MergeComponent::class,
+  MergeSubcomponent::class,
+  MergeInterfaces::class,
 ) {
 
-  private val annotation = "@${annotationClass.simpleName}"
-  private val import = "import ${annotationClass.java.canonicalName}"
-
-  companion object {
-    @Parameters(name = "{0}")
-    @JvmStatic
-    fun annotationClasses(): Collection<Any> {
-      return buildList {
-        add(MergeComponent::class)
-        if (isFullTestRun()) {
-          add(MergeSubcomponent::class)
-          add(MergeInterfaces::class)
-        }
-      }
-    }
-  }
-
-  @Test fun `duplicate scopes are an error`() {
+  @TestFactory
+  fun `duplicate scopes are an error`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -53,7 +34,8 @@ class InterfaceMergerRepeatableTest(
     }
   }
 
-  @Test fun `different kind of merge annotations are forbidden`() {
+  @TestFactory
+  fun `different kind of merge annotations are forbidden`() = testFactory {
     assumeMergeComponent(annotationClass)
 
     compile(
@@ -77,7 +59,8 @@ class InterfaceMergerRepeatableTest(
     }
   }
 
-  @Test fun `interfaces from different scopes are merged successfully`() {
+  @TestFactory
+  fun `interfaces from different scopes are merged successfully`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -101,7 +84,8 @@ class InterfaceMergerRepeatableTest(
     }
   }
 
-  @Test fun `there are no duplicated interfaces`() {
+  @TestFactory
+  fun `there are no duplicated interfaces`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -127,9 +111,11 @@ class InterfaceMergerRepeatableTest(
     }
   }
 
-  @Test fun `a contributed interface replaced in one scope is not included by another scope`() {
-    compile(
-      """
+  @TestFactory
+  fun `a contributed interface replaced in one scope is not included by another scope`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesTo
@@ -149,15 +135,17 @@ class InterfaceMergerRepeatableTest(
       $annotation(Unit::class)
       interface ComponentInterface
       """,
-    ) {
-      assertThat(componentInterface extends contributingInterface).isFalse()
-      assertThat(componentInterface extends secondContributingInterface).isTrue()
+      ) {
+        assertThat(componentInterface extends contributingInterface).isFalse()
+        assertThat(componentInterface extends secondContributingInterface).isTrue()
+      }
     }
-  }
 
-  @Test fun `a contributed interface excluded in one scope is not included by another scope`() {
-    compile(
-      """
+  @TestFactory
+  fun `a contributed interface excluded in one scope is not included by another scope`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesTo
@@ -171,8 +159,8 @@ class InterfaceMergerRepeatableTest(
       $annotation(Unit::class)
       interface ComponentInterface
       """,
-    ) {
-      assertThat(componentInterface extends contributingInterface).isFalse()
+      ) {
+        assertThat(componentInterface extends contributingInterface).isFalse()
+      }
     }
-  }
 }

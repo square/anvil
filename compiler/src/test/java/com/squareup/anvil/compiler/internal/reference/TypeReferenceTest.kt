@@ -1,13 +1,14 @@
 package com.squareup.anvil.compiler.internal.reference
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.DefaultTestEnvironmentTest
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-class TypeReferenceTest {
-  @Test fun `the type parameter arguments from a super type can be queried`() {
+class TypeReferenceTest : DefaultTestEnvironmentTest {
+  @Test fun `the type parameter arguments from a super type can be queried`() = test {
     compile(
       """
       package com.squareup.test
@@ -30,6 +31,7 @@ class TypeReferenceTest {
                 assertThat(unwrappedClassNames).containsExactly("String", "Int").inOrder()
               }
             }
+
             "SomeClass2" -> {
               listOf(psiRef, descriptorRef).forEach { ref ->
                 val listType = ref.directSuperTypeReferences().single()
@@ -42,6 +44,7 @@ class TypeReferenceTest {
                   .containsExactly("String", "Int").inOrder()
               }
             }
+
             else -> throw NotImplementedError(psiRef.shortName)
           }
 
@@ -53,7 +56,7 @@ class TypeReferenceTest {
     }
   }
 
-  @Test fun `type names may be wrapped in backticks`() {
+  @Test fun `type names may be wrapped in backticks`() = test {
     compile(
       """
       package com.squareup.test
@@ -93,80 +96,84 @@ class TypeReferenceTest {
     }
   }
 
-  @Test fun `resolving the generic type name on a concrete type returns the concrete type`() {
-    compile(
-      """
+  @Test fun `resolving the generic type name on a concrete type returns the concrete type`() =
+    test {
+      compile(
+        """
       package com.squareup.test
 
       abstract class SomeClass1 : List<String>
       """,
-      allWarningsAsErrors = false,
-      codeGenerators = listOf(
-        simpleCodeGenerator { psiRef ->
-          val descriptorRef = psiRef.toDescriptorReference()
+        allWarningsAsErrors = false,
+        codeGenerators = listOf(
+          simpleCodeGenerator { psiRef ->
+            val descriptorRef = psiRef.toDescriptorReference()
 
-          when (psiRef.shortName) {
-            "SomeClass1" -> {
-              listOf(psiRef, descriptorRef).forEach { ref ->
-                assertThat(
-                  ref.directSuperTypeReferences()
-                    .single() // List<String>
-                    .unwrappedTypes
-                    .single() // String
-                    .resolveGenericTypeNameOrNull(ref)
-                    .toString(),
-                ).isEqualTo("kotlin.String")
+            when (psiRef.shortName) {
+              "SomeClass1" -> {
+                listOf(psiRef, descriptorRef).forEach { ref ->
+                  assertThat(
+                    ref.directSuperTypeReferences()
+                      .single() // List<String>
+                      .unwrappedTypes
+                      .single() // String
+                      .resolveGenericTypeNameOrNull(ref)
+                      .toString(),
+                  ).isEqualTo("kotlin.String")
+                }
               }
-            }
-            else -> throw NotImplementedError(psiRef.shortName)
-          }
 
-          null
-        },
-      ),
-    ) {
-      assertThat(exitCode).isEqualTo(OK)
+              else -> throw NotImplementedError(psiRef.shortName)
+            }
+
+            null
+          },
+        ),
+      ) {
+        assertThat(exitCode).isEqualTo(OK)
+      }
     }
-  }
 
   @Test
-  fun `resolving the generic type name with no available resolved type returns unresolved type`() {
-    compile(
-      """
+  fun `resolving the generic type name with no available resolved type returns unresolved type`() =
+    test {
+      compile(
+        """
       package com.squareup.test
 
       abstract class SomeClass1<T> : List<T>
       """,
-      allWarningsAsErrors = false,
-      codeGenerators = listOf(
-        simpleCodeGenerator { psiRef ->
-          val descriptorRef = psiRef.toDescriptorReference()
+        allWarningsAsErrors = false,
+        codeGenerators = listOf(
+          simpleCodeGenerator { psiRef ->
+            val descriptorRef = psiRef.toDescriptorReference()
 
-          when (psiRef.shortName) {
-            "SomeClass1" -> {
-              listOf(psiRef, descriptorRef).forEach { ref ->
-                assertThat(
-                  ref.directSuperTypeReferences()
-                    .single() // List<T>
-                    .unwrappedTypes
-                    .single() // T
-                    .resolveGenericTypeNameOrNull(ref)
-                    .toString(),
-                ).isEqualTo("T")
+            when (psiRef.shortName) {
+              "SomeClass1" -> {
+                listOf(psiRef, descriptorRef).forEach { ref ->
+                  assertThat(
+                    ref.directSuperTypeReferences()
+                      .single() // List<T>
+                      .unwrappedTypes
+                      .single() // T
+                      .resolveGenericTypeNameOrNull(ref)
+                      .toString(),
+                  ).isEqualTo("T")
+                }
               }
+
+              else -> throw NotImplementedError(psiRef.shortName)
             }
-            else -> throw NotImplementedError(psiRef.shortName)
-          }
 
-          null
-        },
-      ),
-    ) {
-      assertThat(exitCode).isEqualTo(OK)
+            null
+          },
+        ),
+      ) {
+        assertThat(exitCode).isEqualTo(OK)
+      }
     }
-  }
 
-  @Test fun `resolving the generic type name from a parent returns the resolved type`() {
+  @Test fun `resolving the generic type name from a parent returns the resolved type`() = test {
     compile(
       """
       package com.squareup.test
@@ -197,6 +204,7 @@ class TypeReferenceTest {
                 ).isEqualTo("kotlin.Int")
               }
             }
+
             else -> throw NotImplementedError(psiRef.shortName)
           }
 
@@ -208,7 +216,7 @@ class TypeReferenceTest {
     }
   }
 
-  @Test fun `star projections are supported`() {
+  @Test fun `star projections are supported`() = test {
     compile(
       """
       package com.squareup.test
@@ -244,6 +252,7 @@ class TypeReferenceTest {
                 ).containsExactly("Int", "String").inOrder()
               }
             }
+
             else -> throw NotImplementedError(psiRef.shortName)
           }
 
@@ -255,7 +264,7 @@ class TypeReferenceTest {
     }
   }
 
-  @Test fun `unwrapped types contain types from type aliases`() {
+  @Test fun `unwrapped types contain types from type aliases`() = test {
     compile(
       """
       package com.squareup.test
@@ -292,6 +301,7 @@ class TypeReferenceTest {
                 ).containsExactly("Int", "Int", "Int").inOrder()
               }
             }
+
             else -> throw NotImplementedError(psiRef.shortName)
           }
 

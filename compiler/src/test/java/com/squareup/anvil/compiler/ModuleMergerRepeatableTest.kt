@@ -7,35 +7,16 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerComponent
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
-import kotlin.reflect.KClass
+import org.junit.jupiter.api.TestFactory
 
-@RunWith(Parameterized::class)
-class ModuleMergerRepeatableTest(
-  private val annotationClass: KClass<out Annotation>,
+class ModuleMergerRepeatableTest : AnnotationsTest(
+  MergeComponent::class,
+  MergeSubcomponent::class,
+  MergeModules::class,
 ) {
 
-  private val annotation = "@${annotationClass.simpleName}"
-  private val import = "import ${annotationClass.java.canonicalName}"
-
-  companion object {
-    @Parameters(name = "{0}")
-    @JvmStatic
-    fun annotationClasses(): Collection<Any> {
-      return buildList {
-        add(MergeComponent::class)
-        if (isFullTestRun()) {
-          add(MergeSubcomponent::class)
-          add(MergeModules::class)
-        }
-      }
-    }
-  }
-
-  @Test fun `duplicate scopes are an error`() {
+  @TestFactory
+  fun `duplicate scopes are an error`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -55,7 +36,8 @@ class ModuleMergerRepeatableTest(
     }
   }
 
-  @Test fun `different kind of merge annotations are forbidden`() {
+  @TestFactory
+  fun `different kind of merge annotations are forbidden`() = testFactory {
     assumeMergeComponent(annotationClass)
 
     compile(
@@ -79,7 +61,8 @@ class ModuleMergerRepeatableTest(
     }
   }
 
-  @Test fun `modules from different scopes are merged successfully`() {
+  @TestFactory
+  fun `modules from different scopes are merged successfully`() = testFactory {
     compile(
       """
         package com.squareup.test
@@ -107,7 +90,8 @@ class ModuleMergerRepeatableTest(
     }
   }
 
-  @Test fun `there are no duplicated modules`() {
+  @TestFactory
+  fun `there are no duplicated modules`() = testFactory {
     compile(
       """
         package com.squareup.test
@@ -137,7 +121,8 @@ class ModuleMergerRepeatableTest(
     }
   }
 
-  @Test fun `a module replaced in one scope is not included by another scope`() {
+  @TestFactory
+  fun `a module replaced in one scope is not included by another scope`() = testFactory {
     compile(
       """
         package com.squareup.test
@@ -168,9 +153,11 @@ class ModuleMergerRepeatableTest(
     }
   }
 
-  @Test fun `a contributed binding replaced in one scope is not included by another scope`() {
-    compile(
-      """
+  @TestFactory
+  fun `a contributed binding replaced in one scope is not included by another scope`() =
+    testFactory {
+      compile(
+        """
         package com.squareup.test
 
         import com.squareup.anvil.annotations.ContributesBinding
@@ -194,23 +181,24 @@ class ModuleMergerRepeatableTest(
         $annotation(Unit::class)
         interface ComponentInterface
         """,
-    ) {
-      assertThat(
-        componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModules(),
-      ).containsExactly(daggerModule1.kotlin)
+      ) {
+        assertThat(
+          componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModules(),
+        ).containsExactly(daggerModule1.kotlin)
 
-      assertThat(
+        assertThat(
         componentInterface.mergedModules(annotationClass).flatMapArray {
           it.java.declaredMethods
         },
       ).isEmpty()
+      }
     }
-  }
 
-  @Test
-  fun `a contributed module replaced by a binding in one scope is not included by another scope`() {
-    compile(
-      """
+  @TestFactory
+  fun `a contributed module replaced by a binding in one scope is not included by another scope`() =
+    testFactory {
+      compile(
+        """
         package com.squareup.test
 
         import com.squareup.anvil.annotations.ContributesBinding
@@ -234,21 +222,23 @@ class ModuleMergerRepeatableTest(
         $annotation(Unit::class)
         interface ComponentInterface
         """,
-    ) {
-      assertThat(
-        componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModules(),
-      ).isEmpty()
-      assertThat(
+      ) {
+        assertThat(
+          componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModules(),
+        ).isEmpty()
+        assertThat(
         componentInterface.mergedModules(annotationClass).flatMapArray {
           it.java.declaredMethods
         },
       ).hasSize(1)
+      }
     }
-  }
 
-  @Test fun `a contributed module excluded in one scope is not included by another scope`() {
-    compile(
-      """
+  @TestFactory
+  fun `a contributed module excluded in one scope is not included by another scope`() =
+    testFactory {
+      compile(
+        """
         package com.squareup.test
 
         import com.squareup.anvil.annotations.ContributesTo
@@ -272,15 +262,17 @@ class ModuleMergerRepeatableTest(
         $annotation(Unit::class)
         interface ComponentInterface
         """,
-    ) {
-      val component = componentInterface.anyDaggerComponent(annotationClass)
-      assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule2.kotlin)
+      ) {
+        val component = componentInterface.anyDaggerComponent(annotationClass)
+        assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule2.kotlin)
+      }
     }
-  }
 
-  @Test fun `a contributed binding excluded in one scope is not included by another scope`() {
-    compile(
-      """
+  @TestFactory
+  fun `a contributed binding excluded in one scope is not included by another scope`() =
+    testFactory {
+      compile(
+        """
         package com.squareup.test
 
         import com.squareup.anvil.annotations.ContributesBinding
@@ -301,21 +293,22 @@ class ModuleMergerRepeatableTest(
         $annotation(Unit::class)
         interface ComponentInterface
         """,
-    ) {
-      assertThat(
+      ) {
+        assertThat(
         componentInterface.mergedModules(annotationClass).flatMapArray {
           it.java.declaredMethods
         },
       ).isEmpty()
+      }
     }
-  }
 
-  @Test
-  fun `modules and dependencies are added in the Dagger component with multiple merge annotations`() {
-    assumeMergeComponent(annotationClass)
+  @TestFactory
+  fun `modules and dependencies are added in the Dagger component with multiple merge annotations`() =
+    testFactory {
+      assumeMergeComponent(annotationClass)
 
-    compile(
-      """
+      compile(
+        """
       package com.squareup.test
       
       $import
@@ -332,12 +325,15 @@ class ModuleMergerRepeatableTest(
       )
       interface ComponentInterface
       """,
-    ) {
-      val component = componentInterface.daggerComponent
-      assertThat(
+      ) {
+        val component = componentInterface.daggerComponent
+        assertThat(
         component.modules.withoutAnvilModules(),
-      ).containsExactly(Boolean::class, Int::class)
-      assertThat(component.dependencies.toList()).containsExactly(Boolean::class, Int::class)
+      ).containsExactly(
+          Boolean::class,
+          Int::class,
+        )
+        assertThat(component.dependencies.toList()).containsExactly(Boolean::class, Int::class)
+      }
     }
-  }
 }

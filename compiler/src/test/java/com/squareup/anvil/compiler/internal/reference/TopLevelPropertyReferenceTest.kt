@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.internal.reference
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.DefaultTestEnvironmentTest
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.FileWithContent
@@ -17,12 +18,12 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtProperty
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.source.getPsi
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import java.io.File
 
-class TopLevelPropertyReferenceTest {
+class TopLevelPropertyReferenceTest : DefaultTestEnvironmentTest {
 
-  @Test fun `top level properties are parsed`() {
+  @Test fun `top level properties are parsed`() = test {
     propertyTest(
       """
       package com.squareup.test
@@ -47,7 +48,7 @@ class TopLevelPropertyReferenceTest {
     }
   }
 
-  @Test fun `for top level properties types are resolved`() {
+  @Test fun `for top level properties types are resolved`() = test {
     propertyTest(
       """
       package com.squareup.test
@@ -66,7 +67,7 @@ class TopLevelPropertyReferenceTest {
     }
   }
 
-  @Test fun `for top level properties annotations are parsed`() {
+  @Test fun `for top level properties annotations are parsed`() = test {
     propertyTest(
       """
       package com.squareup.test
@@ -88,7 +89,7 @@ class TopLevelPropertyReferenceTest {
     }
   }
 
-  @Test fun `for top level properties setter annotations are parsed`() {
+  @Test fun `for top level properties setter annotations are parsed`() = test {
     propertyTest(
       """
       package com.squareup.test
@@ -111,7 +112,7 @@ class TopLevelPropertyReferenceTest {
     }
   }
 
-  @Test fun `for top level properties getter annotations are parsed`() {
+  @Test fun `for top level properties getter annotations are parsed`() = test {
     propertyTest(
       """
       package com.squareup.test
@@ -134,7 +135,7 @@ class TopLevelPropertyReferenceTest {
     }
   }
 
-  @Test fun `lateinit top level properties are parsed`() {
+  @Test fun `lateinit top level properties are parsed`() = test {
     propertyTest(
       """
       package com.squareup.test

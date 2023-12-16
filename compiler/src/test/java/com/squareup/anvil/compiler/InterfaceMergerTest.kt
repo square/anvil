@@ -7,35 +7,16 @@ import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.extends
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
-import kotlin.reflect.KClass
+import org.junit.jupiter.api.TestFactory
 
-@RunWith(Parameterized::class)
-class InterfaceMergerTest(
-  private val annotationClass: KClass<*>,
+class InterfaceMergerTest : AnnotationsTest(
+  MergeComponent::class,
+  MergeSubcomponent::class,
+  MergeInterfaces::class,
 ) {
 
-  private val annotation = "@${annotationClass.simpleName}"
-  private val import = "import ${annotationClass.java.canonicalName}"
-
-  companion object {
-    @Parameters(name = "{0}")
-    @JvmStatic
-    fun annotationClasses(): Collection<Any> {
-      return buildList {
-        add(MergeComponent::class)
-        if (isFullTestRun()) {
-          add(MergeSubcomponent::class)
-          add(MergeInterfaces::class)
-        }
-      }
-    }
-  }
-
-  @Test fun `interfaces are merged successfully`() {
+  @TestFactory
+  fun `interfaces are merged successfully`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -58,7 +39,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `parent interface is merged`() {
+  @TestFactory
+  fun `parent interface is merged`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -79,7 +61,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `interfaces are not merged without @Merge annotation`() {
+  @TestFactory
+  fun `interfaces are not merged without @Merge annotation`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -97,7 +80,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `interfaces are not merged without @ContributesTo annotation`() {
+  @TestFactory
+  fun `interfaces are not merged without @ContributesTo annotation`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -115,7 +99,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `code can be in any package`() {
+  @TestFactory
+  fun `code can be in any package`() = testFactory {
     compile(
       """
       package com.other
@@ -137,7 +122,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `classes annotated with @MergeComponent must be interfaces`() {
+  @TestFactory
+  fun `classes annotated with @MergeComponent must be interfaces`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -154,7 +140,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `a contributed interface can be replaced`() {
+  @TestFactory
+  fun `a contributed interface can be replaced`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -180,7 +167,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `replaced interfaces must be interfaces and not classes`() {
+  @TestFactory
+  fun `replaced interfaces must be interfaces and not classes`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -208,7 +196,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `replaced interfaces must use the same scope`() {
+  @TestFactory
+  fun `replaced interfaces must use the same scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -242,7 +231,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `predefined interfaces are not replaced`() {
+  @TestFactory
+  fun `predefined interfaces are not replaced`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -268,7 +258,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `interface can be excluded`() {
+  @TestFactory
+  fun `interface can be excluded`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -296,7 +287,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `excluded interfaces must use the same scope`() {
+  @TestFactory
+  fun `excluded interfaces must use the same scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -330,7 +322,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `predefined interfaces cannot be excluded`() {
+  @TestFactory
+  fun `predefined interfaces cannot be excluded`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -367,7 +360,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `interfaces are added to components with corresponding scope`() {
+  @TestFactory
+  fun `interfaces are added to components with corresponding scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -396,11 +390,13 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `interfaces are added to components with corresponding scope and component type`() {
-    assumeMergeComponent(annotationClass)
+  @TestFactory
+  fun `interfaces are added to components with corresponding scope and component type`() =
+    testFactory {
+      assumeMergeComponent(annotationClass)
 
-    compile(
-      """
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesTo
@@ -419,16 +415,17 @@ class InterfaceMergerTest(
       @MergeSubcomponent(Unit::class)
       interface SubcomponentInterface
       """,
-    ) {
-      assertThat(componentInterface extends contributingInterface).isTrue()
-      assertThat(componentInterface extends secondContributingInterface).isFalse()
+      ) {
+        assertThat(componentInterface extends contributingInterface).isTrue()
+        assertThat(componentInterface extends secondContributingInterface).isFalse()
 
-      assertThat(subcomponentInterface extends contributingInterface).isFalse()
-      assertThat(subcomponentInterface extends secondContributingInterface).isTrue()
+        assertThat(subcomponentInterface extends contributingInterface).isFalse()
+        assertThat(subcomponentInterface extends secondContributingInterface).isTrue()
+      }
     }
-  }
 
-  @Test fun `contributed interfaces must be public`() {
+  @TestFactory
+  fun `contributed interfaces must be public`() = testFactory {
     val visibilities = setOf(
       "internal",
       "private",
@@ -457,7 +454,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `inner interfaces are merged`() {
+  @TestFactory
+  fun `inner interfaces are merged`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -478,7 +476,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `inner interface in a merged component with different scope are merged`() {
+  @TestFactory
+  fun `inner interface in a merged component with different scope are merged`() = testFactory {
     assumeMergeComponent(annotationClass)
 
     compile(
@@ -507,7 +506,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `interfaces are merged without a package`() {
+  @TestFactory
+  fun `interfaces are merged without a package`() = testFactory {
     compile(
       """
       import com.squareup.anvil.annotations.ContributesTo
@@ -526,7 +526,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `module interfaces are not merged`() {
+  @TestFactory
+  fun `module interfaces are not merged`() = testFactory {
     // They could cause errors while compiling code when adding our contributed super classes.
     compile(
       """
@@ -551,7 +552,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `merged interfaces can be contributed to another scope at the same time`() {
+  @TestFactory
+  fun `merged interfaces can be contributed to another scope at the same time`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -577,7 +579,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `anonymous inner classes should not be evaluated`() {
+  @TestFactory
+  fun `anonymous inner classes should not be evaluated`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -597,7 +600,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `interfaces contributed to multiple scopes are merged successfully`() {
+  @TestFactory
+  fun `interfaces contributed to multiple scopes are merged successfully`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -626,10 +630,11 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test
-  fun `interfaces contributed to multiple scopes are merged successfully with multiple compilations`() {
-    val firstResult = compile(
-      """
+  @TestFactory
+  fun `interfaces contributed to multiple scopes are merged successfully with multiple compilations`() =
+    testFactory {
+      val firstResult = compile(
+        """
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesTo
@@ -638,12 +643,13 @@ class InterfaceMergerTest(
       @ContributesTo(Unit::class)
       interface ContributingInterface
       """,
-    ) {
-      assertThat(exitCode).isEqualTo(OK)
-    }
+        workingDir = workingDir.resolve("first"),
+      ) {
+        assertThat(exitCode).isEqualTo(OK)
+      }
 
-    compile(
-      """
+      compile(
+        """
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesTo
@@ -658,16 +664,18 @@ class InterfaceMergerTest(
       $annotation(Unit::class)
       interface SubcomponentInterface
       """,
-      previousCompilationResult = firstResult,
-    ) {
-      assertThat(componentInterface extends contributingInterface).isTrue()
-      assertThat(componentInterface extends secondContributingInterface).isTrue()
-      assertThat(subcomponentInterface extends contributingInterface).isTrue()
-      assertThat(subcomponentInterface extends secondContributingInterface).isFalse()
+        previousCompilationResult = firstResult,
+        workingDir = workingDir.resolve("second"),
+      ) {
+        assertThat(componentInterface extends contributingInterface).isTrue()
+        assertThat(componentInterface extends secondContributingInterface).isTrue()
+        assertThat(subcomponentInterface extends contributingInterface).isTrue()
+        assertThat(subcomponentInterface extends secondContributingInterface).isFalse()
+      }
     }
-  }
 
-  @Test fun `interfaces contributed to multiple scopes can be replaced`() {
+  @TestFactory
+  fun `interfaces contributed to multiple scopes can be replaced`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -696,8 +704,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test
-  fun `replaced interfaces contributed to multiple scopes must use the same scope`() {
+  @TestFactory
+  fun `replaced interfaces contributed to multiple scopes must use the same scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -731,7 +739,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `interfaces contributed to multiple scopes can be excluded in one scope`() {
+  @TestFactory
+  fun `interfaces contributed to multiple scopes can be excluded in one scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -760,7 +769,8 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `contributed interfaces in the old format are picked up`() {
+  @TestFactory
+  fun `contributed interfaces in the old format are picked up`() = testFactory {
     val result = AnvilCompilation()
       .configureAnvil(enableAnvil = false)
       .compile(

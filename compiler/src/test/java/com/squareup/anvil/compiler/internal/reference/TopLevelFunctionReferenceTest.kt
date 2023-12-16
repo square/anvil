@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.internal.reference
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.DefaultTestEnvironmentTest
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.FileWithContent
@@ -17,12 +18,12 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.KtFunction
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.source.getPsi
-import org.junit.Test
+import org.junit.jupiter.api.Test
 import java.io.File
 
-class TopLevelFunctionReferenceTest {
+class TopLevelFunctionReferenceTest : DefaultTestEnvironmentTest {
 
-  @Test fun `top level functions are parsed correctly`() {
+  @Test fun `top level functions are parsed correctly`() = test {
     functionTest(
       """
       package com.squareup.test
@@ -45,7 +46,7 @@ class TopLevelFunctionReferenceTest {
     }
   }
 
-  @Test fun `top level functions parameters and types are parsed correctly`() {
+  @Test fun `top level functions parameters and types are parsed correctly`() = test {
     functionTest(
       """
       package com.squareup.test
@@ -63,7 +64,7 @@ class TopLevelFunctionReferenceTest {
     }
   }
 
-  @Test fun `top level functions annotations are parsed correctly`() {
+  @Test fun `top level functions annotations are parsed correctly`() = test {
     functionTest(
       """
       package com.squareup.test
@@ -83,7 +84,7 @@ class TopLevelFunctionReferenceTest {
     }
   }
 
-  @Test fun `top level functions generic return types are parsed correctly`() {
+  @Test fun `top level functions generic return types are parsed correctly`() = test {
     functionTest(
       """
       package com.squareup.test
@@ -99,7 +100,7 @@ class TopLevelFunctionReferenceTest {
     }
   }
 
-  @Test fun `top level functions generic and lambda parameters are parsed correctly`() {
+  @Test fun `top level functions generic and lambda parameters are parsed correctly`() = test {
     functionTest(
       """
       package com.squareup.test

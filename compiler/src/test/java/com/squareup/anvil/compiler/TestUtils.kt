@@ -3,6 +3,12 @@ package com.squareup.anvil.compiler
 import com.google.common.collect.Lists.cartesianProduct
 import com.google.common.truth.ComparableSubject
 import com.google.common.truth.Truth.assertThat
+import com.rickbusarow.kase.DefaultTestEnvironment
+import com.rickbusarow.kase.HasTestEnvironmentFactory
+import com.rickbusarow.kase.KaseTestFactory
+import com.rickbusarow.kase.ParamTestEnvironmentFactory
+import com.rickbusarow.kase.TestEnvironment
+import com.rickbusarow.kase.files.HasWorkingDir
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesTo
@@ -34,6 +40,62 @@ import org.junit.Assume.assumeTrue
 import java.io.File
 import kotlin.reflect.KClass
 import kotlin.test.fail
+
+interface KaseCompileTest<PARAM, ENV : TestEnvironment> : KaseTestFactory<PARAM, ENV, ParamTestEnvironmentFactory<PARAM, ENV>>
+
+interface DefaultTestEnvironmentTest : HasTestEnvironmentFactory<DefaultTestEnvironment.Factory> {
+  override val testEnvironmentFactory: DefaultTestEnvironment.Factory
+    get() = DefaultTestEnvironment.Factory()
+}
+
+interface CompilationEnvironment : HasWorkingDir {
+  val mode: AnvilCompilationMode
+    get() = AnvilCompilationMode.Embedded(emptyList())
+
+  fun compile(
+    @Language("kotlin") source: String,
+    previousCompilationResult: JvmCompilationResult? = null,
+    enableDaggerAnnotationProcessor: Boolean = false,
+    disableComponentMerging: Boolean = false,
+    codeGenerators: List<CodeGenerator> = emptyList(),
+    allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
+    workingDir: File? = this@CompilationEnvironment.workingDir,
+    mode: AnvilCompilationMode = this@CompilationEnvironment.mode,
+    block: JvmCompilationResult.() -> Unit = { },
+  ): JvmCompilationResult = compileAnvil(
+    source,
+    allWarningsAsErrors = allWarningsAsErrors,
+    previousCompilationResult = previousCompilationResult,
+    enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+    disableComponentMerging = disableComponentMerging,
+    workingDir = workingDir,
+    mode = mode,
+    block = block,
+  )
+
+  fun compile(
+    @Language("kotlin") source0: String,
+    @Language("kotlin") vararg additionalSources: String,
+    previousCompilationResult: JvmCompilationResult? = null,
+    enableDaggerAnnotationProcessor: Boolean = false,
+    disableComponentMerging: Boolean = false,
+    codeGenerators: List<CodeGenerator> = emptyList(),
+    allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
+    workingDir: File? = this@CompilationEnvironment.workingDir,
+    mode: AnvilCompilationMode = this@CompilationEnvironment.mode,
+    block: JvmCompilationResult.() -> Unit = { },
+  ): JvmCompilationResult = compileAnvil(
+    source0,
+    *additionalSources,
+    allWarningsAsErrors = allWarningsAsErrors,
+    previousCompilationResult = previousCompilationResult,
+    enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+    disableComponentMerging = disableComponentMerging,
+    workingDir = workingDir,
+    mode = mode,
+    block = block,
+  )
+}
 
 internal fun compile(
   @Language("kotlin") vararg sources: String,
