@@ -1,32 +1,23 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
-import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.AnvilCompilationModeTest
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
-import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import org.intellij.lang.annotations.Language
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
+import org.junit.jupiter.api.TestFactory
+import org.junit.jupiter.api.parallel.Execution
+import org.junit.jupiter.api.parallel.ExecutionMode.SAME_THREAD
 
-@RunWith(Parameterized::class)
-class AnvilMergeAnnotationDetectorCheckTest(
-  private val mode: AnvilCompilationMode,
+@Execution(SAME_THREAD, reason = "KSP can't handle it")
+class AnvilMergeAnnotationDetectorCheckTest : AnvilCompilationModeTest(
+  AnvilCompilationMode.Embedded(),
+  AnvilCompilationMode.Ksp(),
 ) {
 
-  companion object {
-    @Parameterized.Parameters(name = "{0}")
-    @JvmStatic
-    fun modes(): Collection<Any> {
-      return listOf(AnvilCompilationMode.Embedded(), AnvilCompilationMode.Ksp())
-    }
-  }
-
-  @Test fun `@ContributesTo is allowed`() {
+  @TestFactory
+  fun `@ContributesTo is allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -37,13 +28,14 @@ class AnvilMergeAnnotationDetectorCheckTest(
       @com.squareup.anvil.annotations.ContributesTo(Any::class)
       object AnyClass
       """,
-      mode = mode,
+      disableComponentMerging = true,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
 
-  @Test fun `@ContributesBinding is allowed`() {
+  @TestFactory
+  fun `@ContributesBinding is allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -53,13 +45,14 @@ class AnvilMergeAnnotationDetectorCheckTest(
       @com.squareup.anvil.annotations.ContributesBinding(Any::class)
       class AnyClass : BaseType
       """,
-      mode = mode,
+      disableComponentMerging = true,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
 
-  @Test fun `@MergeComponent is not allowed`() {
+  @TestFactory
+  fun `@MergeComponent is not allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -69,13 +62,14 @@ class AnvilMergeAnnotationDetectorCheckTest(
       @com.squareup.anvil.annotations.MergeComponent(Any::class)
       class AnyClass
       """,
-      mode = mode,
+      disableComponentMerging = true,
     ) {
       assertError()
     }
   }
 
-  @Test fun `@MergeSubcomponent is not allowed`() {
+  @TestFactory
+  fun `@MergeSubcomponent is not allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -85,13 +79,14 @@ class AnvilMergeAnnotationDetectorCheckTest(
       @com.squareup.anvil.annotations.MergeSubcomponent(Any::class)
       class AnyClass
       """,
-      mode = mode,
+      disableComponentMerging = true,
     ) {
       assertError()
     }
   }
 
-  @Test fun `@MergeModules is not allowed`() {
+  @TestFactory
+  fun `@MergeModules is not allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -101,13 +96,14 @@ class AnvilMergeAnnotationDetectorCheckTest(
       @com.squareup.anvil.annotations.compat.MergeModules(Any::class)
       class AnyClass
       """,
-      mode = mode,
+      disableComponentMerging = true,
     ) {
       assertError()
     }
   }
 
-  @Test fun `@MergeInterfaces is not allowed`() {
+  @TestFactory
+  fun `@MergeInterfaces is not allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -117,7 +113,7 @@ class AnvilMergeAnnotationDetectorCheckTest(
       @com.squareup.anvil.annotations.compat.MergeInterfaces(Any::class)
       class AnyClass
       """,
-      mode = mode,
+      disableComponentMerging = true,
     ) {
       assertError()
     }
@@ -133,16 +129,15 @@ class AnvilMergeAnnotationDetectorCheckTest(
     )
   }
 
-  private fun compile(
-    @Language("kotlin") vararg sources: String,
-    codeGenerators: List<CodeGenerator> = emptyList(),
-    mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
-    block: JvmCompilationResult.() -> Unit = { },
-  ): JvmCompilationResult = compileAnvil(
-    sources = sources,
-    disableComponentMerging = true,
-    allWarningsAsErrors = WARNINGS_AS_ERRORS,
-    block = block,
-    mode = mode,
-  )
+  // private fun compile(
+  //   @Language("kotlin") vararg sources: String,
+  //   mode: AnvilCompilationMode,
+  //   block: JvmCompilationResult.() -> Unit = { },
+  // ): JvmCompilationResult = compileAnvil(
+  //   sources = sources,
+  //   disableComponentMerging = true,
+  //   allWarningsAsErrors = WARNINGS_AS_ERRORS,
+  //   block = block,
+  //   mode = mode,
+  // )
 }

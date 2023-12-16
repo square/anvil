@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.internal.reference
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.DefaultTestEnvironmentTest
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.kotlinpoet.ClassName
@@ -9,11 +10,11 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.resolve.source.getPsi
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-class ClassReferenceTest {
+class ClassReferenceTest : DefaultTestEnvironmentTest {
 
-  @Test fun `inner classes are parsed`() {
+  @Test fun `inner classes are parsed`() = test {
     compile(
       """
       package com.squareup.test
@@ -80,7 +81,7 @@ class ClassReferenceTest {
     }
   }
 
-  @Test fun `the type parameter list is parsed`() {
+  @Test fun `the type parameter list is parsed`() = test {
     compile(
       """
       package com.squareup.test
@@ -159,7 +160,7 @@ class ClassReferenceTest {
     }
   }
 
-  @Test fun `generic types are detected`() {
+  @Test fun `generic types are detected`() = test {
     compile(
       """
       package com.squareup.test
@@ -249,7 +250,7 @@ class ClassReferenceTest {
     }
   }
 
-  @Test fun `an enum entry is a class`() {
+  @Test fun `an enum entry is a class`() = test {
     compile(
       """
       package com.squareup.test
@@ -283,7 +284,7 @@ class ClassReferenceTest {
     }
   }
 
-  @Test fun `an import alias can be resolved`() {
+  @Test fun `an import alias can be resolved`() = test {
     compile(
       """
       package com.squareup.test
@@ -323,7 +324,7 @@ class ClassReferenceTest {
     }
   }
 
-  @Test fun `a generic class can be converted to a typename`() {
+  @Test fun `a generic class can be converted to a typename`() = test {
     compile(
       """
       package com.squareup.test
@@ -415,7 +416,7 @@ class ClassReferenceTest {
     }
   }
 
-  @Test fun `super types can be resolved`() {
+  @Test fun `super types can be resolved`() = test {
     compile(
       """
       package com.squareup.test
@@ -502,7 +503,7 @@ class ClassReferenceTest {
     }
   }
 
-  @Test fun `an imported top level function doesn't confuse the class resolver`() {
+  @Test fun `an imported top level function doesn't confuse the class resolver`() = test {
     compile(
       """
       package com.squareup.test

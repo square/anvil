@@ -1,14 +1,15 @@
 package com.squareup.anvil.compiler.internal.reference
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.DefaultTestEnvironmentTest
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.jetbrains.kotlin.name.FqName
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-class AnnotationReferenceTest {
-  @Test fun `annotation references with different arguments aren't equal`() {
+class AnnotationReferenceTest : DefaultTestEnvironmentTest {
+  @Test fun `annotation references with different arguments aren't equal`() = test {
     compile(
       """
       package com.squareup.test
@@ -53,7 +54,7 @@ class AnnotationReferenceTest {
     }
   }
 
-  @Test fun `an enum as annotation argument can be parsed`() {
+  @Test fun `an enum as annotation argument can be parsed`() = test {
     compile(
       """
       @file:Suppress("RemoveRedundantQualifierName")
@@ -99,7 +100,7 @@ class AnnotationReferenceTest {
     }
   }
 
-  @Test fun `a string annotation argument can be parsed`() {
+  @Test fun `a string annotation argument can be parsed`() = test {
     compile(
       """
       package com.squareup.test
@@ -138,7 +139,7 @@ class AnnotationReferenceTest {
     }
   }
 
-  @Test fun `an int annotation argument can be parsed`() {
+  @Test fun `an int annotation argument can be parsed`() = test {
     @Suppress("RemoveRedundantQualifierName")
     compile(
       """
@@ -298,7 +299,7 @@ class AnnotationReferenceTest {
     }
   }
 
-  @Test fun `a complex annotation argument can be parsed`() {
+  @Test fun `a complex annotation argument can be parsed`() = test {
     compile(
       """
       package com.squareup.test
@@ -342,7 +343,7 @@ class AnnotationReferenceTest {
     }
   }
 
-  @Test fun `a string template annotation argument can be parsed`() {
+  @Test fun `a string template annotation argument can be parsed`() = test {
     compile(
       """
       package com.squareup.test
@@ -380,7 +381,7 @@ class AnnotationReferenceTest {
     }
   }
 
-  @Test fun `a string template annotation argument with no literals can be parsed`() {
+  @Test fun `a string template annotation argument with no literals can be parsed`() = test {
     compile(
       """
       package com.squareup.test
@@ -418,7 +419,7 @@ class AnnotationReferenceTest {
     }
   }
 
-  @Test fun `a string template annotation argument with dot-qualified constants can be parsed`() {
+  @Test fun `a string template annotation argument with dot-qualified constants can be parsed`() = test {
     compile(
       """
       package com.squareup.test
@@ -469,7 +470,7 @@ class AnnotationReferenceTest {
     }
   }
 
-  @Test fun `an annotation may have a dollar sign and be wrapped in backticks`() {
+  @Test fun `an annotation may have a dollar sign and be wrapped in backticks`() = test {
     compile(
       """
       package com.squareup.test

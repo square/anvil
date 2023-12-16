@@ -55,6 +55,11 @@ dependencies {
   testImplementation(libs.dagger2.compiler)
   // Force later guava version for Dagger's needs
   testImplementation(libs.guava)
+  testImplementation(libs.junit)
+  testImplementation(libs.junit.jupiter)
+  testImplementation(libs.junit.jupiter.api)
+  testImplementation(libs.junit.jupiter.engine)
+  testImplementation(libs.junit.vintage.engine)
   testImplementation(libs.kase)
   testImplementation(libs.kotest.assertions.core.jvm)
   testImplementation(libs.kotlin.annotationProcessingEmbeddable)

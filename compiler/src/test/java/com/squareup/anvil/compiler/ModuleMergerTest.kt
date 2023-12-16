@@ -4,8 +4,6 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
-import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
-import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.daggerSubcomponent
@@ -13,34 +11,14 @@ import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Component
 import dagger.Subcomponent
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
-import kotlin.reflect.KClass
+import org.junit.jupiter.api.TestFactory
 
-@RunWith(Parameterized::class)
-class ModuleMergerTest(
-  private val annotationClass: KClass<out Annotation>,
+class ModuleMergerTest : AnnotationsTest(
+  MergeComponent::class,
+  MergeSubcomponent::class,
 ) {
 
-  private val annotation = "@${annotationClass.simpleName}"
-  private val import = "import ${annotationClass.java.canonicalName}"
-
-  companion object {
-    @Parameters(name = "{0}")
-    @JvmStatic
-    fun annotationClasses(): Collection<Any> {
-      return buildList {
-        add(MergeComponent::class)
-        if (isFullTestRun()) {
-          add(MergeSubcomponent::class)
-        }
-      }
-    }
-  }
-
-  @Test fun `Dagger modules are empty without arguments`() {
+  @TestFactory fun `Dagger modules are empty without arguments`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -59,7 +37,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `modules are added in the Dagger component`() {
+  @TestFactory fun `modules are added in the Dagger component`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -83,7 +61,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `modules and dependencies are added in the Dagger component`() {
+  @TestFactory fun `modules and dependencies are added in the Dagger component`() = testFactory {
     assumeMergeComponent(annotationClass)
 
     compile(
@@ -114,16 +92,17 @@ class ModuleMergerTest(
     }
   }
 
-  @Test
-  fun `it's not allowed to have @Component and @MergeComponent annotation at the same time`() {
-    val daggerComponentClass = when (annotationClass) {
-      MergeComponent::class -> Component::class
-      MergeSubcomponent::class -> Subcomponent::class
-      else -> throw NotImplementedError()
-    }
+  @TestFactory
+  fun `it's not allowed to have @Component and @MergeComponent annotation at the same time`() =
+    testFactory {
+      val daggerComponentClass = when (annotationClass) {
+        MergeComponent::class -> Component::class
+        MergeSubcomponent::class -> Subcomponent::class
+        else -> throw NotImplementedError()
+      }
 
-    compile(
-      """
+      compile(
+        """
       package com.squareup.test
       
       $import
@@ -132,13 +111,13 @@ class ModuleMergerTest(
       @${daggerComponentClass.java.canonicalName}
       interface ComponentInterface
       """,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:7:11")
+      ) {
+        assertThat(exitCode).isError()
+        assertThat(messages).contains("Source0.kt:7:11")
+      }
     }
-  }
 
-  @Test fun `modules are merged`() {
+  @TestFactory fun `modules are merged`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -159,7 +138,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `module interfaces are merged`() {
+  @TestFactory fun `module interfaces are merged`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -180,7 +159,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `modules are merged with predefined modules`() {
+  @TestFactory fun `modules are merged with predefined modules`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -208,7 +187,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `contributing module must be a Dagger Module`() {
+  @TestFactory fun `contributing module must be a Dagger Module`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -228,7 +207,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `module can be replaced`() {
+  @TestFactory fun `module can be replaced`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -256,7 +235,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `contributed binding can be replaced`() {
+  @TestFactory fun `contributed binding can be replaced`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -292,7 +271,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `contributed multibinding can be replaced`() {
+  @TestFactory fun `contributed multibinding can be replaced`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -328,9 +307,10 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `contributed binding can be replaced but must have the same scope`() {
-    compile(
-      """
+  @TestFactory fun `contributed binding can be replaced but must have the same scope`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesBinding
@@ -352,20 +332,21 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:17:16")
-      assertThat(messages).contains(
-        "com.squareup.test.DaggerModule1 with scopes [kotlin.Any] wants to replace " +
-          "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
-          "to the same scope.",
-      )
+      ) {
+        assertThat(exitCode).isError()
+        assertThat(messages).contains("Source0.kt:17:16")
+        assertThat(messages).contains(
+          "com.squareup.test.DaggerModule1 with scopes [kotlin.Any] wants to replace " +
+            "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
+            "to the same scope.",
+        )
+      }
     }
-  }
 
-  @Test fun `contributed multibinding can be replaced but must have the same scope`() {
-    compile(
-      """
+  @TestFactory fun `contributed multibinding can be replaced but must have the same scope`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesMultibinding
@@ -387,18 +368,18 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:17:16")
-      assertThat(messages).contains(
-        "com.squareup.test.DaggerModule1 with scopes [kotlin.Any] wants to replace " +
-          "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
-          "to the same scope.",
-      )
+      ) {
+        assertThat(exitCode).isError()
+        assertThat(messages).contains("Source0.kt:17:16")
+        assertThat(messages).contains(
+          "com.squareup.test.DaggerModule1 with scopes [kotlin.Any] wants to replace " +
+            "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
+            "to the same scope.",
+        )
+      }
     }
-  }
 
-  @Test fun `module can be replaced by contributed binding`() {
+  @TestFactory fun `module can be replaced by contributed binding`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -432,7 +413,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `module can be replaced by contributed multibinding`() {
+  @TestFactory fun `module can be replaced by contributed multibinding`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -466,7 +447,8 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `module replaced by contributed binding must use the same scope`() {
+  @TestFactory
+  fun `module replaced by contributed binding must use the same scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -501,7 +483,8 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `module replaced by contributed multibinding must use the same scope`() {
+  @TestFactory
+  fun `module replaced by contributed multibinding must use the same scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -536,7 +519,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `replaced modules must be Dagger modules`() {
+  @TestFactory fun `replaced modules must be Dagger modules`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -562,7 +545,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `replaced modules must use the same scope`() {
+  @TestFactory fun `replaced modules must use the same scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -595,7 +578,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `predefined modules are not replaced`() {
+  @TestFactory fun `predefined modules are not replaced`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -629,7 +612,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `modules can be excluded`() {
+  @TestFactory fun `modules can be excluded`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -659,7 +642,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `excluded modules must use the same scope`() {
+  @TestFactory fun `excluded modules must use the same scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -694,7 +677,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `contributed modules cannot be replaced by excluded modules`() {
+  @TestFactory fun `contributed modules cannot be replaced by excluded modules`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -724,7 +707,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `contributed modules are only excluded in one module`() {
+  @TestFactory fun `contributed modules are only excluded in one module`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -759,7 +742,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `contributed bindings can be excluded`() {
+  @TestFactory fun `contributed bindings can be excluded`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -789,7 +772,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `contributed multibindings can be excluded`() {
+  @TestFactory fun `contributed multibindings can be excluded`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -819,7 +802,8 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `contributed bindings can be excluded but must use the same scope`() {
+  @TestFactory
+  fun `contributed bindings can be excluded but must use the same scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -851,7 +835,8 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `contributed multibindings can be excluded but must use the same scope`() {
+  @TestFactory
+  fun `contributed multibindings can be excluded but must use the same scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -883,7 +868,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `modules are added to components with corresponding scope`() {
+  @TestFactory fun `modules are added to components with corresponding scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -913,40 +898,42 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `modules are added to components with corresponding scope and component type`() {
-    assumeMergeComponent(annotationClass)
+  @TestFactory
+  fun `modules are added to components with corresponding scope and component type`() =
+    testFactory {
+      assumeMergeComponent(annotationClass)
 
-    compile(
-      """
-      package com.squareup.test
+      compile(
+        """
+        package com.squareup.test
 
-      import com.squareup.anvil.annotations.ContributesTo
-      import com.squareup.anvil.annotations.MergeComponent
-      import com.squareup.anvil.annotations.MergeSubcomponent
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+        import com.squareup.anvil.annotations.MergeSubcomponent
 
-      @ContributesTo(Any::class)
-      @dagger.Module
-      abstract class DaggerModule1
+        @ContributesTo(Any::class)
+        @dagger.Module
+        abstract class DaggerModule1
 
-      @ContributesTo(Unit::class)
-      @dagger.Module
-      abstract class DaggerModule2 
+        @ContributesTo(Unit::class)
+        @dagger.Module
+        abstract class DaggerModule2 
 
-      @MergeComponent(Any::class)
-      interface ComponentInterface 
+        @MergeComponent(Any::class)
+        interface ComponentInterface 
 
-      @MergeSubcomponent(Unit::class)
-      interface SubcomponentInterface
-      """,
-    ) {
-      assertThat(componentInterface.daggerComponent.modules.withoutAnvilModules())
-        .containsExactly(daggerModule1.kotlin)
-      assertThat(subcomponentInterface.daggerSubcomponent.modules.withoutAnvilModules())
-        .containsExactly(daggerModule2.kotlin)
+        @MergeSubcomponent(Unit::class)
+        interface SubcomponentInterface
+        """,
+      ) {
+        assertThat(componentInterface.daggerComponent.modules.withoutAnvilModules())
+          .containsExactly(daggerModule1.kotlin)
+        assertThat(subcomponentInterface.daggerSubcomponent.modules.withoutAnvilModules())
+          .containsExactly(daggerModule2.kotlin)
+      }
     }
-  }
 
-  @Test fun `contributed modules must be public`() {
+  @TestFactory fun `contributed modules must be public`() = testFactory {
     val visibilities = setOf(
       "internal",
       "private",
@@ -975,7 +962,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `inner modules are merged`() {
+  @TestFactory fun `inner modules are merged`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -998,7 +985,8 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `inner modules in a merged component with different scope are merged`() {
+  @TestFactory
+  fun `inner modules in a merged component with different scope are merged`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -1025,7 +1013,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `modules are merged without a package`() {
+  @TestFactory fun `modules are merged without a package`() = testFactory {
     compile(
       """
       import com.squareup.anvil.annotations.ContributesTo
@@ -1045,7 +1033,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `a module is not allowed to be included and excluded`() {
+  @TestFactory fun `a module is not allowed to be included and excluded`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -1074,7 +1062,7 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `an error is thrown when the scope parameter is missing`() {
+  @TestFactory fun `an error is thrown when the scope parameter is missing`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -1092,9 +1080,10 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `merged modules can be contributed to another scope at the same time`() {
-    compile(
-      """
+  @TestFactory fun `merged modules can be contributed to another scope at the same time`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.compat.MergeModules
@@ -1113,18 +1102,20 @@ class ModuleMergerTest(
       $annotation(Unit::class)
       interface ComponentInterface
       """,
-    ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
-        .containsExactly(daggerModule2.kotlin)
+      ) {
+        assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
+          .containsExactly(daggerModule2.kotlin)
 
-      val component = componentInterface.anyDaggerComponent
-      assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule1.kotlin)
+        val component = componentInterface.anyDaggerComponent
+        assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule1.kotlin)
+      }
     }
-  }
 
-  @Test fun `locally defined classes without a classId are skipped over when merging modules`() {
-    compile(
-      """
+  @TestFactory
+  fun `locally defined classes without a classId are skipped over when merging modules`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesTo
@@ -1161,12 +1152,12 @@ class ModuleMergerTest(
       $annotation(scope = Any::class)
       interface ComponentInterface
       """,
-    ) {
-      assertThat(exitCode).isEqualTo(OK)
+      ) {
+        assertThat(exitCode).isEqualTo(OK)
+      }
     }
-  }
 
-  @Test fun `modules contributed to multiple scopes are merged`() {
+  @TestFactory fun `modules contributed to multiple scopes are merged`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -1198,51 +1189,55 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `modules contributed to multiple scopes are merged with multiple compilations`() {
-    val firstResult = compile(
-      """
-      package com.squareup.test
-      
-      import com.squareup.anvil.annotations.ContributesTo
-      import dagger.Module
+  @TestFactory
+  fun `modules contributed to multiple scopes are merged with multiple compilations`() =
+    testFactory {
+      val firstResult = compile(
+        """
+        package com.squareup.test
         
-      @ContributesTo(Any::class)
-      @ContributesTo(Unit::class)
-      @Module
-      abstract class DaggerModule1
-      """,
-    ) {
-      assertThat(exitCode).isEqualTo(OK)
+        import com.squareup.anvil.annotations.ContributesTo
+        import dagger.Module
+          
+        @ContributesTo(Any::class)
+        @ContributesTo(Unit::class)
+        @Module
+        abstract class DaggerModule1
+        """,
+        workingDir = workingDir.resolve("first"),
+      ) {
+        assertThat(exitCode).isEqualTo(OK)
+      }
+
+      compile(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesTo
+        $import
+        
+        @ContributesTo(Any::class)
+        @dagger.Module
+        abstract class DaggerModule2
+        
+        $annotation(Any::class)
+        interface ComponentInterface
+        
+        $annotation(Unit::class)
+        interface SubcomponentInterface
+        """,
+        previousCompilationResult = firstResult,
+        workingDir = workingDir.resolve("second"),
+      ) {
+        assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
+          .containsExactly(daggerModule1.kotlin, daggerModule2.kotlin)
+
+        assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModules())
+          .containsExactly(daggerModule1.kotlin)
+      }
     }
 
-    compile(
-      """
-      package com.squareup.test
-      
-      import com.squareup.anvil.annotations.ContributesTo
-      $import
-      
-      @ContributesTo(Any::class)
-      @dagger.Module
-      abstract class DaggerModule2
-      
-      $annotation(Any::class)
-      interface ComponentInterface
-      
-      $annotation(Unit::class)
-      interface SubcomponentInterface
-      """,
-      previousCompilationResult = firstResult,
-    ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
-        .containsExactly(daggerModule1.kotlin, daggerModule2.kotlin)
-
-      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModules())
-        .containsExactly(daggerModule1.kotlin)
-    }
-  }
-
-  @Test fun `modules contributed to multiple scopes can be replaced`() {
+  @TestFactory fun `modules contributed to multiple scopes can be replaced`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -1274,8 +1269,8 @@ class ModuleMergerTest(
     }
   }
 
-  @Test
-  fun `replaced module contributed to multiple scopes must use the same scope`() {
+  @TestFactory
+  fun `replaced module contributed to multiple scopes must use the same scope`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -1311,9 +1306,10 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `modules contributed to multiple scopes can be excluded in one scope`() {
-    compile(
-      """
+  @TestFactory fun `modules contributed to multiple scopes can be excluded in one scope`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesTo
@@ -1334,16 +1330,16 @@ class ModuleMergerTest(
       $annotation(Unit::class)
       interface SubcomponentInterface
       """,
-    ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
-        .containsExactly(daggerModule2.kotlin)
+      ) {
+        assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
+          .containsExactly(daggerModule2.kotlin)
 
-      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModules())
-        .containsExactly(daggerModule1.kotlin)
+        assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModules())
+          .containsExactly(daggerModule1.kotlin)
+      }
     }
-  }
 
-  @Test fun `contributed modules in the old format are picked up`() {
+  @TestFactory fun `contributed modules in the old format are picked up`() = testFactory {
     val result = AnvilCompilation()
       .configureAnvil(enableAnvil = false)
       .compile(
@@ -1387,7 +1383,4 @@ class ModuleMergerTest(
         .containsExactly(daggerModule1.kotlin)
     }
   }
-
-  private val Class<*>.anyDaggerComponent: AnyDaggerComponent
-    get() = anyDaggerComponent(annotationClass)
 }

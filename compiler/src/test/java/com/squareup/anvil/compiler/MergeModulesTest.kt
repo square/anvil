@@ -4,11 +4,11 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-class MergeModulesTest {
+class MergeModulesTest : DefaultTestEnvironmentTest {
 
-  @Test fun `Dagger modules are empty without arguments`() {
+  @Test fun `Dagger modules are empty without arguments`() = test {
     compile(
       """
       package com.squareup.test
@@ -24,7 +24,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `included modules are added in the composite module`() {
+  @Test fun `included modules are added in the composite module`() = test {
     compile(
       """
       package com.squareup.test
@@ -46,7 +46,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `includes and subcomponents are added in the Dagger module`() {
+  @Test fun `includes and subcomponents are added in the Dagger module`() = test {
     compile(
       """
       package com.squareup.test
@@ -73,7 +73,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `it's not allowed to have @Module and @MergeModules annotation at the same time`() {
+  @Test fun `it's not allowed to have @Module and @MergeModules annotation at the same time`() = test {
     compile(
       """
       package com.squareup.test
@@ -91,7 +91,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `modules are merged`() {
+  @Test fun `modules are merged`() = test {
     compile(
       """
       package com.squareup.test
@@ -112,7 +112,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `modules are merged with included modules`() {
+  @Test fun `modules are merged with included modules`() = test {
     compile(
       """
       package com.squareup.test
@@ -139,7 +139,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `contributing module must be a Dagger Module`() {
+  @Test fun `contributing module must be a Dagger Module`() = test {
     compile(
       """
       package com.squareup.test
@@ -160,7 +160,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `module can be replaced`() {
+  @Test fun `module can be replaced`() = test {
     compile(
       """
       package com.squareup.test
@@ -188,7 +188,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `contributed binding can be replaced`() {
+  @Test fun `contributed binding can be replaced`() = test {
     compile(
       """
       package com.squareup.test
@@ -224,7 +224,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `contributed multiinding can be replaced`() {
+  @Test fun `contributed multiinding can be replaced`() = test {
     compile(
       """
       package com.squareup.test
@@ -260,7 +260,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `contributed binding can be replaced but must have the same scope`() {
+  @Test fun `contributed binding can be replaced but must have the same scope`() = test {
     compile(
       """
       package com.squareup.test
@@ -296,7 +296,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `contributed multibinding can be replaced but must have the same scope`() {
+  @Test fun `contributed multibinding can be replaced but must have the same scope`() = test {
     compile(
       """
       package com.squareup.test
@@ -332,7 +332,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `module can be replaced by contributed binding`() {
+  @Test fun `module can be replaced by contributed binding`() = test {
     compile(
       """
       package com.squareup.test
@@ -366,7 +366,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `module can be replaced by contributed multibinding`() {
+  @Test fun `module can be replaced by contributed multibinding`() = test {
     compile(
       """
       package com.squareup.test
@@ -400,7 +400,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `module replaced by contributed binding must use the same scope`() {
+  @Test fun `module replaced by contributed binding must use the same scope`() = test {
     compile(
       """
       package com.squareup.test
@@ -436,7 +436,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `module replaced by contributed multibinding must use the same scope`() {
+  @Test fun `module replaced by contributed multibinding must use the same scope`() = test {
     compile(
       """
       package com.squareup.test
@@ -472,7 +472,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `replaced modules must be Dagger modules`() {
+  @Test fun `replaced modules must be Dagger modules`() = test {
     compile(
       """
       package com.squareup.test
@@ -499,7 +499,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `replaced modules must use the same scope`() {
+  @Test fun `replaced modules must use the same scope`() = test {
     compile(
       """
       package com.squareup.test
@@ -533,7 +533,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `included modules are not replaced`() {
+  @Test fun `included modules are not replaced`() = test {
     compile(
       """
       package com.squareup.test
@@ -566,7 +566,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `modules can be excluded`() {
+  @Test fun `modules can be excluded`() = test {
     compile(
       """
       package com.squareup.test
@@ -596,7 +596,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `excluded modules must use the same scope`() {
+  @Test fun `excluded modules must use the same scope`() = test {
     compile(
       """
       package com.squareup.test
@@ -628,7 +628,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `contributed bindings can be excluded`() {
+  @Test fun `contributed bindings can be excluded`() = test {
     compile(
       """
       package com.squareup.test
@@ -658,7 +658,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `contributed multibindings can be excluded`() {
+  @Test fun `contributed multibindings can be excluded`() = test {
     compile(
       """
       package com.squareup.test
@@ -688,7 +688,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `contributed bindings can be excluded but must use the same scope`() {
+  @Test fun `contributed bindings can be excluded but must use the same scope`() = test {
     compile(
       """
       package com.squareup.test
@@ -721,7 +721,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `contributed multibindings can be excluded but must use the same scope`() {
+  @Test fun `contributed multibindings can be excluded but must use the same scope`() = test {
     compile(
       """
       package com.squareup.test
@@ -754,7 +754,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `modules are added to merged modules with corresponding scope`() {
+  @Test fun `modules are added to merged modules with corresponding scope`() = test {
     compile(
       """
       package com.squareup.test
@@ -784,7 +784,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `contributed modules must be public`() {
+  @Test fun `contributed modules must be public`() = test {
     val visibilities = setOf(
       "internal",
       "private",
@@ -814,7 +814,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `inner modules are merged`() {
+  @Test fun `inner modules are merged`() = test {
     compile(
       """
       package com.squareup.test
@@ -837,7 +837,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `modules are merged without a package`() {
+  @Test fun `modules are merged without a package`() = test {
     compile(
       """
       import com.squareup.anvil.annotations.compat.MergeModules
@@ -856,7 +856,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `inner contributed modules are merged`() {
+  @Test fun `inner contributed modules are merged`() = test {
     // This code snippet used to trigger an error, see https://github.com/square/anvil/issues/256
     compile(
       """
@@ -884,7 +884,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `a module is not allowed to be included and excluded`() {
+  @Test fun `a module is not allowed to be included and excluded`() = test {
     compile(
       """
       package com.squareup.test
@@ -913,7 +913,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `merged modules can be contributed to another scope at the same time`() {
+  @Test fun `merged modules can be contributed to another scope at the same time`() = test {
     compile(
       """
       package com.squareup.test
@@ -942,7 +942,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `modules contributed to multiple scopes are merged`() {
+  @Test fun `modules contributed to multiple scopes are merged`() = test {
     compile(
       """
       package com.squareup.test
@@ -974,7 +974,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `modules contributed to multiple scopes can be replaced`() {
+  @Test fun `modules contributed to multiple scopes can be replaced`() = test {
     compile(
       """
       package com.squareup.test
@@ -1006,7 +1006,7 @@ class MergeModulesTest {
     }
   }
 
-  @Test fun `modules contributed to multiple scopes can be excluded in one scope`() {
+  @Test fun `modules contributed to multiple scopes can be excluded in one scope`() = test {
     compile(
       """
       package com.squareup.test

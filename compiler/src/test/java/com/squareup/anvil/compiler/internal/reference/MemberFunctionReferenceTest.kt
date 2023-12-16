@@ -1,16 +1,17 @@
 package com.squareup.anvil.compiler.internal.reference
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.DefaultTestEnvironmentTest
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.jetbrains.kotlin.name.FqName
-import org.junit.Test
+import org.junit.jupiter.api.Test
 
-class MemberFunctionReferenceTest {
+class MemberFunctionReferenceTest : DefaultTestEnvironmentTest {
 
-  @Test fun `constructors are parsed for PSI and Descriptor APIs correctly`() {
+  @Test fun `constructors are parsed for PSI and Descriptor APIs correctly`() = test {
     compile(
       """
       package com.squareup.test
@@ -71,7 +72,7 @@ class MemberFunctionReferenceTest {
     }
   }
 
-  @Test fun `functions are parsed for PSI and Descriptor APIs correctly`() {
+  @Test fun `functions are parsed for PSI and Descriptor APIs correctly`() = test {
     compile(
       """
       package com.squareup.test
@@ -162,7 +163,7 @@ class MemberFunctionReferenceTest {
     }
   }
 
-  @Test fun `the return type of a function can be resolved`() {
+  @Test fun `the return type of a function can be resolved`() = test {
     compile(
       """
       package com.squareup.test
@@ -298,7 +299,7 @@ class MemberFunctionReferenceTest {
     }
   }
 
-  @Test fun `the parameter type of a function can be resolved`() {
+  @Test fun `the parameter type of a function can be resolved`() = test {
     compile(
       """
       package com.squareup.test
