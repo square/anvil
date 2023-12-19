@@ -10,7 +10,44 @@ import org.gradle.api.publish.PublishingExtension
 import org.gradle.api.tasks.SourceSet
 import org.gradle.plugin.devel.GradlePluginDevelopmentExtension
 
-internal fun Project.isInMainAnvilBuild() = rootProject.name == "anvil"
+/**
+ * Returns true if this project is included in the root `settings.gradle.kts` file,
+ * using the syntax `include(":this-project")`.
+ *
+ * Note that due to the current composite build structure,
+ * these projects can have two different build roots:
+ *
+ * ### ':' (ex: `:gradle-plugin`)
+ * - the "true" root build, which is the root of the composite build
+ * - All build/publishing/CI/etc. tasks happen in this build
+ *
+ * ### ':anvil' (ex: `:anvil:gradle-plugin`)
+ * - not really the root build.
+ * - This build is included by the `:delegate` build in order to consume the gradle plugin.
+ *
+ * @see isInAnvilRootBuild to check if this project is part of the true root build
+ * @see isInAnvilIncludedBuild to check if this project is part of the plugin included build
+ */
+internal fun Project.isInAnvilBuild() = rootProject.name == "anvil"
+
+/**
+ * Returns true if this project is in the root 'anvil' build, and it is the true root of the build.
+ *
+ * @see isInAnvilBuild
+ * @see isInAnvilIncludedBuild
+ */
+internal fun Project.isInAnvilRootBuild() = isInAnvilBuild() && gradle.parent == null
+
+/**
+ * Returns true if this project is in the root 'anvil' build,
+ * but it is not the true root of the build.
+ * Unless something changes, that means it is included by the `:delegate` build.
+ */
+internal fun Project.isInAnvilIncludedBuild() = isInAnvilBuild() && gradle.parent != null
+
+/**
+ * Returns true if this project is included in the 'delegate' build.
+ */
 internal fun Project.isInDelegateBuild() = rootProject.name == "delegate"
 
 internal val Project.gradlePublishingExtension: PublishingExtension
