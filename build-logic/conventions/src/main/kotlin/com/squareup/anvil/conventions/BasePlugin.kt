@@ -2,7 +2,9 @@ package com.squareup.anvil.conventions
 
 import com.rickbusarow.kgx.extras
 import com.rickbusarow.kgx.javaExtension
-import com.squareup.anvil.conventions.utils.isInMainAnvilBuild
+import com.squareup.anvil.conventions.utils.isInAnvilBuild
+import com.squareup.anvil.conventions.utils.isInAnvilIncludedBuild
+import com.squareup.anvil.conventions.utils.isInAnvilRootBuild
 import com.squareup.anvil.conventions.utils.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -27,7 +29,7 @@ abstract class BasePlugin : Plugin<Project> {
 
     val extension = target.extensions.create("conventions", ConventionsExtension::class.java)
 
-    if (!target.isInMainAnvilBuild()) {
+    if (!target.isInAnvilBuild()) {
       target.copyRootProjectGradleProperties()
     }
 
@@ -38,6 +40,8 @@ abstract class BasePlugin : Plugin<Project> {
     target.plugins.apply(KtlintConventionPlugin::class.java)
 
     configureGradleProperties(target)
+
+    configureBuildDirs(target)
 
     configureJava(target)
 
@@ -103,6 +107,24 @@ abstract class BasePlugin : Plugin<Project> {
           else -> JvmTarget.fromTarget("$targetInt")
         }
         jvmTarget.set(fromInt)
+      }
+    }
+  }
+
+  /**
+   * The "anvil" projects exist in two different builds, they need two different build directories
+   * so that there is no shared mutable state.
+   */
+  private fun configureBuildDirs(target: Project) {
+    when {
+      !target.isInAnvilBuild() -> return
+
+      target.isInAnvilRootBuild() -> {
+        target.layout.buildDirectory.set(target.file("build/root-build"))
+      }
+
+      target.isInAnvilIncludedBuild() -> {
+        target.layout.buildDirectory.set(target.file("build/included-build"))
       }
     }
   }
