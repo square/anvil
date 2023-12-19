@@ -2,6 +2,7 @@ package com.squareup.anvil.conventions
 
 import com.dropbox.gradle.plugins.dependencyguard.DependencyGuardPluginExtension
 import com.rickbusarow.kgx.pluginId
+import com.squareup.anvil.conventions.utils.isInAnvilRootBuild
 import com.squareup.anvil.conventions.utils.libs
 import org.gradle.api.Project
 
@@ -10,9 +11,11 @@ open class LibraryPlugin : BasePlugin() {
 
   override fun beforeApply(target: Project) {
     target.plugins.apply(target.libs.plugins.kotlin.jvm.pluginId)
-    target.plugins.apply(target.libs.plugins.kotlinx.binaryCompatibility.pluginId)
 
-    configureDependencyGuard(target)
+    if (target.isInAnvilRootBuild()) {
+      target.plugins.apply(target.libs.plugins.kotlinx.binaryCompatibility.pluginId)
+      configureDependencyGuard(target)
+    }
   }
 
   private fun configureDependencyGuard(target: Project) {
