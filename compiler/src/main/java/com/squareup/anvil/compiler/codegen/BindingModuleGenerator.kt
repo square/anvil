@@ -20,11 +20,13 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
+import com.squareup.anvil.compiler.internal.requireRawType
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
 import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier.ABSTRACT
@@ -293,21 +295,21 @@ private fun generatePackageName(clazz: ClassReference): String = MODULE_PACKAGE_
 
 private sealed class GeneratedMethod : Comparable<GeneratedMethod> {
   abstract val spec: FunSpec
-  abstract val contributedClass: ClassReference
-  abstract val boundType: ClassReference
+  abstract val contributedClass: ClassName
+  abstract val boundType: ClassName
 
   override fun compareTo(other: GeneratedMethod): Int = COMPARATOR.compare(this, other)
 
   data class ProviderMethod(
     override val spec: FunSpec,
-    override val contributedClass: ClassReference,
-    override val boundType: ClassReference,
+    override val contributedClass: ClassName,
+    override val boundType: ClassName,
   ) : GeneratedMethod()
 
   data class BindingMethod(
     override val spec: FunSpec,
-    override val contributedClass: ClassReference,
-    override val boundType: ClassReference,
+    override val contributedClass: ClassName,
+    override val boundType: ClassName,
   ) : GeneratedMethod()
 
   companion object {
@@ -332,11 +334,11 @@ private fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBi
   if (bindings.size > 1) {
     throw AnvilCompilationException(
       "There are multiple contributed bindings with the same bound type. The bound type is " +
-        "${bindings[0].boundType.fqName}. The contributed binding classes are: " +
+        "${bindings[0].boundType.canonicalName}. The contributed binding classes are: " +
         bindings.joinToString(
           prefix = "[",
           postfix = "]",
-        ) { it.contributedClass.fqName.asString() },
+        ) { it.contributedClass.canonicalName },
     )
   }
 
@@ -350,13 +352,13 @@ private fun ContributedBinding.toGeneratedMethod(
   val isMapMultibinding = mapKeys.isNotEmpty()
 
   val methodNameSuffix = buildString {
-    append(boundType.shortName.capitalize())
+    append(boundType.simpleName.capitalize())
     if (isMultibinding) {
       append("Multi")
     }
   }
 
-  return if (contributedClass.isObject()) {
+  return if (contributedClassIsObject) {
     ProviderMethod(
       spec = FunSpec.builder(name = "provide$methodNameSuffix")
         .addAnnotation(Provides::class)
@@ -368,8 +370,8 @@ private fun ContributedBinding.toGeneratedMethod(
         }
         .addAnnotations(qualifiers)
         .addAnnotations(mapKeys)
-        .returns(boundType.asClassName())
-        .addStatement("return %T", contributedClass.asClassName())
+        .returns(boundType)
+        .addStatement("return %T", contributedClass)
         .build(),
       contributedClass = contributedClass,
       boundType = boundType,
@@ -388,10 +390,10 @@ private fun ContributedBinding.toGeneratedMethod(
         .addAnnotations(mapKeys)
         .addModifiers(ABSTRACT)
         .addParameter(
-          name = contributedClass.shortName.decapitalize(),
-          type = contributedClass.asClassName(),
+          name = contributedClass.simpleName.decapitalize(),
+          type = contributedClass,
         )
-        .returns(boundType.asClassName())
+        .returns(boundType)
         .build(),
       contributedClass = contributedClass,
       boundType = boundType,

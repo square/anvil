@@ -8,19 +8,24 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
+import com.squareup.anvil.compiler.internal.reference.asClassName
+import com.squareup.anvil.compiler.internal.reference.asTypeName
 import com.squareup.anvil.compiler.internal.reference.toClassReference
 import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.TypeName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import kotlin.LazyThreadSafetyMode.NONE
 
 internal data class ContributedBinding(
-  val contributedClass: ClassReference,
+  val contributedClass: ClassName,
   val mapKeys: List<AnnotationSpec>,
   val qualifiers: List<AnnotationSpec>,
-  val boundType: ClassReference,
+  val boundType: ClassName,
   val priority: Priority,
   val qualifiersKeyLazy: Lazy<String>,
+  val contributedClassIsObject: Boolean,
 )
 
 internal fun AnnotationReference.toContributedBinding(
@@ -42,13 +47,15 @@ internal fun AnnotationReference.toContributedBinding(
     declaringClass().annotations.filter { it.isQualifier() }.map { it.toAnnotationSpec() }
   }
 
+  val declaringClass = declaringClass()
   return ContributedBinding(
-    contributedClass = declaringClass(),
+    contributedClass = declaringClass.asClassName(),
     mapKeys = mapKeys,
     qualifiers = qualifiers,
-    boundType = boundType,
+    boundType = boundType.asClassName(),
     priority = priority(),
-    qualifiersKeyLazy = declaringClass().qualifiersKeyLazy(boundType, ignoreQualifier),
+    qualifiersKeyLazy = declaringClass.qualifiersKeyLazy(boundType, ignoreQualifier),
+    contributedClassIsObject = declaringClass.isObject(),
   )
 }
 
