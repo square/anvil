@@ -124,7 +124,7 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
         .filter {
           it.getKSAnnotationsByType(ContributesTo::class)
             .any { annotation ->
-            annotation.scope() == parentScope
+            annotation.scope().resolveKSClassDeclaration() == parentScope
           }
         }
         .toList()
@@ -167,7 +167,7 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
         }
 
       innerClasses
-        .firstOrNull { it.isAnnotationPresent<Subcomponent.Factory>() }
+        .firstOrNull { it.isAnnotationPresent<Subcomponent.Builder>() }
         ?.let { factoryClass ->
           throw KspAnvilException(
             node = factoryClass,
