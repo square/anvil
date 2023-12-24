@@ -1,19 +1,36 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.symbol.ClassKind
+import com.google.devtools.ksp.symbol.KSAnnotation
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSType
 import com.squareup.anvil.annotations.ContributesBinding.Priority
 import com.squareup.anvil.compiler.anyFqName
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.boundTypeOrNull
+import com.squareup.anvil.compiler.codegen.ksp.declaringClass
+import com.squareup.anvil.compiler.codegen.ksp.ignoreQualifier
+import com.squareup.anvil.compiler.codegen.ksp.isMapKey
+import com.squareup.anvil.compiler.codegen.ksp.isQualifier
+import com.squareup.anvil.compiler.codegen.ksp.priority
+import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
+import com.squareup.anvil.compiler.codegen.ksp.superTypesExcludingAny
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.asClassName
-import com.squareup.anvil.compiler.internal.reference.asTypeName
 import com.squareup.anvil.compiler.internal.reference.toClassReference
+import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.TypeName
+import com.squareup.kotlinpoet.ksp.toAnnotationSpec
+import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.toTypeName
+import com.squareup.kotlinpoet.ksp.toTypeVariableName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.types.KotlinType
 import kotlin.LazyThreadSafetyMode.NONE
@@ -160,6 +177,136 @@ private fun ClassReference.qualifiersKey(): String {
           }
 
           argument.resolvedName + valueString
+        }
+    }
+}
+
+internal fun KSAnnotation.toContributedBinding(
+  isMultibinding: Boolean,
+  resolver: Resolver,
+): ContributedBinding {
+  val boundType = requireBoundType(resolver)
+
+  val mapKeys = if (isMultibinding) {
+    declaringClass().annotations.filter { it.isMapKey() }.map { it.toAnnotationSpec() }
+      .toList()
+  } else {
+    emptyList()
+  }
+
+  val ignoreQualifier = ignoreQualifier()
+  val qualifiers = if (ignoreQualifier) {
+    emptyList()
+  } else {
+    declaringClass().annotations.filter { it.isQualifier() }.map { it.toAnnotationSpec() }
+      .toList()
+  }
+
+  val declaringClass = declaringClass()
+  return ContributedBinding(
+    contributedClass = declaringClass.toClassName(),
+    mapKeys = mapKeys,
+    qualifiers = qualifiers,
+    boundType = boundType.toClassName(),
+    priority = priority(),
+    qualifiersKeyLazy = declaringClass.qualifiersKeyLazy(boundType, ignoreQualifier),
+    contributedClassIsObject = declaringClass.classKind == ClassKind.OBJECT,
+  )
+}
+
+private fun KSAnnotation.requireBoundType(resolver: Resolver): KSClassDeclaration {
+  val boundFromAnnotation = boundTypeOrNull()?.toClassName()
+
+  val declaringClass = declaringClass()
+  if (boundFromAnnotation != null) {
+    // Since all classes extend Any, we can stop here.
+    if (boundFromAnnotation == ANY) return resolver.builtIns.anyType.resolveKSClassDeclaration()!!
+
+    // ensure that the bound type is actually a supertype of the contributing class
+    val boundType = declaringClass.superTypesExcludingAny(resolver)
+      .firstOrNull { it.toTypeName() == boundFromAnnotation }
+      ?.resolve()
+      ?.resolveKSClassDeclaration()
+      ?: throw KspAnvilException(
+        "${declaringClass.qualifiedName?.asString()} contributes a binding for ${boundFromAnnotation}, " +
+          "but doesn't extend this type.",
+        node = this,
+      )
+
+    boundType.checkNotGeneric(contributedClass = declaringClass)
+    return boundType
+  }
+
+  // If there's no bound type in the annotation,
+  // it must be the only supertype of the contributing class
+  val boundType = declaringClass().superTypes.singleOrNull()
+    ?.resolve()
+    ?.resolveKSClassDeclaration()
+    ?: throw KspAnvilException(
+      message = "${declaringClass.qualifiedName?.asString()} contributes a binding, but does not " +
+        "specify the bound type. This is only allowed with exactly one direct super type. " +
+        "If there are multiple or none, then the bound type must be explicitly defined in " +
+        "the @$shortName annotation.",
+      node = this,
+    )
+
+  boundType.checkNotGeneric(contributedClass = declaringClass())
+  return boundType
+}
+
+private fun KSClassDeclaration.checkNotGeneric(
+  contributedClass: KSClassDeclaration,
+) {
+  fun exceptionText(typeString: String): String {
+    return "Class ${contributedClass.qualifiedName?.asString()} binds ${qualifiedName?.asString()}," +
+      " but the bound type contains type parameter(s) $typeString." +
+      " Type parameters in bindings are not supported. This binding needs" +
+      " to be contributed in a Dagger module manually."
+  }
+
+  fun KSClassDeclaration.describeTypeParameters(): String = typeParameters
+    .ifEmpty { return "" }
+    .joinToString(prefix = "<", postfix = ">") { typeArgument ->
+      typeArgument.toTypeVariableName().toString()
+    }
+
+  if (typeParameters.isNotEmpty()) {
+    throw KspAnvilException(
+      node = this,
+      message = exceptionText(describeTypeParameters()),
+    )
+  }
+}
+
+private fun KSClassDeclaration.qualifiersKeyLazy(
+  boundType: KSClassDeclaration,
+  ignoreQualifier: Boolean,
+): Lazy<String> {
+  // Careful! If we ever decide to support generic types, then we might need to use the
+  // Kotlin type and not just the FqName.
+  if (ignoreQualifier) {
+    return lazy { boundType.qualifiedName!!.asString() }
+  }
+
+  return lazy(NONE) { boundType.qualifiedName!!.asString() + qualifiersKey() }
+}
+
+private fun KSClassDeclaration.qualifiersKey(): String {
+  return annotations
+    .filter { it.isQualifier() }
+    .associateBy { it.annotationType.resolve().declaration.qualifiedName!!.asString() }
+    // Note that we sort all elements. That's important for a stable string comparison.
+    .toSortedMap(compareBy { it })
+    .entries
+    .joinToString(separator = "") { (fqName, annotation) ->
+      fqName +
+        annotation.arguments.joinToString(separator = "") { argument ->
+          val valueString = when (val value = argument.value) {
+            is KSType -> value.resolveKSClassDeclaration()!!.qualifiedName!!.asString()
+            else -> value.toString()
+          }
+
+          argument.name!!.asString() + valueString
         }
     }
 }

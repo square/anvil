@@ -10,6 +10,7 @@ import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSModifierListOwner
+import com.google.devtools.ksp.symbol.KSNode
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.Modifier
@@ -130,4 +131,15 @@ internal fun Resolver.injectConstructors(): List<Pair<KSClassDeclaration, KSFunc
 
       clazz to constructors[0]
     }
+}
+
+internal fun KSNode.parentSequence(): Sequence<KSNode> = generateSequence(this) { it.parent }
+
+internal fun KSNode.declaringClass(): KSClassDeclaration {
+  return parentSequence().firstNotNullOf { node ->
+    when (node) {
+      is KSClassDeclaration -> node
+      else -> null
+    }
+  }
 }
