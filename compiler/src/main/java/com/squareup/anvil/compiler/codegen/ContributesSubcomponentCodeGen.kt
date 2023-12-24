@@ -8,7 +8,6 @@ import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSType
 import com.squareup.anvil.annotations.ContributesSubcomponent
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.HINT_SUBCOMPONENTS_PACKAGE_PREFIX
@@ -19,7 +18,6 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
-import com.squareup.anvil.compiler.codegen.dagger.MapKeyCreatorCodeGen
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
@@ -35,7 +33,6 @@ import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerSubcomponentBuilderFqName
 import com.squareup.anvil.compiler.daggerSubcomponentFactoryFqName
-import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -49,7 +46,6 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
@@ -106,11 +102,18 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
           val parentScopeDeclaration = clazz.getKSAnnotationsByType(ContributesSubcomponent::class)
             .single()
             .parentScope()
-          clazz.checkParentComponentInterface(clazz.declarations.filterIsInstance<KSClassDeclaration>(), parentScopeDeclaration)
+          clazz.checkParentComponentInterface(
+            clazz.declarations.filterIsInstance<KSClassDeclaration>(),
+            parentScopeDeclaration,
+          )
           val parentScope = parentScopeDeclaration.toClassName()
 
           createSpec(className, parentScope)
-            .writeTo(env.codeGenerator, aggregating = false, originatingKSFiles = listOf(clazz.containingFile!!))
+            .writeTo(
+              env.codeGenerator,
+              aggregating = false,
+              originatingKSFiles = listOf(clazz.containingFile!!),
+            )
         }
 
       return emptyList()
@@ -124,8 +127,8 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
         .filter {
           it.getKSAnnotationsByType(ContributesTo::class)
             .any { annotation ->
-            annotation.scope().resolveKSClassDeclaration() == parentScope
-          }
+              annotation.scope().resolveKSClassDeclaration() == parentScope
+            }
         }
         .toList()
 
@@ -243,7 +246,9 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
   @AutoService(CodeGenerator::class)
   internal class Embedded : CodeGenerator {
 
-    override fun isApplicable(context: AnvilContext) = ContributesSubcomponentCodeGen.isApplicable(context)
+    override fun isApplicable(context: AnvilContext) = ContributesSubcomponentCodeGen.isApplicable(
+      context,
+    )
 
     override fun generateCode(
       codeGenDir: File,

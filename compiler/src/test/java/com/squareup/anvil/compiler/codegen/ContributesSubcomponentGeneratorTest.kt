@@ -13,7 +13,6 @@ import com.tschuchort.compiletesting.JvmCompilationResult
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import java.io.File
 
 @RunWith(Parameterized::class)
 class ContributesSubcomponentGeneratorTest(

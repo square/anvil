@@ -9,12 +9,7 @@ import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueArgument
 import com.squareup.anvil.compiler.internal.daggerScopeFqName
 import com.squareup.anvil.compiler.internal.mapKeyFqName
-import com.squareup.anvil.compiler.internal.reference.AnnotationReference
-import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionAnnotationReference
-import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.argumentAt
-import com.squareup.anvil.compiler.internal.reference.excludeIndex
-import com.squareup.anvil.compiler.internal.reference.replacesIndex
 import com.squareup.anvil.compiler.isAnvilModule
 import com.squareup.anvil.compiler.qualifierFqName
 import com.squareup.kotlinpoet.ksp.toClassName
@@ -101,15 +96,21 @@ internal fun KSAnnotation.boundTypeOrNull(): KSType? = argumentAt("boundType")?.
 
 @Suppress("UNCHECKED_CAST")
 internal fun KSAnnotation.replaces(): List<KSClassDeclaration> =
-  (argumentAt("replaces")?.value as? List<KSType>).orEmpty().mapNotNull { it.resolveKSClassDeclaration() }
+  (argumentAt("replaces")?.value as? List<KSType>).orEmpty().mapNotNull {
+    it.resolveKSClassDeclaration()
+  }
 
 @Suppress("UNCHECKED_CAST")
 internal fun KSAnnotation.exclude(): List<KSClassDeclaration> =
-  (argumentAt("exclude")?.value as? List<KSType>).orEmpty().mapNotNull { it.resolveKSClassDeclaration() }
+  (argumentAt("exclude")?.value as? List<KSType>).orEmpty().mapNotNull {
+    it.resolveKSClassDeclaration()
+  }
 
 internal fun KSAnnotation.parentScope(): KSClassDeclaration {
-  return (argumentAt("parentScope")
-    ?.value as? KSType)?.resolveKSClassDeclaration()
+  return (
+    argumentAt("parentScope")
+      ?.value as? KSType
+    )?.resolveKSClassDeclaration()
     ?: throw KspAnvilException(
       message = "Couldn't find parentScope for $shortName.",
       node = this,
