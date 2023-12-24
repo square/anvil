@@ -8,6 +8,7 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesBinding.Priority
+import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.internal.BindingPriority
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
@@ -23,13 +24,17 @@ import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.checkClassExtendsBoundType
 import com.squareup.anvil.compiler.codegen.ksp.checkClassIsPublic
 import com.squareup.anvil.compiler.codegen.ksp.checkNoDuplicateScopeAndBoundType
+import com.squareup.anvil.compiler.codegen.ksp.checkNotMoreThanOneMapKey
 import com.squareup.anvil.compiler.codegen.ksp.checkNotMoreThanOneQualifier
 import com.squareup.anvil.compiler.codegen.ksp.checkSingleSuperType
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
+import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.replaces
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesBindingFqName
+import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.createAnvilSpec
+import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
@@ -54,13 +59,14 @@ import kotlin.reflect.KClass
 
 /**
  * @see ContributesBinding
+ * @see ContributesMultibinding
  */
 internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
 
   override fun isApplicable(context: AnvilContext) = !context.generateFactoriesOnly
 
   /**
-   * @param scopesAndReplaces a mapping of scopes to [ContributesBinding.replaces] elements
+   * @param scopesAndReplaces a mapping of scopes to [ContributesBinding.replaces] and [ContributesMultibinding.replaces] elements
    */
   fun generate(
     originClass: ClassName,
@@ -91,12 +97,14 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                   }
                   .build()
               )
-              addAnnotation(
-                AnnotationSpec.builder(BindingPriority::class)
-                  .addMember("%T::class", contributedBinding.boundType)
-                  .addMember("%T.%N", Priority::class.asClassName(), contributedBinding.priority.name)
-                  .build()
-              )
+              if (!contributedBinding.isMultibinding) {
+                addAnnotation(
+                  AnnotationSpec.builder(BindingPriority::class)
+                    .addMember("%T::class", contributedBinding.boundType)
+                    .addMember("%T.%N", Priority::class.asClassName(), contributedBinding.priority.name)
+                    .build()
+                )
+              }
             }
           }
           .addFunction(
@@ -112,35 +120,56 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
   ) : AnvilSymbolProcessor() {
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      resolver
-        .getSymbolsWithAnnotation(contributesBindingFqName.asString())
-        .mapNotNull { annotated ->
+      val contributesBindingNodes =
+        resolver
+          .getSymbolsWithAnnotation(contributesBindingFqName.asString())
+          .map { it to false }
+      val contributesMultibindingNodes =
+        resolver
+          .getSymbolsWithAnnotation(contributesMultibindingFqName.asString())
+          .map { it to true }
+
+      (contributesBindingNodes + contributesMultibindingNodes)
+        .mapNotNull { (annotated, isMultibinding) ->
+          val annotationString = if (isMultibinding) {
+            contributesMultibindingFqName.shortName().asString()
+          } else {
+            contributesBindingFqName.shortName().asString()
+          }
           when {
             annotated !is KSClassDeclaration -> {
               env.logger.error(
-                "Only classes can be annotated with @ContributesBinding.",
+                "Only classes can be annotated with @$annotationString.",
                 annotated,
               )
               return@mapNotNull null
             }
-            else -> annotated
+            else -> annotated to isMultibinding
           }
         }
-        .onEach {
-          it.checkClassIsPublic {
-            "${it.qualifiedName?.asString()} is binding a type, but the class is not public. " +
+        .forEach { (clazz, isMultibinding) ->
+          val targetAnnotation = if (isMultibinding) {
+            ContributesMultibinding::class
+          } else {
+            ContributesBinding::class
+          }
+
+          // Checks
+          clazz.checkClassIsPublic {
+            "${clazz.qualifiedName?.asString()} is binding a type, but the class is not public. " +
               "Only public types are supported."
           }
-          it.checkNotMoreThanOneQualifier(contributesBindingFqName)
-          it.checkSingleSuperType(contributesBindingFqName, resolver)
-          it.checkClassExtendsBoundType(contributesBindingFqName, resolver)
-        }
-        .forEach { clazz ->
-          val className = clazz.toClassName()
+          clazz.checkNotMoreThanOneQualifier(targetAnnotation.fqName)
+          clazz.checkSingleSuperType(targetAnnotation.fqName, resolver)
+          clazz.checkClassExtendsBoundType(targetAnnotation.fqName, resolver)
+          if (isMultibinding) {
+            clazz.checkNotMoreThanOneMapKey()
+          }
 
-          val annotations = clazz.getKSAnnotationsByType(ContributesBinding::class)
+          val annotations = clazz.getKSAnnotationsByType(targetAnnotation)
             .toList()
             .ifEmpty { return@forEach }
+
           val scopesAndReplaces = annotations
             .also { it.checkNoDuplicateScopeAndBoundType(clazz) }
             .associate {
@@ -149,8 +178,9 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
             // Give it a stable sort.
             .toSortedMap(compareBy { it.canonicalName })
 
-          val contributedBinding = annotations[0].toContributedBinding(false, resolver)
+          val contributedBinding = annotations[0].toContributedBinding(isMultibinding, resolver)
 
+          val className = clazz.toClassName()
           val spec = generate(className, scopesAndReplaces, contributedBinding)
 
           spec.writeTo(
@@ -178,24 +208,39 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
       module: ModuleDescriptor,
       projectFiles: Collection<KtFile>,
     ): Collection<GeneratedFile> {
+
       return projectFiles
         .classAndInnerClassReferences(module)
-        .filter { it.isAnnotatedWith(contributesBindingFqName) }
-        .onEach { clazz ->
+        .mapNotNull {
+          when {
+            it.isAnnotatedWith(contributesBindingFqName) -> it to false
+            it.isAnnotatedWith(contributesMultibindingFqName) -> it to true
+            else -> null
+          }
+        }
+        .mapNotNull { (clazz, isMultibinding) ->
+          val targetAnnotation = if (isMultibinding) {
+            contributesMultibindingFqName
+          } else {
+            contributesBindingFqName
+          }
+
+          // Checks
           clazz.checkClassIsPublic {
             "${clazz.fqName} is binding a type, but the class is not public. " +
               "Only public types are supported."
           }
-          clazz.checkNotMoreThanOneQualifier(contributesBindingFqName)
-          clazz.checkSingleSuperType(contributesBindingFqName)
-          clazz.checkClassExtendsBoundType(contributesBindingFqName)
-        }
-        .mapNotNull { clazz ->
-          val className = clazz.asClassName()
+          clazz.checkNotMoreThanOneQualifier(targetAnnotation)
+          clazz.checkSingleSuperType(targetAnnotation)
+          clazz.checkClassExtendsBoundType(targetAnnotation)
+          if (isMultibinding) {
+            clazz.checkNotMoreThanOneMapKey()
+          }
 
           val annotations = clazz.annotations
-            .find(contributesBindingFqName)
+            .find(targetAnnotation)
             .ifEmpty { return@mapNotNull null }
+
           val scopesAndReplaces = annotations
             .also { it.checkNoDuplicateScopeAndBoundType() }
             .associate {
@@ -204,7 +249,8 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
             // Give it a stable sort.
             .toSortedMap(compareBy { it.canonicalName })
 
-          val contributedBinding = annotations[0].toContributedBinding(true, module)
+          val contributedBinding = annotations[0].toContributedBinding(isMultibinding, module)
+          val className = clazz.asClassName()
           val spec = generate(className, scopesAndReplaces, contributedBinding)
 
           createGeneratedFile(
