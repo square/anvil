@@ -16,6 +16,7 @@ import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerSubcomponentBuilderFqName
 import com.squareup.anvil.compiler.daggerSubcomponentFactoryFqName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
@@ -23,10 +24,12 @@ import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
+import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
@@ -79,50 +82,21 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
             }
         }
         .map { clazz ->
-          val fileName = clazz.generateClassName().relativeClassName.asString()
-          val generatedPackage = HINT_SUBCOMPONENTS_PACKAGE_PREFIX +
-            clazz.packageFqName.safePackageString(dotPrefix = true)
+          clazz.checkFactory(clazz.innerClasses())
           val className = clazz.asClassName()
-          val classFqName = clazz.fqName.toString()
-          val propertyName = classFqName.replace('.', '_')
           val parentScopeReference = clazz.annotations
             .single { it.fqName == contributesSubcomponentFqName }
             .parentScope()
+          clazz.checkParentComponentInterface(clazz.innerClasses(), parentScopeReference)
           val parentScope = parentScopeReference.asClassName()
 
-          clazz.checkParentComponentInterface(clazz.innerClasses(), parentScopeReference)
-          clazz.checkFactory(clazz.innerClasses())
-
-          val content =
-            FileSpec.buildFile(generatedPackage, fileName) {
-              addProperty(
-                PropertySpec
-                  .builder(
-                    name = propertyName + REFERENCE_SUFFIX,
-                    type = KClass::class.asClassName().parameterizedBy(className),
-                  )
-                  .initializer("%T::class", className)
-                  .addModifiers(PUBLIC)
-                  .build(),
-              )
-
-              addProperty(
-                PropertySpec
-                  .builder(
-                    name = propertyName + SCOPE_SUFFIX,
-                    type = KClass::class.asClassName().parameterizedBy(parentScope),
-                  )
-                  .initializer("%T::class", parentScope)
-                  .addModifiers(PUBLIC)
-                  .build(),
-              )
-            }
+          val spec = createSpec(className, parentScope)
 
           createGeneratedFile(
             codeGenDir = codeGenDir,
-            packageName = generatedPackage,
-            fileName = fileName,
-            content = content,
+            packageName = spec.packageName,
+            fileName = spec.name,
+            content = spec.toString(),
           )
         }
         .toList()
@@ -243,5 +217,42 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
           }
         }
     }
+  }
+
+  private fun createSpec(
+    className: ClassName,
+    parentScope: ClassName,
+  ): FileSpec {
+    val fileName = className.generateClassName().simpleName
+    val generatedPackage = HINT_SUBCOMPONENTS_PACKAGE_PREFIX +
+      className.packageName.safePackageString(dotPrefix = true)
+    val classFqName = className.canonicalName
+    val propertyName = classFqName.replace('.', '_')
+
+    val spec =
+      FileSpec.createAnvilSpec(generatedPackage, fileName) {
+        addProperty(
+          PropertySpec
+            .builder(
+              name = propertyName + REFERENCE_SUFFIX,
+              type = KClass::class.asClassName().parameterizedBy(className),
+            )
+            .initializer("%T::class", className)
+            .addModifiers(PUBLIC)
+            .build(),
+        )
+
+        addProperty(
+          PropertySpec
+            .builder(
+              name = propertyName + SCOPE_SUFFIX,
+              type = KClass::class.asClassName().parameterizedBy(parentScope),
+            )
+            .initializer("%T::class", parentScope)
+            .addModifiers(PUBLIC)
+            .build(),
+        )
+      }
+    return spec
   }
 }
