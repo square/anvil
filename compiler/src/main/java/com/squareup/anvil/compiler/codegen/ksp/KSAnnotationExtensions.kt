@@ -119,7 +119,6 @@ internal fun KSAnnotation.isQualifier(): Boolean = isTypeAnnotatedWith(qualifier
 internal fun KSAnnotation.isMapKey(): Boolean = isTypeAnnotatedWith(mapKeyFqName)
 internal fun KSAnnotation.isDaggerScope(): Boolean = isTypeAnnotatedWith(daggerScopeFqName)
 
-
 internal fun KSAnnotation.ignoreQualifier(): Boolean {
   return (argumentAt(
     name = "ignoreQualifier",
@@ -135,4 +134,14 @@ internal fun KSAnnotation.priority(): Priority {
       Priority.valueOf(ksName.getShortName())
     }
     ?: NORMAL
+}
+
+internal fun KSAnnotation.replaces(): List<KSClassDeclaration> {
+  @Suppress("UNCHECKED_CAST")
+  return (argumentAt("replaces")
+    ?.value as? List<KSType>)
+    .orEmpty()
+    .mapNotNull { type ->
+      type.resolveKSClassDeclaration()
+    }
 }

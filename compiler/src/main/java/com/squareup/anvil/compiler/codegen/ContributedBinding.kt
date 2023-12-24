@@ -36,6 +36,7 @@ import org.jetbrains.kotlin.types.KotlinType
 import kotlin.LazyThreadSafetyMode.NONE
 
 internal data class ContributedBinding(
+  val isMultibinding: Boolean,
   val contributedClass: ClassName,
   val mapKeys: List<AnnotationSpec>,
   val qualifiers: List<AnnotationSpec>,
@@ -66,6 +67,7 @@ internal fun AnnotationReference.toContributedBinding(
 
   val declaringClass = declaringClass()
   return ContributedBinding(
+    isMultibinding = isMultibinding,
     contributedClass = declaringClass.asClassName(),
     mapKeys = mapKeys,
     qualifiers = qualifiers,
@@ -204,6 +206,7 @@ internal fun KSAnnotation.toContributedBinding(
 
   val declaringClass = declaringClass()
   return ContributedBinding(
+    isMultibinding = isMultibinding,
     contributedClass = declaringClass.toClassName(),
     mapKeys = mapKeys,
     qualifiers = qualifiers,

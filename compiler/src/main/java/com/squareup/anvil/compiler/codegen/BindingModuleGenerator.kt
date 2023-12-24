@@ -208,7 +208,7 @@ internal class BindingModuleGenerator(
                 .asSequence()
             }
           }
-          .map { binding -> binding.toGeneratedMethod(isMultibinding) }
+          .map { binding -> binding.toGeneratedMethod() }
           .toList()
       }
 
@@ -293,7 +293,7 @@ internal class BindingModuleGenerator(
 private fun generatePackageName(clazz: ClassReference): String = MODULE_PACKAGE_PREFIX +
   clazz.packageFqName.safePackageString(dotPrefix = true)
 
-private sealed class GeneratedMethod : Comparable<GeneratedMethod> {
+internal sealed class GeneratedMethod : Comparable<GeneratedMethod> {
   abstract val spec: FunSpec
   abstract val contributedClass: ClassName
   abstract val boundType: ClassName
@@ -345,9 +345,7 @@ private fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBi
   return bindings[0]
 }
 
-private fun ContributedBinding.toGeneratedMethod(
-  isMultibinding: Boolean,
-): GeneratedMethod {
+internal fun ContributedBinding.toGeneratedMethod(): GeneratedMethod {
 
   val isMapMultibinding = mapKeys.isNotEmpty()
 
