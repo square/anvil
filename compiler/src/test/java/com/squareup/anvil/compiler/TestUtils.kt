@@ -30,7 +30,7 @@ internal fun compile(
   daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.NONE,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
-  mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
+  mode: AnvilCompilationMode = Embedded(codeGenerators),
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult = compileAnvil(
   sources = sources,
@@ -219,9 +219,9 @@ internal fun testIsNotYetCompatibleWithKsp(
 
 internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
   val dirToSearch = when (mode) {
-    is AnvilCompilationMode.Embedded ->
+    is Embedded ->
       outputDirectory.parentFile.resolve("build${File.separator}anvil")
-    is AnvilCompilationMode.Ksp -> outputDirectory.parentFile.resolve("ksp${File.separator}sources")
+    is Ksp -> outputDirectory.parentFile.resolve("ksp${File.separator}sources")
   }
   return dirToSearch.walkTopDown()
     .filter { it.isFile && it.extension == "kt" }
@@ -242,10 +242,7 @@ internal fun useDaggerAndKspParams(
       kspCreator(),
     ),
   ).mapNotNull { (daggerAnnotationProcessingMode, mode) ->
-    if (daggerAnnotationProcessingMode != DaggerAnnotationProcessingMode.NONE && mode is Ksp) {
-      // TODO Dagger is not supported with KSP in Anvil's tests yet
-      null
-    } else if (daggerAnnotationProcessingMode == DaggerAnnotationProcessingMode.KSP && mode is Embedded) {
+    if (daggerAnnotationProcessingMode == DaggerAnnotationProcessingMode.KSP && mode is Embedded) {
       // Cannot use embedded anvil with dagger KSP
       null
     } else if (daggerAnnotationProcessingMode == DaggerAnnotationProcessingMode.KAPT && mode is Ksp) {
