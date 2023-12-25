@@ -39,6 +39,7 @@ dependencies {
   implementation(project(":compiler-api"))
   implementation(project(":compiler-utils"))
   implementation(libs.dagger2)
+  implementation(libs.dagger2.compiler)
   implementation(libs.jsr250)
   implementation(libs.kotlinpoet)
   implementation(libs.kotlinpoet.ksp)
@@ -47,16 +48,19 @@ dependencies {
   compileOnly(libs.kotlin.compiler)
   compileOnly(libs.ksp.compilerPlugin)
   compileOnly(libs.ksp.api)
+  // just for reference to get underlying APIs
+  compileOnly(libs.ksp.compilerPlugin)
 
   kapt(libs.auto.service.processor)
 
   testImplementation(testFixtures(project(":compiler-utils")))
-  testImplementation(libs.dagger2.compiler)
   testImplementation(libs.kotlin.annotationProcessingEmbeddable)
   testImplementation(libs.kotlin.compileTesting)
   testImplementation(libs.kotlin.compileTesting.ksp)
   testImplementation(libs.ksp.compilerPlugin)
   testImplementation(libs.kotlin.compiler)
   testImplementation(libs.kotlin.test)
+  testImplementation(libs.ksp.api)
+  testImplementation(libs.ksp.compilerPlugin)
   testImplementation(libs.truth)
 }
