@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.tschuchort.compiletesting.JvmCompilationResult
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -178,35 +179,6 @@ class BindsMethodValidatorTest(
   }
 
   @Test
-  fun `an extension function binding with a parameter fails to compile`() {
-    compile(
-      """
-      package com.squareup.test
- 
-      import dagger.Binds
-      import dagger.Module
-      import javax.inject.Inject
-
-      class Foo @Inject constructor() : Bar
-      class Hammer @Inject constructor() : Bar
-      interface Bar
-
-      @Module
-      abstract class BarModule {
-        @Binds
-        abstract fun Foo.bindsBar(impl2: Hammer): Bar
-      }
-      """,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "@Binds methods must have exactly one parameter, " +
-          "whose type is assignable to the return type",
-      )
-    }
-  }
-
-  @Test
   fun `a binding with no return type fails to compile`() {
     compile(
       """
@@ -234,8 +206,8 @@ class BindsMethodValidatorTest(
   }
 
   @Test
-  fun `an extension function binding is valid`() {
-    val moduleResult = compile(
+  fun `an extension function binding is invalid`() {
+    compile(
       """
       package com.squareup.test
  
@@ -253,25 +225,8 @@ class BindsMethodValidatorTest(
       }
       """,
     ) {
-      assertThat(exitCode).isEqualTo(OK)
-    }
-
-    compile(
-      """
-      package com.squareup.test
-
-      import dagger.Component
-      import javax.inject.Singleton
-
-      @Component(modules = [BarModule::class])
-      interface ComponentInterface {
-        fun bar(): Bar
-      }
-      """,
-      previousCompilationResult = moduleResult,
-      enableDagger = true,
-    ) {
-      assertThat(exitCode).isEqualTo(OK)
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains("@Binds methods can not be an extension function")
     }
   }
 
@@ -322,8 +277,8 @@ class BindsMethodValidatorTest(
   }
 
   @Test
-  fun `an extension function binding with a qualifier is valid`() {
-    val moduleResult = compile(
+  fun `an extension function binding with a qualifier is invalid`() {
+    compile(
       """
       package com.squareup.test
  
@@ -354,25 +309,8 @@ class BindsMethodValidatorTest(
       }
       """,
     ) {
-      assertThat(exitCode).isEqualTo(OK)
-    }
-
-    compile(
-      """
-      package com.squareup.test
-
-      import dagger.Component
-
-      @Component(modules = [BarModule::class])
-      interface ComponentInterface {
-        @Marker
-        fun bar(): Bar
-      }
-      """,
-      previousCompilationResult = moduleResult,
-      enableDagger = true,
-    ) {
-      assertThat(exitCode).isEqualTo(OK)
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains("@Binds methods can not be an extension function")
     }
   }
 
