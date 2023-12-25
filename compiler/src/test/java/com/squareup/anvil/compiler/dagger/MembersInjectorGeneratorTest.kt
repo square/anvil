@@ -20,6 +20,7 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
 import dagger.MembersInjector
 import org.intellij.lang.annotations.Language
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -2262,6 +2263,8 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       """,
     ) {
 
+      // TODO regressed in Dagger 2.50 https://github.com/google/dagger/issues/4199
+      assumeTrue(daggerProcessingMode != DaggerAnnotationProcessingMode.KSP)
       val actualBaseMembersInjector = classLoader.loadClass("com.squareup.test.ActualBase")
         .membersInjector()
 
@@ -2344,7 +2347,8 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       """,
       previousCompilationResult = otherModuleResult,
     ) {
-
+      // TODO regressed in Dagger 2.50 https://github.com/google/dagger/issues/4199
+      assumeTrue(daggerProcessingMode != DaggerAnnotationProcessingMode.KSP)
       val actualBaseMembersInjector = classLoader.loadClass("com.squareup.test.ActualBase")
         .membersInjector()
 
