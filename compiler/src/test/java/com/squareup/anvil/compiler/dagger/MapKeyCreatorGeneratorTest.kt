@@ -2,9 +2,8 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
-import com.squareup.anvil.compiler.daggerProcessingModesForTests
-import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.testIsNotYetCompatibleWithKsp
@@ -33,7 +32,7 @@ class MapKeyCreatorGeneratorTest(
   @Test fun `a creator class is generated`() {
     testIsNotYetCompatibleWithKsp(
       daggerProcessingMode,
-      "https://github.com/google/dagger/issues/3993"
+      "https://github.com/google/dagger/issues/3993",
     )
     compile(
       """
@@ -149,7 +148,7 @@ class MapKeyCreatorGeneratorTest(
   @Test fun `a recursive annotation still works`() {
     testIsNotYetCompatibleWithKsp(
       daggerProcessingMode,
-      "https://github.com/google/dagger/issues/3993"
+      "https://github.com/google/dagger/issues/3993",
     )
     compile(
       """

@@ -7,9 +7,9 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
-import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
@@ -214,7 +214,7 @@ internal fun testRequiresWildcards(mode: DaggerAnnotationProcessingMode?) =
  */
 internal fun testIsNotYetCompatibleWithKsp(
   mode: DaggerAnnotationProcessingMode?,
-  @Suppress("UNUSED_PARAMETER") reason: String
+  @Suppress("UNUSED_PARAMETER") reason: String,
 ) = assumeTrue(mode != DaggerAnnotationProcessingMode.KSP)
 
 internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
@@ -233,7 +233,7 @@ internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode)
 internal fun useDaggerAndKspParams(
   embeddedCreator: () -> Embedded? = { Embedded() },
   kspCreator: () -> Ksp? = { Ksp() },
-  includeNullDaggerProcessingMode: Boolean = true
+  includeNullDaggerProcessingMode: Boolean = true,
 ): Collection<Any> {
   return cartesianProduct(
     daggerProcessingModesForTests(includeNullDaggerProcessingMode),

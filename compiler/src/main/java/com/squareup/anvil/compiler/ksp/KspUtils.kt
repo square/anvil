@@ -15,7 +15,6 @@ import com.google.devtools.ksp.toKSName
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.ANVIL_MODULE_SUFFIX
 import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
-import com.squareup.anvil.compiler.codegen.find
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.argumentAt
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByQualifiedName
@@ -23,18 +22,12 @@ import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.codegen.ksp.scopeOrNull
 import com.squareup.anvil.compiler.internal.classIdBestGuess
-import com.squareup.anvil.compiler.internal.reference.AnnotationReference
-import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionAnnotationReference
-import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
-import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.internal.reference.asClassId
 import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.reference.toClassReferenceOrNull
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.ksp.toClassName
 import dagger.MapKey
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import javax.inject.Qualifier
@@ -46,7 +39,7 @@ val KSClassDeclaration.fqName: FqName get() {
     FqName(it.asString())
   } ?: throw KspAnvilException(
     message = "Couldn't find qualified name for '$this'.",
-    node = this
+    node = this,
   )
 }
 
@@ -55,7 +48,7 @@ val KSClassDeclaration.classId: ClassId get() {
 }
 
 internal fun ClassId.classDeclarationOrNull(
-  resolver: Resolver
+  resolver: Resolver,
 ): KSClassDeclaration? = resolver.getClassDeclarationByName(toKSName())
 
 val KSTypeReference.singleArgumentType: KSType get() {
@@ -68,20 +61,20 @@ val KSTypeReference.singleArgumentType: KSType get() {
 val KSType.classDeclaration: KSClassDeclaration get() {
   return declaration as? KSClassDeclaration ?: throw KspAnvilException(
     message = "Expected declaration to be a class.",
-    node = declaration
+    node = declaration,
   )
 }
 
 internal fun KSAnnotation.declaringClass(): KSClassDeclaration {
   return parent as? KSClassDeclaration ?: throw KspAnvilException(
     message = "Expected declaration to be a class.",
-    node = this
+    node = this,
   )
 }
 
 internal fun KSAnnotated.atLeastOneAnnotation(
   annotationClass: String,
-  scope: KSType? = null
+  scope: KSType? = null,
 ): Sequence<KSAnnotation> {
   return findAllKSAnnotations(annotationClass)
     .filter { it.scopeOrNull() == scope }
@@ -96,7 +89,7 @@ internal fun KSAnnotated.atLeastOneAnnotation(
 
 internal fun KSAnnotated.atLeastOneAnnotation(
   annotationClass: KClass<out Annotation>,
-  scope: KSType? = null
+  scope: KSType? = null,
 ): Sequence<KSAnnotation> {
   return findAllKSAnnotations(annotationClass)
     .filter { it.scopeOrNull() == scope }
@@ -120,21 +113,21 @@ internal fun createAnvilModuleName(clazz: KSClassDeclaration): String {
     clazz.packageName.safePackageString() +
     clazz.generateClassName(
       separator = "",
-      suffix = ANVIL_MODULE_SUFFIX
+      suffix = ANVIL_MODULE_SUFFIX,
     ).relativeClassName.toString()
 }
 
 @ExperimentalAnvilApi
 internal fun KSClassDeclaration.generateClassName(
   separator: String = "_",
-  suffix: String = ""
+  suffix: String = "",
 ): ClassId {
   return toClassName().generateClassName(separator, suffix).asClassId()
 }
 
 internal fun KSName.safePackageString(
   dotPrefix: Boolean = false,
-  dotSuffix: Boolean = true
+  dotSuffix: Boolean = true,
 ): String = toString().safePackageString(isRoot, dotPrefix, dotSuffix)
 
 private val KSName.isRoot: Boolean get() = asString().isEmpty()
@@ -165,13 +158,15 @@ internal fun KSAnnotation.parentScope(): KSClassDeclaration {
     ?.value as? KSClassDeclaration
     ?: throw KspAnvilException(
       message = "Couldn't find parentScope for $this.",
-      node = this
+      node = this,
     )
 }
 
 @OptIn(KspExperimental::class)
 internal fun KSAnnotated.isQualifier(): Boolean = isAnnotationPresent(Qualifier::class)
+
 @OptIn(KspExperimental::class)
 internal fun KSAnnotated.isMapKey(): Boolean = isAnnotationPresent(MapKey::class)
+
 @OptIn(KspExperimental::class)
 internal fun KSAnnotated.isDaggerScope(): Boolean = isAnnotationPresent(Scope::class)

@@ -122,10 +122,10 @@ public class AnvilCompilation internal constructor(
               ServiceLoader
                 .load(
                   SymbolProcessorProvider::class.java,
-                  SymbolProcessorProvider::class.java.classLoader
+                  SymbolProcessorProvider::class.java.classLoader,
                 )
                 // Exclude the Dagger KSP processor, we have special handling for that as we decorate it
-                .filterNot { it is KspComponentProcessor.Provider }
+                .filterNot { it is KspComponentProcessor.Provider },
             )
             addAll(mode.symbolProcessorProviders)
           }
@@ -240,7 +240,7 @@ public class AnvilCompilation internal constructor(
 /** Available Dagger annotation processing modes. */
 enum class DaggerAnnotationProcessingMode {
   KAPT,
-  KSP
+  KSP,
 }
 
 /**

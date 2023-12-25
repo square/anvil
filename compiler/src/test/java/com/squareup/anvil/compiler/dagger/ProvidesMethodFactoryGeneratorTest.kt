@@ -8,10 +8,9 @@ import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
 import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
 import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
 import com.squareup.anvil.compiler.daggerModule1
-import com.squareup.anvil.compiler.daggerProcessingModesForTests
 import com.squareup.anvil.compiler.innerModule
-import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
@@ -3270,7 +3269,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
       }
       """,
       daggerProcessingMode = daggerProcessingMode,
-      previousCompilationResult = otherModuleResult
+      previousCompilationResult = otherModuleResult,
     ) {
       // TODO component generation isn't possible with KSP yet
       assumeFalse(mode is AnvilCompilationMode.Ksp)
@@ -3356,7 +3355,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
       }
       """,
       daggerProcessingMode = daggerProcessingMode,
-      previousCompilationResult = otherModuleResult
+      previousCompilationResult = otherModuleResult,
     ) {
       // TODO component generation isn't possible with KSP yet
       assumeFalse(mode is AnvilCompilationMode.Ksp)

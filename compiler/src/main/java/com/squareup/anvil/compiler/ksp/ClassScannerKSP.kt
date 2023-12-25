@@ -37,7 +37,7 @@ internal class ClassScannerKSP {
   fun findContributedClasses(
     resolver: Resolver,
     annotation: FqName,
-    scope: KSClassDeclaration?
+    scope: KSClassDeclaration?,
   ): Sequence<KSClassDeclaration> {
     val module = (resolver as ResolverImpl).module
     val propertyGroups = cache.getOrPut(CacheKey(annotation, module.hashCode())) {
@@ -59,13 +59,13 @@ internal class ClassScannerKSP {
           .distinctBy { it.baseName }
           .singleOrEmpty()
           ?: throw AnvilCompilationException(
-            message = "Couldn't find the reference for a generated hint: ${properties[0].baseName}."
+            message = "Couldn't find the reference for a generated hint: ${properties[0].baseName}.",
           )
 
         val scopes = properties.filterIsInstance<ScopeProperty>()
           .ifEmpty {
             throw AnvilCompilationException(
-              message = "Couldn't find any scope for a generated hint: ${properties[0].baseName}."
+              message = "Couldn't find any scope for a generated hint: ${properties[0].baseName}.",
             )
           }
           .map { it.declaration.type.singleArgumentType.classDeclaration }
@@ -111,16 +111,16 @@ private fun PackageViewDescriptor.subPackages(): List<PackageViewDescriptor> = m
 
 private sealed class GeneratedProperty(
   val declaration: KSPropertyDeclaration,
-  val baseName: String
+  val baseName: String,
 ) {
   class ReferenceProperty(
     descriptor: KSPropertyDeclaration,
-    baseName: String
+    baseName: String,
   ) : GeneratedProperty(descriptor, baseName)
 
   class ScopeProperty(
     descriptor: KSPropertyDeclaration,
-    baseName: String
+    baseName: String,
   ) : GeneratedProperty(descriptor, baseName)
 
   companion object {
@@ -152,5 +152,5 @@ private sealed class GeneratedProperty(
 
 private data class CacheKey(
   val name: FqName,
-  val moduleHash: Int
+  val moduleHash: Int,
 )

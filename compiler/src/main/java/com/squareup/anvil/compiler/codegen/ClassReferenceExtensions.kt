@@ -95,7 +95,6 @@ internal fun ClassReference.checkClassExtendsBoundType(
   }
 }
 
-
 internal fun ClassReference.atLeastOneAnnotation(
   annotationName: FqName,
   scope: ClassReference? = null,

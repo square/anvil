@@ -331,7 +331,7 @@ class BindsMethodValidatorTest(
     assumeTrue(daggerProcessingMode != null)
     testIsNotYetCompatibleWithKsp(
       daggerProcessingMode,
-      "https://github.com/google/dagger/issues/3990"
+      "https://github.com/google/dagger/issues/3990",
     )
     val moduleResult = compile(
       """

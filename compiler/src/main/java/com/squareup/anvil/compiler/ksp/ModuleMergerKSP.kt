@@ -62,7 +62,7 @@ internal object ModuleMergerKSP {
           .findContributedClasses(
             resolver = resolver,
             annotation = contributesToFqName,
-            scope = scope
+            scope = scope,
           )
       }
       .filter {
@@ -119,12 +119,12 @@ internal object ModuleMergerKSP {
           .findAllKSAnnotations(
             ContributesTo::class,
             ContributesBinding::class,
-            ContributesMultibinding::class
+            ContributesMultibinding::class,
           )
           .map { it.scope() }
           .plus(
             excludedClass.findAllKSAnnotations(ContributesSubcomponent::class)
-              .map { it.parentScope() }
+              .map { it.parentScope() },
           )
           .any { scope -> scope in scopes }
 
@@ -134,7 +134,7 @@ internal object ModuleMergerKSP {
               "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
               "wants to exclude ${excludedClass.fqName}, but the excluded class isn't " +
               "contributed to the same scope.",
-            node = clazz
+            node = clazz,
           )
         }
       }
@@ -158,7 +158,7 @@ internal object ModuleMergerKSP {
               throw KspAnvilException(
                 message = "${contributedClass.fqName} wants to replace " +
                   "${classToReplace.fqName}, but the class being replaced is not a Dagger module.",
-                node = contributedClass
+                node = contributedClass,
               )
             }
 
@@ -167,7 +167,7 @@ internal object ModuleMergerKSP {
       }
 
     fun replacedModulesByContributedBinding(
-      annotationFqName: FqName
+      annotationFqName: FqName,
     ): Sequence<KSClassDeclaration> {
       return scopes.asSequence()
         .flatMap { scope ->
@@ -175,7 +175,7 @@ internal object ModuleMergerKSP {
             .findContributedClasses(
               resolver = resolver,
               annotation = annotationFqName,
-              scope = scope
+              scope = scope,
             )
         }
         .flatMap { contributedClass ->
@@ -190,11 +190,11 @@ internal object ModuleMergerKSP {
     }
 
     val replacedModulesByContributedBindings = replacedModulesByContributedBinding(
-      annotationFqName = contributesBindingFqName
+      annotationFqName = contributesBindingFqName,
     )
 
     val replacedModulesByContributedMultibindings = replacedModulesByContributedBinding(
-      annotationFqName = contributesMultibindingFqName
+      annotationFqName = contributesMultibindingFqName,
     )
 
     val intersect = predefinedModules.intersect(excludedModules.toSet())
@@ -235,7 +235,7 @@ internal object ModuleMergerKSP {
       clazz.packageName.safePackageString() +
       clazz.generateClassName(
         separator = "",
-        suffix = ANVIL_MODULE_SUFFIX
+        suffix = ANVIL_MODULE_SUFFIX,
       ).relativeClassName.toString()
     return FqName(name)
   }
@@ -243,13 +243,13 @@ internal object ModuleMergerKSP {
   private fun checkSameScope(
     contributedClass: KSClassDeclaration,
     classToReplace: KSClassDeclaration,
-    scopes: Set<KSClassDeclaration>
+    scopes: Set<KSClassDeclaration>,
   ) {
     val contributesToOurScope = classToReplace
       .findAllKSAnnotations(
         ContributesTo::class,
         ContributesBinding::class,
-        ContributesMultibinding::class
+        ContributesMultibinding::class,
       )
       .map { it.scope() }
       .any { scope -> scope in scopes }
@@ -260,7 +260,7 @@ internal object ModuleMergerKSP {
         message = "${contributedClass.fqName} with scopes " +
           "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
           "wants to replace ${classToReplace.fqName}, but the replaced class isn't " +
-          "contributed to the same scope."
+          "contributed to the same scope.",
       )
     }
   }
@@ -269,13 +269,13 @@ internal object ModuleMergerKSP {
     classScanner: ClassScannerKSP,
     clazz: KSClassDeclaration,
     scopes: Set<KSClassDeclaration>,
-    resolver: Resolver
+    resolver: Resolver,
   ): Sequence<KSClassDeclaration> {
     return classScanner
       .findContributedClasses(
         resolver = resolver,
         annotation = contributesSubcomponentFqName,
-        scope = null
+        scope = null,
       )
       .filter { contributedClass ->
         contributedClass

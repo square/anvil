@@ -49,12 +49,12 @@ import dagger.Module
 import dagger.Subcomponent
 
 internal class MergeComponentSymbolProcessor(
-  override val env: SymbolProcessorEnvironment
+  override val env: SymbolProcessorEnvironment,
 ) : AnvilSymbolProcessor() {
   @AutoService(SymbolProcessorProvider::class)
   class Provider : AnvilSymbolProcessorProvider(
     applicabilityChecker = ApplicabilityChecker,
-    delegate = ::MergeComponentSymbolProcessor
+    delegate = ::MergeComponentSymbolProcessor,
   )
 
   object ApplicabilityChecker : AnvilApplicabilityChecker {
@@ -89,7 +89,7 @@ internal class MergeComponentSymbolProcessor(
   @OptIn(KspExperimental::class)
   private fun generateComponents(
     resolver: Resolver,
-    clazz: KSClassDeclaration
+    clazz: KSClassDeclaration,
   ) {
     val isMergeModules = clazz.isAnnotationPresent(MergeModules::class)
     val annotations = clazz.annotations.toList()
@@ -109,7 +109,7 @@ internal class MergeComponentSymbolProcessor(
     val daggerAnnotation = createAnnotation(
       originalAnnotation,
       daggerAnnotationFqName,
-      contributedModules
+      contributedModules,
     )
 
     val typesToAdd = mutableListOf<TypeSpec>()
@@ -117,7 +117,7 @@ internal class MergeComponentSymbolProcessor(
     val generatedClassName = "Anvil${clazz.simpleName.asString().capitalize()}"
     val originatingFile = clazz.containingFile ?: throw KspAnvilException(
       "No containing file found for ${clazz.qualifiedName?.asString()}",
-      node = clazz
+      node = clazz,
     )
     if (isMergeModules) {
       // Generate a module with the annotation and be done
@@ -149,7 +149,7 @@ internal class MergeComponentSymbolProcessor(
             addType(
               TypeSpec.companionObjectBuilder()
                 .addFunction(it)
-                .build()
+                .build(),
             )
           }
         }
@@ -161,15 +161,14 @@ internal class MergeComponentSymbolProcessor(
         typesToAdd += generateDaggerComponentShim(
           originClassName,
           creator,
-          originatingFile
+          originatingFile,
         )
       }
     }
 
-
     val fileSpec = FileSpec.createAnvilSpec(
       originClassName.packageName,
-      generatedClassName
+      generatedClassName,
     ) {
       for (type in typesToAdd) {
         addType(type)
@@ -182,7 +181,7 @@ internal class MergeComponentSymbolProcessor(
   @OptIn(KspExperimental::class)
   private fun createFactoryOrBuilderFunSpec(
     origin: KSClassDeclaration,
-    generatedAnvilClassName: ClassName
+    generatedAnvilClassName: ClassName,
   ): FunSpec? {
     val (className, functionName) = origin.declarations
       .filterIsInstance<KSClassDeclaration>()
@@ -218,7 +217,7 @@ internal class MergeComponentSymbolProcessor(
   private fun createAnnotation(
     originalAnnotation: KSAnnotation,
     daggerAnnotation: ClassName,
-    contributedModules: Set<KSClassDeclaration>
+    contributedModules: Set<KSClassDeclaration>,
   ): AnnotationSpec {
     val modulesParamName = if (daggerAnnotation == Module::class.asClassName()) {
       "includes"
@@ -230,7 +229,7 @@ internal class MergeComponentSymbolProcessor(
       .addMember(
         "$modulesParamName = [%L]",
         contributedModules.map { CodeBlock.of("%T::class", it.toClassName()) }
-          .joinToCode()
+          .joinToCode(),
       )
 
     fun copyArrayValue(name: String) {
@@ -270,7 +269,7 @@ internal class MergeComponentSymbolProcessor(
 
 private fun addValueToBlock(
   value: Any,
-  member: CodeBlock.Builder
+  member: CodeBlock.Builder,
 ) {
   when (value) {
     is List<*> -> {

@@ -47,7 +47,7 @@ internal class InterfaceMerger(
       mergeAnnotatedClass = mergeAnnotatedClass,
       annotations = mergeAnnotations,
       supertypes = supertypes
-        .map { it.classDescriptor().toClassReference(module) }
+        .map { it.classDescriptor().toClassReference(module) },
     )
 
     @Suppress("ConvertCallChainIntoSequence")
@@ -66,7 +66,7 @@ internal class InterfaceMerger(
     val contributesAnnotations: List<AnnotationReference>,
     val replacedClasses: Set<ClassReference>,
     val excludedClasses: List<ClassReference>,
-    val contributedSubcomponentInterfaces: () -> Sequence<ClassReference>
+    val contributedSubcomponentInterfaces: () -> Sequence<ClassReference>,
   )
 
   companion object {
@@ -80,7 +80,7 @@ internal class InterfaceMerger(
       if (!mergeAnnotatedClass.isInterface()) {
         throw AnvilCompilationExceptionClassReference(
           classReference = mergeAnnotatedClass,
-          message = "Dagger components must be interfaces."
+          message = "Dagger components must be interfaces.",
         )
       }
 
@@ -95,7 +95,7 @@ internal class InterfaceMerger(
             classReference = mergeAnnotatedClass,
             message = "It seems like you tried to contribute an inner class to its outer class. " +
               "This is not supported and results in a compiler error.",
-            cause = e
+            cause = e,
           )
         }
       }
@@ -106,7 +106,7 @@ internal class InterfaceMerger(
             .findContributedClasses(
               module = module,
               annotation = contributesToFqName,
-              scope = annotation.scope().fqName
+              scope = annotation.scope().fqName,
             )
         }
         .filter { clazz ->
@@ -123,7 +123,7 @@ internal class InterfaceMerger(
             throw AnvilCompilationExceptionClassReference(
               classReference = contributedClass,
               message = "${contributedClass.fqName} is contributed to the Dagger graph, but the " +
-                "interface is not public. Only public interfaces are supported."
+                "interface is not public. Only public interfaces are supported.",
             )
           }
         }
@@ -145,13 +145,15 @@ internal class InterfaceMerger(
                   classReference = contributedClass,
                   message = "${contributedClass.fqName} wants to replace " +
                     "${classToReplace.fqName}, but the class being " +
-                    "replaced is not an interface."
+                    "replaced is not an interface.",
                 )
               }
 
               val contributesToOurScope = classToReplace.annotations
                 .findAll(
-                  contributesToFqName, contributesBindingFqName, contributesMultibindingFqName
+                  contributesToFqName,
+                  contributesBindingFqName,
+                  contributesMultibindingFqName,
                 )
                 .map { it.scope() }
                 .any { scope -> scope in scopes }
@@ -165,7 +167,7 @@ internal class InterfaceMerger(
                   message = "${contributedClass.fqName} with scopes " +
                     "$scopesString " +
                     "wants to replace ${classToReplace.fqName}, but the replaced class isn't " +
-                    "contributed to the same scope."
+                    "contributed to the same scope.",
                 )
               }
             }
@@ -181,7 +183,9 @@ internal class InterfaceMerger(
             .findAll(contributesToFqName, contributesBindingFqName, contributesMultibindingFqName)
             .map { it.scope() }
             .plus(
-              excludedClass.annotations.find(contributesSubcomponentFqName).map { it.parentScope() }
+              excludedClass.annotations.find(
+                contributesSubcomponentFqName,
+              ).map { it.parentScope() },
             )
             .any { scope -> scope in scopes }
 
@@ -191,7 +195,7 @@ internal class InterfaceMerger(
                 "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
                 "wants to exclude ${excludedClass.fqName}, but the excluded class isn't " +
                 "contributed to the same scope.",
-              classReference = mergeAnnotatedClass
+              classReference = mergeAnnotatedClass,
             )
           }
         }
@@ -207,7 +211,7 @@ internal class InterfaceMerger(
             message = "${mergeAnnotatedClass.fqName} excludes types that it implements or " +
               "extends. These types cannot be excluded. Look at all the super" +
               " types to find these classes: " +
-              "${intersect.joinToString { it.fqName.asString() }}."
+              "${intersect.joinToString { it.fqName.asString() }}.",
           )
         }
       }
@@ -220,9 +224,9 @@ internal class InterfaceMerger(
             classScanner = classScanner,
             clazz = mergeAnnotatedClass,
             scopes = scopes,
-            module = module
+            module = module,
           )
-        }
+        },
       )
     }
 
@@ -230,13 +234,13 @@ internal class InterfaceMerger(
       classScanner: ClassScanner,
       clazz: ClassReference,
       scopes: Collection<ClassReference>,
-      module: ModuleDescriptor
+      module: ModuleDescriptor,
     ): Sequence<ClassReference.Descriptor> {
       return classScanner
         .findContributedClasses(
           module = module,
           annotation = contributesSubcomponentFqName,
-          scope = null
+          scope = null,
         )
         .filter {
           it.atLeastOneAnnotation(contributesSubcomponentFqName).single().parentScope() in scopes

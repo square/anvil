@@ -3,17 +3,16 @@ package com.squareup.anvil.compiler.dagger
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.assistedService
-import com.squareup.anvil.compiler.daggerProcessingModesForTests
-import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.compilationErrorLine
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.squareup.anvil.compiler.testIsNotYetCompatibleWithKsp
+import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -621,7 +620,7 @@ public final class AssistedService_Factory {
   @Test fun `two assisted inject constructors aren't supported`() {
     testIsNotYetCompatibleWithKsp(
       daggerProcessingMode,
-      "https://github.com/google/dagger/issues/3992"
+      "https://github.com/google/dagger/issues/3992",
     )
     compile(
       """
@@ -653,7 +652,7 @@ public final class AssistedService_Factory {
   @Test fun `one inject and one assisted inject constructor aren't supported`() {
     testIsNotYetCompatibleWithKsp(
       daggerProcessingMode,
-      "https://github.com/google/dagger/issues/3991"
+      "https://github.com/google/dagger/issues/3991",
     )
     compile(
       """

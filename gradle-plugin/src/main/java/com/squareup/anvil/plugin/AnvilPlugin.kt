@@ -152,7 +152,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       .extendsFrom(getConfiguration(project, variant.name))
 
     if (!variant.variantFilter.enableKspComponentMerging) {
-     disableIncrementalKotlinCompilation(variant)
+      disableIncrementalKotlinCompilation(variant)
     }
 
     if (!variant.variantFilter.generateDaggerFactoriesOnly || !variant.variantFilter.enableKspComponentMerging) {

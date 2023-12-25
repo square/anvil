@@ -75,7 +75,7 @@ internal class InterfaceMergerKSP(
     val contributesAnnotations: List<KSAnnotation>,
     val replacedClasses: Set<KSClassDeclaration>,
     val excludedClasses: List<KSClassDeclaration>,
-    val contributedSubcomponentInterfaces: () -> Sequence<KSClassDeclaration>
+    val contributedSubcomponentInterfaces: () -> Sequence<KSClassDeclaration>,
   )
 
   companion object {
@@ -91,7 +91,7 @@ internal class InterfaceMergerKSP(
       if (!mergeAnnotatedClass.isInterface()) {
         throw KspAnvilException(
           node = mergeAnnotatedClass,
-          message = "Dagger components must be interfaces."
+          message = "Dagger components must be interfaces.",
         )
       }
 
@@ -101,7 +101,7 @@ internal class InterfaceMergerKSP(
             .findContributedClasses(
               resolver = resolver,
               annotation = contributesToFqName,
-              scope = annotation.scope()
+              scope = annotation.scope(),
             )
         }
         .filter { clazz ->
@@ -117,7 +117,7 @@ internal class InterfaceMergerKSP(
             throw KspAnvilException(
               node = contributedClass,
               message = "${contributedClass.fqName} is contributed to the Dagger graph, but the " +
-                "interface is not public. Only public interfaces are supported."
+                "interface is not public. Only public interfaces are supported.",
             )
           }
         }
@@ -129,7 +129,9 @@ internal class InterfaceMergerKSP(
         .flatMap { contributeAnnotation ->
           val contributedClass = contributeAnnotation.declaringClass()
           contributedClass
-            .atLeastOneAnnotation(contributeAnnotation.annotationType.resolve().classDeclaration.qualifiedName!!.asString())
+            .atLeastOneAnnotation(
+              contributeAnnotation.annotationType.resolve().classDeclaration.qualifiedName!!.asString(),
+            )
             .flatMap { it.replaces() }
             .map { it.classDeclaration }
             .onEach { classToReplace ->
@@ -140,12 +142,16 @@ internal class InterfaceMergerKSP(
                   node = contributedClass,
                   message = "${contributedClass.fqName} wants to replace " +
                     "${classToReplace.fqName}, but the class being " +
-                    "replaced is not an interface."
+                    "replaced is not an interface.",
                 )
               }
 
               val contributesToOurScope = classToReplace
-                .findAllKSAnnotations(ContributesTo::class, ContributesBinding::class, ContributesMultibinding::class)
+                .findAllKSAnnotations(
+                  ContributesTo::class,
+                  ContributesBinding::class,
+                  ContributesMultibinding::class,
+                )
                 .map { it.scope() }
                 .any { scope -> scope in scopes }
 
@@ -158,7 +164,7 @@ internal class InterfaceMergerKSP(
                   message = "${contributedClass.fqName} with scopes " +
                     "$scopesString " +
                     "wants to replace ${classToReplace.fqName}, but the replaced class isn't " +
-                    "contributed to the same scope."
+                    "contributed to the same scope.",
                 )
               }
             }
@@ -172,10 +178,16 @@ internal class InterfaceMergerKSP(
         .onEach { excludedClass ->
           // Verify that the replaced classes use the same scope.
           val contributesToOurScope = excludedClass
-            .findAllKSAnnotations(ContributesTo::class, ContributesBinding::class, ContributesMultibinding::class)
+            .findAllKSAnnotations(
+              ContributesTo::class,
+              ContributesBinding::class,
+              ContributesMultibinding::class,
+            )
             .map { it.scope() }
             .plus(
-              excludedClass.findAllKSAnnotations(ContributesSubcomponent::class).map { it.parentScope() }
+              excludedClass.findAllKSAnnotations(
+                ContributesSubcomponent::class,
+              ).map { it.parentScope() },
             )
             .any { scope -> scope in scopes }
 
@@ -185,7 +197,7 @@ internal class InterfaceMergerKSP(
                 "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
                 "wants to exclude ${excludedClass.fqName}, but the excluded class isn't " +
                 "contributed to the same scope.",
-              node = mergeAnnotatedClass
+              node = mergeAnnotatedClass,
             )
           }
         }
@@ -201,7 +213,7 @@ internal class InterfaceMergerKSP(
             message = "${mergeAnnotatedClass.fqName} excludes types that it implements or " +
               "extends. These types cannot be excluded. Look at all the super" +
               " types to find these classes: " +
-              "${intersect.joinToString { it.fqName.asString() }}."
+              "${intersect.joinToString { it.fqName.asString() }}.",
           )
         }
       }
@@ -214,9 +226,9 @@ internal class InterfaceMergerKSP(
             classScanner = classScanner,
             clazz = mergeAnnotatedClass,
             scopes = scopes,
-            resolver = resolver
+            resolver = resolver,
           )
-        }
+        },
       )
     }
 
@@ -224,13 +236,13 @@ internal class InterfaceMergerKSP(
       classScanner: ClassScannerKSP,
       clazz: KSClassDeclaration,
       scopes: Collection<KSClassDeclaration>,
-      resolver: Resolver
+      resolver: Resolver,
     ): Sequence<KSClassDeclaration> {
       return classScanner
         .findContributedClasses(
           resolver = resolver,
           annotation = contributesSubcomponentFqName,
-          scope = null
+          scope = null,
         )
         .filter {
           it.atLeastOneAnnotation(ContributesSubcomponent::class).single().parentScope() in scopes

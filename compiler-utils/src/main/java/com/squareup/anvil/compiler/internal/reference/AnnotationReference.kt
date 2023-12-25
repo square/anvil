@@ -224,19 +224,19 @@ public fun KtAnnotationEntry.toAnnotationReference(
 ): Psi {
   return toAnnotationReference(
     classReference = requireFqName(module).toClassReference(module),
-    declaringClass = declaringClass
+    declaringClass = declaringClass,
   )
 }
 
 @ExperimentalAnvilApi
 public fun KtAnnotationEntry.toAnnotationReference(
   declaringClass: ClassReference?,
-  classReference: ClassReference
+  classReference: ClassReference,
 ): Psi {
   return Psi(
     annotation = this,
     classReference = classReference,
-    declaringClass = declaringClass
+    declaringClass = declaringClass,
   )
 }
 
@@ -254,12 +254,12 @@ public fun AnnotationDescriptor.toAnnotationReference(
 @ExperimentalAnvilApi
 public fun AnnotationDescriptor.toAnnotationReference(
   declaringClass: ClassReference?,
-  classReference: ClassReference
+  classReference: ClassReference,
 ): Descriptor {
   return Descriptor(
     annotation = this,
     classReference = classReference,
-    declaringClass = declaringClass
+    declaringClass = declaringClass,
   )
 }
 

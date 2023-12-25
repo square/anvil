@@ -649,7 +649,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @MergeComponent(Unit::class)
         interface ComponentInterface
       """,
-      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT,
     ) {
       val daggerComponent = componentInterface.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -707,7 +707,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface2
       """,
       // Keep Dagger enabled, because it complained initially.
-      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT,
     ) {
       assertThat(componentInterface1 extends subcomponentInterface1.anyParentComponentInterface)
       assertThat(
@@ -1039,7 +1039,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @MergeComponent(Unit::class)
         interface ComponentInterface
       """,
-      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT,
     ) {
       val daggerComponent = componentInterface.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1099,7 +1099,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
         class TestClass @Inject constructor(val factory: SubcomponentInterface.ComponentFactory)
       """,
-      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT,
     ) {
       val daggerComponent = componentInterface.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1161,7 +1161,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
         class TestClass @Inject constructor(val factory: SubcomponentInterface.ComponentFactory)
       """,
-      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT,
     ) {
       val daggerComponent = componentInterface2.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1226,7 +1226,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @MergeComponent(Unit::class)
         interface ComponentInterface1
       """.trimIndent(),
-      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT,
     ) {
       assertThat(exitCode).isEqualTo(OK)
 
@@ -1245,7 +1245,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface2
       """.trimIndent(),
       previousCompilationResult = firstCompilationResult,
-      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT,
     ) {
       assertThat(exitCode).isEqualTo(OK)
 
@@ -1359,7 +1359,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
         class TestClass @Inject constructor(val factory: SubcomponentInterface.ComponentFactory)
       """,
-      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT,
     ) {
       val daggerComponent1 = componentInterface1.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1490,7 +1490,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @MergeComponent(Unit::class)
         interface ComponentInterface1
       """,
-      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT,
     ) {
       val daggerComponent = componentInterface1.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1537,7 +1537,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface2
       """,
       daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT,
-      previousCompilationResult = firstResult
+      previousCompilationResult = firstResult,
     ) {
       val daggerComponent = componentInterface2.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1626,7 +1626,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @ContributesSubcomponent(scope = Any::class, parentScope = Unit::class)
         interface SubcomponentInterfacewithVeryVeryVeryVeryVeryVeryVeryLongName
       """,
-      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
+      daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }

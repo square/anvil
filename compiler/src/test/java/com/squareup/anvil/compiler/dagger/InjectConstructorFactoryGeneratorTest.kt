@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.daggerProcessingModesForTests
 import com.squareup.anvil.compiler.compilationErrorLine
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode

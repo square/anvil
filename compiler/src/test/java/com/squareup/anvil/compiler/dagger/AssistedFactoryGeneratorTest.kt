@@ -6,11 +6,10 @@ import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.assistedServiceFactory
 import com.squareup.anvil.compiler.compilationErrorLine
 import com.squareup.anvil.compiler.daggerModule1
-import com.squareup.anvil.compiler.daggerProcessingModesForTests
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
-import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
