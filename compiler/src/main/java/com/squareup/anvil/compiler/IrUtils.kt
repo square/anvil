@@ -21,7 +21,7 @@ import org.jetbrains.kotlin.name.FqName
 
 internal fun IrPluginContext.requireReferenceClass(fqName: FqName): IrClassSymbol {
   return referenceClass(fqName.classIdBestGuess()) ?: throw AnvilCompilationException(
-    message = "Couldn't resolve reference for $fqName"
+    message = "Couldn't resolve reference for $fqName",
   )
 }
 
@@ -34,7 +34,7 @@ internal fun ClassId.referenceClassOrNull(context: IrPluginContext): ClassRefere
 internal fun IrClass.requireClassId(): ClassId {
   return classId ?: throw AnvilCompilationException(
     element = this,
-    message = "Couldn't find a ClassId for $fqName."
+    message = "Couldn't find a ClassId for $fqName.",
   )
 }
 
@@ -44,13 +44,13 @@ internal val IrExpression.kclassUnwrapped: IrClassifierSymbol
   get() = (type as? IrSimpleType)?.arguments?.get(0)?.typeOrNull?.classifierOrNull
     ?: throw AnvilCompilationException(
       message = "Couldn't resolve wrapped class.",
-      element = this
+      element = this,
     )
 
 internal val IrDeclarationWithName.fqName: FqName
   get() = fqNameWhenAvailable ?: throw AnvilCompilationException(
     message = "Couldn't find FqName for $name",
-    element = this
+    element = this,
   )
 
 internal val IrClassSymbol.fqName: FqName get() = owner.fqName

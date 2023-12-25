@@ -40,7 +40,7 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
       valueDescription = "<file-path>",
       description = "Path to directory in which Anvil specific code should be generated",
       required = false,
-      allowMultipleOccurrences = false
+      allowMultipleOccurrences = false,
     ),
     CliOption(
       optionName = generateDaggerFactoriesName,
@@ -49,7 +49,7 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
         "annotation processor would generate for @Provides methods and @Inject " +
         "constructors.",
       required = false,
-      allowMultipleOccurrences = false
+      allowMultipleOccurrences = false,
     ),
     CliOption(
       optionName = generateDaggerFactoriesOnlyName,
@@ -57,7 +57,7 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
       description = "Whether Anvil should generate Factory classes only and no code for " +
         "contributed code.",
       required = false,
-      allowMultipleOccurrences = false
+      allowMultipleOccurrences = false,
     ),
     CliOption(
       optionName = disableComponentMergingName,
@@ -65,7 +65,7 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
       description = "Whether Anvil should generate code only and not transform code for " +
         "@MergeComponent or @MergeSubcomponent.",
       required = false,
-      allowMultipleOccurrences = false
+      allowMultipleOccurrences = false,
     ),
     @Suppress("EnumValuesSoftDeprecate") // Can't use Enum.entries while targeting Kotlin 1.8
     CliOption(
@@ -73,14 +73,14 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
       valueDescription = AnvilBackend.values().joinToString("|", "<", ">"),
       description = "Controls whether Anvil is running as an embedded plugin or as KSP.",
       required = false,
-      allowMultipleOccurrences = false
-    )
+      allowMultipleOccurrences = false,
+    ),
   )
 
   override fun processOption(
     option: AbstractCliOption,
     value: String,
-    configuration: CompilerConfiguration
+    configuration: CompilerConfiguration,
   ) {
     when (option.optionName) {
       srcGenDirName -> configuration.put(srcGenDirKey, value)

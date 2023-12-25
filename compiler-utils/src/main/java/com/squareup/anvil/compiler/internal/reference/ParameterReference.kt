@@ -29,11 +29,11 @@ public sealed class ParameterReference : AnnotatedReference {
     ?: throw AnvilCompilationExceptionParameterReference(
       parameterReference = this,
       message = "Unable to get type for the parameter with name $name of " +
-        "function ${declaringFunction.fqName}"
+        "function ${declaringFunction.fqName}",
     )
 
   public fun resolveTypeNameOrNull(
-    implementingClass: ClassReference
+    implementingClass: ClassReference,
   ): TypeName? {
     return type?.resolveGenericTypeNameOrNull(implementingClass)
   }
@@ -43,7 +43,7 @@ public sealed class ParameterReference : AnnotatedReference {
       ?: throw AnvilCompilationExceptionParameterReference(
         message = "Unable to resolve type name for parameter with name $name with the " +
           "implementing class ${implementingClass.fqName}.",
-        parameterReference = this
+        parameterReference = this,
       )
 
   override fun toString(): String {
@@ -68,7 +68,7 @@ public sealed class ParameterReference : AnnotatedReference {
 
   public class Psi(
     public val parameter: KtParameter,
-    override val declaringFunction: FunctionReference.Psi
+    override val declaringFunction: FunctionReference.Psi,
   ) : ParameterReference() {
     override val name: String = parameter.nameAsSafeName.asString()
 
@@ -91,7 +91,7 @@ public sealed class ParameterReference : AnnotatedReference {
 
   public class Descriptor(
     public val parameter: ValueParameterDescriptor,
-    override val declaringFunction: FunctionReference.Descriptor
+    override val declaringFunction: FunctionReference.Descriptor,
   ) : ParameterReference() {
     override val name: String = parameter.name.asString()
 
@@ -115,14 +115,14 @@ public sealed class ParameterReference : AnnotatedReference {
 
 @ExperimentalAnvilApi
 public fun KtParameter.toParameterReference(
-  declaringFunction: FunctionReference.Psi
+  declaringFunction: FunctionReference.Psi,
 ): Psi {
   return Psi(this, declaringFunction)
 }
 
 @ExperimentalAnvilApi
 public fun ValueParameterDescriptor.toParameterReference(
-  declaringFunction: FunctionReference.Descriptor
+  declaringFunction: FunctionReference.Descriptor,
 ): Descriptor {
   return Descriptor(this, declaringFunction)
 }
@@ -132,16 +132,16 @@ public fun ValueParameterDescriptor.toParameterReference(
 public fun AnvilCompilationExceptionParameterReference(
   parameterReference: ParameterReference,
   message: String,
-  cause: Throwable? = null
+  cause: Throwable? = null,
 ): AnvilCompilationException = when (parameterReference) {
   is Psi -> AnvilCompilationException(
     element = parameterReference.parameter,
     message = message,
-    cause = cause
+    cause = cause,
   )
   is Descriptor -> AnvilCompilationException(
     parameterDescriptor = parameterReference.parameter,
     message = message,
-    cause = cause
+    cause = cause,
   )
 }

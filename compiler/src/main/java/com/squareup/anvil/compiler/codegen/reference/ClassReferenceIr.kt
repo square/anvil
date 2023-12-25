@@ -21,7 +21,7 @@ import kotlin.LazyThreadSafetyMode.NONE
 
 internal class ClassReferenceIr(
   val clazz: IrClassSymbol,
-  val context: IrPluginContext
+  val context: IrPluginContext,
 ) : AnnotatedReferenceIr {
   val fqName: FqName = clazz.fqName
   val packageFqName: FqName? = clazz.owner.packageFqName
@@ -51,7 +51,7 @@ internal class ClassReferenceIr(
       DescriptorVisibilities.PROTECTED -> PROTECTED
       else -> throw AnvilCompilationExceptionClassReferenceIr(
         this,
-        "Encountered an unsupported visibility ${clazz.owner.visibility.name} for class $fqName"
+        "Encountered an unsupported visibility ${clazz.owner.visibility.name} for class $fqName",
       )
     }
   }
@@ -85,9 +85,9 @@ internal fun IrClassSymbol.toClassReference(context: IrPluginContext) =
 internal fun AnvilCompilationExceptionClassReferenceIr(
   classReference: ClassReferenceIr,
   message: String,
-  cause: Throwable? = null
+  cause: Throwable? = null,
 ): AnvilCompilationException = AnvilCompilationException(
   element = classReference.clazz,
   message = message,
-  cause = cause
+  cause = cause,
 )

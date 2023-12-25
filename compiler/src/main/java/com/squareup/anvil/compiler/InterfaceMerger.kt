@@ -26,11 +26,11 @@ import org.jetbrains.kotlin.types.KotlinType
  */
 internal class InterfaceMerger(
   private val classScanner: ClassScanner,
-  private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory
+  private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
 ) : SyntheticResolveExtension {
   override fun addSyntheticSupertypes(
     thisDescriptor: ClassDescriptor,
-    supertypes: MutableList<KotlinType>
+    supertypes: MutableList<KotlinType>,
   ) {
     if (thisDescriptor.shouldIgnore()) return
 

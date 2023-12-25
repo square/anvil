@@ -51,5 +51,5 @@ public annotation class MergeComponent(
    * List of bindings, multibindings, modules and component interfaces that are contributed to the
    * same scope, but should be excluded from the component.
    */
-  val exclude: Array<KClass<*>> = []
+  val exclude: Array<KClass<*>> = [],
 )

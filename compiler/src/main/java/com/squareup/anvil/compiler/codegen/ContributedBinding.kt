@@ -20,7 +20,7 @@ internal data class ContributedBinding(
   val qualifiers: List<AnnotationSpec>,
   val boundType: ClassReference,
   val priority: Priority,
-  val qualifiersKeyLazy: Lazy<String>
+  val qualifiersKeyLazy: Lazy<String>,
 )
 
 internal fun AnnotationReference.toContributedBinding(
@@ -48,7 +48,7 @@ internal fun AnnotationReference.toContributedBinding(
     qualifiers = qualifiers,
     boundType = boundType,
     priority = priority(),
-    qualifiersKeyLazy = declaringClass().qualifiersKeyLazy(boundType, ignoreQualifier)
+    qualifiersKeyLazy = declaringClass().qualifiersKeyLazy(boundType, ignoreQualifier),
   )
 }
 
@@ -64,7 +64,7 @@ private fun AnnotationReference.requireBoundType(module: ModuleDescriptor): Clas
       .firstOrNull { it.fqName == boundFromAnnotation.fqName }
       ?: throw AnvilCompilationException(
         "$fqName contributes a binding for ${boundFromAnnotation.fqName}, " +
-          "but doesn't extend this type."
+          "but doesn't extend this type.",
       )
 
     boundType.checkNotGeneric(contributedClass = declaringClass())
@@ -79,7 +79,7 @@ private fun AnnotationReference.requireBoundType(module: ModuleDescriptor): Clas
       message = "$fqName contributes a binding, but does not " +
         "specify the bound type. This is only allowed with exactly one direct super type. " +
         "If there are multiple or none, then the bound type must be explicitly defined in " +
-        "the @$shortName annotation."
+        "the @$shortName annotation.",
     )
 
   boundType.checkNotGeneric(contributedClass = declaringClass())
@@ -87,7 +87,7 @@ private fun AnnotationReference.requireBoundType(module: ModuleDescriptor): Clas
 }
 
 private fun ClassReference.checkNotGeneric(
-  contributedClass: ClassReference
+  contributedClass: ClassReference,
 ) {
   fun exceptionText(typeString: String): String {
     return "Class ${contributedClass.fqName} binds $fqName," +
@@ -108,7 +108,7 @@ private fun ClassReference.checkNotGeneric(
 
         throw AnvilCompilationException(
           classDescriptor = clazz,
-          message = exceptionText(clazz.defaultType.describeTypeParameters())
+          message = exceptionText(clazz.defaultType.describeTypeParameters()),
         )
       }
     }
@@ -119,7 +119,7 @@ private fun ClassReference.checkNotGeneric(
 
         throw AnvilCompilationException(
           message = exceptionText(typeString),
-          element = clazz.nameIdentifier
+          element = clazz.nameIdentifier,
         )
       }
     }
@@ -128,7 +128,7 @@ private fun ClassReference.checkNotGeneric(
 
 private fun ClassReference.qualifiersKeyLazy(
   boundType: ClassReference,
-  ignoreQualifier: Boolean
+  ignoreQualifier: Boolean,
 ): Lazy<String> {
   // Careful! If we ever decide to support generic types, then we might need to use the
   // Kotlin type and not just the FqName.

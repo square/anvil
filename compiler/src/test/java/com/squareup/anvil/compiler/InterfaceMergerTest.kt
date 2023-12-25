@@ -15,7 +15,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class InterfaceMergerTest(
-  private val annotationClass: KClass<*>
+  private val annotationClass: KClass<*>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -23,7 +23,8 @@ class InterfaceMergerTest(
 
   companion object {
     @Parameters(name = "{0}")
-    @JvmStatic fun annotationClasses(): Collection<Any> {
+    @JvmStatic
+    fun annotationClasses(): Collection<Any> {
       return buildList {
         add(MergeComponent::class)
         if (isFullTestRun()) {
@@ -50,7 +51,7 @@ class InterfaceMergerTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -72,7 +73,7 @@ class InterfaceMergerTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends parentInterface).isTrue()
     }
@@ -90,7 +91,7 @@ class InterfaceMergerTest(
       interface ContributingInterface
       
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
     }
@@ -108,7 +109,7 @@ class InterfaceMergerTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
     }
@@ -127,11 +128,11 @@ class InterfaceMergerTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(
         classLoader.loadClass("com.other.ComponentInterface") extends
-          classLoader.loadClass("com.other.ContributingInterface")
+          classLoader.loadClass("com.other.ContributingInterface"),
       ).isTrue()
     }
   }
@@ -145,7 +146,7 @@ class InterfaceMergerTest(
       
       $annotation(Any::class)
       abstract class MergingClass
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
@@ -172,7 +173,7 @@ class InterfaceMergerTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -198,7 +199,7 @@ class InterfaceMergerTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       // Position to the class. Unfortunately, a different error is reported that the class is
@@ -227,7 +228,7 @@ class InterfaceMergerTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       // Position to the class. Unfortunately, a different error is reported that the class is
@@ -236,7 +237,7 @@ class InterfaceMergerTest(
       assertThat(messages).contains(
         "com.squareup.test.SecondContributingInterface with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
-          "to the same scope."
+          "to the same scope.",
       )
     }
   }
@@ -260,7 +261,7 @@ class InterfaceMergerTest(
 
       $annotation(Any::class)
       interface ComponentInterface : ContributingInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -288,7 +289,7 @@ class InterfaceMergerTest(
           ]
       )
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -316,7 +317,7 @@ class InterfaceMergerTest(
           ]
       )
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
@@ -324,7 +325,7 @@ class InterfaceMergerTest(
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.ContributingInterface, but the excluded class isn't contributed " +
-          "to the same scope."
+          "to the same scope.",
       )
     }
   }
@@ -353,7 +354,7 @@ class InterfaceMergerTest(
           ]
       )
       interface ComponentInterface : ContributingInterface, OtherInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
@@ -361,7 +362,7 @@ class InterfaceMergerTest(
         "ComponentInterface excludes types that it implements or extends. These types cannot " +
           "be excluded. Look at all the super types to find these classes: " +
           "com.squareup.test.ContributingInterface, " +
-          "com.squareup.test.SecondContributingInterface"
+          "com.squareup.test.SecondContributingInterface",
       )
     }
   }
@@ -385,7 +386,7 @@ class InterfaceMergerTest(
       
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isFalse()
@@ -417,7 +418,7 @@ class InterfaceMergerTest(
       
       @MergeSubcomponent(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isFalse()
@@ -431,7 +432,7 @@ class InterfaceMergerTest(
     val visibilities = setOf(
       "internal",
       "private",
-      "protected"
+      "protected",
     )
 
     visibilities.forEach { visibility ->
@@ -447,7 +448,7 @@ class InterfaceMergerTest(
         
         $annotation(Any::class)
         interface ComponentInterface
-        """
+        """,
       ) {
         assertThat(exitCode).isError()
         // Position to the class.
@@ -471,7 +472,7 @@ class InterfaceMergerTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends innerInterface).isTrue()
     }
@@ -491,13 +492,13 @@ class InterfaceMergerTest(
         @ContributesTo(Any::class)
         interface InnerInterface
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "Couldn't find the classId for <root>. Are we stuck in a loop while resolving super " +
           "types? Note that it's not supported to contribute an inner class to a scope that " +
-          "is merged in an outer class."
+          "is merged in an outer class.",
       )
     }
   }
@@ -517,12 +518,12 @@ class InterfaceMergerTest(
         @dagger.Module
         abstract class InnerModule
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "It seems like you tried to contribute an inner class to its outer class. This is " +
-          "not supported and results in a compiler error."
+          "not supported and results in a compiler error.",
       )
     }
   }
@@ -546,7 +547,7 @@ class InterfaceMergerTest(
         @ContributesTo(Unit::class)
         interface InnerInterface
       }
-      """
+      """,
     ) {
       val innerInterface = classLoader
         .loadClass("com.squareup.test.SubcomponentInterface\$InnerInterface")
@@ -567,7 +568,7 @@ class InterfaceMergerTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val componentInterface = classLoader.loadClass("ComponentInterface")
       val contributingInterface = classLoader.loadClass("ContributingInterface")
@@ -593,7 +594,7 @@ class InterfaceMergerTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isFalse()
@@ -617,7 +618,7 @@ class InterfaceMergerTest(
       
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(secondContributingInterface extends contributingInterface).isTrue()
 
@@ -640,7 +641,7 @@ class InterfaceMergerTest(
       interface DoSomethingInterface {
         fun doSomething()
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -666,7 +667,7 @@ class InterfaceMergerTest(
       
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -686,7 +687,7 @@ class InterfaceMergerTest(
       @ContributesTo(Any::class)
       @ContributesTo(Unit::class)
       interface ContributingInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -707,7 +708,7 @@ class InterfaceMergerTest(
       $annotation(Unit::class)
       interface SubcomponentInterface
       """,
-      previousCompilationResult = firstResult
+      previousCompilationResult = firstResult,
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -736,7 +737,7 @@ class InterfaceMergerTest(
       
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -769,13 +770,13 @@ class InterfaceMergerTest(
       
       $annotation(Int::class)
       interface SubcomponentInterface2
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.SecondContributingInterface with scopes [kotlin.Int] wants to " +
           "replace com.squareup.test.ContributingInterface, but the replaced class isn't " +
-          "contributed to the same scope."
+          "contributed to the same scope.",
       )
     }
   }
@@ -800,7 +801,7 @@ class InterfaceMergerTest(
       
       $annotation(Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -832,7 +833,7 @@ class InterfaceMergerTest(
         
         // Note that the number is missing after the scope. 
         public val com_squareup_test_ContributingInterface_scope: KClass<Any> = Any::class
-        """.trimIndent()
+        """.trimIndent(),
       ) {
         assertThat(exitCode).isEqualTo(OK)
       }
@@ -846,7 +847,7 @@ class InterfaceMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
-      previousCompilationResult = result
+      previousCompilationResult = result,
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
     }

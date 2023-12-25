@@ -25,83 +25,83 @@ import org.jetbrains.kotlin.util.getExceptionMessage
 public class AnvilCompilationException(
   message: String,
   cause: Throwable? = null,
-  element: PsiElement? = null
+  element: PsiElement? = null,
 ) : CompilationException(message, cause, element) {
   public companion object {
     public operator fun invoke(
       annotationDescriptor: AnnotationDescriptor,
       message: String,
-      cause: Throwable? = null
+      cause: Throwable? = null,
     ): AnvilCompilationException {
       return AnvilCompilationException(
         message = message,
         cause = cause,
-        element = annotationDescriptor.identifier
+        element = annotationDescriptor.identifier,
       )
     }
 
     public operator fun invoke(
       functionDescriptor: FunctionDescriptor,
       message: String,
-      cause: Throwable? = null
+      cause: Throwable? = null,
     ): AnvilCompilationException {
       return AnvilCompilationException(
         message = message,
         cause = cause,
-        element = functionDescriptor.identifier
+        element = functionDescriptor.identifier,
       )
     }
 
     public operator fun invoke(
       parameterDescriptor: ValueParameterDescriptor,
       message: String,
-      cause: Throwable? = null
+      cause: Throwable? = null,
     ): AnvilCompilationException {
       return AnvilCompilationException(
         message = message,
         cause = cause,
-        element = parameterDescriptor.identifier
+        element = parameterDescriptor.identifier,
       )
     }
 
     public operator fun invoke(
       propertyDescriptor: PropertyDescriptor,
       message: String,
-      cause: Throwable? = null
+      cause: Throwable? = null,
     ): AnvilCompilationException {
       return AnvilCompilationException(
         message = message,
         cause = cause,
-        element = propertyDescriptor.identifier
+        element = propertyDescriptor.identifier,
       )
     }
 
     public operator fun invoke(
       classDescriptor: ClassDescriptor,
       message: String,
-      cause: Throwable? = null
+      cause: Throwable? = null,
     ): AnvilCompilationException {
       return AnvilCompilationException(
         message = message,
         cause = cause,
-        element = classDescriptor.identifier
+        element = classDescriptor.identifier,
       )
     }
 
     public operator fun invoke(
       element: IrElement? = null,
       message: String,
-      cause: Throwable? = null
+      cause: Throwable? = null,
     ): AnvilCompilationException {
       return AnvilCompilationException(
         message = getExceptionMessage(
           subsystemName = "Anvil",
           message = message,
           cause = cause,
-          location = element?.render()
+          location = element?.render(),
         ),
         cause = cause,
-        element = element?.psi
+        element = element?.psi,
       ).apply {
         if (element != null) {
           withAttachment("element.kt", element.render())
@@ -117,7 +117,7 @@ public class AnvilCompilationException(
       return AnvilCompilationException(
         message = message,
         cause = cause,
-        element = element?.owner
+        element = element?.owner,
       )
     }
   }

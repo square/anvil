@@ -50,7 +50,7 @@ internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScope(
 }
 
 internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScopeAndBoundType(
-  annotatedType: KSClassDeclaration
+  annotatedType: KSClassDeclaration,
 ) {
   // Exit early to avoid allocating additional collections.
   if (size < 2) return
@@ -76,7 +76,7 @@ internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScopeAndBoundType(
         } +
         ". Contributing multiple times to the same scope with the same bound type is forbidden " +
         "and all scope - bound type combinations must be distinct.",
-      annotatedType
+      annotatedType,
     )
   }
 }
@@ -103,7 +103,7 @@ internal fun KSAnnotation.argumentAt(
 }
 
 private fun KSAnnotation.isTypeAnnotatedWith(
-  annotationFqName: FqName
+  annotationFqName: FqName,
 ): Boolean = annotationType.resolve()
   .declaration
   .isAnnotationPresent(annotationFqName.asString())

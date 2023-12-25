@@ -42,3 +42,10 @@ out
 
 # Ignore the generated project.
 /benchmark/
+
+# projects in the `build-logic/delegate` build have a second build dir
+build-delegate/
+build-anvil/
+
+# old build directories that've moved
+/gradle-plugin/build-composite-wrapper/

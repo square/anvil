@@ -12,7 +12,7 @@ import kotlin.LazyThreadSafetyMode.NONE
 internal class AnnotationReferenceIr(
   val annotation: IrConstructorCall,
   val classReference: ClassReferenceIr,
-  declaringClass: ClassReferenceIr?
+  declaringClass: ClassReferenceIr?,
 ) {
   val fqName: FqName
     get() = classReference.fqName
@@ -27,7 +27,7 @@ internal class AnnotationReferenceIr(
   val scope: ClassReferenceIr
     get() = scopeOrNull ?: throw AnvilCompilationException(
       element = annotation,
-      message = "Couldn't find scope for $fqName."
+      message = "Couldn't find scope for $fqName.",
     )
 
   val scopeOrNull: ClassReferenceIr? by lazy(NONE) {
@@ -40,7 +40,7 @@ internal class AnnotationReferenceIr(
   val declaringClass: ClassReferenceIr = declaringClassOrNull
     ?: throw AnvilCompilationExceptionAnnotationReferenceIr(
       annotationReference = this,
-      message = "The declaring class was null, this means the annotation wasn't used on a class."
+      message = "The declaring class was null, this means the annotation wasn't used on a class.",
     )
 
   val parentScope: ClassReferenceIr by lazy(NONE) {
@@ -48,7 +48,7 @@ internal class AnnotationReferenceIr(
       context.referenceClass(it.classId)?.toClassReference(context)
     } ?: throw AnvilCompilationException(
       element = annotation,
-      message = "Couldn't find parent scope for $fqName."
+      message = "Couldn't find parent scope for $fqName.",
     )
   }
 
@@ -85,21 +85,21 @@ internal class AnnotationReferenceIr(
 
 internal fun IrConstructorCall.toAnnotationReference(
   context: IrPluginContext,
-  declaringClass: ClassReferenceIr?
+  declaringClass: ClassReferenceIr?,
 ) =
   AnnotationReferenceIr(
     annotation = this,
     classReference = this.symbol.owner.parentAsClass.symbol.toClassReference(context),
-    declaringClass = declaringClass
+    declaringClass = declaringClass,
   )
 
 @Suppress("FunctionName")
 internal fun AnvilCompilationExceptionAnnotationReferenceIr(
   annotationReference: AnnotationReferenceIr,
   message: String,
-  cause: Throwable? = null
+  cause: Throwable? = null,
 ): AnvilCompilationException = AnvilCompilationException(
   element = annotationReference.annotation,
   message = message,
-  cause = cause
+  cause = cause,
 )

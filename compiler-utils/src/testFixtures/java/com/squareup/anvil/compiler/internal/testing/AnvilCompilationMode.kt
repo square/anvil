@@ -8,9 +8,9 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 
 sealed class AnvilCompilationMode(val backend: AnvilBackend) {
   data class Embedded(
-    val codeGenerators: List<CodeGenerator> = emptyList()
+    val codeGenerators: List<CodeGenerator> = emptyList(),
   ) : AnvilCompilationMode(EMBEDDED)
   data class Ksp(
-    val symbolProcessorProviders: List<SymbolProcessorProvider> = emptyList()
+    val symbolProcessorProviders: List<SymbolProcessorProvider> = emptyList(),
   ) : AnvilCompilationMode(KSP)
 }

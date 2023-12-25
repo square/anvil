@@ -12,7 +12,7 @@ private object NoOpProcessor : SymbolProcessor {
   override fun process(resolver: Resolver): List<KSAnnotated> = emptyList()
 }
 
-internal abstract class AnvilSymbolProcessorProvider(
+internal open class AnvilSymbolProcessorProvider(
   private val applicabilityChecker: AnvilApplicabilityChecker,
   private val delegate: (SymbolProcessorEnvironment) -> AnvilSymbolProcessor,
 ) : SymbolProcessorProvider {

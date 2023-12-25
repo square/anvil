@@ -20,11 +20,11 @@ public interface AnvilModuleDescriptor : ModuleDescriptor {
 
   public fun resolveFqNameOrNull(
     fqName: FqName,
-    lookupLocation: LookupLocation = FROM_BACKEND
+    lookupLocation: LookupLocation = FROM_BACKEND,
   ): ClassDescriptor?
 
   public fun resolveTypeAliasFqNameOrNull(
-    fqName: FqName
+    fqName: FqName,
   ): TypeAliasDescriptor?
 
   public fun getClassAndInnerClassReferences(ktFile: KtFile): List<Psi>
@@ -51,12 +51,12 @@ internal inline fun ModuleDescriptor.asAnvilModuleDescriptor(): AnvilModuleDescr
 
 @ExperimentalAnvilApi
 public fun FqName.canResolveFqName(
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
 ): Boolean = module.asAnvilModuleDescriptor().resolveClassIdOrNull(classIdBestGuess()) != null
 
 @ExperimentalAnvilApi
 public fun Collection<KtFile>.classAndInnerClassReferences(
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
 ): Sequence<Psi> {
   return asSequence().flatMap {
     module.asAnvilModuleDescriptor().getClassAndInnerClassReferences(it)
@@ -65,7 +65,7 @@ public fun Collection<KtFile>.classAndInnerClassReferences(
 
 @ExperimentalAnvilApi
 public fun Collection<KtFile>.topLevelFunctionReferences(
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
 ): Sequence<TopLevelFunctionReference.Psi> {
   return asSequence().flatMap {
     module.asAnvilModuleDescriptor().getTopLevelFunctionReferences(it)
@@ -74,7 +74,7 @@ public fun Collection<KtFile>.topLevelFunctionReferences(
 
 @ExperimentalAnvilApi
 public fun Collection<KtFile>.topLevelPropertyReferences(
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
 ): Sequence<TopLevelPropertyReference.Psi> {
   return asSequence().flatMap {
     module.asAnvilModuleDescriptor().getTopLevelPropertyReferences(it)

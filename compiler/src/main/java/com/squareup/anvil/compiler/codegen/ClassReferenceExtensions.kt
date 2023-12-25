@@ -13,7 +13,7 @@ import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReference
 import org.jetbrains.kotlin.name.FqName
 
 internal fun ClassReference.checkNotMoreThanOneQualifier(
-  annotationFqName: FqName
+  annotationFqName: FqName,
 ) {
   // The class is annotated with @ContributesBinding, @ContributesMultibinding, or another Anvil annotation.
   // If there is less than 2 further annotations, then there can't be more than two qualifiers.
@@ -24,7 +24,7 @@ internal fun ClassReference.checkNotMoreThanOneQualifier(
     throw AnvilCompilationExceptionClassReference(
       message = "Classes annotated with @${annotationFqName.shortName()} may not use more " +
         "than one @Qualifier.",
-      classReference = this
+      classReference = this,
     )
   }
 }
@@ -33,7 +33,7 @@ internal inline fun ClassReference.checkClassIsPublic(message: () -> String) {
   if (visibility() != Visibility.PUBLIC) {
     throw AnvilCompilationExceptionClassReference(
       classReference = this,
-      message = message()
+      message = message(),
     )
   }
 }
@@ -49,13 +49,13 @@ internal fun ClassReference.checkNotMoreThanOneMapKey() {
     throw AnvilCompilationExceptionClassReference(
       message = "Classes annotated with @${contributesMultibindingFqName.shortName()} may not " +
         "use more than one @MapKey.",
-      classReference = this
+      classReference = this,
     )
   }
 }
 
 internal fun ClassReference.checkSingleSuperType(
-  annotationFqName: FqName
+  annotationFqName: FqName,
 ) {
   // If the bound type exists, then you're allowed to have multiple super types. Without the bound
   // type there must be exactly one super type.
@@ -67,19 +67,19 @@ internal fun ClassReference.checkSingleSuperType(
         "specify the bound type. This is only allowed with exactly one direct super type. " +
         "If there are multiple or none, then the bound type must be explicitly defined in " +
         "the @${annotationFqName.shortName()} annotation.",
-      classReference = this
+      classReference = this,
     )
   }
 }
 
 internal fun ClassReference.checkClassExtendsBoundType(
-  annotationFqName: FqName
+  annotationFqName: FqName,
 ) {
   val boundType = annotations.find { it.fqName == annotationFqName }?.boundTypeOrNull()
     ?: directSuperTypeReferences().singleOrNull()?.asClassReference()
     ?: throw AnvilCompilationExceptionClassReference(
       message = "Couldn't find the bound type.",
-      classReference = this
+      classReference = this,
     )
 
   // The boundType is declared explicitly in the annotation. Since all classes extend Any, we can
@@ -90,7 +90,7 @@ internal fun ClassReference.checkClassExtendsBoundType(
     throw AnvilCompilationExceptionClassReference(
       message = "${this.fqName} contributes a binding for ${boundType.fqName}, but doesn't " +
         "extend this type.",
-      classReference = this
+      classReference = this,
     )
   }
 }
@@ -98,14 +98,14 @@ internal fun ClassReference.checkClassExtendsBoundType(
 
 internal fun ClassReference.atLeastOneAnnotation(
   annotationName: FqName,
-  scope: ClassReference? = null
+  scope: ClassReference? = null,
 ): List<AnnotationReference> {
   return annotations.find(annotationName = annotationName, scope = scope)
     .ifEmpty {
       throw AnvilCompilationExceptionClassReference(
         classReference = this,
         message = "Class $fqName is not annotated with $annotationName" +
-          "${if (scope == null) "" else " with scope ${scope.fqName}"}."
+          "${if (scope == null) "" else " with scope ${scope.fqName}"}.",
       )
     }
 }
@@ -128,12 +128,15 @@ internal fun <T : MemberFunctionReference> Collection<T>.injectConstructor(): T?
         constructor.annotations.joinToString(" ", postfix = " ")
           // We special-case @Inject to match Dagger using the non-fully-qualified name
           .replace("@javax.inject.Inject", "@Inject") +
-          constructor.fqName.toString().replace(".<init>", "")
+          constructor.fqName.toString().replace(".<init>", "") +
+          constructor.parameters.joinToString(", ", prefix = "(", postfix = ")") { param ->
+            param.type().asClassReference().shortName
+          }
       }.joinToString()
       throw AnvilCompilationExceptionClassReference(
         classReference = constructors[0].declaringClass,
         message = "Type ${constructors[0].declaringClass.fqName} may only contain one injected " +
-          "constructor. Found: [$constructorsErrorMessage]"
+          "constructor. Found: [$constructorsErrorMessage]",
       )
     }
   }

@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler
 
+import com.google.common.collect.Lists.cartesianProduct
 import com.google.common.truth.ComparableSubject
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
@@ -7,10 +8,13 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
+import com.tschuchort.compiletesting.CompilationResult
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
@@ -27,14 +31,14 @@ internal fun compile(
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
   mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
-  block: JvmCompilationResult.() -> Unit = { }
+  block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult = compileAnvil(
   sources = sources,
   allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
   daggerAnnotationProcessingMode = daggerAnnotationProcessingMode,
   mode = mode,
-  block = block
+  block = block,
 )
 
 internal val JvmCompilationResult.contributingInterface: Class<*>
@@ -133,7 +137,7 @@ internal val Class<*>.hintSubcomponentParentScopes: List<KClass<*>>
 
 internal val Class<*>.anvilModule: Class<*>
   get() = classLoader.loadClass(
-    "$MODULE_PACKAGE_PREFIX.${generatedClassesString(separator = "")}$ANVIL_MODULE_SUFFIX"
+    "$MODULE_PACKAGE_PREFIX.${generatedClassesString(separator = "")}$ANVIL_MODULE_SUFFIX",
   )
 
 private fun Class<*>.getHint(prefix: String): KClass<*>? = contributedProperties(prefix)
@@ -178,6 +182,8 @@ internal fun ComparableSubject<ExitCode>.isError() {
 
 internal fun isFullTestRun(): Boolean = FULL_TEST_RUN
 internal fun checkFullTestRun() = assumeTrue(isFullTestRun())
+internal fun includeKspTests(): Boolean = INCLUDE_KSP_TESTS
+
 internal fun daggerProcessingModesForTests(includeNull: Boolean = true) = buildList {
   if (isFullTestRun()) {
     add(DaggerAnnotationProcessingMode.KSP)
@@ -213,9 +219,45 @@ internal fun testIsNotYetCompatibleWithKsp(
 
 internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
   val dirToSearch = when (mode) {
-    is AnvilCompilationMode.Embedded -> outputDirectory.parentFile.resolve("build/anvil")
-    is AnvilCompilationMode.Ksp -> outputDirectory.parentFile.resolve("ksp/sources")
+    is AnvilCompilationMode.Embedded ->
+      outputDirectory.parentFile.resolve("build${File.separator}anvil")
+    is AnvilCompilationMode.Ksp -> outputDirectory.parentFile.resolve("ksp${File.separator}sources")
   }
   return dirToSearch.walkTopDown()
     .filter { it.isFile && it.extension == "kt" }
+}
+
+/**
+ * Parameters for configuring [AnvilCompilationMode] and whether to run a full test run or not.
+ */
+internal fun useDaggerAndKspParams(
+  embeddedCreator: () -> Embedded? = { Embedded() },
+  kspCreator: () -> Ksp? = { Ksp() },
+): Collection<Any> {
+  return cartesianProduct(
+    listOf(
+      isFullTestRun(),
+      false,
+    ),
+    listOfNotNull(
+      embeddedCreator(),
+      kspCreator(),
+    ),
+  ).mapNotNull { (useDagger, mode) ->
+    if (useDagger == true && mode is Ksp) {
+      // TODO Dagger is not supported with KSP in Anvil's tests yet
+      null
+    } else {
+      arrayOf(useDagger, mode)
+    }
+  }.distinct()
+}
+
+/** In any failing compilation in KSP, it always prints this error line first. */
+private const val KSP_ERROR_HEADER = "e: Error occurred in KSP, check log for detail"
+
+internal fun CompilationResult.compilationErrorLine(): String {
+  return messages
+    .lineSequence()
+    .first { it.startsWith("e:") && KSP_ERROR_HEADER !in it }
 }

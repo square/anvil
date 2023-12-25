@@ -1,0 +1,58 @@
+public final class com/squareup/anvil/plugin/AndroidVariantFilter : com/squareup/anvil/plugin/VariantFilter {
+	public fun getAddOptionalAnnotations ()Z
+	public final fun getAndroidVariant ()Lcom/android/build/gradle/api/BaseVariant;
+	public fun getDisableComponentMerging ()Z
+	public fun getGenerateDaggerFactories ()Z
+	public fun getGenerateDaggerFactoriesOnly ()Z
+	public fun getIgnore ()Z
+	public fun getName ()Ljava/lang/String;
+	public fun getSyncGeneratedSources ()Z
+	public fun setAddOptionalAnnotations (Z)V
+	public fun setDisableComponentMerging (Z)V
+	public fun setGenerateDaggerFactories (Z)V
+	public fun setGenerateDaggerFactoriesOnly (Z)V
+	public fun setIgnore (Z)V
+	public fun setSyncGeneratedSources (Z)V
+}
+
+public abstract class com/squareup/anvil/plugin/AnvilExtension {
+	public fun <init> (Lorg/gradle/api/model/ObjectFactory;)V
+	public final fun getAddOptionalAnnotations ()Lorg/gradle/api/provider/Property;
+	public final fun getDisableComponentMerging ()Lorg/gradle/api/provider/Property;
+	public final fun getGenerateDaggerFactories ()Lorg/gradle/api/provider/Property;
+	public final fun getGenerateDaggerFactoriesOnly ()Lorg/gradle/api/provider/Property;
+	public final fun getSyncGeneratedSources ()Lorg/gradle/api/provider/Property;
+	public final fun variantFilter (Lorg/gradle/api/Action;)V
+}
+
+public final class com/squareup/anvil/plugin/JvmVariantFilter : com/squareup/anvil/plugin/VariantFilter {
+	public fun getAddOptionalAnnotations ()Z
+	public fun getDisableComponentMerging ()Z
+	public fun getGenerateDaggerFactories ()Z
+	public fun getGenerateDaggerFactoriesOnly ()Z
+	public fun getIgnore ()Z
+	public fun getName ()Ljava/lang/String;
+	public fun getSyncGeneratedSources ()Z
+	public fun setAddOptionalAnnotations (Z)V
+	public fun setDisableComponentMerging (Z)V
+	public fun setGenerateDaggerFactories (Z)V
+	public fun setGenerateDaggerFactoriesOnly (Z)V
+	public fun setIgnore (Z)V
+	public fun setSyncGeneratedSources (Z)V
+}
+
+public abstract interface class com/squareup/anvil/plugin/VariantFilter : org/gradle/api/Named {
+	public abstract fun getAddOptionalAnnotations ()Z
+	public abstract fun getDisableComponentMerging ()Z
+	public abstract fun getGenerateDaggerFactories ()Z
+	public abstract fun getGenerateDaggerFactoriesOnly ()Z
+	public abstract fun getIgnore ()Z
+	public abstract fun getSyncGeneratedSources ()Z
+	public abstract fun setAddOptionalAnnotations (Z)V
+	public abstract fun setDisableComponentMerging (Z)V
+	public abstract fun setGenerateDaggerFactories (Z)V
+	public abstract fun setGenerateDaggerFactoriesOnly (Z)V
+	public abstract fun setIgnore (Z)V
+	public abstract fun setSyncGeneratedSources (Z)V
+}
+

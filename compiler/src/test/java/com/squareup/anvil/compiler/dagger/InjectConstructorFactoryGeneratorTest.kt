@@ -2,7 +2,9 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.daggerProcessingModesForTests
+import com.squareup.anvil.compiler.compilationErrorLine
 import com.squareup.anvil.compiler.injectClass
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
@@ -11,6 +13,7 @@ import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.testRequiresWildcards
+import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
@@ -26,13 +29,16 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class InjectConstructorFactoryGeneratorTest(
-  private val daggerProcessingMode: DaggerAnnotationProcessingMode?
+  // TODO daggerProcessingMode: DaggerAnnotationProcessingMode?
+  private val useDagger: Boolean,
+  private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Dagger processing mode: {0}")
+    // TODO daggerProcessingModesForTests()
+    @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun daggerProcessingModes() = daggerProcessingModesForTests()
+    fun params() = useDaggerAndKspParams()
   }
 
   @Test fun `a factory class is generated for an inject constructor without arguments`() {
@@ -77,7 +83,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       import javax.inject.Inject
       
       class InjectClass @Inject constructor()
-      """
+      """,
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -116,7 +122,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       }
 
       class InjectClassFactory @Inject constructor(val factory: InjectClass.Factory)
-      """
+      """,
     ) {
       // Loading one of the classes is all that's necessary to verify no conflicting imports were
       // generated
@@ -176,7 +182,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         val string: String, 
         val int: Int
       )
-      """
+      """,
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -281,7 +287,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
              stringListProvider.get()[0] + lazyString.get()
         }
       }
-      """
+      """,
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -291,7 +297,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
           Provider::class.java,
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
         .inOrder()
 
@@ -303,7 +309,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
           Provider { "a" },
           Provider { "b" },
           Provider { listOf("c") },
-          Provider { "d" }
+          Provider { "d" },
         )
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
@@ -381,7 +387,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
          return string.get().get() 
         }
       }
-      """
+      """,
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -407,10 +413,10 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
-  @Test
-  @Ignore("This test is broken with Dagger as well.")
   // Notice in the get() function Dagger creates a Lazy of a Provider of Provider instead of a
   // Lazy of a Provider.
+  @Test
+  @Ignore("This test is broken with Dagger as well.")
   fun `a factory class is generated for an inject constructor with a provider argument wrapped in a lazy`() {
     /*
 package com.squareup.test;
@@ -472,7 +478,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
          return string.get().get() 
         }
       }
-      """
+      """,
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -563,7 +569,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         val path: Path,
         val setMultibinding: Set<String>,
       )
-      """
+      """,
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -579,7 +585,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
           null,
           Provider { File("") },
           Provider { File("").toPath() },
-          Provider { emptySet<String>() }
+          Provider { emptySet<String>() },
         )
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
@@ -612,7 +618,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         import javax.inject.Inject
         
         public class B @Inject constructor(): A.AA()
-      """
+      """,
     ) {
       assertThat(classLoader.loadClass("b.B").factoryClass()).isNotNull()
     }
@@ -677,7 +683,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         val pair: Pair<Pair<String, Int>, List<String>>, 
         val set: Set<String>
       )
-      """
+      """,
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -764,7 +770,7 @@ public final class OuterClass_InjectClass_Factory implements Factory<OuterClass.
       class OuterClass {
         class InjectClass @Inject constructor()
       }
-      """
+      """,
     ) {
       val injectClass = classLoader.loadClass("com.squareup.test.OuterClass\$InjectClass")
       val factoryClass = injectClass.factoryClass()
@@ -845,7 +851,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         val string: String, 
         val set: @JvmSuppressWildcards Set<(StringList) -> StringList>
       )
-      """
+      """,
     ) {
       val factoryClass = injectClass.factoryClass()
 
@@ -926,7 +932,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       import javax.inject.Inject
       
       data class injectClass @Inject constructor(val string: String)
-      """
+      """,
     ) {
       val factoryClass = classLoader.loadClass("com.squareup.test.injectClass").factoryClass()
 
@@ -1012,7 +1018,7 @@ public class InjectClass_Factory(
           return result
         }
       }
-      """
+      """,
     ) {
 
       val factoryClass = injectClass.factoryClass()
@@ -1070,7 +1076,7 @@ public class InjectClass_Factory(
         @Inject
         lateinit var base2: List<String>
       }
-      """
+      """,
     ) {
 
       val factoryClass = injectClass.factoryClass()
@@ -1082,7 +1088,7 @@ public class InjectClass_Factory(
           Provider::class.java,
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val name = "name"
@@ -1098,7 +1104,7 @@ public class InjectClass_Factory(
         Provider { base2 },
         Provider { middle1 },
         Provider { middle2 },
-        Provider { name }
+        Provider { name },
       )
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
@@ -1135,7 +1141,7 @@ public class InjectClass_Factory(
         @Inject
         lateinit var base2: List<String>
       }
-      """
+      """,
     ) {
 
       val factoryClass = injectClass.factoryClass()
@@ -1144,7 +1150,7 @@ public class InjectClass_Factory(
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val base1 = listOf(3)
@@ -1154,7 +1160,7 @@ public class InjectClass_Factory(
 
       val factoryInstance = factoryClass.createInstance(
         Provider { base1 },
-        Provider { base2 }
+        Provider { base2 },
       )
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
@@ -1185,7 +1191,7 @@ public class InjectClass_Factory(
         @Inject
         lateinit var base2: List<String>
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -1202,7 +1208,7 @@ public class InjectClass_Factory(
         lateinit var name: String
       }
       """,
-      previousCompilationResult = otherModuleResult
+      previousCompilationResult = otherModuleResult,
     ) {
 
       val factoryClass = injectClass.factoryClass()
@@ -1212,7 +1218,7 @@ public class InjectClass_Factory(
         .containsExactly(
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val name = "name"
@@ -1224,7 +1230,7 @@ public class InjectClass_Factory(
       val factoryInstance = factoryClass.createInstance(
         Provider { base1 },
         Provider { base2 },
-        Provider { name }
+        Provider { name },
       )
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
@@ -1257,7 +1263,7 @@ public class InjectClass_Factory(
         @Inject
         lateinit var base2: List<String>
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -1283,7 +1289,7 @@ public class InjectClass_Factory(
         lateinit var middle2: Set<String>
       }
       """,
-      previousCompilationResult = otherModuleResult
+      previousCompilationResult = otherModuleResult,
     ) {
 
       val factoryClass = injectClass.factoryClass()
@@ -1295,7 +1301,7 @@ public class InjectClass_Factory(
           Provider::class.java,
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val name = "name"
@@ -1311,7 +1317,7 @@ public class InjectClass_Factory(
         Provider { base2 },
         Provider { middle1 },
         Provider { middle2 },
-        Provider { name }
+        Provider { name },
       )
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
@@ -1404,7 +1410,7 @@ public class InjectClass_Factory(
           return result
         }
       }
-      """
+      """,
     ) {
 
       val factoryClass = injectClass.factoryClass()
@@ -1415,7 +1421,7 @@ public class InjectClass_Factory(
           Provider::class.java,
           Provider::class.java,
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -1426,7 +1432,7 @@ public class InjectClass_Factory(
           Provider { "a" },
           Provider { 1 },
           Provider { "stringLazy" },
-          Provider { "otherString" }
+          Provider { "otherString" },
         )
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
@@ -1492,7 +1498,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       class otherClass {
         class inner @Inject constructor()
       }
-      """
+      """,
     ) {
       val constructor = injectClass.factoryClass().declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
@@ -1540,7 +1546,7 @@ public class InjectClass_Factory(
       class InjectClass @Inject constructor(
         val inner: Other.Inner<String>
       )
-      """
+      """,
     ) {
       val constructor = injectClass.factoryClass().declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
@@ -1590,7 +1596,7 @@ public class InjectClass_Factory(
       class InjectClass @Inject constructor(
         val inner: Other.Middle.Inner<String>
       )
-      """
+      """,
     ) {
       val constructor = injectClass.factoryClass().declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
@@ -1680,7 +1686,7 @@ public final class MyClass_Factory implements Factory<MyClass> {
       class MyClass @Inject constructor(arg: innerClass) {
         class innerClass @Inject constructor()
       }
-      """
+      """,
     ) {
       val factoryClass =
         classLoader.loadClass("com.squareup.test.MyClass\$innerClass").factoryClass()
@@ -1785,7 +1791,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       class InjectClass @Inject constructor(dependencies: Dependencies) {
         class Dependencies @Inject constructor()     
       }
-      """
+      """,
     ) {
       val constructor = injectClass.factoryClass().declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
@@ -1884,7 +1890,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       open class ParentTwo(d: Dependencies) : ParentOne(d)
       
       class InjectClass @Inject constructor(d: Dependencies) : ParentTwo(d)
-      """
+      """,
     ) {
       val constructor = injectClass.factoryClass().declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
@@ -1949,7 +1955,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       ) {
         interface Interceptor
       }
-      """
+      """,
     ) {
       val constructor = injectClass.factoryClass().declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
@@ -2006,7 +2012,7 @@ public final class InjectClass_Inner_Factory implements Factory<InjectClass.Inne
       class InjectClass(innerClass: InnerClass): OuterClass(innerClass) {
         class Inner @Inject constructor(innerClass: InnerClass)
       }
-      """
+      """,
     ) {
       val constructor = classLoader.loadClass("com.squareup.test.InjectClass\$Inner")
         .factoryClass().declaredConstructors.single()
@@ -2056,7 +2062,7 @@ public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
       import javax.inject.Provider
       
       class InjectClass<T> @Inject constructor(prov: Provider<T>)
-      """
+      """,
     ) {
       val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
         .factoryClass().declaredConstructors.single()
@@ -2111,7 +2117,7 @@ public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
       import javax.inject.Inject
       
       class InjectClass<T> @Inject constructor()
-      """
+      """,
     ) {
       val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
         .factoryClass().declaredConstructors.single()
@@ -2171,7 +2177,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       class InjectClass @Inject constructor(
         map: Map<Class<out CharSequence>, @JvmSuppressWildcards Provider<String>>
       )
-      """
+      """,
     ) {
       val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
         .factoryClass().declaredConstructors.single()
@@ -2215,7 +2221,7 @@ public final class InjectClass_Factory<T extends CharSequence> implements Factor
       import javax.inject.Provider
       
       class InjectClass<T : CharSequence> @Inject constructor(element: Provider<T>)
-      """
+      """,
     ) {
       val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
         .factoryClass().declaredConstructors.single()
@@ -2261,7 +2267,7 @@ public class InjectClass_Factory<T>(
       class InjectClass<T> @Inject constructor(
         private val t: T
       ) where T : Appendable, T : CharSequence
-      """
+      """,
     ) {
 
       val factoryClass = injectClass.factoryClass()
@@ -2340,7 +2346,7 @@ public class InjectClass_Factory<T, R : Set<String>>(
         private val t: T,
         private val r: Lazy<R>
       ) where T : Appendable, T : CharSequence
-      """
+      """,
     ) {
 
       val factoryClass = injectClass.factoryClass()
@@ -2352,15 +2358,17 @@ public class InjectClass_Factory<T, R : Set<String>>(
 
       assertThat(typeParams)
         .containsExactly(
-          "T", listOf("java.lang.Appendable", "java.lang.CharSequence"),
-          "R", listOf("java.util.Set<? extends java.lang.String>")
+          "T",
+          listOf("java.lang.Appendable", "java.lang.CharSequence"),
+          "R",
+          listOf("java.util.Set<? extends java.lang.String>"),
         )
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
-          Provider::class.java
+          Provider::class.java,
         )
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2424,7 +2432,7 @@ public class InjectClass_Factory<T>(
       class InjectClass<T> @Inject constructor(
         private val t: T
       ) where T : Appendable, T : Other
-      """
+      """,
     ) {
 
       val factoryClass = injectClass.factoryClass()
@@ -2480,7 +2488,7 @@ public class InjectClass_Factory<T : List<String>>(
       class InjectClass<T : List<String>> @Inject constructor(
         private val t: T
       )
-      """
+      """,
     ) {
 
       val factoryClass = injectClass.factoryClass()
@@ -2518,7 +2526,7 @@ public class InjectClass_Factory<T : List<String>>(
       import javax.inject.Inject
       
       class InjectClass @Inject constructor()
-      """
+      """,
     ) {
       val factoryClass = classLoader.loadClass("InjectClass").factoryClass()
 
@@ -2549,17 +2557,15 @@ public class InjectClass_Factory<T : List<String>>(
       class InjectClass @Inject constructor() {
         @Inject constructor(string: String)
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(
-        messages.lineSequence()
-          .filterOutKspErrorPrefix()
-          .first { it.startsWith("e:") }
-          .removeParametersAndSort()
+        compilationErrorLine()
+          .removeParametersAndSort(),
       ).contains(
         "Type com.squareup.test.InjectClass may only contain one injected constructor. " +
-          "Found: [@Inject com.squareup.test.InjectClass, @Inject com.squareup.test.InjectClass]"
+          "Found: [@Inject com.squareup.test.InjectClass, @Inject com.squareup.test.InjectClass]",
       )
     }
   }
@@ -2585,7 +2591,7 @@ public class InjectClass_Factory<T : List<String>>(
       class SomeClass @Inject constructor(
         state: State
       )  
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -2702,7 +2708,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       
       @Qualifier
       annotation class StringQualifier(val value: String)
-      """
+      """,
     ) {
       val constructor = injectClass.factoryClass().declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList()).hasSize(8)
@@ -2730,7 +2736,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
           class Factory
         }
       }
-      """
+      """,
     ) {
       assertThat(classLoader.loadClass("com.squareup.test.A\$Achild\$Factory")).isNotNull()
     }
@@ -2739,7 +2745,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
-    block: JvmCompilationResult.() -> Unit = { }
+    block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     daggerAnnotationProcessingMode = daggerProcessingMode,
@@ -2747,6 +2753,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     // Many constructor parameters are unused.
     allWarningsAsErrors = false,
     previousCompilationResult = previousCompilationResult,
-    block = block
+    mode = mode,
+    block = block,
   )
 }

@@ -5,11 +5,14 @@ import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.daggerProcessingModesForTests
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
+import com.squareup.anvil.compiler.compilationErrorLine
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.squareup.anvil.compiler.testIsNotYetCompatibleWithKsp
 import com.tschuchort.compiletesting.JvmCompilationResult
 import org.intellij.lang.annotations.Language
@@ -21,13 +24,16 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class AssistedInjectGeneratorTest(
-  private val daggerProcessingMode: DaggerAnnotationProcessingMode?
+  // TODO daggerProcessingMode: DaggerAnnotationProcessingMode?
+  private val useDagger: Boolean,
+  private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Dagger processing mode: {0}")
+    // TODO daggerProcessingModesForTests()
+    @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun daggerProcessingModes() = daggerProcessingModesForTests()
+    fun params() = useDaggerAndKspParams()
   }
 
   @Test fun `a factory class is generated with one assisted parameter`() {
@@ -76,7 +82,7 @@ public final class AssistedService_Factory {
         val int: Int,
         @Assisted val string: String
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -147,7 +153,7 @@ public final class AssistedService_Factory {
           return true
         } 
       }
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -179,7 +185,7 @@ public final class AssistedService_Factory {
         @Assisted("one") val string1: String,
         @Assisted("two") val string2: String
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -212,7 +218,7 @@ public final class AssistedService_Factory {
         @Assisted("one") val string1: String,
         @Assisted("two") val string2: String
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -246,12 +252,12 @@ public final class AssistedService_Factory {
         @Assisted val type1: SomeType,
         @Assisted val type2: SomeType
       )
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@AssistedInject constructor has duplicate @Assisted type: " +
-          "@Assisted com.squareup.test.SomeType"
+          "@Assisted com.squareup.test.SomeType",
       )
     }
   }
@@ -270,12 +276,12 @@ public final class AssistedService_Factory {
         @Assisted("one") val type1: SomeType,
         @Assisted(value = "one") val type2: SomeType
       )
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@AssistedInject constructor has duplicate @Assisted type: " +
-          "@Assisted(\"one\") com.squareup.test.SomeType"
+          "@Assisted(\"one\") com.squareup.test.SomeType",
       )
     }
   }
@@ -291,7 +297,7 @@ public final class AssistedService_Factory {
       data class AssistedService @AssistedInject constructor(
         val int: Int
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -324,7 +330,7 @@ public final class AssistedService_Factory {
         val int: Int,
         @Assisted val strings: List<String>
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -357,7 +363,7 @@ public final class AssistedService_Factory {
         val int: Int,
         @Assisted val strings: T
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -390,7 +396,7 @@ public final class AssistedService_Factory {
         val int: Int,
         @Assisted val stringBuilder : T
       ) where T : Appendable, T : CharSequence
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -422,7 +428,7 @@ public final class AssistedService_Factory {
         @Assisted val strings: List<String>,
         @Assisted val ints: List<Int>
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -455,7 +461,7 @@ public final class AssistedService_Factory {
         val int: Int,
         @Assisted val string: T
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -488,7 +494,7 @@ public final class AssistedService_Factory {
         val int: S,
         @Assisted val string: T
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -524,7 +530,7 @@ public final class AssistedService_Factory {
         )
       }
       
-      """
+      """,
     ) {
       val factoryClass = classLoader
         .loadClass("com.squareup.test.Outer\$AssistedService")
@@ -593,7 +599,7 @@ public final class AssistedService_Factory {
         val int: Int?,
         @Assisted val string: String?
       )
-      """
+      """,
     ) {
       val factoryClass = assistedService.factoryClass()
 
@@ -632,17 +638,16 @@ public final class AssistedService_Factory {
       ) {
         @AssistedInject constructor(@Assisted string: String)
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(
-        messages.lines()
-          .first { it.startsWith("e:") }
-          .removeParametersAndSort()
+        compilationErrorLine()
+          .removeParametersAndSort(),
       ).contains(
         "Type com.squareup.test.AssistedService may only contain one injected constructor. " +
           "Found: [@dagger.assisted.AssistedInject com.squareup.test.AssistedService, " +
-          "@dagger.assisted.AssistedInject com.squareup.test.AssistedService]"
+          "@dagger.assisted.AssistedInject com.squareup.test.AssistedService]",
       )
     }
   }
@@ -666,17 +671,16 @@ public final class AssistedService_Factory {
       ) {
         @Inject constructor(@Assisted string: String)
       }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(
-        messages.lines()
-          .first { it.startsWith("e:") }
-          .removeParametersAndSort()
+        compilationErrorLine()
+          .removeParametersAndSort(),
       ).contains(
         "Type com.squareup.test.AssistedService may only contain one injected constructor. " +
           "Found: [@Inject com.squareup.test.AssistedService, " +
-          "@dagger.assisted.AssistedInject com.squareup.test.AssistedService]"
+          "@dagger.assisted.AssistedInject com.squareup.test.AssistedService]",
       )
     }
   }
@@ -689,6 +693,7 @@ public final class AssistedService_Factory {
     daggerAnnotationProcessingMode = daggerProcessingMode,
     generateDaggerFactories = daggerProcessingMode == null,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
-    block = block
+    mode = mode,
+    block = block,
   )
 }

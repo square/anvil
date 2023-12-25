@@ -8,9 +8,6 @@ import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.TestExtension
 import com.android.build.gradle.TestedExtension
-import com.android.build.gradle.api.BaseVariant
-import com.android.build.gradle.api.TestVariant
-import com.android.build.gradle.api.UnitTestVariant
 import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.Action
 import org.gradle.api.GradleException
@@ -37,6 +34,15 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
 import java.util.concurrent.ConcurrentHashMap
+
+@Suppress("DEPRECATION")
+internal typealias BaseVariantDeprecated = com.android.build.gradle.api.BaseVariant
+
+@Suppress("DEPRECATION")
+private typealias TestVariantDeprecated = com.android.build.gradle.api.TestVariant
+
+@Suppress("DEPRECATION")
+private typealias UnitTestVariantDeprecated = com.android.build.gradle.api.UnitTestVariant
 
 @Suppress("unused")
 internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
@@ -84,9 +90,10 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
           // E.g. "anvilDebug", "anvilTestRelease", ...
           val configuration = getConfiguration(target, buildType = variant.name)
 
+          @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
           when (variant) {
-            is UnitTestVariant -> configuration.extendsFrom(testConfiguration)
-            is TestVariant -> configuration.extendsFrom(androidTestVariant)
+            is UnitTestVariantDeprecated -> configuration.extendsFrom(testConfiguration)
+            is TestVariantDeprecated -> configuration.extendsFrom(androidTestVariant)
             // non-test variants like "debug" extend the main config
             else -> configuration.extendsFrom(commonConfiguration)
           }
@@ -113,14 +120,16 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   }
 
   override fun applyToCompilation(
-    kotlinCompilation: KotlinCompilation<*>
+    kotlinCompilation: KotlinCompilation<*>,
   ): Provider<List<SubpluginOption>> {
     kotlinCompilation.compilerOptions.options.let {
-      if (it.useK2.get() || it.languageVersion.getOrElse(KOTLIN_1_9) >= KOTLIN_2_0) {
+      @Suppress("DEPRECATION")
+      val useK2 = it.useK2.get()
+      if (useK2 || it.languageVersion.getOrElse(KOTLIN_1_9) >= KOTLIN_2_0) {
         kotlinCompilation.project.logger
           .error(
             "NOTE: Anvil is currently incompatible with the K2 compiler. Related GH issue:" +
-              "https://github.com/square/anvil/issues/733"
+              "https://github.com/square/anvil/issues/733",
           )
       }
     }
@@ -133,7 +142,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     ) {
       throw GradleException(
         "You cannot set generateDaggerFactories to false and generateDaggerFactoriesOnly " +
-          "to true at the same time for variant ${variant.name}."
+          "to true at the same time for variant ${variant.name}.",
       )
     }
 
@@ -162,10 +171,8 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     // Notice that we use the name of the variant as a directory name. Generated code
     // for this specific compile task will be included in the task output. The output of different
     // compile tasks shouldn't be mixed.
-    val srcGenDir = File(
-      project.buildDir,
-      "anvil${File.separator}src-gen-${variant.name}"
-    )
+    val srcGenDir = project.layout.buildDirectory.get().asFile
+      .resolve("anvil${File.separator}src-gen-${variant.name}")
 
     if (variant.variantFilter.syncGeneratedSources) {
       val isIdeSyncProvider = project.providers
@@ -191,20 +198,20 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       listOf(
         FilesSubpluginOption(
           key = "src-gen-dir",
-          files = listOf(srcGenDir)
+          files = listOf(srcGenDir),
         ),
         SubpluginOption(
           key = "generate-dagger-factories",
-          lazy { variant.variantFilter.generateDaggerFactories.toString() }
+          lazy { variant.variantFilter.generateDaggerFactories.toString() },
         ),
         SubpluginOption(
           key = "generate-dagger-factories-only",
-          lazy { variant.variantFilter.generateDaggerFactoriesOnly.toString() }
+          lazy { variant.variantFilter.generateDaggerFactoriesOnly.toString() },
         ),
         SubpluginOption(
           key = "disable-component-merging",
-          lazy { variant.variantFilter.disableComponentMerging.toString() }
-        )
+          lazy { variant.variantFilter.disableComponentMerging.toString() },
+        ),
       )
     }
   }
@@ -214,7 +221,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
     groupId = GROUP,
     artifactId = "compiler",
-    version = VERSION
+    version = VERSION,
   )
 
   private fun disableCorrectErrorTypes(variant: Variant) {
@@ -248,7 +255,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
               stubsTask.doFirstCompat {
                 stubsTask.incremental = false
                 stubsTask.log(
-                  "Anvil: Incremental compilation enabled: ${stubsTask.incremental} (stub)"
+                  "Anvil: Incremental compilation enabled: ${stubsTask.incremental} (stub)",
                 )
               }
             }
@@ -259,7 +266,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
   private fun getConfiguration(
     project: Project,
-    buildType: String
+    buildType: String,
   ): Configuration {
     val name =
       if (buildType.isEmpty()) "anvil" else "anvil${buildType.replaceFirstChar(Char::uppercase)}"
@@ -312,7 +319,7 @@ private fun <T : Task> T.doFirstCompat(block: (T) -> Unit) {
  */
 private inline fun <reified T : Task> Project.namedLazy(
   name: String,
-  crossinline action: (TaskProvider<T>) -> Unit
+  crossinline action: (TaskProvider<T>) -> Unit,
 ) {
   try {
     action(tasks.named(name, T::class.java))
@@ -339,7 +346,11 @@ private inline fun <reified T : Task> Project.namedLazy(
 /**
  * Runs the given [action] for each Android variant including androidTest and unit test variants.
  */
-private fun Project.androidVariantsConfigure(action: (BaseVariant) -> Unit) {
+
+private fun Project.androidVariantsConfigure(
+  @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
+  action: (BaseVariantDeprecated) -> Unit,
+) {
   val androidExtension = extensions.findByName("android")
 
   when (androidExtension) {
@@ -358,7 +369,7 @@ private fun Project.androidVariantsConfigure(action: (BaseVariant) -> Unit) {
 // the 'java' plugin implicitly. One could also apply the 'java' plugin alone without the
 // application or library plugin, so 'java' must be included in this list.
 private val jvmPlugins = listOf(
-  "java"
+  "java",
 )
 
 private val agpPlugins = listOf(
@@ -374,7 +385,8 @@ internal class Variant private constructor(
   val name: String,
   val project: Project,
   val compileTaskProvider: TaskProvider<KotlinCompile>,
-  val androidVariant: BaseVariant?,
+  @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
+  val androidVariant: BaseVariantDeprecated?,
   val androidSourceSets: List<AndroidSourceSet>?,
   val compilerPluginClasspathName: String,
   val variantFilter: VariantFilter,
@@ -388,7 +400,7 @@ internal class Variant private constructor(
       // Sanity check.
       require(
         kotlinCompilation.platformType != androidJvm ||
-          kotlinCompilation is KotlinJvmAndroidCompilation
+          kotlinCompilation is KotlinJvmAndroidCompilation,
       ) {
         "The KotlinCompilation is KotlinJvmAndroidCompilation, but the platform type " +
           "is different."
@@ -426,7 +438,7 @@ internal class Variant private constructor(
         compilerPluginClasspathName = PLUGIN_CLASSPATH_CONFIGURATION_NAME +
           kotlinCompilation.target.targetName.replaceFirstChar(Char::uppercase) +
           kotlinCompilation.name.replaceFirstChar(Char::uppercase),
-        variantFilter = variantFilter
+        variantFilter = variantFilter,
       ).also {
         // Sanity check.
         check(it.compileTaskProvider.name.startsWith("compile"))

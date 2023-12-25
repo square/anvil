@@ -57,7 +57,7 @@ public sealed class AnnotationReference {
   public open fun declaringClass(): ClassReference = declaringClass
     ?: throw AnvilCompilationExceptionAnnotationReference(
       annotationReference = this,
-      message = "The declaring class was null, this means the annotation wasn't used on a class."
+      message = "The declaring class was null, this means the annotation wasn't used on a class.",
     )
 
   public abstract fun scopeOrNull(parameterIndex: Int = DEFAULT_SCOPE_INDEX): ClassReference?
@@ -65,7 +65,7 @@ public sealed class AnnotationReference {
     scopeOrNull(parameterIndex)
       ?: throw AnvilCompilationExceptionAnnotationReference(
         annotationReference = this,
-        message = "Couldn't find scope for $fqName."
+        message = "Couldn't find scope for $fqName.",
       )
 
   public fun boundTypeOrNull(): ClassReference? = argumentAt("boundType", 1)?.value()
@@ -88,7 +88,7 @@ public sealed class AnnotationReference {
           when (val value = argument.value<Any>()) {
             is ClassReference -> addMember(
               "${argument.resolvedName} = %T::class",
-              value.asClassName()
+              value.asClassName(),
             )
             is FqName -> {
               val clazz = value.toClassReferenceOrNull(module)
@@ -96,7 +96,7 @@ public sealed class AnnotationReference {
                 // That's an enum value!
                 val enumMember = MemberName(
                   enclosingClassName = clazz.enclosingClass()!!.asClassName(),
-                  simpleName = clazz.shortName
+                  simpleName = clazz.shortName,
                 )
                 addMember("${argument.resolvedName} = %M", enumMember)
               } else {
@@ -105,25 +105,25 @@ public sealed class AnnotationReference {
             }
             is String -> addMember("${argument.resolvedName} = \"$value\"")
             is BooleanArray -> addMember(
-              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}",
             )
             is IntArray -> addMember(
-              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}",
             )
             is LongArray -> addMember(
-              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}",
             )
             is DoubleArray -> addMember(
-              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}",
             )
             is ByteArray -> addMember(
-              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}",
             )
             is ShortArray -> addMember(
-              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}",
             )
             is FloatArray -> addMember(
-              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}"
+              "${argument.resolvedName} = ${value.joinToString(prefix = "[", postfix = "]")}",
             )
             is List<*> -> {
               when {
@@ -134,7 +134,7 @@ public sealed class AnnotationReference {
 
                   addMember(
                     "${argument.resolvedName} = [$template]",
-                    *classes.map { it.asClassName() }.toTypedArray()
+                    *classes.map { it.asClassName() }.toTypedArray(),
                   )
                 }
                 value[0] is FqName -> {
@@ -220,7 +220,7 @@ public sealed class AnnotationReference {
 @ExperimentalAnvilApi
 public fun KtAnnotationEntry.toAnnotationReference(
   declaringClass: ClassReference.Psi?,
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
 ): Psi {
   return toAnnotationReference(
     classReference = requireFqName(module).toClassReference(module),
@@ -243,7 +243,7 @@ public fun KtAnnotationEntry.toAnnotationReference(
 @ExperimentalAnvilApi
 public fun AnnotationDescriptor.toAnnotationReference(
   declaringClass: ClassReference.Descriptor?,
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
 ): Descriptor {
   val annotationClass = annotationClass ?: throw AnvilCompilationException(
     message = "Couldn't find the annotation class for $fqName",
@@ -266,7 +266,7 @@ public fun AnnotationDescriptor.toAnnotationReference(
 @ExperimentalAnvilApi
 public fun AnnotationReference.argumentAt(
   name: String,
-  index: Int
+  index: Int,
 ): AnnotationArgumentReference? {
   return arguments.singleOrNull { it.name == name }
     ?: arguments.elementAtOrNull(index)?.takeIf { it.name == null }
@@ -277,17 +277,17 @@ public fun AnnotationReference.argumentAt(
 public fun AnvilCompilationExceptionAnnotationReference(
   annotationReference: AnnotationReference,
   message: String,
-  cause: Throwable? = null
+  cause: Throwable? = null,
 ): AnvilCompilationException = when (annotationReference) {
   is Psi -> AnvilCompilationException(
     element = annotationReference.annotation,
     message = message,
-    cause = cause
+    cause = cause,
   )
   is Descriptor -> AnvilCompilationException(
     annotationDescriptor = annotationReference.annotation,
     message = message,
-    cause = cause
+    cause = cause,
   )
 }
 
@@ -297,7 +297,7 @@ private fun replacesIndex(annotationFqName: FqName): Int {
     contributesBindingFqName, contributesMultibindingFqName -> 2
     contributesSubcomponentFqName -> 4
     else -> throw NotImplementedError(
-      "Couldn't find index of replaces argument for $annotationFqName."
+      "Couldn't find index of replaces argument for $annotationFqName.",
     )
   }
 }
@@ -308,7 +308,7 @@ private fun excludeIndex(annotationFqName: FqName): Int {
     mergeSubcomponentFqName -> 2
     mergeComponentFqName, mergeModulesFqName, contributesSubcomponentFqName -> 3
     else -> throw NotImplementedError(
-      "Couldn't find index of exclude argument for $annotationFqName."
+      "Couldn't find index of exclude argument for $annotationFqName.",
     )
   }
 }

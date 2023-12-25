@@ -18,7 +18,7 @@ class AnvilAnnotationDetectorCheckTest {
       
       @dagger.Subcomponent
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -33,7 +33,7 @@ class AnvilAnnotationDetectorCheckTest {
       
       @com.squareup.anvil.annotations.ContributesTo(Any::class)
       class AnyClass
-      """
+      """,
     ) {
       assertError()
     }
@@ -48,7 +48,7 @@ class AnvilAnnotationDetectorCheckTest {
       
       @com.squareup.anvil.annotations.ContributesBinding(Any::class)
       class AnyClass
-      """
+      """,
     ) {
       assertError()
     }
@@ -63,7 +63,7 @@ class AnvilAnnotationDetectorCheckTest {
       
       @com.squareup.anvil.annotations.ContributesSubcomponent(Any::class, Unit::class)
       class AnyClass
-      """
+      """,
     ) {
       assertError()
     }
@@ -78,7 +78,7 @@ class AnvilAnnotationDetectorCheckTest {
       
       @com.squareup.anvil.annotations.MergeComponent(Any::class)
       class AnyClass
-      """
+      """,
     ) {
       assertError()
     }
@@ -93,7 +93,7 @@ class AnvilAnnotationDetectorCheckTest {
       
       @com.squareup.anvil.annotations.MergeSubcomponent(Any::class)
       class AnyClass
-      """
+      """,
     ) {
       assertError()
     }
@@ -108,7 +108,7 @@ class AnvilAnnotationDetectorCheckTest {
       
       @com.squareup.anvil.annotations.compat.MergeModules(Any::class)
       class AnyClass
-      """
+      """,
     ) {
       assertError()
     }
@@ -123,7 +123,7 @@ class AnvilAnnotationDetectorCheckTest {
       
       @com.squareup.anvil.annotations.compat.MergeInterfaces(Any::class)
       class AnyClass
-      """
+      """,
     ) {
       assertError()
     }
@@ -135,18 +135,18 @@ class AnvilAnnotationDetectorCheckTest {
     assertThat(messages).contains(
       "This Gradle module is configured to ONLY generate Dagger factories with the " +
         "`generateDaggerFactoriesOnly` flag. However, this module contains code that uses " +
-        "other Anvil annotations. That's not supported."
+        "other Anvil annotations. That's not supported.",
     )
   }
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    block: JvmCompilationResult.() -> Unit = { }
+    block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     generateDaggerFactories = true,
     generateDaggerFactoriesOnly = true,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
-    block = block
+    block = block,
   )
 }

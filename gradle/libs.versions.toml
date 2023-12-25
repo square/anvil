@@ -9,20 +9,33 @@
 
 [versions]
 agp = "7.3.1"
+androidx-appcompat = "1.6.1"
+androidx-core = "1.3.0"
+androidx-test = "1.5.0"
+androidx-test-ext = "1.1.5"
 autoService = "1.1.1"
-autoValue = "1.10.1"
+autoValue = "1.10.4"
+buildconfig = "4.2.0"
 dagger = "2.48"
-dokka = "1.8.20"
+dropbox-dependencyGuard = "0.4.3"
+dokka = "1.9.10"
 espresso = "3.5.1"
-gradlePublish = "0.15.0"
+gradlePublish = "1.2.1"
+jUnit5 = "5.10.1"
+jvm-toolchain = "11"
+jvm-target-library = "8"
+jvm-target-minimal = "11"
+kase = "0.4.0"
 kct = "0.3.2"
+kgx = "0.1.9"
 kotlin = "1.9.10"
+kotlinx-binaryCompatibility = "0.13.2"
 kotlinpoet = "1.14.2"
 # If updating KSP version, we currently have ksp override logic in settings.gradle that needs to be updated too
 ksp = "1.9.10-1.0.13"
-ktlint = "0.41.0"
-ktlintPlugin = "10.2.0"
-mavenPublish = "0.18.0"
+ktlint = "1.0.1"
+ktlintPlugin = "12.0.3"
+mavenPublish = "0.26.0"
 
 #
 # Configs that we can override in CI. Not exactly "versions" but useful to repurpose it here.
@@ -32,30 +45,38 @@ mavenPublish = "0.18.0"
 # with one annotation instead of all options. We also skip tests that run the Dagger annotation
 # processor (KAPT is slow).
 config-fullTestRun = "true"
+# This is exclusively used to work-around an issue with certain KSP tests on Windows on CI.
+# We've run the same tests without issue on local Windows machines, so this just allows us to
+# unblock KSP work for the moment until the source of the Git-Windows-CI jank can be identified.
+config-includeKspTests = "true"
 config-generateDaggerFactoriesWithAnvil = "true"
+config-warningsAsErrors = "false"
 
 [plugins]
 agp-application = { id = "com.android.application", version.ref = "agp" }
 agp-library = { id = "com.android.library", version.ref = "agp" }
+buildconfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildconfig" }
+dependencyGuard = { id = "com.dropbox.dependency-guard", version.ref = "dropbox-dependencyGuard" }
 gradlePublish = { id = "com.gradle.plugin-publish", version.ref = "gradlePublish" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
 kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
-ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }
+kotlinx-binaryCompatibility = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "kotlinx-binaryCompatibility" }
 ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
-mavenPublish = { id = "com.vanniktech.maven.publish", version.ref = "mavenPublish" }
+ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }
+mavenPublishBase = { id = "com.vanniktech.maven.publish.base", version.ref = "mavenPublish" }
 
 [libraries]
-androidx-appcompat = "androidx.appcompat:appcompat:1.1.0"
-androidx-core = "androidx.core:core-ktx:1.3.0"
+androidx-appcompat = { module = "androidx.appcompat:appcompat", version.ref = "androidx-appcompat" }
+androidx-core = { module = "androidx.core:core-ktx", version.ref = "androidx-core" }
 androidx-material = "com.google.android.material:material:1.1.0"
-androidx-test-core = "androidx.test:core:1.1.0"
+androidx-test-core = { module = "androidx.test:core", version.ref = "androidx-test" }
 androidx-test-espresso-core = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso" }
-androidx-test-junit = "androidx.test.ext:junit:1.1.1"
-androidx-test-rules = "androidx.test:rules:1.1.0"
-androidx-test-runner = "androidx.test:runner:1.1.0"
+androidx-test-junit = { module = "androidx.test.ext:junit", version.ref = "androidx-test-ext" }
+androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-test" }
+androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test" }
 
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
 
@@ -67,11 +88,21 @@ auto-value-processor = { module = "com.google.auto.value:auto-value", version.re
 dagger2 = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger2-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
 
+dropbox-dependencyGuard = { module = "com.dropbox.dependency-guard:dependency-guard", version.ref = "dropbox-dependencyGuard" }
+
 gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", version.ref = "gradlePublish" }
 
 inject = "javax.inject:javax.inject:1"
 jsr250 = "javax.annotation:jsr250-api:1.0"
-junit = "junit:junit:4.13"
+junit = "junit:junit:4.13.2"
+
+junit5-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "jUnit5" }
+junit5-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "jUnit5" }
+junit5-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "jUnit5" }
+
+kase = { module = "com.rickbusarow.kase:kase", version.ref = "kase" }
+kase-gradle = { module = "com.rickbusarow.kase:kase-gradle", version.ref = "kase" }
+kase-gradle-dsl = { module = "com.rickbusarow.kase:kase-gradle-dsl", version.ref = "kase" }
 
 kotlin-annotationProcessingEmbeddable = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable", version.ref = "kotlin" }
 kotlin-compileTesting = { module = "dev.zacsweers.kctfork:core", version.ref = "kct" }
@@ -87,6 +118,10 @@ kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref =
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
 
+kotlinx-binaryCompatibility = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "kotlinx-binaryCompatibility" }
+
+kgx = { module = "com.rickbusarow.kgx:kotlin-gradle-extensions", version.ref = "kgx" }
+
 ksp-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
 ksp-compilerPlugin = { module = "com.google.devtools.ksp:symbol-processing", version.ref = "ksp" }
 ksp-gradlePlugin = { module = "com.google.devtools.ksp:symbol-processing-gradle-plugin", version.ref = "ksp" }
@@ -95,4 +130,4 @@ ktlintRaw = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "kt
 
 mavenPublishRaw = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
 
-truth = "com.google.truth:truth:1.1.3"
+truth = "com.google.truth:truth:1.1.5"

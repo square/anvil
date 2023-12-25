@@ -53,7 +53,7 @@ public fun PsiElement.ktFile(): KtFile {
 
 @ExperimentalAnvilApi
 public fun PsiElement.fqNameOrNull(
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
 ): FqName? {
   // Usually it's the opposite way, the require*() method calls the nullable method. But in this
   // case we'd like to preserve the better error messages in case something goes wrong.
@@ -66,13 +66,13 @@ public fun PsiElement.fqNameOrNull(
 
 @ExperimentalAnvilApi
 public fun PsiElement.requireFqName(
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
 ): FqName {
   val containingKtFile = ktFile()
 
   fun failTypeHandling(): Nothing = throw AnvilCompilationException(
     "Don't know how to handle Psi element: $text",
-    element = this
+    element = this,
   )
 
   val classReference = when (this) {
@@ -147,7 +147,7 @@ public fun PsiElement.requireFqName(
       // Returns "Abc" for "Abc::class".
       val element = children.singleOrNull() ?: throw AnvilCompilationException(
         "Expected a single child, but there were ${children.size} instead: $text",
-        element = this
+        element = this,
       )
       return element.requireFqName(module)
     }
@@ -160,7 +160,7 @@ public fun PsiElement.requireFqName(
       if (parameterCount !in 0..22) {
         throw AnvilCompilationException(
           element = this,
-          message = "Couldn't find function type for $parameterCount parameters."
+          message = "Couldn't find function type for $parameterCount parameters.",
         )
       }
       return FqName("kotlin.jvm.functions.Function$parameterCount")
@@ -293,7 +293,7 @@ public fun PsiElement.requireFqName(
   // Everything else isn't supported.
   throw AnvilCompilationException(
     "Couldn't resolve FqName $classReference for Psi element: $text",
-    element = this
+    element = this,
   )
 }
 
@@ -325,7 +325,7 @@ private fun PsiElement.findClassReferenceInSuperTypes(
             // It might be a generic type, e.g. ClassA<Abc>. Remove the generic type.
             )?.substringBefore('<')
             ?: throw AnvilCompilationException(
-              "Couldn't get the super type for ${superType.text}."
+              "Couldn't get the super type for ${superType.text}.",
             )
 
           // Find the FqName for our super type. We check below if it's actually correct.

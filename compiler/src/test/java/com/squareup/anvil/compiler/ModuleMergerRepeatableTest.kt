@@ -15,7 +15,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class ModuleMergerRepeatableTest(
-  private val annotationClass: KClass<*>
+  private val annotationClass: KClass<*>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -23,7 +23,8 @@ class ModuleMergerRepeatableTest(
 
   companion object {
     @Parameters(name = "{0}")
-    @JvmStatic fun annotationClasses(): Collection<Any> {
+    @JvmStatic
+    fun annotationClasses(): Collection<Any> {
       return buildList {
         add(MergeComponent::class)
         if (isFullTestRun()) {
@@ -44,12 +45,12 @@ class ModuleMergerRepeatableTest(
       $annotation(Any::class)
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface merges multiple times to the same scope: [Any]. " +
-          "Merging multiple times to the same scope is forbidden and all scopes must be distinct."
+          "Merging multiple times to the same scope is forbidden and all scopes must be distinct.",
       )
     }
   }
@@ -67,13 +68,13 @@ class ModuleMergerRepeatableTest(
       @MergeComponent(Any::class)
       @MergeSubcomponent(Unit::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
         "It's only allowed to have one single type of @Merge* annotation, however multiple " +
           "instances of the same annotation are allowed. You mix " +
-          "[MergeComponent, MergeSubcomponent] and this is forbidden."
+          "[MergeComponent, MergeSubcomponent] and this is forbidden.",
       )
     }
   }
@@ -98,7 +99,7 @@ class ModuleMergerRepeatableTest(
         $annotation(Any::class)
         $annotation(Unit::class)
         interface ComponentInterface
-        """
+        """,
     ) {
       val component = componentInterface.anyDaggerComponent(annotationClass)
       assertThat(component.modules.withoutAnvilModule())
@@ -128,7 +129,7 @@ class ModuleMergerRepeatableTest(
         $annotation(Any::class)
         $annotation(Unit::class)
         interface ComponentInterface
-        """
+        """,
     ) {
       val component = componentInterface.anyDaggerComponent(annotationClass)
       assertThat(component.modules.withoutAnvilModule())
@@ -160,7 +161,7 @@ class ModuleMergerRepeatableTest(
         $annotation(Any::class)
         $annotation(Unit::class)
         interface ComponentInterface
-        """
+        """,
     ) {
       val component = componentInterface.anyDaggerComponent(annotationClass)
       assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule2.kotlin)
@@ -192,10 +193,10 @@ class ModuleMergerRepeatableTest(
         $annotation(Any::class)
         $annotation(Unit::class)
         interface ComponentInterface
-        """
+        """,
     ) {
       assertThat(
-        componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModule()
+        componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModule(),
       ).containsExactly(daggerModule1.kotlin)
 
       assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
@@ -228,10 +229,10 @@ class ModuleMergerRepeatableTest(
         $annotation(Any::class)
         $annotation(Unit::class)
         interface ComponentInterface
-        """
+        """,
     ) {
       assertThat(
-        componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModule()
+        componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModule(),
       ).isEmpty()
       assertThat(componentInterface.anvilModule.declaredMethods).hasLength(1)
     }
@@ -262,7 +263,7 @@ class ModuleMergerRepeatableTest(
         )
         $annotation(Unit::class)
         interface ComponentInterface
-        """
+        """,
     ) {
       val component = componentInterface.anyDaggerComponent(annotationClass)
       assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule2.kotlin)
@@ -291,7 +292,7 @@ class ModuleMergerRepeatableTest(
         )
         $annotation(Unit::class)
         interface ComponentInterface
-        """
+        """,
     ) {
       assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
     }
@@ -318,7 +319,7 @@ class ModuleMergerRepeatableTest(
           dependencies = [Int::class]
       )
       interface ComponentInterface
-      """
+      """,
     ) {
       val component = componentInterface.daggerComponent
       assertThat(component.modules.withoutAnvilModule()).containsExactly(Boolean::class, Int::class)

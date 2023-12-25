@@ -29,7 +29,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class BindingModuleMultibindingMapTest(
-  private val annotationClass: KClass<*>
+  private val annotationClass: KClass<*>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -37,7 +37,8 @@ class BindingModuleMultibindingMapTest(
 
   companion object {
     @Parameters(name = "{0}")
-    @JvmStatic fun annotationClasses(): Collection<Any> {
+    @JvmStatic
+    fun annotationClasses(): Collection<Any> {
       return buildList {
         add(MergeComponent::class)
         if (isFullTestRun()) {
@@ -70,7 +71,7 @@ class BindingModuleMultibindingMapTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -114,7 +115,7 @@ class BindingModuleMultibindingMapTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -167,7 +168,7 @@ class BindingModuleMultibindingMapTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -203,7 +204,7 @@ class BindingModuleMultibindingMapTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -244,7 +245,7 @@ class BindingModuleMultibindingMapTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       val modules = if (annotationClass == MergeModules::class) {
         componentInterface.daggerModule.includes.toList()
@@ -288,11 +289,11 @@ class BindingModuleMultibindingMapTest(
 
       $annotation(Any::class)
       interface ComponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
-        "Classes annotated with @ContributesMultibinding may not use more than one @MapKey."
+        "Classes annotated with @ContributesMultibinding may not use more than one @MapKey.",
       )
     }
   }

@@ -11,7 +11,7 @@ import javax.inject.Singleton
 
 @ContributesSubcomponent(
   scope = ContributedSubcomponent.Scope::class,
-  parentScope = ContributedSubcomponent.ParentScope::class
+  parentScope = ContributedSubcomponent.ParentScope::class,
 )
 @Singleton
 public interface ContributedSubcomponent {
@@ -25,7 +25,8 @@ public interface ContributedSubcomponent {
   @ContributesTo(ContributedSubcomponent.Scope::class)
   @Module
   public object SubcomponentModule {
-    @Provides @Singleton public fun provideInteger(): Int = 3
+    @Provides @Singleton
+    public fun provideInteger(): Int = 3
   }
 
   public abstract class Scope
@@ -34,7 +35,7 @@ public interface ContributedSubcomponent {
 
 @ContributesSubcomponent(
   scope = ContributedSubcomponentFactory.Scope::class,
-  parentScope = ContributedSubcomponentFactory.ParentScope::class
+  parentScope = ContributedSubcomponentFactory.ParentScope::class,
 )
 public interface ContributedSubcomponentFactory {
   public fun integer(): Int
@@ -47,7 +48,7 @@ public interface ContributedSubcomponentFactory {
   @ContributesSubcomponent.Factory
   public interface Factory {
     public fun createComponent(
-      @BindsInstance integer: Int
+      @BindsInstance integer: Int,
     ): ContributedSubcomponentFactory
   }
 

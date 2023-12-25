@@ -13,11 +13,11 @@ import kotlin.reflect.KClass
 @ExperimentalAnvilApi
 public fun Class<*>.moduleFactoryClass(
   providerMethodName: String,
-  companion: Boolean = false
+  companion: Boolean = false,
 ): Class<*> {
   val companionString = if (companion) "_Companion" else ""
   return classLoader.loadClass(
-    "${generatedClassesString()}${companionString}_${providerMethodName.capitalize()}Factory"
+    "${generatedClassesString()}${companionString}_${providerMethodName.capitalize()}Factory",
   )
 }
 
@@ -38,7 +38,7 @@ public fun Class<*>.membersInjector(): Class<*> {
 
 @ExperimentalAnvilApi
 public fun Class<*>.generatedClassesString(
-  separator: String = "_"
+  separator: String = "_",
 ): String {
   return generateSequence(enclosingClass) { it.enclosingClass }
     .toList()

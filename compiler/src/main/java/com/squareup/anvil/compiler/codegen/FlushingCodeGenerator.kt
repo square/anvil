@@ -15,6 +15,6 @@ internal interface FlushingCodeGenerator : CodeGenerator {
    */
   fun flush(
     codeGenDir: File,
-    module: ModuleDescriptor
+    module: ModuleDescriptor,
   ): Collection<GeneratedFile> = emptyList()
 }

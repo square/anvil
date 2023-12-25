@@ -22,7 +22,7 @@ class ContributesSubcomponentGeneratorTest {
 
       @ContributesSubcomponent(Any::class, Unit::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
       assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
@@ -44,7 +44,7 @@ class ContributesSubcomponentGeneratorTest {
 
       @ContributesSubcomponent(Any::class, Unit::class)
       abstract class SubcomponentInterface
-      """
+      """,
     ) {
       assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
       assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
@@ -60,7 +60,7 @@ class ContributesSubcomponentGeneratorTest {
 
       @ContributesSubcomponent(parentScope = Unit::class, scope = Any::class)
       interface SubcomponentInterface
-      """
+      """,
     ) {
       assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
       assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
@@ -78,7 +78,7 @@ class ContributesSubcomponentGeneratorTest {
         @ContributesSubcomponent(Any::class, Unit::class)
         interface SubcomponentInterface
       }
-      """
+      """,
     ) {
       val subcomponentInterface = classLoader
         .loadClass("com.squareup.test.Outer\$SubcomponentInterface")
@@ -102,14 +102,14 @@ class ContributesSubcomponentGeneratorTest {
 
       @ContributesSubcomponent(Any::class, Unit::class)
       class SubcomponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:6:")
       assertThat(messages).contains(
         "com.squareup.test.SubcomponentInterface is annotated with @ContributesSubcomponent, " +
-          "but this class is not an interface."
+          "but this class is not an interface.",
       )
     }
 
@@ -121,14 +121,14 @@ class ContributesSubcomponentGeneratorTest {
 
       @ContributesSubcomponent(Any::class, Unit::class)
       object SubcomponentInterface
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:6:")
       assertThat(messages).contains(
         "com.squareup.test.SubcomponentInterface is annotated with @ContributesSubcomponent, " +
-          "but this class is not an interface."
+          "but this class is not an interface.",
       )
     }
   }
@@ -137,7 +137,7 @@ class ContributesSubcomponentGeneratorTest {
     val visibilities = setOf(
       "internal",
       "private",
-      "protected"
+      "protected",
     )
 
     visibilities.forEach { visibility ->
@@ -149,14 +149,14 @@ class ContributesSubcomponentGeneratorTest {
   
         @ContributesSubcomponent(Any::class, Unit::class)
         $visibility interface SubcomponentInterface
-        """
+        """,
       ) {
         assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:6:")
         assertThat(messages).contains(
           "com.squareup.test.SubcomponentInterface is contributed to the Dagger graph, but the " +
-            "interface is not public. Only public interfaces are supported."
+            "interface is not public. Only public interfaces are supported.",
         )
       }
     }
@@ -178,7 +178,7 @@ class ContributesSubcomponentGeneratorTest {
             fun createComponent(): SubcomponentInterface
           }
         }
-      """
+      """,
     ) {
       val parentComponent = subcomponentInterface.parentComponentInterface
       assertThat(parentComponent).isNotNull()
@@ -208,13 +208,13 @@ class ContributesSubcomponentGeneratorTest {
             fun createComponent(): SubcomponentInterface
           }
         }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:7:11")
       assertThat(messages).contains(
         "Expected zero or one parent component interface within " +
-          "com.squareup.test.SubcomponentInterface being contributed to the parent scope."
+          "com.squareup.test.SubcomponentInterface being contributed to the parent scope.",
       )
     }
   }
@@ -236,13 +236,13 @@ class ContributesSubcomponentGeneratorTest {
             fun createComponent2(): SubcomponentInterface
           }
         }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:9:13")
       assertThat(messages).contains(
         "Expected zero or one function returning the subcomponent " +
-          "com.squareup.test.SubcomponentInterface."
+          "com.squareup.test.SubcomponentInterface.",
       )
     }
   }
@@ -268,12 +268,12 @@ class ContributesSubcomponentGeneratorTest {
             fun createComponent(): SubcomponentInterface
           }
         }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:8:11")
       assertThat(messages).contains(
-        "Expected zero or one factory within com.squareup.test.SubcomponentInterface."
+        "Expected zero or one factory within com.squareup.test.SubcomponentInterface.",
       )
     }
   }
@@ -295,7 +295,7 @@ class ContributesSubcomponentGeneratorTest {
             fun createComponent(): SubcomponentInterface = throw NotImplementedError()
           }
         }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:10:3")
@@ -317,7 +317,7 @@ class ContributesSubcomponentGeneratorTest {
             fun createComponent(): SubcomponentInterface = throw NotImplementedError()
           }
         }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:10:9")
@@ -340,13 +340,13 @@ class ContributesSubcomponentGeneratorTest {
           @Factory
           interface ComponentFactory
         }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:10:13")
       assertThat(messages).contains(
         "A factory must have exactly one abstract function returning the subcomponent " +
-          "com.squareup.test.SubcomponentInterface."
+          "com.squareup.test.SubcomponentInterface.",
       )
     }
   }
@@ -369,13 +369,13 @@ class ContributesSubcomponentGeneratorTest {
             fun createComponent2(): SubcomponentInterface
           }
         }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:10:13")
       assertThat(messages).contains(
         "A factory must have exactly one abstract function returning the subcomponent " +
-          "com.squareup.test.SubcomponentInterface."
+          "com.squareup.test.SubcomponentInterface.",
       )
     }
   }
@@ -397,13 +397,13 @@ class ContributesSubcomponentGeneratorTest {
             fun createComponent(): SubcomponentInterface = throw NotImplementedError()
           }
         }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:10:18")
       assertThat(messages).contains(
         "A factory must have exactly one abstract function returning the subcomponent " +
-          "com.squareup.test.SubcomponentInterface."
+          "com.squareup.test.SubcomponentInterface.",
       )
     }
   }
@@ -424,14 +424,14 @@ class ContributesSubcomponentGeneratorTest {
             fun createComponent(): SubcomponentInterface
           }
         }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:9:13")
       assertThat(messages).contains(
         "Within a class using @ContributesSubcomponent you must use " +
           "com.squareup.anvil.annotations.ContributesSubcomponent.Factory and not " +
-          "dagger.Subcomponent.Factory."
+          "dagger.Subcomponent.Factory.",
       )
     }
   }
@@ -452,14 +452,14 @@ class ContributesSubcomponentGeneratorTest {
             fun createComponent(): SubcomponentInterface
           }
         }
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:9:13")
       assertThat(messages).contains(
         "Within a class using @ContributesSubcomponent you must use " +
           "com.squareup.anvil.annotations.ContributesSubcomponent.Factory and not " +
-          "dagger.Subcomponent.Builder. Builders aren't supported."
+          "dagger.Subcomponent.Builder. Builders aren't supported.",
       )
     }
   }
@@ -483,7 +483,7 @@ class ContributesSubcomponentGeneratorTest {
         replaces = [SubcomponentInterface1::class]
       )
       interface SubcomponentInterface2
-      """
+      """,
     ) {
       assertThat(subcomponentInterface1.hintSubcomponent?.java).isEqualTo(subcomponentInterface1)
       assertThat(subcomponentInterface1.hintSubcomponentParentScope).isEqualTo(Unit::class)
@@ -512,14 +512,14 @@ class ContributesSubcomponentGeneratorTest {
         replaces = [SubcomponentInterface1::class]
       )
       interface SubcomponentInterface2
-      """
+      """,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:16:11")
       assertThat(messages).contains(
         "com.squareup.test.SubcomponentInterface2 with scope kotlin.Any wants to replace " +
           "com.squareup.test.SubcomponentInterface1 with scope kotlin.Long. The replacement " +
-          "must use the same scope."
+          "must use the same scope.",
       )
     }
   }

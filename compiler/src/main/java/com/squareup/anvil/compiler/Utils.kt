@@ -11,6 +11,7 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.toClassReferenceOrNull
+import com.squareup.kotlinpoet.asClassName
 import dagger.Binds
 import dagger.Component
 import dagger.Lazy
@@ -49,6 +50,7 @@ internal val daggerModuleFqName = Module::class.fqName
 internal val daggerBindsFqName = Binds::class.fqName
 internal val daggerProvidesFqName = Provides::class.fqName
 internal val daggerLazyFqName = Lazy::class.fqName
+internal val daggerLazyClassName = Lazy::class.asClassName()
 internal val injectFqName = Inject::class.fqName
 internal val qualifierFqName = Qualifier::class.fqName
 internal val mapKeyFqName = MapKey::class.fqName
@@ -56,6 +58,7 @@ internal val assistedFqName = Assisted::class.fqName
 internal val assistedFactoryFqName = AssistedFactory::class.fqName
 internal val assistedInjectFqName = AssistedInject::class.fqName
 internal val providerFqName = Provider::class.fqName
+internal val providerClassName = Provider::class.asClassName()
 internal val jvmSuppressWildcardsFqName = JvmSuppressWildcards::class.fqName
 internal val jvmFieldFqName = JvmField::class.fqName
 internal val publishedApiFqName = PublishedApi::class.fqName
@@ -91,7 +94,7 @@ internal fun String.isAnvilModule(): Boolean {
 
 @Suppress("UNCHECKED_CAST")
 internal fun <T : ClassReference> ClassId.classReferenceOrNull(
-  module: ModuleDescriptor
+  module: ModuleDescriptor,
 ): T? = asSingleFqName().toClassReferenceOrNull(module) as T?
 
 // If we're evaluating an anonymous inner class, it cannot merge anything and will cause
@@ -109,9 +112,11 @@ internal inline fun <T> Iterable<T>.singleOrEmpty(predicate: (T) -> Boolean): T?
   var found = false
   for (element in this) {
     if (predicate(element)) {
-      if (found) throw IllegalArgumentException(
-        "Collection contains more than one matching element."
-      )
+      if (found) {
+        throw IllegalArgumentException(
+          "Collection contains more than one matching element.",
+        )
+      }
       single = element
       found = true
     }

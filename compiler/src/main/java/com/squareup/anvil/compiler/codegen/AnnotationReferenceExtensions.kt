@@ -24,7 +24,7 @@ internal fun AnnotationReference.parentScope(): ClassReference {
     ?.value()
     ?: throw AnvilCompilationExceptionAnnotationReference(
       message = "Couldn't find parentScope for $fqName.",
-      annotationReference = this
+      annotationReference = this,
     )
 }
 
@@ -35,7 +35,7 @@ internal fun AnnotationReference.ignoreQualifier(): Boolean {
       contributesBindingFqName -> 4
       contributesMultibindingFqName -> 3
       else -> return false
-    }
+    },
   )
     ?.value()
     ?: false
@@ -49,7 +49,7 @@ internal fun AnnotationReference.priority(): Priority {
 }
 
 internal fun AnnotationReference.modules(
-  parameterIndex: Int = modulesIndex(fqName)
+  parameterIndex: Int = modulesIndex(fqName),
 ): List<ClassReference> {
   return argumentAt(modulesName(fqName), parameterIndex)
     ?.value<List<ClassReference>>()
@@ -61,7 +61,7 @@ private fun modulesIndex(annotationFqName: FqName): Int {
     mergeComponentFqName, mergeSubcomponentFqName, mergeModulesFqName -> 1
     contributesSubcomponentFqName -> 2
     else -> throw NotImplementedError(
-      "Couldn't find index of modules argument for $annotationFqName."
+      "Couldn't find index of modules argument for $annotationFqName.",
     )
   }
 }
@@ -71,14 +71,14 @@ private fun modulesName(annotationFqName: FqName): String {
     mergeComponentFqName, mergeSubcomponentFqName, contributesSubcomponentFqName -> "modules"
     mergeModulesFqName -> "includes"
     else -> throw NotImplementedError(
-      "Couldn't find name of modules argument for $annotationFqName."
+      "Couldn't find name of modules argument for $annotationFqName.",
     )
   }
 }
 
 internal fun <T : AnnotationReference> List<T>.find(
   annotationName: FqName,
-  scope: ClassReference? = null
+  scope: ClassReference? = null,
 ): List<T> {
   return filter {
     it.fqName == annotationName && (scope == null || it.scopeOrNull() == scope)
@@ -87,7 +87,7 @@ internal fun <T : AnnotationReference> List<T>.find(
 
 internal fun <T : AnnotationReference> List<T>.findAll(
   vararg annotationNames: FqName,
-  scope: ClassReference? = null
+  scope: ClassReference? = null,
 ): List<T> {
   return filter {
     it.fqName in annotationNames && (scope == null || it.scopeOrNull() == scope)
@@ -95,7 +95,7 @@ internal fun <T : AnnotationReference> List<T>.findAll(
 }
 
 internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScope(
-  contributeAnnotation: Boolean
+  contributeAnnotation: Boolean,
 ) {
   // Exit early to avoid allocating additional collections.
   if (size < 2) return
@@ -121,7 +121,7 @@ internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScope(
           "${duplicates.keys.joinToString(prefix = "[", postfix = "]") { it.shortName }}. " +
           "Merging multiple times to the same scope is forbidden and all scopes must " +
           "be distinct."
-      }
+      },
     )
   }
 }
@@ -150,7 +150,7 @@ internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScopeAndBoundType
           it?.shortName ?: clazz.directSuperTypeReferences().single().asClassReference().shortName
         } +
         ". Contributing multiple times to the same scope with the same bound type is forbidden " +
-        "and all scope - bound type combinations must be distinct."
+        "and all scope - bound type combinations must be distinct.",
     )
   }
 }

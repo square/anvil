@@ -12,7 +12,9 @@ public abstract class AppModule1
 @Module
 @ContributesTo(AppScope::class)
 public object AppModule2 {
-  @Provides @Singleton public fun provideFunction(): (String) -> Int = { it.length }
+  @Provides @Singleton
+  public fun provideFunction(): (String) -> Int = { it.length }
+
   @Provides internal fun provideType(): CharSequence = "Hello"
 }
 

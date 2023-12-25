@@ -10,7 +10,7 @@ import com.squareup.anvil.compiler.contributesMultibindingFqName
 import org.jetbrains.kotlin.name.FqName
 
 internal fun KSClassDeclaration.checkNotMoreThanOneQualifier(
-  annotationFqName: FqName
+  annotationFqName: FqName,
 ) {
   val annotationsList = annotations.toList()
   // The class is annotated with @ContributesBinding, @ContributesMultibinding, or another Anvil annotation.
@@ -22,7 +22,7 @@ internal fun KSClassDeclaration.checkNotMoreThanOneQualifier(
     throw KspAnvilException(
       message = "Classes annotated with @${annotationFqName.shortName()} may not use more " +
         "than one @Qualifier.",
-      node = this
+      node = this,
     )
   }
 }
@@ -48,14 +48,14 @@ internal fun KSClassDeclaration.checkNotMoreThanOneMapKey() {
     throw KspAnvilException(
       message = "Classes annotated with @${contributesMultibindingFqName.shortName()} may not " +
         "use more than one @MapKey.",
-      node = this
+      node = this,
     )
   }
 }
 
 internal fun KSClassDeclaration.checkSingleSuperType(
   annotationFqName: FqName,
-  resolver: Resolver
+  resolver: Resolver,
 ) {
   // If the bound type exists, then you're allowed to have multiple super types. Without the bound
   // type there must be exactly one super type.
@@ -70,14 +70,14 @@ internal fun KSClassDeclaration.checkSingleSuperType(
         "specify the bound type. This is only allowed with exactly one direct super type. " +
         "If there are multiple or none, then the bound type must be explicitly defined in " +
         "the @${annotationFqName.shortName()} annotation.",
-      node = this
+      node = this,
     )
   }
 }
 
 internal fun KSClassDeclaration.checkClassExtendsBoundType(
   annotationFqName: FqName,
-  resolver: Resolver
+  resolver: Resolver,
 ) {
   val boundType = getKSAnnotationsByQualifiedName(annotationFqName.asString())
     .firstOrNull()
@@ -85,7 +85,7 @@ internal fun KSClassDeclaration.checkClassExtendsBoundType(
     ?: superTypesExcludingAny(resolver).singleOrNull()?.resolve()
     ?: throw KspAnvilException(
       message = "Couldn't find the bound type.",
-      node = this
+      node = this,
     )
 
   // The boundType is declared explicitly in the annotation. Since all classes extend Any, we can
@@ -97,13 +97,13 @@ internal fun KSClassDeclaration.checkClassExtendsBoundType(
       message = "${this.qualifiedName?.asString()} contributes a binding " +
         "for ${boundType.declaration.qualifiedName?.asString()}, but doesn't " +
         "extend this type.",
-      node = this
+      node = this,
     )
   }
 }
 
 internal fun KSClassDeclaration.superTypesExcludingAny(
-  resolver: Resolver
+  resolver: Resolver,
 ): Sequence<KSTypeReference> = superTypes
   .filterNot { it.resolve() == resolver.builtIns.anyType }
 

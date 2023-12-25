@@ -1,0 +1,8 @@
+public abstract interface annotation class com/squareup/anvil/annotations/optional/ForScope : java/lang/annotation/Annotation {
+	public abstract fun scope ()Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/optional/SingleIn : java/lang/annotation/Annotation {
+	public abstract fun scope ()Ljava/lang/Class;
+}
+

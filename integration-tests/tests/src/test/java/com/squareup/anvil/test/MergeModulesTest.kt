@@ -58,7 +58,8 @@ internal class MergeModulesTest {
 
   @Subcomponent(modules = [CompositeSubModule::class])
   interface SubComponent {
-    @Named("middle") fun middleType(): MiddleType
+    @Named("middle")
+    fun middleType(): MiddleType
     fun parentType(): ParentType
     fun middleTypes(): Set<MiddleType>
   }

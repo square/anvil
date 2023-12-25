@@ -9,6 +9,7 @@ import java.lang.reflect.Modifier
 
 @ExperimentalAnvilApi
 public val Member.isStatic: Boolean get() = Modifier.isStatic(modifiers)
+
 @ExperimentalAnvilApi
 public val Member.isAbstract: Boolean get() = Modifier.isAbstract(modifiers)
 
@@ -19,7 +20,7 @@ public val Member.isAbstract: Boolean get() = Modifier.isAbstract(modifiers)
 @ExperimentalAnvilApi
 @Suppress("UNCHECKED_CAST")
 public fun <T : Any> Class<T>.createInstance(
-  vararg initargs: Any?
+  vararg initargs: Any?,
 ): T = declaredConstructors.single().use { it.newInstance(*initargs) } as T
 
 @ExperimentalAnvilApi

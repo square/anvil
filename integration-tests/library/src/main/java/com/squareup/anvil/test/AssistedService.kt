@@ -18,7 +18,7 @@ public interface AssistedService {
 
 public class AssistedServiceImpl @AssistedInject constructor(
   public val integer: Int,
-  @Assisted public override val string: String
+  @Assisted public override val string: String,
 ) : AssistedService {
 
   @AssistedFactory

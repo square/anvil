@@ -9,6 +9,26 @@ on :
   pull_request :
 
 jobs :
+  binary-compatibility-check :
+    runs-on : ubuntu-latest
+    timeout-minutes : 25
+
+    strategy :
+      fail-fast : false
+      matrix :
+        kotlin-version : [ 1.8.22, 1.9.10 ]
+
+    steps :
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
+        with :
+          distribution : 'temurin'
+          java-version : '11'
+          check-latest : true
+
+      - name : API check
+        run : ./gradlew apiCheck --no-daemon --stacktrace
+
   test-ubuntu :
     runs-on : ubuntu-latest
     timeout-minutes : 25
@@ -36,7 +56,6 @@ jobs :
           name : test-results-${{ matrix.kotlin-version }}
           path : ./**/build/reports/tests/
 
-
   test-windows :
     runs-on : windows-latest
     timeout-minutes : 25
@@ -56,7 +75,7 @@ jobs :
       # Expressions in Github actions are limited. If there would be an if expression, then we
       # wouldn't need to duplicate the next step and depending on the OS enable / disable them.
       - name : Test on Windows
-        run : ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace -Doverride_config-fullTestRun=false
+        run : ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace -Doverride_config-fullTestRun=false -Doverride_config-includeKspTests=false
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v3
@@ -64,6 +83,21 @@ jobs :
         with :
           name : test-results-windows
           path : ./**/build/reports/tests/
+
+  dependency-guard :
+    runs-on : ubuntu-latest
+    timeout-minutes : 15
+
+    steps :
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
+        with :
+          distribution : 'temurin'
+          java-version : '11'
+          check-latest : true
+
+      - name : Dependency Guard Check
+        run : ./gradlew dependencyGuard --no-build-cache --no-daemon --stacktrace
 
   ktlint :
     runs-on : ubuntu-latest
@@ -78,7 +112,7 @@ jobs :
           check-latest : true
 
       - name : KtLint
-        run : ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace && ./gradlew -p buildSrc ktlintCheck --no-build-cache --no-daemon --stacktrace
+        run : ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace
 
   lint :
     runs-on : ubuntu-latest
@@ -93,7 +127,7 @@ jobs :
           check-latest : true
 
       - name : Android Lint
-        run : ./gradlew lint --no-build-cache --no-daemon --stacktrace
+        run : ./gradlew -p build-logic/delegate lint --no-build-cache --no-daemon --stacktrace
 
       - name : Upload Lint Results
         uses : actions/upload-artifact@v3
@@ -115,7 +149,7 @@ jobs :
           check-latest : true
 
       - name : Publish to Maven Local
-        run : ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace && cd ..
+        run : ./gradlew clean publishToMavenLocal --no-build-cache --no-daemon --stacktrace --no-parallel
 
   publish-snapshot :
     runs-on : ubuntu-latest
@@ -123,7 +157,7 @@ jobs :
     timeout-minutes : 25
     needs :
       - test-ubuntu
-      - build-gradle-plugin
+      - test-gradle-plugin
       - gradle-wrapper-validation
       - publish-maven-local
 
@@ -136,23 +170,20 @@ jobs :
           check-latest : true
 
       - name : Publish Snapshots 1.9
-        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace && cd ..
+        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel
         env :
           ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
 
       # TODO: Remove when we drop Kotlin 1.8 support
       - name : Publish Snapshots 1.8
-        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel -Doverride_kotlin=1.8.22 -PVERSION_NAME=2.4.9-1-8-SNAPSHOT && cd gradle-plugin && ./gradlew clean publish --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=1.8.22 -PVERSION_NAME=2.4.9-1-8-SNAPSHOT && cd ..
+        run : ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel -Doverride_kotlin=1.8.22 -PVERSION_NAME=2.4.9-1-8-SNAPSHOT
         env :
           ORG_GRADLE_PROJECT_mavenCentralUsername : ${{ secrets.SONATYPE_NEXUS_USERNAME }}
           ORG_GRADLE_PROJECT_mavenCentralPassword : ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
 
-  build-gradle-plugin :
+  test-gradle-plugin :
     runs-on : ubuntu-latest
-    defaults :
-      run :
-        working-directory : gradle-plugin
 
     timeout-minutes : 15
 
@@ -174,7 +205,7 @@ jobs :
           check-latest : true
 
       - name : Test Gradle Plugin
-        run : ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_agp=${{ matrix.agp-version }}
+        run : ./gradlew :gradle-plugin:assemble :gradle-plugin:test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_agp=${{ matrix.agp-version }}
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v3
@@ -183,25 +214,6 @@ jobs :
           # Use the Kotlin version to prevent overrides.
           name : test-results-gradle-plugin-${{ matrix.kotlin-version }}-${{ matrix.agp-version }}
           path : ./**/build/reports/tests/
-
-  ktlint-gradle-plugin :
-    runs-on : ubuntu-latest
-    defaults :
-      run :
-        working-directory : gradle-plugin
-
-    timeout-minutes : 15
-
-    steps :
-      - uses : actions/checkout@v3
-      - uses : actions/setup-java@v3
-        with :
-          distribution : 'temurin'
-          java-version : '11'
-          check-latest : true
-
-      - name : KtLint Gradle Plugin
-        run : ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace
 
   kapt-for-dagger-factories :
     runs-on : ubuntu-latest
@@ -224,10 +236,10 @@ jobs :
           check-latest : true
 
       - name : Run integration tests
-        run : ./gradlew -p integration-tests test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
+        run : ./gradlew -p build-logic/delegate test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
 
       - name : Build the sample
-        run : ./gradlew :sample:app:assembleDebug --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
+        run : ./gradlew :delegate:sample:app:assembleDebug --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
 
       - name : Upload Test Results
         uses : actions/upload-artifact@v3
@@ -271,6 +283,29 @@ jobs :
           name : insrumentation-test-results
           path : ./**/build/reports/androidTests/connected/**
 
+  gradle-integration-tests :
+    name : Gradle integration tests
+    runs-on : macos-latest
+    timeout-minutes : 20
+
+    steps :
+      - uses : actions/checkout@v3
+      - uses : actions/setup-java@v3
+        with :
+          distribution : 'temurin'
+          java-version : '11'
+          check-latest : true
+
+      - name : Gradle integration tests
+        run : ./gradlew gradleTest --stacktrace
+
+      - name : Upload Test Results
+        uses : actions/upload-artifact@v3
+        if : ${{ failure() }}
+        with :
+          name : test-results-gradle-integration
+          path : ./**/build/reports/tests/
+
   gradle-wrapper-validation :
     name : "Validate the Gradle Wrapper"
     runs-on : ubuntu-latest
@@ -295,4 +330,30 @@ jobs :
         run : ./gradlew :createBenchmarkProject
 
       - name : "Build Benchmark Project"
-        run : ./gradlew :benchmark:app:assemble
+        run : ./gradlew -p benchmark :app:assemble
+
+  all-checks:
+    if: always()
+    runs-on: ubuntu-latest
+    needs:
+      - binary-compatibility-check
+      - test-ubuntu
+      - test-windows
+      - dependency-guard
+      - ktlint
+      - lint
+      - publish-maven-local
+      - publish-snapshot
+      - test-gradle-plugin
+      - kapt-for-dagger-factories
+      - instrumentation-tests
+      - gradle-integration-tests
+      - gradle-wrapper-validation
+      - build-benchmark-project
+
+    steps:
+      - name: require that all other jobs have passed
+        uses: re-actors/alls-green@release/v1
+        with:
+          allowed-skips: publish-snapshot
+          jobs: ${{ toJSON(needs) }}

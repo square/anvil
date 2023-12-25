@@ -4,9 +4,11 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.daggerProcessingModesForTests
 import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.testIsNotYetCompatibleWithKsp
+import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.descriptors.runtime.components.tryLoadClass
@@ -18,13 +20,16 @@ import org.junit.runners.Parameterized.Parameters
 
 @RunWith(Parameterized::class)
 class MapKeyCreatorGeneratorTest(
-  private val daggerProcessingMode: DaggerAnnotationProcessingMode?
+  // TODO daggerProcessingMode: DaggerAnnotationProcessingMode?
+  private val useDagger: Boolean,
+  private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Dagger processing mode: {0}")
+    // TODO daggerProcessingModesForTests()
+    @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun daggerProcessingModes() = daggerProcessingModesForTests()
+    fun params() = useDaggerAndKspParams()
   }
 
   @Test fun `a creator class is generated`() {
@@ -69,7 +74,7 @@ class MapKeyCreatorGeneratorTest(
         val floatArrayValue: FloatArray,
         val doubleArrayValue: DoubleArray,
       )
-      """
+      """,
     ) {
       val mapKeyClass = classLoader.loadClass("com.squareup.test.ExampleMapKey")
       val creatorClass = classLoader.loadClass("com.squareup.test.ExampleMapKeyCreator")
@@ -87,31 +92,56 @@ class MapKeyCreatorGeneratorTest(
       val mapKeyInstance = staticMethods.single { it.name == "createExampleMapKey" }
         .invoke(
           null,
-          /* stringValue*/ "stringValue",
-          /* stringArrayValue */ arrayOf("stringArrayValue"),
-          /* annotationValue */ TestAnnotation("annotationValue"),
-          /* annotationArrayValue */ arrayOf(TestAnnotation("annotationValue")),
-          /* enumValue */ TestEnum.A,
-          /* enumArrayValue */ arrayOf(TestEnum.A),
-          /* kClassValue */ String::class.java,
-          /* kClassStarValue */ String::class.java,
-          /* kClassArrayValue */ arrayOf(String::class.java),
-          /* booleanValue */ true,
-          /* byteValue */ 1.toByte(),
-          /* charValue */ 3.toChar(),
-          /* shortValue */ 2.toShort(),
-          /* intValue */ 4,
-          /* longValue */ 5L,
-          /* floatValue */ 6.0f,
-          /* doubleValue */ 7.0,
-          /* booleanArrayValue */ booleanArrayOf(true),
-          /* byteArrayValue */ byteArrayOf(1.toByte()),
-          /* charArrayValue */ charArrayOf(3.toChar()),
-          /* shortArrayValue */ shortArrayOf(2.toShort()),
-          /* intArrayValue */ intArrayOf(4),
-          /* longArrayValue */ longArrayOf(5L),
-          /* floatArrayValue */ floatArrayOf(6.0f),
-          /* doubleArrayValue */ doubleArrayOf(7.0),
+          /* stringValue*/
+          "stringValue",
+          /* stringArrayValue */
+          arrayOf("stringArrayValue"),
+          /* annotationValue */
+          TestAnnotation("annotationValue"),
+          /* annotationArrayValue */
+          arrayOf(TestAnnotation("annotationValue")),
+          /* enumValue */
+          TestEnum.A,
+          /* enumArrayValue */
+          arrayOf(TestEnum.A),
+          /* kClassValue */
+          String::class.java,
+          /* kClassStarValue */
+          String::class.java,
+          /* kClassArrayValue */
+          arrayOf(String::class.java),
+          /* booleanValue */
+          true,
+          /* byteValue */
+          1.toByte(),
+          /* charValue */
+          3.toChar(),
+          /* shortValue */
+          2.toShort(),
+          /* intValue */
+          4,
+          /* longValue */
+          5L,
+          /* floatValue */
+          6.0f,
+          /* doubleValue */
+          7.0,
+          /* booleanArrayValue */
+          booleanArrayOf(true),
+          /* byteArrayValue */
+          byteArrayOf(1.toByte()),
+          /* charArrayValue */
+          charArrayOf(3.toChar()),
+          /* shortArrayValue */
+          shortArrayOf(2.toShort()),
+          /* intArrayValue */
+          intArrayOf(4),
+          /* longArrayValue */
+          longArrayOf(5L),
+          /* floatArrayValue */
+          floatArrayOf(6.0f),
+          /* doubleArrayValue */
+          doubleArrayOf(7.0),
         )
 
       assertThat(mapKeyInstance::class.java).isAssignableTo(mapKeyClass)
@@ -137,7 +167,7 @@ class MapKeyCreatorGeneratorTest(
       annotation class ExampleMapKey(
         val value: RecursiveAnnotation,
       )
-      """
+      """,
     ) {
       val recursiveClass = classLoader.loadClass("com.squareup.test.RecursiveAnnotation")
       val mapKeyClass = classLoader.loadClass("com.squareup.test.ExampleMapKey")
@@ -157,7 +187,8 @@ class MapKeyCreatorGeneratorTest(
       val mapKeyInstance = staticMethods.single { it.name == "createExampleMapKey" }
         .invoke(
           null,
-          /* stringValue*/ recursiveAnnotationInstance,
+          /* stringValue*/
+          recursiveAnnotationInstance,
         )
 
       assertThat(mapKeyInstance::class.java).isAssignableTo(mapKeyClass)
@@ -180,7 +211,7 @@ class MapKeyCreatorGeneratorTest(
       annotation class ExampleMapKey2(
         val value: String,
       )
-      """
+      """,
     ) {
       classLoader.loadClass("com.squareup.test.ExampleMapKey")
       val creatorClass = classLoader.tryLoadClass("com.squareup.test.ExampleMapKeyCreator")
@@ -206,7 +237,7 @@ class MapKeyCreatorGeneratorTest(
           val stringValue: String,
         )
       }
-      """
+      """,
     ) {
       val mapKeyClass = classLoader.loadClass("com.squareup.test.Container\$ExampleMapKey")
       val creatorClass = classLoader.loadClass("com.squareup.test.Container_ExampleMapKeyCreator")
@@ -217,7 +248,8 @@ class MapKeyCreatorGeneratorTest(
       val mapKeyInstance = staticMethods.single { it.name == "createExampleMapKey" }
         .invoke(
           null,
-          /* stringValue*/ "stringValue",
+          /* stringValue*/
+          "stringValue",
         )
 
       assertThat(mapKeyInstance::class.java).isAssignableTo(mapKeyClass)
@@ -226,12 +258,13 @@ class MapKeyCreatorGeneratorTest(
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    block: JvmCompilationResult.() -> Unit = { }
+    block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     daggerAnnotationProcessingMode = daggerProcessingMode,
     generateDaggerFactories = daggerProcessingMode == null,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
-    block = block
+    mode = mode,
+    block = block,
   )
 }
