@@ -28,7 +28,7 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class InjectConstructorFactoryGeneratorTest(
-  private val daggerProcessingMode: DaggerAnnotationProcessingMode?,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
@@ -2746,7 +2746,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     daggerAnnotationProcessingMode = daggerProcessingMode,
-    generateDaggerFactories = daggerProcessingMode == null,
+    generateDaggerFactories = daggerProcessingMode == DaggerAnnotationProcessingMode.NONE,
     // Many constructor parameters are unused.
     allWarningsAsErrors = false,
     previousCompilationResult = previousCompilationResult,

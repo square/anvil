@@ -27,7 +27,7 @@ import kotlin.reflect.KClass
 internal fun compile(
   @Language("kotlin") vararg sources: String,
   previousCompilationResult: JvmCompilationResult? = null,
-  daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode? = null,
+  daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.NONE,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
   mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
@@ -184,13 +184,13 @@ internal fun isFullTestRun(): Boolean = FULL_TEST_RUN
 internal fun checkFullTestRun() = assumeTrue(isFullTestRun())
 internal fun includeKspTests(): Boolean = INCLUDE_KSP_TESTS
 
-internal fun daggerProcessingModesForTests(includeNull: Boolean = true) = buildList {
+internal fun daggerProcessingModesForTests(includeNone: Boolean = true) = buildList {
   if (isFullTestRun()) {
     add(DaggerAnnotationProcessingMode.KSP)
     add(DaggerAnnotationProcessingMode.KAPT)
   }
-  if (includeNull) {
-    add(null)
+  if (includeNone) {
+    add(DaggerAnnotationProcessingMode.NONE)
   }
 }
 
@@ -242,8 +242,15 @@ internal fun useDaggerAndKspParams(
       kspCreator(),
     ),
   ).mapNotNull { (daggerAnnotationProcessingMode, mode) ->
-    if (daggerAnnotationProcessingMode != null && mode is Ksp) {
+    if (daggerAnnotationProcessingMode != DaggerAnnotationProcessingMode.NONE && mode is Ksp) {
       // TODO Dagger is not supported with KSP in Anvil's tests yet
+      null
+    } else if (daggerAnnotationProcessingMode == DaggerAnnotationProcessingMode.KSP && mode is Embedded) {
+      // Cannot use embedded anvil with dagger KSP
+      null
+    } else if (daggerAnnotationProcessingMode == DaggerAnnotationProcessingMode.KAPT && mode is Ksp) {
+      // Cannot use KSP anvil with dagger kapt
+      // TODO revisit later, this may be possible actually
       null
     } else {
       arrayOf(daggerAnnotationProcessingMode, mode)

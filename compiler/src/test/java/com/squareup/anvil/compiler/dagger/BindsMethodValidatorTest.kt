@@ -18,14 +18,14 @@ import org.junit.runners.Parameterized.Parameters
 
 @RunWith(Parameterized::class)
 class BindsMethodValidatorTest(
-  private val daggerProcessingMode: DaggerAnnotationProcessingMode?,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode,
 ) {
 
   companion object {
     @Parameters(name = "Dagger Processing Mode: {0}")
     @JvmStatic
     fun daggerProcessingMode(): Collection<Any> {
-      return listOf(daggerProcessingModesForTests())
+      return daggerProcessingModesForTests()
     }
   }
 
@@ -55,7 +55,7 @@ class BindsMethodValidatorTest(
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type",
       )
-      if (daggerProcessingMode == null) {
+      if (daggerProcessingMode == DaggerAnnotationProcessingMode.NONE) {
         assertThat(messages).contains(
           "Expected binding of type Bar but impl parameter of type Foo only has the following " +
             "supertypes: [Ipsum, Lorem]",
@@ -88,7 +88,7 @@ class BindsMethodValidatorTest(
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type",
       )
-      if (daggerProcessingMode == null) {
+      if (daggerProcessingMode == DaggerAnnotationProcessingMode.NONE) {
         assertThat(messages).contains(
           "Expected binding of type Bar but impl parameter of type Foo has no supertypes.",
         )
@@ -238,7 +238,7 @@ class BindsMethodValidatorTest(
 
   @Test
   fun `an extension function binding is valid`() {
-    assumeTrue(daggerProcessingMode != null)
+    assumeTrue(daggerProcessingMode != DaggerAnnotationProcessingMode.NONE)
     val moduleResult = compile(
       """
       package com.squareup.test
@@ -281,7 +281,7 @@ class BindsMethodValidatorTest(
 
   @Test
   fun `a binding for a back-ticked-package type is valid`() {
-    assumeTrue(daggerProcessingMode != null)
+    assumeTrue(daggerProcessingMode != DaggerAnnotationProcessingMode.NONE)
     val moduleResult = compile(
       """
       package com.squareup.`impl`
@@ -328,7 +328,7 @@ class BindsMethodValidatorTest(
 
   @Test
   fun `an extension function binding with a qualifier is valid`() {
-    assumeTrue(daggerProcessingMode != null)
+    assumeTrue(daggerProcessingMode != DaggerAnnotationProcessingMode.NONE)
     testIsNotYetCompatibleWithKsp(
       daggerProcessingMode,
       "https://github.com/google/dagger/issues/3990",
@@ -389,12 +389,12 @@ class BindsMethodValidatorTest(
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
-    daggerProcessingMode: DaggerAnnotationProcessingMode? = null,
+    daggerProcessingMode: DaggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.NONE,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     daggerAnnotationProcessingMode = daggerProcessingMode,
-    generateDaggerFactories = daggerProcessingMode == null,
+    generateDaggerFactories = daggerProcessingMode == DaggerAnnotationProcessingMode.NONE,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
     block = block,

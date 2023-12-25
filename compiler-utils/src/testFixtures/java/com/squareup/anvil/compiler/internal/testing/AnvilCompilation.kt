@@ -40,7 +40,7 @@ public class AnvilCompilation internal constructor(
   @Suppress("SuspiciousCollectionReassignment")
   @ExperimentalAnvilApi
   public fun configureAnvil(
-    daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode? = null,
+    daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.NONE,
     generateDaggerFactories: Boolean = false,
     generateDaggerFactoriesOnly: Boolean = false,
     disableComponentMerging: Boolean = false,
@@ -73,7 +73,7 @@ public class AnvilCompilation internal constructor(
           // https://kotlinlang.slack.com/archives/C013BA8EQSE/p1639462548225400?thread_ts=1639433474.224900&cid=C013BA8EQSE
           kspWithCompilation = true
         }
-        null -> {
+        DaggerAnnotationProcessingMode.NONE -> {
           // Do nothing
         }
       }
@@ -241,6 +241,7 @@ public class AnvilCompilation internal constructor(
 enum class DaggerAnnotationProcessingMode {
   KAPT,
   KSP,
+  NONE,
 }
 
 /**
@@ -253,7 +254,7 @@ enum class DaggerAnnotationProcessingMode {
 @ExperimentalAnvilApi
 public fun compileAnvil(
   @Language("kotlin") vararg sources: String,
-  daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode? = null,
+  daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.NONE,
   generateDaggerFactories: Boolean = false,
   generateDaggerFactoriesOnly: Boolean = false,
   disableComponentMerging: Boolean = false,

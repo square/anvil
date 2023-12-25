@@ -35,12 +35,12 @@ import javax.inject.Provider
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
 class ProvidesMethodFactoryGeneratorTest(
-  private val daggerProcessingMode: DaggerAnnotationProcessingMode?,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Dagger Processing MOde: {0}, mode: {1}")
+    @Parameters(name = "Dagger Processing Mode: {0}, mode: {1}")
     @JvmStatic
     fun params() = useDaggerAndKspParams()
   }
@@ -3227,7 +3227,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
 }
      */
 
-    assumeTrue(daggerProcessingMode != null)
+    assumeTrue(daggerProcessingMode != DaggerAnnotationProcessingMode.NONE)
     val otherModuleResult = compile(
       """
       package com.squareup.test
@@ -3319,7 +3319,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
 }
      */
 
-    assumeTrue(daggerProcessingMode != null)
+    assumeTrue(daggerProcessingMode != DaggerAnnotationProcessingMode.NONE)
     val otherModuleResult = compile(
       """
       package com.squareup.test
@@ -3516,14 +3516,14 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    daggerProcessingMode: DaggerAnnotationProcessingMode? = null,
+    daggerProcessingMode: DaggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.NONE,
     previousCompilationResult: JvmCompilationResult? = null,
     moduleName: String? = null,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     daggerAnnotationProcessingMode = daggerProcessingMode,
-    generateDaggerFactories = daggerProcessingMode == null,
+    generateDaggerFactories = daggerProcessingMode == DaggerAnnotationProcessingMode.NONE,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block,
     mode = mode,

@@ -19,7 +19,7 @@ import org.junit.runners.Parameterized.Parameters
 
 @RunWith(Parameterized::class)
 class MapKeyCreatorGeneratorTest(
-  private val daggerProcessingMode: DaggerAnnotationProcessingMode?,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
@@ -259,7 +259,7 @@ class MapKeyCreatorGeneratorTest(
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     daggerAnnotationProcessingMode = daggerProcessingMode,
-    generateDaggerFactories = daggerProcessingMode == null,
+    generateDaggerFactories = daggerProcessingMode == DaggerAnnotationProcessingMode.NONE,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     mode = mode,
     block = block,

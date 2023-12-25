@@ -31,7 +31,7 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class AssistedFactoryGeneratorTest(
-  private val daggerProcessingMode: DaggerAnnotationProcessingMode?,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
@@ -2066,7 +2066,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       }
       .configureAnvil(
         daggerAnnotationProcessingMode = daggerProcessingMode,
-        generateDaggerFactories = daggerProcessingMode == null,
+        generateDaggerFactories = daggerProcessingMode == DaggerAnnotationProcessingMode.NONE,
         mode = mode,
       )
   }

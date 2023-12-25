@@ -34,7 +34,7 @@ import kotlin.test.assertFailsWith
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
 class MembersInjectorGeneratorTest(
-  private val daggerProcessingMode: DaggerAnnotationProcessingMode?,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
@@ -2511,7 +2511,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     daggerAnnotationProcessingMode = daggerProcessingMode,
-    generateDaggerFactories = daggerProcessingMode == null,
+    generateDaggerFactories = daggerProcessingMode == DaggerAnnotationProcessingMode.NONE,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
     mode = mode,

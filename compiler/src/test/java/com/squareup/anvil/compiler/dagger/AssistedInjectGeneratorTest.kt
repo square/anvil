@@ -23,7 +23,7 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class AssistedInjectGeneratorTest(
-  private val daggerProcessingMode: DaggerAnnotationProcessingMode?,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
@@ -688,7 +688,7 @@ public final class AssistedService_Factory {
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     daggerAnnotationProcessingMode = daggerProcessingMode,
-    generateDaggerFactories = daggerProcessingMode == null,
+    generateDaggerFactories = daggerProcessingMode == DaggerAnnotationProcessingMode.NONE,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     mode = mode,
     block = block,
