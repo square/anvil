@@ -63,4 +63,6 @@ dependencies {
   testImplementation(libs.ksp.api)
   testImplementation(libs.ksp.compilerPlugin)
   testImplementation(libs.truth)
+  // Force latest guava version for alignment with dagger's versions
+  testImplementation(libs.guava)
 }
