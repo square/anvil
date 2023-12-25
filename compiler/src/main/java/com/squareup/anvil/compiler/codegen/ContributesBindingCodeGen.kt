@@ -11,7 +11,9 @@ import com.squareup.anvil.annotations.ContributesBinding.Priority
 import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.internal.BindingPriority
+import com.squareup.anvil.compiler.ANVIL_MODULE_SUFFIX
 import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
@@ -19,6 +21,8 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFile
 import com.squareup.anvil.compiler.api.createGeneratedFile
+import com.squareup.anvil.compiler.codegen.GeneratedMethod.BindingMethod
+import com.squareup.anvil.compiler.codegen.GeneratedMethod.ProviderMethod
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.checkClassExtendsBoundType
@@ -33,8 +37,10 @@ import com.squareup.anvil.compiler.codegen.ksp.replaces
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
+import com.squareup.anvil.compiler.internal.buildFile
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.fqName
+import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
@@ -43,6 +49,7 @@ import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.KModifier.ABSTRACT
 import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
@@ -52,6 +59,7 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
+import dagger.Module
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -73,11 +81,21 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
     scopesAndReplaces: Map<ClassName, List<ClassName>>,
     contributedBinding: ContributedBinding,
   ): FileSpec {
-    val moduleClassName = originClass.generateClassName(suffix = "Module").simpleName
-    val generatedPackage = originClass.packageName.safePackageString(dotPrefix = true)
-    return FileSpec.createAnvilSpec(generatedPackage, moduleClassName) {
+    val moduleClassName = originClass.generateClassName(suffix = "Module")
+    val generatedPackage = generatePackageName(moduleClassName)
+    val generatedMethod = contributedBinding.toGeneratedMethod()
+
+    return FileSpec.createAnvilSpec(generatedPackage, moduleClassName.simpleName) {
+      val builder = if (generatedMethod is ProviderMethod) {
+        TypeSpec.objectBuilder(moduleClassName)
+          .addFunction(generatedMethod.spec)
+      } else {
+        TypeSpec.classBuilder(moduleClassName)
+          .addModifiers(ABSTRACT)
+          .addFunction(generatedMethod.spec)
+      }
       addType(
-        TypeSpec.interfaceBuilder(moduleClassName)
+        builder
           .apply {
             for ((scope, replaces) in scopesAndReplaces) {
               addAnnotation(
@@ -107,13 +125,13 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
               }
             }
           }
-          .addFunction(
-            contributedBinding.toGeneratedMethod().spec
-          )
           .build()
       )
     }
   }
+
+  private fun generatePackageName(clazz: ClassName): String = MODULE_PACKAGE_PREFIX +
+    clazz.packageName.safePackageString(dotPrefix = true)
 
   internal class KspGenerator(
     override val env: SymbolProcessorEnvironment,
