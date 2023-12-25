@@ -36,14 +36,12 @@ import javax.inject.Provider
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
 class ProvidesMethodFactoryGeneratorTest(
-// TODO daggerProcessingMode: DaggerAnnotationProcessingMode?
-  private val useDagger: Boolean,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode?,
   private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    // TODO daggerProcessingModesForTests()
-    @Parameters(name = "Use Dagger: {0}, mode: {1}")
+    @Parameters(name = "Dagger Processing MOde: {0}, mode: {1}")
     @JvmStatic
     fun params() = useDaggerAndKspParams()
   }

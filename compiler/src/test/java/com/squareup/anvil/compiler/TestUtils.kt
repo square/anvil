@@ -233,22 +233,20 @@ internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode)
 internal fun useDaggerAndKspParams(
   embeddedCreator: () -> Embedded? = { Embedded() },
   kspCreator: () -> Ksp? = { Ksp() },
+  includeNullDaggerProcessingMode: Boolean = true
 ): Collection<Any> {
   return cartesianProduct(
-    listOf(
-      isFullTestRun(),
-      false,
-    ),
+    daggerProcessingModesForTests(includeNullDaggerProcessingMode),
     listOfNotNull(
       embeddedCreator(),
       kspCreator(),
     ),
-  ).mapNotNull { (useDagger, mode) ->
-    if (useDagger == true && mode is Ksp) {
+  ).mapNotNull { (daggerAnnotationProcessingMode, mode) ->
+    if (daggerAnnotationProcessingMode != null && mode is Ksp) {
       // TODO Dagger is not supported with KSP in Anvil's tests yet
       null
     } else {
-      arrayOf(useDagger, mode)
+      arrayOf(daggerAnnotationProcessingMode, mode)
     }
   }.distinct()
 }

@@ -32,14 +32,12 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class AssistedFactoryGeneratorTest(
-  private val useDagger: Boolean,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode?,
   private val mode: AnvilCompilationMode,
-  private val daggerProcessingMode: DaggerAnnotationProcessingMode?
 ) {
 
   companion object {
-    // TODO update for daggerProcessingModesForTests()
-    @Parameters(name = "Use Dagger: {0}, mode: {1}")
+    @Parameters(name = "Dagger Processing Mode: {0}, mode: {1}")
     @JvmStatic
     fun params() = useDaggerAndKspParams()
   }
@@ -2068,9 +2066,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         kotlinCompilation.allWarningsAsErrors = WARNINGS_AS_ERRORS
       }
       .configureAnvil(
-        // TODO daggerAnnotationProcessingMode = daggerProcessingMode,
-        enableDaggerAnnotationProcessor = useDagger,
-        generateDaggerFactories = !useDagger,
+        daggerAnnotationProcessingMode = daggerProcessingMode,
+        generateDaggerFactories = daggerProcessingMode == null,
         mode = mode,
       )
   }

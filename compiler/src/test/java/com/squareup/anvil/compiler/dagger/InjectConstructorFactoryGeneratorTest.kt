@@ -29,14 +29,12 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class InjectConstructorFactoryGeneratorTest(
-  // TODO daggerProcessingMode: DaggerAnnotationProcessingMode?
-  private val useDagger: Boolean,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode?,
   private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    // TODO daggerProcessingModesForTests()
-    @Parameters(name = "Use Dagger: {0}, mode: {1}")
+    @Parameters(name = "Dagger Processing Mode: {0}, mode: {1}")
     @JvmStatic
     fun params() = useDaggerAndKspParams()
   }

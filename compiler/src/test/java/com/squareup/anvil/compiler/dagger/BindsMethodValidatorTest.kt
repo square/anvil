@@ -18,16 +18,14 @@ import org.junit.runners.Parameterized.Parameters
 
 @RunWith(Parameterized::class)
 class BindsMethodValidatorTest(
-  // TODO daggerProcessingMode: DaggerAnnotationProcessingMode?
-  private val useDagger: Boolean,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode?,
 ) {
 
   companion object {
-    // TODO daggerProcessingModesForTests()
-    @Parameters(name = "Use Dagger: {0}")
+    @Parameters(name = "Dagger Processing Mode: {0}")
     @JvmStatic
-    fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
+    fun daggerProcessingMode(): Collection<Any> {
+      return listOf(daggerProcessingModesForTests())
     }
   }
 
@@ -392,7 +390,6 @@ class BindsMethodValidatorTest(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
     daggerProcessingMode: DaggerAnnotationProcessingMode? = null,
-    enableDagger: Boolean = useDagger,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,

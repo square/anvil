@@ -649,7 +649,6 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @MergeComponent(Unit::class)
         interface ComponentInterface
       """,
-      enableDaggerAnnotationProcessor = true,
       daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       val daggerComponent = componentInterface.daggerComponent.declaredMethods
@@ -708,7 +707,6 @@ class ContributesSubcomponentHandlerGeneratorTest {
         interface ComponentInterface2
       """,
       // Keep Dagger enabled, because it complained initially.
-      enableDaggerAnnotationProcessor = true,
       daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       assertThat(componentInterface1 extends subcomponentInterface1.anyParentComponentInterface)
@@ -1228,7 +1226,6 @@ class ContributesSubcomponentHandlerGeneratorTest {
         @MergeComponent(Unit::class)
         interface ComponentInterface1
       """.trimIndent(),
-      enableDaggerAnnotationProcessor = true,
       daggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.KAPT
     ) {
       assertThat(exitCode).isEqualTo(OK)
