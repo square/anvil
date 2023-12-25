@@ -16,7 +16,7 @@ androidx-test-ext = "1.1.5"
 autoService = "1.1.1"
 autoValue = "1.10.4"
 buildconfig = "4.2.0"
-dagger = "2.46.1"
+dagger = "2.50"
 dropbox-dependencyGuard = "0.4.3"
 dokka = "1.9.10"
 espresso = "3.5.1"
@@ -91,6 +91,8 @@ dagger2-compiler = { module = "com.google.dagger:dagger-compiler", version.ref =
 dropbox-dependencyGuard = { module = "com.dropbox.dependency-guard:dependency-guard", version.ref = "dropbox-dependencyGuard" }
 
 gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", version.ref = "gradlePublish" }
+
+guava = "com.google.guava:guava:33.0.0-jre"
 
 inject = "javax.inject:javax.inject:1"
 jsr250 = "javax.annotation:jsr250-api:1.0"
