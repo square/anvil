@@ -42,6 +42,12 @@ public interface VariantFilter : Named {
    * details.
    */
   public var addOptionalAnnotations: Boolean
+
+  /**
+   * Enables experimental KSP support in component merging. This is only
+   * useful if using Dagger with KSP and if [disableComponentMerging] is set to `false`.
+   */
+  public var enableKspComponentMerging: Boolean
 }
 
 internal class CommonFilter(
@@ -84,6 +90,13 @@ internal class CommonFilter(
     get() = addOptionalAnnotationsOverride ?: extension.addOptionalAnnotations.get()
     set(value) {
       addOptionalAnnotationsOverride = value
+    }
+
+  private var useKspOverride: Boolean? = null
+  override var enableKspComponentMerging: Boolean
+    get() = useKspOverride ?: extension.enableKspComponentMerging.get()
+    set(value) {
+      useKspOverride = value
     }
 }
 

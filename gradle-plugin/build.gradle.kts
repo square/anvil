@@ -83,6 +83,7 @@ dependencies {
   compileOnly(libs.kotlin.gradlePlugin)
   compileOnly(libs.kotlin.gradlePluginApi)
   compileOnly(libs.agp)
+  compileOnly(libs.ksp.gradlePlugin)
 
   testImplementation(libs.junit)
   testImplementation(libs.truth)

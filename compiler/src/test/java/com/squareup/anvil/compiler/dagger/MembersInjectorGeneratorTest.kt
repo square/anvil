@@ -5,6 +5,7 @@ import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
@@ -19,6 +20,7 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
 import dagger.MembersInjector
 import org.intellij.lang.annotations.Language
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -33,12 +35,12 @@ import kotlin.test.assertFailsWith
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
 class MembersInjectorGeneratorTest(
-  private val useDagger: Boolean,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}, mode: {1}")
+    @Parameters(name = "Dagger Processing Mode: {0}, mode: {1}")
     @JvmStatic
     fun params() = useDaggerAndKspParams()
   }
@@ -2261,6 +2263,8 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       """,
     ) {
 
+      // TODO regressed in Dagger 2.50 https://github.com/google/dagger/issues/4199
+      assumeTrue(daggerProcessingMode != DaggerAnnotationProcessingMode.KSP)
       val actualBaseMembersInjector = classLoader.loadClass("com.squareup.test.ActualBase")
         .membersInjector()
 
@@ -2343,7 +2347,8 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       """,
       previousCompilationResult = otherModuleResult,
     ) {
-
+      // TODO regressed in Dagger 2.50 https://github.com/google/dagger/issues/4199
+      assumeTrue(daggerProcessingMode != DaggerAnnotationProcessingMode.KSP)
       val actualBaseMembersInjector = classLoader.loadClass("com.squareup.test.ActualBase")
         .membersInjector()
 
@@ -2509,8 +2514,8 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
-    enableDaggerAnnotationProcessor = useDagger,
-    generateDaggerFactories = !useDagger,
+    daggerAnnotationProcessingMode = daggerProcessingMode,
+    generateDaggerFactories = daggerProcessingMode == DaggerAnnotationProcessingMode.NONE,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
     mode = mode,

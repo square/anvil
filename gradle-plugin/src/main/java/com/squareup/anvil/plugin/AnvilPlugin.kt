@@ -8,6 +8,7 @@ import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.TestExtension
 import com.android.build.gradle.TestedExtension
+import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -49,7 +50,21 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   private val variantCache = ConcurrentHashMap<String, Variant>()
 
   override fun apply(target: Project) {
-    target.extensions.create("anvil", AnvilExtension::class.java)
+    val anvilExtension = target.extensions.create("anvil", AnvilExtension::class.java)
+
+    target.pluginManager.withPlugin("com.google.devtools.ksp") {
+      // TODO would be nice if KSP made this a property so these
+      //  could be chained nicely without afterEvaluate
+      target.afterEvaluate {
+        if (anvilExtension.enableKspComponentMerging.get()) {
+          target.extensions.configure(KspExtension::class.java) { kspExtension ->
+            kspExtension.excludeProcessor("dagger.internal.codegen.KspComponentProcessor")
+          }
+
+          target.dependencies.add("ksp", "$GROUP:compiler:$VERSION")
+        }
+      }
+    }
 
     // Create a configuration for collecting CodeGenerator dependencies. We need to create all
     // configurations eagerly and cannot wait for applyToCompilation(..) below, because this
@@ -136,9 +151,11 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     project.configurations.getByName(variant.compilerPluginClasspathName)
       .extendsFrom(getConfiguration(project, variant.name))
 
-    disableIncrementalKotlinCompilation(variant)
+    if (!variant.variantFilter.enableKspComponentMerging) {
+      disableIncrementalKotlinCompilation(variant)
+    }
 
-    if (!variant.variantFilter.generateDaggerFactoriesOnly) {
+    if (!variant.variantFilter.generateDaggerFactoriesOnly || !variant.variantFilter.enableKspComponentMerging) {
       disableCorrectErrorTypes(variant)
 
       kotlinCompilation.dependencies {

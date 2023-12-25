@@ -172,7 +172,7 @@ public sealed class AnnotationReference {
   public class Psi internal constructor(
     public val annotation: KtAnnotationEntry,
     override val classReference: ClassReference,
-    override val declaringClass: ClassReference.Psi?,
+    override val declaringClass: ClassReference?,
   ) : AnnotationReference() {
 
     override val arguments: List<AnnotationArgumentReference.Psi> by lazy(NONE) {
@@ -198,7 +198,7 @@ public sealed class AnnotationReference {
   public class Descriptor internal constructor(
     public val annotation: AnnotationDescriptor,
     override val classReference: ClassReference,
-    override val declaringClass: ClassReference.Descriptor?,
+    override val declaringClass: ClassReference?,
   ) : AnnotationReference() {
 
     override val arguments: List<AnnotationArgumentReference.Descriptor> by lazy(NONE) {
@@ -222,9 +222,20 @@ public fun KtAnnotationEntry.toAnnotationReference(
   declaringClass: ClassReference.Psi?,
   module: ModuleDescriptor,
 ): Psi {
+  return toAnnotationReference(
+    classReference = requireFqName(module).toClassReference(module),
+    declaringClass = declaringClass,
+  )
+}
+
+@ExperimentalAnvilApi
+public fun KtAnnotationEntry.toAnnotationReference(
+  declaringClass: ClassReference?,
+  classReference: ClassReference,
+): Psi {
   return Psi(
     annotation = this,
-    classReference = requireFqName(module).toClassReference(module),
+    classReference = classReference,
     declaringClass = declaringClass,
   )
 }
@@ -237,10 +248,17 @@ public fun AnnotationDescriptor.toAnnotationReference(
   val annotationClass = annotationClass ?: throw AnvilCompilationException(
     message = "Couldn't find the annotation class for $fqName",
   )
+  return toAnnotationReference(declaringClass, annotationClass.toClassReference(module))
+}
 
+@ExperimentalAnvilApi
+public fun AnnotationDescriptor.toAnnotationReference(
+  declaringClass: ClassReference?,
+  classReference: ClassReference,
+): Descriptor {
   return Descriptor(
     annotation = this,
-    classReference = annotationClass.toClassReference(module),
+    classReference = classReference,
     declaringClass = declaringClass,
   )
 }

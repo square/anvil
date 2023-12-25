@@ -5,11 +5,13 @@ import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.compilationErrorLine
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.testIsNotYetCompatibleWithKsp
 import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import org.intellij.lang.annotations.Language
@@ -21,12 +23,12 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class AssistedInjectGeneratorTest(
-  private val useDagger: Boolean,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}, mode: {1}")
+    @Parameters(name = "Dagger Processing Mode: {0}, mode: {1}")
     @JvmStatic
     fun params() = useDaggerAndKspParams()
   }
@@ -616,6 +618,10 @@ public final class AssistedService_Factory {
   }
 
   @Test fun `two assisted inject constructors aren't supported`() {
+    testIsNotYetCompatibleWithKsp(
+      daggerProcessingMode,
+      "https://github.com/google/dagger/issues/3992",
+    )
     compile(
       """
       package com.squareup.test
@@ -644,6 +650,10 @@ public final class AssistedService_Factory {
   }
 
   @Test fun `one inject and one assisted inject constructor aren't supported`() {
+    testIsNotYetCompatibleWithKsp(
+      daggerProcessingMode,
+      "https://github.com/google/dagger/issues/3991",
+    )
     compile(
       """
       package com.squareup.test
@@ -677,8 +687,8 @@ public final class AssistedService_Factory {
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
-    enableDaggerAnnotationProcessor = useDagger,
-    generateDaggerFactories = !useDagger,
+    daggerAnnotationProcessingMode = daggerProcessingMode,
+    generateDaggerFactories = daggerProcessingMode == DaggerAnnotationProcessingMode.NONE,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     mode = mode,
     block = block,

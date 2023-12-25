@@ -16,6 +16,7 @@ import com.tschuchort.compiletesting.kspArgs
 import com.tschuchort.compiletesting.kspWithCompilation
 import com.tschuchort.compiletesting.symbolProcessorProviders
 import dagger.internal.codegen.ComponentProcessor
+import dagger.internal.codegen.KspComponentProcessor
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.config.JvmTarget
 import java.io.File
@@ -39,7 +40,7 @@ public class AnvilCompilation internal constructor(
   @Suppress("SuspiciousCollectionReassignment")
   @ExperimentalAnvilApi
   public fun configureAnvil(
-    enableDaggerAnnotationProcessor: Boolean = false,
+    daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.NONE,
     generateDaggerFactories: Boolean = false,
     generateDaggerFactoriesOnly: Boolean = false,
     disableComponentMerging: Boolean = false,
@@ -59,8 +60,25 @@ public class AnvilCompilation internal constructor(
       // Deprecation tracked in https://github.com/square/anvil/issues/672
       @Suppress("DEPRECATION")
       componentRegistrars = listOf(anvilComponentRegistrar)
-      if (enableDaggerAnnotationProcessor) {
-        annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
+
+      when (daggerAnnotationProcessingMode) {
+        DaggerAnnotationProcessingMode.KAPT -> {
+          annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
+        }
+        DaggerAnnotationProcessingMode.KSP -> {
+          @Suppress("invisible_reference", "invisible_member")
+          symbolProcessorProviders +=
+            listOf(
+              com.squareup.anvil.compiler.ksp.MergeComponentSymbolProcessor.Provider(),
+              KspComponentProcessor.Provider(),
+            )
+          // Run KSP in a single-pass
+          // https://kotlinlang.slack.com/archives/C013BA8EQSE/p1639462548225400?thread_ts=1639433474.224900&cid=C013BA8EQSE
+          kspWithCompilation = true
+        }
+        DaggerAnnotationProcessingMode.NONE -> {
+          // Do nothing
+        }
       }
 
       val anvilCommandLineProcessor = AnvilCommandLineProcessor()
@@ -104,10 +122,13 @@ public class AnvilCompilation internal constructor(
         is Ksp -> {
           symbolProcessorProviders += buildList {
             addAll(
-              ServiceLoader.load(
-                SymbolProcessorProvider::class.java,
-                SymbolProcessorProvider::class.java.classLoader,
-              ),
+              ServiceLoader
+                .load(
+                  SymbolProcessorProvider::class.java,
+                  SymbolProcessorProvider::class.java.classLoader,
+                )
+                // Exclude the Dagger KSP processor, we have special handling for that as we decorate it
+                .filterNot { it is KspComponentProcessor.Provider },
             )
             addAll(mode.symbolProcessorProviders)
           }
@@ -219,6 +240,13 @@ public class AnvilCompilation internal constructor(
   }
 }
 
+/** Available Dagger annotation processing modes. */
+enum class DaggerAnnotationProcessingMode {
+  KAPT,
+  KSP,
+  NONE,
+}
+
 /**
  * Helpful for testing code generators in unit tests end to end.
  *
@@ -229,7 +257,7 @@ public class AnvilCompilation internal constructor(
 @ExperimentalAnvilApi
 public fun compileAnvil(
   @Language("kotlin") vararg sources: String,
-  enableDaggerAnnotationProcessor: Boolean = false,
+  daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.NONE,
   generateDaggerFactories: Boolean = false,
   generateDaggerFactoriesOnly: Boolean = false,
   disableComponentMerging: Boolean = false,
@@ -243,7 +271,8 @@ public fun compileAnvil(
   jvmTarget: JvmTarget? = null,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult {
-  return AnvilCompilation()
+  val compilation = AnvilCompilation()
+  return compilation
     .apply {
       kotlinCompilation.apply {
         this.allWarningsAsErrors = allWarningsAsErrors
@@ -265,7 +294,7 @@ public fun compileAnvil(
       }
     }
     .configureAnvil(
-      enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+      daggerAnnotationProcessingMode = daggerAnnotationProcessingMode,
       generateDaggerFactories = generateDaggerFactories,
       generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
       disableComponentMerging = disableComponentMerging,
@@ -273,5 +302,7 @@ public fun compileAnvil(
       mode = mode,
     )
     .compile(*sources)
-    .also(block)
+    .also { result ->
+      result.block()
+    }
 }

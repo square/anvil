@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
@@ -30,12 +31,12 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class AssistedFactoryGeneratorTest(
-  private val useDagger: Boolean,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}, mode: {1}")
+    @Parameters(name = "Dagger Processing Mode: {0}, mode: {1}")
     @JvmStatic
     fun params() = useDaggerAndKspParams()
   }
@@ -1318,8 +1319,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   }
 
   @Override
-  public AssistedService create(long p0_1663806, String other) {
-    return delegateFactory.get(other, p0_1663806);
+  public AssistedService create(long longValue, String other) {
+    return delegateFactory.get(other, longValue);
   }
 
   public static Provider<AssistedServiceFactory> create(AssistedService_Factory delegateFactory) {
@@ -1338,12 +1339,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String,
-        @Assisted val long: Long
+        @Assisted val longValue: Long
       )
       
       @AssistedFactory
       interface AssistedServiceFactory {
-        fun create(long: Long, other: String): AssistedService
+        fun create(longValue: Long, other: String): AssistedService
       }
       """,
     ) {
@@ -2064,8 +2065,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         kotlinCompilation.allWarningsAsErrors = WARNINGS_AS_ERRORS
       }
       .configureAnvil(
-        enableDaggerAnnotationProcessor = useDagger,
-        generateDaggerFactories = !useDagger,
+        daggerAnnotationProcessingMode = daggerProcessingMode,
+        generateDaggerFactories = daggerProcessingMode == DaggerAnnotationProcessingMode.NONE,
         mode = mode,
       )
   }

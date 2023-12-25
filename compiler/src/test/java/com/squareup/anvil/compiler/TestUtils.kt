@@ -9,12 +9,14 @@ import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
 import com.tschuchort.compiletesting.CompilationResult
 import com.tschuchort.compiletesting.JvmCompilationResult
+import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
@@ -26,16 +28,16 @@ import kotlin.reflect.KClass
 internal fun compile(
   @Language("kotlin") vararg sources: String,
   previousCompilationResult: JvmCompilationResult? = null,
-  enableDaggerAnnotationProcessor: Boolean = false,
+  daggerAnnotationProcessingMode: DaggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.NONE,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
-  mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
+  mode: AnvilCompilationMode = Embedded(codeGenerators),
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult = compileAnvil(
   sources = sources,
   allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
-  enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+  daggerAnnotationProcessingMode = daggerAnnotationProcessingMode,
   mode = mode,
   block = block,
 )
@@ -183,11 +185,44 @@ internal fun isFullTestRun(): Boolean = FULL_TEST_RUN
 internal fun checkFullTestRun() = assumeTrue(isFullTestRun())
 internal fun includeKspTests(): Boolean = INCLUDE_KSP_TESTS
 
+internal fun daggerProcessingModesForTests(includeNone: Boolean = true) = buildList {
+  if (isFullTestRun()) {
+    add(DaggerAnnotationProcessingMode.KSP)
+    add(DaggerAnnotationProcessingMode.KAPT)
+  }
+  if (includeNone) {
+    add(DaggerAnnotationProcessingMode.NONE)
+  }
+}
+
+/**
+ * Dagger KSP does not support wildcard types on the DI graph. Dagger 2.47 added a flag to ignore these, but it doesn't
+ * appear to actually enforce things. KSP code gen does behave as expected though, so we disable tests that require
+ * wildcards support when using KSP.
+ *
+ * See https://dagger.dev/dev-guide/compiler-options#ignore-provision-key-wildcards.
+ *
+ * This function calls [assumeTrue] under the hood and should be used to ignore tests that require wildcards.
+ */
+internal fun testRequiresWildcards(mode: DaggerAnnotationProcessingMode?) =
+  assumeTrue(mode != DaggerAnnotationProcessingMode.KSP)
+
+/**
+ * Dagger KSP is a work in progress and there may occasionally be bugs that are not working yet upstream. This function
+ * is here to track such cases. The second parameter is solely for documentation purposes.
+ *
+ * This function calls [assumeTrue] under the hood and should be used to ignore tests that are not ready for KSP yet.
+ */
+internal fun testIsNotYetCompatibleWithKsp(
+  mode: DaggerAnnotationProcessingMode?,
+  @Suppress("UNUSED_PARAMETER") reason: String,
+) = assumeTrue(mode != DaggerAnnotationProcessingMode.KSP)
+
 internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
   val dirToSearch = when (mode) {
-    is AnvilCompilationMode.Embedded ->
+    is Embedded ->
       outputDirectory.parentFile.resolve("build${File.separator}anvil")
-    is AnvilCompilationMode.Ksp -> outputDirectory.parentFile.resolve("ksp${File.separator}sources")
+    is Ksp -> outputDirectory.parentFile.resolve("ksp${File.separator}sources")
   }
   return dirToSearch.walkTopDown()
     .filter { it.isFile && it.extension == "kt" }
@@ -199,22 +234,24 @@ internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode)
 internal fun useDaggerAndKspParams(
   embeddedCreator: () -> Embedded? = { Embedded() },
   kspCreator: () -> Ksp? = { Ksp() },
+  includeNullDaggerProcessingMode: Boolean = true,
 ): Collection<Any> {
   return cartesianProduct(
-    listOf(
-      isFullTestRun(),
-      false,
-    ),
+    daggerProcessingModesForTests(includeNullDaggerProcessingMode),
     listOfNotNull(
       embeddedCreator(),
       kspCreator(),
     ),
-  ).mapNotNull { (useDagger, mode) ->
-    if (useDagger == true && mode is Ksp) {
-      // TODO Dagger is not supported with KSP in Anvil's tests yet
+  ).mapNotNull { (daggerAnnotationProcessingMode, mode) ->
+    if (daggerAnnotationProcessingMode == DaggerAnnotationProcessingMode.KSP && mode is Embedded) {
+      // Cannot use embedded anvil with dagger KSP
+      null
+    } else if (daggerAnnotationProcessingMode == DaggerAnnotationProcessingMode.KAPT && mode is Ksp) {
+      // Cannot use KSP anvil with dagger kapt
+      // TODO revisit later, this may be possible actually
       null
     } else {
-      arrayOf(useDagger, mode)
+      arrayOf(daggerAnnotationProcessingMode, mode)
     }
   }.distinct()
 }
@@ -226,4 +263,13 @@ internal fun CompilationResult.compilationErrorLine(): String {
   return messages
     .lineSequence()
     .first { it.startsWith("e:") && KSP_ERROR_HEADER !in it }
+}
+
+/** Provides reflective access to the original [KotlinCompilation] that produced this result. */
+internal fun JvmCompilationResult.compilation(): KotlinCompilation {
+  return JvmCompilationResult::class.java.getDeclaredField("compilation")
+    .apply {
+      isAccessible = true
+    }
+    .get(this) as KotlinCompilation
 }

@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUpper
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.DaggerAnnotationProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
@@ -22,6 +23,7 @@ import dagger.Lazy
 import dagger.internal.Factory
 import org.intellij.lang.annotations.Language
 import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -33,12 +35,12 @@ import javax.inject.Provider
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
 class ProvidesMethodFactoryGeneratorTest(
-  private val useDagger: Boolean,
+  private val daggerProcessingMode: DaggerAnnotationProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}, mode: {1}")
+    @Parameters(name = "Dagger Processing Mode: {0}, mode: {1}")
     @JvmStatic
     fun params() = useDaggerAndKspParams()
   }
@@ -1777,7 +1779,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       }
       """,
     ) {
-      if (useDagger) {
+      if (daggerProcessingMode != DaggerAnnotationProcessingMode.NONE) {
         assertThat(sourcesGeneratedByAnnotationProcessor).isEmpty()
       }
     }
@@ -2024,7 +2026,7 @@ public final class ComponentInterface_InnerModule_Companion_ProvideStringFactory
       }
       """,
     ) {
-      if (useDagger) {
+      if (daggerProcessingMode != DaggerAnnotationProcessingMode.NONE) {
         assertThat(sourcesGeneratedByAnnotationProcessor).isEmpty()
       }
     }
@@ -2558,7 +2560,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       }
       """,
     ) {
-      assumeFalse(useDagger)
+      assumeFalse(daggerProcessingMode != DaggerAnnotationProcessingMode.NONE)
       if (mode is AnvilCompilationMode.Ksp) {
         // KSP always resolves the inferred return type
         assertThat(exitCode).isEqualTo(ExitCode.OK)
@@ -3225,6 +3227,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
 }
      */
 
+    assumeTrue(daggerProcessingMode != DaggerAnnotationProcessingMode.NONE)
     val otherModuleResult = compile(
       """
       package com.squareup.test
@@ -3265,7 +3268,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
         fun providesSomething(): Preference<Map<String, Boolean>>
       }
       """,
-      enableDagger = true,
+      daggerProcessingMode = daggerProcessingMode,
       previousCompilationResult = otherModuleResult,
     ) {
       // TODO component generation isn't possible with KSP yet
@@ -3316,6 +3319,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
 }
      */
 
+    assumeTrue(daggerProcessingMode != DaggerAnnotationProcessingMode.NONE)
     val otherModuleResult = compile(
       """
       package com.squareup.test
@@ -3350,7 +3354,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
         fun providesSomething(): Set<String>
       }
       """,
-      enableDagger = true,
+      daggerProcessingMode = daggerProcessingMode,
       previousCompilationResult = otherModuleResult,
     ) {
       // TODO component generation isn't possible with KSP yet
@@ -3512,14 +3516,14 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    enableDagger: Boolean = useDagger,
+    daggerProcessingMode: DaggerAnnotationProcessingMode = DaggerAnnotationProcessingMode.NONE,
     previousCompilationResult: JvmCompilationResult? = null,
     moduleName: String? = null,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
-    enableDaggerAnnotationProcessor = enableDagger,
-    generateDaggerFactories = !enableDagger,
+    daggerAnnotationProcessingMode = daggerProcessingMode,
+    generateDaggerFactories = daggerProcessingMode == DaggerAnnotationProcessingMode.NONE,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block,
     mode = mode,
