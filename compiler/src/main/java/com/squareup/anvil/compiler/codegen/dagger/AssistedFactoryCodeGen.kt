@@ -575,7 +575,9 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
           TypeSpec.companionObjectBuilder()
             .addFunction(createFactory("create", Provider::class.asClassName()))
             // New in Dagger 2.50: factories for dagger.internal.Provider
-            .addFunction(createFactory("createFactoryProvider", dagger.internal.Provider::class.asClassName()))
+            .addFunction(
+              createFactory("createFactoryProvider", dagger.internal.Provider::class.asClassName()),
+            )
             .build()
             .let {
               addType(it)
