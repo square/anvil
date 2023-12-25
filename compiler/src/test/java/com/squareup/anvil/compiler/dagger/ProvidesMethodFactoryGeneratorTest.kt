@@ -18,6 +18,7 @@ import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import dagger.Lazy
 import dagger.internal.Factory
 import org.intellij.lang.annotations.Language
@@ -3507,6 +3508,30 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
 
       assertThat(providedBoolean).isFalse()
       assertThat((factoryInstance as Factory<Boolean>).get()).isFalse()
+    }
+  }
+
+  @Test fun `extension functions are invalid`() {
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.Module
+      import dagger.Provides
+
+      class ProvidedClass {
+        val value: String = "Hello"
+      }
+      
+      @Module
+      object DaggerModule1 {
+        @Provides
+        fun ProvidedClass.provideValue(): String = value
+      }
+      """,
+    ) {
+      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      assertThat(messages).contains("@Provides methods can not be an extension function")
     }
   }
 
