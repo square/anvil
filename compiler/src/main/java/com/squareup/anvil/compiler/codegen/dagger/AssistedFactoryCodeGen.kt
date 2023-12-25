@@ -559,20 +559,23 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
             .build(),
         )
         .apply {
+          fun createFactory(name: String, providerTypeName: ClassName): FunSpec {
+            return FunSpec.builder(name)
+              .jvmStatic()
+              .addTypeVariables(typeParameters)
+              .addParameter(DELEGATE_FACTORY_NAME, generatedFactoryTypeName)
+              .returns(providerTypeName.parameterizedBy(baseFactoryTypeName))
+              .addStatement(
+                "return %T.create(%T($DELEGATE_FACTORY_NAME))",
+                InstanceFactory::class,
+                implParameterizedTypeName,
+              )
+              .build()
+          }
           TypeSpec.companionObjectBuilder()
-            .addFunction(
-              FunSpec.builder("create")
-                .jvmStatic()
-                .addTypeVariables(typeParameters)
-                .addParameter(DELEGATE_FACTORY_NAME, generatedFactoryTypeName)
-                .returns(Provider::class.asClassName().parameterizedBy(baseFactoryTypeName))
-                .addStatement(
-                  "return %T.create(%T($DELEGATE_FACTORY_NAME))",
-                  InstanceFactory::class,
-                  implParameterizedTypeName,
-                )
-                .build(),
-            )
+            .addFunction(createFactory("create", Provider::class.asClassName()))
+            // New in Dagger 2.50: factories for dagger.internal.Provider
+            .addFunction(createFactory("createFactoryProvider", dagger.internal.Provider::class.asClassName()))
             .build()
             .let {
               addType(it)
