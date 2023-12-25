@@ -70,7 +70,7 @@ public class AnvilCompilation internal constructor(
           symbolProcessorProviders +=
             listOf(
               com.squareup.anvil.compiler.ksp.MergeComponentSymbolProcessor.Provider(),
-              KspComponentProcessor.Provider()
+              KspComponentProcessor.Provider(),
             )
           // Run KSP in a single-pass
           // https://kotlinlang.slack.com/archives/C013BA8EQSE/p1639462548225400?thread_ts=1639433474.224900&cid=C013BA8EQSE
