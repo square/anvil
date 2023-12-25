@@ -16,6 +16,7 @@ import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
 import com.tschuchort.compiletesting.CompilationResult
 import com.tschuchort.compiletesting.JvmCompilationResult
+import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
@@ -262,4 +263,13 @@ internal fun CompilationResult.compilationErrorLine(): String {
   return messages
     .lineSequence()
     .first { it.startsWith("e:") && KSP_ERROR_HEADER !in it }
+}
+
+/** Provides reflective access to the original [KotlinCompilation] that produced this result. */
+internal fun JvmCompilationResult.compilation(): KotlinCompilation {
+  return JvmCompilationResult::class.java.getDeclaredField("compilation")
+    .apply {
+      isAccessible = true
+    }
+    .get(this) as KotlinCompilation
 }
