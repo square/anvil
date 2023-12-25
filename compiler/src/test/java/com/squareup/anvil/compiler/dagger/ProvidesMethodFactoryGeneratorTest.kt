@@ -1779,7 +1779,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       }
       """,
     ) {
-      if (daggerProcessingMode != null) {
+      if (daggerProcessingMode != DaggerAnnotationProcessingMode.NONE) {
         assertThat(sourcesGeneratedByAnnotationProcessor).isEmpty()
       }
     }
@@ -2026,7 +2026,7 @@ public final class ComponentInterface_InnerModule_Companion_ProvideStringFactory
       }
       """,
     ) {
-      if (daggerProcessingMode != null) {
+      if (daggerProcessingMode != DaggerAnnotationProcessingMode.NONE) {
         assertThat(sourcesGeneratedByAnnotationProcessor).isEmpty()
       }
     }
@@ -2560,7 +2560,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       }
       """,
     ) {
-      assumeFalse(daggerProcessingMode != null)
+      assumeFalse(daggerProcessingMode != DaggerAnnotationProcessingMode.NONE)
       if (mode is AnvilCompilationMode.Ksp) {
         // KSP always resolves the inferred return type
         assertThat(exitCode).isEqualTo(ExitCode.OK)
