@@ -2,9 +2,10 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -17,14 +18,13 @@ import org.junit.runners.Parameterized.Parameters
 @RunWith(Parameterized::class)
 class BindsMethodValidatorTest(
   private val useDagger: Boolean,
+  private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
+    @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
-    }
+    fun params() = useDaggerAndKspParams()
   }
 
   @Test
@@ -55,8 +55,8 @@ class BindsMethodValidatorTest(
       )
       if (!useDagger) {
         assertThat(messages).contains(
-          "Expected binding of type Bar but impl parameter of type Foo only has the following " +
-            "supertypes: [Ipsum, Lorem]",
+          "Expected binding of type com.squareup.test.Bar but impl parameter of type com.squareup.test.Foo only has the following " +
+            "supertypes: [com.squareup.test.Ipsum, com.squareup.test.Lorem]",
         )
       }
     }
@@ -88,7 +88,7 @@ class BindsMethodValidatorTest(
       )
       if (!useDagger) {
         assertThat(messages).contains(
-          "Expected binding of type Bar but impl parameter of type Foo has no supertypes.",
+          "Expected binding of type com.squareup.test.Bar but impl parameter of type com.squareup.test.Foo has no supertypes.",
         )
       }
     }
@@ -314,6 +314,30 @@ class BindsMethodValidatorTest(
     }
   }
 
+  @Test
+  fun `binding inside interface is valid`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import dagger.Binds
+      import dagger.Module
+      import javax.inject.Inject
+
+      interface Foo : Bar
+      interface Bar
+
+      @Module
+      interface BarModule {
+        @Binds
+        fun bindsBar(foo: Foo): Bar
+      }
+      """,
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
@@ -325,6 +349,7 @@ class BindsMethodValidatorTest(
     generateDaggerFactories = !enableDagger,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
+    mode = mode,
     block = block,
   )
 }
