@@ -270,6 +270,7 @@ class BindsMethodValidatorTest(
       }
       """,
       previousCompilationResult = moduleResult,
+      forceEmbeddedMode = true,
       enableDagger = true,
     ) {
       assertThat(exitCode).isEqualTo(OK)
@@ -342,6 +343,7 @@ class BindsMethodValidatorTest(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
     enableDagger: Boolean = useDagger,
+    forceEmbeddedMode: Boolean = false,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
@@ -349,7 +351,7 @@ class BindsMethodValidatorTest(
     generateDaggerFactories = !enableDagger,
     allWarningsAsErrors = WARNINGS_AS_ERRORS,
     previousCompilationResult = previousCompilationResult,
-    mode = mode,
+    mode = if (forceEmbeddedMode) AnvilCompilationMode.Embedded(emptyList()) else mode,
     block = block,
   )
 }
