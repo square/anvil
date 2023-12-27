@@ -666,3 +666,30 @@ private fun TypeName.lambdaFix(): TypeName {
     .parameterizedBy(allTypes)
     .copy(nullable = isNullable)
 }
+
+/**
+ * This will return all super types as [TypeReference], whether they're parsed as [KtTypeReference]
+ * or [KotlinType]. This will include generated code, assuming it has already been generated.
+ * The returned sequence will be distinct by FqName, and Psi types are preferred over Descriptors.
+ *
+ * The first elements in the returned sequence represent the direct superclass to the receiver. The
+ * last elements represent the types which are furthest up-stream.
+ *
+ * @param includeSelf If true, the receiver class is the first element of the sequence
+ */
+@ExperimentalAnvilApi
+public fun TypeReference.allSuperTypeReferences(
+  includeSelf: Boolean = false,
+): Sequence<TypeReference> {
+  return generateSequence(listOf(this)) { superTypes ->
+    superTypes
+      .mapNotNull { it.asClassReferenceOrNull() }
+      .flatMap { classRef ->
+        classRef.directSuperTypeReferences()
+      }
+      .takeIf { it.isNotEmpty() }
+  }
+    .drop(if (includeSelf) 0 else 1)
+    .flatten()
+    .distinct()
+}

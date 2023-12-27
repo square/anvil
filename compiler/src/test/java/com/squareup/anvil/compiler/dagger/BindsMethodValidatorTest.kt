@@ -55,8 +55,8 @@ class BindsMethodValidatorTest(
       )
       if (!useDagger) {
         assertThat(messages).contains(
-          "Expected binding of type Bar but impl parameter of type Foo only has the following " +
-            "supertypes: [Ipsum, Lorem]",
+          "Expected binding of type com.squareup.test.Bar but impl parameter of type com.squareup.test.Foo only has the following " +
+            "supertypes: [com.squareup.test.Ipsum, com.squareup.test.Lorem]",
         )
       }
     }
@@ -88,7 +88,7 @@ class BindsMethodValidatorTest(
       )
       if (!useDagger) {
         assertThat(messages).contains(
-          "Expected binding of type Bar but impl parameter of type Foo has no supertypes.",
+          "Expected binding of type com.squareup.test.Bar but impl parameter of type com.squareup.test.Foo has no supertypes.",
         )
       }
     }
@@ -404,6 +404,14 @@ class BindsMethodValidatorTest(
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type",
       )
+      if (!useDagger) {
+        assertThat(messages).contains(
+          "@Binds methods' parameter type must be assignable to the return type. Expected " +
+            "binding of type com.squareup.test.ItemMapper<com.squareup.test.ItemDetail> but impl " +
+            "parameter of type com.squareup.test.DetailTypeAItemMapper only has the following " +
+            "supertypes: [com.squareup.test.ItemMapper<com.squareup.test.ItemDetail.DetailTypeA>]",
+        )
+      }
     }
   }
 
