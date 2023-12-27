@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.tschuchort.compiletesting.JvmCompilationResult
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -373,6 +374,36 @@ class BindsMethodValidatorTest(
       enableDagger = true,
     ) {
       assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @Test
+  fun `binding which supertype is narrower than return type fails to compile`() {
+    compile(
+      """
+        package com.squareup.test
+
+        import dagger.Module
+        import dagger.Binds
+    
+        sealed interface ItemDetail {
+          object DetailTypeA : ItemDetail
+        }
+
+        interface ItemMapper<T : ItemDetail>
+
+        class DetailTypeAItemMapper : ItemMapper<ItemDetail.DetailTypeA>
+        
+        @Module
+        interface SomeModule {
+          @Binds fun shouldBeInvalidComplexBinding(real: DetailTypeAItemMapper): ItemMapper<ItemDetail>
+        }
+      """.trimIndent(),
+    ) {
+      assertThat(exitCode).isEqualTo(ExitCode.COMPILATION_ERROR)
+      assertThat(messages).contains(
+        "@Binds methods' parameter type must be assignable to the return type",
+      )
     }
   }
 
