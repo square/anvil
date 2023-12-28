@@ -34,6 +34,14 @@ publish {
   )
 }
 
+sourceSets {
+  if (libs.versions.kotlin.get().startsWith("2")) {
+    main.get().java.srcDir("src/2-0/java")
+  } else {
+    main.get().java.srcDir("src/1-9-and-below/java")
+  }
+}
+
 dependencies {
   implementation(project(":annotations"))
   implementation(project(":compiler-api"))

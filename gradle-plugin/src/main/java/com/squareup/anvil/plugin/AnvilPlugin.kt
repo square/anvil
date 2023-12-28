@@ -112,10 +112,11 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       val useK2 = it.useK2.get()
       if (useK2 || it.languageVersion.getOrElse(KOTLIN_1_9) >= KOTLIN_2_0) {
         kotlinCompilation.project.logger
-          .error(
-            "NOTE: Anvil is currently incompatible with the K2 compiler. Related GH issue:" +
-              "https://github.com/square/anvil/issues/733",
+          .warn(
+            "NOTE: Anvil is currently incompatible with the K2 compiler. Falling back to language" +
+              "version 1.9. Related GH issue: https://github.com/square/anvil/issues/733",
           )
+        it.languageVersion.set(KOTLIN_1_9)
       }
     }
 

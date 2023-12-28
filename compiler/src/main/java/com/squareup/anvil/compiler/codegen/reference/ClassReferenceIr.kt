@@ -9,7 +9,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.requireClassId
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.lower.parents
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
@@ -31,7 +30,7 @@ internal class ClassReferenceIr(
     get() = fqName.shortName().asString()
 
   val enclosingClassesWithSelf: List<ClassReferenceIr> by lazy {
-    clazz.owner.parents
+    clazz.owner.parentsWrapped
       .filterIsInstance<IrClass>()
       .map { it.symbol.toClassReference(context) }
       .toList()

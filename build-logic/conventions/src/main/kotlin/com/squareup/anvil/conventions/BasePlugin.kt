@@ -14,6 +14,7 @@ import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9
 import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.Properties
@@ -107,6 +108,12 @@ abstract class BasePlugin : Plugin<Project> {
           else -> JvmTarget.fromTarget("$targetInt")
         }
         jvmTarget.set(fromInt)
+
+        if (target.libs.versions.kotlin.get().startsWith("2")) {
+          // TODO: Force 1.9 until we add K2 support (https://github.com/square/anvil/issues/733)
+          task.project.logger.lifecycle("Falling back to Kotlin language version 1.9")
+          languageVersion.set(KOTLIN_1_9)
+        }
       }
     }
   }

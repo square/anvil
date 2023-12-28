@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
+@OptIn(org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI::class)
 internal class ModuleMergerIr(
   private val classScanner: ClassScanner,
   private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,

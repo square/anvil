@@ -213,6 +213,8 @@ public class AnvilCompilation internal constructor(
           inheritClassPath = true
           jvmTarget = JvmTarget.JVM_1_8.description
           verbose = false
+          // TODO: Force 1.9 until we add K2 support (https://github.com/square/anvil/issues/733)
+          languageVersion = "1.9"
         },
       )
     }
