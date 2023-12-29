@@ -15,7 +15,7 @@ androidx-test = "1.5.0"
 androidx-test-ext = "1.1.5"
 autoService = "1.1.1"
 autoValue = "1.10.4"
-buildconfig = "4.2.0"
+buildconfig = "5.2.0"
 dagger = "2.50"
 dropbox-dependencyGuard = "0.4.3"
 dokka = "1.9.10"
@@ -26,13 +26,13 @@ jvm-toolchain = "11"
 jvm-target-library = "8"
 jvm-target-minimal = "11"
 kase = "0.4.0"
-kct = "0.3.1"
+kct = "0.4.0"
 kgx = "0.1.9"
-kotlin = "1.9.10"
+kotlin = "1.9.20"
 kotlinx-binaryCompatibility = "0.13.2"
 kotlinpoet = "1.15.3"
 # If updating KSP version, we currently have ksp override logic in settings.gradle that needs to be updated too
-ksp = "1.9.10-1.0.13"
+ksp = "1.9.20-1.0.14"
 ktlint = "1.0.1"
 ktlintPlugin = "12.0.3"
 mavenPublish = "0.26.0"
@@ -113,7 +113,7 @@ kotlin-compiler = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", 
 kotlin-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradlePluginApi = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
-kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.6.2"
+kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.8.0"
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 
