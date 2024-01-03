@@ -3,7 +3,7 @@ package com.squareup.anvil.compiler.codegen
 import com.squareup.anvil.compiler.CommandLineOptions
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.FileWithContent
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.analyzer.AnalysisResult.RetryWithAdditionalRoots
@@ -77,29 +77,28 @@ internal class CodeGenerationExtension(
         }
       }
 
-    val generatedFiles = mutableMapOf<String, GeneratedFile>()
+    val generatedFiles = mutableMapOf<String, FileWithContent>()
 
     val (privateCodeGenerators, nonPrivateCodeGenerators) =
       codeGenerators
         .filter { it.isApplicable(anvilContext) }
         .partition { it is PrivateCodeGenerator }
 
-    fun Collection<GeneratedFile>.toKtFile(): Collection<KtFile> {
-      return this
-        .mapNotNull { (file, content) ->
-          val virtualFile = LightVirtualFile(
-            file.relativeTo(codeGenDir).path,
-            KotlinFileType.INSTANCE,
-            content,
-          )
+    fun Collection<FileWithContent>.toKtFile(): List<KtFile> {
+      return mapNotNull { (file, content) ->
+        val virtualFile = LightVirtualFile(
+          file.path,
+          KotlinFileType.INSTANCE,
+          content,
+        )
 
-          psiManager.findFile(virtualFile)
-        }
+        psiManager.findFile(virtualFile)
+      }
         .filterIsInstance<KtFile>()
         .also { anvilModule.addFiles(it) }
     }
 
-    fun Collection<CodeGenerator>.generateCode(files: Collection<KtFile>): Collection<KtFile> =
+    fun Collection<CodeGenerator>.generateCode(files: Collection<KtFile>): List<KtFile> =
       flatMap { codeGenerator ->
         codeGenerator.generateCode(codeGenDir, anvilModule, files)
           .onEach { generatedFile ->

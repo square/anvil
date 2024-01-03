@@ -17,6 +17,8 @@
 
 ### Custom Code Generator
 
+- The `GeneratedFile` result type has been deprecated in favor of `GeneratedFileWithSources`.  This new type allows for precise tracking of the generated files, which in turn drastically improves incremental compilation performance (#693).
+
 ### Other Notes & Contributions
 
 
