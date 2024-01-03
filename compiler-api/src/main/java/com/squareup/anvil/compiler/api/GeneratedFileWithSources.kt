@@ -7,9 +7,16 @@ import java.io.File
  * files that triggered the generation of this file or are referenced by the generated file.
  * A modification to any of the [sourceFiles] will invalidate this generated file.
  *
+ * All source files must be:
+ *   - absolute paths
+ *   - actual files (not directories)
+ *   - existent in the file system
+ *
  * @property file the [File] to generate.
  * @property content the file contents to write to [file].
  * @property sourceFiles the source files used to generate this file.
+ * @throws AnvilCompilationException if a [sourceFiles] is not an absolute file, doesn't exist, or is a directory
+ * @throw AnvilCompilationException if a source file is the same as the generated [file]
  */
 public class GeneratedFileWithSources(
   override val file: File,
@@ -26,17 +33,53 @@ public class GeneratedFileWithSources(
           |${lazyMessage()}
           |
           |generated file:
-          |$this
+          |$file
+          |
           """.trimMargin(),
         )
       }
     }
     require(sourceFiles.none { it == file }) {
-      "GeneratedFileWithSources must not contain the generated file as a source file."
+      """
+      |${this::class.simpleName} must not contain the generated file as a source file.
+      |
+      |source files:
+      |${sourceFiles.sorted().joinToString("\n")}
+      """.trimMargin()
     }
-    require(sourceFiles.none { it.isAbsolute && !it.exists() }) {
-      "If a source file is also a generated file, its path should be relative.\n" +
-        sourceFiles.joinToString("\n")
+    require(sourceFiles.all { it.isFile && it.isAbsolute }) {
+
+      val notAbsolute = sourceFiles.filterNot { it.isAbsolute }.sorted()
+      val notFiles = sourceFiles.filterNot { it.isFile }.sorted()
+
+      buildString {
+        appendLine(
+          """
+          All source files must be:
+            - absolute paths
+            - actual files (not directories)
+            - existent in the file system
+          """.trimIndent(),
+        )
+        if (notAbsolute.isNotEmpty()) {
+          append(
+            """
+            |
+            |not absolute:
+            |${notAbsolute.joinToString("\n")}
+            """.trimMargin(),
+          )
+        }
+        if (notFiles.isNotEmpty()) {
+          append(
+            """
+            |
+            |not files:
+            |${notFiles.joinToString("\n")}
+            """.trimMargin(),
+          )
+        }
+      }
     }
   }
 
@@ -62,9 +105,9 @@ public class GeneratedFileWithSources(
 
   override fun toString(): String = buildString {
     appendLine("GeneratedFileWithSource(")
-    appendLine("  file: $file,")
-    appendLine("  content: '$content',")
-    appendLine("  sourceFiles: $sourceFiles")
+    appendLine("  file: $file")
+    appendLine("  sourceFiles: ${sourceFiles.sorted()}")
+    appendLine("  content: $content")
     appendLine(")")
   }
 }

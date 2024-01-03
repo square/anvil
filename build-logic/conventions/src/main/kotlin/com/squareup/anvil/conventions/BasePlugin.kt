@@ -1,5 +1,6 @@
 package com.squareup.anvil.conventions
 
+import com.rickbusarow.kgx.buildDir
 import com.rickbusarow.kgx.extras
 import com.rickbusarow.kgx.fromInt
 import com.rickbusarow.kgx.javaExtension
@@ -125,6 +126,7 @@ abstract class BasePlugin : Plugin<Project> {
    * so that there is no shared mutable state.
    */
   private fun configureBuildDirs(target: Project) {
+
     when {
       !target.isInAnvilBuild() -> return
 
@@ -135,6 +137,16 @@ abstract class BasePlugin : Plugin<Project> {
       target.isInAnvilIncludedBuild() -> {
         target.layout.buildDirectory.set(target.file("build/included-build"))
       }
+    }
+
+    // Set the kase working directory ('<build directory>/kase/<test|gradleTest>') as a System property,
+    // so that it's in the right place for projects with relocated directories.
+    // https://github.com/rickbusarow/kase/blob/255db67f40d5ec83e31755bc9ce81b1a2b08cf11/kase/src/main/kotlin/com/rickbusarow/kase/files/HasWorkingDir.kt#L93-L96
+    target.tasks.withType(Test::class.java).configureEach { task ->
+      task.systemProperty(
+        "kase.baseWorkingDir",
+        target.buildDir().resolve("kase/${task.name}"),
+      )
     }
   }
 

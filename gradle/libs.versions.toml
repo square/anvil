@@ -101,9 +101,10 @@ inject = "javax.inject:javax.inject:1"
 jsr250 = "javax.annotation:jsr250-api:1.0"
 junit = "junit:junit:4.13.2"
 
-junit5-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "jUnit5" }
-junit5-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "jUnit5" }
-junit5-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "jUnit5" }
+junit-jupiter = { module = "org.junit.jupiter:junit-jupiter", version.ref = "jUnit5" }
+junit-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.ref = "jUnit5" }
+junit-jupiter-engine = { module = "org.junit.jupiter:junit-jupiter-engine", version.ref = "jUnit5" }
+junit-vintage-engine = { module = "org.junit.vintage:junit-vintage-engine", version.ref = "jUnit5" }
 
 kase = { module = "com.rickbusarow.kase:kase", version.ref = "kase" }
 kase-gradle = { module = "com.rickbusarow.kase:kase-gradle", version.ref = "kase" }

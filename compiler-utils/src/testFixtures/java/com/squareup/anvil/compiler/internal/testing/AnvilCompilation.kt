@@ -87,8 +87,18 @@ public class AnvilCompilation internal constructor(
             listOf(
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "gradle-project-dir",
+                optionValue = workingDir.absolutePath,
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "src-gen-dir",
                 optionValue = File(workingDir, "build/anvil").absolutePath,
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "anvil-cache-dir",
+                optionValue = File(workingDir, "build/anvil-cache").absolutePath,
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
