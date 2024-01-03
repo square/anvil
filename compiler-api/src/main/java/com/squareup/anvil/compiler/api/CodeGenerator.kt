@@ -38,7 +38,7 @@ public interface CodeGenerator : AnvilApplicabilityChecker {
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
-  ): Collection<GeneratedFile>
+  ): Collection<FileWithContent>
 }
 
 /**
@@ -46,19 +46,73 @@ public interface CodeGenerator : AnvilApplicabilityChecker {
  * refers to the class name.
  */
 @ExperimentalAnvilApi
-@Suppress("unused")
+@Deprecated(
+  message = "Use the createGeneratedFile with a `sourceFiles` argument instead.",
+  replaceWith = ReplaceWith(
+    expression = "createGeneratedFile(codeGenDir, packageName, fileName, content, sourceFile = TODO())",
+    imports = ["com.squareup.anvil.compiler.api.createGeneratedFile"],
+  ),
+)
+@Suppress("UnusedReceiverParameter", "unused", "Deprecation")
 public fun CodeGenerator.createGeneratedFile(
   codeGenDir: File,
   packageName: String,
   fileName: String,
   content: String,
-): GeneratedFile {
+): GeneratedFile = GeneratedFile(
+  file = writeFileContent(
+    codeGenDir = codeGenDir,
+    packageName = packageName,
+    fileName = fileName,
+    content = content,
+  ),
+  content = content,
+)
+
+public fun CodeGenerator.createGeneratedFile(
+  codeGenDir: File,
+  packageName: String,
+  fileName: String,
+  content: String,
+  sourceFile: File,
+  vararg additionalSourceFiles: File,
+): GeneratedFileWithSources = createGeneratedFile(
+  codeGenDir = codeGenDir,
+  packageName = packageName,
+  fileName = fileName,
+  content = content,
+  sourceFiles = setOf(sourceFile, *additionalSourceFiles),
+)
+
+@Suppress("UnusedReceiverParameter")
+public fun CodeGenerator.createGeneratedFile(
+  codeGenDir: File,
+  packageName: String,
+  fileName: String,
+  content: String,
+  sourceFiles: Set<File>,
+): GeneratedFileWithSources = GeneratedFileWithSources(
+  file = writeFileContent(
+    codeGenDir = codeGenDir,
+    packageName = packageName,
+    fileName = fileName,
+    content = content,
+  ),
+  content = content,
+  sourceFiles = sourceFiles,
+)
+
+private fun writeFileContent(
+  codeGenDir: File,
+  packageName: String,
+  fileName: String,
+  content: String,
+): File {
   val directory = File(codeGenDir, packageName.replace('.', File.separatorChar))
   val file = File(directory, "$fileName.kt")
   check(file.parentFile.exists() || file.parentFile.mkdirs()) {
     "Could not generate package directory: ${file.parentFile}"
   }
   file.writeText(content)
-
-  return GeneratedFile(file, content)
+  return file
 }
