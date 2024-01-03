@@ -1,18 +1,19 @@
 package com.squareup.anvil.plugin
 
 import com.rickbusarow.kase.files.DirectoryBuilder
+import java.io.File
 
 interface FileStubs {
 
-  fun DirectoryBuilder.injectClass(packageName: String = "com.squareup.test") {
-    kotlinFile(
+  fun DirectoryBuilder.injectClass(packageName: String = "com.squareup.test"): File {
+    return kotlinFile(
       packageName.replace(".", "/") / "InjectClass.kt",
       """
-      package $packageName
-      
-      import javax.inject.Inject
-      
-      class InjectClass @Inject constructor()
+        package $packageName
+        
+        import javax.inject.Inject
+        
+        class InjectClass @Inject constructor()
       """.trimIndent(),
     )
   }

@@ -16,7 +16,7 @@ import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
@@ -91,10 +91,11 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
           clazz.getKSAnnotationsByType(ContributesSubcomponent::class)
             .forEach { annotation ->
               for (it in annotation.replaces()) {
-                val scope = annotation.scope().resolveKSClassDeclaration() ?: throw KspAnvilException(
-                  message = "Couldn't resolve the scope for ${clazz.qualifiedName?.asString()}.",
-                  node = clazz,
-                )
+                val scope =
+                  annotation.scope().resolveKSClassDeclaration() ?: throw KspAnvilException(
+                    message = "Couldn't resolve the scope for ${clazz.qualifiedName?.asString()}.",
+                    node = clazz,
+                  )
                 it.checkUsesSameScope(scope, clazz)
               }
             }
@@ -213,7 +214,9 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
         }
         .toList()
 
-      if (functions.size != 1 || functions[0].returnType?.resolve()?.resolveKSClassDeclaration() != this) {
+      if (functions.size != 1 || functions[0].returnType?.resolve()
+          ?.resolveKSClassDeclaration() != this
+      ) {
         throw KspAnvilException(
           node = factory,
           message = "A factory must have exactly one abstract function returning the " +
@@ -257,7 +260,7 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
       codeGenDir: File,
       module: ModuleDescriptor,
       projectFiles: Collection<KtFile>,
-    ): Collection<GeneratedFile> {
+    ): Collection<GeneratedFileWithSources> {
       return projectFiles
         .classAndInnerClassReferences(module)
         .filter { it.isAnnotatedWith(contributesSubcomponentFqName) }
@@ -302,6 +305,7 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
             packageName = spec.packageName,
             fileName = spec.name,
             content = spec.toString(),
+            sourceFile = clazz.containingFileAsJavaFile,
           )
         }
         .toList()

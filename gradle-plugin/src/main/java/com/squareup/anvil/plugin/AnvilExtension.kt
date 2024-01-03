@@ -12,10 +12,10 @@ public abstract class AnvilExtension @Inject constructor(
 ) {
   /**
    * Allows you to use Anvil to generate Factory classes that usually the Dagger annotation
-   * processor would generate for @Provides methods, @Inject constructors and @Inject fields.
+   * processor would generate for `@Provides` methods, `@Inject` constructors and `@Inject` fields.
    *
    * The benefit of this feature is that you don't need to enable the Dagger annotation processor
-   * in this module. That often means you can skip KAPT and the stub generating task. In addition
+   * in this module. That often means you can skip KAPT and the stub generating task. In addition,
    * Anvil generates Kotlin instead of Java code, which allows Gradle to skip the Java compilation
    * task. The result is faster builds.
    *
@@ -23,7 +23,7 @@ public abstract class AnvilExtension @Inject constructor(
    * Since Anvil only processes Kotlin code, you shouldn't enable it in modules with mixed Kotlin /
    * Java sources either.
    *
-   * By default this feature is disabled.
+   * This feature is disabled by default.
    *
    * This property can also be set via a Gradle property:
    *
@@ -94,12 +94,15 @@ public abstract class AnvilExtension @Inject constructor(
     .conventionFromProperty("com.squareup.anvil.addOptionalAnnotations", false)
 
   /**
-   * Track the source files for each generated file. This allows for two new behaviors:
+   * Enables incremental compilation support.
+   *
+   * This is achieved by tracking the source files for each generated file,
+   * which allows for two new behaviors:
    * - Generated code is "invalidated" and deleted when the source file is changed or deleted.
    * - Generated code is cached in a way that Gradle understands,
    *   and will be restored from cache along with other build artifacts.
    *
-   * By default this feature is enabled.
+   * This feature is disabled by default.
    *
    * This property can also be set via a Gradle property:
    *
@@ -108,7 +111,7 @@ public abstract class AnvilExtension @Inject constructor(
    * ```
    */
   public val trackSourceFiles: Property<Boolean> = objects.property(Boolean::class.java)
-    .conventionFromProperty("com.squareup.anvil.trackSourceFiles", true)
+    .conventionFromProperty("com.squareup.anvil.trackSourceFiles", false)
 
   @Suppress("PropertyName")
   internal var _variantFilter: Action<VariantFilter>? = null

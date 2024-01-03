@@ -11,38 +11,50 @@ public interface VariantFilter : Named {
 
   /**
    * Indicate whether Dagger factory generation for this variant should be enabled. The default
-   * value comes from the [AnvilExtension]. See [AnvilExtension.generateDaggerFactories] for more
-   * details.
+   * value comes from the [AnvilExtension].
+   *
+   * @see AnvilExtension.generateDaggerFactories for more details.
    */
   public var generateDaggerFactories: Boolean
 
   /**
    * Indicate whether only Dagger factories for this variant should be generated. The default
-   * value comes from the [AnvilExtension]. See [AnvilExtension.generateDaggerFactoriesOnly] for
-   * more details.
+   * value comes from the [AnvilExtension].
+   *
+   * @see AnvilExtension.generateDaggerFactoriesOnly for more details.
    */
   public var generateDaggerFactoriesOnly: Boolean
 
   /**
    * Indicate whether component merging for this variant should be disabled. The default
-   * value comes from the [AnvilExtension]. See [AnvilExtension.disableComponentMerging] for more
-   * details.
+   * value comes from the [AnvilExtension].
+   *
+   * @see AnvilExtension.disableComponentMerging for more details.
    */
   public var disableComponentMerging: Boolean
 
   /**
    * Add Anvil generated source directories to sourceSets in Gradle for indexing visibility in the
    * IDE. This can be useful in debugging and is disabled by default.
+   *
+   * @see AnvilExtension.syncGeneratedSources for more details.
    */
   public var syncGeneratedSources: Boolean
 
   /**
    * Add the `annotations-optional` artifact as a dependency. The default
-   * value comes from the [AnvilExtension]. See [AnvilExtension.addOptionalAnnotations] for more
-   * details.
+   * value comes from the [AnvilExtension].
+   *
+   * @see AnvilExtension.addOptionalAnnotations for more details.
    */
   public var addOptionalAnnotations: Boolean
 
+  /**
+   * Enables incremental compilation support for this variant.
+   * The default value comes from the [AnvilExtension].
+   *
+   * @see AnvilExtension.trackSourceFiles for more details.
+   */
   public var trackSourceFiles: Boolean
 }
 

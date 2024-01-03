@@ -20,4 +20,9 @@ dependencies {
   api(libs.kotlin.compiler)
 
   implementation(platform(libs.kotlin.bom))
+
+  testImplementation(libs.junit)
+  testImplementation(libs.kase)
+  testImplementation(libs.kotest.assertions.api)
+  testImplementation(libs.kotest.assertions.core.jvm)
 }

@@ -28,9 +28,9 @@ public class SimpleCodeGenerator internal constructor(
 ) : CodeGenerator {
   public var isApplicableCalls: Int = 0
     private set
-  private val inputCalls = mutableMapOf<String, Int>()
+  private val inputFileContentToGenerateCalls = mutableMapOf<String, Int>()
 
-  public fun getCallsForInput(content: String): Int = inputCalls[content] ?: 0
+  public fun getGenerateCallsForInputFileContent(content: String): Int = inputFileContentToGenerateCalls[content] ?: 0
 
   override fun isApplicable(context: AnvilContext): Boolean {
     isApplicableCalls++
@@ -43,13 +43,13 @@ public class SimpleCodeGenerator internal constructor(
     projectFiles: Collection<KtFile>,
   ): Collection<FileWithContent> {
     for (file in projectFiles) {
-      inputCalls[file.text] = (inputCalls[file.text] ?: 0) + 1
+      inputFileContentToGenerateCalls[file.text] = (inputFileContentToGenerateCalls[file.text] ?: 0) + 1
     }
 
     return projectFiles
       .classAndInnerClassReferences(module)
-      .mapNotNull { psi ->
-        val content = mapper.invoke(this, psi) ?: return@mapNotNull null
+      .mapNotNull { clazz ->
+        val content = mapper.invoke(this, clazz) ?: return@mapNotNull null
         val (packageName, fileName) = parseSimpleFileContents(content)
 
         when (trackSourceFiles) {
@@ -72,7 +72,7 @@ public class SimpleCodeGenerator internal constructor(
             sourceFiles = if (trackSourceFiles == TRACKING_WITH_NO_SOURCES) {
               emptySet()
             } else {
-              setOf(psi.containingFileAsJavaFile)
+              setOf(clazz.containingFileAsJavaFile)
             },
           )
         }

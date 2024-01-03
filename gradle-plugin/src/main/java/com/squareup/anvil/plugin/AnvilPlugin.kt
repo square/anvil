@@ -31,7 +31,6 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("DEPRECATION")
@@ -154,8 +153,28 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     // Notice that we use the name of the variant as a directory name. Generated code
     // for this specific compile task will be included in the task output. The output of different
     // compile tasks shouldn't be mixed.
-    val srcGenDir = project.layout.buildDirectory.get().asFile
-      .resolve("anvil${File.separator}src-gen-${variant.name}")
+    val srcGenDir = project.layout.buildDirectory.map {
+      it.asFile.resolve("anvil/${variant.name}/generated")
+    }
+
+    val anvilCacheDir = project.layout.buildDirectory.map {
+      it.asFile.resolve("anvil/${variant.name}/caches")
+    }
+
+    kotlinCompilation.compileTaskProvider.configure { task ->
+
+      if (variant.variantFilter.trackSourceFiles) {
+        // Add the generated files directory as output
+        // so that Gradle will watch them and invoke the compile task if they've changed.
+        // This also makes Gradle restore the files from the remote build cache,
+        // but that's technically not necessary.
+        task.outputs.dir(srcGenDir)
+        // This adds Anvil's internal cache and source-to-generated mapping to Gradle's cache,
+        // so that Gradle handles its restoration.
+        // The contents of this cache are used to restore any missing generated output.
+        task.outputs.dir(anvilCacheDir)
+      }
+    }
 
     if (variant.variantFilter.syncGeneratedSources) {
       val isIdeSyncProvider = project.providers
@@ -180,8 +199,16 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     return project.provider {
       listOf(
         FilesSubpluginOption(
+          key = "gradle-project-dir",
+          files = listOf(project.projectDir),
+        ),
+        FilesSubpluginOption(
           key = "src-gen-dir",
-          files = listOf(srcGenDir),
+          files = listOf(srcGenDir.get()),
+        ),
+        FilesSubpluginOption(
+          key = "anvil-cache-dir",
+          files = listOf(anvilCacheDir.get()),
         ),
         SubpluginOption(
           key = "generate-dagger-factories",

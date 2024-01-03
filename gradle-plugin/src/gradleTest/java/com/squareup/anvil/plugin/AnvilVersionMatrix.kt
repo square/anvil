@@ -7,6 +7,9 @@ import com.rickbusarow.kase.gradle.GradleDependencyVersion
 import com.rickbusarow.kase.gradle.HasKotlinDependencyVersion
 import com.rickbusarow.kase.gradle.KotlinDependencyVersion
 import com.rickbusarow.kase.gradle.KspDependencyVersion
+import com.squareup.anvil.plugin.buildProperties.daggerVersion
+import com.squareup.anvil.plugin.buildProperties.gradleVersion
+import com.squareup.anvil.plugin.buildProperties.kotlinVersion
 
 // TODO (rbusarow) move this to build-logic and sync it with the version catalog and `ci.yml`.
 class AnvilVersionMatrix(
@@ -22,9 +25,9 @@ class AnvilVersionMatrix(
       // TODO (rbusarow) enable later AGP versions once we're building with JDK 17
       // "8.0.2", "8.1.1", "8.2.0",
     ).map(::AgpDependencyVersion)
-    val kotlinList = setOf("1.9.0", "1.9.10", "1.9.21").map(::KotlinDependencyVersion)
-    val gradleList = setOf("8.5").map(::GradleDependencyVersion)
-    val daggerList = setOf("2.46.1").map(::DaggerDependencyVersion)
+    val kotlinList = setOf(kotlinVersion).map(::KotlinDependencyVersion)
+    val gradleList = setOf(gradleVersion).map(::GradleDependencyVersion)
+    val daggerList = setOf(daggerVersion).map(::DaggerDependencyVersion)
   }
 }
 
@@ -36,7 +39,7 @@ val HasKotlinDependencyVersion.kspDependencyVersion: KspDependencyVersion
     val kspPart = when (kotlinVersion) {
       in ("1.9.0"..<"1.9.10") -> "1.0.11"
       in ("1.9.10"..<"1.9.20") -> "1.0.13"
-      else -> "1.0.15"
+      else -> "1.0.17"
     }
     return KspDependencyVersion("$kotlinVersion-$kspPart")
   }

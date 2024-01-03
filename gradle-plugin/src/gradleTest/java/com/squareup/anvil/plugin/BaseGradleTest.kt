@@ -2,12 +2,15 @@ package com.squareup.anvil.plugin
 
 import com.rickbusarow.kase.KaseMatrix
 import com.rickbusarow.kase.files.HasWorkingDir
+import com.rickbusarow.kase.files.JavaFileFileInjection
+import com.rickbusarow.kase.files.LanguageInjection
 import com.rickbusarow.kase.files.TestLocation
 import com.rickbusarow.kase.gradle.DefaultGradleTestEnvironment
 import com.rickbusarow.kase.gradle.DslLanguage
 import com.rickbusarow.kase.gradle.DslLanguage.KotlinDsl
 import com.rickbusarow.kase.gradle.GradleDependencyVersion
 import com.rickbusarow.kase.gradle.GradleKotlinTestVersions
+import com.rickbusarow.kase.gradle.GradleProjectBuilder
 import com.rickbusarow.kase.gradle.GradleRootProjectBuilder
 import com.rickbusarow.kase.gradle.GradleTestEnvironment
 import com.rickbusarow.kase.gradle.GradleTestEnvironmentFactory
@@ -50,7 +53,18 @@ class AnvilGradleTestEnvironment(
   dslLanguage = dslLanguage,
   hasWorkingDir = hasWorkingDir,
   rootProject = rootProject,
-) {
+),
+  LanguageInjection<File> by LanguageInjection(JavaFileFileInjection()),
+  AnvilFilePathExtensions {
+
+  /** `workingDir.resolve("build/anvil/main/generated")` */
+  val GradleTestEnvironment.rootAnvilMainGenerated: File
+    get() = workingDir.anvilMainGenerated
+
+  val GradleProjectBuilder.buildFileAsFile: File
+    get() = path.resolve(dslLanguage.buildFileName)
+  val GradleProjectBuilder.settingsFileAsFile: File
+    get() = path.resolve(dslLanguage.settingsFileName)
 
   class Factory : GradleTestEnvironmentFactory<GradleKotlinTestVersions, AnvilGradleTestEnvironment> {
 
