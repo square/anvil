@@ -11,7 +11,7 @@ import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
@@ -88,32 +88,32 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
       codeGenDir: File,
       module: ModuleDescriptor,
       projectFiles: Collection<KtFile>,
-    ) {
-      projectFiles
-        .classAndInnerClassReferences(module)
-        .filterNot { it.isInterface() }
-        .forEach { clazz ->
-          // Only generate a MembersInjector if the target class declares its own member-injected
-          // properties. If it does, then any properties from superclasses must be added as well
-          // (clazz.memberInjectParameters() will do this).
-          clazz.properties
-            .filter { it.visibility() != Visibility.PRIVATE }
-            .filter { it.isAnnotatedWith(injectFqName) }
-            .ifEmpty { return@forEach }
+    ): Collection<GeneratedFileWithSources> = projectFiles
+      .classAndInnerClassReferences(module)
+      .filterNot { it.isInterface() }
+      .filter { clazz ->
+        // Only generate a MembersInjector if the target class declares its own member-injected
+        // properties. If it does, then any properties from superclasses must be added as well
+        // (clazz.memberInjectParameters() will do this).
+        clazz.properties
+          .filter { it.visibility() != Visibility.PRIVATE }
+          .any { it.isAnnotatedWith(injectFqName) }
+      }
+      .map { clazz ->
 
-          generateMembersInjectorClass(
-            codeGenDir = codeGenDir,
-            clazz = clazz,
-            parameters = clazz.memberInjectParameters(),
-          )
-        }
-    }
+        generateMembersInjectorClass(
+          codeGenDir = codeGenDir,
+          clazz = clazz,
+          parameters = clazz.memberInjectParameters(),
+        )
+      }
+      .toList()
 
     private fun generateMembersInjectorClass(
       codeGenDir: File,
       clazz: ClassReference.Psi,
       parameters: List<MemberInjectParameter>,
-    ): GeneratedFile {
+    ): GeneratedFileWithSources {
       val isGeneric = clazz.isGenericClass()
       val typeParameters = clazz.typeParameters
         .map { it.typeVariableName }
@@ -125,7 +125,13 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
         parameters = parameters,
       )
 
-      return createGeneratedFile(codeGenDir, spec.packageName, spec.name, spec.toString())
+      return createGeneratedFile(
+        codeGenDir = codeGenDir,
+        packageName = spec.packageName,
+        fileName = spec.name,
+        content = spec.toString(),
+        sourceFile = clazz.containingFileAsJavaFile,
+      )
     }
   }
 

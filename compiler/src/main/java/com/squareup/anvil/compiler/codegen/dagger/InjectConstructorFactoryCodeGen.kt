@@ -10,7 +10,7 @@ import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.injectConstructor
@@ -19,6 +19,7 @@ import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.injectConstructors
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.injectFqName
+import com.squareup.anvil.compiler.internal.containingFileAsJavaFile
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
@@ -104,24 +105,23 @@ internal object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
       codeGenDir: File,
       module: ModuleDescriptor,
       projectFiles: Collection<KtFile>,
-    ) {
-      projectFiles
-        .classAndInnerClassReferences(module)
-        .forEach { clazz ->
-          clazz.constructors
-            .injectConstructor()
-            ?.takeIf { it.isAnnotatedWith(injectFqName) }
-            ?.let {
-              generateFactoryClass(codeGenDir, clazz, it)
-            }
-        }
-    }
+    ): List<GeneratedFileWithSources> = projectFiles
+      .classAndInnerClassReferences(module)
+      .mapNotNull { clazz ->
+        clazz.constructors
+          .injectConstructor()
+          ?.takeIf { it.isAnnotatedWith(injectFqName) }
+          ?.let {
+            generateFactoryClass(codeGenDir, clazz, it)
+          }
+      }
+      .toList()
 
     private fun generateFactoryClass(
       codeGenDir: File,
       clazz: ClassReference.Psi,
       constructor: MemberFunctionReference.Psi,
-    ): GeneratedFile {
+    ): GeneratedFileWithSources {
       val constructorParameters = constructor.parameters.mapToConstructorParameters()
       val memberInjectParameters = clazz.memberInjectParameters()
       val typeParameters = clazz.typeParameters.map { it.typeVariableName }
@@ -133,7 +133,13 @@ internal object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
         memberInjectParameters = memberInjectParameters,
       )
 
-      return createGeneratedFile(codeGenDir, spec.packageName, spec.name, spec.toString())
+      return createGeneratedFile(
+        codeGenDir = codeGenDir,
+        packageName = spec.packageName,
+        fileName = spec.name,
+        content = spec.toString(),
+        sourceFile = clazz.clazz.containingFileAsJavaFile(),
+      )
     }
   }
 

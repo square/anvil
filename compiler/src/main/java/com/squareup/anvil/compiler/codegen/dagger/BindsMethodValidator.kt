@@ -3,7 +3,7 @@ package com.squareup.anvil.compiler.codegen.dagger
 import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
+import com.squareup.anvil.compiler.codegen.CheckOnlyCodeGenerator
 import com.squareup.anvil.compiler.daggerBindsFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
@@ -25,11 +25,11 @@ import java.io.File
  * when Anvil generates Dagger factories.
  */
 @AutoService(CodeGenerator::class)
-internal class BindsMethodValidator : PrivateCodeGenerator() {
+internal class BindsMethodValidator : CheckOnlyCodeGenerator() {
 
   override fun isApplicable(context: AnvilContext) = context.generateFactories
 
-  override fun generateCodePrivate(
+  override fun checkCode(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
