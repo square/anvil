@@ -1,7 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import java.io.File
 
@@ -16,5 +16,5 @@ internal interface FlushingCodeGenerator : CodeGenerator {
   fun flush(
     codeGenDir: File,
     module: ModuleDescriptor,
-  ): Collection<GeneratedFile> = emptyList()
+  ): Collection<GeneratedFileWithSources> = emptyList()
 }

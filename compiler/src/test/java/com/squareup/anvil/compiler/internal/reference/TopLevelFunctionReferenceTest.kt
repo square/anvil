@@ -3,7 +3,7 @@ package com.squareup.anvil.compiler.internal.reference
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.FileWithContent
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
@@ -133,7 +133,7 @@ class TopLevelFunctionReferenceTest {
             codeGenDir: File,
             module: ModuleDescriptor,
             projectFiles: Collection<KtFile>,
-          ): Collection<GeneratedFile> {
+          ): Collection<FileWithContent> {
             projectFiles
               .topLevelFunctionReferences(module)
               .flatMap { listOf(it.toPsiReference(), it.toDescriptorReference()) }

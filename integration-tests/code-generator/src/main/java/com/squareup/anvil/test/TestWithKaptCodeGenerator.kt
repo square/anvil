@@ -3,7 +3,7 @@ package com.squareup.anvil.test
 import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.safePackageString
@@ -26,7 +26,7 @@ class TestWithKaptCodeGenerator : CodeGenerator {
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
-  ): Collection<GeneratedFile> {
+  ): Collection<GeneratedFileWithSources> {
     return projectFiles
       .classAndInnerClassReferences(module)
       .filter { it.isAnnotatedWith(FqName("com.squareup.anvil.test.TriggerWithKapt")) }
@@ -50,6 +50,7 @@ class TestWithKaptCodeGenerator : CodeGenerator {
             packageName = generatedPackage,
             fileName = "mergedComponent",
             content = mergedComponent,
+            sourceFile = clazz.containingFileAsJavaFile,
           ),
         )
       }

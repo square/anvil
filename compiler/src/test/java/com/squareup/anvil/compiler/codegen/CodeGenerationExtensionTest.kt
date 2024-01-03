@@ -3,7 +3,7 @@ package com.squareup.anvil.compiler.codegen
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.FileWithContent
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.anvil.compiler.isError
@@ -96,7 +96,7 @@ class CodeGenerationExtensionTest {
         codeGenDir: File,
         module: ModuleDescriptor,
         projectFiles: Collection<KtFile>,
-      ): Collection<GeneratedFile> {
+      ): Collection<FileWithContent> {
         generateCodeCalled = true
         return emptyList()
       }

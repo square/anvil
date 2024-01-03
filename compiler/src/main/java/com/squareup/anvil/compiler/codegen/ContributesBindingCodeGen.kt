@@ -13,7 +13,7 @@ import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
@@ -152,7 +152,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
       codeGenDir: File,
       module: ModuleDescriptor,
       projectFiles: Collection<KtFile>,
-    ): Collection<GeneratedFile> {
+    ): List<GeneratedFileWithSources> {
       return projectFiles
         .classAndInnerClassReferences(module)
         .filter { it.isAnnotatedWith(contributesBindingFqName) }
@@ -183,6 +183,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
             packageName = spec.packageName,
             fileName = spec.name,
             content = spec.toString(),
+            sourceFile = clazz.containingFileAsJavaFile,
           )
         }
         .toList()

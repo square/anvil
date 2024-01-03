@@ -8,7 +8,7 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
+import com.squareup.anvil.compiler.codegen.CheckOnlyCodeGenerator
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
@@ -58,12 +58,12 @@ internal object AnvilMergeAnnotationDetectorCheck : AnvilApplicabilityChecker {
   }
 
   @AutoService(CodeGenerator::class)
-  internal class EmbeddedGenerator : PrivateCodeGenerator() {
+  internal class EmbeddedGenerator : CheckOnlyCodeGenerator() {
 
     override fun isApplicable(context: AnvilContext) =
       AnvilMergeAnnotationDetectorCheck.isApplicable(context)
 
-    override fun generateCodePrivate(
+    override fun checkCode(
       codeGenDir: File,
       module: ModuleDescriptor,
       projectFiles: Collection<KtFile>,

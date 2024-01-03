@@ -3,8 +3,9 @@ package com.squareup.anvil.test
 import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
+import com.squareup.anvil.compiler.internal.containingFileAsJavaFile
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.topLevelFunctionReferences
 import com.squareup.anvil.compiler.internal.reference.topLevelPropertyReferences
@@ -30,7 +31,7 @@ class TestCodeGenerator : CodeGenerator {
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
-  ): Collection<GeneratedFile> {
+  ): Collection<GeneratedFileWithSources> {
     return projectFiles
       .classAndInnerClassReferences(module)
       .filter { it.isAnnotatedWith(FqName("com.squareup.anvil.test.Trigger")) }
@@ -136,42 +137,49 @@ class TestCodeGenerator : CodeGenerator {
             packageName = generatedPackage,
             fileName = "GeneratedClass",
             content = generatedClass,
+            sourceFile = clazz.containingFileAsJavaFile,
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "ContributedInterface",
             content = contributedInterface,
+            sourceFile = clazz.containingFileAsJavaFile,
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "ContributedModule",
             content = contributedModule,
+            sourceFile = clazz.containingFileAsJavaFile,
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "ContributedBinding",
             content = contributedBinding,
+            sourceFile = clazz.containingFileAsJavaFile,
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "InjectClass",
             content = injectClass,
+            sourceFile = clazz.containingFileAsJavaFile,
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "AssistedInject",
             content = assistedInject,
+            sourceFile = clazz.containingFileAsJavaFile,
           ),
           createGeneratedFile(
             codeGenDir = codeGenDir,
             packageName = generatedPackage,
             fileName = "ContributedSubcomponent",
             content = contributedSubcomponent,
+            sourceFile = clazz.containingFileAsJavaFile,
           ),
         )
       }
@@ -196,6 +204,7 @@ class TestCodeGenerator : CodeGenerator {
                 packageName = generatedPackage,
                 fileName = "GeneratedFunctionClass",
                 content = generatedClass,
+                sourceFile = it.function.containingFileAsJavaFile(),
               ),
             )
           },
@@ -221,6 +230,7 @@ class TestCodeGenerator : CodeGenerator {
                 packageName = generatedPackage,
                 fileName = "GeneratedPropertyClass",
                 content = generatedClass,
+                sourceFile = it.property.containingFileAsJavaFile(),
               ),
             )
           },

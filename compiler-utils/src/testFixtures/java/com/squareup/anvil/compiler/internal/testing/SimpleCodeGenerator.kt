@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler.internal.testing
 
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
@@ -21,13 +21,11 @@ public fun simpleCodeGenerator(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
-  ): Collection<GeneratedFile> {
+  ): Collection<GeneratedFileWithSources> {
     return projectFiles
       .classAndInnerClassReferences(module)
-      .mapNotNull {
-        mapper.invoke(this, it)
-      }
-      .map { content ->
+      .mapNotNull { psi ->
+        val content = mapper.invoke(this, psi) ?: return@mapNotNull null
         val (packageName, fileName) = parseSimpleFileContents(content)
 
         createGeneratedFile(
@@ -35,6 +33,7 @@ public fun simpleCodeGenerator(
           packageName = packageName,
           fileName = fileName,
           content = content,
+          sourceFile = psi.containingFileAsJavaFile,
         )
       }
       .toList()

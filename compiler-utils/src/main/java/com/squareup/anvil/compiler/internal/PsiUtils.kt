@@ -31,12 +31,21 @@ import org.jetbrains.kotlin.psi.psiUtil.collectDescendantsOfType
 import org.jetbrains.kotlin.psi.psiUtil.parents
 import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.ImportPath
+import java.io.File
 
 private val kotlinAnnotations = listOf(jvmSuppressWildcardsFqName, publishedApiFqName)
 
 @ExperimentalAnvilApi
 public fun KtNamedDeclaration.requireFqName(): FqName = requireNotNull(fqName) {
   "fqName was null for $this, $nameAsSafeName"
+}
+
+@ExperimentalAnvilApi
+public fun PsiElement.containingFileAsJavaFile(): File {
+  val virtualFile = requireNotNull(containingFile.virtualFile) {
+    "Couldn't get virtualFile for $this"
+  }
+  return File(virtualFile.path)
 }
 
 @ExperimentalAnvilApi

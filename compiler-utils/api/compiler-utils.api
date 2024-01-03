@@ -31,6 +31,7 @@ public final class com/squareup/anvil/compiler/internal/KotlinPoetUtilsKt {
 }
 
 public final class com/squareup/anvil/compiler/internal/PsiUtilsKt {
+	public static final fun containingFileAsJavaFile (Lorg/jetbrains/kotlin/com/intellij/psi/PsiElement;)Ljava/io/File;
 	public static final fun fqNameOrNull (Lorg/jetbrains/kotlin/com/intellij/psi/PsiElement;Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;)Lorg/jetbrains/kotlin/name/FqName;
 	public static final fun ktFile (Lorg/jetbrains/kotlin/com/intellij/psi/PsiElement;)Lorg/jetbrains/kotlin/psi/KtFile;
 	public static final fun requireFqName (Lorg/jetbrains/kotlin/com/intellij/psi/PsiElement;Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;)Lorg/jetbrains/kotlin/name/FqName;
@@ -174,6 +175,7 @@ public abstract class com/squareup/anvil/compiler/internal/reference/ClassRefere
 	public fun equals (Ljava/lang/Object;)Z
 	public abstract fun getClassId ()Lorg/jetbrains/kotlin/name/ClassId;
 	public abstract fun getConstructors ()Ljava/util/List;
+	public abstract fun getContainingFileAsJavaFile ()Ljava/io/File;
 	public abstract fun getFqName ()Lorg/jetbrains/kotlin/name/FqName;
 	public abstract fun getFunctions ()Ljava/util/List;
 	protected abstract fun getInnerClassesAndObjects ()Ljava/util/List;
@@ -204,6 +206,7 @@ public final class com/squareup/anvil/compiler/internal/reference/ClassReference
 	public fun getClassId ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getClazz ()Lorg/jetbrains/kotlin/descriptors/ClassDescriptor;
 	public fun getConstructors ()Ljava/util/List;
+	public fun getContainingFileAsJavaFile ()Ljava/io/File;
 	public fun getFqName ()Lorg/jetbrains/kotlin/name/FqName;
 	public fun getFunctions ()Ljava/util/List;
 	public fun getModule ()Lcom/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor;
@@ -228,6 +231,7 @@ public final class com/squareup/anvil/compiler/internal/reference/ClassReference
 	public fun getClassId ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getClazz ()Lorg/jetbrains/kotlin/psi/KtClassOrObject;
 	public fun getConstructors ()Ljava/util/List;
+	public fun getContainingFileAsJavaFile ()Ljava/io/File;
 	public fun getFqName ()Lorg/jetbrains/kotlin/name/FqName;
 	public fun getFunctions ()Ljava/util/List;
 	public fun getModule ()Lcom/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor;

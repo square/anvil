@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.containingFileAsJavaFile
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
@@ -40,6 +41,8 @@ import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.parents
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
 import org.jetbrains.kotlin.resolve.scopes.getDescriptorsFiltered
+import org.jetbrains.kotlin.resolve.source.getPsi
+import java.io.File
 import kotlin.LazyThreadSafetyMode.NONE
 
 /**
@@ -54,6 +57,8 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
   public abstract val classId: ClassId
   public abstract val fqName: FqName
   public abstract val module: AnvilModuleDescriptor
+
+  public abstract val containingFileAsJavaFile: File
 
   public val shortName: String get() = fqName.shortName().asString()
   public val packageFqName: FqName get() = classId.packageFqName
@@ -133,6 +138,10 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
 
     override val constructors: List<MemberFunctionReference.Psi> by lazy(NONE) {
       clazz.allConstructors.map { it.toFunctionReference(this) }
+    }
+
+    override val containingFileAsJavaFile: File by lazy(NONE) {
+      clazz.containingFileAsJavaFile()
     }
 
     override val functions: List<MemberFunctionReference.Psi> by lazy(NONE) {
@@ -241,6 +250,15 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
 
     override val constructors: List<MemberFunctionReference.Descriptor> by lazy(NONE) {
       clazz.constructors.map { it.toFunctionReference(this) }
+    }
+
+    override val containingFileAsJavaFile: File by lazy(NONE) {
+      clazz.source.getPsi()
+        ?.containingFileAsJavaFile()
+        ?: throw AnvilCompilationExceptionClassReference(
+          classReference = this,
+          message = "Couldn't find Psi element for class $fqName.",
+        )
     }
 
     override val functions: List<MemberFunctionReference.Descriptor> by lazy(NONE) {
