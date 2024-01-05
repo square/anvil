@@ -28,7 +28,7 @@ import kotlin.LazyThreadSafetyMode.NONE
  * various compilation phases.
  */
 @AutoService(ComponentRegistrar::class)
-class AnvilComponentRegistrar : ComponentRegistrar {
+public class AnvilComponentRegistrar : ComponentRegistrar {
 
   private val manuallyAddedCodeGenerators = mutableListOf<CodeGenerator>()
 
@@ -105,7 +105,7 @@ class AnvilComponentRegistrar : ComponentRegistrar {
 
   // This function is used in tests. It must be called before the test code is being compiled.
   @ExperimentalAnvilApi
-  fun addCodeGenerators(codeGenerators: List<CodeGenerator>) {
+  public fun addCodeGenerators(codeGenerators: List<CodeGenerator>) {
     manuallyAddedCodeGenerators += codeGenerators
   }
 }

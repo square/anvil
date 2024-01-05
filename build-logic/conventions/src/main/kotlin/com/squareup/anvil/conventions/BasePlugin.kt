@@ -1,6 +1,7 @@
 package com.squareup.anvil.conventions
 
 import com.rickbusarow.kgx.extras
+import com.rickbusarow.kgx.fromInt
 import com.rickbusarow.kgx.javaExtension
 import com.squareup.anvil.conventions.utils.isInAnvilBuild
 import com.squareup.anvil.conventions.utils.isInAnvilIncludedBuild
@@ -13,7 +14,6 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8
 import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.Properties
@@ -98,15 +98,23 @@ abstract class BasePlugin : Plugin<Project> {
         }
 
         freeCompilerArgs.addAll(extension.kotlinCompilerArgs.get())
-        if (extension.explicitApi.get()) {
+
+        fun isTestOrGradleTest(): Boolean {
+          val sourceSetName = task.sourceSetName
+            .getOrElse(
+              task.name.substringAfter("compile")
+                .substringBefore("Kotlin")
+                .replaceFirstChar(Char::lowercase),
+            )
+
+          return sourceSetName == "test" || sourceSetName == "gradleTest"
+        }
+
+        if (extension.explicitApi.get() && !isTestOrGradleTest()) {
           freeCompilerArgs.add("-Xexplicit-api=strict")
         }
 
-        val fromInt = when (val targetInt = target.jvmTargetInt()) {
-          8 -> JVM_1_8
-          else -> JvmTarget.fromTarget("$targetInt")
-        }
-        jvmTarget.set(fromInt)
+        jvmTarget.set(JvmTarget.fromInt(target.jvmTargetInt()))
       }
     }
   }

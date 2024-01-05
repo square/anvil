@@ -75,7 +75,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 import javax.inject.Provider
 
-object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
+internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
 
   override fun isApplicable(context: AnvilContext) = context.generateFactories
 

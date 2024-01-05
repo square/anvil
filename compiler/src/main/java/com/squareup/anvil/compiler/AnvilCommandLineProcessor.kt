@@ -31,7 +31,7 @@ internal val backendKey =
  * Parses arguments from the Gradle plugin for the compiler plugin.
  */
 @AutoService(CommandLineProcessor::class)
-class AnvilCommandLineProcessor : CommandLineProcessor {
+public class AnvilCommandLineProcessor : CommandLineProcessor {
   override val pluginId: String = "com.squareup.anvil.compiler"
 
   override val pluginOptions: Collection<AbstractCliOption> = listOf(
@@ -86,10 +86,13 @@ class AnvilCommandLineProcessor : CommandLineProcessor {
       srcGenDirName -> configuration.put(srcGenDirKey, value)
       generateDaggerFactoriesName ->
         configuration.put(generateDaggerFactoriesKey, value.toBoolean())
+
       generateDaggerFactoriesOnlyName ->
         configuration.put(generateDaggerFactoriesOnlyKey, value.toBoolean())
+
       disableComponentMergingName ->
         configuration.put(disableComponentMergingKey, value.toBoolean())
+
       backendName -> configuration.put(backendKey, value)
     }
   }

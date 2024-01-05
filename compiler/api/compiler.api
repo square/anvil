@@ -24,55 +24,6 @@ public final class com/squareup/anvil/compiler/CommandLineOptions$Companion {
 	public final fun getCommandLineOptions (Lorg/jetbrains/kotlin/config/CompilerConfiguration;)Lcom/squareup/anvil/compiler/CommandLineOptions;
 }
 
-public final class com/squareup/anvil/compiler/codegen/dagger/AssistedFactoryCodeGen : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
-	public static final field INSTANCE Lcom/squareup/anvil/compiler/codegen/dagger/AssistedFactoryCodeGen;
-	public fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z
-}
-
-public final class com/squareup/anvil/compiler/codegen/dagger/AssistedInjectCodeGen : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
-	public static final field INSTANCE Lcom/squareup/anvil/compiler/codegen/dagger/AssistedInjectCodeGen;
-	public fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z
-}
-
-public final class com/squareup/anvil/compiler/codegen/dagger/InjectConstructorFactoryCodeGen : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
-	public static final field INSTANCE Lcom/squareup/anvil/compiler/codegen/dagger/InjectConstructorFactoryCodeGen;
-	public fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z
-}
-
-public final class com/squareup/anvil/compiler/codegen/dagger/MapKeyCreatorCodeGen : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
-	public static final field INSTANCE Lcom/squareup/anvil/compiler/codegen/dagger/MapKeyCreatorCodeGen;
-	public fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z
-}
-
-public abstract interface class com/squareup/anvil/compiler/codegen/dagger/Parameter {
-	public abstract fun getAssistedIdentifier ()Ljava/lang/String;
-	public abstract fun getAssistedParameterKey ()Lcom/squareup/anvil/compiler/codegen/dagger/Parameter$AssistedParameterKey;
-	public abstract fun getLazyTypeName ()Lcom/squareup/kotlinpoet/ParameterizedTypeName;
-	public abstract fun getName ()Ljava/lang/String;
-	public abstract fun getOriginalName ()Ljava/lang/String;
-	public fun getOriginalTypeName ()Lcom/squareup/kotlinpoet/TypeName;
-	public abstract fun getProviderTypeName ()Lcom/squareup/kotlinpoet/ParameterizedTypeName;
-	public abstract fun getTypeName ()Lcom/squareup/kotlinpoet/TypeName;
-	public abstract fun isAssisted ()Z
-	public abstract fun isLazyWrappedInProvider ()Z
-	public abstract fun isWrappedInLazy ()Z
-	public abstract fun isWrappedInProvider ()Z
-}
-
-public final class com/squareup/anvil/compiler/codegen/dagger/Parameter$AssistedParameterKey {
-	public fun <init> (Lcom/squareup/kotlinpoet/TypeName;Ljava/lang/String;)V
-	public final fun copy (Lcom/squareup/kotlinpoet/TypeName;Ljava/lang/String;)Lcom/squareup/anvil/compiler/codegen/dagger/Parameter$AssistedParameterKey;
-	public static synthetic fun copy$default (Lcom/squareup/anvil/compiler/codegen/dagger/Parameter$AssistedParameterKey;Lcom/squareup/kotlinpoet/TypeName;Ljava/lang/String;ILjava/lang/Object;)Lcom/squareup/anvil/compiler/codegen/dagger/Parameter$AssistedParameterKey;
-	public fun equals (Ljava/lang/Object;)Z
-	public fun hashCode ()I
-	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/squareup/anvil/compiler/codegen/dagger/ProvidesMethodFactoryCodeGen : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
-	public static final field INSTANCE Lcom/squareup/anvil/compiler/codegen/dagger/ProvidesMethodFactoryCodeGen;
-	public fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z
-}
-
 public final class com/squareup/anvil/compiler/codegen/reference/RealAnvilModuleDescriptor : com/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor, org/jetbrains/kotlin/descriptors/ModuleDescriptor {
 	public synthetic fun <init> (Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun accept (Lorg/jetbrains/kotlin/descriptors/DeclarationDescriptorVisitor;Ljava/lang/Object;)Ljava/lang/Object;

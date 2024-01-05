@@ -54,7 +54,7 @@ import java.io.File
  * class AssistedService_Factory { .. }
  * ```
  */
-object AssistedInjectCodeGen : AnvilApplicabilityChecker {
+internal object AssistedInjectCodeGen : AnvilApplicabilityChecker {
 
   override fun isApplicable(context: AnvilContext) = context.generateFactories
 
