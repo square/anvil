@@ -6,8 +6,10 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import kotlin.LazyThreadSafetyMode.NONE
 
+@OptIn(UnsafeDuringIrConstructionAPI::class)
 internal class AnnotationArgumentReferenceIr(
   val argumentParameter: IrValueParameter,
   val argumentExpression: IrExpression,

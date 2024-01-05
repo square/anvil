@@ -5,5 +5,5 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationParent
 import org.jetbrains.kotlin.ir.util.parents
 
 // The package changed in Kotlin 2.x. Can be deleted when we drop support for 1.9
-val IrDeclaration.parentsWrapped: Sequence<IrDeclarationParent>
+internal val IrDeclaration.parentsWrapped: Sequence<IrDeclarationParent>
   get() = parents
