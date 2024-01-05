@@ -1,10 +1,11 @@
 package com.squareup.anvil.plugin
 
+import com.rickbusarow.kase.KaseMatrix
 import com.rickbusarow.kase.gradle.GradleKotlinTestVersions
 import com.rickbusarow.kase.gradle.GradleTestEnvironment
 import com.rickbusarow.kase.gradle.KaseGradleTest
-import com.rickbusarow.kase.gradle.VersionMatrix
 import com.rickbusarow.kase.gradle.dsl.BuildFileSpec
+import com.rickbusarow.kase.gradle.versions
 import com.rickbusarow.kase.stdlib.letIf
 import com.squareup.anvil.plugin.buildProperties.anvilVersion
 import com.squareup.anvil.plugin.buildProperties.fullTestRun
@@ -12,7 +13,7 @@ import com.squareup.anvil.plugin.buildProperties.localBuildM2Dir
 import java.io.File
 
 abstract class BaseGradleTest(
-  override val versionMatrix: VersionMatrix = AnvilVersionMatrix(),
+  override val kaseMatrix: KaseMatrix = AnvilVersionMatrix(),
 ) : KaseGradleTest<GradleKotlinTestVersions>,
   FileStubs,
   MoreAsserts {
@@ -21,7 +22,7 @@ abstract class BaseGradleTest(
     get() = localBuildM2Dir
 
   override val kases: List<GradleKotlinTestVersions>
-    get() = versionMatrix.versions(GradleKotlinTestVersions)
+    get() = kaseMatrix.versions(GradleKotlinTestVersions)
       .letIf(!fullTestRun) { it.takeLast(1) }
 
   /** Brings the magic of LibrariesForLibs into the test environment. */

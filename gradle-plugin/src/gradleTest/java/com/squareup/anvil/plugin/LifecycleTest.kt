@@ -1,6 +1,7 @@
 package com.squareup.anvil.plugin
 
 import com.rickbusarow.kase.gradle.dsl.buildFile
+import com.rickbusarow.kase.gradle.rootProject
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldInclude
 import io.kotest.matchers.string.shouldNotInclude

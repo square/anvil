@@ -1,12 +1,12 @@
 package com.squareup.anvil.plugin
 
+import com.rickbusarow.kase.KaseMatrix
 import com.rickbusarow.kase.gradle.AgpDependencyVersion
 import com.rickbusarow.kase.gradle.DaggerDependencyVersion
 import com.rickbusarow.kase.gradle.GradleDependencyVersion
 import com.rickbusarow.kase.gradle.HasKotlinDependencyVersion
 import com.rickbusarow.kase.gradle.KotlinDependencyVersion
 import com.rickbusarow.kase.gradle.KspDependencyVersion
-import com.rickbusarow.kase.gradle.VersionMatrix
 
 // TODO (rbusarow) move this to build-logic and sync it with the version catalog and `ci.yml`.
 class AnvilVersionMatrix(
@@ -14,7 +14,7 @@ class AnvilVersionMatrix(
   kotlin: List<KotlinDependencyVersion> = kotlinList,
   gradle: List<GradleDependencyVersion> = gradleList,
   dagger: List<DaggerDependencyVersion> = daggerList,
-) : VersionMatrix by VersionMatrix(agp + kotlin + gradle + dagger) {
+) : KaseMatrix by KaseMatrix(agp + kotlin + gradle + dagger) {
   private companion object {
     val agpList = setOf("7.3.1", "7.4.2", "8.0.2", "8.1.1", "8.2.0").map(::AgpDependencyVersion)
     val kotlinList = setOf("1.8.21", "1.9.0", "1.9.10", "1.9.21").map(::KotlinDependencyVersion)
