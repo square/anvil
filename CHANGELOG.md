@@ -19,6 +19,18 @@
 ### Other Notes & Contributions
 
 
+## [2.4.9] - 2024-01-05
+
+### Changed
+- Upgrade Kotlin to `1.9.20`
+
+### Fixed
+- Fix a configuration error related to version catalogs when building on Windows (#744)
+
+### Other Notes & Contributions
+- Use Anvil version `2.4.9-1-8` if your project is using Kotlin `1.8.x`. This is also the last planned release with Kotlin `1.8.x` support.
+
+
 ## [2.4.8] - 2023-09-07
 
 ### Added
@@ -626,7 +638,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.4.8...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.4.9...HEAD
+[2.4.9]: https://github.com/square/anvil/releases/tag/v2.4.9
 [2.4.8]: https://github.com/square/anvil/releases/tag/v2.4.8
 [2.4.7]: https://github.com/square/anvil/releases/tag/v2.4.7
 [2.4.6]: https://github.com/square/anvil/releases/tag/v2.4.6
