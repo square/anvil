@@ -46,7 +46,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 import javax.inject.Inject
 
-object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
+internal object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext) = context.generateFactories
 
   internal class KspGenerator(

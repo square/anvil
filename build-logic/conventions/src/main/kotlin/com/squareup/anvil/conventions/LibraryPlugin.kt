@@ -16,6 +16,9 @@ open class LibraryPlugin : BasePlugin() {
       target.plugins.apply(target.libs.plugins.kotlinx.binaryCompatibility.pluginId)
       configureDependencyGuard(target)
     }
+
+    target.extensions.getByType(ConventionsExtension::class.java)
+      .explicitApi.set(true)
   }
 
   private fun configureDependencyGuard(target: Project) {

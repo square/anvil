@@ -29,14 +29,13 @@ import java.util.ServiceLoader
  */
 @ExperimentalAnvilApi
 public class AnvilCompilation internal constructor(
-  val kotlinCompilation: KotlinCompilation,
+  public val kotlinCompilation: KotlinCompilation,
 ) {
 
   private var isCompiled = false
   private var anvilConfigured = false
 
   /** Configures this the Anvil behavior of this compilation. */
-  @Suppress("SuspiciousCollectionReassignment")
   @ExperimentalAnvilApi
   public fun configureAnvil(
     enableDaggerAnnotationProcessor: Boolean = false,
@@ -46,7 +45,7 @@ public class AnvilCompilation internal constructor(
     enableExperimentalAnvilApis: Boolean = true,
     mode: AnvilCompilationMode = Embedded(emptyList()),
     enableAnvil: Boolean = true,
-  ) = apply {
+  ): AnvilCompilation = apply {
     checkNotCompiled()
     check(!anvilConfigured) { "Anvil should not be configured twice." }
 
@@ -101,6 +100,7 @@ public class AnvilCompilation internal constructor(
               ),
             )
         }
+
         is Ksp -> {
           symbolProcessorProviders += buildList {
             addAll(
@@ -129,7 +129,7 @@ public class AnvilCompilation internal constructor(
   }
 
   /** Adds the given sources to this compilation with their packages and names inferred. */
-  public fun addSources(@Language("kotlin") vararg sources: String) = apply {
+  public fun addSources(@Language("kotlin") vararg sources: String): AnvilCompilation = apply {
     checkNotCompiled()
     kotlinCompilation.sources += sources.mapIndexed { index, content ->
       val packageDir = content.lines()
@@ -148,7 +148,7 @@ public class AnvilCompilation internal constructor(
     }
   }
 
-  public fun addPreviousCompilationResult(result: JvmCompilationResult) = apply {
+  public fun addPreviousCompilationResult(result: JvmCompilationResult): AnvilCompilation = apply {
     checkNotCompiled()
     kotlinCompilation.addPreviousResultToClasspath(result)
   }
@@ -205,7 +205,7 @@ public class AnvilCompilation internal constructor(
     return kotlinCompilation.compile().apply(block)
   }
 
-  companion object {
+  public companion object {
     public operator fun invoke(): AnvilCompilation {
       return AnvilCompilation(
         KotlinCompilation().apply {

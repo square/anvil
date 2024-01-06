@@ -4,14 +4,14 @@ import com.squareup.anvil.compiler.api.AnvilBackend
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import java.util.Locale
 
-class CommandLineOptions private constructor(
-  val generateFactories: Boolean,
-  val generateFactoriesOnly: Boolean,
-  val disableComponentMerging: Boolean,
-  val backend: AnvilBackend,
+public class CommandLineOptions private constructor(
+  public val generateFactories: Boolean,
+  public val generateFactoriesOnly: Boolean,
+  public val disableComponentMerging: Boolean,
+  public val backend: AnvilBackend,
 ) {
-  companion object {
-    val CompilerConfiguration.commandLineOptions: CommandLineOptions
+  public companion object {
+    public val CompilerConfiguration.commandLineOptions: CommandLineOptions
       get() = CommandLineOptions(
         generateFactories = get(generateDaggerFactoriesKey, false),
         generateFactoriesOnly = get(generateDaggerFactoriesOnlyKey, false),
