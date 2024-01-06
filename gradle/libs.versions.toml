@@ -35,7 +35,7 @@ kotlinpoet = "1.15.3"
 ksp = "1.9.20-1.0.14"
 ktlint = "1.0.1"
 ktlintPlugin = "12.0.3"
-mavenPublish = "0.26.0"
+mavenPublish = "0.27.0"
 
 #
 # Configs that we can override in CI. Not exactly "versions" but useful to repurpose it here.
