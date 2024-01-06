@@ -67,10 +67,9 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       required = false,
       allowMultipleOccurrences = false,
     ),
-    @Suppress("EnumValuesSoftDeprecate") // Can't use Enum.entries while targeting Kotlin 1.8
     CliOption(
       optionName = backendName,
-      valueDescription = AnvilBackend.values().joinToString("|", "<", ">"),
+      valueDescription = AnvilBackend.entries.joinToString("|", "<", ">"),
       description = "Controls whether Anvil is running as an embedded plugin or as KSP.",
       required = false,
       allowMultipleOccurrences = false,

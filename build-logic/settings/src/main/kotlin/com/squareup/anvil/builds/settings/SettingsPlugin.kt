@@ -30,13 +30,6 @@ abstract class SettingsPlugin @Inject constructor(
         .forEach { (key, value) ->
           val alias = key.substring("override_".length)
           catalogBuilder.overrideVersion(alias = alias, versionString = value.toString())
-
-          if (alias == "kotlin" && value.toString().startsWith("1.8")) {
-            // TODO hardcoded to match what's in libs.versions.toml, but kinda ugly
-            catalogBuilder.overrideVersion(alias = "ksp", versionString = "$value-1.0.11")
-            // KCT versions after 0.3.2 are not compatible with Kotlin 1.8
-            catalogBuilder.overrideVersion(alias = "kct", versionString = "0.3.2")
-          }
         }
 
       catalogBuilder.version("config-warningsAsErrors", System.getenv("CI") ?: "false")
