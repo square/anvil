@@ -6,7 +6,7 @@ pluginManagement {
   }
 
   includeBuild("build-logic/conventions")
-  includeBuild("build-logic/delegate")
+  // includeBuild("build-logic/delegate")
   includeBuild("build-logic/settings")
   includeBuild("lib")
 }

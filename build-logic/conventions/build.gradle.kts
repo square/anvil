@@ -1,3 +1,12 @@
+import com.rickbusarow.kgx.fromInt
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
+buildscript {
+  dependencies {
+    classpath(libs.kgx)
+  }
+}
+
 plugins {
   alias(libs.plugins.kotlin.jvm)
   alias(libs.plugins.ktlint)
@@ -31,6 +40,12 @@ gradlePlugin {
 
 kotlin {
   jvmToolchain(libs.versions.jvm.toolchain.get().toInt())
+  compilerOptions {
+    jvmTarget.set(JvmTarget.fromInt(libs.versions.jvm.target.minimal.get().toInt()))
+  }
+}
+tasks.withType(JavaCompile::class.java).configureEach {
+  options.release.set(libs.versions.jvm.target.minimal.get().toInt())
 }
 
 ktlint {
