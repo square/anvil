@@ -12,6 +12,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import kotlin.reflect.KClass
+import kotlin.test.fail
 
 @RunWith(Parameterized::class)
 class InterfaceMergerTest(
@@ -33,6 +34,15 @@ class InterfaceMergerTest(
         }
       }
     }
+  }
+
+  @Test fun `this is a test that can be debugged`() {
+
+    assertThat(true).isTrue()
+
+    assertThat(false).isFalse()
+
+    fail("we shouldn't get here")
   }
 
   @Test fun `interfaces are merged successfully`() {

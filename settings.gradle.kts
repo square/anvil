@@ -6,9 +6,7 @@ pluginManagement {
   }
 
   includeBuild("build-logic/conventions")
-  // includeBuild("build-logic/delegate")
   includeBuild("build-logic/settings")
-  includeBuild("lib")
 }
 
 plugins {
@@ -16,3 +14,6 @@ plugins {
 }
 
 rootProject.name = "anvil"
+
+includeBuild("lib")
+includeBuild("build-logic/delegate")
