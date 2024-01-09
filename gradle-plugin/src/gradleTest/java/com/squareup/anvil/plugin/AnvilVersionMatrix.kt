@@ -17,7 +17,7 @@ class AnvilVersionMatrix(
 ) : KaseMatrix by KaseMatrix(agp + kotlin + gradle + dagger) {
   private companion object {
     val agpList = setOf("7.3.1", "7.4.2", "8.0.2", "8.1.1", "8.2.0").map(::AgpDependencyVersion)
-    val kotlinList = setOf("1.8.21", "1.9.0", "1.9.10", "1.9.21").map(::KotlinDependencyVersion)
+    val kotlinList = setOf("1.9.0", "1.9.10", "1.9.21").map(::KotlinDependencyVersion)
     val gradleList = setOf("8.5").map(::GradleDependencyVersion)
     val daggerList = setOf("2.46.1").map(::DaggerDependencyVersion)
   }
@@ -29,8 +29,6 @@ class AnvilVersionMatrix(
 val HasKotlinDependencyVersion.kspDependencyVersion: KspDependencyVersion
   get() {
     val kspPart = when (kotlinVersion) {
-      in ("1.8.10"..<"1.8.20") -> "1.0.9"
-      in ("1.8.20"..<"1.9.0") -> "1.0.11"
       in ("1.9.0"..<"1.9.10") -> "1.0.11"
       in ("1.9.10"..<"1.9.20") -> "1.0.13"
       else -> "1.0.15"

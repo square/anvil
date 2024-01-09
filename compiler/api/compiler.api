@@ -5,6 +5,10 @@ public final class com/squareup/anvil/compiler/AnvilCommandLineProcessor : org/j
 	public fun processOption (Lorg/jetbrains/kotlin/compiler/plugin/AbstractCliOption;Ljava/lang/String;Lorg/jetbrains/kotlin/config/CompilerConfiguration;)V
 }
 
+public synthetic class com/squareup/anvil/compiler/AnvilCommandLineProcessor$EntriesMappings {
+	public static final synthetic field entries$0 Lkotlin/enums/EnumEntries;
+}
+
 public final class com/squareup/anvil/compiler/AnvilComponentRegistrar : org/jetbrains/kotlin/compiler/plugin/ComponentRegistrar {
 	public fun <init> ()V
 	public final fun addCodeGenerators (Ljava/util/List;)V
@@ -22,6 +26,10 @@ public final class com/squareup/anvil/compiler/CommandLineOptions {
 
 public final class com/squareup/anvil/compiler/CommandLineOptions$Companion {
 	public final fun getCommandLineOptions (Lorg/jetbrains/kotlin/config/CompilerConfiguration;)Lcom/squareup/anvil/compiler/CommandLineOptions;
+}
+
+public synthetic class com/squareup/anvil/compiler/CommandLineOptions$Companion$EntriesMappings {
+	public static final synthetic field entries$0 Lkotlin/enums/EnumEntries;
 }
 
 public final class com/squareup/anvil/compiler/codegen/reference/RealAnvilModuleDescriptor : com/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor, org/jetbrains/kotlin/descriptors/ModuleDescriptor {
