@@ -2,10 +2,9 @@ package com.squareup.anvil.conventions
 
 import com.rickbusarow.kgx.extras
 import com.rickbusarow.kgx.fromInt
+import com.rickbusarow.kgx.isPartOfRootBuild
 import com.rickbusarow.kgx.javaExtension
-import com.squareup.anvil.conventions.utils.isInAnvilBuild
-import com.squareup.anvil.conventions.utils.isInAnvilIncludedBuild
-import com.squareup.anvil.conventions.utils.isInAnvilRootBuild
+import com.rickbusarow.kgx.resolveInParent
 import com.squareup.anvil.conventions.utils.libs
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -29,7 +28,7 @@ abstract class BasePlugin : Plugin<Project> {
 
     val extension = target.extensions.create("conventions", ConventionsExtension::class.java)
 
-    if (!target.isInAnvilBuild()) {
+    if (!target.isPartOfRootBuild) {
       target.copyRootProjectGradleProperties()
     }
 
@@ -40,8 +39,6 @@ abstract class BasePlugin : Plugin<Project> {
     target.plugins.apply(KtlintConventionPlugin::class.java)
 
     configureGradleProperties(target)
-
-    configureBuildDirs(target)
 
     configureJava(target)
 
@@ -66,7 +63,8 @@ abstract class BasePlugin : Plugin<Project> {
    * See https://github.com/square/anvil/pull/763#discussion_r1379563691
    */
   private fun Project.copyRootProjectGradleProperties() {
-    rootProject.file("../../gradle.properties")
+    rootDir.resolveInParent("CHANGELOG.md")
+      .resolveSibling("gradle.properties")
       .inputStream()
       .use { Properties().apply { load(it) } }
       .forEach { key, value ->
@@ -115,24 +113,6 @@ abstract class BasePlugin : Plugin<Project> {
         }
 
         jvmTarget.set(JvmTarget.fromInt(target.jvmTargetInt()))
-      }
-    }
-  }
-
-  /**
-   * The "anvil" projects exist in two different builds, they need two different build directories
-   * so that there is no shared mutable state.
-   */
-  private fun configureBuildDirs(target: Project) {
-    when {
-      !target.isInAnvilBuild() -> return
-
-      target.isInAnvilRootBuild() -> {
-        target.layout.buildDirectory.set(target.file("build/root-build"))
-      }
-
-      target.isInAnvilIncludedBuild() -> {
-        target.layout.buildDirectory.set(target.file("build/included-build"))
       }
     }
   }

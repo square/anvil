@@ -28,7 +28,7 @@ import org.gradle.plugin.devel.GradlePluginDevelopmentExtension
  * @see isInAnvilRootBuild to check if this project is part of the true root build
  * @see isInAnvilIncludedBuild to check if this project is part of the plugin included build
  */
-internal fun Project.isInAnvilBuild() = rootProject.name == "anvil"
+internal fun Project.isInAnvilBuild() = rootProject.name == "lib"
 
 /**
  * Returns true if this project is in the root 'anvil' build, and it is the true root of the build.
@@ -36,7 +36,7 @@ internal fun Project.isInAnvilBuild() = rootProject.name == "anvil"
  * @see isInAnvilBuild
  * @see isInAnvilIncludedBuild
  */
-internal fun Project.isInAnvilRootBuild() = isInAnvilBuild() && gradle.parent == null
+internal fun Project.isInAnvilRootBuild() = isInAnvilBuild() // && gradle.parent == null
 
 /**
  * Returns true if this project is in the root 'anvil' build,

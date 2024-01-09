@@ -44,9 +44,7 @@ pluginManagement {
    *           │   build-logic/settings    │
    *           └───────────────────────────┘
    */
-  if (gradle.parent != null) {
-    includeBuild("../..")
-  }
+  includeBuild("../../lib")
 }
 
 plugins {
@@ -69,42 +67,4 @@ listOf(
 ).forEach { name ->
   include(":$name")
   project(":$name").projectDir = file("../../${name.replace(":", "/")}")
-}
-
-/*
- * If this build is the root, then we include the root build here in order to get the gradle plugin.
- *
- * We include it here instead of in the pluginManagement block above because both of these builds
- * include the conventions build in `pluginManagement`, and that causes a race condition since
- * composite builds aren't thread-safe. Moving the root build down here ensures that they're
- * evaluated in order.
- *
- * When this build is the root build, the graph winds up as:
- *
- *  ┌────────────────────────────────────────┐
- *  │               :delegate                │
- *  │          build-logic/delegate          │
- *  │ ┌────────────┐   ┌───────────────────┐ │
- *  │ │  :sample   │   │:integration-tests │ │
- *  │ └────────────┘   └───────────────────┘ │
- *  └────────────────────────────────────────┘      ┌───────────────────┐
- *                   │  │   └──────────────────────▶│      :anvil       │
- *                   │  │                           │ (root directory)  │
- *                   │  └─────────────┐             └───────────────────┘
- *                   │                │   ┌──────────────────┘   │
- *                   │                ▼   ▼                      │
- *                   │       ┌───────────────────────────┐       │
- *                   │       │       :conventions        │       │
- *                   │       │  build-logic/conventions  │       │
- *                   │       └───────────────────────────┘       │
- *                   │    ┌───────────────┘                      │
- *                   │    │    ┌─────────────────────────────────┘
- *                   ▼    ▼    ▼
- *           ┌───────────────────────────┐
- *           │         :settings         │
- *           │   build-logic/settings    │
- *           └───────────────────────────┘
- */
-if (gradle.parent == null) {
-  includeBuild("../..")
 }
