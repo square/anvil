@@ -28,6 +28,7 @@ jvm-target-minimal = "11"
 kase = "0.7.0"
 kct = "0.4.0"
 kgx = "0.1.10"
+kotest = "5.8.0"
 kotlin = "1.9.20"
 kotlinx-binaryCompatibility = "0.13.2"
 kotlinpoet = "1.15.3"
@@ -103,6 +104,9 @@ junit5-jupiter-api = { module = "org.junit.jupiter:junit-jupiter-api", version.r
 kase = { module = "com.rickbusarow.kase:kase", version.ref = "kase" }
 kase-gradle = { module = "com.rickbusarow.kase:kase-gradle", version.ref = "kase" }
 kase-gradle-dsl = { module = "com.rickbusarow.kase:kase-gradle-dsl", version.ref = "kase" }
+
+kotest-assertions-api = { module = "io.kotest:kotest-assertions-api", version.ref = "kotest" }
+kotest-assertions-core-jvm = { module = "io.kotest:kotest-assertions-core-jvm", version.ref = "kotest" }
 
 kotlin-annotationProcessingEmbeddable = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable", version.ref = "kotlin" }
 kotlin-compileTesting = { module = "dev.zacsweers.kctfork:core", version.ref = "kct" }
