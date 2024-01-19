@@ -38,6 +38,7 @@ dependencies {
   implementation(project(":annotations"))
   implementation(project(":compiler-api"))
   implementation(project(":compiler-utils"))
+  implementation(platform(libs.kotlin.bom))
   implementation(libs.dagger2)
   implementation(libs.jsr250)
   implementation(libs.kotlinpoet)

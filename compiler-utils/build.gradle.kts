@@ -26,6 +26,7 @@ dependencies {
   api(libs.kotlin.compiler)
   api(libs.kotlinpoet)
 
+  implementation(platform(libs.kotlin.bom))
   implementation(libs.dagger2)
   implementation(libs.inject)
 
