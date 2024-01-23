@@ -1,6 +1,6 @@
 plugins {
   alias(libs.plugins.gradlePublish)
-  alias(libs.plugins.buildconfig)
+  id(libs.plugins.buildconfig.get().pluginId)
   id("conventions.library")
   id("conventions.publish")
   id("conventions.gradle-tests")

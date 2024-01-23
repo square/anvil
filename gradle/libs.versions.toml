@@ -88,6 +88,8 @@ auto-service-processor = { module = "com.google.auto.service:auto-service", vers
 auto-value-annotations = { module = "com.google.auto.value:auto-value-annotations", version.ref = "autoValue" }
 auto-value-processor = { module = "com.google.auto.value:auto-value", version.ref = "autoValue" }
 
+buildconfig = { module = "com.github.gmazzo.buildconfig:plugin", version.ref = "buildconfig" }
+
 dagger2 = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger2-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
 

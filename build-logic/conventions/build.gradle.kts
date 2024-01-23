@@ -46,6 +46,7 @@ ktlint {
 dependencies {
   compileOnly(gradleApi())
 
+  api(libs.buildconfig)
   api(libs.dropbox.dependencyGuard)
   api(libs.kotlinx.binaryCompatibility)
   api(libs.ktlintRaw)

@@ -2,7 +2,7 @@ plugins {
   id("conventions.library")
   id("conventions.publish")
   alias(libs.plugins.kotlin.kapt)
-  alias(libs.plugins.buildconfig)
+  id(libs.plugins.buildconfig.get().pluginId)
 }
 
 buildConfig {
