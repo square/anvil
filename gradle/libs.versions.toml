@@ -109,6 +109,7 @@ kotest-assertions-api = { module = "io.kotest:kotest-assertions-api", version.re
 kotest-assertions-core-jvm = { module = "io.kotest:kotest-assertions-core-jvm", version.ref = "kotest" }
 
 kotlin-annotationProcessingEmbeddable = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable", version.ref = "kotlin" }
+kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
 kotlin-compileTesting = { module = "dev.zacsweers.kctfork:core", version.ref = "kct" }
 kotlin-compileTesting-ksp = { module = "dev.zacsweers.kctfork:ksp", version.ref = "kct" }
 kotlin-compiler = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
