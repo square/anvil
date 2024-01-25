@@ -16,7 +16,7 @@ jobs :
     strategy :
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.9.20 ]
+        kotlin-version : [ 1.9.22 ]
 
     steps :
       - uses : actions/checkout@v3
@@ -36,7 +36,7 @@ jobs :
     strategy :
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.9.20 ]
+        kotlin-version : [ 1.9.22 ]
 
     steps :
       - uses : actions/checkout@v3
@@ -186,7 +186,7 @@ jobs :
       # solution.
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.9.20 ]
+        kotlin-version : [ 1.9.22 ]
         agp-version : [ 7.1.1, 7.2.0, 7.3.1 ]
 
     steps :
@@ -218,7 +218,7 @@ jobs :
       # solution.
       fail-fast : false
       matrix :
-        kotlin-version : [ 1.9.20 ]
+        kotlin-version : [ 1.9.22 ]
 
     steps :
       - uses : actions/checkout@v3
