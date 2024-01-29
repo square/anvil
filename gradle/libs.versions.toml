@@ -116,7 +116,7 @@ kotlin-compiler = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", 
 kotlin-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradlePluginApi = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
-kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.8.0"
+kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0"
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 
