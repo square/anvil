@@ -24,6 +24,7 @@ internal class CodeGenerationExtension(
   codeGenerators: List<CodeGenerator>,
   private val commandLineOptions: CommandLineOptions,
   private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
+  private val trackSourceFiles: Boolean,
 ) : AnalysisHandlerExtension {
 
   private var didRecompile = false

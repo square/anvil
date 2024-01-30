@@ -93,6 +93,23 @@ public abstract class AnvilExtension @Inject constructor(
   public val addOptionalAnnotations: Property<Boolean> = objects.property(Boolean::class.java)
     .conventionFromProperty("com.squareup.anvil.addOptionalAnnotations", false)
 
+  /**
+   * Track the source files for each generated file. This allows for two new behaviors:
+   * - Generated code is "invalidated" and deleted when the source file is changed or deleted.
+   * - Generated code is cached in a way that Gradle understands,
+   *   and will be restored from cache along with other build artifacts.
+   *
+   * By default this feature is enabled.
+   *
+   * This property can also be set via a Gradle property:
+   *
+   * ```properties
+   * com.squareup.anvil.trackSourceFiles=true
+   * ```
+   */
+  public val trackSourceFiles: Property<Boolean> = objects.property(Boolean::class.java)
+    .conventionFromProperty("com.squareup.anvil.trackSourceFiles", true)
+
   @Suppress("PropertyName")
   internal var _variantFilter: Action<VariantFilter>? = null
 

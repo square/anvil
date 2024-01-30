@@ -23,6 +23,10 @@ internal const val disableComponentMergingName = "disable-component-merging"
 internal val disableComponentMergingKey =
   CompilerConfigurationKey.create<Boolean>("anvil $disableComponentMergingName")
 
+internal const val trackSourceFilesName = "track-source-files"
+internal val trackSourceFilesKey =
+  CompilerConfigurationKey.create<Boolean>("anvil $trackSourceFilesName")
+
 internal const val backendName = "backend"
 internal val backendKey =
   CompilerConfigurationKey.create<String>("anvil $backendName")
@@ -68,6 +72,14 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       allowMultipleOccurrences = false,
     ),
     CliOption(
+      optionName = trackSourceFilesName,
+      valueDescription = "<true|false>",
+      description = "Whether Anvil should track its experimental generated " +
+        "file caching and invalidation",
+      required = false,
+      allowMultipleOccurrences = false,
+    ),
+    CliOption(
       optionName = backendName,
       valueDescription = AnvilBackend.entries.joinToString("|", "<", ">"),
       description = "Controls whether Anvil is running as an embedded plugin or as KSP.",
@@ -91,6 +103,9 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
 
       disableComponentMergingName ->
         configuration.put(disableComponentMergingKey, value.toBoolean())
+
+      trackSourceFilesName ->
+        configuration.put(trackSourceFilesKey, value.toBoolean())
 
       backendName -> configuration.put(backendKey, value)
     }
