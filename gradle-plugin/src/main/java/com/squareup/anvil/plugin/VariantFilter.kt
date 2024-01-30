@@ -42,6 +42,8 @@ public interface VariantFilter : Named {
    * details.
    */
   public var addOptionalAnnotations: Boolean
+
+  public var trackSourceFiles: Boolean
 }
 
 internal class CommonFilter(
@@ -84,6 +86,13 @@ internal class CommonFilter(
     get() = addOptionalAnnotationsOverride ?: extension.addOptionalAnnotations.get()
     set(value) {
       addOptionalAnnotationsOverride = value
+    }
+
+  private var trackSourceFilesOverride: Boolean? = null
+  override var trackSourceFiles: Boolean
+    get() = trackSourceFilesOverride ?: extension.trackSourceFiles.get()
+    set(value) {
+      trackSourceFilesOverride = value
     }
 }
 

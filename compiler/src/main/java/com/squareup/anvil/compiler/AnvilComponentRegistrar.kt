@@ -63,6 +63,7 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
     }
 
     val sourceGenFolder = File(configuration.getNotNull(srcGenDirKey))
+    val trackSourceFiles = configuration.getNotNull(trackSourceFilesKey)
 
     val codeGenerators = loadCodeGenerators() +
       manuallyAddedCodeGenerators +
@@ -85,6 +86,7 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
         codeGenerators = codeGenerators,
         commandLineOptions = commandLineOptions,
         moduleDescriptorFactory = moduleDescriptorFactory,
+        trackSourceFiles = trackSourceFiles,
       ),
     )
   }

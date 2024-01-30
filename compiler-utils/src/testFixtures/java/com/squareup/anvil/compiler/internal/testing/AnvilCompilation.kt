@@ -44,6 +44,7 @@ public class AnvilCompilation internal constructor(
     generateDaggerFactoriesOnly: Boolean = false,
     disableComponentMerging: Boolean = false,
     enableExperimentalAnvilApis: Boolean = true,
+    trackSourceFiles: Boolean = true,
     mode: AnvilCompilationMode = Embedded(emptyList()),
     enableAnvil: Boolean = true,
   ): AnvilCompilation = apply {
@@ -98,6 +99,11 @@ public class AnvilCompilation internal constructor(
                 pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "generate-dagger-factories-only",
                 optionValue = generateDaggerFactoriesOnly.toString(),
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "track-source-files",
+                optionValue = trackSourceFiles.toString(),
               ),
             )
         }
@@ -242,6 +248,7 @@ public fun compileAnvil(
   messageOutputStream: OutputStream = System.out,
   workingDir: File? = null,
   enableExperimentalAnvilApis: Boolean = true,
+  trackSourceFiles: Boolean = true,
   previousCompilationResult: JvmCompilationResult? = null,
   mode: AnvilCompilationMode = Embedded(emptyList()),
   moduleName: String? = null,
@@ -275,6 +282,7 @@ public fun compileAnvil(
       generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
       disableComponentMerging = disableComponentMerging,
       enableExperimentalAnvilApis = enableExperimentalAnvilApis,
+      trackSourceFiles = trackSourceFiles,
       mode = mode,
     )
     .compile(*sources)

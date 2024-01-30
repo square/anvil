@@ -195,6 +195,10 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
           key = "disable-component-merging",
           lazy { variant.variantFilter.disableComponentMerging.toString() },
         ),
+        SubpluginOption(
+          key = "track-source-files",
+          lazy { variant.variantFilter.trackSourceFiles.toString() },
+        ),
       )
     }
   }

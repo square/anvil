@@ -8,6 +8,7 @@ public class CommandLineOptions private constructor(
   public val generateFactories: Boolean,
   public val generateFactoriesOnly: Boolean,
   public val disableComponentMerging: Boolean,
+  public val trackSourceFiles: Boolean,
   public val backend: AnvilBackend,
 ) {
   public companion object {
@@ -16,6 +17,7 @@ public class CommandLineOptions private constructor(
         generateFactories = get(generateDaggerFactoriesKey, false),
         generateFactoriesOnly = get(generateDaggerFactoriesOnlyKey, false),
         disableComponentMerging = get(disableComponentMergingKey, false),
+        trackSourceFiles = get(trackSourceFilesKey, false),
         backend = parseBackend(),
       )
 
