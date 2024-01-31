@@ -14,7 +14,7 @@ import org.gradle.api.DefaultTask
 import org.gradle.api.tasks.TaskAction
 import java.io.File
 
-private const val MODULE_COUNT = 1000
+private const val MODULE_COUNT = 20
 
 /**
  * Generates 1000 library modules and 1 application module to benchmark Anvil. The first 10

@@ -1,0 +1,78 @@
+# Can specify scenarios to use when none are specified on the command line
+default-scenarios = [
+  "aa_fill_cache",
+  "anvil_benchmark",
+  "assemble_no_tracking",
+  "assemble_with_tracking",
+  "assemble_ABI_change_no_tracking",
+  "assemble_ABI_change_with_tracking"
+]
+
+# Prefix with aa_ to run this scenario first. The Gradle Profiler uses an alphabetical sort
+# for all scenarios.
+aa_fill_cache {
+  tasks = [":app:assemble"]
+  warm-ups = 1
+  iterations = 0
+}
+
+anvil_benchmark {
+  tasks = [":app:compileKotlin"]
+  cleanup-tasks = [":app:cleanCompileKotlin"]
+  measured-build-ops = ["org.jetbrains.kotlin.gradle.tasks.KotlinCompile"]
+
+  warm-ups = 6
+  iterations = 10
+
+  gradle-args = ["--offline", "--no-build-cache", "-Pcom.squareup.anvil.trackSourceFiles=false"]
+}
+
+assemble_no_tracking {
+  tasks = ["assemble"]
+  cleanup-tasks = ["clean"]
+  measured-build-ops = ["org.jetbrains.kotlin.gradle.tasks.KotlinCompile"]
+
+  warm-ups = 6
+  iterations = 10
+
+  gradle-args = ["--offline", "--no-build-cache", "-Pcom.squareup.anvil.trackSourceFiles=false"]
+}
+
+assemble_with_tracking {
+  tasks = ["assemble"]
+  cleanup-tasks = ["clean"]
+  measured-build-ops = ["org.jetbrains.kotlin.gradle.tasks.KotlinCompile"]
+
+  warm-ups = 6
+  iterations = 10
+
+  gradle-args = ["--offline", "--no-build-cache", "-Pcom.squareup.anvil.trackSourceFiles=false"]
+}
+
+assemble_ABI_change_no_tracking {
+  tasks = ["assemble"]
+  cleanup-tasks = ["clean"]
+  measured-build-ops = ["org.jetbrains.kotlin.gradle.tasks.KotlinCompile"]
+
+  warm-ups = 6
+  iterations = 10
+
+  # The path of the changed file is relative to the build's root directory (where settings.gradle is).
+  apply-abi-change-to = ["lib0/src/main/kotlin/com/squareup/anvil/benchmark0/Source.kt"]
+
+  gradle-args = ["--offline", "--no-build-cache", "-Pcom.squareup.anvil.trackSourceFiles=false"]
+}
+
+assemble_ABI_change_with_tracking {
+  tasks = ["assemble"]
+  cleanup-tasks = ["clean"]
+  measured-build-ops = ["org.jetbrains.kotlin.gradle.tasks.KotlinCompile"]
+
+  warm-ups = 6
+  iterations = 10
+
+  # The path of the changed file is relative to the build's root directory (where settings.gradle is).
+  apply-abi-change-to = ["lib0/src/main/kotlin/com/squareup/anvil/benchmark0/Source.kt"]
+
+  gradle-args = ["--offline", "--no-build-cache", "-Pcom.squareup.anvil.trackSourceFiles=false"]
+}
