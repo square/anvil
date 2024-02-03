@@ -1,6 +1,7 @@
 package com.squareup.anvil.conventions
 
 import com.rickbusarow.kgx.extras
+import com.rickbusarow.kgx.fromInt
 import com.rickbusarow.kgx.javaExtension
 import com.squareup.anvil.conventions.utils.isInAnvilBuild
 import com.squareup.anvil.conventions.utils.isInAnvilIncludedBuild
@@ -13,7 +14,6 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
-import org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_1_8
 import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.Properties
@@ -91,22 +91,30 @@ abstract class BasePlugin : Plugin<Project> {
             extension.warningsAsErrors.get(),
         )
 
+        val sourceSetName = task.sourceSetName.getOrElse(
+          task.name.substringAfter("compile")
+            .substringBefore("Kotlin")
+            .replaceFirstChar(Char::lowercase),
+        )
+
         // Only add the experimental opt-in if the project has the `annotations` dependency,
         // otherwise the compiler will throw a warning and fail in CI.
-        if (target.hasAnnotationDependency()) {
+        if (target.hasAnnotationDependency(sourceSetName)) {
           freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
         }
 
         freeCompilerArgs.addAll(extension.kotlinCompilerArgs.get())
-        if (extension.explicitApi.get()) {
+
+        fun isTestSourceSet(): Boolean {
+          val regex = """(?:gradle|Unit|[aA]ndroid)Test""".toRegex()
+          return sourceSetName == "test" || sourceSetName.matches(regex)
+        }
+
+        if (extension.explicitApi.get() && !isTestSourceSet()) {
           freeCompilerArgs.add("-Xexplicit-api=strict")
         }
 
-        val fromInt = when (val targetInt = target.jvmTargetInt()) {
-          8 -> JVM_1_8
-          else -> JvmTarget.fromTarget("$targetInt")
-        }
-        jvmTarget.set(fromInt)
+        jvmTarget.set(JvmTarget.fromInt(target.jvmTargetInt()))
       }
     }
   }
@@ -134,15 +142,16 @@ abstract class BasePlugin : Plugin<Project> {
    * to determine if the receiver has the `annotations` dependency,
    * without actually resolving the dependency graph.
    */
-  private fun Project.hasAnnotationDependency(): Boolean {
-    val seed = sequenceOf(
-      "compileClasspath",
-      "testCompileClasspath",
-      "debugCompileClasspath",
-    )
-      .mapNotNull { configurations.findByName(it) }
+  private fun Project.hasAnnotationDependency(sourceSetName: String): Boolean {
 
-    val configs = generateSequence(seed) { configs ->
+    val compileClasspath = when (sourceSetName) {
+      "main" -> "compileClasspath"
+      else -> "${sourceSetName}CompileClasspath"
+    }
+      .let { configurations.findByName(it) }
+      ?: return false
+
+    val configs = generateSequence(sequenceOf(compileClasspath)) { configs ->
       configs.flatMap { it.extendsFrom }
         .mapNotNull { configurations.findByName(it.name) }
         .takeIf { it.iterator().hasNext() }
@@ -155,14 +164,15 @@ abstract class BasePlugin : Plugin<Project> {
 
     return configs.any { cfg ->
       cfg.dependencies.any { dep ->
-
         dep.group == "com.squareup.anvil" && dep.name in providingProjects
       }
     }
   }
 
   private fun configureJava(target: Project) {
-    target.plugins.withId("java") {
+    // Sets the toolchain and target versions for java compilation. This waits for the 'java-base'
+    // plugin instead of just 'java' for the sake of the KMP integration test project.
+    target.plugins.withId("java-base") {
       target.javaExtension.toolchain {
         it.languageVersion.set(JavaLanguageVersion.of(target.libs.versions.jvm.toolchain.get()))
       }
@@ -178,7 +188,7 @@ abstract class BasePlugin : Plugin<Project> {
       task.maxParallelForks = Runtime.getRuntime().availableProcessors()
 
       task.testLogging { logging ->
-        logging.events("passed", "skipped", "failed")
+        logging.events("skipped", "failed")
         logging.exceptionFormat = FULL
         logging.showCauses = true
         logging.showExceptions = true

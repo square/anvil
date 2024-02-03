@@ -68,7 +68,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.psi.psiUtil.isExtensionDeclaration
 import java.io.File
 
-object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
+internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext) = context.generateFactories
 
   internal class KspGenerator(

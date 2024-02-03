@@ -18,4 +18,6 @@ publish {
 dependencies {
   api(project(":annotations"))
   api(libs.kotlin.compiler)
+
+  implementation(platform(libs.kotlin.bom))
 }

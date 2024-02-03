@@ -7,7 +7,7 @@ import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.TypeName
 import org.jetbrains.kotlin.name.FqName
 
-sealed interface Parameter {
+internal sealed interface Parameter {
   val name: String
   val originalName: String
   val typeName: TypeName

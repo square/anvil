@@ -30,7 +30,7 @@ import org.jetbrains.kotlin.psi.psiUtil.parentsWithSelf
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 
-class RealAnvilModuleDescriptor private constructor(
+public class RealAnvilModuleDescriptor private constructor(
   delegate: ModuleDescriptor,
 ) : AnvilModuleDescriptor, ModuleDescriptor by delegate {
 
@@ -53,7 +53,7 @@ class RealAnvilModuleDescriptor private constructor(
       .map { it.clazz.containingKtFile }
       .distinctBy { it.identifier }
 
-  fun addFiles(files: Collection<KtFile>) {
+  public fun addFiles(files: Collection<KtFile>) {
     files.forEach { ktFile ->
       val classReferences = ktFile.classesAndInnerClasses().map { ktClass ->
         Psi(ktClass, ktClass.toClassId(), this)

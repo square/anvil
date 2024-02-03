@@ -10,6 +10,7 @@ import com.squareup.anvil.conventions.utils.libs
 import com.vanniktech.maven.publish.JavadocJar.Dokka
 import com.vanniktech.maven.publish.KotlinJvm
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
+import com.vanniktech.maven.publish.SonatypeHost
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.publish.maven.MavenPublication
@@ -37,6 +38,7 @@ open class PublishConventionPlugin : Plugin<Project> {
     @Suppress("UnstableApiUsage")
     mavenPublishing.pomFromGradleProperties()
     mavenPublishing.signAllPublications()
+    mavenPublishing.publishToMavenCentral(SonatypeHost.S01, automaticRelease = true)
 
     target.plugins.withId("org.jetbrains.kotlin.jvm") {
       when {

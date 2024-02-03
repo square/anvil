@@ -11,7 +11,7 @@ class LifecycleTest : BaseGradleTest() {
 
   @TestFactory
   fun `tasks are compatible with configuration caching when targeting kotlin-jvm`() =
-    kases
+    params
       .distinctBy { it.gradleVersion }
       .asTests {
 

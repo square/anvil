@@ -3,9 +3,13 @@ package com.squareup.anvil.plugin
 import org.gradle.api.Action
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.ProviderFactory
 import javax.inject.Inject
 
-public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory) {
+public abstract class AnvilExtension @Inject constructor(
+  objects: ObjectFactory,
+  private val providers: ProviderFactory,
+) {
   /**
    * Allows you to use Anvil to generate Factory classes that usually the Dagger annotation
    * processor would generate for @Provides methods, @Inject constructors and @Inject fields.
@@ -20,18 +24,30 @@ public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory)
    * Java sources either.
    *
    * By default this feature is disabled.
+   *
+   * This property can also be set via a Gradle property:
+   *
+   * ```properties
+   * com.squareup.anvil.generateDaggerFactories=true
+   * ```
    */
   public val generateDaggerFactories: Property<Boolean> = objects.property(Boolean::class.java)
-    .convention(false)
+    .conventionFromProperty("com.squareup.anvil.generateDaggerFactories", false)
 
   /**
    * There are occasions where consumers of Anvil are only interested in generating Dagger
    * factories to speed up build times and don't want to make use of the other features. With this
    * flag Anvil will only generate Dagger factories and skip all other steps. If this flag is set
    * to `true`, then also [generateDaggerFactories] must be set to `true`.
+   *
+   * This property can also be set via a Gradle property:
+   *
+   * ```properties
+   * com.squareup.anvil.generateDaggerFactoriesOnly=true
+   * ```
    */
   public val generateDaggerFactoriesOnly: Property<Boolean> = objects.property(Boolean::class.java)
-    .convention(false)
+    .conventionFromProperty("com.squareup.anvil.generateDaggerFactoriesOnly", false)
 
   /**
    * Enabling this indicates that only code generation should run and no component merging should
@@ -39,23 +55,43 @@ public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory)
    * or similar annotations but _not_ `@MergeComponent` or `@MergeSubcomponent` functionality.
    * This allows for anvil use in projects with kapt enabled but _not_ require disabling
    * incremental compilation in kapt stub generation tasks.
+   *
+   * This property can also be set via a Gradle property:
+   *
+   * ```properties
+   * com.squareup.anvil.disableComponentMerging=true
+   * ```
    */
   public val disableComponentMerging: Property<Boolean> = objects.property(Boolean::class.java)
-    .convention(false)
+    .conventionFromProperty("com.squareup.anvil.disableComponentMerging", false)
 
   /**
    * Add Anvil generated source directories to sourceSets in Gradle for indexing visibility in the
    * IDE. This can be useful in debugging and is disabled by default.
+   *
+   * This property can also be set via a Gradle property:
+   *
+   * ```properties
+   * com.squareup.anvil.syncGeneratedSources=true
+   * ```
    */
   public val syncGeneratedSources: Property<Boolean> = objects.property(Boolean::class.java)
-    .convention(false)
+    .conventionFromProperty("com.squareup.anvil.syncGeneratedSources", false)
 
   /**
-   * Add the `annotations-optional` artifact as a dependency to make annotations like `@SingleIn` and `@ForScope`
-   * available to use. These are annotations that are not strictly required but which we've found to be helpful with managing larger dependency graphs.
+   * Add the `annotations-optional` artifact as a dependency to make annotations
+   * like `@SingleIn` and `@ForScope` available to use. These are annotations
+   * that are not strictly required but which we've found to be helpful with
+   * managing larger dependency graphs.
+   *
+   * This property can also be set via a Gradle property:
+   *
+   * ```properties
+   * com.squareup.anvil.addOptionalAnnotations=true
+   * ```
    */
   public val addOptionalAnnotations: Property<Boolean> = objects.property(Boolean::class.java)
-    .convention(false)
+    .conventionFromProperty("com.squareup.anvil.addOptionalAnnotations", false)
 
   @Suppress("PropertyName")
   internal var _variantFilter: Action<VariantFilter>? = null
@@ -67,4 +103,13 @@ public abstract class AnvilExtension @Inject constructor(objects: ObjectFactory)
   public fun variantFilter(action: Action<VariantFilter>) {
     _variantFilter = action
   }
+
+  private fun Property<Boolean>.conventionFromProperty(
+    name: String,
+    default: Boolean,
+  ): Property<Boolean> = convention(
+    providers.gradleProperty(name)
+      .map(String::toBoolean)
+      .orElse(default),
+  )
 }
