@@ -96,14 +96,14 @@ internal fun KSAnnotation.boundTypeOrNull(): KSType? = argumentAt("boundType")?.
 
 @Suppress("UNCHECKED_CAST")
 internal fun KSAnnotation.replaces(): List<KSClassDeclaration> =
-  (argumentAt("replaces")?.value as? List<KSType>).orEmpty().mapNotNull {
-    it.resolveKSClassDeclaration()
+  (argumentAt("replaces")?.value as? List<KSType>).orEmpty().map {
+    it.resolveKSClassDeclaration() ?: throw KspAnvilException("Could not resolve replaces type $it}", this)
   }
 
 @Suppress("UNCHECKED_CAST")
 internal fun KSAnnotation.exclude(): List<KSClassDeclaration> =
-  (argumentAt("exclude")?.value as? List<KSType>).orEmpty().mapNotNull {
-    it.resolveKSClassDeclaration()
+  (argumentAt("exclude")?.value as? List<KSType>).orEmpty().map {
+    it.resolveKSClassDeclaration() ?: throw KspAnvilException("Could not resolve exclude $it", this)
   }
 
 internal fun KSAnnotation.parentScope(): KSClassDeclaration {

@@ -91,7 +91,10 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
           clazz.getKSAnnotationsByType(ContributesSubcomponent::class)
             .forEach { annotation ->
               for (it in annotation.replaces()) {
-                val scope = annotation.scope().resolveKSClassDeclaration() ?: continue
+                val scope = annotation.scope().resolveKSClassDeclaration() ?: throw KspAnvilException(
+                  message = "Couldn't resolve the scope for ${clazz.qualifiedName?.asString()}.",
+                  node = clazz,
+                )
                 it.checkUsesSameScope(scope, clazz)
               }
             }
