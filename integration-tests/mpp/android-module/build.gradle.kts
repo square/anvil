@@ -39,10 +39,7 @@ androidComponents {
 
 kotlin {
 
-  // The `android()` target is deprecated in Kotlin 1.9.0+,
-  // but the new `androidTarget()` alternative doesn't exist in KGP 1.8.x.
-  @Suppress("DEPRECATION")
-  android()
+  androidTarget()
 
   sourceSets {
     val androidMain by getting {

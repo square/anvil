@@ -16,4 +16,24 @@ interface FileStubs {
       """.trimIndent(),
     )
   }
+
+  fun androidBlock(namespace: String = "com.squareup.anvil.android"): String {
+    return """
+    android {
+      compileSdk = 33
+      namespace = "$namespace"
+
+      defaultConfig {
+        minSdk = 24
+        @Suppress("UnstableApiUsage")
+        targetSdk = 33
+      }
+
+      compileOptions {
+        sourceCompatibility = JavaVersion.VERSION_11
+        targetCompatibility = JavaVersion.VERSION_11
+      }
+    }
+    """.trimIndent()
+  }
 }

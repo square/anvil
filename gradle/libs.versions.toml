@@ -15,7 +15,7 @@ androidx-test = "1.5.0"
 androidx-test-ext = "1.1.5"
 autoService = "1.1.1"
 autoValue = "1.10.4"
-buildconfig = "4.2.0"
+buildconfig = "5.3.5"
 dagger = "2.46.1"
 dropbox-dependencyGuard = "0.4.3"
 dokka = "1.9.10"
@@ -25,17 +25,18 @@ jUnit5 = "5.10.1"
 jvm-toolchain = "11"
 jvm-target-library = "8"
 jvm-target-minimal = "11"
-kase = "0.4.0"
-kct = "0.3.1"
-kgx = "0.1.9"
-kotlin = "1.9.10"
-kotlinx-binaryCompatibility = "0.13.2"
-kotlinpoet = "1.14.2"
+kase = "0.9.1"
+kct = "0.4.0"
+kgx = "0.1.11"
+kotest = "5.8.0"
+kotlin = "1.9.22"
+kotlinx-binaryCompatibility = "0.14.0"
+kotlinpoet = "1.16.0"
 # If updating KSP version, we currently have ksp override logic in settings.gradle that needs to be updated too
-ksp = "1.9.10-1.0.13"
+ksp = "1.9.22-1.0.17"
 ktlint = "1.0.1"
-ktlintPlugin = "12.0.3"
-mavenPublish = "0.26.0"
+ktlintPlugin = "12.1.0"
+mavenPublish = "0.27.0"
 
 #
 # Configs that we can override in CI. Not exactly "versions" but useful to repurpose it here.
@@ -104,14 +105,18 @@ kase = { module = "com.rickbusarow.kase:kase", version.ref = "kase" }
 kase-gradle = { module = "com.rickbusarow.kase:kase-gradle", version.ref = "kase" }
 kase-gradle-dsl = { module = "com.rickbusarow.kase:kase-gradle-dsl", version.ref = "kase" }
 
+kotest-assertions-api = { module = "io.kotest:kotest-assertions-api", version.ref = "kotest" }
+kotest-assertions-core-jvm = { module = "io.kotest:kotest-assertions-core-jvm", version.ref = "kotest" }
+
 kotlin-annotationProcessingEmbeddable = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable", version.ref = "kotlin" }
+kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
 kotlin-compileTesting = { module = "dev.zacsweers.kctfork:core", version.ref = "kct" }
 kotlin-compileTesting-ksp = { module = "dev.zacsweers.kctfork:ksp", version.ref = "kct" }
 kotlin-compiler = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
 kotlin-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradlePluginApi = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
-kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.6.2"
+kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0"
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 

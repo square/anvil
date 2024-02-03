@@ -34,7 +34,6 @@ import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryCodeGen.KspGene
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
-import com.squareup.anvil.compiler.codegen.ksp.argumentAt
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
@@ -76,7 +75,7 @@ import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 import javax.inject.Provider
 
-object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
+internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
 
   override fun isApplicable(context: AnvilContext) = context.generateFactories
 
@@ -143,7 +142,7 @@ object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
       // Compute for each parameter its key.
       val functionParameterKeys = function.parameterKeys
       val assistedParameterKeys = assistedParameters.map {
-        it.toAssistedParameterKey(it.type.toTypeName(typeParameterResolver))
+        it.toAssistedParameterKey(it.type.resolve().toTypeName(typeParameterResolver))
       }
 
       // The factory function may not have two or more parameters with the same key.
