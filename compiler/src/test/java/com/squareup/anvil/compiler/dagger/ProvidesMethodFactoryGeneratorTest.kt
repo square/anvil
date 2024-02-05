@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUpper
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
@@ -3531,7 +3532,12 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
       """,
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-      assertThat(messages).contains("@Provides methods can not be an extension function")
+      // Amusingly, these error messages are ever-so-slightly different across KSP and Kapt.
+      if (mode is Ksp) {
+        assertThat(messages).contains("@Provides methods cannot be extension functions")
+      } else {
+        assertThat(messages).contains("@Provides methods can not be an extension function")
+      }
     }
   }
 
