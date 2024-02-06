@@ -139,11 +139,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -186,11 +190,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -229,11 +237,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -273,11 +285,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -313,11 +329,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val lambdaArg = { num: Int -> num.toString() }
 
@@ -355,11 +375,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val lambdaArg: suspend (Int) -> String = { num: Int -> num.toString() }
 
@@ -397,11 +421,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val lambdaArg = { num: Int -> num.toString() }
 
@@ -439,11 +467,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val lambdaArg = { num: Int -> num.toString() }
 
@@ -481,11 +513,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val lambdaArg = null
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -522,11 +558,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val lambdaArg = { num: Int -> num.toString() }
 
@@ -563,11 +603,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val generatedFactoryInstance = assistedService.factoryClass().createInstance()
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
     }
   }
 
@@ -602,11 +646,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -645,11 +693,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -685,11 +737,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -725,11 +781,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -767,11 +827,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -876,11 +940,15 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -916,11 +984,15 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -973,11 +1045,15 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -1019,11 +1095,15 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -1064,11 +1144,15 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -1170,11 +1254,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -1352,11 +1440,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -1401,11 +1493,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -1443,11 +1539,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -1485,11 +1585,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -1530,11 +1634,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -1570,11 +1678,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -1912,11 +2024,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -1978,11 +2094,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }
@@ -2042,11 +2162,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       val factoryImplInstance = factoryImplClass.createInstance(generatedFactoryInstance)
 
       val staticMethods = factoryImplClass.declaredMethods.filter { it.isStatic }
-      assertThat(staticMethods).hasSize(1)
+      assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
+
+      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
+        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
         .filterNot { it.isStatic }

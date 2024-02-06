@@ -53,6 +53,8 @@ dependencies {
 
   testImplementation(testFixtures(project(":compiler-utils")))
   testImplementation(libs.dagger2.compiler)
+  // Force later guava version for Dagger's needs
+  testImplementation(libs.guava)
   testImplementation(libs.kotlin.annotationProcessingEmbeddable)
   testImplementation(libs.kotlin.compileTesting)
   testImplementation(libs.kotlin.compileTesting.ksp)

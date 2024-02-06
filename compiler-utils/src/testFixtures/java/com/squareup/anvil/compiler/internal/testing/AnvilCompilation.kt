@@ -16,6 +16,7 @@ import com.tschuchort.compiletesting.kspArgs
 import com.tschuchort.compiletesting.kspWithCompilation
 import com.tschuchort.compiletesting.symbolProcessorProviders
 import dagger.internal.codegen.ComponentProcessor
+import dagger.internal.codegen.KspComponentProcessor
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.config.JvmTarget
 import java.io.File
@@ -107,7 +108,11 @@ public class AnvilCompilation internal constructor(
               ServiceLoader.load(
                 SymbolProcessorProvider::class.java,
                 SymbolProcessorProvider::class.java.classLoader,
-              ),
+              )
+                // TODO for now, we don't want to run the dagger KSP processor while we're testing
+                //  KSP. This will change when we start supporting dagger-KSP, at which point we can
+                //  change this filter to be based on https://github.com/square/anvil/pull/713
+                .filterNot { it is KspComponentProcessor.Provider },
             )
             addAll(mode.symbolProcessorProviders)
           }

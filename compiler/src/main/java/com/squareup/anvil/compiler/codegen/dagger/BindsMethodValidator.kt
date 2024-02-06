@@ -59,9 +59,15 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
       )
     }
 
+    if (function.function.isExtensionDeclaration()) {
+      throw AnvilCompilationExceptionFunctionReference(
+        message = "@Binds methods can not be an extension function",
+        functionReference = function,
+      )
+    }
+
     val hasSingleBindingParameter =
-      (function.parameters.size == 1 && !function.function.isExtensionDeclaration()) ||
-        (function.parameters.isEmpty() && function.function.isExtensionDeclaration())
+      function.parameters.size == 1 && !function.function.isExtensionDeclaration()
     if (!hasSingleBindingParameter) {
       throw AnvilCompilationExceptionFunctionReference(
         message = "@Binds methods must have exactly one parameter, " +

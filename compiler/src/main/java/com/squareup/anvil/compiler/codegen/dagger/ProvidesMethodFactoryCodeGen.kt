@@ -65,6 +65,7 @@ import dagger.internal.Factory
 import dagger.internal.Preconditions
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.psiUtil.isExtensionDeclaration
 import java.io.File
 
 internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
@@ -151,6 +152,12 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     }
 
     private fun CallableReference.Companion.from(function: KSFunctionDeclaration): CallableReference {
+      if (function.extensionReceiver != null) {
+        throw KspAnvilException(
+          message = "@Provides methods cannot be extension functions",
+          node = function,
+        )
+      }
       val type = function.returnType?.resolve() ?: throw KspAnvilException(
         message = "Error occurred in type resolution and could not resolve return type.",
         node = function,
@@ -281,6 +288,12 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     }
 
     private fun CallableReference.Companion.from(function: MemberFunctionReference.Psi): CallableReference {
+      if (function.function.isExtensionDeclaration()) {
+        throw AnvilCompilationExceptionFunctionReference(
+          message = "@Provides methods can not be an extension function",
+          functionReference = function,
+        )
+      }
       val type = function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
         message = "Dagger provider methods must specify the return type explicitly when using " +
           "Anvil. The return type cannot be inferred implicitly.",
