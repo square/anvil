@@ -42,8 +42,8 @@ jobs :
       - uses : actions/checkout@v3
       - uses : actions/setup-java@v3
         with :
-          distribution : 'temurin'
-          java-version : '11'
+          distribution : 'zulu'
+          java-version : '17'
           check-latest : true
 
       - name : Test on Ubuntu
@@ -64,8 +64,8 @@ jobs :
       - uses : actions/checkout@v3
       - uses : actions/setup-java@v3
         with :
-          distribution : 'temurin'
-          java-version : '11'
+          distribution : 'zulu'
+          java-version : '17'
           check-latest : true
 
       # On Windows the command looks a little bit different. Notice that we use the .bat file and
@@ -107,8 +107,8 @@ jobs :
       - uses : actions/checkout@v3
       - uses : actions/setup-java@v3
         with :
-          distribution : 'temurin'
-          java-version : '11'
+          distribution : 'zulu'
+          java-version : '17'
           check-latest : true
 
       - name : KtLint
@@ -122,8 +122,8 @@ jobs :
       - uses : actions/checkout@v3
       - uses : actions/setup-java@v3
         with :
-          distribution : 'temurin'
-          java-version : '11'
+          distribution : 'zulu'
+          java-version : '17'
           check-latest : true
 
       - name : Android Lint
@@ -144,8 +144,8 @@ jobs :
       - uses : actions/checkout@v3
       - uses : actions/setup-java@v3
         with :
-          distribution : 'temurin'
-          java-version : '11'
+          distribution : 'zulu'
+          java-version : '17'
           check-latest : true
 
       - name : Publish to Maven Local
@@ -165,8 +165,8 @@ jobs :
       - uses : actions/checkout@v3
       - uses : actions/setup-java@v3
         with :
-          distribution : 'temurin'
-          java-version : '11'
+          distribution : 'zulu'
+          java-version : '17'
           check-latest : true
 
       - name : Publish Snapshots 1.9
@@ -193,8 +193,8 @@ jobs :
       - uses : actions/checkout@v3
       - uses : actions/setup-java@v3
         with :
-          distribution : 'temurin'
-          java-version : '11'
+          distribution : 'zulu'
+          java-version : '17'
           check-latest : true
 
       - name : Test Gradle Plugin
@@ -224,8 +224,8 @@ jobs :
       - uses : actions/checkout@v3
       - uses : actions/setup-java@v3
         with :
-          distribution : 'temurin'
-          java-version : '11'
+          distribution : 'zulu'
+          java-version : '17'
           check-latest : true
 
       - name : Run integration tests
@@ -258,8 +258,8 @@ jobs :
       - uses : actions/checkout@v3
       - uses : actions/setup-java@v3
         with :
-          distribution : 'temurin'
-          java-version : '11'
+          distribution : 'zulu'
+          java-version : '17'
           check-latest : true
 
       - name : Instrumentation Tests
@@ -285,8 +285,8 @@ jobs :
       - uses : actions/checkout@v3
       - uses : actions/setup-java@v3
         with :
-          distribution : 'temurin'
-          java-version : '11'
+          distribution : 'zulu'
+          java-version : '17'
           check-latest : true
 
       - name : Gradle integration tests
@@ -315,8 +315,8 @@ jobs :
       - uses : actions/checkout@v3
       - uses : actions/setup-java@v3
         with :
-          distribution : 'temurin'
-          java-version : '11'
+          distribution : 'zulu'
+          java-version : '17'
           check-latest : true
 
       - name : "Generate Project"

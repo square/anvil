@@ -7,6 +7,7 @@ import com.squareup.anvil.conventions.utils.isInAnvilBuild
 import com.squareup.anvil.conventions.utils.isInAnvilIncludedBuild
 import com.squareup.anvil.conventions.utils.isInAnvilRootBuild
 import com.squareup.anvil.conventions.utils.libs
+import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.JavaCompile
@@ -176,6 +177,7 @@ abstract class BasePlugin : Plugin<Project> {
       target.javaExtension.toolchain {
         it.languageVersion.set(JavaLanguageVersion.of(target.libs.versions.jvm.toolchain.get()))
       }
+      target.javaExtension.targetCompatibility = JavaVersion.toVersion(target.jvmTargetInt())
       target.tasks.withType(JavaCompile::class.java).configureEach { task ->
         task.options.release.set(target.jvmTargetInt())
       }
@@ -186,6 +188,26 @@ abstract class BasePlugin : Plugin<Project> {
     target.tasks.withType(Test::class.java).configureEach { task ->
 
       task.maxParallelForks = Runtime.getRuntime().availableProcessors()
+
+      task.jvmArgs(
+        // Fixes illegal reflective operation warnings during tests. It's a Kotlin issue.
+        // https://github.com/pinterest/ktlint/issues/1618
+        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+        "--add-opens=java.base/java.util=ALL-UNNAMED",
+        // Fixes IllegalAccessError: class org.jetbrains.kotlin.kapt3.base.KaptContext [...] in KCT tests
+        // https://youtrack.jetbrains.com/issue/KT-45545/Kapt-is-not-compatible-with-JDK-16
+        "--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+        "--illegal-access=permit",
+      )
 
       task.testLogging { logging ->
         logging.events("skipped", "failed")
