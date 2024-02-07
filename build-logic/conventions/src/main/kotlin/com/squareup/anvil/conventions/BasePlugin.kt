@@ -185,6 +185,25 @@ abstract class BasePlugin : Plugin<Project> {
   private fun configureTests(target: Project) {
     target.tasks.withType(Test::class.java).configureEach { task ->
 
+      // println(
+      //   """
+      //   ################################################### ${task.path}
+      //   ${target.gradle.startParameter.taskNames}
+      //
+      //   ${
+      //     target.gradle.startParameter.taskRequests.joinToString("\n") {
+      //       """
+      //       ---
+      //       root: ${it.rootDir}
+      //       args: ${it.args}
+      //       ---
+      //       """.trimIndent()
+      //     }
+      //   }
+      //   ###################################################
+      //   """.trimIndent(),
+      // )
+
       task.maxParallelForks = Runtime.getRuntime().availableProcessors()
 
       task.testLogging { logging ->

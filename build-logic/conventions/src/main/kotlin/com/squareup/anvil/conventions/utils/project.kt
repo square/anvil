@@ -80,3 +80,24 @@ internal fun Project.addTasksToStartParameter(taskNames: Iterable<String>) {
     )
   }
 }
+
+/** This is always a valid cast */
+internal fun Project.asProjectInternal(): ProjectInternal = this as ProjectInternal
+
+// internal fun Project.transformStartParameterTasks(transform: (Set<String>) -> Set<String>) {
+//
+//   if (isPartOfRootBuild) {
+//     /* Root of composite build: We can just add the task name */
+//     gradle.startParameter.setTaskNames(
+//       gradle.startParameter.taskNames.toSet() + taskNames,
+//     )
+//   } else {
+//     /* This is an included build. Referencing the task path explicitly */
+//     val rootBuild = gradle.parents().last()
+//     val buildId = (project as ProjectInternal).identityPath
+//     val absoluteTaskPaths = taskNames.map { "$buildId:$it" }
+//     rootBuild.startParameter.setTaskNames(
+//       rootBuild.startParameter.taskNames.toSet() + absoluteTaskPaths,
+//     )
+//   }
+// }

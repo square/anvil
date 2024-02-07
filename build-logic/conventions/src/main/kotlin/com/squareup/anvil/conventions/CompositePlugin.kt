@@ -1,6 +1,7 @@
 package com.squareup.anvil.conventions
 
 import com.rickbusarow.kgx.checkProjectIsRoot
+import com.squareup.anvil.conventions.utils.asProjectInternal
 import com.squareup.anvil.conventions.utils.hasTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -26,6 +27,50 @@ class CompositePlugin : Plugin<Project> {
         "This project has no included builds, " +
         "so the plugin would just waste time searching the task graph."
     }
+
+    // // if (target.providers.getSystemPropertyOrNull("idea.active") == "true") {
+    // val startParameter = target.gradle.startParameter
+
+    val thisBuild = target.asProjectInternal().buildPath
+    println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% thisBuild -- $thisBuild")
+
+    // val rootTestTasks = startParameter.taskNames.map {
+    //   val path = GradlePath.path(it)
+    //
+    //   when {
+    //     !path.isAbsolute -> it
+    //     path.firstSegment != GradlePath.path(":anvil") -> it
+    //     path.lastSegment.path == ":test" -> path.removeFirstSegments(1).path
+    //     path.lastSegment.path == ":gradleTest" -> path.removeFirstSegments(1).path
+    //     else -> it
+    //   }
+    // }
+    //
+    // val originalArgs = startParameter.taskRequests.flatMap { it.args }
+    // val originalNames = startParameter.taskNames.toList()
+    //
+    // if (startParameter.taskNames != rootTestTasks) {
+    //   startParameter.setTaskNames(rootTestTasks)
+    // }
+    //
+    // val newNames = rootTestTasks.toList()
+    // val newArgs = startParameter.taskRequests.flatMap { it.args }
+    //
+    // println(
+    //   """
+    //   |%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% thisBuild -- $thisBuild
+    //   |   original names: $originalNames
+    //   |        new names: $newNames
+    //   |
+    //   |
+    //   |    original args: $originalArgs
+    //   |         new args: $newArgs
+    //   |%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+    //   """.trimMargin(),
+    // )
+    // // }
+
+    return
 
     target.gradle.projectsEvaluated { gradle ->
 
