@@ -305,7 +305,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: gradle/wrapper-validation-action@56b90f209b02bf6d1deae490e9ef18b21a389cd4 # v1
+      - uses: gradle/wrapper-validation-action@85cde3f5a1033b2adc2442631c24b530f1183a1a # v2
 
   build-benchmark-project:
     runs-on: ubuntu-latest
