@@ -1,7 +1,6 @@
 package com.squareup.anvil.conventions
 
 import com.rickbusarow.kgx.checkProjectIsRoot
-import com.squareup.anvil.conventions.utils.asProjectInternal
 import com.squareup.anvil.conventions.utils.hasTask
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -31,8 +30,8 @@ class CompositePlugin : Plugin<Project> {
     // // if (target.providers.getSystemPropertyOrNull("idea.active") == "true") {
     // val startParameter = target.gradle.startParameter
 
-    val thisBuild = target.asProjectInternal().buildPath
-    println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% thisBuild -- $thisBuild")
+    // val thisBuild = target.asProjectInternal().buildPath
+    // println("%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% thisBuild -- $thisBuild")
 
     // val rootTestTasks = startParameter.taskNames.map {
     //   val path = GradlePath.path(it)

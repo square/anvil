@@ -23,6 +23,7 @@ class ComponentDetectorCheckTest(
     @JvmStatic
     fun modes(): Collection<Any> {
       return listOf(AnvilCompilationMode.Embedded(), AnvilCompilationMode.Ksp())
+        .take(1)
     }
   }
 

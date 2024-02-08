@@ -1,3 +1,4 @@
+import Settings_gradle.GradlePath
 import org.gradle.api.internal.SettingsInternal
 import org.gradle.util.Path
 
@@ -38,7 +39,12 @@ include(":gradle-plugin")
 // If this build is being included elsewhere, there's no need for it. If the root build is actually
 // the delegate build, then including it here would create a circular dependency.
 if (gradle.parent == null) {
-  includeBuild("build-logic/delegate")
+  if (providers.systemProperty("idea.active").orNull == "true") {
+    if (gradle.startParameter.taskNames.none { it.endsWith(":test") }) {
+      includeBuild("build-logic/delegate")
+    }
+  }
+  // includeBuild("build-logic/delegate")
 }
 
 // if (target.providers.getSystemPropertyOrNull("idea.active") == "true") {
@@ -68,11 +74,12 @@ val newArgs = startParameter.taskRequests.flatMap { it.args }
 
 println(
   """
-  |%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% thisBuild -- ${(settings as SettingsInternal)}
+  |%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% thisBuild -- ${(settings as SettingsInternal)} -- gradle parent: ${gradle.parent}
+  |     request type: ${startParameter.taskRequests.single().javaClass}
+  |
   |   original names: $originalNames
   |        new names: $newNames
-  |        
-  |        
+  |
   |    original args: $originalArgs
   |         new args: $newArgs
   |%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
