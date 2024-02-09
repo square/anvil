@@ -13,13 +13,12 @@ import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
-import com.squareup.anvil.compiler.codegen.ksp.argumentAt
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationClass
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
@@ -178,26 +177,25 @@ internal object MapKeyCreatorCodeGen : AnvilApplicabilityChecker {
       codeGenDir: File,
       module: ModuleDescriptor,
       projectFiles: Collection<KtFile>,
-    ) {
-      projectFiles
-        .classAndInnerClassReferences(module)
-        .filter { classRef ->
-          val mapKey = classRef.annotations.find { it.fqName == mapKeyFqName }
-          if (mapKey != null) {
-            mapKey.argumentAt("unwrapValue", 0)?.value<Boolean>() == false
-          } else {
-            false
-          }
+    ): Collection<GeneratedFileWithSources> = projectFiles
+      .classAndInnerClassReferences(module)
+      .filter { classRef ->
+        val mapKey = classRef.annotations.find { it.fqName == mapKeyFqName }
+        if (mapKey != null) {
+          mapKey.argumentAt("unwrapValue", 0)?.value<Boolean>() == false
+        } else {
+          false
         }
-        .forEach { clazz ->
-          generateCreatorClass(codeGenDir, clazz)
-        }
-    }
+      }
+      .map { clazz ->
+        generateCreatorClass(codeGenDir, clazz)
+      }
+      .toList()
 
     private fun generateCreatorClass(
       codeGenDir: File,
       clazz: ClassReference,
-    ): GeneratedFile {
+    ): GeneratedFileWithSources {
       // // Given this
       // @MapKey(unwrapValue = false)
       // annotation class ActivityKey(
@@ -265,7 +263,13 @@ internal object MapKeyCreatorCodeGen : AnvilApplicabilityChecker {
       val spec = generateCreatorFileSpec(className, creatorFunctions)
       val content = spec.toString()
 
-      return createGeneratedFile(codeGenDir, packageName, spec.name, content)
+      return createGeneratedFile(
+        codeGenDir = codeGenDir,
+        packageName = packageName,
+        fileName = spec.name,
+        content = content,
+        sourceFile = clazz.containingFileAsJavaFile,
+      )
     }
 
     private fun generateCreatorFunction(
@@ -279,7 +283,10 @@ internal object MapKeyCreatorCodeGen : AnvilApplicabilityChecker {
     }
   }
 
-  private fun generateCreatorFileSpec(sourceClass: ClassName, creatorFunctions: List<FunSpec>): FileSpec {
+  private fun generateCreatorFileSpec(
+    sourceClass: ClassName,
+    creatorFunctions: List<FunSpec>,
+  ): FileSpec {
     val simpleName = sourceClass.simpleNames.joinToString("_")
     val generatedClassName = "${simpleName}Creator"
     val spec = FileSpec.createAnvilSpec(sourceClass.packageName, generatedClassName) {

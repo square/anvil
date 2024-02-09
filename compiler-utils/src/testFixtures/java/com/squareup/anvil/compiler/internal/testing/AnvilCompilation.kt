@@ -44,6 +44,7 @@ public class AnvilCompilation internal constructor(
     generateDaggerFactoriesOnly: Boolean = false,
     disableComponentMerging: Boolean = false,
     enableExperimentalAnvilApis: Boolean = true,
+    trackSourceFiles: Boolean = true,
     mode: AnvilCompilationMode = Embedded(emptyList()),
     enableAnvil: Boolean = true,
   ): AnvilCompilation = apply {
@@ -86,8 +87,18 @@ public class AnvilCompilation internal constructor(
             listOf(
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "gradle-project-dir",
+                optionValue = workingDir.absolutePath,
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "src-gen-dir",
                 optionValue = File(workingDir, "build/anvil").absolutePath,
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "anvil-cache-dir",
+                optionValue = File(workingDir, "build/anvil-cache").absolutePath,
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
@@ -98,6 +109,11 @@ public class AnvilCompilation internal constructor(
                 pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "generate-dagger-factories-only",
                 optionValue = generateDaggerFactoriesOnly.toString(),
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "track-source-files",
+                optionValue = trackSourceFiles.toString(),
               ),
             )
         }
@@ -242,6 +258,7 @@ public fun compileAnvil(
   messageOutputStream: OutputStream = System.out,
   workingDir: File? = null,
   enableExperimentalAnvilApis: Boolean = true,
+  trackSourceFiles: Boolean = true,
   previousCompilationResult: JvmCompilationResult? = null,
   mode: AnvilCompilationMode = Embedded(emptyList()),
   moduleName: String? = null,
@@ -275,6 +292,7 @@ public fun compileAnvil(
       generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
       disableComponentMerging = disableComponentMerging,
       enableExperimentalAnvilApis = enableExperimentalAnvilApis,
+      trackSourceFiles = trackSourceFiles,
       mode = mode,
     )
     .compile(*sources)

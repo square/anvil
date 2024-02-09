@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
+import com.squareup.anvil.compiler.codegen.incremental.ProjectDir
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -19,7 +20,6 @@ import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
-import java.io.File
 import java.util.ServiceLoader
 import kotlin.LazyThreadSafetyMode.NONE
 
@@ -62,7 +62,10 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
       return
     }
 
-    val sourceGenFolder = File(configuration.getNotNull(srcGenDirKey))
+    val sourceGenFolder = configuration.getNotNull(srcGenDirKey)
+    val cacheDir = configuration.getNotNull(anvilCacheDirKey)
+    val projectDir = ProjectDir(configuration.getNotNull(gradleProjectDirKey))
+    val trackSourceFiles = configuration.getNotNull(trackSourceFilesKey)
 
     val codeGenerators = loadCodeGenerators() +
       manuallyAddedCodeGenerators +
@@ -81,10 +84,13 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
     AnalysisHandlerExtension.registerExtensionFirst(
       project,
       CodeGenerationExtension(
-        codeGenDir = sourceGenFolder,
         codeGenerators = codeGenerators,
         commandLineOptions = commandLineOptions,
         moduleDescriptorFactory = moduleDescriptorFactory,
+        projectDir = projectDir,
+        generatedDir = sourceGenFolder,
+        cacheDir = cacheDir,
+        trackSourceFiles = trackSourceFiles,
       ),
     )
   }

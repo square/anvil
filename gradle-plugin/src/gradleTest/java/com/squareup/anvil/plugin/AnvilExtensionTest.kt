@@ -26,6 +26,7 @@ class AnvilExtensionTest : BaseGradleTest() {
       kase(a1 = "disableComponentMerging", false),
       kase(a1 = "syncGeneratedSources", false),
       kase(a1 = "addOptionalAnnotations", false),
+      kase(a1 = "trackSourceFiles", false),
     )
 
     fun GradleProjectBuilder.gradlePropertiesFile(propertyName: String, value: Any) {

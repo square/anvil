@@ -1,7 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.FileWithContent
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -17,14 +17,11 @@ internal abstract class PrivateCodeGenerator : CodeGenerator {
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
-  ): Collection<GeneratedFile> {
-    generateCodePrivate(codeGenDir, module, projectFiles)
-    return emptyList()
-  }
+  ): Collection<FileWithContent> = generateCodePrivate(codeGenDir, module, projectFiles)
 
   protected abstract fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
-  )
+  ): Collection<FileWithContent>
 }

@@ -40,4 +40,5 @@ class AnvilExtensionSpec : AbstractDslElementContainer<AnvilExtensionSpec>() {
   val disableComponentMerging by gradlePropertyReference()
   val syncGeneratedSources by gradlePropertyReference()
   val addOptionalAnnotations by gradlePropertyReference()
+  val trackSourceFiles by gradlePropertyReference()
 }

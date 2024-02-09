@@ -2182,10 +2182,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
-  private fun prepareCompilation(): AnvilCompilation {
+  private fun prepareCompilation(
+    previousCompilationResult: JvmCompilationResult? = null,
+  ): AnvilCompilation {
     return AnvilCompilation()
       .apply {
         kotlinCompilation.allWarningsAsErrors = WARNINGS_AS_ERRORS
+
+        if (previousCompilationResult != null) {
+          addPreviousCompilationResult(previousCompilationResult)
+        }
       }
       .configureAnvil(
         enableDaggerAnnotationProcessor = useDagger,
@@ -2196,9 +2202,10 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
+    previousCompilationResult: JvmCompilationResult? = null,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult {
-    return prepareCompilation()
+    return prepareCompilation(previousCompilationResult = previousCompilationResult)
       .compile(*sources)
       .apply(block)
   }

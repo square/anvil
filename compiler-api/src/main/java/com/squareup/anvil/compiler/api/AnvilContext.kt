@@ -44,6 +44,17 @@ public interface AnvilContext {
   public val disableComponentMerging: Boolean
 
   /**
+   * Enables incremental compilation support.
+   *
+   * This is achieved by tracking the source files for each generated file,
+   * which allows for two new behaviors:
+   * - Generated code is "invalidated" and deleted when the source file is changed or deleted.
+   * - Generated code is cached in a way that Gradle understands,
+   *   and will be restored from cache along with other build artifacts.
+   */
+  public val trackSourceFiles: Boolean
+
+  /**
    * The module of the current compilation.
    */
   public val module: ModuleDescriptor

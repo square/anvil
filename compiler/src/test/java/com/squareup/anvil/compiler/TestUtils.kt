@@ -27,6 +27,7 @@ internal fun compile(
   @Language("kotlin") vararg sources: String,
   previousCompilationResult: JvmCompilationResult? = null,
   enableDaggerAnnotationProcessor: Boolean = false,
+  trackSourceFiles: Boolean = true,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
   mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
@@ -36,6 +37,7 @@ internal fun compile(
   allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
   enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+  trackSourceFiles = trackSourceFiles,
   mode = mode,
   block = block,
 )
@@ -187,6 +189,7 @@ internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode)
   val dirToSearch = when (mode) {
     is AnvilCompilationMode.Embedded ->
       outputDirectory.parentFile.resolve("build${File.separator}anvil")
+
     is AnvilCompilationMode.Ksp -> outputDirectory.parentFile.resolve("ksp${File.separator}sources")
   }
   return dirToSearch.walkTopDown()
