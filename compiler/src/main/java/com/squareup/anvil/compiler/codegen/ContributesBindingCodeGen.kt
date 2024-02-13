@@ -22,7 +22,9 @@ import com.squareup.anvil.compiler.codegen.ksp.checkNoDuplicateScopeAndBoundType
 import com.squareup.anvil.compiler.codegen.ksp.checkNotMoreThanOneQualifier
 import com.squareup.anvil.compiler.codegen.ksp.checkSingleSuperType
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
+import com.squareup.anvil.compiler.codegen.ksp.ignoreQualifier
 import com.squareup.anvil.compiler.codegen.ksp.priority
+import com.squareup.anvil.compiler.codegen.ksp.qualifierAnnotation
 import com.squareup.anvil.compiler.codegen.ksp.replaces
 import com.squareup.anvil.compiler.codegen.ksp.resolveBoundType
 import com.squareup.anvil.compiler.codegen.ksp.scope
@@ -42,6 +44,7 @@ import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.joinToCode
+import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.Binds
@@ -66,6 +69,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
     val boundType: ClassName,
     val priority: ContributesBinding.Priority,
     val replaces: List<ClassName>,
+    val qualifier: AnnotationSpec?
   ) {
     companion object {
       val COMPARATOR = compareBy<Contribution> { it.scope.canonicalName }
@@ -112,6 +116,9 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
             FunSpec.builder("bind")
               .addModifiers(KModifier.ABSTRACT)
               .addAnnotation(Binds::class)
+              .apply {
+                contribution.qualifier?.let { addAnnotation(it) }
+              }
               .addParameter("real", originClass)
               .returns(contribution.boundType)
               .build(),
@@ -161,7 +168,12 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
               val boundType = it.resolveBoundType(resolver, clazz).toClassName()
               val priority = it.priority()
               val replaces = it.replaces().map { it.toClassName() }
-              Contribution(scope, boundType, priority, replaces)
+              val qualifier = if (it.ignoreQualifier()) {
+                null
+              } else {
+                clazz.qualifierAnnotation()?.toAnnotationSpec()
+              }
+              Contribution(scope, boundType, priority, replaces, qualifier)
             }
             .distinct()
             // Give it a stable sort.
@@ -226,7 +238,12 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                 )
               val priority = it.priority()
               val replaces = it.replaces().map { it.asClassName() }
-              Contribution(scope, boundType, priority, replaces)
+              val qualifier = if (it.ignoreQualifier()) {
+                null
+              } else {
+                clazz.qualifierAnnotation()?.toAnnotationSpec()
+              }
+              Contribution(scope, boundType, priority, replaces, qualifier)
             }
             // Give it a stable sort.
             .sortedWith(Contribution.COMPARATOR)
