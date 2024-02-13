@@ -227,15 +227,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
             .distinctBy { it.scope() }
             .map {
               val scope = it.scope().asClassName()
-              val boundType = it.boundTypeOrNull()?.asClassName()
-                ?: clazz.directSuperTypeReferences()
-                  .singleOrNull()
-                  ?.asClassReference()
-                  ?.asClassName()
-                ?: throw AnvilCompilationExceptionClassReference(
-                  message = "Couldn't resolve bound type for ${clazz.fqName}",
-                  classReference = clazz,
-                )
+              val boundType = it.resolveBoundType().asClassName()
               val priority = it.priority()
               val replaces = it.replaces().map { it.asClassName() }
               val qualifier = if (it.ignoreQualifier()) {

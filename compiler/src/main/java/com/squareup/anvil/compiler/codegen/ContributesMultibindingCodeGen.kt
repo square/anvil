@@ -7,9 +7,7 @@ import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesMultibinding
-import com.squareup.anvil.compiler.HINT_MULTIBINDING_PACKAGE_PREFIX
-import com.squareup.anvil.compiler.REFERENCE_SUFFIX
-import com.squareup.anvil.compiler.SCOPE_SUFFIX
+import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
@@ -24,66 +22,98 @@ import com.squareup.anvil.compiler.codegen.ksp.checkNotMoreThanOneMapKey
 import com.squareup.anvil.compiler.codegen.ksp.checkNotMoreThanOneQualifier
 import com.squareup.anvil.compiler.codegen.ksp.checkSingleSuperType
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
+import com.squareup.anvil.compiler.codegen.ksp.ignoreQualifier
+import com.squareup.anvil.compiler.codegen.ksp.isMapKey
+import com.squareup.anvil.compiler.codegen.ksp.qualifierAnnotation
+import com.squareup.anvil.compiler.codegen.ksp.replaces
+import com.squareup.anvil.compiler.codegen.ksp.resolveBoundType
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesMultibindingFqName
+import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
+import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
+import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.KModifier.PUBLIC
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.joinToCode
+import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
+import dagger.Binds
+import dagger.multibindings.IntoSet
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
-import kotlin.reflect.KClass
 
 /**
- * Generates a hint for each contributed class in the `anvil.hint.multibinding` package. This
- * allows the compiler plugin to find all contributed multibindings a lot faster when merging
- * modules and component interfaces.
+ * Generates binding modules for every [ContributesMultibinding]-annotated class. If a class has repeated
+ * annotations, a binding module will be generated for each contribution. Each generated module is
+ * annotated with [ContributesTo] for merging.
  */
 internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
 
-  fun generate(
+  private data class Contribution(
+    val scope: ClassName,
+    val boundType: ClassName,
+    val replaces: List<ClassName>,
+    val qualifier: AnnotationSpec?,
+    val mapKey: AnnotationSpec?,
+  ) {
+    companion object {
+      val COMPARATOR = compareBy<Contribution> { it.scope.canonicalName }
+        .thenComparing(compareBy { it.boundType.canonicalName })
+        .thenComparing(compareBy { it.replaces.joinToString { it.canonicalName } })
+    }
+  }
+
+  private fun generate(
     className: ClassName,
-    scopes: List<ClassName>,
+    contributions: List<Contribution>,
   ): FileSpec {
-    val fileName = className.generateClassName().simpleName
-    val generatedPackage = HINT_MULTIBINDING_PACKAGE_PREFIX +
-      className.packageName.safePackageString(dotPrefix = true)
-    val classFqName = className.canonicalName
-    val propertyName = classFqName.replace('.', '_')
+    val fileName = className.generateClassName(suffix = "MultiBindingModule").simpleName
+    val generatedPackage = className.packageName.safePackageString(dotPrefix = true)
 
     return FileSpec.createAnvilSpec(generatedPackage, fileName) {
-      addProperty(
-        PropertySpec
-          .builder(
-            name = propertyName + REFERENCE_SUFFIX,
-            type = KClass::class.asClassName().parameterizedBy(className),
-          )
-          .initializer("%T::class", className)
-          .addModifiers(PUBLIC)
-          .build(),
-      )
+      for (contribution in contributions) {
+        // Combination name of origin, scope, and boundType
+        val suffix = className.simpleName.capitalize() +
+          contribution.scope.simpleName.capitalize() +
+          contribution.boundType.simpleName.capitalize()
 
-      scopes.forEachIndexed { index, scope ->
-        addProperty(
-          PropertySpec
-            .builder(
-              name = propertyName + SCOPE_SUFFIX + index,
-              type = KClass::class.asClassName().parameterizedBy(scope),
-            )
-            .initializer("%T::class", scope)
-            .addModifiers(PUBLIC)
-            .build(),
-        )
+        val contributionName =
+          className.generateClassName(suffix = "${suffix}BindingModule").simpleName
+        TypeSpec.interfaceBuilder(contributionName).apply {
+          addAnnotation(
+            AnnotationSpec.builder(ContributesTo::class)
+              .addMember("scope = %T", contribution.scope)
+              .addMember("replaces = %L", contribution.replaces.map { CodeBlock.of("%T::class") }.joinToCode(prefix = "[", suffix = "]"))
+              .build(),
+          )
+
+          addFunction(
+            FunSpec.builder("bind")
+              .addModifiers(KModifier.ABSTRACT)
+              .addAnnotation(Binds::class)
+              .apply {
+                if (contribution.mapKey == null) {
+                  addAnnotation(IntoSet::class)
+                } else {
+                  addAnnotation(contribution.mapKey)
+                }
+                contribution.qualifier?.let { addAnnotation(it) }
+              }
+              .addParameter("real", className)
+              .returns(contribution.boundType)
+              .build(),
+          )
+        }
       }
     }
   }
@@ -115,15 +145,29 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
 
           // All good, generate away
           val className = clazz.toClassName()
-          val scopes = clazz.getKSAnnotationsByType(ContributesMultibinding::class)
+          val contributions = clazz.getKSAnnotationsByType(ContributesMultibinding::class)
             .toList()
             .also { it.checkNoDuplicateScopeAndBoundType(clazz) }
-            .map { it.scope().toClassName() }
+            .map {
+              val scope = it.scope().toClassName()
+              val boundType = it.resolveBoundType(resolver, clazz).toClassName()
+              val replaces = it.replaces().map { it.toClassName() }
+              val qualifier = if (it.ignoreQualifier()) {
+                null
+              } else {
+                clazz.qualifierAnnotation()?.toAnnotationSpec()
+              }
+              val mapKey = clazz.getKSAnnotationsByType(ContributesMultibinding::class)
+                .filter { it.isMapKey() }
+                .singleOrNull()
+              ?.toAnnotationSpec()
+              Contribution(scope, boundType, replaces, qualifier, mapKey)
+            }
             .distinct()
             // Give it a stable sort.
-            .sortedBy { it.canonicalName }
+            .sortedWith(Contribution.COMPARATOR)
 
-          generate(className, scopes)
+          generate(className, contributions)
             .writeTo(
               codeGenerator = env.codeGenerator,
               aggregating = false,
@@ -168,9 +212,23 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
             .find(contributesMultibindingFqName)
             .also { it.checkNoDuplicateScopeAndBoundType() }
             .distinctBy { it.scope() }
+            .map {
+              val scope = it.scope().asClassName()
+              val boundType = it.resolveBoundType().asClassName()
+              val replaces = it.replaces().map { it.asClassName() }
+              val qualifier = if (it.ignoreQualifier()) {
+                null
+              } else {
+                clazz.qualifierAnnotation()?.toAnnotationSpec()
+              }
+              val mapKey = clazz.annotations
+                .find { it.isMapKey() }
+                ?.toAnnotationSpec()
+              Contribution(scope, boundType, replaces, qualifier, mapKey)
+            }
+            .distinct()
             // Give it a stable sort.
-            .sortedBy { it.scope() }
-            .map { it.scope().asClassName() }
+            .sortedWith(Contribution.COMPARATOR)
 
           val spec = generate(className, scopes)
 
