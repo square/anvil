@@ -5,7 +5,6 @@
 ### Added
 
 ### Changed
-- Upgrade Kotlin to `1.9.22`
 
 ### Deprecated
 
@@ -17,10 +16,27 @@
 
 ### Custom Code Generator
 
-- The `GeneratedFile` result type has been deprecated in favor of `GeneratedFileWithSources`.  This new type allows for precise tracking of the generated files, which in turn drastically improves incremental compilation performance (#693).
-
 ### Other Notes & Contributions
 
+## [2.5.0-beta01] - 2024-02-14
+
+### Added
+- Incremental compilation and build caching fixes ([#836](https://github.com/square/anvil/pull/836))
+- Configuration options can now be set via Gradle properties ([#851](https://github.com/square/anvil/pull/851))
+
+### Changed
+- Upgrade Kotlin to `1.9.22` ([#814](https://github.com/square/anvil/pull/814))
+- don't leak Anvil's annotation artifacts to the target project's compile classpath ([#822](https://github.com/square/anvil/pull/822))
+- Update to dagger 2.50 ([#830](https://github.com/square/anvil/pull/830))
+
+### Removed
+- Drop Kotlin 1.8 support ([#841](https://github.com/square/anvil/pull/841))
+
+### Custom Code Generator
+- The `GeneratedFile` result type has been deprecated in favor of `GeneratedFileWithSources`.  This new type allows for precise tracking of the generated files, which in turn drastically improves incremental compilation performance ([#693](https://github.com/square/anvil/pull/693)).
+
+### Other Notes & Contributions
+- Support KSP in ContributesSubcomponentGenerator ([#828](https://github.com/square/anvil/pull/828))
 
 ## [2.4.9] - 2024-01-05
 
@@ -641,7 +657,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.4.9...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta01...HEAD
+[2.5.0-beta01]: https://github.com/square/anvil/releases/tag/v2.5.0-beta01
 [2.4.9]: https://github.com/square/anvil/releases/tag/v2.4.9
 [2.4.8]: https://github.com/square/anvil/releases/tag/v2.4.8
 [2.4.7]: https://github.com/square/anvil/releases/tag/v2.4.7
