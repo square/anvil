@@ -38,7 +38,7 @@ internal data class ContributedBinding(
   val qualifiers: List<AnnotationSpec>,
   val boundType: ClassName,
   val priority: Priority,
-  val qualifiersKeyLazy: Lazy<String>,
+  val qualifierKeyLazy: Lazy<String>,
 )
 
 internal fun AnnotationReference.toContributedBinding(
@@ -68,7 +68,7 @@ internal fun AnnotationReference.toContributedBinding(
     qualifiers = qualifiers,
     boundType = boundType.asClassName(),
     priority = priority(),
-    qualifiersKeyLazy = declaringClass().qualifiersKeyLazy(boundType, ignoreQualifier),
+    qualifierKeyLazy = declaringClass().qualifierKeyLazy(boundType, ignoreQualifier),
   )
 }
 
@@ -147,7 +147,7 @@ private fun ClassReference.checkNotGeneric(
   }
 }
 
-private fun ClassReference.qualifiersKeyLazy(
+private fun ClassReference.qualifierKeyLazy(
   boundType: ClassReference,
   ignoreQualifier: Boolean,
 ): Lazy<String> {
@@ -157,15 +157,13 @@ private fun ClassReference.qualifiersKeyLazy(
     return lazy { boundType.fqName.asString() }
   }
 
-  return lazy(NONE) { boundType.fqName.asString() + qualifiersKey() }
+  return lazy(NONE) { boundType.fqName.asString() + qualifierKey() }
 }
 
-private fun ClassReference.qualifiersKey(): String {
+private fun ClassReference.qualifierKey(): String {
   return annotations
-    .filter { it.isQualifier() }
-    // Note that we sort all elements. That's important for a stable string comparison.
-    .sortedBy { it.classReference }
-    .joinToString(separator = "") { annotation ->
+    .singleOrNull { it.isQualifier() }
+    ?.let { annotation ->
       annotation.fqName.asString() +
         annotation.arguments.joinToString(separator = "") { argument ->
           val valueString = when (val value = argument.value<Any>()) {
@@ -176,7 +174,7 @@ private fun ClassReference.qualifiersKey(): String {
 
           argument.resolvedName + valueString
         }
-    }
+    }.orEmpty()
 }
 
 internal fun KSAnnotation.toContributedBinding(
@@ -206,7 +204,7 @@ internal fun KSAnnotation.toContributedBinding(
     qualifiers = qualifiers,
     boundType = boundType.toClassName(),
     priority = priority(),
-    qualifiersKeyLazy = declaringClass.qualifiersKeyLazy(boundType, ignoreQualifier),
+    qualifierKeyLazy = declaringClass.qualifierKeyLazy(boundType, ignoreQualifier),
   )
 }
 
@@ -293,7 +291,7 @@ private fun KSClassDeclaration.checkNotGeneric(
   }
 }
 
-private fun KSClassDeclaration.qualifiersKeyLazy(
+private fun KSClassDeclaration.qualifierKeyLazy(
   boundType: KSClassDeclaration,
   ignoreQualifier: Boolean,
 ): Lazy<String> {
@@ -303,18 +301,13 @@ private fun KSClassDeclaration.qualifiersKeyLazy(
     return lazy { boundType.qualifiedName!!.asString() }
   }
 
-  return lazy(NONE) { boundType.qualifiedName!!.asString() + qualifiersKey() }
+  return lazy(NONE) { boundType.qualifiedName!!.asString() + qualifierKey() }
 }
 
-private fun KSClassDeclaration.qualifiersKey(): String {
+private fun KSClassDeclaration.qualifierKey(): String {
   return annotations
-    .filter { it.isQualifier() }
-    // Note that we sort all elements. That's important for a stable string comparison.
-    .sortedBy {
-      it.annotationType.resolve()
-        .resolveKSClassDeclaration()?.qualifiedName!!.asString()
-    }
-    .joinToString(separator = "") { annotation ->
+    .singleOrNull { it.isQualifier() }
+    ?.let { annotation ->
       annotation.shortName.asString() +
         annotation.arguments.joinToString(separator = "") { argument ->
           val valueString = when (val value = argument.value) {
@@ -325,5 +318,5 @@ private fun KSClassDeclaration.qualifiersKey(): String {
 
           argument.name!!.asString() + valueString
         }
-    }
+    }.orEmpty()
 }
