@@ -89,67 +89,67 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
     val fileName = className.generateClassName(suffix = "MultiBindingModule").simpleName
     val generatedPackage = className.packageName.safePackageString(dotPrefix = true)
 
+    val specs = contributions.map { contribution ->
+      // Combination name of origin, scope, and boundType
+      val suffix = "As" +
+        contribution.boundType.simpleName.capitalize() +
+        "To" +
+        contribution.scope.simpleName.capitalize() +
+        "BindingModule"
+
+      val contributionName =
+        className.generateClassName(suffix = suffix).simpleName
+      TypeSpec.interfaceBuilder(contributionName).apply {
+        addAnnotation(Module::class)
+        addAnnotation(
+          AnnotationSpec.builder(ContributesTo::class)
+            .addMember("scope = %T::class", contribution.scope)
+            .apply {
+              if (contribution.replaces.isNotEmpty()) {
+                addMember(
+                  "replaces = %L",
+                  contribution.replaces.map { CodeBlock.of("%T::class") }
+                    .joinToCode(prefix = "[", suffix = "]"),
+                )
+              }
+            }
+            .build(),
+        )
+
+        addAnnotation(
+          AnnotationSpec.builder(
+            InternalBindingMarker::class.asClassName()
+              .parameterizedBy(contribution.boundType, className),
+          )
+            .addMember("isMultibinding = true")
+            .apply {
+              contribution.qualifier?.key?.let { qualifierKey ->
+                addMember("qualifierKey = %S", qualifierKey)
+              }
+            }
+            .build(),
+        )
+
+        addFunction(
+          FunSpec.builder("bind")
+            .addModifiers(KModifier.ABSTRACT)
+            .addAnnotation(Binds::class)
+            .apply {
+              if (contribution.mapKey == null) {
+                addAnnotation(IntoSet::class)
+              } else {
+                addAnnotation(contribution.mapKey)
+              }
+              contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
+            }
+            .addParameter("real", className)
+            .returns(contribution.boundType)
+            .build(),
+        )
+      }.build()
+    }
     return FileSpec.createAnvilSpec(generatedPackage, fileName) {
-      for (contribution in contributions) {
-        // Combination name of origin, scope, and boundType
-        val suffix = "As" +
-          contribution.boundType.simpleName.capitalize() +
-          "To" +
-          contribution.scope.simpleName.capitalize() +
-          "BindingModule"
-
-        val contributionName =
-          className.generateClassName(suffix = suffix).simpleName
-        val spec = TypeSpec.interfaceBuilder(contributionName).apply {
-          addAnnotation(Module::class)
-          addAnnotation(
-            AnnotationSpec.builder(ContributesTo::class)
-              .addMember("scope = %T::class", contribution.scope)
-              .apply {
-                if (contribution.replaces.isNotEmpty()) {
-                  addMember(
-                    "replaces = %L",
-                    contribution.replaces.map { CodeBlock.of("%T::class") }
-                      .joinToCode(prefix = "[", suffix = "]"),
-                  )
-                }
-              }
-              .build(),
-          )
-
-          addAnnotation(
-            AnnotationSpec.builder(
-              InternalBindingMarker::class.asClassName()
-                .parameterizedBy(contribution.boundType, className),
-            )
-              .addMember("isMultibinding = true")
-              .apply {
-                contribution.qualifier?.key?.let { qualifierKey ->
-                  addMember("qualifierKey = %S", qualifierKey)
-                }
-              }
-              .build(),
-          )
-
-          addFunction(
-            FunSpec.builder("bind")
-              .addModifiers(KModifier.ABSTRACT)
-              .addAnnotation(Binds::class)
-              .apply {
-                if (contribution.mapKey == null) {
-                  addAnnotation(IntoSet::class)
-                } else {
-                  addAnnotation(contribution.mapKey)
-                }
-                contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
-              }
-              .addParameter("real", className)
-              .returns(contribution.boundType)
-              .build(),
-          )
-        }.build()
-        addType(spec)
-      }
+      addTypes(specs.sortedBy { it.name })
     }
   }
 

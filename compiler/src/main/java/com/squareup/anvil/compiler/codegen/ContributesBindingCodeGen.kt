@@ -93,66 +93,66 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
     val fileName = originClass.generateClassName(suffix = "BindingModule").simpleName
     val generatedPackage = originClass.packageName.safePackageString(dotPrefix = true)
 
-    return FileSpec.createAnvilSpec(generatedPackage, fileName) {
-      for (contribution in contributions) {
-        // Combination name of origin, scope, and boundType
-        val suffix = "As" +
-          contribution.boundType.simpleName.capitalize() +
-          "To" +
-          contribution.scope.simpleName.capitalize() +
-          "BindingModule"
+    val specs = contributions.map { contribution ->
+      // Combination name of origin, scope, and boundType
+      val suffix = "As" +
+        contribution.boundType.simpleName.capitalize() +
+        "To" +
+        contribution.scope.simpleName.capitalize() +
+        "BindingModule"
 
-        val contributionName =
-          originClass.generateClassName(suffix = suffix).simpleName
-        val spec = TypeSpec.interfaceBuilder(contributionName).apply {
-          addAnnotation(Module::class)
-          addAnnotation(
-            AnnotationSpec.builder(ContributesTo::class)
-              .addMember("scope = %T::class", contribution.scope)
-              .apply {
-                if (contribution.replaces.isNotEmpty()) {
-                  addMember(
-                    "replaces = %L",
-                    contribution.replaces.map { CodeBlock.of("%T::class") }
-                      .joinToCode(prefix = "[", suffix = "]"),
-                  )
-                }
+      val contributionName =
+        originClass.generateClassName(suffix = suffix).simpleName
+      TypeSpec.interfaceBuilder(contributionName).apply {
+        addAnnotation(Module::class)
+        addAnnotation(
+          AnnotationSpec.builder(ContributesTo::class)
+            .addMember("scope = %T::class", contribution.scope)
+            .apply {
+              if (contribution.replaces.isNotEmpty()) {
+                addMember(
+                  "replaces = %L",
+                  contribution.replaces.map { CodeBlock.of("%T::class") }
+                    .joinToCode(prefix = "[", suffix = "]"),
+                )
               }
-              .build(),
+            }
+            .build(),
+        )
+        addAnnotation(
+          AnnotationSpec.builder(
+            InternalBindingMarker::class.asClassName()
+              .parameterizedBy(contribution.boundType, originClass),
           )
-          addAnnotation(
-            AnnotationSpec.builder(
-              InternalBindingMarker::class.asClassName()
-                .parameterizedBy(contribution.boundType, originClass),
+            .addMember("isMultibinding = false")
+            .apply {
+              contribution.qualifier?.key?.let { qualifierKey ->
+                addMember("qualifierKey = %S", qualifierKey)
+              }
+            }
+            .addMember(
+              "priority = %S",
+              contribution.priority.name,
             )
-              .addMember("isMultibinding = false")
-              .apply {
-                contribution.qualifier?.key?.let { qualifierKey ->
-                  addMember("qualifierKey = %S", qualifierKey)
-                }
-              }
-              .addMember(
-                "priority = %S",
-                contribution.priority.name,
-              )
-              .build(),
-          )
+            .build(),
+        )
 
-          addFunction(
-            FunSpec.builder("bind")
-              .addModifiers(KModifier.ABSTRACT)
-              .addAnnotation(Binds::class)
-              .apply {
-                contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
-              }
-              .addParameter("real", originClass)
-              .returns(contribution.boundType)
-              .build(),
-          )
-        }
-          .build()
-        addType(spec)
+        addFunction(
+          FunSpec.builder("bind")
+            .addModifiers(KModifier.ABSTRACT)
+            .addAnnotation(Binds::class)
+            .apply {
+              contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
+            }
+            .addParameter("real", originClass)
+            .returns(contribution.boundType)
+            .build(),
+        )
       }
+        .build()
+    }
+    return FileSpec.createAnvilSpec(generatedPackage, fileName) {
+      addTypes(specs.sortedBy { it.name })
     }
   }
 
