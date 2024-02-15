@@ -3,7 +3,6 @@ package com.squareup.anvil.annotations.internal
 import com.squareup.anvil.annotations.ContributesBinding.Priority
 import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.annotation.AnnotationTarget.CLASS
-import kotlin.reflect.KClass
 
 /**
  * An internal Anvil API used to propagate binding metadata from contributed bindings.

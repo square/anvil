@@ -43,8 +43,8 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
@@ -103,8 +103,13 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
           addAnnotation(
             AnnotationSpec.builder(ContributesTo::class)
               .addMember("scope = %T", contribution.scope)
-              .addMember("replaces = %L", contribution.replaces.map { CodeBlock.of("%T::class") }.joinToCode(prefix = "[", suffix = "]"))
-              .build()
+              .addMember(
+                "replaces = %L",
+                contribution.replaces.map {
+                  CodeBlock.of("%T::class")
+                }.joinToCode(prefix = "[", suffix = "]"),
+              )
+              .build(),
           )
 
           addAnnotation(
@@ -118,7 +123,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
                   addMember("qualifierKey = %S", qualifierKey)
                 }
               }
-              .build()
+              .build(),
           )
 
           addFunction(
@@ -188,7 +193,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
               val mapKey = clazz.getKSAnnotationsByType(ContributesMultibinding::class)
                 .filter { it.isMapKey() }
                 .singleOrNull()
-              ?.toAnnotationSpec()
+                ?.toAnnotationSpec()
               Contribution(scope, boundType, replaces, qualifierData, mapKey)
             }
             .distinct()

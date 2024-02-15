@@ -14,8 +14,6 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
-import com.squareup.anvil.compiler.codegen.dagger.optionallyParameterizedBy
-import com.squareup.anvil.compiler.codegen.dagger.optionallyParameterizedByNames
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.checkClassExtendsBoundType
@@ -44,9 +42,9 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.joinToCode
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
@@ -114,7 +112,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                 contribution.replaces.map { CodeBlock.of("%T::class") }
                   .joinToCode(prefix = "[", suffix = "]"),
               )
-              .build()
+              .build(),
           )
           addAnnotation(
             AnnotationSpec.builder(
@@ -131,7 +129,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                 "priority = %S",
                 contribution.priority.name,
               )
-              .build()
+              .build(),
           )
 
           addFunction(

@@ -71,8 +71,10 @@ internal val daggerDoubleCheckFqNameString = DoubleCheck::class.java.canonicalNa
 internal val isWordPrefixRegex = "^is([^a-z].*)".toRegex()
 
 internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "anvil.hint.merge"
+
 // TODO remove
 internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
+
 // TODO remove
 internal const val HINT_MULTIBINDING_PACKAGE_PREFIX = "anvil.hint.multibinding"
 internal const val HINT_SUBCOMPONENTS_PACKAGE_PREFIX = "anvil.hint.subcomponent"
