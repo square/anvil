@@ -34,35 +34,48 @@ dependencies {
   kapt "com.google.auto.service:auto-service:1.0"
 }
 ```
+ 
 
 After that implement the `CodeGenerator` interface:
 
+<!-- doks whole-CodeGenerator:1 -->
+
 ```kotlin
 @AutoService(CodeGenerator::class)
-class SampleCodeGenerator : CodeGenerator {
+class CustomCodeGeneratorSample : CodeGenerator {
+
   override fun isApplicable(context: AnvilContext): Boolean = true
 
   override fun generateCode(
     codeGenDir: File,
     module: ModuleDescriptor,
-    projectFiles: Collection<KtFile>
-  ): Collection<GeneratedFile> {
-    return projectFiles
-      .classAndInnerClassReferences(module)
+    projectFiles: Collection<KtFile>,
+  ): Collection<FileWithContent> {
+    return projectFiles.classAndInnerClassReferences(module)
       .filter { it.isAnnotatedWith(FqName("sample.MyAnnotation")) }
       .map { clazz ->
-        // ...
         createGeneratedFile(
-          codeGenDir = codeGenDir,
-          packageName = // ...
-          fileName = // ...
-          content = // ...
+          codeGenDir,
+          packageName = clazz.packageFqName.asString(),
+          fileName = "MyGeneratedClass",
+          content = """
+            package ${clazz.packageFqName}
+            
+            class MyGeneratedClass {
+              fun doSomething() {
+                println("Hello, World!")
+              }
+            }
+          """.trimIndent(),
+          sourceFile = clazz.containingFileAsJavaFile,
         )
       }
       .toList()
   }
 }
 ```
+
+<!-- doks END -->
 
 Note that the sample code generator is annotated with `@AutoService`. It's recommended to use the
 [AutoService](https://github.com/google/auto/tree/master/service) library to generate necessary
@@ -74,9 +87,11 @@ multiple times until no code generators generate code anymore.
 
 To use your new code generator in any module you need to add the module to the Anvil classpath:
 
+<!-- doks anvil-plugin:1 -->
+
 ```groovy
 plugins {
-  id 'com.squareup.anvil' version "${latest_version}"
+  id 'com.squareup.anvil' version "2.5.2-SNAPSHOT"
 }
 
 dependencies {
@@ -84,6 +99,8 @@ dependencies {
   implementation project(':sample:annotation')
 }
 ```
+
+<!-- doks END -->
 
 ## Limitations
 
