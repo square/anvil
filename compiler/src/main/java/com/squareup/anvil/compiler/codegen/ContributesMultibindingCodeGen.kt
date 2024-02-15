@@ -92,23 +92,28 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
     return FileSpec.createAnvilSpec(generatedPackage, fileName) {
       for (contribution in contributions) {
         // Combination name of origin, scope, and boundType
-        val suffix = className.simpleName.capitalize() +
+        val suffix = "As" +
+          contribution.boundType.simpleName.capitalize() +
+          "To" +
           contribution.scope.simpleName.capitalize() +
-          contribution.boundType.simpleName.capitalize()
+          "BindingModule"
 
         val contributionName =
-          className.generateClassName(suffix = "${suffix}MultiBindingModule").simpleName
-        TypeSpec.interfaceBuilder(contributionName).apply {
+          className.generateClassName(suffix = suffix).simpleName
+        val spec = TypeSpec.interfaceBuilder(contributionName).apply {
           addAnnotation(Module::class)
           addAnnotation(
             AnnotationSpec.builder(ContributesTo::class)
-              .addMember("scope = %T", contribution.scope)
-              .addMember(
-                "replaces = %L",
-                contribution.replaces.map {
-                  CodeBlock.of("%T::class")
-                }.joinToCode(prefix = "[", suffix = "]"),
-              )
+              .addMember("scope = %T::class", contribution.scope)
+              .apply {
+                if (contribution.replaces.isNotEmpty()) {
+                  addMember(
+                    "replaces = %L",
+                    contribution.replaces.map { CodeBlock.of("%T::class") }
+                      .joinToCode(prefix = "[", suffix = "]"),
+                  )
+                }
+              }
               .build(),
           )
 
@@ -142,7 +147,8 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
               .returns(contribution.boundType)
               .build(),
           )
-        }
+        }.build()
+        addType(spec)
       }
     }
   }
