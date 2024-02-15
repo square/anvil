@@ -111,7 +111,6 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
               InternalBindingMarker::class.asClassName()
                 .parameterizedBy(contribution.boundType, className),
             )
-              .addMember("scope = %T::class", contribution.scope)
               .addMember("isMultibinding = true")
               .apply {
                 contribution.qualifier?.key?.let { qualifierKey ->

@@ -120,7 +120,6 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
               InternalBindingMarker::class.asClassName()
                 .parameterizedBy(contribution.boundType, originClass),
             )
-              .addMember("scope = %T::class", contribution.scope)
               .addMember("isMultibinding = false")
               .apply {
                 contribution.qualifier?.key?.let { qualifierKey ->
