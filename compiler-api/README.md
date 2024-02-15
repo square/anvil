@@ -35,9 +35,40 @@ dependencies {
 }
 ```
 
+<!-- doks boogers:1 -->
+__snot__-boogers
+<!-- doks END -->
+
+<!-- doks whole-file:1 -->
+
+```kotlin
+import java.io.File
+
+@AutoService(CodeGenerator::class)
+class CustomCodeGeneratorSample : CodeGenerator {
+
+  override fun isApplicable(context: AnvilContext): Boolean {
+    TODO("Not yet implemented")
+  }
+
+  override fun generateCode(
+    codeGenDir: File,
+    module: ModuleDescriptor,
+    projectFiles: Collection<KtFile>,
+  ): Collection<FileWithContent> {
+    TODO("Not yet implemented")
+  }
+}
+```
+
+<!-- doks END -->
+
+
 After that implement the `CodeGenerator` interface:
 
 ```kotlin
+import java.io.File
+
 @AutoService(CodeGenerator::class)
 class SampleCodeGenerator : CodeGenerator {
   override fun isApplicable(context: AnvilContext): Boolean = true

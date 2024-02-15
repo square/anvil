@@ -1,10 +1,34 @@
 plugins {
   id("conventions.library")
   id("conventions.publish")
+  alias(libs.plugins.doks)
 }
 
 conventions {
   explicitApi = true
+}
+
+doks {
+  dokSet {
+    docs("README.md")
+    sampleCodeSource(
+      kotlin.sourceSets.map { it.kotlin },
+      project(":gradle-plugin").kotlin.sourceSets.map { it.kotlin },
+    )
+
+    rule("boogers") {
+      regex = """(__.+__)"""
+      replacement = "$1-boogers"
+    }
+
+    rule("whole-file") {
+
+      replacement = sourceCode(
+        fqName = "com.squareup.anvil.compiler.api.CustomCodeGeneratorSample",
+        bodyOnly = false,
+      )
+    }
+  }
 }
 
 publish {
@@ -20,6 +44,8 @@ dependencies {
   api(libs.kotlin.compiler)
 
   implementation(platform(libs.kotlin.bom))
+
+  testCompileOnly(libs.auto.service.annotations)
 
   testImplementation(libs.junit)
   testImplementation(libs.kase)
