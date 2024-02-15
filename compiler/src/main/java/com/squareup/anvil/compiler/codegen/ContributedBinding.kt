@@ -170,6 +170,7 @@ private fun ClassReference.qualifiersKey(): String {
         annotation.arguments.joinToString(separator = "") { argument ->
           val valueString = when (val value = argument.value<Any>()) {
             is ClassReference -> value.fqName.asString()
+            // TODO what if it's another annotation?
             else -> value.toString()
           }
 
@@ -318,6 +319,7 @@ private fun KSClassDeclaration.qualifiersKey(): String {
         annotation.arguments.joinToString(separator = "") { argument ->
           val valueString = when (val value = argument.value) {
             is KSType -> value.resolveKSClassDeclaration()!!.qualifiedName!!.asString()
+            // TODO what if it's another annotation?
             else -> value.toString()
           }
 
