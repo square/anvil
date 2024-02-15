@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler
 
+import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
 import com.squareup.anvil.compiler.codegen.reference.AnnotationReferenceIr
@@ -17,6 +18,7 @@ import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.createIrBuilder
 import org.jetbrains.kotlin.backend.jvm.ir.kClassReference
+import org.jetbrains.kotlin.com.google.common.collect.BoundType
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
 import org.jetbrains.kotlin.ir.builders.irCallConstructor
@@ -25,6 +27,8 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.expressions.getClassTypeArgument
+import org.jetbrains.kotlin.ir.types.classOrFail
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
@@ -82,7 +86,7 @@ internal class ModuleMergerIr(
 
     val anvilModuleName = createAnvilModuleName(declaration)
 
-    val contributesAnnotations = annotations
+    val allContributesAnnotations: List<AnnotationReferenceIr> = annotations
       .flatMap { annotation ->
         classScanner
           .findContributedClasses(
@@ -101,7 +105,9 @@ internal class ModuleMergerIr(
         // modules contain the same bindings and are contributed to the same scope. To avoid this
         // issue we filter all generated Anvil modules except for the one that was generated for
         // this specific class.
-        !it.fqName.isAnvilModule() || it.fqName == anvilModuleName
+        !it.fqName.isAnvilModule() ||
+          it.fqName == anvilModuleName ||
+          it.isAnnotatedWith(internalBindingMarkerFqName)
       }
       .flatMap { contributedClass ->
         contributedClass.annotations
@@ -142,6 +148,10 @@ internal class ModuleMergerIr(
       // for replaced classes and the final result.
       .toList()
 
+    val (bindingModuleContributesAnnotations, contributesAnnotations) = allContributesAnnotations.partition {
+      it.declaringClass.isAnnotatedWith(internalBindingMarkerFqName)
+    }
+
     val excludedModules = annotations
       .flatMap { it.excludedClasses }
       .onEach { excludedClass ->
@@ -167,6 +177,7 @@ internal class ModuleMergerIr(
           )
         }
       }
+      .toSet()
 
     val replacedModules = contributesAnnotations
       // Ignore replaced modules or bindings specified by excluded modules.
@@ -194,38 +205,76 @@ internal class ModuleMergerIr(
             checkSameScope(contributedClass, classToReplace, scopes)
           }
       }
+      .toSet()
+
+    // Map up binding modules by their scopes
+    val bindingModuleContributesAnnotationsByScope = bindingModuleContributesAnnotations
+      .mapNotNull { contributedAnnotation ->
+        val moduleClass = contributedAnnotation.declaringClass
+        val internalBindingMarker =
+          moduleClass.annotations.single { it.fqName == internalBindingMarkerFqName }
+        val implClass =
+          internalBindingMarker.annotation.getClassTypeArgument(1)!!.classOrFail.toClassReference(
+            pluginContext,
+          )
+        // TODO do we need to check separately if this is replaced by a dagger module? Think no
+        if (implClass in excludedModules || implClass in replacedModules) return@mapNotNull null
+        val boundType =
+          internalBindingMarker.annotation.getClassTypeArgument(0)!!.classOrFail.toClassReference(
+            pluginContext,
+          )
+        val isMultibinding =
+          internalBindingMarker.argumentOrNull("isMultibinding")?.value<Boolean>() == true
+        val qualifierKey =
+          internalBindingMarker.argumentOrNull("qualifierKey")?.value<String>().orEmpty()
+        val priority = internalBindingMarker.argumentOrNull("qualifierKey")
+          ?.value<String>()
+          ?.let { ContributesBinding.Priority.valueOf(it) }
+          ?: ContributesBinding.Priority.NORMAL
+        val scope = contributedAnnotation.scope
+        ContributedBinding(
+          scope = scope,
+          contributedAnnotation = contributedAnnotation,
+          declaringClass = moduleClass,
+          implClass = implClass,
+          boundType = boundType,
+          isMultibinding = isMultibinding,
+          qualifierKey = qualifierKey,
+          priority = priority,
+        )
+      }
+      .groupBy { it.scope }
+      .filterValues { it.isNotEmpty() }
 
     fun replacedModulesByContributedBinding(
       annotationFqName: FqName,
+      isMultibinding: Boolean,
     ): Sequence<ClassReferenceIr> {
       return scopes.asSequence()
         .flatMap { scope ->
-          classScanner
-            .findContributedClasses(
-              pluginContext = pluginContext,
-              moduleFragment = moduleFragment,
-              annotation = annotationFqName,
-              scope = scope,
-              moduleDescriptorFactory = moduleDescriptorFactory,
-            )
+          bindingModuleContributesAnnotationsByScope[scope].orEmpty()
+            .filter { it.contributedAnnotation.fqName == annotationFqName }
         }
-        .flatMap { contributedClass ->
-          contributedClass.annotations
-            .find(annotationName = annotationFqName)
-            .filter { it.scope in scopes }
-            .flatMap { it.replacedClasses }
-            .onEach { classToReplace ->
-              checkSameScope(contributedClass, classToReplace, scopes)
-            }
+        .let { bindings ->
+          if (isMultibinding) {
+            bindings
+          } else {
+            bindings.groupBy { it.qualifierKey }
+              .map { it.value.findHighestPriorityBinding() }
+              .asSequence()
+          }
         }
+        .let { it.map { it.declaringClass } }
     }
 
     val replacedModulesByContributedBindings = replacedModulesByContributedBinding(
       annotationFqName = contributesBindingFqName,
+      isMultibinding = false,
     )
 
     val replacedModulesByContributedMultibindings = replacedModulesByContributedBinding(
       annotationFqName = contributesMultibindingFqName,
+      isMultibinding = true,
     )
 
     if (predefinedModules.isNotEmpty()) {
@@ -250,10 +299,10 @@ internal class ModuleMergerIr(
     val contributedModules = contributesAnnotations
       .asSequence()
       .map { it.declaringClass }
-      .minus(replacedModules.toSet())
+      .minus(replacedModules)
       .minus(replacedModulesByContributedBindings.toSet())
       .minus(replacedModulesByContributedMultibindings.toSet())
-      .minus(excludedModules.toSet())
+      .minus(excludedModules)
       .plus(predefinedModules)
       .plus(contributedSubcomponentModules)
       .distinct()

@@ -15,7 +15,7 @@ import kotlin.reflect.KClass
  * @param BoundType The bound type of the contributed binding.
  * @param ImplType The implementation type of the contributed binding.
  * @param isMultibinding True if the contributed binding is a multibinding.
- * @param priority The priority of the contributed binding.
+ * @param priority The priority of the contributed binding. Corresponds to a [Priority.name].
  * @param qualifierKey The computed key of the qualifier annotation if present. Empty otherwise.
  */
 @Target(CLASS)
@@ -23,6 +23,6 @@ import kotlin.reflect.KClass
 @Repeatable
 public annotation class InternalBindingMarker<BoundType, ImplType : BoundType>(
   val isMultibinding: Boolean,
-  val priority: Priority = Priority.NORMAL,
+  val priority: String = "",
   val qualifierKey: String = "",
 )

@@ -8,6 +8,7 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.toClassReferenceOrNull
@@ -42,6 +43,7 @@ internal val contributesBindingFqName = ContributesBinding::class.fqName
 internal val contributesMultibindingFqName = ContributesMultibinding::class.fqName
 internal val contributesSubcomponentFqName = ContributesSubcomponent::class.fqName
 internal val contributesSubcomponentFactoryFqName = ContributesSubcomponent.Factory::class.fqName
+internal val internalBindingMarkerFqName = InternalBindingMarker::class.fqName
 internal val daggerComponentFqName = Component::class.fqName
 internal val daggerSubcomponentFqName = Subcomponent::class.fqName
 internal val daggerSubcomponentFactoryFqName = Subcomponent.Factory::class.fqName
@@ -69,7 +71,9 @@ internal val daggerDoubleCheckFqNameString = DoubleCheck::class.java.canonicalNa
 internal val isWordPrefixRegex = "^is([^a-z].*)".toRegex()
 
 internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "anvil.hint.merge"
+// TODO remove
 internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
+// TODO remove
 internal const val HINT_MULTIBINDING_PACKAGE_PREFIX = "anvil.hint.multibinding"
 internal const val HINT_SUBCOMPONENTS_PACKAGE_PREFIX = "anvil.hint.subcomponent"
 internal const val MODULE_PACKAGE_PREFIX = "anvil.module"

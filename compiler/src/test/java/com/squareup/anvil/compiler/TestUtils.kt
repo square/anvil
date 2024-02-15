@@ -109,21 +109,26 @@ internal val Class<*>.hintContributesScope: KClass<*>?
 internal val Class<*>.hintContributesScopes: List<KClass<*>>
   get() = getHintScopes(HINT_CONTRIBUTES_PACKAGE_PREFIX)
 
+// TODO remove
 internal val Class<*>.hintBinding: KClass<*>?
   get() = getHint(HINT_BINDING_PACKAGE_PREFIX)
 
+// TODO remove
 internal val Class<*>.hintBindingScope: KClass<*>?
   get() = hintBindingScopes.takeIf { it.isNotEmpty() }?.single()
 
+// TODO remove
 internal val Class<*>.hintBindingScopes: List<KClass<*>>
   get() = getHintScopes(HINT_BINDING_PACKAGE_PREFIX)
 
 internal val Class<*>.hintMultibinding: KClass<*>?
   get() = getHint(HINT_MULTIBINDING_PACKAGE_PREFIX)
 
+// TODO remove
 internal val Class<*>.hintMultibindingScope: KClass<*>?
   get() = hintMultibindingScopes.takeIf { it.isNotEmpty() }?.single()
 
+// TODO remove
 internal val Class<*>.hintMultibindingScopes: List<KClass<*>>
   get() = getHintScopes(HINT_MULTIBINDING_PACKAGE_PREFIX)
 
