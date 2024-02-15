@@ -37,8 +37,11 @@ internal fun AnnotationReference.ignoreQualifier(): Boolean {
       else -> return false
     },
   )
-    ?.value()
-    ?: false
+    ?.value<Boolean>() == true
+}
+
+internal fun ClassReference.qualifierAnnotation(): AnnotationReference? {
+  return annotations.find { it.isQualifier() }
 }
 
 internal fun AnnotationReference.priority(): Priority {

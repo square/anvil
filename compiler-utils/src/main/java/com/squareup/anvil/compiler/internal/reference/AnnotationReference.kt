@@ -70,6 +70,17 @@ public sealed class AnnotationReference {
 
   public fun boundTypeOrNull(): ClassReference? = argumentAt("boundType", 1)?.value()
 
+  public fun resolveBoundType(): ClassReference {
+    return boundTypeOrNull()
+      ?: declaringClass().directSuperTypeReferences()
+        .singleOrNull()
+        ?.asClassReference()
+      ?: throw AnvilCompilationExceptionClassReference(
+        message = "Couldn't resolve bound type for $fqName",
+        classReference = declaringClass(),
+      )
+  }
+
   public fun replaces(parameterIndex: Int = replacesIndex(fqName)): List<ClassReference> =
     argumentAt("replaces", parameterIndex)?.value<List<ClassReference>>().orEmpty()
 
