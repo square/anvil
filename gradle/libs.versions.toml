@@ -22,6 +22,7 @@ classgraph = "4.8.170"
 dagger = "2.51.1"
 dropbox-dependencyGuard = "0.5.0"
 dokka = "1.9.20"
+doks = "0.1.4"
 espresso = "3.5.1"
 gradlePublish = "1.2.1"
 jUnit5 = "5.10.2"
@@ -61,6 +62,7 @@ agp-application = { id = "com.android.application", version.ref = "agp" }
 agp-library = { id = "com.android.library", version.ref = "agp" }
 buildconfig = { id = "com.github.gmazzo.buildconfig", version.ref = "buildconfig" }
 dependencyGuard = { id = "com.dropbox.dependency-guard", version.ref = "dropbox-dependencyGuard" }
+doks = { id = "com.rickbusarow.doks", version.ref = "doks" }
 gradlePublish = { id = "com.gradle.plugin-publish", version.ref = "gradlePublish" }
 kotlin-android = { id = "org.jetbrains.kotlin.android", version.ref = "kotlin" }
 kotlin-dokka = { id = "org.jetbrains.dokka", version.ref = "dokka" }
