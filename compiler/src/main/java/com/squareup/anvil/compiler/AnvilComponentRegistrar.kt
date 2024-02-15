@@ -8,7 +8,6 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.CommandLineOptions.Companion.commandLineOptions
 import com.squareup.anvil.compiler.api.AnvilBackend
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
 import com.squareup.anvil.compiler.codegen.incremental.ProjectDir
@@ -70,7 +69,6 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
     val codeGenerators = loadCodeGenerators() +
       manuallyAddedCodeGenerators +
       // We special case these due to the ClassScanner requirement.
-      BindingModuleGenerator(scanner) +
       ContributesSubcomponentHandlerGenerator(scanner)
 
     // It's important to register our extension at the first position. The compiler calls each
