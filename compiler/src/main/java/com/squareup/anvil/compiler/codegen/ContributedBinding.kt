@@ -163,18 +163,20 @@ private fun ClassReference.qualifierKeyLazy(
 private fun ClassReference.qualifierKey(): String {
   return annotations
     .singleOrNull { it.isQualifier() }
-    ?.let { annotation ->
-      annotation.fqName.asString() +
-        annotation.arguments.joinToString(separator = "") { argument ->
-          val valueString = when (val value = argument.value<Any>()) {
-            is ClassReference -> value.fqName.asString()
-            // TODO what if it's another annotation?
-            else -> value.toString()
-          }
+    ?.qualifierKey().orEmpty()
+}
 
-          argument.resolvedName + valueString
-        }
-    }.orEmpty()
+internal fun AnnotationReference.qualifierKey(): String {
+  return fqName.asString() +
+    arguments.joinToString(separator = "") { argument ->
+      val valueString = when (val value = argument.value<Any>()) {
+        is ClassReference -> value.fqName.asString()
+        // TODO what if it's another annotation?
+        else -> value.toString()
+      }
+
+      argument.resolvedName + valueString
+    }
 }
 
 internal fun KSAnnotation.toContributedBinding(
@@ -307,16 +309,18 @@ private fun KSClassDeclaration.qualifierKeyLazy(
 private fun KSClassDeclaration.qualifierKey(): String {
   return annotations
     .singleOrNull { it.isQualifier() }
-    ?.let { annotation ->
-      annotation.shortName.asString() +
-        annotation.arguments.joinToString(separator = "") { argument ->
-          val valueString = when (val value = argument.value) {
-            is KSType -> value.resolveKSClassDeclaration()!!.qualifiedName!!.asString()
-            // TODO what if it's another annotation?
-            else -> value.toString()
-          }
+    ?.qualifierKey().orEmpty()
+}
 
-          argument.name!!.asString() + valueString
-        }
-    }.orEmpty()
+internal fun KSAnnotation.qualifierKey(): String {
+  return shortName.asString() +
+    arguments.joinToString(separator = "") { argument ->
+      val valueString = when (val value = argument.value) {
+        is KSType -> value.resolveKSClassDeclaration()!!.qualifiedName!!.asString()
+        // TODO what if it's another annotation?
+        else -> value.toString()
+      }
+
+      argument.name!!.asString() + valueString
+    }
 }

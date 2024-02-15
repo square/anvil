@@ -8,6 +8,7 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesTo
+import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
@@ -42,11 +43,14 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
+import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.Binds
+import dagger.Module
 import dagger.multibindings.IntoSet
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
@@ -63,9 +67,13 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
     val scope: ClassName,
     val boundType: ClassName,
     val replaces: List<ClassName>,
-    val qualifier: AnnotationSpec?,
+    val qualifier: QualifierData?,
     val mapKey: AnnotationSpec?,
   ) {
+    data class QualifierData(
+      val annotationSpec: AnnotationSpec,
+      val key: String,
+    )
     companion object {
       val COMPARATOR = compareBy<Contribution> { it.scope.canonicalName }
         .thenComparing(compareBy { it.boundType.canonicalName })
@@ -90,11 +98,27 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
         val contributionName =
           className.generateClassName(suffix = "${suffix}BindingModule").simpleName
         TypeSpec.interfaceBuilder(contributionName).apply {
+          addAnnotation(Module::class)
           addAnnotation(
             AnnotationSpec.builder(ContributesTo::class)
               .addMember("scope = %T", contribution.scope)
               .addMember("replaces = %L", contribution.replaces.map { CodeBlock.of("%T::class") }.joinToCode(prefix = "[", suffix = "]"))
-              .build(),
+              .build()
+          )
+
+          addAnnotation(
+            AnnotationSpec.builder(
+              InternalBindingMarker::class.asClassName()
+                .parameterizedBy(contribution.boundType, className),
+            )
+              .addMember("scope = %T::class", contribution.scope)
+              .addMember("isMultibinding = true")
+              .apply {
+                contribution.qualifier?.key?.let { qualifierKey ->
+                  addMember("qualifierKey = %S", qualifierKey)
+                }
+              }
+              .build()
           )
 
           addFunction(
@@ -107,7 +131,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
                 } else {
                   addAnnotation(contribution.mapKey)
                 }
-                contribution.qualifier?.let { addAnnotation(it) }
+                contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
               }
               .addParameter("real", className)
               .returns(contribution.boundType)
@@ -152,16 +176,20 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
               val scope = it.scope().toClassName()
               val boundType = it.resolveBoundType(resolver, clazz).toClassName()
               val replaces = it.replaces().map { it.toClassName() }
-              val qualifier = if (it.ignoreQualifier()) {
+              val qualifierData = if (it.ignoreQualifier()) {
                 null
               } else {
-                clazz.qualifierAnnotation()?.toAnnotationSpec()
+                clazz.qualifierAnnotation()?.let { qualifierAnnotation ->
+                  val annotationSpec = qualifierAnnotation.toAnnotationSpec()
+                  val key = qualifierAnnotation.qualifierKey()
+                  Contribution.QualifierData(annotationSpec, key)
+                }
               }
               val mapKey = clazz.getKSAnnotationsByType(ContributesMultibinding::class)
                 .filter { it.isMapKey() }
                 .singleOrNull()
               ?.toAnnotationSpec()
-              Contribution(scope, boundType, replaces, qualifier, mapKey)
+              Contribution(scope, boundType, replaces, qualifierData, mapKey)
             }
             .distinct()
             // Give it a stable sort.
@@ -216,15 +244,19 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
               val scope = it.scope().asClassName()
               val boundType = it.resolveBoundType().asClassName()
               val replaces = it.replaces().map { it.asClassName() }
-              val qualifier = if (it.ignoreQualifier()) {
+              val qualifierData = if (it.ignoreQualifier()) {
                 null
               } else {
-                clazz.qualifierAnnotation()?.toAnnotationSpec()
+                clazz.qualifierAnnotation()?.let { qualifierAnnotation ->
+                  val annotationSpec = qualifierAnnotation.toAnnotationSpec()
+                  val key = qualifierAnnotation.qualifierKey()
+                  Contribution.QualifierData(annotationSpec, key)
+                }
               }
               val mapKey = clazz.annotations
                 .find { it.isMapKey() }
                 ?.toAnnotationSpec()
-              Contribution(scope, boundType, replaces, qualifier, mapKey)
+              Contribution(scope, boundType, replaces, qualifierData, mapKey)
             }
             .distinct()
             // Give it a stable sort.

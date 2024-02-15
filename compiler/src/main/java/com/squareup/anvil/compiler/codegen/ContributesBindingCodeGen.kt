@@ -8,12 +8,14 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.annotations.internal.BindingPriority
+import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
+import com.squareup.anvil.compiler.codegen.dagger.optionallyParameterizedBy
+import com.squareup.anvil.compiler.codegen.dagger.optionallyParameterizedByNames
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.checkClassExtendsBoundType
@@ -42,11 +44,14 @@ import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.asClassName
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.joinToCode
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.Binds
+import dagger.Module
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -56,7 +61,7 @@ import java.io.File
  * annotations, a binding module will be generated for each contribution. Each generated module is
  * annotated with [ContributesTo] for merging.
  *
- * [ContributesBinding.priority] is conveyed in the generated module via [BindingPriority]
+ * [ContributesBinding.priority] is conveyed in the generated module via [InternalBindingMarker]
  * annotation generated onto the binding module.
  */
 internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
@@ -68,8 +73,12 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
     val boundType: ClassName,
     val priority: ContributesBinding.Priority,
     val replaces: List<ClassName>,
-    val qualifier: AnnotationSpec?
+    val qualifier: QualifierData?,
   ) {
+    data class QualifierData(
+      val annotationSpec: AnnotationSpec,
+      val key: String,
+    )
     companion object {
       val COMPARATOR = compareBy<Contribution> { it.scope.canonicalName }
         .thenComparing(compareBy { it.boundType.canonicalName })
@@ -95,20 +104,35 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
         val contributionName =
           originClass.generateClassName(suffix = "${suffix}BindingModule").simpleName
         TypeSpec.interfaceBuilder(contributionName).apply {
+          addAnnotation(Module::class)
           addAnnotation(
             AnnotationSpec.builder(ContributesTo::class)
               .addMember("scope = %T", contribution.scope)
-              .addMember("replaces = %L", contribution.replaces.map { CodeBlock.of("%T::class") }.joinToCode(prefix = "[", suffix = "]"))
-              .build(),
+              .addMember(
+                "replaces = %L",
+                contribution.replaces.map { CodeBlock.of("%T::class") }
+                  .joinToCode(prefix = "[", suffix = "]"),
+              )
+              .build()
           )
           addAnnotation(
-            AnnotationSpec.builder(BindingPriority::class)
+            AnnotationSpec.builder(
+              InternalBindingMarker::class.asClassName()
+                .parameterizedBy(contribution.boundType, originClass),
+            )
+              .addMember("scope = %T::class", contribution.scope)
+              .addMember("isMultibinding = false")
+              .apply {
+                contribution.qualifier?.key?.let { qualifierKey ->
+                  addMember("qualifierKey = %S", qualifierKey)
+                }
+              }
               .addMember(
                 "priority = %T.%L",
                 ContributesBinding.Priority::class,
                 contribution.priority.name,
               )
-              .build(),
+              .build()
           )
 
           addFunction(
@@ -116,7 +140,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
               .addModifiers(KModifier.ABSTRACT)
               .addAnnotation(Binds::class)
               .apply {
-                contribution.qualifier?.let { addAnnotation(it) }
+                contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
               }
               .addParameter("real", originClass)
               .returns(contribution.boundType)
@@ -167,12 +191,16 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
               val boundType = it.resolveBoundType(resolver, clazz).toClassName()
               val priority = it.priority()
               val replaces = it.replaces().map { it.toClassName() }
-              val qualifier = if (it.ignoreQualifier()) {
+              val qualifierData = if (it.ignoreQualifier()) {
                 null
               } else {
-                clazz.qualifierAnnotation()?.toAnnotationSpec()
+                clazz.qualifierAnnotation()?.let { qualifierAnnotation ->
+                  val annotationSpec = qualifierAnnotation.toAnnotationSpec()
+                  val key = qualifierAnnotation.qualifierKey()
+                  Contribution.QualifierData(annotationSpec, key)
+                }
               }
-              Contribution(scope, boundType, priority, replaces, qualifier)
+              Contribution(scope, boundType, priority, replaces, qualifierData)
             }
             .distinct()
             // Give it a stable sort.
@@ -229,12 +257,16 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
               val boundType = it.resolveBoundType().asClassName()
               val priority = it.priority()
               val replaces = it.replaces().map { it.asClassName() }
-              val qualifier = if (it.ignoreQualifier()) {
+              val qualifierData = if (it.ignoreQualifier()) {
                 null
               } else {
-                clazz.qualifierAnnotation()?.toAnnotationSpec()
+                clazz.qualifierAnnotation()?.let { qualifierAnnotation ->
+                  val annotationSpec = qualifierAnnotation.toAnnotationSpec()
+                  val key = qualifierAnnotation.qualifierKey()
+                  Contribution.QualifierData(annotationSpec, key)
+                }
               }
-              Contribution(scope, boundType, priority, replaces, qualifier)
+              Contribution(scope, boundType, priority, replaces, qualifierData)
             }
             // Give it a stable sort.
             .sortedWith(Contribution.COMPARATOR)
