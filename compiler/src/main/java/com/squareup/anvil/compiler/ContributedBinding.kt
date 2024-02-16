@@ -16,7 +16,6 @@ internal data class ContributedBinding(
   val declaringClass: ClassReferenceIr,
   val implClass: ClassReferenceIr,
   val boundType: ClassReferenceIr,
-  val isMultibinding: Boolean,
   val qualifierKey: String,
   val priority: ContributesBinding.Priority,
 )

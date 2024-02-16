@@ -222,8 +222,6 @@ internal class ModuleMergerIr(
           internalBindingMarker.annotation.getClassTypeArgument(0)!!.classOrFail.toClassReference(
             pluginContext,
           )
-        val isMultibinding =
-          internalBindingMarker.argumentOrNull("isMultibinding")?.value<Boolean>() == true
         val qualifierKey =
           internalBindingMarker.argumentOrNull("qualifierKey")?.value<String>().orEmpty()
         val priority = internalBindingMarker.argumentOrNull("qualifierKey")
@@ -237,7 +235,6 @@ internal class ModuleMergerIr(
           declaringClass = moduleClass,
           implClass = implClass,
           boundType = boundType,
-          isMultibinding = isMultibinding,
           qualifierKey = qualifierKey,
           priority = priority,
         )

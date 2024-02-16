@@ -124,7 +124,6 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
             InternalBindingMarker::class.asClassName()
               .parameterizedBy(contribution.boundType, originClass),
           )
-            .addMember("isMultibinding = false")
             .apply {
               contribution.qualifier?.key?.let { qualifierKey ->
                 addMember("qualifierKey = %S", qualifierKey)
@@ -256,7 +255,6 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
           val contributions = clazz.annotations
             .find(contributesBindingFqName)
             .also { it.checkNoDuplicateScopeAndBoundType() }
-            .distinctBy { it.scope() }
             .map {
               val scope = it.scope().asClassName()
               val boundType = it.resolveBoundType().asClassName()
@@ -273,6 +271,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
               }
               Contribution(scope, boundType, priority, replaces, qualifierData)
             }
+            .distinct()
             // Give it a stable sort.
             .sortedWith(Contribution.COMPARATOR)
 

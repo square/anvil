@@ -3,7 +3,10 @@ package com.squareup.anvil.compiler
 import com.google.common.collect.Lists.cartesianProduct
 import com.google.common.truth.ComparableSubject
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeComponent
+import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
@@ -22,6 +25,7 @@ import org.intellij.lang.annotations.Language
 import org.junit.Assume.assumeTrue
 import java.io.File
 import kotlin.reflect.KClass
+import kotlin.test.fail
 
 internal fun compile(
   @Language("kotlin") vararg sources: String,
@@ -109,17 +113,44 @@ internal val Class<*>.hintContributesScope: KClass<*>?
 internal val Class<*>.hintContributesScopes: List<KClass<*>>
   get() = getHintScopes(HINT_CONTRIBUTES_PACKAGE_PREFIX)
 
-// TODO remove
-internal val Class<*>.hintBinding: KClass<*>?
-  get() = getHint(HINT_BINDING_PACKAGE_PREFIX)
+private fun Class<*>.generatedBindingModules(): List<Class<*>> {
+  return getAnnotationsByType(ContributesBinding::class.java)
+    .map { bindingAnnotation ->
+      val scope = bindingAnnotation.scope.simpleName!!.capitalize()
+      val boundType = bindingAnnotation.boundType
+        .let {
+          if (it == Unit::class) {
+            interfaces.singleOrNull()?.kotlin ?: superclass.kotlin
+          } else {
+            it
+          }
+        }
+        .simpleName!!.capitalize()
+      val className = "${generatedClassesString()}As${boundType}To${scope}BindingModule"
+      classLoader.loadClass(className)
+    }
+}
 
-// TODO remove
-internal val Class<*>.hintBindingScope: KClass<*>?
-  get() = hintBindingScopes.takeIf { it.isNotEmpty() }?.single()
+internal val Class<*>.bindingModule: KClass<*>?
+  get() {
+    val generatedBindingModule = generatedBindingModules().first()
+    // TODO use kotlinx-metadata to read type args? Validate they match?
+    val internalBindingMarker =
+      generatedBindingModule.getAnnotation(InternalBindingMarker::class.java)
+    val bindingFunction = generatedBindingModule.declaredMethods[0]
+    val implType = bindingFunction.parameterTypes[0]
+    return implType.kotlin
+  }
 
-// TODO remove
-internal val Class<*>.hintBindingScopes: List<KClass<*>>
-  get() = getHintScopes(HINT_BINDING_PACKAGE_PREFIX)
+internal val Class<*>.bindingModuleScope: KClass<*>?
+  get() = bindingModuleScopes.first()
+
+internal val Class<*>.bindingModuleScopes: List<KClass<*>>
+  get() = generatedBindingModules()
+    .map { generatedBindingModule ->
+      val contributesTo = generatedBindingModule.getAnnotation(ContributesTo::class.java)
+      contributesTo.scope
+    }
 
 internal val Class<*>.hintMultibinding: KClass<*>?
   get() = getHint(HINT_MULTIBINDING_PACKAGE_PREFIX)
@@ -200,6 +231,34 @@ internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode)
   return dirToSearch.walkTopDown()
     .filter { it.isFile && it.extension == "kt" }
 }
+
+internal fun JvmCompilationResult.singleGeneratedFile(mode: AnvilCompilationMode): File {
+  val files = walkGeneratedFiles(mode).toList()
+  assertThat(files).hasSize(1)
+  return files[0]
+}
+
+internal fun JvmCompilationResult.assertFileGenerated(
+  mode: AnvilCompilationMode,
+  fileName: String,
+) {
+  if (generatedFileOrNull(mode, fileName) == null) {
+    val files = walkGeneratedFiles(mode).toList()
+    fail(
+      buildString {
+        appendLine("Could not find file '$fileName' in the generated files:")
+        for (file in files.sorted()) {
+          appendLine("\t- ${file.name}")
+        }
+      },
+    )
+  }
+}
+
+internal fun JvmCompilationResult.generatedFileOrNull(
+  mode: AnvilCompilationMode,
+  fileName: String,
+): File? = walkGeneratedFiles(mode).singleOrNull { it.name == fileName }
 
 /**
  * Parameters for configuring [AnvilCompilationMode] and whether to run a full test run or not.
