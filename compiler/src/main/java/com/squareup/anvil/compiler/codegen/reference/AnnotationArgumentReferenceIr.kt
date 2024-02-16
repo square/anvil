@@ -4,6 +4,7 @@ import com.squareup.anvil.compiler.kclassUnwrapped
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrValueParameter
+import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
 import kotlin.LazyThreadSafetyMode.NONE
@@ -25,6 +26,10 @@ internal class AnnotationArgumentReferenceIr(
   // We currently special-case for Classes, but this is the spot we'll need to update if we need to
   // support primitives later on.
   private fun findValue(): Any {
+    (argumentExpression as? IrConst<*>)?.let {
+      return it.value as Any
+    }
+
     (argumentExpression as? IrVararg)?.elements?.let { element ->
       return element.filterIsInstance<IrExpression>()
         .map { it.kclassUnwrapped.owner as IrClass }

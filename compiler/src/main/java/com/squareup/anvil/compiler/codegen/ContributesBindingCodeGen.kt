@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
+import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesBinding
@@ -51,6 +52,7 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -69,6 +71,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
 
   private data class Contribution(
     val scope: ClassName,
+    val isObject: Boolean,
     val boundType: ClassName,
     val priority: ContributesBinding.Priority,
     val replaces: List<ClassName>,
@@ -122,8 +125,8 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
         addAnnotation(
           AnnotationSpec.builder(
             InternalBindingMarker::class.asClassName()
-              .parameterizedBy(contribution.boundType, originClass),
           )
+            .addMember("isMultibinding = false")
             .apply {
               contribution.qualifier?.key?.let { qualifierKey ->
                 addMember("qualifierKey = %S", qualifierKey)
@@ -147,6 +150,21 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
             .returns(contribution.boundType)
             .build(),
         )
+
+        if (contribution.isObject) {
+          addType(TypeSpec.companionObjectBuilder()
+            .addFunction(
+              FunSpec.builder("provide${originClass.simpleName.capitalize()}")
+                .addAnnotation(Provides::class)
+                .apply {
+                  contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
+                }
+                .returns(originClass)
+                .addStatement("return %T", originClass)
+                .build(),
+            )
+            .build())
+        }
       }
         .build()
     }
@@ -204,7 +222,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                   Contribution.QualifierData(annotationSpec, key)
                 }
               }
-              Contribution(scope, boundType, priority, replaces, qualifierData)
+              Contribution(scope, clazz.classKind == ClassKind.OBJECT, boundType, priority, replaces, qualifierData)
             }
             .distinct()
             // Give it a stable sort.
@@ -269,7 +287,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                   Contribution.QualifierData(annotationSpec, key)
                 }
               }
-              Contribution(scope, boundType, priority, replaces, qualifierData)
+              Contribution(scope, clazz.isObject(), boundType, priority, replaces, qualifierData)
             }
             .distinct()
             // Give it a stable sort.

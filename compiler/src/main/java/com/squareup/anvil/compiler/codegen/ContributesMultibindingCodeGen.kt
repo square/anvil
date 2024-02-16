@@ -4,6 +4,7 @@ import com.google.auto.service.AutoService
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
+import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesMultibinding
@@ -52,6 +53,7 @@ import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.multibindings.IntoSet
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
@@ -66,6 +68,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
 
   private data class Contribution(
     val scope: ClassName,
+    val isObject: Boolean,
     val boundType: ClassName,
     val replaces: List<ClassName>,
     val qualifier: QualifierData?,
@@ -119,8 +122,8 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
         addAnnotation(
           AnnotationSpec.builder(
             InternalBindingMarker::class.asClassName()
-              .parameterizedBy(contribution.boundType, className),
           )
+            .addMember("isMultibinding = true")
             .apply {
               contribution.qualifier?.key?.let { qualifierKey ->
                 addMember("qualifierKey = %S", qualifierKey)
@@ -145,6 +148,21 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
             .returns(contribution.boundType)
             .build(),
         )
+
+        if (contribution.isObject) {
+          addType(TypeSpec.companionObjectBuilder()
+            .addFunction(
+              FunSpec.builder("provide${className.simpleName.capitalize()}")
+                .addAnnotation(Provides::class)
+                .apply {
+                  contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
+                }
+                .returns(className)
+                .addStatement("return %T", className)
+                .build(),
+            )
+            .build())
+        }
       }.build()
     }
     return FileSpec.createAnvilSpec(generatedPackage, fileName) {
@@ -199,7 +217,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
                 .filter { it.isMapKey() }
                 .singleOrNull()
                 ?.toAnnotationSpec()
-              Contribution(scope, boundType, replaces, qualifierData, mapKey)
+              Contribution(scope, clazz.classKind == ClassKind.OBJECT, boundType, replaces, qualifierData, mapKey)
             }
             .distinct()
             // Give it a stable sort.
@@ -265,7 +283,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
               val mapKey = clazz.annotations
                 .find { it.isMapKey() }
                 ?.toAnnotationSpec()
-              Contribution(scope, boundType, replaces, qualifierData, mapKey)
+              Contribution(scope, clazz.isObject(), boundType, replaces, qualifierData, mapKey)
             }
             .distinct()
             // Give it a stable sort.

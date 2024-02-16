@@ -12,7 +12,7 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 
 internal data class ContributedBinding(
   val scope: ClassReferenceIr,
-  val contributedAnnotation: AnnotationReferenceIr,
+  val isMultibinding: Boolean,
   val declaringClass: ClassReferenceIr,
   val implClass: ClassReferenceIr,
   val boundType: ClassReferenceIr,

@@ -10,15 +10,15 @@ import kotlin.annotation.AnnotationTarget.CLASS
  * Note the reader of this should also check the single binds function in the annotated module to
  * read the bound type and possible qualifier.
  *
- * @param BoundType The bound type of the contributed binding.
- * @param ImplType The implementation type of the contributed binding.
+ * @param isMultibinding Whether this is a multibinding.
  * @param priority The priority of the contributed binding. Corresponds to a [Priority.name].
  * @param qualifierKey The computed key of the qualifier annotation if present. Empty otherwise.
  */
 @Target(CLASS)
 @Retention(RUNTIME)
 @Repeatable
-public annotation class InternalBindingMarker<BoundType, ImplType : BoundType>(
+public annotation class InternalBindingMarker(
+  val isMultibinding: Boolean,
   val priority: String = "",
   val qualifierKey: String = "",
 )
