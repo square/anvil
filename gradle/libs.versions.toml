@@ -140,4 +140,4 @@ ktlintRaw = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "kt
 
 mavenPublishRaw = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
 
-truth = "com.google.truth:truth:1.4.0"
+truth = "com.google.truth:truth:1.4.1"
