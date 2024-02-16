@@ -5,13 +5,28 @@ import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.hintSubcomponent
 import com.squareup.anvil.compiler.hintSubcomponentParentScope
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.subcomponentInterface
+import com.squareup.anvil.compiler.walkGeneratedFiles
 import com.tschuchort.compiletesting.JvmCompilationResult
 import org.junit.Test
-import java.io.File
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
 
-class ContributesSubcomponentGeneratorTest {
+@RunWith(Parameterized::class)
+class ContributesSubcomponentGeneratorTest(
+  private val mode: AnvilCompilationMode,
+) {
+
+  companion object {
+    @JvmStatic
+    @Parameterized.Parameters(name = "{0}")
+    fun data(): List<AnvilCompilationMode> = listOf(
+      AnvilCompilationMode.Ksp(),
+      AnvilCompilationMode.Embedded(),
+    )
+  }
 
   @Test fun `there is a hint for contributed subcomponents`() {
     compile(
@@ -23,13 +38,12 @@ class ContributesSubcomponentGeneratorTest {
       @ContributesSubcomponent(Any::class, Unit::class)
       interface SubcomponentInterface
       """,
+      mode = mode,
     ) {
       assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
       assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
 
-      val generatedFile = File(outputDirectory.parent, "build/anvil")
-        .walk()
-        .single { it.isFile && it.extension == "kt" }
+      val generatedFile = walkGeneratedFiles(mode).single()
 
       assertThat(generatedFile.name).isEqualTo("SubcomponentInterface.kt")
     }
@@ -45,6 +59,7 @@ class ContributesSubcomponentGeneratorTest {
       @ContributesSubcomponent(Any::class, Unit::class)
       abstract class SubcomponentInterface
       """,
+      mode = mode,
     ) {
       assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
       assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
@@ -61,6 +76,7 @@ class ContributesSubcomponentGeneratorTest {
       @ContributesSubcomponent(parentScope = Unit::class, scope = Any::class)
       interface SubcomponentInterface
       """,
+      mode = mode,
     ) {
       assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
       assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
@@ -79,15 +95,14 @@ class ContributesSubcomponentGeneratorTest {
         interface SubcomponentInterface
       }
       """,
+      mode = mode,
     ) {
       val subcomponentInterface = classLoader
         .loadClass("com.squareup.test.Outer\$SubcomponentInterface")
       assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
       assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
 
-      val generatedFile = File(outputDirectory.parent, "build/anvil")
-        .walk()
-        .single { it.isFile && it.extension == "kt" }
+      val generatedFile = walkGeneratedFiles(mode).single()
 
       assertThat(generatedFile.name).isEqualTo("Outer_SubcomponentInterface.kt")
     }
@@ -103,6 +118,7 @@ class ContributesSubcomponentGeneratorTest {
       @ContributesSubcomponent(Any::class, Unit::class)
       class SubcomponentInterface
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
@@ -122,6 +138,7 @@ class ContributesSubcomponentGeneratorTest {
       @ContributesSubcomponent(Any::class, Unit::class)
       object SubcomponentInterface
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
       // Position to the class.
@@ -150,6 +167,7 @@ class ContributesSubcomponentGeneratorTest {
         @ContributesSubcomponent(Any::class, Unit::class)
         $visibility interface SubcomponentInterface
         """,
+        mode = mode,
       ) {
         assertThat(exitCode).isError()
         // Position to the class.
@@ -179,6 +197,7 @@ class ContributesSubcomponentGeneratorTest {
           }
         }
       """,
+      mode = mode,
     ) {
       val parentComponent = subcomponentInterface.parentComponentInterface
       assertThat(parentComponent).isNotNull()
@@ -209,9 +228,10 @@ class ContributesSubcomponentGeneratorTest {
           }
         }
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:7:11")
+      assertThat(messages).contains("Source0.kt:7:")
       assertThat(messages).contains(
         "Expected zero or one parent component interface within " +
           "com.squareup.test.SubcomponentInterface being contributed to the parent scope.",
@@ -237,9 +257,10 @@ class ContributesSubcomponentGeneratorTest {
           }
         }
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:9:13")
+      assertThat(messages).contains("Source0.kt:9:")
       assertThat(messages).contains(
         "Expected zero or one function returning the subcomponent " +
           "com.squareup.test.SubcomponentInterface.",
@@ -269,9 +290,10 @@ class ContributesSubcomponentGeneratorTest {
           }
         }
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:8:11")
+      assertThat(messages).contains("Source0.kt:8:")
       assertThat(messages).contains(
         "Expected zero or one factory within com.squareup.test.SubcomponentInterface.",
       )
@@ -296,9 +318,10 @@ class ContributesSubcomponentGeneratorTest {
           }
         }
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:10:3")
+      assertThat(messages).contains("Source0.kt:10:")
       assertThat(messages).contains("A factory must be an interface or an abstract class.")
     }
 
@@ -318,9 +341,10 @@ class ContributesSubcomponentGeneratorTest {
           }
         }
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:10:9")
+      assertThat(messages).contains("Source0.kt:10:")
       assertThat(messages).contains("A factory must be an interface or an abstract class.")
     }
   }
@@ -341,9 +365,10 @@ class ContributesSubcomponentGeneratorTest {
           interface ComponentFactory
         }
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:10:13")
+      assertThat(messages).contains("Source0.kt:10:")
       assertThat(messages).contains(
         "A factory must have exactly one abstract function returning the subcomponent " +
           "com.squareup.test.SubcomponentInterface.",
@@ -370,9 +395,10 @@ class ContributesSubcomponentGeneratorTest {
           }
         }
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:10:13")
+      assertThat(messages).contains("Source0.kt:10:")
       assertThat(messages).contains(
         "A factory must have exactly one abstract function returning the subcomponent " +
           "com.squareup.test.SubcomponentInterface.",
@@ -398,9 +424,10 @@ class ContributesSubcomponentGeneratorTest {
           }
         }
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:10:18")
+      assertThat(messages).contains("Source0.kt:10:")
       assertThat(messages).contains(
         "A factory must have exactly one abstract function returning the subcomponent " +
           "com.squareup.test.SubcomponentInterface.",
@@ -425,9 +452,10 @@ class ContributesSubcomponentGeneratorTest {
           }
         }
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:9:13")
+      assertThat(messages).contains("Source0.kt:9:")
       assertThat(messages).contains(
         "Within a class using @ContributesSubcomponent you must use " +
           "com.squareup.anvil.annotations.ContributesSubcomponent.Factory and not " +
@@ -453,9 +481,10 @@ class ContributesSubcomponentGeneratorTest {
           }
         }
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:9:13")
+      assertThat(messages).contains("Source0.kt:9:")
       assertThat(messages).contains(
         "Within a class using @ContributesSubcomponent you must use " +
           "com.squareup.anvil.annotations.ContributesSubcomponent.Factory and not " +
@@ -484,6 +513,7 @@ class ContributesSubcomponentGeneratorTest {
       )
       interface SubcomponentInterface2
       """,
+      mode = mode,
     ) {
       assertThat(subcomponentInterface1.hintSubcomponent?.java).isEqualTo(subcomponentInterface1)
       assertThat(subcomponentInterface1.hintSubcomponentParentScope).isEqualTo(Unit::class)
@@ -513,9 +543,10 @@ class ContributesSubcomponentGeneratorTest {
       )
       interface SubcomponentInterface2
       """,
+      mode = mode,
     ) {
       assertThat(exitCode).isError()
-      assertThat(messages).contains("Source0.kt:16:11")
+      assertThat(messages).contains("Source0.kt:16:")
       assertThat(messages).contains(
         "com.squareup.test.SubcomponentInterface2 with scope kotlin.Any wants to replace " +
           "com.squareup.test.SubcomponentInterface1 with scope kotlin.Long. The replacement " +

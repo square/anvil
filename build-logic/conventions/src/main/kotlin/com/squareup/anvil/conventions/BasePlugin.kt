@@ -1,5 +1,6 @@
 package com.squareup.anvil.conventions
 
+import com.rickbusarow.kgx.buildDir
 import com.rickbusarow.kgx.extras
 import com.rickbusarow.kgx.fromInt
 import com.rickbusarow.kgx.javaExtension
@@ -7,6 +8,7 @@ import com.squareup.anvil.conventions.utils.isInAnvilBuild
 import com.squareup.anvil.conventions.utils.isInAnvilIncludedBuild
 import com.squareup.anvil.conventions.utils.isInAnvilRootBuild
 import com.squareup.anvil.conventions.utils.libs
+import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
 import org.gradle.api.Project
 import org.gradle.api.tasks.compile.JavaCompile
@@ -91,26 +93,26 @@ abstract class BasePlugin : Plugin<Project> {
             extension.warningsAsErrors.get(),
         )
 
+        val sourceSetName = task.sourceSetName.getOrElse(
+          task.name.substringAfter("compile")
+            .substringBefore("Kotlin")
+            .replaceFirstChar(Char::lowercase),
+        )
+
         // Only add the experimental opt-in if the project has the `annotations` dependency,
         // otherwise the compiler will throw a warning and fail in CI.
-        if (target.hasAnnotationDependency()) {
+        if (target.hasAnnotationDependency(sourceSetName)) {
           freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
         }
 
         freeCompilerArgs.addAll(extension.kotlinCompilerArgs.get())
 
-        fun isTestOrGradleTest(): Boolean {
-          val sourceSetName = task.sourceSetName
-            .getOrElse(
-              task.name.substringAfter("compile")
-                .substringBefore("Kotlin")
-                .replaceFirstChar(Char::lowercase),
-            )
-
-          return sourceSetName == "test" || sourceSetName == "gradleTest"
+        fun isTestSourceSet(): Boolean {
+          val regex = """(?:gradle|Unit|[aA]ndroid)Test""".toRegex()
+          return sourceSetName == "test" || sourceSetName.matches(regex)
         }
 
-        if (extension.explicitApi.get() && !isTestOrGradleTest()) {
+        if (extension.explicitApi.get() && !isTestSourceSet()) {
           freeCompilerArgs.add("-Xexplicit-api=strict")
         }
 
@@ -124,6 +126,7 @@ abstract class BasePlugin : Plugin<Project> {
    * so that there is no shared mutable state.
    */
   private fun configureBuildDirs(target: Project) {
+
     when {
       !target.isInAnvilBuild() -> return
 
@@ -135,6 +138,16 @@ abstract class BasePlugin : Plugin<Project> {
         target.layout.buildDirectory.set(target.file("build/included-build"))
       }
     }
+
+    // Set the kase working directory ('<build directory>/kase/<test|gradleTest>') as a System property,
+    // so that it's in the right place for projects with relocated directories.
+    // https://github.com/rickbusarow/kase/blob/255db67f40d5ec83e31755bc9ce81b1a2b08cf11/kase/src/main/kotlin/com/rickbusarow/kase/files/HasWorkingDir.kt#L93-L96
+    target.tasks.withType(Test::class.java).configureEach { task ->
+      task.systemProperty(
+        "kase.baseWorkingDir",
+        target.buildDir().resolve("kase/${task.name}"),
+      )
+    }
   }
 
   /**
@@ -142,15 +155,16 @@ abstract class BasePlugin : Plugin<Project> {
    * to determine if the receiver has the `annotations` dependency,
    * without actually resolving the dependency graph.
    */
-  private fun Project.hasAnnotationDependency(): Boolean {
-    val seed = sequenceOf(
-      "compileClasspath",
-      "testCompileClasspath",
-      "debugCompileClasspath",
-    )
-      .mapNotNull { configurations.findByName(it) }
+  private fun Project.hasAnnotationDependency(sourceSetName: String): Boolean {
 
-    val configs = generateSequence(seed) { configs ->
+    val compileClasspath = when (sourceSetName) {
+      "main" -> "compileClasspath"
+      else -> "${sourceSetName}CompileClasspath"
+    }
+      .let { configurations.findByName(it) }
+      ?: return false
+
+    val configs = generateSequence(sequenceOf(compileClasspath)) { configs ->
       configs.flatMap { it.extendsFrom }
         .mapNotNull { configurations.findByName(it.name) }
         .takeIf { it.iterator().hasNext() }
@@ -163,17 +177,19 @@ abstract class BasePlugin : Plugin<Project> {
 
     return configs.any { cfg ->
       cfg.dependencies.any { dep ->
-
         dep.group == "com.squareup.anvil" && dep.name in providingProjects
       }
     }
   }
 
   private fun configureJava(target: Project) {
-    target.plugins.withId("java") {
+    // Sets the toolchain and target versions for java compilation. This waits for the 'java-base'
+    // plugin instead of just 'java' for the sake of the KMP integration test project.
+    target.plugins.withId("java-base") {
       target.javaExtension.toolchain {
         it.languageVersion.set(JavaLanguageVersion.of(target.libs.versions.jvm.toolchain.get()))
       }
+      target.javaExtension.targetCompatibility = JavaVersion.toVersion(target.jvmTargetInt())
       target.tasks.withType(JavaCompile::class.java).configureEach { task ->
         task.options.release.set(target.jvmTargetInt())
       }
@@ -185,8 +201,28 @@ abstract class BasePlugin : Plugin<Project> {
 
       task.maxParallelForks = Runtime.getRuntime().availableProcessors()
 
+      task.jvmArgs(
+        // Fixes illegal reflective operation warnings during tests. It's a Kotlin issue.
+        // https://github.com/pinterest/ktlint/issues/1618
+        "--add-opens=java.base/java.lang=ALL-UNNAMED",
+        "--add-opens=java.base/java.util=ALL-UNNAMED",
+        // Fixes IllegalAccessError: class org.jetbrains.kotlin.kapt3.base.KaptContext [...] in KCT tests
+        // https://youtrack.jetbrains.com/issue/KT-45545/Kapt-is-not-compatible-with-JDK-16
+        "--add-opens=jdk.compiler/com.sun.tools.javac.api=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.code=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.comp=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.file=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.jvm=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.main=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.parser=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
+        "--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
+        "--illegal-access=permit",
+      )
+
       task.testLogging { logging ->
-        logging.events("passed", "skipped", "failed")
+        logging.events("skipped", "failed")
         logging.exceptionFormat = FULL
         logging.showCauses = true
         logging.showExceptions = true

@@ -9,7 +9,7 @@ import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesSubcomponentFactoryFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
@@ -78,7 +78,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
-  ): Collection<GeneratedFile> {
+  ): Collection<GeneratedFileWithSources> {
     if (isFirstRound) {
       isFirstRound = false
       populateInitialContributions(module)
@@ -193,6 +193,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           packageName = generatedPackage,
           fileName = componentClassName,
           content = content,
+          sourceFile = generateCodeEvent.trigger.clazz.containingFileAsJavaFile,
         )
       }
   }

@@ -22,7 +22,7 @@ import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.assistedFactoryFqName
 import com.squareup.anvil.compiler.assistedFqName
@@ -304,19 +304,18 @@ internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
       codeGenDir: File,
       module: ModuleDescriptor,
       projectFiles: Collection<KtFile>,
-    ) {
-      projectFiles
-        .classAndInnerClassReferences(module)
-        .filter { it.isAnnotatedWith(assistedFactoryFqName) }
-        .forEach { clazz ->
-          generateFactoryClass(codeGenDir, clazz)
-        }
-    }
+    ): List<GeneratedFileWithSources> = projectFiles
+      .classAndInnerClassReferences(module)
+      .filter { it.isAnnotatedWith(assistedFactoryFqName) }
+      .map { clazz ->
+        generateFactoryClass(codeGenDir, clazz)
+      }
+      .toList()
 
     private fun generateFactoryClass(
       codeGenDir: File,
       clazz: ClassReference.Psi,
-    ): GeneratedFile {
+    ): GeneratedFileWithSources {
       val function = clazz.requireSingleAbstractFunction()
 
       val returnType = try {
@@ -417,7 +416,13 @@ internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
         functionParameterKeys = functionParameterKeys,
       )
 
-      return createGeneratedFile(codeGenDir, spec.packageName, spec.name, spec.toString())
+      return createGeneratedFile(
+        codeGenDir = codeGenDir,
+        packageName = spec.packageName,
+        fileName = spec.name,
+        content = spec.toString(),
+        sourceFile = clazz.containingFileAsJavaFile,
+      )
     }
 
     private fun ClassReference.Psi.requireSingleAbstractFunction(): AssistedFactoryFunction {
@@ -558,19 +563,24 @@ internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
             .build(),
         )
         .apply {
+          fun createFactory(name: String, providerTypeName: ClassName): FunSpec {
+            return FunSpec.builder(name)
+              .jvmStatic()
+              .addTypeVariables(typeParameters)
+              .addParameter(DELEGATE_FACTORY_NAME, generatedFactoryTypeName)
+              .returns(providerTypeName.parameterizedBy(baseFactoryTypeName))
+              .addStatement(
+                "return %T.create(%T($DELEGATE_FACTORY_NAME))",
+                InstanceFactory::class,
+                implParameterizedTypeName,
+              )
+              .build()
+          }
           TypeSpec.companionObjectBuilder()
+            .addFunction(createFactory("create", Provider::class.asClassName()))
+            // New in Dagger 2.50: factories for dagger.internal.Provider
             .addFunction(
-              FunSpec.builder("create")
-                .jvmStatic()
-                .addTypeVariables(typeParameters)
-                .addParameter(DELEGATE_FACTORY_NAME, generatedFactoryTypeName)
-                .returns(Provider::class.asClassName().parameterizedBy(baseFactoryTypeName))
-                .addStatement(
-                  "return %T.create(%T($DELEGATE_FACTORY_NAME))",
-                  InstanceFactory::class,
-                  implParameterizedTypeName,
-                )
-                .build(),
+              createFactory("createFactoryProvider", dagger.internal.Provider::class.asClassName()),
             )
             .build()
             .let {

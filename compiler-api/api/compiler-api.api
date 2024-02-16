@@ -43,6 +43,7 @@ public abstract interface class com/squareup/anvil/compiler/api/AnvilContext {
 	public abstract fun getGenerateFactories ()Z
 	public abstract fun getGenerateFactoriesOnly ()Z
 	public abstract fun getModule ()Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;
+	public abstract fun getTrackSourceFiles ()Z
 }
 
 public abstract interface class com/squareup/anvil/compiler/api/CodeGenerator : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
@@ -52,17 +53,50 @@ public abstract interface class com/squareup/anvil/compiler/api/CodeGenerator : 
 
 public final class com/squareup/anvil/compiler/api/CodeGeneratorKt {
 	public static final fun createGeneratedFile (Lcom/squareup/anvil/compiler/api/CodeGenerator;Ljava/io/File;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/GeneratedFile;
+	public static final fun createGeneratedFile (Lcom/squareup/anvil/compiler/api/CodeGenerator;Ljava/io/File;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/io/File;[Ljava/io/File;)Lcom/squareup/anvil/compiler/api/GeneratedFileWithSources;
+	public static final fun createGeneratedFile (Lcom/squareup/anvil/compiler/api/CodeGenerator;Ljava/io/File;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;)Lcom/squareup/anvil/compiler/api/GeneratedFileWithSources;
 }
 
-public final class com/squareup/anvil/compiler/api/GeneratedFile {
+public abstract interface class com/squareup/anvil/compiler/api/FileWithContent : java/lang/Comparable {
+	public abstract fun compareTo (Lcom/squareup/anvil/compiler/api/FileWithContent;)I
+	public abstract fun component1 ()Ljava/io/File;
+	public abstract fun component2 ()Ljava/lang/String;
+	public abstract fun getContent ()Ljava/lang/String;
+	public abstract fun getFile ()Ljava/io/File;
+}
+
+public final class com/squareup/anvil/compiler/api/FileWithContent$DefaultImpls {
+	public static fun compareTo (Lcom/squareup/anvil/compiler/api/FileWithContent;Lcom/squareup/anvil/compiler/api/FileWithContent;)I
+	public static fun component1 (Lcom/squareup/anvil/compiler/api/FileWithContent;)Ljava/io/File;
+	public static fun component2 (Lcom/squareup/anvil/compiler/api/FileWithContent;)Ljava/lang/String;
+}
+
+public final class com/squareup/anvil/compiler/api/GeneratedFile : com/squareup/anvil/compiler/api/FileWithContent {
 	public fun <init> (Ljava/io/File;Ljava/lang/String;)V
+	public fun compareTo (Lcom/squareup/anvil/compiler/api/FileWithContent;)I
+	public synthetic fun compareTo (Ljava/lang/Object;)I
 	public final fun component1 ()Ljava/io/File;
 	public final fun component2 ()Ljava/lang/String;
 	public final fun copy (Ljava/io/File;Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/GeneratedFile;
 	public static synthetic fun copy$default (Lcom/squareup/anvil/compiler/api/GeneratedFile;Ljava/io/File;Ljava/lang/String;ILjava/lang/Object;)Lcom/squareup/anvil/compiler/api/GeneratedFile;
 	public fun equals (Ljava/lang/Object;)Z
-	public final fun getContent ()Ljava/lang/String;
-	public final fun getFile ()Ljava/io/File;
+	public fun getContent ()Ljava/lang/String;
+	public fun getFile ()Ljava/io/File;
+	public fun hashCode ()I
+	public fun toString ()Ljava/lang/String;
+}
+
+public final class com/squareup/anvil/compiler/api/GeneratedFileWithSources : com/squareup/anvil/compiler/api/FileWithContent {
+	public fun <init> (Ljava/io/File;Ljava/lang/String;Ljava/util/Set;)V
+	public fun compareTo (Lcom/squareup/anvil/compiler/api/FileWithContent;)I
+	public synthetic fun compareTo (Ljava/lang/Object;)I
+	public fun component1 ()Ljava/io/File;
+	public fun component2 ()Ljava/lang/String;
+	public final fun component3 ()Ljava/util/Set;
+	public fun equals (Ljava/lang/Object;)Z
+	public fun getContent ()Ljava/lang/String;
+	public fun getFile ()Ljava/io/File;
+	public final fun getSourceFiles ()Ljava/util/Set;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
 }

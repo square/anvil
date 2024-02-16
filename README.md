@@ -212,11 +212,24 @@ means you can skip KAPT and the stub generating task. In addition Anvil generate
 of Java code, which allows Gradle to skip the Java compilation task. The result is faster
 builds.
 
+<details open>
+<summary>Gradle DSL</summary>
+
 ```groovy
+// build.gradle
 anvil {
   generateDaggerFactories = true // default is false
 }
 ```
+</details>
+<details>
+<summary>Gradle Properties</summary>
+
+```properties
+# gradle.properties
+com.squareup.anvil.generateDaggerFactories=true # default is false
+```
+</details>
 
 In our codebase we measured that modules using Dagger build 65% faster with this new Anvil feature
 compared to using the Dagger annotation processor:
@@ -308,6 +321,32 @@ functions won't be implemented properly in the final Dagger component.
 Anvil will automatically set `correctErrorTypes` to false to avoid this issue.
 
 #### Incremental Kotlin compilation breaks Anvil's feature to merge contributions
+
+> [!TIP]
+> Anvil now experimentally supports incremental compilation and Gradle's build caching,
+> as of [v2.5.0](https://github.com/square/anvil/releases/tag/v2.5.0-beta01).
+>
+> This feature is disabled by default.
+> It can be enabled via a Gradle property or the Gradle DSL:
+> <details open>
+> <summary>Gradle Properties</summary>
+> 
+> ```properties
+> # gradle.properties
+> com.squareup.anvil.trackSourceFiles=true # default is false
+> ```
+> 
+> </details>
+> <details>
+> <summary>Gradle DSL</summary>
+> 
+> ```groovy
+> // build.gradle
+> anvil {
+>   trackSourceFiles = true // default is false
+> }
+> ```
+> </details>
 
 Anvil merges Dagger component interfaces and Dagger modules during the stub generating task
 when `@MergeComponent` is used. This requires scanning the compile classpath for any contributions.

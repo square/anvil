@@ -3,7 +3,7 @@ package com.squareup.anvil.compiler.codegen.dagger
 import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
+import com.squareup.anvil.compiler.codegen.CheckOnlyCodeGenerator
 import com.squareup.anvil.compiler.daggerBindsFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
@@ -14,6 +14,7 @@ import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferenc
 import com.squareup.anvil.compiler.internal.reference.toTypeReference
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.psiUtil.isExtensionDeclaration
 import java.io.File
 
 /**
@@ -24,7 +25,7 @@ import java.io.File
  * when Anvil generates Dagger factories.
  */
 @AutoService(CodeGenerator::class)
-internal class BindsMethodValidator : PrivateCodeGenerator() {
+internal class BindsMethodValidator : CheckOnlyCodeGenerator() {
 
   override fun isApplicable(context: AnvilContext) = context.generateFactories
 
@@ -51,7 +52,7 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
     }
   }
 
-  override fun generateCodePrivate(
+  override fun checkCode(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
@@ -77,6 +78,13 @@ internal class BindsMethodValidator : PrivateCodeGenerator() {
     if (!function.isAbstract()) {
       throw AnvilCompilationExceptionFunctionReference(
         message = Errors.BINDS_MUST_BE_ABSTRACT,
+        functionReference = function,
+      )
+    }
+
+    if (function.function.isExtensionDeclaration()) {
+      throw AnvilCompilationExceptionFunctionReference(
+        message = "@Binds methods can not be an extension function",
         functionReference = function,
       )
     }

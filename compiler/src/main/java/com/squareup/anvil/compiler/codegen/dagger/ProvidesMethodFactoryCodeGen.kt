@@ -19,7 +19,7 @@ import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
@@ -32,6 +32,7 @@ import com.squareup.anvil.compiler.codegen.ksp.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.containingFileAsJavaFile
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -65,6 +66,7 @@ import dagger.internal.Factory
 import dagger.internal.Preconditions
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
+import org.jetbrains.kotlin.psi.psiUtil.isExtensionDeclaration
 import java.io.File
 
 internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
@@ -82,7 +84,8 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         .forEach { clazz ->
           val classAndCompanion = sequenceOf(clazz)
             .plus(
-              clazz.declarations.filterIsInstance<KSClassDeclaration>().filter { it.isCompanionObject },
+              clazz.declarations.filterIsInstance<KSClassDeclaration>()
+                .filter { it.isCompanionObject },
             )
 
           val functions = classAndCompanion.flatMap { it.getDeclaredFunctions() }
@@ -151,6 +154,12 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     }
 
     private fun CallableReference.Companion.from(function: KSFunctionDeclaration): CallableReference {
+      if (function.extensionReceiver != null) {
+        throw KspAnvilException(
+          message = "@Provides methods cannot be extension functions",
+          node = function,
+        )
+      }
       val type = function.returnType?.resolve() ?: throw KspAnvilException(
         message = "Error occurred in type resolution and could not resolve return type.",
         node = function,
@@ -197,56 +206,56 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       codeGenDir: File,
       module: ModuleDescriptor,
       projectFiles: Collection<KtFile>,
-    ) {
-      projectFiles
-        .classAndInnerClassReferences(module)
-        .filter { it.isAnnotatedWith(daggerModuleFqName) }
-        .forEach { clazz ->
-          (clazz.companionObjects() + clazz)
-            .asSequence()
-            .flatMap { it.functions }
-            .filter { it.isAnnotatedWith(daggerProvidesFqName) }
-            .onEach { function ->
-              checkFunctionIsNotAbstract(clazz, function)
-            }
-            .also { functions ->
-              assertNoDuplicateFunctions(clazz, functions)
-            }
-            .forEach { function ->
-              generateFactoryClass(
-                codeGenDir,
-                module,
-                clazz,
-                CallableReference.from(function),
-              )
-            }
+    ): Collection<GeneratedFileWithSources> = projectFiles
+      .classAndInnerClassReferences(module)
+      .filter { it.isAnnotatedWith(daggerModuleFqName) }
+      .flatMap { clazz ->
+        val types = (clazz.companionObjects() + clazz)
+          .asSequence()
 
-          (clazz.companionObjects() + clazz)
-            .asSequence()
-            .flatMap { it.properties }
-            .filter { property ->
-              // Must be '@get:Provides'.
-              property.annotations.singleOrNull {
-                it.fqName == daggerProvidesFqName
-              }?.annotation?.useSiteTarget?.text == "get"
-            }
-            .forEach { property ->
-              generateFactoryClass(
-                codeGenDir,
-                module,
-                clazz,
-                CallableReference.from(property),
-              )
-            }
-        }
-    }
+        val functions = types
+          .flatMap { it.functions }
+          .filter { it.isAnnotatedWith(daggerProvidesFqName) }
+          .onEach { function ->
+            checkFunctionIsNotAbstract(clazz, function)
+          }
+          .also { functions ->
+            assertNoDuplicateFunctions(clazz, functions)
+          }
+          .map { function ->
+            generateFactoryClass(
+              codeGenDir,
+              module,
+              clazz,
+              CallableReference.from(function),
+            )
+          }
+
+        val properties = types
+          .flatMap { it.properties }
+          .filter { property ->
+            // Must be `@get:Provides`.
+            property.getterAnnotations.any { it.fqName == daggerProvidesFqName }
+          }
+          .map { property ->
+            generateFactoryClass(
+              codeGenDir,
+              module,
+              clazz,
+              CallableReference.from(property),
+            )
+          }
+
+        functions + properties
+      }
+      .toList()
 
     private fun generateFactoryClass(
       codeGenDir: File,
       module: ModuleDescriptor,
       clazz: ClassReference.Psi,
       declaration: CallableReference,
-    ): GeneratedFile {
+    ): GeneratedFileWithSources {
       val spec = generateFactoryClass(
         module.mangledNameSuffix(),
         clazz.asClassName(),
@@ -254,7 +263,13 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         declaration,
       )
 
-      return createGeneratedFile(codeGenDir, spec.packageName, spec.name, spec.toString())
+      return createGeneratedFile(
+        codeGenDir = codeGenDir,
+        packageName = spec.packageName,
+        fileName = spec.name,
+        content = spec.toString(),
+        sourceFile = clazz.clazz.containingFileAsJavaFile(),
+      )
     }
 
     private fun checkFunctionIsNotAbstract(
@@ -281,6 +296,12 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     }
 
     private fun CallableReference.Companion.from(function: MemberFunctionReference.Psi): CallableReference {
+      if (function.function.isExtensionDeclaration()) {
+        throw AnvilCompilationExceptionFunctionReference(
+          message = "@Provides methods can not be an extension function",
+          functionReference = function,
+        )
+      }
       val type = function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
         message = "Dagger provider methods must specify the return type explicitly when using " +
           "Anvil. The return type cannot be inferred implicitly.",

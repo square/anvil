@@ -15,10 +15,10 @@ import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 
 @AutoService(CodeGenerator::class)
-internal class MergeAnnotationsCheckGenerator : PrivateCodeGenerator() {
+internal class MergeAnnotationsCheckGenerator : CheckOnlyCodeGenerator() {
   override fun isApplicable(context: AnvilContext): Boolean = !context.disableComponentMerging
 
-  override fun generateCodePrivate(
+  override fun checkCode(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,

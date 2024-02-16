@@ -16,6 +16,7 @@ import com.tschuchort.compiletesting.kspArgs
 import com.tschuchort.compiletesting.kspWithCompilation
 import com.tschuchort.compiletesting.symbolProcessorProviders
 import dagger.internal.codegen.ComponentProcessor
+import dagger.internal.codegen.KspComponentProcessor
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.config.JvmTarget
 import java.io.File
@@ -43,6 +44,7 @@ public class AnvilCompilation internal constructor(
     generateDaggerFactoriesOnly: Boolean = false,
     disableComponentMerging: Boolean = false,
     enableExperimentalAnvilApis: Boolean = true,
+    trackSourceFiles: Boolean = true,
     mode: AnvilCompilationMode = Embedded(emptyList()),
     enableAnvil: Boolean = true,
   ): AnvilCompilation = apply {
@@ -85,8 +87,18 @@ public class AnvilCompilation internal constructor(
             listOf(
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "gradle-project-dir",
+                optionValue = workingDir.absolutePath,
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "src-gen-dir",
                 optionValue = File(workingDir, "build/anvil").absolutePath,
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "anvil-cache-dir",
+                optionValue = File(workingDir, "build/anvil-cache").absolutePath,
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
@@ -98,6 +110,11 @@ public class AnvilCompilation internal constructor(
                 optionName = "generate-dagger-factories-only",
                 optionValue = generateDaggerFactoriesOnly.toString(),
               ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "track-source-files",
+                optionValue = trackSourceFiles.toString(),
+              ),
             )
         }
 
@@ -107,7 +124,11 @@ public class AnvilCompilation internal constructor(
               ServiceLoader.load(
                 SymbolProcessorProvider::class.java,
                 SymbolProcessorProvider::class.java.classLoader,
-              ),
+              )
+                // TODO for now, we don't want to run the dagger KSP processor while we're testing
+                //  KSP. This will change when we start supporting dagger-KSP, at which point we can
+                //  change this filter to be based on https://github.com/square/anvil/pull/713
+                .filterNot { it is KspComponentProcessor.Provider },
             )
             addAll(mode.symbolProcessorProviders)
           }
@@ -237,6 +258,7 @@ public fun compileAnvil(
   messageOutputStream: OutputStream = System.out,
   workingDir: File? = null,
   enableExperimentalAnvilApis: Boolean = true,
+  trackSourceFiles: Boolean = true,
   previousCompilationResult: JvmCompilationResult? = null,
   mode: AnvilCompilationMode = Embedded(emptyList()),
   moduleName: String? = null,
@@ -270,6 +292,7 @@ public fun compileAnvil(
       generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
       disableComponentMerging = disableComponentMerging,
       enableExperimentalAnvilApis = enableExperimentalAnvilApis,
+      trackSourceFiles = trackSourceFiles,
       mode = mode,
     )
     .compile(*sources)

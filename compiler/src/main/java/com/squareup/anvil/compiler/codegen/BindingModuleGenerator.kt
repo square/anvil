@@ -6,7 +6,7 @@ import com.squareup.anvil.compiler.ClassScanner
 import com.squareup.anvil.compiler.MODULE_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.AnvilContext
-import com.squareup.anvil.compiler.api.GeneratedFile
+import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.codegen.GeneratedMethod.BindingMethod
 import com.squareup.anvil.compiler.codegen.GeneratedMethod.ProviderMethod
 import com.squareup.anvil.compiler.contributesBindingFqName
@@ -63,7 +63,7 @@ internal class BindingModuleGenerator(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
-  ): Collection<GeneratedFile> {
+  ): Collection<GeneratedFileWithSources> {
     val classes = projectFiles.classAndInnerClassReferences(module).toList()
 
     // Even though we support multiple rounds the Kotlin compiler let's us generate code only once.
@@ -112,7 +112,11 @@ internal class BindingModuleGenerator(
 
         mergedClasses[clazz] = file
 
-        GeneratedFile(file, content)
+        GeneratedFileWithSources(
+          file = file,
+          content = content,
+          sourceFiles = setOf(clazz.containingFileAsJavaFile),
+        )
       }
       .toList()
   }
@@ -120,7 +124,7 @@ internal class BindingModuleGenerator(
   override fun flush(
     codeGenDir: File,
     module: ModuleDescriptor,
-  ): Collection<GeneratedFile> {
+  ): Collection<GeneratedFileWithSources> {
     return mergedClasses.map { (mergedClass, daggerModuleFile) ->
       val annotations = mergedClass.annotations.filter { it.fqName in supportedFqNames }
       val scopes = annotations.map { it.scope() }
@@ -234,7 +238,11 @@ internal class BindingModuleGenerator(
 
       daggerModuleFile.writeText(content)
 
-      GeneratedFile(daggerModuleFile, content)
+      GeneratedFileWithSources(
+        file = daggerModuleFile,
+        content = content,
+        sourceFiles = setOf(mergedClass.containingFileAsJavaFile),
+      )
     }
   }
 
