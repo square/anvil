@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.assertFileGenerated
+import com.squareup.anvil.compiler.assertStableInterfaceOrder
 import com.squareup.anvil.compiler.bindingModule
 import com.squareup.anvil.compiler.bindingModuleScope
 import com.squareup.anvil.compiler.bindingModuleScopes
@@ -14,7 +15,6 @@ import com.squareup.anvil.compiler.walkGeneratedFiles
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
-import java.io.File
 
 @Suppress("RemoveRedundantQualifierName")
 @RunWith(Parameterized::class)
@@ -399,14 +399,6 @@ class ContributesBindingGeneratorTest(
       generatedFileOrNull(mode, "SecondContributingInterfaceBindingModule.kt")!!
         .assertStableInterfaceOrder()
     }
-  }
-
-  private fun File.assertStableInterfaceOrder() {
-    val classNamesAndLineNumbers = readText().lines().withIndex()
-      .filter { (_, line) -> line.startsWith("public interface ") }
-      .sortedBy { it.value }
-
-    assertThat(classNamesAndLineNumbers).isEqualTo(classNamesAndLineNumbers.sortedBy { it.index })
   }
 
   @Test fun `there are multiple hints for contributed bindings with fully qualified names`() {

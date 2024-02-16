@@ -95,7 +95,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
         contribution.boundType.simpleName.capitalize() +
         "To" +
         contribution.scope.simpleName.capitalize() +
-        "BindingModule"
+        "MultiBindingModule"
 
       val contributionName =
         className.generateClassName(suffix = suffix).simpleName

@@ -4,6 +4,7 @@ import com.google.common.collect.Lists.cartesianProduct
 import com.google.common.truth.ComparableSubject
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
@@ -131,6 +132,24 @@ private fun Class<*>.generatedBindingModules(): List<Class<*>> {
     }
 }
 
+private fun Class<*>.generatedMultiBindingModules(): List<Class<*>> {
+  return getAnnotationsByType(ContributesMultibinding::class.java)
+    .map { bindingAnnotation ->
+      val scope = bindingAnnotation.scope.simpleName!!.capitalize()
+      val boundType = bindingAnnotation.boundType
+        .let {
+          if (it == Unit::class) {
+            interfaces.singleOrNull()?.kotlin ?: superclass.kotlin
+          } else {
+            it
+          }
+        }
+        .simpleName!!.capitalize()
+      val className = "${generatedClassesString()}As${boundType}To${scope}MultiBindingModule"
+      classLoader.loadClass(className)
+    }
+}
+
 internal val Class<*>.bindingModule: KClass<*>?
   get() {
     val generatedBindingModule = generatedBindingModules().first()
@@ -152,16 +171,28 @@ internal val Class<*>.bindingModuleScopes: List<KClass<*>>
       contributesTo.scope
     }
 
-internal val Class<*>.hintMultibinding: KClass<*>?
-  get() = getHint(HINT_MULTIBINDING_PACKAGE_PREFIX)
+internal val Class<*>.multibindingModule: KClass<*>?
+  get() {
+    val generatedBindingModule = generatedMultiBindingModules().first()
+    // TODO use kotlinx-metadata to read type args? Validate they match?
+    val internalBindingMarker =
+      generatedBindingModule.getAnnotation(InternalBindingMarker::class.java)
+    val bindingFunction = generatedBindingModule.declaredMethods[0]
+    val implType = bindingFunction.parameterTypes[0]
+    return implType.kotlin
+  }
 
 // TODO remove
-internal val Class<*>.hintMultibindingScope: KClass<*>?
-  get() = hintMultibindingScopes.takeIf { it.isNotEmpty() }?.single()
+internal val Class<*>.multibindingModuleScope: KClass<*>?
+  get() = multibindingModuleScopes.takeIf { it.isNotEmpty() }?.single()
 
 // TODO remove
-internal val Class<*>.hintMultibindingScopes: List<KClass<*>>
-  get() = getHintScopes(HINT_MULTIBINDING_PACKAGE_PREFIX)
+internal val Class<*>.multibindingModuleScopes: List<KClass<*>>
+  get() = generatedMultiBindingModules()
+    .map { generatedBindingModule ->
+      val contributesTo = generatedBindingModule.getAnnotation(ContributesTo::class.java)
+      contributesTo.scope
+    }
 
 internal val Class<*>.hintSubcomponent: KClass<*>?
   get() = getHint(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
@@ -293,4 +324,12 @@ internal fun CompilationResult.compilationErrorLine(): String {
   return messages
     .lineSequence()
     .first { it.startsWith("e:") && KSP_ERROR_HEADER !in it }
+}
+
+internal fun File.assertStableInterfaceOrder() {
+  val classNamesAndLineNumbers = readText().lines().withIndex()
+    .filter { (_, line) -> line.startsWith("public interface ") }
+    .sortedBy { it.value }
+
+  assertThat(classNamesAndLineNumbers).isEqualTo(classNamesAndLineNumbers.sortedBy { it.index })
 }
