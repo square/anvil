@@ -30,7 +30,7 @@ jobs:
 
       - name: Extract release notes
         id: release_notes
-        uses: ffurrer2/extract-release-notes@85cc26c72b68321ff4f363353ce4b69f69f7adf8 # v2
+        uses: ffurrer2/extract-release-notes@4a5a562549e21065f6791b32ec5415bd33045cd2 # v2
 
       - name: Create release
         uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
