@@ -44,7 +44,6 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
@@ -121,7 +120,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
 
         addAnnotation(
           AnnotationSpec.builder(
-            InternalBindingMarker::class.asClassName()
+            InternalBindingMarker::class.asClassName(),
           )
             .addMember("isMultibinding = true")
             .apply {
@@ -150,18 +149,20 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
         )
 
         if (contribution.isObject) {
-          addType(TypeSpec.companionObjectBuilder()
-            .addFunction(
-              FunSpec.builder("provide${className.simpleName.capitalize()}")
-                .addAnnotation(Provides::class)
-                .apply {
-                  contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
-                }
-                .returns(className)
-                .addStatement("return %T", className)
-                .build(),
-            )
-            .build())
+          addType(
+            TypeSpec.companionObjectBuilder()
+              .addFunction(
+                FunSpec.builder("provide${className.simpleName.capitalize()}")
+                  .addAnnotation(Provides::class)
+                  .apply {
+                    contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
+                  }
+                  .returns(className)
+                  .addStatement("return %T", className)
+                  .build(),
+              )
+              .build(),
+          )
         }
       }.build()
     }
@@ -217,7 +218,14 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
                 .filter { it.isMapKey() }
                 .singleOrNull()
                 ?.toAnnotationSpec()
-              Contribution(scope, clazz.classKind == ClassKind.OBJECT, boundType, replaces, qualifierData, mapKey)
+              Contribution(
+                scope,
+                clazz.classKind == ClassKind.OBJECT,
+                boundType,
+                replaces,
+                qualifierData,
+                mapKey,
+              )
             }
             .distinct()
             // Give it a stable sort.

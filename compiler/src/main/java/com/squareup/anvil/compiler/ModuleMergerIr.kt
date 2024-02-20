@@ -17,6 +17,7 @@ import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.createIrBuilder
+import org.jetbrains.kotlin.backend.jvm.functionByName
 import org.jetbrains.kotlin.backend.jvm.ir.kClassReference
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -26,7 +27,6 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
-import org.jetbrains.kotlin.ir.expressions.getClassTypeArgument
 import org.jetbrains.kotlin.ir.types.classOrFail
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.util.defaultType
@@ -178,7 +178,7 @@ internal class ModuleMergerIr(
       }
       .toSet()
 
-    val replacedModules = contributesAnnotations
+    val replacedModules = allContributesAnnotations
       // Ignore replaced modules or bindings specified by excluded modules.
       .filter { contributesAnnotation ->
         contributesAnnotation.declaringClass !in excludedModules
@@ -206,22 +206,28 @@ internal class ModuleMergerIr(
       }
       .toSet()
 
-    // Map up binding modules by their scopes
-    val bindingModuleContributesAnnotationsByScope = bindingModuleContributesAnnotations
+    val bindings = bindingModuleContributesAnnotations
       .mapNotNull { contributedAnnotation ->
         val moduleClass = contributedAnnotation.declaringClass
         val internalBindingMarker =
           moduleClass.annotations.single { it.fqName == internalBindingMarkerFqName }
+
+        val bindingFunction = moduleClass.clazz.functionByName("bind")
+
         val implClass =
-          internalBindingMarker.annotation.getClassTypeArgument(1)!!.classOrFail.toClassReference(
+          bindingFunction.owner.valueParameters.single().type.classOrFail.toClassReference(
             pluginContext,
           )
-        // TODO do we need to check separately if this is replaced by a dagger module? Think no
+
         if (implClass in excludedModules || implClass in replacedModules) return@mapNotNull null
-        val boundType =
-          internalBindingMarker.annotation.getClassTypeArgument(0)!!.classOrFail.toClassReference(
-            pluginContext,
-          )
+        if (moduleClass in excludedModules || moduleClass in replacedModules) return@mapNotNull null
+
+        val boundType = bindingFunction.owner.returnType.classOrFail.toClassReference(
+          pluginContext,
+        )
+        val isMultibinding =
+          internalBindingMarker.argumentOrNull("isMultibinding")
+            ?.value<Boolean>() == true
         val qualifierKey =
           internalBindingMarker.argumentOrNull("qualifierKey")?.value<String>().orEmpty()
         val priority = internalBindingMarker.argumentOrNull("qualifierKey")
@@ -231,47 +237,15 @@ internal class ModuleMergerIr(
         val scope = contributedAnnotation.scope
         ContributedBinding(
           scope = scope,
-          contributedAnnotation = contributedAnnotation,
-          declaringClass = moduleClass,
+          isMultibinding = isMultibinding,
+          bindingModule = moduleClass,
           implClass = implClass,
           boundType = boundType,
           qualifierKey = qualifierKey,
           priority = priority,
         )
       }
-      .groupBy { it.scope }
-      .filterValues { it.isNotEmpty() }
-
-    fun replacedModulesByContributedBinding(
-      annotationFqName: FqName,
-      isMultibinding: Boolean,
-    ): Sequence<ClassReferenceIr> {
-      return scopes.asSequence()
-        .flatMap { scope ->
-          bindingModuleContributesAnnotationsByScope[scope].orEmpty()
-            .filter { it.contributedAnnotation.fqName == annotationFqName }
-        }
-        .let { bindings ->
-          if (isMultibinding) {
-            bindings
-          } else {
-            bindings.groupBy { it.qualifierKey }
-              .map { it.value.findHighestPriorityBinding() }
-              .asSequence()
-          }
-        }
-        .let { it.map { it.declaringClass } }
-    }
-
-    val replacedModulesByContributedBindings = replacedModulesByContributedBinding(
-      annotationFqName = contributesBindingFqName,
-      isMultibinding = false,
-    )
-
-    val replacedModulesByContributedMultibindings = replacedModulesByContributedBinding(
-      annotationFqName = contributesMultibindingFqName,
-      isMultibinding = true,
-    )
+      .let { ContributedBindings.from(it) }
 
     if (predefinedModules.isNotEmpty()) {
       val intersect = predefinedModules.intersect(excludedModules.toSet())
@@ -295,9 +269,10 @@ internal class ModuleMergerIr(
     val contributedModules = contributesAnnotations
       .asSequence()
       .map { it.declaringClass }
+      .plus(bindings.bindings.values.flatMap { it.values }.flatten().map { it.bindingModule })
       .minus(replacedModules)
-      .minus(replacedModulesByContributedBindings.toSet())
-      .minus(replacedModulesByContributedMultibindings.toSet())
+      // TODO is this even necessary?
+      .minus(bindings.replacedBindings)
       .minus(excludedModules)
       .plus(predefinedModules)
       .plus(contributedSubcomponentModules)
