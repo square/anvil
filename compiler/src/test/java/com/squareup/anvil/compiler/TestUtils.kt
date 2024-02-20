@@ -153,9 +153,6 @@ private fun Class<*>.generatedMultiBindingModules(): List<Class<*>> {
 internal val Class<*>.bindingModule: KClass<*>?
   get() {
     val generatedBindingModule = generatedBindingModules().first()
-    // TODO use kotlinx-metadata to read type args? Validate they match?
-    val internalBindingMarker =
-      generatedBindingModule.getAnnotation(InternalBindingMarker::class.java)
     val bindingFunction = generatedBindingModule.declaredMethods[0]
     val implType = bindingFunction.parameterTypes[0]
     return implType.kotlin
