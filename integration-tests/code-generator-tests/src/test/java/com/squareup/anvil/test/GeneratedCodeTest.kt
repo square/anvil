@@ -39,10 +39,12 @@ class GeneratedCodeTest {
   @Test fun `the generated module is contributed to the scope`() {
     val contributedModule =
       Class.forName("generated.test.com.squareup.anvil.test.ContributedModule").kotlin
+    val contributedBindingModule =
+      Class.forName("generated.test.com.squareup.anvil.test.ContributedBindingAsBindingToUnitBindingModule").kotlin
 
     val annotation = AppComponent::class.java.getAnnotation(Component::class.java)!!
     assertThat(annotation.modules.withoutAnvilModule())
-      .containsExactly(contributedModule)
+      .containsExactly(contributedModule, contributedBindingModule)
   }
 
   @Test fun `the generated contributed binding can be injected`() {
