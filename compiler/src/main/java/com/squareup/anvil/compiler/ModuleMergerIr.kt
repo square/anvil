@@ -230,7 +230,7 @@ internal class ModuleMergerIr(
             ?.value<Boolean>() == true
         val qualifierKey =
           internalBindingMarker.argumentOrNull("qualifierKey")?.value<String>().orEmpty()
-        val priority = internalBindingMarker.argumentOrNull("qualifierKey")
+        val priority = internalBindingMarker.argumentOrNull("priority")
           ?.value<String>()
           ?.let { ContributesBinding.Priority.valueOf(it) }
           ?: ContributesBinding.Priority.NORMAL
