@@ -10,6 +10,7 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
+import com.squareup.anvil.compiler.BINDING_MODULE_SUFFIX
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
@@ -101,7 +102,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
         contribution.boundType.simpleName.capitalize() +
         "To" +
         contribution.scope.simpleName.capitalize() +
-        "BindingModule"
+        BINDING_MODULE_SUFFIX
 
       val contributionName =
         originClass.generateClassName(suffix = suffix).simpleName

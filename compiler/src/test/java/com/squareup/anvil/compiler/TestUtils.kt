@@ -127,7 +127,7 @@ private fun Class<*>.generatedBindingModules(): List<Class<*>> {
           }
         }
         .simpleName!!.capitalize()
-      val className = "${generatedClassesString()}As${boundType}To${scope}BindingModule"
+      val className = "${generatedClassesString()}As${boundType}To${scope}$BINDING_MODULE_SUFFIX"
       classLoader.loadClass(className)
     }
 }
@@ -145,7 +145,7 @@ private fun Class<*>.generatedMultiBindingModules(): List<Class<*>> {
           }
         }
         .simpleName!!.capitalize()
-      val className = "${generatedClassesString()}As${boundType}To${scope}MultiBindingModule"
+      val className = "${generatedClassesString()}As${boundType}To${scope}$MULTIBINDING_MODULE_SUFFIX"
       classLoader.loadClass(className)
     }
 }

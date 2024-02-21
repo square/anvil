@@ -10,6 +10,7 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
+import com.squareup.anvil.compiler.MULTIBINDING_MODULE_SUFFIX
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
@@ -88,7 +89,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
     className: ClassName,
     contributions: List<Contribution>,
   ): FileSpec {
-    val fileName = className.generateClassName(suffix = "MultiBindingModule").simpleName
+    val fileName = className.generateClassName(suffix = MULTIBINDING_MODULE_SUFFIX).simpleName
     val generatedPackage = className.packageName.safePackageString(dotPrefix = true)
 
     val specs = contributions.map { contribution ->

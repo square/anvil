@@ -72,16 +72,13 @@ internal val isWordPrefixRegex = "^is([^a-z].*)".toRegex()
 
 internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "anvil.hint.merge"
 
-// TODO remove
-internal const val HINT_BINDING_PACKAGE_PREFIX = "anvil.hint.binding"
-
-// TODO remove
-internal const val HINT_MULTIBINDING_PACKAGE_PREFIX = "anvil.hint.multibinding"
 internal const val HINT_SUBCOMPONENTS_PACKAGE_PREFIX = "anvil.hint.subcomponent"
 internal const val MODULE_PACKAGE_PREFIX = "anvil.module"
 internal const val COMPONENT_PACKAGE_PREFIX = "anvil.component"
 
 internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
+internal const val BINDING_MODULE_SUFFIX = "BindingModule"
+internal const val MULTIBINDING_MODULE_SUFFIX = "MultiBindingModule"
 
 // The suffix is a letter by design. Class names for subcomponents must be kept short.
 internal const val ANVIL_SUBCOMPONENT_SUFFIX = "A"
