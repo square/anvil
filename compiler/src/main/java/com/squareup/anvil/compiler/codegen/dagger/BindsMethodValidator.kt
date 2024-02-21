@@ -59,14 +59,14 @@ internal object BindsMethodValidator : AnvilApplicabilityChecker {
         "whose type is assignable to the return type"
     internal const val BINDS_MUST_RETURN_A_VALUE = "@Binds methods must return a value (not void)"
     internal fun bindsParameterMustBeAssignable(
-      paramSuperTypeNames: List<String>,
+      bindingParameterSuperTypeNames: List<String>,
       returnTypeName: String,
       parameterType: String?,
     ): String {
-      val superTypesMessage = if (paramSuperTypeNames.isEmpty()) {
+      val superTypesMessage = if (bindingParameterSuperTypeNames.isEmpty()) {
         "has no supertypes."
       } else {
-        "only has the following supertypes: $paramSuperTypeNames"
+        "only has the following supertypes: $bindingParameterSuperTypeNames"
       }
 
       return "@Binds methods' parameter type must be assignable to the return type. " +
@@ -132,16 +132,16 @@ internal object BindsMethodValidator : AnvilApplicabilityChecker {
           node = function,
         )
 
-        val parameterSuperTypes =
-          bindingParameter
-            .resolveSuperTypesExcludingAny()
-            .toList()
+        if (!returnType.isAssignableFrom(bindingParameter.resolve())) {
+          val superTypeNames =
+            bindingParameter
+              .resolveSuperTypesExcludingAny()
+              .map { it.toTypeName().toString() }
+              .toList()
 
-        if (returnType !in parameterSuperTypes) {
-          val superTypeNames = parameterSuperTypes.map { it.toTypeName().toString() }
           throw KspAnvilException(
             message = Errors.bindsParameterMustBeAssignable(
-              paramSuperTypeNames = superTypeNames,
+              bindingParameterSuperTypeNames = superTypeNames,
               returnTypeName = returnType.toTypeName().toString(),
               parameterType = bindingParameter.toTypeName().toString(),
             ),
@@ -227,7 +227,7 @@ internal object BindsMethodValidator : AnvilApplicabilityChecker {
 
         throw AnvilCompilationExceptionFunctionReference(
           message = Errors.bindsParameterMustBeAssignable(
-            paramSuperTypeNames = superTypeNames.drop(1).toList(),
+            bindingParameterSuperTypeNames = superTypeNames.drop(1).toList(),
             returnTypeName = returnType.asTypeName().toString(),
             parameterType = superTypeNames.first(),
           ),
