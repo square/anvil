@@ -7,6 +7,8 @@ import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeComponent
+import com.squareup.anvil.annotations.MergeSubcomponent
+import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.capitalize
@@ -22,6 +24,9 @@ import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
+import dagger.Component
+import dagger.Module
+import dagger.Subcomponent
 import org.intellij.lang.annotations.Language
 import org.junit.Assume.assumeTrue
 import java.io.File
@@ -114,49 +119,76 @@ internal val Class<*>.hintContributesScope: KClass<*>?
 internal val Class<*>.hintContributesScopes: List<KClass<*>>
   get() = getHintScopes(HINT_CONTRIBUTES_PACKAGE_PREFIX)
 
+internal val Class<*>.generatedBindingModule: Class<*> get() = generatedBindingModules(
+  ContributesBinding::class,
+).single()
+internal val Class<*>.generatedMultiBindingModule: Class<*> get() = generatedBindingModules(
+  ContributesMultibinding::class,
+).single()
+
 private fun Class<*>.generatedBindingModules(): List<Class<*>> {
-  return getAnnotationsByType(ContributesBinding::class.java)
-    .map { bindingAnnotation ->
-      val scope = bindingAnnotation.scope.simpleName!!.capitalize()
-      val boundType = bindingAnnotation.boundType
-        .let {
-          if (it == Unit::class) {
-            interfaces.singleOrNull()?.kotlin ?: superclass.kotlin
-          } else {
-            it
-          }
-        }
-        .simpleName!!.capitalize()
-      val className = "${generatedClassesString()}As${boundType}To${scope}$BINDING_MODULE_SUFFIX"
-      classLoader.loadClass(className)
-    }
+  return generatedBindingModules(ContributesBinding::class)
 }
 
-private fun Class<*>.generatedMultiBindingModules(): List<Class<*>> {
-  return getAnnotationsByType(ContributesMultibinding::class.java)
-    .map { bindingAnnotation ->
-      val scope = bindingAnnotation.scope.simpleName!!.capitalize()
-      val boundType = bindingAnnotation.boundType
-        .let {
-          if (it == Unit::class) {
-            interfaces.singleOrNull()?.kotlin ?: superclass.kotlin
-          } else {
-            it
-          }
-        }
-        .simpleName!!.capitalize()
-      val className = "${generatedClassesString()}As${boundType}To${scope}$MULTIBINDING_MODULE_SUFFIX"
-      classLoader.loadClass(className)
-    }
-}
-
-internal val Class<*>.bindingModule: KClass<*>?
+private val Annotation.scope: KClass<*>
   get() {
-    val generatedBindingModule = generatedBindingModules().first()
-    val bindingFunction = generatedBindingModule.declaredMethods[0]
-    val implType = bindingFunction.parameterTypes[0]
-    return implType.kotlin
+    return when (this) {
+      is ContributesTo -> scope
+      is ContributesBinding -> scope
+      is ContributesMultibinding -> scope
+      else -> error("Unknown annotation class: $this")
+    }
   }
+
+private val Annotation.replaces: Array<KClass<*>>
+  get() {
+    return when (this) {
+      is ContributesTo -> replaces
+      is ContributesBinding -> replaces
+      is ContributesMultibinding -> replaces
+      else -> error("Unknown annotation class: $this")
+    }
+  }
+
+private val Annotation.boundType: KClass<*>
+  get() {
+    return when (this) {
+      is ContributesBinding -> boundType
+      is ContributesMultibinding -> boundType
+      else -> error("Unknown annotation class: $this")
+    }
+  }
+
+private fun Class<*>.generatedBindingModules(annotationClass: KClass<out Annotation>): List<Class<*>> {
+  return getAnnotationsByType(annotationClass.java)
+    .map { bindingAnnotation ->
+      val scope = bindingAnnotation.scope.simpleName!!.capitalize()
+      val boundType = bindingAnnotation.boundType
+        .let {
+          if (it == Unit::class) {
+            interfaces.singleOrNull()?.kotlin ?: superclass.kotlin
+          } else {
+            it
+          }
+        }
+        .simpleName!!.capitalize()
+      val suffix = when (annotationClass) {
+        ContributesBinding::class -> BINDING_MODULE_SUFFIX
+        ContributesMultibinding::class -> MULTIBINDING_MODULE_SUFFIX
+        else -> error("Unknown annotation class: $annotationClass")
+      }
+      val className = "${generatedClassesString()}As${boundType}To${scope}$suffix"
+      classLoader.loadClass(className)
+    }
+}
+
+internal val Class<*>.bindingOriginKClass: KClass<*>?
+  get() {
+    return resolveOriginClass(ContributesBinding::class)
+  }
+
+internal val Class<*>.bindingOriginClass: Class<*>
+  get() = generatedBindingModules().first()
 
 internal val Class<*>.bindingModuleScope: KClass<*>?
   get() = bindingModuleScopes.first()
@@ -168,28 +200,57 @@ internal val Class<*>.bindingModuleScopes: List<KClass<*>>
       contributesTo.scope
     }
 
-internal val Class<*>.multibindingModule: KClass<*>?
-  get() {
-    val generatedBindingModule = generatedMultiBindingModules().first()
-    // TODO use kotlinx-metadata to read type args? Validate they match?
-    val internalBindingMarker =
-      generatedBindingModule.getAnnotation(InternalBindingMarker::class.java)
-    val bindingFunction = generatedBindingModule.declaredMethods[0]
-    val implType = bindingFunction.parameterTypes[0]
-    return implType.kotlin
-  }
+internal val Class<*>.multibindingOriginClass: KClass<*>?
+  get() = resolveOriginClass(ContributesMultibinding::class)
 
-// TODO remove
+internal fun Class<*>.resolveOriginClass(bindingAnnotation: KClass<out Annotation>): KClass<*>? {
+  val generatedBindingModule = generatedBindingModules(bindingAnnotation).firstOrNull() ?: return null
+  val internalBindingMarker: InternalBindingMarker<*> =
+    generatedBindingModule.kotlin.annotations.filterIsInstance<InternalBindingMarker<*>>().single()
+  val bindingFunction = generatedBindingModule.declaredMethods[0]
+  val parameterImplType = bindingFunction.parameterTypes.firstOrNull()
+  val bindingMarkerOriginType = internalBindingMarker::class.typeParameters.single().upperBounds.single().classifier as KClass<*>
+  if (parameterImplType == null) {
+    // Validate that the function is a provider in an object
+    assertThat(generatedBindingModule.kotlin.objectInstance).isNotNull()
+  } else {
+    assertThat(generatedBindingModule.isInterface).isTrue()
+    // Added validation that the binding marker type matches the binds param
+    assertThat(parameterImplType).isEqualTo(bindingMarkerOriginType)
+  }
+  return bindingMarkerOriginType
+}
+
 internal val Class<*>.multibindingModuleScope: KClass<*>?
   get() = multibindingModuleScopes.takeIf { it.isNotEmpty() }?.single()
 
-// TODO remove
 internal val Class<*>.multibindingModuleScopes: List<KClass<*>>
-  get() = generatedMultiBindingModules()
+  get() = generatedBindingModules(ContributesMultibinding::class)
     .map { generatedBindingModule ->
       val contributesTo = generatedBindingModule.getAnnotation(ContributesTo::class.java)
       contributesTo.scope
     }
+
+/**
+ * Given a [mergeAnnotation], finds and returns the resulting merged Dagger annotation's modules.
+ *
+ * This is useful for testing that module merging worked correctly in the final Dagger component
+ * during IR.
+ */
+internal fun Class<*>.mergedModules(mergeAnnotation: KClass<out Annotation>): Array<KClass<*>> {
+  val mergedAnnotation = when (mergeAnnotation) {
+    MergeComponent::class -> Component::class
+    MergeSubcomponent::class -> Subcomponent::class
+    MergeModules::class -> Module::class
+    else -> error("Unknown merge annotation class: $mergeAnnotation")
+  }
+  return when (val annotation = getAnnotation(mergedAnnotation.java)) {
+    is Component -> return annotation.modules
+    is Subcomponent -> return annotation.modules
+    is Module -> return annotation.includes
+    else -> error("Unknown merge annotation class: $mergeAnnotation")
+  }
+}
 
 internal val Class<*>.hintSubcomponent: KClass<*>?
   get() = getHint(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)

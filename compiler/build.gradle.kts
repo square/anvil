@@ -62,6 +62,7 @@ dependencies {
   testImplementation(libs.kotlin.compileTesting.ksp)
   testImplementation(libs.kotlin.compiler)
   testImplementation(libs.kotlin.test)
+  testImplementation(libs.kotlin.reflect)
   testImplementation(libs.ksp.compilerPlugin)
   testImplementation(libs.truth)
 }
