@@ -1,14 +1,22 @@
 package com.squareup.anvil.compiler
 
 import com.google.devtools.ksp.symbol.KSAnnotation
+import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.reference.AnvilCompilationExceptionClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.ClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.find
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
+import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
+import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
+import com.squareup.anvil.compiler.internal.requireFqName
+import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
+import org.jetbrains.kotlin.types.KotlinType
 
 private typealias Scope = ClassReferenceIr
 private typealias BindingModule = ClassReferenceIr
@@ -99,10 +107,10 @@ internal data class ContributedBindings(
       val groupedByScope = bindings.groupBy { it.scope }
       val groupedByScopeAndKey = groupedByScope.mapValues { (_, bindings) ->
         bindings.groupBy { it.bindingKey }
-          .mapValues { (_, bindings) ->
-            if (bindings.size < 2) return@mapValues bindings
+          .mapValues innerMapValues@ { (_, bindings) ->
+            if (bindings.size < 2) return@innerMapValues bindings
             val (multiBindings, bindingsOnly) = bindings.partition { it.isMultibinding }
-            if (bindingsOnly.size < 2) return@mapValues bindings
+            if (bindingsOnly.size < 2) return@innerMapValues bindings
             val highestPriorityBinding = bindingsOnly.findHighestPriorityBinding()
             multiBindings + listOf(highestPriorityBinding)
           }
@@ -151,6 +159,50 @@ internal fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedB
   return bindings[0]
 }
 
+private fun genericExceptionText(
+  origin: String,
+  boundType: String,
+  typeString: String
+): String {
+  return "Class $origin binds $boundType," +
+    " but the bound type contains type parameter(s) $typeString." +
+    " Type parameters in bindings are not supported. This binding needs" +
+    " to be contributed in a Dagger module manually."
+}
+
+internal fun ClassReference.checkNotGeneric(
+  contributedClass: ClassReference,
+) {
+  fun KotlinType.describeTypeParameters(): String = arguments
+    .ifEmpty { return "" }
+    .joinToString(prefix = "<", postfix = ">") { typeArgument ->
+      typeArgument.type.toString() + typeArgument.type.describeTypeParameters()
+    }
+
+  when (this) {
+    is Descriptor -> {
+      if (clazz.declaredTypeParameters.isNotEmpty()) {
+
+        throw AnvilCompilationException(
+          classDescriptor = clazz,
+          message = genericExceptionText(contributedClass.fqName.asString(), clazz.fqNameSafe.asString(), clazz.defaultType.describeTypeParameters()),
+        )
+      }
+    }
+    is Psi -> {
+      if (clazz.typeParameters.isNotEmpty()) {
+        val typeString = clazz.typeParameters
+          .joinToString(prefix = "<", postfix = ">") { it.name!! }
+
+        throw AnvilCompilationException(
+          message = genericExceptionText(contributedClass.fqName.asString(), clazz.requireFqName().asString(), typeString),
+          element = clazz.nameIdentifier,
+        )
+      }
+    }
+  }
+}
+
 internal fun AnnotationReference.qualifierKey(): String {
   return fqName.asString() +
     arguments.joinToString(separator = "") { argument ->
@@ -162,6 +214,20 @@ internal fun AnnotationReference.qualifierKey(): String {
 
       argument.resolvedName + valueString
     }
+}
+
+internal fun KSClassDeclaration.checkNotGeneric(
+  contributedClass: KSClassDeclaration,
+) {
+  if (typeParameters.isNotEmpty()) {
+    val typeString = typeParameters
+      .joinToString(prefix = "<", postfix = ">") { it.name.asString() }
+
+    throw KspAnvilException(
+      message = genericExceptionText(contributedClass.qualifiedName!!.asString(), qualifiedName!!.asString(), typeString),
+      node = contributedClass,
+    )
+  }
 }
 
 internal fun KSAnnotation.qualifierKey(): String {

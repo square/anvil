@@ -16,6 +16,7 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
+import com.squareup.anvil.compiler.checkNotGeneric
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.checkClassExtendsBoundType
@@ -211,7 +212,9 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
             .also { it.checkNoDuplicateScopeAndBoundType(clazz) }
             .map {
               val scope = it.scope().toClassName()
-              val boundType = it.resolveBoundType(resolver, clazz).toClassName()
+              val boundTypeDeclaration = it.resolveBoundType(resolver, clazz)
+              boundTypeDeclaration.checkNotGeneric(clazz)
+              val boundType = boundTypeDeclaration.toClassName()
               val priority = it.priority()
               val replaces = it.replaces().map { it.toClassName() }
               val qualifierData = if (it.ignoreQualifier()) {
@@ -284,7 +287,11 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
             .also { it.checkNoDuplicateScopeAndBoundType() }
             .map {
               val scope = it.scope().asClassName()
-              val boundType = it.resolveBoundType().asClassName()
+              // TODO if we support generic bound types in the future, we would change the below
+              //  to use asTypeName() + remove the checkNotGeneric call.
+              val boundTypeReference = it.resolveBoundType()
+              boundTypeReference.checkNotGeneric(clazz)
+              val boundType = boundTypeReference.asClassName()
               val priority = it.priority()
               val replaces = it.replaces().map { it.asClassName() }
               val qualifierData = if (it.ignoreQualifier()) {
