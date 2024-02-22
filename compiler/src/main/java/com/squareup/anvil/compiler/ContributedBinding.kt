@@ -100,21 +100,11 @@ internal data class ContributedBindings(
       val groupedByScopeAndKey = groupedByScope.mapValues { (_, bindings) ->
         bindings.groupBy { it.bindingKey }
           .mapValues { (_, bindings) ->
-            bindings
-              .sortedBy { it.priority }.also {
-                // Check no duplicate priorities
-                if (it.groupBy { it.priority }.values.any { it.size > 1 }) {
-                  throw AnvilCompilationExceptionClassReferenceIr(
-                    bindings[0].boundType,
-                    "There are multiple contributed bindings with the same bound type. The bound type is " +
-                      "${bindings[0].boundType.fqName.asString()}. The contributed binding classes are: " +
-                      bindings.joinToString(
-                        prefix = "[",
-                        postfix = "]",
-                      ) { "${it.originClass.fqName.asString()} (priority=${it.priority})" },
-                  )
-                }
-              }
+            if (bindings.size < 2) return@mapValues bindings
+            val (multiBindings, bindingsOnly) = bindings.partition { it.isMultibinding }
+            if (bindingsOnly.size < 2) return@mapValues bindings
+            val highestPriorityBinding = bindingsOnly.findHighestPriorityBinding()
+            multiBindings + listOf(highestPriorityBinding)
           }
       }
 
@@ -143,15 +133,14 @@ internal fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedB
   val bindings = groupBy { it.priority }
     .toSortedMap()
     .let { it.getValue(it.lastKey()) }
-    // In some very rare cases we can see a binding for the same type twice. Just in case filter
-    // them, see https://github.com/square/anvil/issues/460.
-    .distinctBy { it.boundType }
+    .distinctBy { it.originClass }
 
   if (bindings.size > 1) {
     throw AnvilCompilationExceptionClassReferenceIr(
       bindings[0].boundType,
-      "There are multiple contributed bindings with the same bound type. The bound type is " +
-        "${bindings[0].boundType.fqName.asString()}. The contributed binding classes are: " +
+      "There are multiple contributed bindings with the same bound type and priority. The bound type is " +
+        "${bindings[0].boundType.fqName.asString()}. The priority is ${bindings[0].priority.name}. " +
+        "The contributed binding classes are: " +
         bindings.joinToString(
           prefix = "[",
           postfix = "]",
