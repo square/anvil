@@ -1,5 +1,6 @@
 package com.squareup.anvil.annotations.internal
 
+import com.squareup.anvil.annotations.ContributesBinding.Priority
 import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.annotation.AnnotationTarget.CLASS
 
@@ -10,6 +11,7 @@ import kotlin.annotation.AnnotationTarget.CLASS
  * Note the reader of this should also check the single binds function in the annotated module to
  * read the bound type and possible qualifier.
  *
+ * @param Origin the origin class that contributed the binding.
  * @param isMultibinding Whether this is a multibinding.
  * @param priority The priority of the contributed binding. Corresponds to a [Priority.name].
  * @param qualifierKey The computed key of the qualifier annotation if present. Empty otherwise.
@@ -17,7 +19,7 @@ import kotlin.annotation.AnnotationTarget.CLASS
 @Target(CLASS)
 @Retention(RUNTIME)
 @Repeatable
-public annotation class InternalBindingMarker(
+public annotation class InternalBindingMarker<Origin>(
   val isMultibinding: Boolean,
   val priority: String = "",
   val qualifierKey: String = "",
