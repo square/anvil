@@ -343,6 +343,7 @@ class BindsMethodValidatorTest(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
     enableDagger: Boolean = useDagger,
+    // Used to enable the dagger compiler even in KSP mode, which is necessary for some multi-round tests
     forceEmbeddedMode: Boolean = false,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
