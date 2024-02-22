@@ -1,13 +1,11 @@
 package com.squareup.anvil.compiler.codegen.incremental
 
+import com.rickbusarow.kase.stdlib.createSafely
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import io.kotest.assertions.throwables.shouldThrow
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
 import org.junit.Test
-import java.io.BufferedOutputStream
-import java.io.ObjectInputStream
-import java.io.ObjectOutputStream
 
 internal class GeneratedFileCacheTest : CacheTests {
 
@@ -190,19 +188,17 @@ internal class GeneratedFileCacheTest : CacheTests {
   @Test
   fun `serialization and deserialization work`() = test {
 
-    cache.addAll(
-      gen1.withSources(source1),
-      gen2.withSources(source1, source2),
-      gen3.withSources(source2),
-      gen4.withSources(gen3.toSourceFile()),
-      gen5.withSources(gen4.toSourceFile(), source3),
-    )
+    cache.use {
+      it.addAll(
+        gen1.withSources(source1),
+        gen2.withSources(source1, source2),
+        gen3.withSources(source2),
+        gen4.withSources(gen3.toSourceFile()),
+        gen5.withSources(gen4.toSourceFile(), source3),
+      )
+    }
 
-    ObjectOutputStream(BufferedOutputStream(binaryFile.outputStream()))
-      .use { it.writeObject(cache) }
-
-    val deserializedCache = binaryFile.inputStream()
-      .use { ObjectInputStream(it).readObject() as GeneratedFileCache }
+    val deserializedCache = GeneratedFileCache.fromFile(binaryFile, projectDir)
 
     deserializedCache shouldBe cache
   }
@@ -235,5 +231,23 @@ internal class GeneratedFileCacheTest : CacheTests {
     workingDir.resolve(source1.file).writeText("content 2")
 
     cache.hasChanged(source1) shouldBe true
+  }
+
+  @Test
+  fun `hasChanged is false for identical files with different parent directories`() = test {
+
+    val projectA = ProjectDir(workingDir.resolve("projectA"))
+    val fileA = projectA.file.resolve("common.kt").createSafely("content")
+
+    GeneratedFileCache.fromFile(binaryFile, projectA).use { cacheA ->
+      cacheA.hasChanged(AbsoluteFile(fileA)) shouldBe true
+    }
+
+    val projectB = ProjectDir(workingDir.resolve("projectB"))
+    val fileB = projectB.file.resolve("common.kt").createSafely("content")
+
+    GeneratedFileCache.fromFile(binaryFile, projectB).use { cacheB ->
+      cacheB.hasChanged(AbsoluteFile(fileB)) shouldBe false
+    }
   }
 }
