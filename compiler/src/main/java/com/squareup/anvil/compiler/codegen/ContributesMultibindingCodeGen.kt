@@ -45,6 +45,7 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
@@ -67,6 +68,7 @@ import java.io.File
 internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
 
   private data class Contribution(
+    val source: ClassName,
     val scope: ClassName,
     val isObject: Boolean,
     val boundType: ClassName,
@@ -102,7 +104,12 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
 
       val contributionName =
         className.generateClassName(suffix = suffix).simpleName
-      TypeSpec.interfaceBuilder(contributionName).apply {
+      val builder = if (contribution.isObject) {
+        TypeSpec.objectBuilder(contributionName)
+      } else {
+        TypeSpec.interfaceBuilder(contributionName)
+      }
+      builder.apply {
         addAnnotation(Module::class)
         addAnnotation(
           AnnotationSpec.builder(ContributesTo::class)
@@ -121,7 +128,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
 
         addAnnotation(
           AnnotationSpec.builder(
-            InternalBindingMarker::class.asClassName(),
+            InternalBindingMarker::class.asClassName().parameterizedBy(contribution.source),
           )
             .addMember("isMultibinding = true")
             .apply {
@@ -132,10 +139,19 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
             .build(),
         )
 
-        addFunction(
+        val functionBuilder = if (contribution.isObject) {
+          FunSpec.builder("provide${className.simpleName.capitalize()}")
+            .addAnnotation(Provides::class)
+            .addStatement("return %T", className)
+        } else {
           FunSpec.builder("bind")
             .addModifiers(KModifier.ABSTRACT)
             .addAnnotation(Binds::class)
+            .addParameter("real", className)
+        }
+
+        addFunction(
+          functionBuilder
             .apply {
               if (contribution.mapKey == null) {
                 addAnnotation(IntoSet::class)
@@ -144,27 +160,9 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
               }
               contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
             }
-            .addParameter("real", className)
             .returns(contribution.boundType)
             .build(),
         )
-
-        if (contribution.isObject) {
-          addType(
-            TypeSpec.companionObjectBuilder()
-              .addFunction(
-                FunSpec.builder("provide${className.simpleName.capitalize()}")
-                  .addAnnotation(Provides::class)
-                  .apply {
-                    contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
-                  }
-                  .returns(className)
-                  .addStatement("return %T", className)
-                  .build(),
-              )
-              .build(),
-          )
-        }
       }.build()
     }
     return FileSpec.createAnvilSpec(generatedPackage, fileName) {
@@ -220,6 +218,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
                 .singleOrNull()
                 ?.toAnnotationSpec()
               Contribution(
+                clazz.toClassName(),
                 scope,
                 clazz.classKind == ClassKind.OBJECT,
                 boundType,
@@ -292,7 +291,15 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
               val mapKey = clazz.annotations
                 .find { it.isMapKey() }
                 ?.toAnnotationSpec()
-              Contribution(scope, clazz.isObject(), boundType, replaces, qualifierData, mapKey)
+              Contribution(
+                clazz.asClassName(),
+                scope,
+                clazz.isObject(),
+                boundType,
+                replaces,
+                qualifierData,
+                mapKey,
+              )
             }
             .distinct()
             // Give it a stable sort.

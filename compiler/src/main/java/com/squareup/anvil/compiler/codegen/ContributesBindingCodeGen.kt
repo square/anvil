@@ -44,6 +44,7 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
+import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
@@ -70,6 +71,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext) = !context.generateFactoriesOnly
 
   private data class Contribution(
+    val origin: ClassName,
     val scope: ClassName,
     val isObject: Boolean,
     val boundType: ClassName,
@@ -106,7 +108,14 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
 
       val contributionName =
         originClass.generateClassName(suffix = suffix).simpleName
-      TypeSpec.interfaceBuilder(contributionName).apply {
+
+      val builder = if (contribution.isObject) {
+        TypeSpec.objectBuilder(contributionName)
+      } else {
+        TypeSpec.interfaceBuilder(contributionName)
+      }
+
+      builder.apply {
         addAnnotation(Module::class)
         addAnnotation(
           AnnotationSpec.builder(ContributesTo::class)
@@ -124,7 +133,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
         )
         addAnnotation(
           AnnotationSpec.builder(
-            InternalBindingMarker::class.asClassName(),
+            InternalBindingMarker::class.asClassName().parameterizedBy(contribution.origin),
           )
             .addMember("isMultibinding = false")
             .apply {
@@ -139,34 +148,24 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
             .build(),
         )
 
-        addFunction(
+        val functionBuilder = if (contribution.isObject) {
+          FunSpec.builder("provide${originClass.simpleName.capitalize()}")
+            .addAnnotation(Provides::class)
+            .addStatement("return %T", originClass)
+        } else {
           FunSpec.builder("bind")
             .addModifiers(KModifier.ABSTRACT)
             .addAnnotation(Binds::class)
-            .apply {
-              contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
-            }
             .addParameter("real", originClass)
+        }
+
+        addFunction(
+          functionBuilder.apply {
+            contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
+          }
             .returns(contribution.boundType)
             .build(),
         )
-
-        if (contribution.isObject) {
-          addType(
-            TypeSpec.companionObjectBuilder()
-              .addFunction(
-                FunSpec.builder("provide${originClass.simpleName.capitalize()}")
-                  .addAnnotation(Provides::class)
-                  .apply {
-                    contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
-                  }
-                  .returns(originClass)
-                  .addStatement("return %T", originClass)
-                  .build(),
-              )
-              .build(),
-          )
-        }
       }
         .build()
     }
@@ -225,6 +224,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                 }
               }
               Contribution(
+                clazz.toClassName(),
                 scope,
                 clazz.classKind == ClassKind.OBJECT,
                 boundType,
@@ -296,7 +296,15 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                   Contribution.QualifierData(annotationSpec, key)
                 }
               }
-              Contribution(scope, clazz.isObject(), boundType, priority, replaces, qualifierData)
+              Contribution(
+                clazz.asClassName(),
+                scope,
+                clazz.isObject(),
+                boundType,
+                priority,
+                replaces,
+                qualifierData,
+              )
             }
             .distinct()
             // Give it a stable sort.

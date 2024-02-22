@@ -17,7 +17,6 @@ import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.createIrBuilder
-import org.jetbrains.kotlin.backend.jvm.functionByName
 import org.jetbrains.kotlin.backend.jvm.ir.kClassReference
 import org.jetbrains.kotlin.ir.IrStatement
 import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
@@ -30,6 +29,7 @@ import org.jetbrains.kotlin.ir.expressions.IrVararg
 import org.jetbrains.kotlin.ir.types.classOrFail
 import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -212,14 +212,18 @@ internal class ModuleMergerIr(
         val internalBindingMarker =
           moduleClass.annotations.single { it.fqName == internalBindingMarkerFqName }
 
-        val bindingFunction = moduleClass.clazz.functionByName("bind")
+        val bindingFunction = moduleClass.clazz.functions.single {
+          val functionName = it.owner.name.asString()
+          functionName == "bind" || functionName.startsWith("provide")
+        }
 
-        val implClass =
-          bindingFunction.owner.valueParameters.single().type.classOrFail.toClassReference(
-            pluginContext,
-          )
+        val originClass = internalBindingMarker.annotation
+          .getTypeArgument(0)?.classOrFail?.toClassReference(pluginContext) ?: throw AnvilCompilationExceptionClassReferenceIr(
+          message = "The origin type of a contributed binding is null.",
+          classReference = moduleClass,
+        )
 
-        if (implClass in excludedModules || implClass in replacedModules) return@mapNotNull null
+        if (originClass in excludedModules || originClass in replacedModules) return@mapNotNull null
         if (moduleClass in excludedModules || moduleClass in replacedModules) return@mapNotNull null
 
         val boundType = bindingFunction.owner.returnType.classOrFail.toClassReference(
@@ -239,7 +243,7 @@ internal class ModuleMergerIr(
           scope = scope,
           isMultibinding = isMultibinding,
           bindingModule = moduleClass,
-          implClass = implClass,
+          originClass = originClass,
           boundType = boundType,
           qualifierKey = qualifierKey,
           priority = priority,

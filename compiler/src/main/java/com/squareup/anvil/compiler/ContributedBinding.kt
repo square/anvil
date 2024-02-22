@@ -12,7 +12,7 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 
 private typealias Scope = ClassReferenceIr
 private typealias BindingModule = ClassReferenceIr
-private typealias BindingClass = ClassReferenceIr
+private typealias OriginClass = ClassReferenceIr
 
 internal data class BindingKey(
   val scope: Scope,
@@ -72,10 +72,10 @@ internal data class BindingKey(
 internal data class ContributedBindings(
   val bindings: Map<Scope, Map<BindingKey, List<ContributedBinding>>>,
 ) {
-  val bindingsByImplClass: Map<BindingClass, Map<Scope, List<ContributedBinding>>> = bindings.values.flatMap {
+  val bindingsByImplClass: Map<OriginClass, Map<Scope, List<ContributedBinding>>> = bindings.values.flatMap {
     it.values
   }.flatten()
-    .groupBy { it.implClass }
+    .groupBy { it.originClass }
     .mapValues { (_, values) ->
       values.groupBy { it.scope }
     }
@@ -111,7 +111,7 @@ internal data class ContributedBindings(
                       bindings.joinToString(
                         prefix = "[",
                         postfix = "]",
-                      ) { "${it.implClass.fqName.asString()} (priority=${it.priority})" },
+                      ) { "${it.originClass.fqName.asString()} (priority=${it.priority})" },
                   )
                 }
               }
@@ -127,7 +127,7 @@ internal data class ContributedBinding(
   val scope: Scope,
   val isMultibinding: Boolean,
   val bindingModule: BindingModule,
-  val implClass: BindingClass,
+  val originClass: OriginClass,
   val boundType: ClassReferenceIr,
   val qualifierKey: String,
   val priority: ContributesBinding.Priority,
@@ -155,7 +155,7 @@ internal fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedB
         bindings.joinToString(
           prefix = "[",
           postfix = "]",
-        ) { it.implClass.fqName.asString() },
+        ) { it.originClass.fqName.asString() },
     )
   }
 

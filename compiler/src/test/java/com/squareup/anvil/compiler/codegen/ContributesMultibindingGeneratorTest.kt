@@ -13,9 +13,9 @@ import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.mergeComponentFqName
-import com.squareup.anvil.compiler.multibindingModule
 import com.squareup.anvil.compiler.multibindingModuleScope
 import com.squareup.anvil.compiler.multibindingModuleScopes
+import com.squareup.anvil.compiler.multibindingOriginClass
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -54,7 +54,9 @@ class ContributesMultibindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.multibindingModule?.java).isEqualTo(contributingInterface)
+      assertThat(
+        contributingInterface.multibindingOriginClass?.java,
+      ).isEqualTo(contributingInterface)
       assertThat(contributingInterface.multibindingModuleScope).isEqualTo(Any::class)
 
       assertFileGenerated(mode, "ContributingInterfaceMultiBindingModule.kt")
@@ -75,7 +77,9 @@ class ContributesMultibindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.multibindingModule?.java).isEqualTo(contributingInterface)
+      assertThat(
+        contributingInterface.multibindingOriginClass?.java,
+      ).isEqualTo(contributingInterface)
       assertThat(contributingInterface.multibindingModuleScope).isEqualTo(Any::class)
     }
   }
@@ -94,7 +98,9 @@ class ContributesMultibindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.multibindingModule?.java).isEqualTo(contributingInterface)
+      assertThat(
+        contributingInterface.multibindingOriginClass?.java,
+      ).isEqualTo(contributingInterface)
       assertThat(contributingInterface.multibindingModuleScope).isEqualTo(Any::class)
     }
   }
@@ -135,7 +141,9 @@ class ContributesMultibindingGeneratorTest(
     ) {
       val contributingInterface =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingInterface")
-      assertThat(contributingInterface.multibindingModule?.java).isEqualTo(contributingInterface)
+      assertThat(
+        contributingInterface.multibindingOriginClass?.java,
+      ).isEqualTo(contributingInterface)
       assertThat(contributingInterface.multibindingModuleScope).isEqualTo(Any::class)
     }
   }
@@ -158,7 +166,7 @@ class ContributesMultibindingGeneratorTest(
     ) {
       val contributingClass =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingClass")
-      assertThat(contributingClass.multibindingModule?.java).isEqualTo(contributingClass)
+      assertThat(contributingClass.multibindingOriginClass?.java).isEqualTo(contributingClass)
       assertThat(contributingClass.multibindingModuleScope).isEqualTo(Any::class)
 
       assertFileGenerated(mode, "Abc_ContributingClassMultiBindingModule.kt")
@@ -316,7 +324,9 @@ class ContributesMultibindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.multibindingModule?.java).isEqualTo(contributingInterface)
+      assertThat(
+        contributingInterface.multibindingOriginClass?.java,
+      ).isEqualTo(contributingInterface)
       assertThat(contributingInterface.multibindingModuleScope).isEqualTo(Int::class)
     }
   }
@@ -356,7 +366,9 @@ class ContributesMultibindingGeneratorTest(
       mode = mode,
     ) {
       println(generatedFiles.toList().joinToString("\n"))
-      assertThat(contributingInterface.multibindingModule?.java).isEqualTo(contributingInterface)
+      assertThat(
+        contributingInterface.multibindingOriginClass?.java,
+      ).isEqualTo(contributingInterface)
       assertThat(contributingInterface.multibindingModuleScope).isEqualTo(Int::class)
     }
   }
@@ -491,7 +503,9 @@ class ContributesMultibindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.multibindingModule?.java).isEqualTo(contributingInterface)
+      assertThat(
+        contributingInterface.multibindingOriginClass?.java,
+      ).isEqualTo(contributingInterface)
       assertThat(contributingInterface.multibindingModuleScopes)
         .containsExactly(Any::class, Unit::class)
     }
@@ -538,7 +552,9 @@ class ContributesMultibindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.multibindingModule?.java).isEqualTo(contributingInterface)
+      assertThat(
+        contributingInterface.multibindingOriginClass?.java,
+      ).isEqualTo(contributingInterface)
       assertThat(contributingInterface.multibindingModuleScopes)
         .containsExactly(Any::class, Unit::class)
     }
@@ -589,7 +605,9 @@ class ContributesMultibindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.multibindingModule?.java).isEqualTo(contributingInterface)
+      assertThat(
+        contributingInterface.multibindingOriginClass?.java,
+      ).isEqualTo(contributingInterface)
       assertThat(contributingInterface.multibindingModuleScopes.toSet())
         .containsExactly(Any::class, Unit::class)
     }
