@@ -118,7 +118,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
               if (contribution.replaces.isNotEmpty()) {
                 addMember(
                   "replaces = %L",
-                  contribution.replaces.map { CodeBlock.of("%T::class") }
+                  contribution.replaces.map { CodeBlock.of("%T::class", it) }
                     .joinToCode(prefix = "[", suffix = "]"),
                 )
               }
