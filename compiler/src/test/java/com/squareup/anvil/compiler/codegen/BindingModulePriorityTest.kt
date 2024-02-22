@@ -4,12 +4,12 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
-import com.squareup.anvil.compiler.anvilModule
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.mergedModules
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
@@ -21,7 +21,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class BindingModulePriorityTest(
-  annotationClass: KClass<*>,
+  private val annotationClass: KClass<out Annotation>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -66,7 +66,9 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """,
     ) {
-      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.mergedModules(
+        annotationClass,
+      ).single().java.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -100,7 +102,9 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """,
     ) {
-      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.mergedModules(
+        annotationClass,
+      ).single().java.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -132,8 +136,9 @@ class BindingModulePriorityTest(
       assertThat(exitCode).isError()
 
       assertThat(messages).contains(
-        "There are multiple contributed bindings with the same bound type. The bound type is " +
-          "com.squareup.test.ParentInterface. The contributed binding classes are: [",
+        "There are multiple contributed bindings with the same bound type and priority. The bound " +
+          "type is com.squareup.test.ParentInterface. The priority is NORMAL. The contributed " +
+          "binding classes are: [",
       )
       // Check the contributed bindings separately, we cannot rely on the order in the string.
       assertThat(messages).contains("com.squareup.test.ContributingInterface")
@@ -161,7 +166,9 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """,
     ) {
-      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.mergedModules(
+        annotationClass,
+      ).single().java.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -190,7 +197,9 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """,
     ) {
-      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.mergedModules(
+        annotationClass,
+      ).single().java.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -222,8 +231,10 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """,
     ) {
-      val bindingMethods = componentInterface.anvilModule.declaredMethods
-        .filter { it.returnType == parentInterface }
+      val bindingMethods = componentInterface.mergedModules(annotationClass).flatMap {
+        it.java.declaredMethods
+          .filter { it.returnType == parentInterface }
+      }
 
       assertThat(bindingMethods).hasSize(2)
 
@@ -262,8 +273,9 @@ class BindingModulePriorityTest(
       assertThat(exitCode).isError()
 
       assertThat(messages).contains(
-        "There are multiple contributed bindings with the same bound type. The bound type is " +
-          "com.squareup.test.ParentInterface. The contributed binding classes are: [",
+        "There are multiple contributed bindings with the same bound type and priority. The bound " +
+          "type is com.squareup.test.ParentInterface. The priority is NORMAL. The contributed " +
+          "binding classes are: [",
       )
       // Check the contributed bindings separately, we cannot rely on the order in the string.
       assertThat(messages).contains("com.squareup.test.ContributingInterface")
@@ -297,8 +309,9 @@ class BindingModulePriorityTest(
       assertThat(exitCode).isError()
 
       assertThat(messages).contains(
-        "There are multiple contributed bindings with the same bound type. The bound type is " +
-          "com.squareup.test.ParentInterface. The contributed binding classes are: [",
+        "There are multiple contributed bindings with the same bound type and priority. The bound " +
+          "type is com.squareup.test.ParentInterface. The priority is NORMAL. The contributed " +
+          "binding classes are: [",
       )
       // Check the contributed bindings separately, we cannot rely on the order in the string.
       assertThat(messages).contains("com.squareup.test.ContributingInterface")
@@ -329,7 +342,9 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """,
     ) {
-      val bindingMethod = componentInterface.anvilModule.declaredMethods.single()
+      val bindingMethod = componentInterface.mergedModules(
+        annotationClass,
+      ).single().java.declaredMethods.single()
 
       with(bindingMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
@@ -358,8 +373,9 @@ class BindingModulePriorityTest(
       interface ComponentInterface
       """,
     ) {
-      val bindingMethods = componentInterface.anvilModule.declaredMethods
-      assertThat(bindingMethods).hasLength(2)
+      val bindingMethods = componentInterface.mergedModules(annotationClass)
+        .flatMap { it.java.declaredMethods.toList() }
+      assertThat(bindingMethods).hasSize(2)
     }
   }
 
@@ -392,11 +408,15 @@ class BindingModulePriorityTest(
       interface SubcomponentInterface
       """,
     ) {
-      with(componentInterface.anvilModule.declaredMethods.single()) {
+      with(
+        componentInterface.mergedModules(annotationClass).single().java.declaredMethods.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
       }
-      with(subcomponentInterface.anvilModule.declaredMethods.single()) {
+      with(
+        subcomponentInterface.mergedModules(annotationClass).single().java.declaredMethods.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(secondContributingInterface)
       }
