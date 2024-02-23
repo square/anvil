@@ -488,10 +488,8 @@ class IncrementalTest : BaseGradleTest() {
         .withTestKitDir(workingDir / "testKit")
         .withArguments("compileKotlin", "--stacktrace")
 
-      val rootA = workingDir.resolve("root-a")
-      // The second project has an extra parent directory
-      // so that `root-a` and `root-b` have different relative paths to the build cache.
-      val rootB = workingDir.resolve("dir/root-b")
+      val rootA = workingDir.resolve("a/root-a")
+      val rootB = workingDir.resolve("b/root-b")
 
       for (root in listOf(rootA, rootB)) {
         rootProject(path = root) {
@@ -519,6 +517,9 @@ class IncrementalTest : BaseGradleTest() {
       with(runner.withProjectDir(rootA).build()) {
         task(":compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }
+
+      rootA.deleteRecursively()
+      rootA.shouldNotExist()
 
       with(runner.withProjectDir(rootB).build()) {
         task(":compileKotlin")?.outcome shouldBe TaskOutcome.FROM_CACHE

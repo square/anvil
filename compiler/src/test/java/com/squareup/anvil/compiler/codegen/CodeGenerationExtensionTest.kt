@@ -203,7 +203,8 @@ class CodeGenerationExtensionTest {
     }
   }
 
-  @Test fun `a code generator that tracks an a single source per generated file can use trackSourceFiles`() {
+  @Test
+  fun `a code generator that tracks a single source per generated file can use trackSourceFiles`() {
 
     val codeGenerator = simpleCodeGenerator(TRACK_SOURCE_FILES) { clazz ->
 
