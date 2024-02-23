@@ -144,7 +144,12 @@ internal class CodeGenerationExtension(
       bindingContext = bindingTrace.bindingContext,
       moduleDescriptor = anvilModule,
       additionalJavaRoots = emptyList(),
-      additionalKotlinRoots = generatedFiles.map { it.file },
+      // Return the entire `generatedDir` as additional roots so that any generated files *or
+      // restored files* are added/updated for the next analysis.
+      // If we only return individual files, then any restored files will not be picked up and added
+      // to the final jar.
+      // see https://github.com/square/anvil/issues/876
+      additionalKotlinRoots = listOf(generatedDir),
       addToEnvironment = true,
     )
   }

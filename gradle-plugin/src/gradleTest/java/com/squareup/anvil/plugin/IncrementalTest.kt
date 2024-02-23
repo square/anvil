@@ -478,6 +478,154 @@ class IncrementalTest : BaseGradleTest() {
     }
 
   @TestFactory
+  fun `compilation re-runs when a dependency module's @AssistedInject constructor changes`() =
+    testFactory {
+
+      // minimal reproducer for https://github.com/square/anvil/issues/876
+
+      val assistedClassPath = rootProject.path.resolve("lib")
+        .resolve("src/main/java")
+        .resolve("com/squareup/test/lib/AssistedClass.kt")
+
+      fun assistedClassContent(vararg assistedParams: String): String =
+        """
+          |package com.squareup.test.lib
+          |
+          |import dagger.assisted.Assisted
+          |import dagger.assisted.AssistedFactory
+          |import dagger.assisted.AssistedInject
+          |
+          |class AssistedClass @AssistedInject constructor(
+          |  ${assistedParams.joinToString(",\n")}
+          |) {
+          |
+          |  @AssistedFactory
+          |  interface Factory {
+          |    fun create(
+          |      ${assistedParams.joinToString(",\n")}
+          |    ): AssistedClass
+          |  }
+          |}
+        """.trimMargin()
+
+      rootProject {
+        gradlePropertiesFile(
+          """
+          com.squareup.anvil.trackSourceFiles=true
+          com.squareup.anvil.addOptionalAnnotations=true
+          """.trimIndent(),
+        )
+
+        settingsFileAsFile.appendText(
+          """
+
+          include(":lib")
+          include(":app")
+          """.trimIndent(),
+        )
+
+        project("lib") {
+          buildFile {
+            plugins {
+              kotlin("jvm")
+              id("com.squareup.anvil")
+            }
+            anvil {
+              generateDaggerFactories.set(true)
+            }
+            dependencies {
+              implementation(libs.dagger2.annotations)
+            }
+          }
+          assistedClassPath.createSafely(
+            assistedClassContent("""@Assisted("arg1") arg1: String"""),
+          )
+
+          dir("src/main/java") {
+            kotlinFile(
+              "com/squareup/test/lib/LibComponent.kt",
+              """
+                package com.squareup.test.lib
+                
+                import com.squareup.anvil.annotations.ContributesTo
+                import com.squareup.test.lib.AssistedClass
+                
+                @ContributesTo(Any::class)
+                interface LibComponent {
+                  fun assistedClassFactory(): AssistedClass.Factory
+                }
+              """.trimIndent(),
+            )
+          }
+        }
+
+        project("app") {
+
+          buildFile {
+            plugins {
+              kotlin("jvm")
+              kotlin("kapt")
+              id("com.squareup.anvil")
+            }
+            dependencies {
+              compileOnly(libs.dagger2.annotations)
+              implementation(project(":lib"))
+              kapt(libs.dagger2.compiler)
+            }
+          }
+
+          dir("src/main/java") {
+            kotlinFile(
+              "com/squareup/test/app/AppComponent.kt",
+              """
+              package com.squareup.test.app
+
+              import com.squareup.anvil.annotations.MergeComponent
+              import javax.inject.Singleton
+              import com.squareup.anvil.annotations.optional.SingleIn
+
+              @SingleIn(Any::class)
+              @MergeComponent(Any::class)
+              interface AppComponent
+              """.trimIndent(),
+            )
+          }
+        }
+      }
+
+      shouldSucceed(":app:compileJava")
+
+      val assistedClassFactoryImpl = rootProject.path.resolve("lib")
+        .anvilMainGenerated
+        .resolve("com/squareup/test/lib/AssistedClass_Factory_Impl.kt")
+
+      assistedClassFactoryImpl shouldExistWithTextContaining """
+        public class AssistedClass_Factory_Impl(
+          private val delegateFactory: AssistedClass_Factory,
+        ) : AssistedClass.Factory {
+          override fun create(arg1: String): AssistedClass = delegateFactory.get(arg1)
+      """.trimIndent()
+
+      assistedClassPath.writeText(
+        assistedClassContent(
+          """@Assisted("arg1") arg1: String""",
+          """@Assisted("arg2") arg2: String""",
+        ),
+      )
+
+      shouldSucceed(":app:compileJava") {
+        task(":app:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      }
+
+      assistedClassFactoryImpl shouldExistWithTextContaining """
+        public class AssistedClass_Factory_Impl(
+          private val delegateFactory: AssistedClass_Factory,
+        ) : AssistedClass.Factory {
+          override fun create(arg1: String, arg2: String): AssistedClass = delegateFactory.get(arg1, arg2)
+      """.trimIndent()
+    }
+
+  @TestFactory
   fun `build cache restores generated source files in a different project location`() =
     testFactory {
 
