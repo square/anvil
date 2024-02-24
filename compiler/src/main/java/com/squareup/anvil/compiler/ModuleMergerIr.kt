@@ -86,6 +86,7 @@ internal class ModuleMergerIr(
     val anvilModuleName = createAnvilModuleName(declaration)
 
     val allContributesAnnotations: List<AnnotationReferenceIr> = annotations
+      .asSequence()
       .flatMap { annotation ->
         classScanner
           .findContributedClasses(
