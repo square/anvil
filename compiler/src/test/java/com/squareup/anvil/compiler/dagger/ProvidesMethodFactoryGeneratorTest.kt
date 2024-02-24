@@ -1,8 +1,8 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
-import com.squareup.anvil.compiler.anvilModule
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
 import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
@@ -16,6 +16,7 @@ import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.mergedModules
 import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
@@ -2406,7 +2407,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
      */
 
     // TODO component merging isn't possible with KSP yet
-    assumeFalse(mode is AnvilCompilationMode.Ksp)
+    assumeFalse(mode is Ksp)
     compile(
       """
       package com.squareup.test
@@ -2423,7 +2424,9 @@ public final class DaggerComponentInterface implements ComponentInterface {
       interface ComponentInterface
       """,
     ) {
-      val factoryClass = componentInterface.anvilModule
+      val factoryClass = componentInterface.mergedModules(MergeComponent::class)
+        .single()
+        .java
         .moduleFactoryClass("provideParentInterface")
 
       val constructor = factoryClass.declaredConstructors.single()
@@ -2561,7 +2564,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
       """,
     ) {
       assumeFalse(useDagger)
-      if (mode is AnvilCompilationMode.Ksp) {
+      if (mode is Ksp) {
         // KSP always resolves the inferred return type
         assertThat(exitCode).isEqualTo(ExitCode.OK)
       } else {
@@ -3271,7 +3274,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
       previousCompilationResult = otherModuleResult,
     ) {
       // TODO component generation isn't possible with KSP yet
-      assumeFalse(mode is AnvilCompilationMode.Ksp)
+      assumeFalse(mode is Ksp)
       // We are not able to directly assert that @JvmSuppressWildcards was added because it is
       // lost as part of converting to bytecode. However, we know that this would fail with an
       // 'incompatible types' error if the annotation had not been included.
@@ -3356,7 +3359,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
       previousCompilationResult = otherModuleResult,
     ) {
       // TODO component generation isn't possible with KSP yet
-      assumeFalse(mode is AnvilCompilationMode.Ksp)
+      assumeFalse(mode is Ksp)
       // We are not able to directly assert that @JvmSuppressWildcards was added because it is
       // lost as part of converting to bytecode. However, we know that this would fail with an
       // 'incompatible types' error if the annotation had not been included.
