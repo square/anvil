@@ -331,7 +331,7 @@ class BindingModuleMultibindingSetTest(
       """,
     ) {
       val modules = componentInterface.mergedModules(annotationClass).toList()
-      assertThat(modules).containsExactly(daggerModule1.anvilModule.kotlin)
+      assertThat(modules).containsExactly(contributingInterface.generatedMultiBindingModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
