@@ -55,6 +55,7 @@ import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.Binds
 import dagger.Module
 import dagger.Provides
+import dagger.multibindings.IntoMap
 import dagger.multibindings.IntoSet
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
@@ -158,6 +159,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
               if (contribution.mapKey == null) {
                 addAnnotation(IntoSet::class)
               } else {
+                addAnnotation(IntoMap::class)
                 addAnnotation(contribution.mapKey)
               }
               contribution.qualifier?.let { addAnnotation(it.annotationSpec) }

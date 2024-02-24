@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.bindingKey
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
+import com.squareup.anvil.compiler.generatedMultiBindingModule
 import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
@@ -16,6 +17,7 @@ import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isAbstract
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.mergedModules
 import com.squareup.anvil.compiler.parentInterface
 import dagger.Binds
 import dagger.Provides
@@ -29,7 +31,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class BindingModuleMultibindingMapTest(
-  private val annotationClass: KClass<*>,
+  private val annotationClass: KClass<out Annotation>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -73,11 +75,7 @@ class BindingModuleMultibindingMapTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
+      val modules = componentInterface.mergedModules(annotationClass)
 
       val methods = modules.single().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -117,12 +115,8 @@ class BindingModuleMultibindingMapTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
+      val modules = componentInterface.mergedModules(annotationClass).toList()
+      assertThat(modules).containsExactly(contributingInterface.generatedMultiBindingModule.kotlin)
 
       val methods = modules.single().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -170,11 +164,7 @@ class BindingModuleMultibindingMapTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
+      val modules = componentInterface.mergedModules(annotationClass)
 
       val methods = modules.single().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -206,11 +196,7 @@ class BindingModuleMultibindingMapTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
+      val modules = componentInterface.mergedModules(annotationClass)
 
       val methods = modules.single().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -247,11 +233,7 @@ class BindingModuleMultibindingMapTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
+      val modules = componentInterface.mergedModules(annotationClass)
 
       val annotation = modules.single().java.declaredMethods.single().getAnnotation(bindingKey)
       val methods = annotation::class.java.declaredMethods
