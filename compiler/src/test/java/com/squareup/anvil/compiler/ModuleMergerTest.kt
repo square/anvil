@@ -33,9 +33,9 @@ class ModuleMergerTest(
     fun annotationClasses(): Collection<Any> {
       return buildList {
         add(MergeComponent::class)
-        // if (isFullTestRun()) {
-        //   add(MergeSubcomponent::class)
-        // }
+        if (isFullTestRun()) {
+          add(MergeSubcomponent::class)
+        }
       }
     }
   }
