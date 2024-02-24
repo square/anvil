@@ -4,12 +4,9 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
-import com.squareup.anvil.compiler.anvilModule
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
-import com.squareup.anvil.compiler.daggerModule1
-import com.squareup.anvil.compiler.generatedBindingModule
 import com.squareup.anvil.compiler.generatedMultiBindingModule
 import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
@@ -194,7 +191,9 @@ class BindingModuleMultibindingSetTest(
       """,
     ) {
       val modules = componentInterface.mergedModules(annotationClass).toList()
-      assertThat(modules).containsExactly(secondContributingInterface.generatedMultiBindingModule.kotlin)
+      assertThat(
+        modules,
+      ).containsExactly(secondContributingInterface.generatedMultiBindingModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -233,7 +232,9 @@ class BindingModuleMultibindingSetTest(
       """,
     ) {
       val modules = componentInterface.mergedModules(annotationClass).toList()
-      assertThat(modules).containsExactly(secondContributingInterface.generatedMultiBindingModule.kotlin)
+      assertThat(
+        modules,
+      ).containsExactly(secondContributingInterface.generatedMultiBindingModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -369,7 +370,9 @@ class BindingModuleMultibindingSetTest(
       interface SubcomponentInterface
       """,
     ) {
-      with(componentInterface.mergedModules(annotationClass).single().java.declaredMethods.single()) {
+      with(
+        componentInterface.mergedModules(annotationClass).single().java.declaredMethods.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -377,7 +380,9 @@ class BindingModuleMultibindingSetTest(
         assertThat(isAnnotationPresent(IntoSet::class.java)).isTrue()
       }
 
-      with(subcomponentInterface.mergedModules(annotationClass).single().java.declaredMethods.single()) {
+      with(
+        subcomponentInterface.mergedModules(annotationClass).single().java.declaredMethods.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -409,7 +414,9 @@ class BindingModuleMultibindingSetTest(
       interface SubcomponentInterface
       """,
     ) {
-      with(componentInterface.mergedModules(annotationClass).single().java.declaredMethods.single()) {
+      with(
+        componentInterface.mergedModules(annotationClass).single().java.declaredMethods.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface1)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -417,7 +424,9 @@ class BindingModuleMultibindingSetTest(
         assertThat(isAnnotationPresent(IntoSet::class.java)).isTrue()
       }
 
-      with(subcomponentInterface.mergedModules(annotationClass).single().java.declaredMethods.single()) {
+      with(
+        subcomponentInterface.mergedModules(annotationClass).single().java.declaredMethods.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface2)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -489,7 +498,11 @@ class BindingModuleMultibindingSetTest(
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.mergedModules(annotationClass).flatMap { it.java.declaredMethods.toList() }).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMap {
+          it.java.declaredMethods.toList()
+        },
+      ).isEmpty()
     }
   }
 

@@ -45,7 +45,6 @@ import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
@@ -58,6 +57,7 @@ import dagger.Provides
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
+import java.util.Comparator
 
 /**
  * Generates binding modules for every [ContributesBinding]-annotated class. If a class has repeated
@@ -85,10 +85,10 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
       val key: String,
     )
     companion object {
-      val COMPARATOR = compareBy<Contribution> { it.scope.canonicalName }
+      val COMPARATOR: Comparator<Contribution> = compareBy<Contribution> { it.scope.canonicalName }
         .thenComparing(compareBy { it.boundType.canonicalName })
         .thenComparing(compareBy { it.priority })
-        .thenComparing(compareBy { it.replaces.joinToString { it.canonicalName } })
+        .thenComparing(compareBy { it.replaces.joinToString(transform = ClassName::canonicalName) })
     }
   }
 
@@ -134,8 +134,9 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
         )
         addAnnotation(
           AnnotationSpec.builder(
-            InternalBindingMarker::class.asClassName().parameterizedBy(contribution.origin),
+            InternalBindingMarker::class.asClassName(),
           )
+            .addMember("originClass = %T::class", contribution.origin)
             .addMember("isMultibinding = false")
             .apply {
               contribution.qualifier?.key?.let { qualifierKey ->

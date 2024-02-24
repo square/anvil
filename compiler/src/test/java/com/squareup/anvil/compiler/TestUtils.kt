@@ -205,18 +205,18 @@ internal val Class<*>.multibindingOriginClass: KClass<*>?
 
 internal fun Class<*>.resolveOriginClass(bindingAnnotation: KClass<out Annotation>): KClass<*>? {
   val generatedBindingModule = generatedBindingModules(bindingAnnotation).firstOrNull() ?: return null
-  val internalBindingMarker: InternalBindingMarker<*> =
-    generatedBindingModule.kotlin.annotations.filterIsInstance<InternalBindingMarker<*>>().single()
   val bindingFunction = generatedBindingModule.declaredMethods[0]
   val parameterImplType = bindingFunction.parameterTypes.firstOrNull()
-  val bindingMarkerOriginType = internalBindingMarker::class.typeParameters.single().upperBounds.single().classifier as KClass<*>
+  val internalBindingMarker: InternalBindingMarker =
+    generatedBindingModule.kotlin.annotations.filterIsInstance<InternalBindingMarker>().single()
+  val bindingMarkerOriginType = internalBindingMarker.originClass
   if (parameterImplType == null) {
     // Validate that the function is a provider in an object
     assertThat(generatedBindingModule.kotlin.objectInstance).isNotNull()
   } else {
     assertThat(generatedBindingModule.isInterface).isTrue()
     // Added validation that the binding marker type matches the binds param
-    assertThat(parameterImplType).isEqualTo(bindingMarkerOriginType)
+    assertThat(parameterImplType).isEqualTo(bindingMarkerOriginType.java)
   }
   return bindingMarkerOriginType
 }

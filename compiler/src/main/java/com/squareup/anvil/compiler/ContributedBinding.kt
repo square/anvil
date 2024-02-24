@@ -107,7 +107,7 @@ internal data class ContributedBindings(
       val groupedByScope = bindings.groupBy { it.scope }
       val groupedByScopeAndKey = groupedByScope.mapValues { (_, bindings) ->
         bindings.groupBy { it.bindingKey }
-          .mapValues innerMapValues@ { (_, bindings) ->
+          .mapValues innerMapValues@{ (_, bindings) ->
             if (bindings.size < 2) return@innerMapValues bindings
             val (multiBindings, bindingsOnly) = bindings.partition { it.isMultibinding }
             if (bindingsOnly.size < 2) return@innerMapValues bindings
@@ -162,7 +162,7 @@ internal fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedB
 private fun genericExceptionText(
   origin: String,
   boundType: String,
-  typeString: String
+  typeString: String,
 ): String {
   return "Class $origin binds $boundType," +
     " but the bound type contains type parameter(s) $typeString." +
@@ -185,7 +185,11 @@ internal fun ClassReference.checkNotGeneric(
 
         throw AnvilCompilationException(
           classDescriptor = clazz,
-          message = genericExceptionText(contributedClass.fqName.asString(), clazz.fqNameSafe.asString(), clazz.defaultType.describeTypeParameters()),
+          message = genericExceptionText(
+            contributedClass.fqName.asString(),
+            clazz.fqNameSafe.asString(),
+            clazz.defaultType.describeTypeParameters(),
+          ),
         )
       }
     }
@@ -195,7 +199,11 @@ internal fun ClassReference.checkNotGeneric(
           .joinToString(prefix = "<", postfix = ">") { it.name!! }
 
         throw AnvilCompilationException(
-          message = genericExceptionText(contributedClass.fqName.asString(), clazz.requireFqName().asString(), typeString),
+          message = genericExceptionText(
+            contributedClass.fqName.asString(),
+            clazz.requireFqName().asString(),
+            typeString,
+          ),
           element = clazz.nameIdentifier,
         )
       }
@@ -224,7 +232,11 @@ internal fun KSClassDeclaration.checkNotGeneric(
       .joinToString(prefix = "<", postfix = ">") { it.name.asString() }
 
     throw KspAnvilException(
-      message = genericExceptionText(contributedClass.qualifiedName!!.asString(), qualifiedName!!.asString(), typeString),
+      message = genericExceptionText(
+        contributedClass.qualifiedName!!.asString(),
+        qualifiedName!!.asString(),
+        typeString,
+      ),
       node = contributedClass,
     )
   }

@@ -218,8 +218,7 @@ internal class ModuleMergerIr(
           functionName == "bind" || functionName.startsWith("provide")
         }
 
-        val originClass = internalBindingMarker.annotation
-          .getTypeArgument(0)?.classOrFail?.toClassReference(pluginContext) ?: throw AnvilCompilationExceptionClassReferenceIr(
+        val originClass = internalBindingMarker.argumentOrNull("originClass")?.value<ClassReferenceIr>() ?: throw AnvilCompilationExceptionClassReferenceIr(
           message = "The origin type of a contributed binding is null.",
           classReference = moduleClass,
         )
