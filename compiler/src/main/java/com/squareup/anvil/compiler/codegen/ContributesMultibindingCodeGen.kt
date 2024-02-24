@@ -38,6 +38,7 @@ import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
+import com.squareup.anvil.compiler.internal.reference.generateClassNameString
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.qualifierKey
 import com.squareup.kotlinpoet.AnnotationSpec
@@ -99,9 +100,9 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
     val specs = contributions.map { contribution ->
       // Combination name of origin, scope, and boundType
       val suffix = "As" +
-        contribution.boundType.simpleName.capitalize() +
+        contribution.boundType.generateClassNameString().capitalize() +
         "To" +
-        contribution.scope.simpleName.capitalize() +
+        contribution.scope.generateClassNameString().capitalize() +
         "MultiBindingModule"
 
       val contributionName =

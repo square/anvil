@@ -12,6 +12,7 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.reference.generateClassNameString
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
@@ -19,6 +20,7 @@ import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
+import com.squareup.kotlinpoet.asClassName
 import com.tschuchort.compiletesting.CompilationResult
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
@@ -162,7 +164,7 @@ private val Annotation.boundType: KClass<*>
 private fun Class<*>.generatedBindingModules(annotationClass: KClass<out Annotation>): List<Class<*>> {
   return getAnnotationsByType(annotationClass.java)
     .map { bindingAnnotation ->
-      val scope = bindingAnnotation.scope.simpleName!!.capitalize()
+      val scope = bindingAnnotation.scope.asClassName().generateClassNameString().capitalize()
       val boundType = bindingAnnotation.boundType
         .let {
           if (it == Unit::class) {
@@ -171,7 +173,7 @@ private fun Class<*>.generatedBindingModules(annotationClass: KClass<out Annotat
             it
           }
         }
-        .simpleName!!.capitalize()
+        .asClassName().generateClassNameString().capitalize()
       val suffix = when (annotationClass) {
         ContributesBinding::class -> BINDING_MODULE_SUFFIX
         ContributesMultibinding::class -> MULTIBINDING_MODULE_SUFFIX
@@ -391,3 +393,8 @@ internal fun File.assertStableInterfaceOrder() {
 
   assertThat(classNamesAndLineNumbers).isEqualTo(classNamesAndLineNumbers.sortedBy { it.index })
 }
+
+internal inline fun <T, R> Array<out T>.flatMapArray(transform: (T) -> Array<R>) =
+  flatMapTo(ArrayList()) {
+    transform(it).asIterable()
+  }
