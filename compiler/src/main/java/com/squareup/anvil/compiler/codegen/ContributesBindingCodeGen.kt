@@ -152,7 +152,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
         )
 
         val functionBuilder = if (contribution.isObject) {
-          FunSpec.builder("provide${originClass.simpleName.capitalize()}")
+          FunSpec.builder("provide${contribution.boundType.simpleName.capitalize()}")
             .addAnnotation(Provides::class)
             .addStatement("return %T", originClass)
         } else {
