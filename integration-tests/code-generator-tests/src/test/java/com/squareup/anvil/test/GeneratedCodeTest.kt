@@ -40,7 +40,9 @@ class GeneratedCodeTest {
     val contributedModule =
       Class.forName("generated.test.com.squareup.anvil.test.ContributedModule").kotlin
     val contributedBindingModule =
-      Class.forName("generated.test.com.squareup.anvil.test.ContributedBindingAsBindingToUnitBindingModule").kotlin
+      Class.forName(
+        "generated.test.com.squareup.anvil.test.ContributedBindingAsGeneratedTestComSquareupAnvilTestBindingToKotlinUnitBindingModule",
+      ).kotlin
 
     val annotation = AppComponent::class.java.getAnnotation(Component::class.java)!!
     assertThat(annotation.modules.withoutAnvilModule())
