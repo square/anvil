@@ -168,12 +168,13 @@ internal class ModuleMergerIr(
           .any { scope -> scope in scopes }
 
         if (!contributesToOurScope) {
+          val origin = declaration.originClass()
           throw AnvilCompilationExceptionClassReferenceIr(
-            message = "${declaration.fqName} with scopes " +
+            message = "${origin.fqName} with scopes " +
               "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
               "wants to exclude ${excludedClass.fqName}, but the excluded class isn't " +
               "contributed to the same scope.",
-            classReference = declaration,
+            classReference = origin,
           )
         }
       }
@@ -194,11 +195,12 @@ internal class ModuleMergerIr(
               !classToReplace.isAnnotatedWith(contributesBindingFqName) &&
               !classToReplace.isAnnotatedWith(contributesMultibindingFqName)
             ) {
+              val origin = contributedClass.originClass()
               throw AnvilCompilationExceptionClassReferenceIr(
-                message = "${contributedClass.fqName} wants to replace " +
+                message = "${origin.fqName} wants to replace " +
                   "${classToReplace.fqName}, but the class being " +
                   "replaced is not a Dagger module.",
-                classReference = contributedClass,
+                classReference = origin,
               )
             }
 
@@ -354,14 +356,24 @@ internal class ModuleMergerIr(
       .any { scope -> scope in scopes }
 
     if (!contributesToOurScope) {
+      val origin = contributedClass.originClass()
       throw AnvilCompilationExceptionClassReferenceIr(
-        classReference = contributedClass,
-        message = "${contributedClass.fqName} with scopes " +
+        classReference = origin,
+        message = "${origin.fqName} with scopes " +
           "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
           "wants to replace ${classToReplace.fqName}, but the replaced class isn't " +
           "contributed to the same scope.",
       )
     }
+  }
+
+  private fun ClassReferenceIr.originClass(): ClassReferenceIr {
+    val originClass = annotations
+      .find(internalBindingMarkerFqName)
+      .singleOrNull()
+      ?.argumentOrNull("originClass")
+      ?.value<ClassReferenceIr>()
+    return originClass ?: this
   }
 
   private fun findContributedSubcomponentModules(
