@@ -275,8 +275,6 @@ internal class ModuleMergerIr(
       .map { it.declaringClass }
       .plus(bindings.bindings.values.flatMap { it.values }.flatten().map { it.bindingModule })
       .minus(replacedModules)
-      // TODO is this even necessary?
-      .minus(bindings.replacedBindings)
       .minus(excludedModules)
       .plus(predefinedModules)
       .plus(contributedSubcomponentModules)

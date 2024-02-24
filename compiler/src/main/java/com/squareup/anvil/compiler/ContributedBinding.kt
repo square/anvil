@@ -80,26 +80,6 @@ internal data class BindingKey(
 internal data class ContributedBindings(
   val bindings: Map<Scope, Map<BindingKey, List<ContributedBinding>>>,
 ) {
-  val bindingsByImplClass: Map<OriginClass, Map<Scope, List<ContributedBinding>>> = bindings.values.flatMap {
-    it.values
-  }.flatten()
-    .groupBy { it.originClass }
-    .mapValues { (_, values) ->
-      values.groupBy { it.scope }
-    }
-
-  val replacedBindings = bindings.flatMapTo(mutableSetOf()) { (scope, bindingsForScope) ->
-    bindingsForScope.flatMap { (_, bindings) ->
-      val replacedBindings = bindings.flatMap { it.replaces }
-      replacedBindings.plus(
-        // Remap replaced bindings to their binding module, if relevant
-        replacedBindings.mapNotNull { replacedBinding ->
-          bindingsByImplClass[replacedBinding]?.get(scope)?.firstOrNull()?.bindingModule
-        },
-      )
-    }
-  }
-
   companion object {
     fun from(
       bindings: List<ContributedBinding>,
