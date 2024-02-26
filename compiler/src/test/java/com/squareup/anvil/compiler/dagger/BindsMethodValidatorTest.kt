@@ -55,8 +55,8 @@ class BindsMethodValidatorTest(
       )
       if (!useDagger) {
         assertThat(messages).contains(
-          "Expected binding of type com.squareup.test.Bar but impl parameter of type com.squareup.test.Foo only has the following " +
-            "supertypes: [com.squareup.test.Ipsum, com.squareup.test.Lorem]",
+          "Expected binding of type Bar but impl parameter of type Foo only has the following " +
+            "supertypes: [Ipsum, Lorem]",
         )
       }
     }
@@ -88,7 +88,7 @@ class BindsMethodValidatorTest(
       )
       if (!useDagger) {
         assertThat(messages).contains(
-          "Expected binding of type com.squareup.test.Bar but impl parameter of type com.squareup.test.Foo has no supertypes.",
+          "Expected binding of type Bar but impl parameter of type Foo has no supertypes.",
         )
       }
     }
@@ -311,44 +311,6 @@ class BindsMethodValidatorTest(
     ) {
       assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       assertThat(messages).contains("@Binds methods can not be an extension function")
-    }
-  }
-
-  @Test
-  fun `binding which supertype is narrower than return type fails to compile`() {
-    compile(
-      """
-        package com.squareup.test
-
-        import dagger.Module
-        import dagger.Binds
-    
-        sealed interface ItemDetail {
-          object DetailTypeA : ItemDetail
-        }
-
-        interface ItemMapper<T : ItemDetail>
-
-        class DetailTypeAItemMapper : ItemMapper<ItemDetail.DetailTypeA>
-        
-        @Module
-        interface SomeModule {
-          @Binds fun shouldBeInvalidComplexBinding(real: DetailTypeAItemMapper): ItemMapper<ItemDetail>
-        }
-      """.trimIndent(),
-    ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
-      assertThat(messages).contains(
-        "@Binds methods' parameter type must be assignable to the return type",
-      )
-      if (!useDagger) {
-        assertThat(messages).contains(
-          "@Binds methods' parameter type must be assignable to the return type. Expected " +
-            "binding of type com.squareup.test.ItemMapper<com.squareup.test.ItemDetail> but impl " +
-            "parameter of type com.squareup.test.DetailTypeAItemMapper only has the following " +
-            "supertypes: [com.squareup.test.ItemMapper<com.squareup.test.ItemDetail.DetailTypeA>]",
-        )
-      }
     }
   }
 

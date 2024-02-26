@@ -7,9 +7,9 @@ import com.squareup.anvil.compiler.codegen.CheckOnlyCodeGenerator
 import com.squareup.anvil.compiler.daggerBindsFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
+import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
-import com.squareup.anvil.compiler.internal.reference.TypeReference
-import com.squareup.anvil.compiler.internal.reference.allSuperTypeReferences
+import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.toTypeReference
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -28,29 +28,6 @@ import java.io.File
 internal class BindsMethodValidator : CheckOnlyCodeGenerator() {
 
   override fun isApplicable(context: AnvilContext) = context.generateFactories
-
-  internal object Errors {
-    internal const val BINDS_MUST_BE_ABSTRACT = "@Binds methods must be abstract"
-    internal const val BINDS_MUST_HAVE_SINGLE_PARAMETER =
-      "@Binds methods must have exactly one parameter, " +
-        "whose type is assignable to the return type"
-    internal const val BINDS_MUST_RETURN_A_VALUE = "@Binds methods must return a value (not void)"
-    internal fun bindsParameterMustBeAssignable(
-      paramSuperTypeNames: List<String>,
-      returnTypeName: String,
-      parameterType: String?,
-    ): String {
-      val superTypesMessage = if (paramSuperTypeNames.isEmpty()) {
-        "has no supertypes."
-      } else {
-        "only has the following supertypes: $paramSuperTypeNames"
-      }
-
-      return "@Binds methods' parameter type must be assignable to the return type. " +
-        "Expected binding of type $returnTypeName but impl parameter of type " +
-        "$parameterType $superTypesMessage"
-    }
-  }
 
   override fun checkCode(
     codeGenDir: File,
@@ -77,7 +54,7 @@ internal class BindsMethodValidator : CheckOnlyCodeGenerator() {
   private fun validateBindsFunction(function: MemberFunctionReference.Psi) {
     if (!function.isAbstract()) {
       throw AnvilCompilationExceptionFunctionReference(
-        message = Errors.BINDS_MUST_BE_ABSTRACT,
+        message = "@Binds methods must be abstract",
         functionReference = function,
       )
     }
@@ -89,47 +66,64 @@ internal class BindsMethodValidator : CheckOnlyCodeGenerator() {
       )
     }
 
-    val bindingParameter = listOfNotNull(
-      function.singleParameterTypeOrNull(),
-      function.receiverTypeOrNull(),
-    ).singleOrNull()
+    val hasSingleBindingParameter =
+      function.parameters.size == 1 && !function.function.isExtensionDeclaration()
+    if (!hasSingleBindingParameter) {
+      throw AnvilCompilationExceptionFunctionReference(
+        message = "@Binds methods must have exactly one parameter, " +
+          "whose type is assignable to the return type",
+        functionReference = function,
+      )
+    }
 
-    bindingParameter ?: throw AnvilCompilationExceptionFunctionReference(
-      message = Errors.BINDS_MUST_HAVE_SINGLE_PARAMETER,
+    function.returnTypeOrNull() ?: throw AnvilCompilationExceptionFunctionReference(
+      message = "@Binds methods must return a value (not void)",
       functionReference = function,
     )
 
-    val returnTypeName = function.returnTypeOrNull()?.asTypeName()
-
-    returnTypeName ?: throw AnvilCompilationExceptionFunctionReference(
-      message = Errors.BINDS_MUST_RETURN_A_VALUE,
-      functionReference = function,
-    )
-
-    val parameterSuperTypes =
-      bindingParameter
-        .allSuperTypeReferences(includeSelf = true)
-        .map { it.asTypeName() }
+    if (!function.parameterMatchesReturnType() && !function.receiverMatchesReturnType()) {
+      val returnType = function.returnType().asClassReference().shortName
+      val paramSuperTypes = (function.parameterSuperTypes() ?: function.receiverSuperTypes())!!
+        .map { it.shortName }
         .toList()
 
-    if (returnTypeName !in parameterSuperTypes) {
-      val superTypeNames = parameterSuperTypes.map { it.toString() }
+      val superTypesMessage = if (paramSuperTypes.size == 1) {
+        "has no supertypes."
+      } else {
+        "only has the following supertypes: ${paramSuperTypes.drop(1)}"
+      }
       throw AnvilCompilationExceptionFunctionReference(
-        message = Errors.bindsParameterMustBeAssignable(
-          paramSuperTypeNames = superTypeNames.drop(1),
-          returnTypeName = returnTypeName.toString(),
-          parameterType = superTypeNames.first(),
-        ),
+        message = "@Binds methods' parameter type must be assignable to the return type. " +
+          "Expected binding of type $returnType but impl parameter of type " +
+          "${paramSuperTypes.first()} $superTypesMessage",
         functionReference = function,
       )
     }
   }
 
-  private fun MemberFunctionReference.Psi.singleParameterTypeOrNull(): TypeReference? {
-    return parameters.singleOrNull()?.type()
+  private fun MemberFunctionReference.Psi.parameterMatchesReturnType(): Boolean {
+    return parameterSuperTypes()
+      ?.contains(returnType().asClassReference())
+      ?: false
   }
 
-  private fun MemberFunctionReference.Psi.receiverTypeOrNull(): TypeReference? {
-    return function.receiverTypeReference?.toTypeReference(declaringClass, module)
+  private fun MemberFunctionReference.Psi.parameterSuperTypes(): Sequence<ClassReference>? {
+    return parameters.singleOrNull()
+      ?.type()
+      ?.asClassReference()
+      ?.allSuperTypeClassReferences(includeSelf = true)
+  }
+
+  private fun MemberFunctionReference.Psi.receiverMatchesReturnType(): Boolean {
+    return receiverSuperTypes()
+      ?.contains(returnType().asClassReference())
+      ?: false
+  }
+
+  private fun MemberFunctionReference.Psi.receiverSuperTypes(): Sequence<ClassReference>? {
+    return function.receiverTypeReference
+      ?.toTypeReference(declaringClass, module)
+      ?.asClassReference()
+      ?.allSuperTypeClassReferences(includeSelf = true)
   }
 }
