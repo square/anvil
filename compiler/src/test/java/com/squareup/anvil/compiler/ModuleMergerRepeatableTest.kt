@@ -15,7 +15,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class ModuleMergerRepeatableTest(
-  private val annotationClass: KClass<*>,
+  private val annotationClass: KClass<out Annotation>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -199,7 +199,11 @@ class ModuleMergerRepeatableTest(
         componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModules(),
       ).containsExactly(daggerModule1.kotlin)
 
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -234,7 +238,11 @@ class ModuleMergerRepeatableTest(
       assertThat(
         componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModules(),
       ).isEmpty()
-      assertThat(componentInterface.anvilModule.declaredMethods).hasLength(1)
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).hasSize(1)
     }
   }
 
@@ -294,7 +302,11 @@ class ModuleMergerRepeatableTest(
         interface ComponentInterface
         """,
     ) {
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 

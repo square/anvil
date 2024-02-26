@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
 import org.junit.Test
@@ -215,7 +216,11 @@ class MergeModulesTest {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
 
-      assertThat(daggerModule1.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        daggerModule1.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -247,7 +252,11 @@ class MergeModulesTest {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
 
-      assertThat(daggerModule1.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        daggerModule1.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -349,7 +358,11 @@ class MergeModulesTest {
       """,
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules()).isEmpty()
-      assertThat(daggerModule1.anvilModule.declaredMethods).hasLength(1)
+      assertThat(
+        daggerModule1.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).hasSize(1)
     }
   }
 
@@ -379,7 +392,11 @@ class MergeModulesTest {
       """,
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules()).isEmpty()
-      assertThat(daggerModule1.anvilModule.declaredMethods).hasLength(1)
+      assertThat(
+        daggerModule1.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).hasSize(1)
     }
   }
 
@@ -633,7 +650,11 @@ class MergeModulesTest {
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -659,7 +680,11 @@ class MergeModulesTest {
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -851,7 +876,11 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.anvilModule.declaredMethods).hasLength(1)
+      assertThat(
+        daggerModule1.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).hasSize(1)
     }
   }
 

@@ -42,7 +42,7 @@ internal fun compile(
   trackSourceFiles: Boolean = true,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
-  mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
+  mode: AnvilCompilationMode = Embedded(codeGenerators),
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult = compileAnvil(
   sources = sources,
@@ -142,16 +142,6 @@ private val Annotation.scope: KClass<*>
     }
   }
 
-private val Annotation.replaces: Array<KClass<*>>
-  get() {
-    return when (this) {
-      is ContributesTo -> replaces
-      is ContributesBinding -> replaces
-      is ContributesMultibinding -> replaces
-      else -> error("Unknown annotation class: $this")
-    }
-  }
-
 private val Annotation.boundType: KClass<*>
   get() {
     return when (this) {
@@ -189,10 +179,7 @@ internal val Class<*>.bindingOriginKClass: KClass<*>?
     return resolveOriginClass(ContributesBinding::class)
   }
 
-internal val Class<*>.bindingOriginClass: Class<*>
-  get() = generatedBindingModules().first()
-
-internal val Class<*>.bindingModuleScope: KClass<*>?
+internal val Class<*>.bindingModuleScope: KClass<*>
   get() = bindingModuleScopes.first()
 
 internal val Class<*>.bindingModuleScopes: List<KClass<*>>
@@ -263,11 +250,6 @@ internal val Class<*>.hintSubcomponentParentScope: KClass<*>?
 internal val Class<*>.hintSubcomponentParentScopes: List<KClass<*>>
   get() = getHintScopes(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
 
-internal val Class<*>.anvilModule: Class<*>
-  get() = classLoader.loadClass(
-    "$MODULE_PACKAGE_PREFIX.${generatedClassesString(separator = "")}$ANVIL_MODULE_SUFFIX",
-  )
-
 private fun Class<*>.getHint(prefix: String): KClass<*>? = contributedProperties(prefix)
   ?.filter { it.java == this }
   ?.also { assertThat(it.size).isEqualTo(1) }
@@ -314,10 +296,10 @@ internal fun includeKspTests(): Boolean = INCLUDE_KSP_TESTS
 
 internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
   val dirToSearch = when (mode) {
-    is AnvilCompilationMode.Embedded ->
+    is Embedded ->
       outputDirectory.parentFile.resolve("build${File.separator}anvil")
 
-    is AnvilCompilationMode.Ksp -> outputDirectory.parentFile.resolve("ksp${File.separator}sources")
+    is Ksp -> outputDirectory.parentFile.resolve("ksp${File.separator}sources")
   }
   return dirToSearch.walkTopDown()
     .filter { it.isFile && it.extension == "kt" }
