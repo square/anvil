@@ -28,7 +28,6 @@ import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
-import java.lang.reflect.Method
 import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
@@ -631,16 +630,20 @@ class BindingModuleCodegenTest(
       interface ComponentInterface
       """,
     ) {
-      val methods = componentInterface.mergedModules(annotationClass).flatMap { moduleClass ->
-        moduleClass.java.declaredMethods.sortedWith(
-          compareBy<Method> { it.name }
-            .thenBy { it.returnType.canonicalName }
-            .thenBy { it.parameters.firstOrNull()?.type?.canonicalName.orEmpty() },
-        )
+      val methods = componentInterface.mergedModules(annotationClass).flatMapArray { moduleClass ->
+        moduleClass.java.declaredMethods
       }
       assertThat(methods).hasSize(2)
+      val otherParentInterface = classLoader.loadClass("com.squareup.test.other.ParentInterface")
 
-      with(methods[0]) {
+      // Order of loading classes in the jvm here isn't super guaranteed across local and CI, so
+      // we just look up the methods directly
+      val parentInterfaceMethod = methods.find { it.returnType == parentInterface }
+        ?: error("No method found for $parentInterface")
+      val otherParentInterfaceMethod = methods.find { it.returnType == otherParentInterface }
+        ?: error("No method found for $otherParentInterface")
+
+      with(otherParentInterfaceMethod) {
         assertThat(returnType).isEqualTo(
           classLoader.loadClass("com.squareup.test.other.ParentInterface"),
         )
@@ -648,7 +651,7 @@ class BindingModuleCodegenTest(
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
-      with(methods[1]) {
+      with(parentInterfaceMethod) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
