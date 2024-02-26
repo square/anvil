@@ -583,17 +583,21 @@ class BindingModuleCodegenTest(
     ) {
       val methods = componentInterface.mergedModules(annotationClass).flatMapArray {
         it.java.declaredMethods
-      }.sortedBy { it.name }
+      }.sortedWith(
+        compareBy<Method> { it.name }
+          .thenBy { it.returnType.canonicalName }
+          .thenBy { it.parameters.firstOrNull()?.type?.canonicalName.orEmpty() },
+      )
       assertThat(methods).hasSize(2)
 
       with(methods[0]) {
-        assertThat(returnType).isEqualTo(parentInterface2)
+        assertThat(returnType).isEqualTo(parentInterface1)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
       with(methods[1]) {
-        assertThat(returnType).isEqualTo(parentInterface1)
+        assertThat(returnType).isEqualTo(parentInterface2)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
