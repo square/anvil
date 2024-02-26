@@ -217,7 +217,7 @@ internal class ModuleMergerIr(
 
         val bindingFunction = moduleClass.clazz.functions.single {
           val functionName = it.owner.name.asString()
-          functionName == "bind" || functionName.startsWith("provide")
+          functionName.startsWith("bind") || functionName.startsWith("provide")
         }
 
         val originClass = internalBindingMarker.argumentOrNull("originClass")?.value<ClassReferenceIr>() ?: throw AnvilCompilationExceptionClassReferenceIr(

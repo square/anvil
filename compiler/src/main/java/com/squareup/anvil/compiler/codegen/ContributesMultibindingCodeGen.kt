@@ -143,12 +143,13 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
             .build(),
         )
 
+        val nameSuffix = contribution.boundType.simpleName.capitalize()
         val functionBuilder = if (contribution.isObject) {
-          FunSpec.builder("provide${contribution.boundType.simpleName.capitalize()}")
+          FunSpec.builder("provide$nameSuffix")
             .addAnnotation(Provides::class)
             .addStatement("return %T", className)
         } else {
-          FunSpec.builder("bind")
+          FunSpec.builder("bind$nameSuffix")
             .addModifiers(KModifier.ABSTRACT)
             .addAnnotation(Binds::class)
             .addParameter("real", className)
