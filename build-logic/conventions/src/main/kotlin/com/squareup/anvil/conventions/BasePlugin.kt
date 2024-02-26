@@ -201,6 +201,23 @@ abstract class BasePlugin : Plugin<Project> {
 
       task.maxParallelForks = Runtime.getRuntime().availableProcessors()
 
+      task.useJUnitPlatform {
+        it.includeEngines("junit-jupiter", "junit-vintage")
+      }
+      task.systemProperties.putAll(
+        mapOf(
+          // remove parentheses from test display names
+          "junit.jupiter.displayname.generator.default" to
+            "org.junit.jupiter.api.DisplayNameGenerator\$Simple",
+
+          // Allow unit tests to run in parallel
+          // https://junit.org/junit5/docs/snapshot/user-guide/#writing-tests-parallel-execution-config-properties
+          "junit.jupiter.execution.parallel.enabled" to true,
+          "junit.jupiter.execution.parallel.mode.default" to "concurrent",
+          "junit.jupiter.execution.parallel.mode.classes.default" to "concurrent",
+        ),
+      )
+
       task.jvmArgs(
         // Fixes illegal reflective operation warnings during tests. It's a Kotlin issue.
         // https://github.com/pinterest/ktlint/issues/1618

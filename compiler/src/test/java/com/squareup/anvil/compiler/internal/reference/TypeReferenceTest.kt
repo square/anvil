@@ -1,12 +1,26 @@
 package com.squareup.anvil.compiler.internal.reference
 
 import com.google.common.truth.Truth.assertThat
+import com.rickbusarow.kase.Kase3
+import com.rickbusarow.kase.kase
 import com.squareup.anvil.compiler.compile
+import com.squareup.anvil.compiler.internal.reference.ReferencesTestEnvironment.AssignableTestAction
+import com.squareup.anvil.compiler.internal.reference.ReferencesTestEnvironment.ReferenceType
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
+import org.intellij.lang.annotations.Language
 import org.junit.Test
+import org.junit.jupiter.api.DynamicNode
+import org.junit.jupiter.api.TestFactory
+import java.util.stream.Stream
 
-class TypeReferenceTest {
+class TypeReferenceTest :
+  ReferenceTests,
+  ReferenceAsserts {
+
+  override val testEnvironmentFactory
+    get() = ReferencesTestEnvironment.Factory
+
   @Test fun `the type parameter arguments from a super type can be queried`() {
     compile(
       """
@@ -30,6 +44,7 @@ class TypeReferenceTest {
                 assertThat(unwrappedClassNames).containsExactly("String", "Int").inOrder()
               }
             }
+
             "SomeClass2" -> {
               listOf(psiRef, descriptorRef).forEach { ref ->
                 val listType = ref.directSuperTypeReferences().single()
@@ -42,6 +57,7 @@ class TypeReferenceTest {
                   .containsExactly("String", "Int").inOrder()
               }
             }
+
             else -> throw NotImplementedError(psiRef.shortName)
           }
 
@@ -52,6 +68,141 @@ class TypeReferenceTest {
       assertThat(exitCode).isEqualTo(OK)
     }
   }
+
+  @TestFactory
+  fun `simgle-param generic type references are assignable to non-generic supertypes`() =
+    testFactory {
+
+      compile(
+        """
+      package com.squareup.test
+  
+      interface RefsContainer {
+        fun refs(
+          any: Any,
+          any_nullable: Any?,
+          list_any: List<Any>,
+          list_anyNullable: List<Any?>,
+          list_any_nullable: List<Any>?,
+          list_charSequence: List<CharSequence>,
+          list_int: List<Int>,
+          list_number: List<Number>,
+          list_star: List<*>,
+          list_string: List<String>,
+          mutableList_any: MutableList<Any>,
+          mutableList_anyNullable: MutableList<Any?>,
+          mutableList_any_nullable: MutableList<Any>?,
+          mutableList_star: MutableList<*>,
+          mutableList_string: MutableList<String>,
+          nothing: Nothing,
+          string: String,
+          string_nullable: String?,
+        )
+      }
+      """,
+      ) { map ->
+
+        val any by map
+        val any_nullable by map
+        val list_any by map
+        val list_anyNullable by map
+        val list_any_nullable by map
+        val list_charSequence by map
+        val list_int by map
+        val list_number by map
+        val list_star by map
+        val list_string by map
+        val mutableList_any by map
+        val mutableList_anyNullable by map
+        val mutableList_any_nullable by map
+        val mutableList_star by map
+        val mutableList_string by map
+        val nothing by map
+        val string by map
+        val string_nullable by map
+
+        list_string shouldBeAssignableTo any
+        list_string shouldBeAssignableTo any_nullable
+        list_string shouldNotBeAssignableTo string
+        list_string shouldNotBeAssignableTo string_nullable
+      }
+    }
+
+  @TestFactory
+  fun `canary thing 5`() = foo2(
+    displayName = { (assignable, a, b) ->
+      if (assignable) {
+        "$a is assignable to $b"
+      } else {
+        "$a is not assignable to $b"
+      }
+    },
+    // kase(true, "MutableList<String>", "Collection<Any>"),
+    // kase(true, "MutableList<String>", "Collection<out Any>"),
+    // kase(true, "MutableList<String>", "Collection<Any?>"),
+    // kase(true, "MutableList<String>", "List<Any>"),
+    // kase(true, "MutableList<String>", "List<Any?>"),
+    // kase(true, "MutableList<String>", "List<CharSequence>"),
+    // kase(true, "MutableList<String>", "List<String>"),
+    // kase(true, "MutableList<String>", "MutableList<*>"),
+    // kase(true, "List<String>", "Collection<Any>"),
+    // kase(true, "List<String>", "Collection<Any?>"),
+    // kase(true, "List<String>", "List<Any>"),
+    // kase(true, "List<String>", "List<Any?>"),
+    // kase(true, "List<String>", "List<CharSequence>"),
+    kase(true, "List<String>", "List<String>"),
+    kase(true, "Generic1Out<String>", "Generic1Out<CharSequence>"),
+    kase(false, "AbstractMap<String, List<Int>>", "Map<CharSequence, List<Int>>"),
+    kase(false, "Generic1<String>", "Generic1<CharSequence>"),
+    kase(false, "Generic1In<String>", "Generic1In<CharSequence>"),
+    content = listOf(
+      //language=kotlin
+      """
+      package com.squareup.test
+      
+      interface Generic1<T>
+      interface Generic1In<in T>
+      interface Generic1Out<out T>
+      
+      interface Generic2<T, R>
+      interface Generic2In<in T, in R>
+      interface Generic2Out<out T, out R>
+      """.trimIndent(),
+    ),
+  ) { assignable, assigned, assignedTo ->
+
+    if (assignable) {
+      assigned shouldBeAssignableTo assignedTo
+    } else {
+      assigned shouldNotBeAssignableTo assignedTo
+    }
+  }
+
+  fun kase(
+    assignable: Boolean,
+    assigned: String,
+    assignedTo: String,
+  ): Kase3<Boolean, String, String> = kase(a1 = assignable, a2 = assigned, a3 = assignedTo)
+
+  fun foo2(
+    displayName: (Kase3<Boolean, String, String>) -> String,
+    @Language("kotlin") vararg assignableToAssignedTypes: Kase3<Boolean, String, String>,
+    content: List<String> = emptyList(),
+    referenceTypes: List<ReferenceType> = params,
+    testAction: AssignableTestAction,
+  ): Stream<out DynamicNode> = assignableToAssignedTypes.asList()
+    .asContainers(displayName) { (assignable, assigned, assignTo) ->
+
+      referenceTypes.asTests {
+        compile(
+          *content.toTypedArray(),
+          assignable = assignable,
+          assigned = assigned,
+          assignedTo = assignTo,
+          testAction = testAction,
+        )
+      }
+    }
 
   @Test fun `type names may be wrapped in backticks`() {
     compile(
@@ -118,6 +269,7 @@ class TypeReferenceTest {
                 ).isEqualTo("kotlin.String")
               }
             }
+
             else -> throw NotImplementedError(psiRef.shortName)
           }
 
@@ -155,6 +307,7 @@ class TypeReferenceTest {
                 ).isEqualTo("T")
               }
             }
+
             else -> throw NotImplementedError(psiRef.shortName)
           }
 
@@ -197,6 +350,7 @@ class TypeReferenceTest {
                 ).isEqualTo("kotlin.Int")
               }
             }
+
             else -> throw NotImplementedError(psiRef.shortName)
           }
 
@@ -244,6 +398,7 @@ class TypeReferenceTest {
                 ).containsExactly("Int", "String").inOrder()
               }
             }
+
             else -> throw NotImplementedError(psiRef.shortName)
           }
 
@@ -292,6 +447,7 @@ class TypeReferenceTest {
                 ).containsExactly("Int", "Int", "Int").inOrder()
               }
             }
+
             else -> throw NotImplementedError(psiRef.shortName)
           }
 

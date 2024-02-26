@@ -79,7 +79,7 @@ public sealed class ParameterReference : AnnotatedReference {
     }
 
     override val type: TypeReference.Psi? by lazy(NONE) {
-      parameter.typeReference?.toTypeReference(declaringClass, module)
+      parameter.typeReference?.toInvariantTypeReference(declaringClass, module)
     }
 
     override val declaringClass: ClassReference.Psi?
@@ -102,7 +102,7 @@ public sealed class ParameterReference : AnnotatedReference {
     }
 
     override val type: TypeReference.Descriptor? by lazy(NONE) {
-      parameter.type.toTypeReference(declaringClass, module)
+      parameter.type.toInvariantTypeReference(declaringClass, module)
     }
 
     override val declaringClass: ClassReference.Descriptor?
@@ -139,6 +139,7 @@ public fun AnvilCompilationExceptionParameterReference(
     message = message,
     cause = cause,
   )
+
   is Descriptor -> AnvilCompilationException(
     parameterDescriptor = parameterReference.parameter,
     message = message,

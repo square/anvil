@@ -152,7 +152,7 @@ public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyRefe
     }
 
     override val type: TypeReference by lazy(NONE) {
-      property.type.toTypeReference(null, module)
+      property.type.toInvariantTypeReference(null, module)
     }
 
     override fun visibility(): Visibility {

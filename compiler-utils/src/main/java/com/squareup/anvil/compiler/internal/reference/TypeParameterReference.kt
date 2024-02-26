@@ -21,7 +21,7 @@ public sealed class TypeParameterReference {
 
   public class Psi internal constructor(
     override val name: String,
-    override val upperBounds: List<TypeReference.Psi>,
+    override val upperBounds: List<TypeReference>,
     override val declaringClass: ClassReference.Psi,
   ) : TypeParameterReference()
 
@@ -78,7 +78,9 @@ public fun TypeParameterDescriptor.toTypeParameterReference(
 ): Descriptor {
   return Descriptor(
     name = name.asString(),
-    upperBounds = upperBounds.map { it.toTypeReference(declaringClass, declaringClass.module) },
+    upperBounds = upperBounds.map {
+      it.toInvariantTypeReference(declaringClass, declaringClass.module)
+    },
     declaringClass = declaringClass,
   )
 }

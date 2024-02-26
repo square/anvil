@@ -95,6 +95,32 @@ class BindsMethodValidatorTest(
   }
 
   @Test
+  fun `a bound type with a compatible generic type parameter is allowed`() {
+    compile(
+      """
+      package com.squareup.test
+ 
+      import dagger.Binds
+      import dagger.Module
+import java.lang.Void
+      import javax.inject.Inject
+
+      class Foo @Inject constructor() : Bar<Unit>
+      interface Bar<T>
+
+      @Module
+      abstract class BarModule {
+        @Binds
+        abstract fun bindsBar(impl: Foo): Bar<*>
+      }
+      """,
+    ) {
+      assertThat(exitCode).isError()
+      assertThat(messages).contains("@Binds methods must be abstract")
+    }
+  }
+
+  @Test
   fun `a non-abstract binding fails to compile`() {
     compile(
       """

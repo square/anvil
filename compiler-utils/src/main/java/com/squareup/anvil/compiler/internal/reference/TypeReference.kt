@@ -2,14 +2,15 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.anyFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.classDescriptorOrNull
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.reference.TypeReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.TypeReference.Psi
+import com.squareup.anvil.compiler.internal.reference.TypeVariance.Companion.toTypeVariance
 import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.kotlinpoet.ANY
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.LambdaTypeName
@@ -21,12 +22,13 @@ import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.WildcardTypeName
 import org.jetbrains.kotlin.builtins.isFunctionType
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
-import org.jetbrains.kotlin.lexer.KtTokens
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.psi.KtFunctionType
 import org.jetbrains.kotlin.psi.KtNullableType
 import org.jetbrains.kotlin.psi.KtProjectionKind
+import org.jetbrains.kotlin.psi.KtProjectionKind.IN
+import org.jetbrains.kotlin.psi.KtProjectionKind.OUT
 import org.jetbrains.kotlin.psi.KtSuperTypeListEntry
 import org.jetbrains.kotlin.psi.KtTypeArgumentList
 import org.jetbrains.kotlin.psi.KtTypeElement
@@ -41,12 +43,75 @@ import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameOrNull
 import org.jetbrains.kotlin.types.DefinitelyNotNullType
 import org.jetbrains.kotlin.types.FlexibleType
 import org.jetbrains.kotlin.types.KotlinType
+import org.jetbrains.kotlin.types.TypeProjection
 import org.jetbrains.kotlin.types.Variance.INVARIANT
 import org.jetbrains.kotlin.types.Variance.IN_VARIANCE
 import org.jetbrains.kotlin.types.Variance.OUT_VARIANCE
 import org.jetbrains.kotlin.types.isNullable
 import org.jetbrains.kotlin.types.typeUtil.isTypeParameter
 import kotlin.LazyThreadSafetyMode.NONE
+import org.jetbrains.kotlin.types.Variance as DescriptorVariance
+
+@ExperimentalAnvilApi
+public enum class TypeVariance {
+  IN,
+  OUT,
+
+  /**
+   * Functionally the same as `out Any?`.  Descriptor APIs will convert star projections to `Any?`.
+   */
+  STAR,
+
+  /**
+   * The "invariant" variance.
+   *
+   * examples:
+   * ```
+   * fun <T> example(t: T) { } // T has no variance
+   *
+   * class SomeClass<T> {
+   *   fun example(t: T) { } // T has no variance
+   * }
+   *
+   * fun example(string: String) { } // String has no variance
+   * ```
+   *
+   * @see org.jetbrains.kotlin.psi.KtProjectionKind.NONE
+   * @see org.jetbrains.kotlin.types.Variance.INVARIANT
+   */
+  NONE,
+  ;
+
+  public fun allowsPosition(position: TypeVariance): Boolean {
+    return toDescriptorVariance()
+      .allowsPosition(position.toDescriptorVariance())
+  }
+
+  private fun toDescriptorVariance() = when (this) {
+    IN -> DescriptorVariance.IN_VARIANCE
+    OUT -> DescriptorVariance.OUT_VARIANCE
+    NONE -> DescriptorVariance.INVARIANT
+    STAR -> DescriptorVariance.OUT_VARIANCE
+  }
+
+  public companion object {
+
+    public fun KtProjectionKind.toTypeVariance(): TypeVariance = when (this) {
+      KtProjectionKind.IN -> TypeVariance.IN
+      KtProjectionKind.OUT -> TypeVariance.OUT
+      KtProjectionKind.NONE -> TypeVariance.NONE
+      KtProjectionKind.STAR -> TypeVariance.STAR
+    }
+
+    public fun DescriptorVariance.toTypeVariance(): TypeVariance {
+      return when (this) {
+        DescriptorVariance.IN_VARIANCE -> TypeVariance.IN
+        DescriptorVariance.OUT_VARIANCE -> TypeVariance.OUT
+        DescriptorVariance.INVARIANT -> TypeVariance.NONE
+      }
+    }
+  }
+}
 
 @ExperimentalAnvilApi
 public sealed class TypeReference {
@@ -67,6 +132,8 @@ public sealed class TypeReference {
    * `List<*>` the result will be mapped to [Any].
    */
   public abstract val unwrappedTypes: List<TypeReference>
+
+  public abstract val typeVariance: TypeVariance
 
   public abstract val module: AnvilModuleDescriptor
 
@@ -108,6 +175,7 @@ public sealed class TypeReference {
 
   public class Psi internal constructor(
     public val type: KtTypeReference,
+    override val typeVariance: TypeVariance,
     override val declaringClass: ClassReference.Psi?,
     override val module: AnvilModuleDescriptor,
   ) : TypeReference() {
@@ -135,18 +203,8 @@ public sealed class TypeReference {
         .singleOrNull()
         ?.children
         ?.filterIsInstance<KtTypeProjection>()
-        ?.map { typeProjection ->
-          if (typeProjection.children.isEmpty() && typeProjection.text == "*") {
-            // Resolve `*` star projections to kotlin.Any similar to the descriptor APIs.
-            val anyDescriptor = module.asAnvilModuleDescriptor().resolveFqNameOrNull(anyFqName)!!
-            anyDescriptor.defaultType.toTypeReference(declaringClass, module)
-          } else {
-            typeProjection.children
-              .filterIsInstance<KtTypeReference>()
-              .single()
-              .toTypeReference(declaringClass, module)
-          }
-        } ?: emptyList()
+        ?.map { it.toTypeReference(declaringClass, module) }
+        .orEmpty()
 
       findUnwrappedTypesWithTypeAlias(unwrappedTypes)
     }
@@ -200,7 +258,10 @@ public sealed class TypeReference {
       // When we fail to resolve the generic type here, we're potentially at the end of a chain of
       // generics, so we return the current type instead of null.
       return resolveGenericTypeReference(
-        implementingClass, declaringClass, type.text, module,
+        implementingClass,
+        declaringClass,
+        type.text,
+        module,
       ) ?: this
     }
 
@@ -276,14 +337,11 @@ public sealed class TypeReference {
                         }
                       }
                       .let { typeName ->
-                        val modifierList = typeProjection.modifierList
-                        when {
-                          modifierList == null -> typeName
-                          modifierList.hasModifier(KtTokens.OUT_KEYWORD) ->
-                            WildcardTypeName.producerOf(typeName)
-                          modifierList.hasModifier(KtTokens.IN_KEYWORD) ->
-                            WildcardTypeName.consumerOf(typeName)
-                          else -> typeName
+                        when (typeProjection.projectionKind) {
+                          IN -> WildcardTypeName.consumerOf(typeName)
+                          OUT -> WildcardTypeName.producerOf(typeName)
+                          KtProjectionKind.STAR -> STAR
+                          KtProjectionKind.NONE -> typeName
                         }
                       }
                   }
@@ -293,6 +351,7 @@ public sealed class TypeReference {
               className
             }
           }
+
           is KtFunctionType ->
             LambdaTypeName.get(
               receiver = receiver?.typeReference?.requireTypeName(),
@@ -308,9 +367,11 @@ public sealed class TypeReference {
             ).copy(
               suspending = type.modifierList?.hasSuspendModifier() ?: false,
             )
+
           is KtNullableType -> {
             (innerType ?: fail()).requireTypeName().copy(nullable = true)
           }
+
           else -> fail()
         }
       }
@@ -349,7 +410,7 @@ public sealed class TypeReference {
         if (index >= 0) {
           unwrappedTypes[index]
         } else {
-          typeProjection.type.toTypeReference(declaringClass, module)
+          typeProjection.toTypeReference(declaringClass, module)
         }
       }
     }
@@ -357,6 +418,7 @@ public sealed class TypeReference {
 
   public class Descriptor internal constructor(
     public val type: KotlinType,
+    override val typeVariance: TypeVariance,
     override val declaringClass: ClassReference?,
     override val module: AnvilModuleDescriptor,
   ) : TypeReference() {
@@ -376,7 +438,7 @@ public sealed class TypeReference {
       )
 
     override val unwrappedTypes: List<Descriptor> by lazy(NONE) {
-      type.arguments.map { it.type.toTypeReference(declaringClass, module) }
+      type.arguments.map { it.toTypeReference(declaringClass, module) }
     }
 
     override fun resolveGenericTypeOrNull(implementingClass: ClassReference): TypeReference? {
@@ -418,6 +480,7 @@ public sealed class TypeReference {
             type.lowerBound
           }
         }
+
         is DefinitelyNotNullType -> {
           // This is known to be not null in Java, such as something annotated `@NotNull` or
           // controlled by a JSR305 or jSpecify annotation.
@@ -425,6 +488,7 @@ public sealed class TypeReference {
           // https://github.com/JetBrains/kotlin/blob/9ee0d6b60ac4f0ea0ccc5dd01146bab92fabcdf2/core/descriptors/src/org/jetbrains/kotlin/types/TypeUtils.java#L455-L458
           type.original
         }
+
         else -> type
       }
 
@@ -468,20 +532,70 @@ public sealed class TypeReference {
 }
 
 @ExperimentalAnvilApi
+public fun KtTypeProjection.toTypeReference(
+  declaringClass: ClassReference.Psi?,
+  module: AnvilModuleDescriptor,
+): TypeReference {
+
+  val variance = projectionKind.toTypeVariance()
+
+  return if (variance == TypeVariance.STAR) {
+    module.builtIns.nullableAnyType
+      .toInvariantTypeReference(declaringClass, module)
+  } else {
+
+    val typeRef = requireNotNull(typeReference) {
+      "An expected type reference is missing for the type projection: $text"
+    }
+    Psi(typeRef, variance, declaringClass, module)
+  }
+}
+
+@ExperimentalAnvilApi
 public fun KtTypeReference.toTypeReference(
   declaringClass: ClassReference.Psi?,
   module: AnvilModuleDescriptor,
-): Psi {
-  return Psi(this, declaringClass, module)
-}
+): TypeReference = (parent as? KtTypeProjection)?.toTypeReference(declaringClass, module)
+  ?: toInvariantTypeReference(declaringClass, module)
 
+@ExperimentalAnvilApi
+public fun KtTypeReference.toInvariantTypeReference(
+  declaringClass: ClassReference.Psi?,
+  module: AnvilModuleDescriptor,
+): TypeReference.Psi = Psi(
+  type = this,
+  typeVariance = TypeVariance.NONE,
+  declaringClass = declaringClass,
+  module = module,
+)
+
+@ExperimentalAnvilApi
+public fun TypeProjection.toTypeReference(
+  declaringClass: ClassReference?,
+  module: AnvilModuleDescriptor,
+): TypeReference.Descriptor = Descriptor(
+  type = type,
+  typeVariance = projectionKind.toTypeVariance(),
+  declaringClass = declaringClass,
+  module = module,
+)
+
+@ExperimentalAnvilApi
+public fun KotlinType.toInvariantTypeReference(
+  declaringClass: ClassReference?,
+  module: AnvilModuleDescriptor,
+): Descriptor = Descriptor(this, TypeVariance.NONE, declaringClass, module)
+
+@Deprecated(
+  message = "Use toInvariantTypeReference instead.",
+  replaceWith = ReplaceWith("toInvariantTypeReference(declaringClass, module)"),
+)
 @ExperimentalAnvilApi
 public fun KotlinType.toTypeReference(
   declaringClass: ClassReference?,
   module: AnvilModuleDescriptor,
-): Descriptor {
-  return Descriptor(this, declaringClass, module)
-}
+  typeVariance: TypeVariance,
+): Descriptor = toInvariantTypeReference(declaringClass, module)
 
 @ExperimentalAnvilApi
 @Suppress("FunctionName")
@@ -495,6 +609,7 @@ public fun AnvilCompilationExceptionTypReference(
     message = message,
     cause = cause,
   )
+
   is Descriptor -> {
     AnvilCompilationException(
       classDescriptor = typeReference.type.classDescriptor(),
@@ -535,11 +650,17 @@ private fun resolveGenericTypeReference(
         ?.containingClass()
         ?.toClassReference(implementingClass.module)
         ?.let { resolvedDeclaringClass ->
-          resolvedTypeReference
+
+          val tr = resolvedTypeReference
             .toTypeReference(resolvedDeclaringClass, module)
-            .resolveTypeReference(implementingClass)
+
+          when (tr) {
+            is Descriptor -> tr.resolveGenericKotlinTypeOrNull(implementingClass)
+            is Psi -> tr.resolveTypeReference(implementingClass)
+          }
         }
     }
+
     is ClassReference.Descriptor -> {
       val resolvedTypeReference = implementingClass
         .superTypeOrNull(declaringClass.fqName)
@@ -550,7 +671,7 @@ private fun resolveGenericTypeReference(
       return resolvedTypeReference
         ?.containingClassReference(implementingClass)
         ?.let { resolvedDeclaringClass ->
-          resolvedTypeReference.toTypeReference(
+          resolvedTypeReference.toInvariantTypeReference(
             resolvedDeclaringClass,
             module,
           ).resolveGenericKotlinTypeOrNull(implementingClass)
@@ -692,4 +813,55 @@ public fun TypeReference.allSuperTypeReferences(
     .drop(if (includeSelf) 0 else 1)
     .flatten()
     .distinct()
+}
+
+@ExperimentalAnvilApi
+public fun TypeReference.isAssignableTo(other: TypeReference): Boolean {
+  return when {
+    // !typeVariance.allowsPosition(other.typeVariance) -> false
+    // !other.typeVariance.allowsPosition(typeVariance) -> false
+    isNullable() && !other.isNullable() -> false
+    asTypeName() == other.asTypeName() -> true
+    other.typeVariance != TypeVariance.OUT -> false
+    other.asTypeName() == STAR -> true
+    other.asTypeName().copy(nullable = false) == ANY -> true
+    isGenericType() -> {
+
+      val rawTypeIsAssignable = asClassReferenceOrNull()
+        ?.allSuperTypeClassReferences(true)
+        ?.contains(other.asClassReferenceOrNull())
+        ?: false
+
+      if (!rawTypeIsAssignable) return false
+
+      if (other.unwrappedTypes.size != unwrappedTypes.size) return false
+
+      unwrappedTypes.zip(other.unwrappedTypes)
+        .all { (thisTypeArg, otherTypeArg) ->
+
+          otherTypeArg.typeVariance
+
+          thisTypeArg.isAssignableTo(otherTypeArg)
+        }
+    }
+
+    else -> allSuperTypeReferences().any { it.isAssignableTo(other) }
+  }
+    // TODO <Rick> delete me
+    .also {
+      if (!it) {
+        println(
+          """
+          |%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          |other: ${other.asTypeName()} - ${other.typeVariance} 
+          | this: ${asTypeName()} - $typeVariance
+          |
+          |other allows - ${other.typeVariance.allowsPosition(typeVariance)}
+          | this allows - ${typeVariance.allowsPosition(other.typeVariance)}
+          |%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+          |
+          """.trimMargin(),
+        )
+      }
+    }
 }

@@ -31,6 +31,7 @@ internal fun compile(
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
   mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
+  workingDir: File? = null,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult = compileAnvil(
   sources = sources,
@@ -39,6 +40,7 @@ internal fun compile(
   enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
   trackSourceFiles = trackSourceFiles,
   mode = mode,
+  workingDir = workingDir,
   block = block,
 )
 

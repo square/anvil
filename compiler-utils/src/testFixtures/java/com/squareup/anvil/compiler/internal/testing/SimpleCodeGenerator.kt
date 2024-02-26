@@ -49,6 +49,7 @@ public class SimpleCodeGenerator internal constructor(
     return projectFiles
       .classAndInnerClassReferences(module)
       .mapNotNull { clazz ->
+
         val content = mapper.invoke(this, clazz) ?: return@mapNotNull null
         val (packageName, fileName) = parseSimpleFileContents(content)
 

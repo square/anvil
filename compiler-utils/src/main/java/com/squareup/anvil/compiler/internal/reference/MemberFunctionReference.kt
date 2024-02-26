@@ -85,7 +85,7 @@ public sealed class MemberFunctionReference : AnnotatedReference, FunctionRefere
     }
 
     override val returnType: TypeReference.Psi? by lazy(NONE) {
-      function.typeReference?.toTypeReference(declaringClass, module)
+      function.typeReference?.toInvariantTypeReference(declaringClass, module)
     }
 
     override val parameters: List<ParameterReference.Psi> by lazy(NONE) {
@@ -129,7 +129,7 @@ public sealed class MemberFunctionReference : AnnotatedReference, FunctionRefere
     }
 
     override val returnType: TypeReference.Descriptor? by lazy(NONE) {
-      function.returnType?.toTypeReference(declaringClass, module)
+      function.returnType?.toInvariantTypeReference(declaringClass, module)
     }
 
     override fun isAbstract(): Boolean = function.modality == ABSTRACT

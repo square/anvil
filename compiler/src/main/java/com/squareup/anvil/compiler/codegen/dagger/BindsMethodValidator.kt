@@ -98,19 +98,32 @@ internal class BindsMethodValidator : CheckOnlyCodeGenerator() {
       message = Errors.BINDS_MUST_HAVE_SINGLE_PARAMETER,
       functionReference = function,
     )
+    val returnType = function.returnTypeOrNull()
+      ?: throw AnvilCompilationExceptionFunctionReference(
+        message = Errors.BINDS_MUST_RETURN_A_VALUE,
+        functionReference = function,
+      )
 
-    val returnTypeName = function.returnTypeOrNull()?.asTypeName()
+    val returnTypeName = returnType.asTypeName()
 
-    returnTypeName ?: throw AnvilCompilationExceptionFunctionReference(
-      message = Errors.BINDS_MUST_RETURN_A_VALUE,
-      functionReference = function,
+    val parameterSuperTypes = bindingParameter
+      .allSuperTypeReferences(includeSelf = true)
+      .map { it.asTypeName() }
+      .toList()
+
+    println(
+      """
+|%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% $returnTypeName
+|            isGenericType: ${returnType.isGenericType()}
+|
+| -- resolveGenericTypeOrNull
+| ${returnType.resolveGenericTypeOrNull(bindingParameter.asClassReference())?.asTypeName()}
+|
+| -- unwrapped types
+|${returnType.unwrappedTypes.joinToString("\n") { it.asTypeName().toString() }}
+|%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      """.trimMargin(),
     )
-
-    val parameterSuperTypes =
-      bindingParameter
-        .allSuperTypeReferences(includeSelf = true)
-        .map { it.asTypeName() }
-        .toList()
 
     if (returnTypeName !in parameterSuperTypes) {
       val superTypeNames = parameterSuperTypes.map { it.toString() }

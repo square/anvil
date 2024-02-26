@@ -52,7 +52,7 @@ public sealed class TopLevelFunctionReference : AnnotatedReference, FunctionRefe
     }
 
     override val returnType: TypeReference.Psi? by lazy(NONE) {
-      function.typeReference?.toTypeReference(declaringClass = null, module)
+      function.typeReference?.toInvariantTypeReference(declaringClass = null, module = module)
     }
 
     override val parameters: List<ParameterReference.Psi> by lazy(NONE) {
@@ -90,7 +90,7 @@ public sealed class TopLevelFunctionReference : AnnotatedReference, FunctionRefe
     }
 
     override val returnType: TypeReference.Descriptor? by lazy(NONE) {
-      function.returnType?.toTypeReference(declaringClass = null, module)
+      function.returnType?.toInvariantTypeReference(declaringClass = null, module = module)
     }
 
     override fun visibility(): Visibility {

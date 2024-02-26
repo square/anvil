@@ -159,7 +159,7 @@ public sealed class MemberPropertyReference : AnnotatedReference, PropertyRefere
     }
 
     override val type: TypeReference by lazy(NONE) {
-      property.type.toTypeReference(declaringClass, module)
+      property.type.toInvariantTypeReference(declaringClass, module)
     }
 
     override fun visibility(): Visibility {
