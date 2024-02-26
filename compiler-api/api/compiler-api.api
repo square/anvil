@@ -57,6 +57,14 @@ public final class com/squareup/anvil/compiler/api/CodeGeneratorKt {
 	public static final fun createGeneratedFile (Lcom/squareup/anvil/compiler/api/CodeGenerator;Ljava/io/File;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;)Lcom/squareup/anvil/compiler/api/GeneratedFileWithSources;
 }
 
+public final class com/squareup/anvil/compiler/api/ComponentMergingBackend : java/lang/Enum {
+	public static final field IR Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
+	public static final field KSP Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
+	public static fun values ()[Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
+}
+
 public abstract interface class com/squareup/anvil/compiler/api/FileWithContent : java/lang/Comparable {
 	public abstract fun compareTo (Lcom/squareup/anvil/compiler/api/FileWithContent;)I
 	public abstract fun component1 ()Ljava/io/File;
@@ -99,13 +107,5 @@ public final class com/squareup/anvil/compiler/api/GeneratedFileWithSources : co
 	public final fun getSourceFiles ()Ljava/util/Set;
 	public fun hashCode ()I
 	public fun toString ()Ljava/lang/String;
-}
-
-public final class com/squareup/anvil/compiler/api/ModuleMergingBackend : java/lang/Enum {
-	public static final field IR Lcom/squareup/anvil/compiler/api/ModuleMergingBackend;
-	public static final field KSP Lcom/squareup/anvil/compiler/api/ModuleMergingBackend;
-	public static fun getEntries ()Lkotlin/enums/EnumEntries;
-	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/ModuleMergingBackend;
-	public static fun values ()[Lcom/squareup/anvil/compiler/api/ModuleMergingBackend;
 }
 
