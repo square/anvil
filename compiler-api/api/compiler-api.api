@@ -101,3 +101,11 @@ public final class com/squareup/anvil/compiler/api/GeneratedFileWithSources : co
 	public fun toString ()Ljava/lang/String;
 }
 
+public final class com/squareup/anvil/compiler/api/ModuleMergingBackend : java/lang/Enum {
+	public static final field IR Lcom/squareup/anvil/compiler/api/ModuleMergingBackend;
+	public static final field KSP Lcom/squareup/anvil/compiler/api/ModuleMergingBackend;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/ModuleMergingBackend;
+	public static fun values ()[Lcom/squareup/anvil/compiler/api/ModuleMergingBackend;
+}
+

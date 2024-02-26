@@ -56,6 +56,22 @@ public interface VariantFilter : Named {
    * @see AnvilExtension.trackSourceFiles for more details.
    */
   public var trackSourceFiles: Boolean
+
+  /**
+   * Enables KSP code gen support for this variant.
+   * The default value comes from the [AnvilExtension].
+   *
+   * @see AnvilExtension.useKspBackend for more details.
+   */
+  public var useKspBackend: Boolean
+
+  /**
+   * Enables KSP module merging support for this variant.
+   * The default value comes from the [AnvilExtension].
+   *
+   * @see AnvilExtension.useKspModuleMergingBackend for more details.
+   */
+  public var useKspModuleMergingBackend: Boolean
 }
 
 internal class CommonFilter(
@@ -105,6 +121,20 @@ internal class CommonFilter(
     get() = trackSourceFilesOverride ?: extension.trackSourceFiles.get()
     set(value) {
       trackSourceFilesOverride = value
+    }
+
+  private var useKspBackendOverride: Boolean? = null
+  override var useKspBackend: Boolean
+    get() = useKspBackendOverride ?: extension.useKspBackend.get()
+    set(value) {
+      useKspBackendOverride = value
+    }
+
+  private var useKspModuleMergingBackendOverride: Boolean? = null
+  override var useKspModuleMergingBackend: Boolean
+    get() = useKspModuleMergingBackendOverride ?: extension.useKspModuleMergingBackend.get()
+    set(value) {
+      useKspModuleMergingBackendOverride = value
     }
 }
 

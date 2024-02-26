@@ -41,7 +41,7 @@ internal const val backendName = "backend"
 internal val backendKey =
   CompilerConfigurationKey.create<String>("anvil $backendName")
 
-internal const val moduleMergingBackendName = "moduleMergingBackend"
+internal const val moduleMergingBackendName = "module-merging-backend"
 internal val moduleMergingBackendKey =
   CompilerConfigurationKey.create<String>("anvil $moduleMergingBackendName")
 
