@@ -3,7 +3,6 @@ package com.squareup.anvil.test
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.internal.testing.extends
-import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
 import dagger.Component
 import org.junit.Test
 import javax.inject.Inject
