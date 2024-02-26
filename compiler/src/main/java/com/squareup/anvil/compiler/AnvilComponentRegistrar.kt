@@ -8,6 +8,7 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.CommandLineOptions.Companion.commandLineOptions
 import com.squareup.anvil.compiler.api.AnvilBackend
 import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.api.ModuleMergingBackend
 import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
@@ -44,22 +45,29 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
       RealAnvilModuleDescriptor.Factory()
     }
 
-    if (!commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging) {
-      SyntheticResolveExtension.registerExtension(
-        project,
-        InterfaceMerger(scanner, moduleDescriptorFactory),
-      )
-
-      IrGenerationExtension.registerExtension(
-        project,
-        ModuleMergerIr(scanner, moduleDescriptorFactory),
-      )
+    val mergingEnabled = !commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging
+    if (mergingEnabled) {
+      if (commandLineOptions.moduleMergingBackend == ModuleMergingBackend.IR) {
+        IrGenerationExtension.registerExtension(
+          project,
+          ModuleMergerIr(scanner, moduleDescriptorFactory),
+        )
+      } else {
+        // TODO in dagger-ksp support
+      }
     }
 
     // Everything below this point is only when running in embedded compilation mode. If running in
     // KSP, there's nothing else to do.
     if (commandLineOptions.backend != AnvilBackend.EMBEDDED) {
       return
+    }
+
+    if (mergingEnabled) {
+      SyntheticResolveExtension.registerExtension(
+        project,
+        InterfaceMerger(scanner, moduleDescriptorFactory),
+      )
     }
 
     val sourceGenFolder = configuration.getNotNull(srcGenDirKey)
