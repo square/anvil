@@ -10,7 +10,7 @@ import kotlin.reflect.KClass
  * Should not be used directly.
  *
  * Note the reader of this should also check the single binds function in the annotated module to
- * read the bound type and possible qualifier.
+ * read the bound type, possible qualifier, and possible `@MapKey`/`@IntoSet` annotations.
  *
  * @param originClass the origin class that contributed the binding. This is important to include
  *               because the contributed binding may be an `object` and cannot be specified as a
@@ -23,8 +23,6 @@ import kotlin.reflect.KClass
 @Retention(RUNTIME)
 @Repeatable
 public annotation class InternalBindingMarker(
-  // TODO would be ideal to put this in a type argument instead, but kotlin-metadata doesn't appear
-  //  to store this information for us to read in kotlin-reflect. Does work in IR though.
   val originClass: KClass<*>,
   val isMultibinding: Boolean,
   val priority: String = "",
