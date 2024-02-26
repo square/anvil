@@ -539,6 +539,8 @@ public fun KtTypeProjection.toTypeReference(
 
   val variance = projectionKind.toTypeVariance()
 
+  println("%%%%%%%%%%% $variance")
+
   return if (variance == TypeVariance.STAR) {
     module.builtIns.nullableAnyType
       .toInvariantTypeReference(declaringClass, module)
@@ -555,8 +557,11 @@ public fun KtTypeProjection.toTypeReference(
 public fun KtTypeReference.toTypeReference(
   declaringClass: ClassReference.Psi?,
   module: AnvilModuleDescriptor,
-): TypeReference = (parent as? KtTypeProjection)?.toTypeReference(declaringClass, module)
-  ?: toInvariantTypeReference(declaringClass, module)
+): TypeReference {
+  println("%%%%%%%%%%% parents: ${parents.map { it::class.simpleName}.toList()}")
+  return (parent as? KtTypeProjection)?.toTypeReference(declaringClass, module)
+    ?: toInvariantTypeReference(declaringClass, module)
+}
 
 @ExperimentalAnvilApi
 public fun KtTypeReference.toInvariantTypeReference(
@@ -594,7 +599,6 @@ public fun KotlinType.toInvariantTypeReference(
 public fun KotlinType.toTypeReference(
   declaringClass: ClassReference?,
   module: AnvilModuleDescriptor,
-  typeVariance: TypeVariance,
 ): Descriptor = toInvariantTypeReference(declaringClass, module)
 
 @ExperimentalAnvilApi
@@ -644,7 +648,6 @@ private fun resolveGenericTypeReference(
         ?.getChildOfType<KtTypeArgumentList>()
         ?.arguments
         ?.get(indexOfType)
-        ?.typeReference
 
       return resolvedTypeReference
         ?.containingClass()
@@ -855,6 +858,8 @@ public fun TypeReference.isAssignableTo(other: TypeReference): Boolean {
           |%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
           |other: ${other.asTypeName()} - ${other.typeVariance} 
           | this: ${asTypeName()} - $typeVariance
+          | 
+          |resolved - ${resolveGenericTypeOrNull(other.asClassReference())?.typeVariance}
           |
           |other allows - ${other.typeVariance.allowsPosition(typeVariance)}
           | this allows - ${typeVariance.allowsPosition(other.typeVariance)}

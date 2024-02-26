@@ -43,6 +43,9 @@ class ReferencesTestEnvironment(
   LanguageInjection<File> by LanguageInjection(JavaFileFileInjection()),
   ReferenceAsserts {
 
+  lateinit var referenceMap: Map<String, TypeReference>
+    private set
+
   operator fun <E : FunctionReference> List<E>.getValue(
     thisRef: Any?,
     property: KProperty<*>,
@@ -57,7 +60,7 @@ class ReferencesTestEnvironment(
     @Language("kotlin") content: String,
     @Language("kotlin") vararg additionalContent: String,
     allWarningsAsErrors: Boolean = false,
-    testAction: CodeGenerator.(referenceMap: Map<String, TypeReference>) -> Unit,
+    testAction: CodeGenerator.() -> Unit,
   ) {
 
     compile(
@@ -92,12 +95,12 @@ class ReferencesTestEnvironment(
                     "Existing functions: ${refsContainer.functions.map { it.name }}"
                 }
 
-              val referenceMap = when (referenceType) {
+              referenceMap = when (referenceType) {
                 ReferenceType.Psi -> refsFun.parameters.associate { it.name to it.type() }
                 ReferenceType.Descriptor -> refsFun.parameters.associate { it.name to it.type() }
               }
 
-              testAction(referenceMap)
+              testAction()
             }
 
             return emptyList()

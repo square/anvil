@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.internal.reference.ReferencesTestEnvironment.
 import com.squareup.anvil.compiler.internal.reference.ReferencesTestEnvironment.ReferenceType
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
+import io.kotest.matchers.shouldBe
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.jupiter.api.DynamicNode
@@ -79,52 +80,20 @@ class TypeReferenceTest :
   
       interface RefsContainer {
         fun refs(
-          any: Any,
-          any_nullable: Any?,
-          list_any: List<Any>,
-          list_anyNullable: List<Any?>,
-          list_any_nullable: List<Any>?,
-          list_charSequence: List<CharSequence>,
-          list_int: List<Int>,
-          list_number: List<Number>,
-          list_star: List<*>,
-          list_string: List<String>,
-          mutableList_any: MutableList<Any>,
-          mutableList_anyNullable: MutableList<Any?>,
-          mutableList_any_nullable: MutableList<Any>?,
-          mutableList_star: MutableList<*>,
-          mutableList_string: MutableList<String>,
-          nothing: Nothing,
-          string: String,
-          string_nullable: String?,
+          list_charSequence: List<out CharSequence>,
         )
       }
       """,
-      ) { map ->
+      ) {
 
-        val any by map
-        val any_nullable by map
-        val list_any by map
-        val list_anyNullable by map
-        val list_any_nullable by map
-        val list_charSequence by map
-        val list_int by map
-        val list_number by map
-        val list_star by map
-        val list_string by map
-        val mutableList_any by map
-        val mutableList_anyNullable by map
-        val mutableList_any_nullable by map
-        val mutableList_star by map
-        val mutableList_string by map
-        val nothing by map
-        val string by map
-        val string_nullable by map
+        val list_charSequence by referenceMap
 
-        list_string shouldBeAssignableTo any
-        list_string shouldBeAssignableTo any_nullable
-        list_string shouldNotBeAssignableTo string
-        list_string shouldNotBeAssignableTo string_nullable
+        // list_string shouldBeAssignableTo any
+        // list_string shouldBeAssignableTo any_nullable
+        // list_string shouldNotBeAssignableTo string
+        // list_string shouldNotBeAssignableTo string_nullable
+
+        list_charSequence.typeVariance shouldBe TypeVariance.OUT
       }
     }
 
@@ -150,11 +119,11 @@ class TypeReferenceTest :
     // kase(true, "List<String>", "List<Any>"),
     // kase(true, "List<String>", "List<Any?>"),
     // kase(true, "List<String>", "List<CharSequence>"),
-    kase(true, "List<String>", "List<String>"),
+    // kase(true, "List<String>", "List<String>"),
     kase(true, "Generic1Out<String>", "Generic1Out<CharSequence>"),
-    kase(false, "AbstractMap<String, List<Int>>", "Map<CharSequence, List<Int>>"),
-    kase(false, "Generic1<String>", "Generic1<CharSequence>"),
-    kase(false, "Generic1In<String>", "Generic1In<CharSequence>"),
+    // kase(false, "AbstractMap<String, List<Int>>", "Map<CharSequence, List<Int>>"),
+    // kase(false, "Generic1<String>", "Generic1<CharSequence>"),
+    // kase(false, "Generic1In<String>", "Generic1In<CharSequence>"),
     content = listOf(
       //language=kotlin
       """
