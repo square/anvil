@@ -558,7 +558,7 @@ public fun KtTypeReference.toTypeReference(
   declaringClass: ClassReference.Psi?,
   module: AnvilModuleDescriptor,
 ): TypeReference {
-  println("%%%%%%%%%%% parents: ${parents.map { it::class.simpleName}.toList()}")
+
   return (parent as? KtTypeProjection)?.toTypeReference(declaringClass, module)
     ?: toInvariantTypeReference(declaringClass, module)
 }

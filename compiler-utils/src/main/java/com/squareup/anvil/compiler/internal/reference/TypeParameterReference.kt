@@ -4,6 +4,7 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.internal.fqNameOrNull
 import com.squareup.anvil.compiler.internal.reference.TypeParameterReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.TypeParameterReference.Psi
+import com.squareup.anvil.compiler.internal.reference.TypeVariance.Companion.toTypeVariance
 import com.squareup.kotlinpoet.TypeVariableName
 import org.jetbrains.kotlin.descriptors.TypeParameterDescriptor
 import kotlin.LazyThreadSafetyMode.NONE
@@ -14,6 +15,7 @@ public sealed class TypeParameterReference {
   public abstract val name: String
   public abstract val upperBounds: List<TypeReference>
   public abstract val declaringClass: ClassReference
+  public abstract val variance: TypeVariance
 
   public val typeVariableName: TypeVariableName by lazy(NONE) {
     TypeVariableName(name, upperBounds.map { it.asTypeName() })
@@ -23,12 +25,14 @@ public sealed class TypeParameterReference {
     override val name: String,
     override val upperBounds: List<TypeReference>,
     override val declaringClass: ClassReference.Psi,
+    override val variance: TypeVariance,
   ) : TypeParameterReference()
 
   public class Descriptor internal constructor(
     override val name: String,
     override val upperBounds: List<TypeReference.Descriptor>,
     override val declaringClass: ClassReference.Descriptor,
+    override val variance: TypeVariance,
   ) : TypeParameterReference()
 
   override fun toString(): String {
@@ -42,15 +46,21 @@ public fun ClassReference.Psi.getTypeParameterReferences(): List<Psi> {
   // It's also technically possible to have one constraint in the type parameter spot, like this:
   // class MyClass<T : Any> where T : Set<*>, T : MutableCollection<*>
   // Merge both groups of type parameters in order to get the full list of bounds.
-  val boundsByVariableName = clazz.typeParameterList
+
+  val boundsByVariableName = mutableMapOf<String, MutableList<TypeReference>>()
+  val varianceByVariableName = mutableMapOf<String, TypeVariance>()
+
+  clazz.typeParameterList
     ?.parameters
     ?.filter { it.fqNameOrNull(module) == null }
-    ?.associateTo(mutableMapOf()) { parameter ->
+    ?.forEach { parameter ->
       val variableName = parameter.nameAsSafeName.asString()
+
       val extendsBound = parameter.extendsBound?.toTypeReference(this, module)
 
-      variableName to listOfNotNull(extendsBound).toMutableList()
-    } ?: mutableMapOf()
+      boundsByVariableName[variableName] = listOfNotNull(extendsBound).toMutableList()
+      varianceByVariableName[variableName] = parameter.variance.toTypeVariance()
+    }
 
   clazz.typeConstraintList
     ?.constraints
@@ -68,7 +78,12 @@ public fun ClassReference.Psi.getTypeParameterReferences(): List<Psi> {
     }
 
   return boundsByVariableName.map { (name, types) ->
-    Psi(name, types, this)
+    Psi(
+      name = name,
+      upperBounds = types,
+      declaringClass = this,
+      variance = varianceByVariableName.getValue(name),
+    )
   }
 }
 
@@ -76,11 +91,13 @@ public fun ClassReference.Psi.getTypeParameterReferences(): List<Psi> {
 public fun TypeParameterDescriptor.toTypeParameterReference(
   declaringClass: ClassReference.Descriptor,
 ): Descriptor {
+  val typeVariance = variance.toTypeVariance()
   return Descriptor(
     name = name.asString(),
     upperBounds = upperBounds.map {
-      it.toInvariantTypeReference(declaringClass, declaringClass.module)
+      TypeReference.Descriptor(it, typeVariance, declaringClass, declaringClass.module)
     },
     declaringClass = declaringClass,
+    variance = typeVariance,
   )
 }
