@@ -73,7 +73,7 @@ internal sealed interface Contribution {
           InternalBindingMarker::class.asClassName(),
         )
           .addMember("originClass = %T::class", contribution.origin)
-          .addMember("isMultibinding = ${this@Contribution is MultiBinding}")
+          .addMember("isMultibinding = ${contribution is MultiBinding}")
           .apply {
             contribution.qualifier?.key?.let { qualifierKey ->
               addMember("qualifierKey = %S", qualifierKey)
