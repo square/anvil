@@ -462,6 +462,7 @@ public fun AnvilCompilationExceptionClassReference(
     message = message,
     cause = cause,
   )
+
   is Descriptor -> AnvilCompilationException(
     classDescriptor = classReference.clazz,
     message = message,
