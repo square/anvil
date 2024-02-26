@@ -1,7 +1,7 @@
 package com.squareup.anvil.compiler
 
 import com.squareup.anvil.compiler.api.AnvilBackend
-import com.squareup.anvil.compiler.api.ModuleMergingBackend
+import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import java.util.Locale
 
@@ -11,7 +11,7 @@ public class CommandLineOptions private constructor(
   public val disableComponentMerging: Boolean,
   public val trackSourceFiles: Boolean,
   public val backend: AnvilBackend,
-  public val moduleMergingBackend: ModuleMergingBackend,
+  public val componentMergingBackend: ComponentMergingBackend,
 ) {
   public companion object {
     public val CompilerConfiguration.commandLineOptions: CommandLineOptions
@@ -21,7 +21,7 @@ public class CommandLineOptions private constructor(
         disableComponentMerging = get(disableComponentMergingKey, false),
         trackSourceFiles = get(trackSourceFilesKey, false),
         backend = parseBackend(),
-        moduleMergingBackend = parseModuleMergingBackend(),
+        componentMergingBackend = parseComponentMergingBackend(),
       )
 
     private fun CompilerConfiguration.parseBackend(): AnvilBackend {
@@ -32,11 +32,11 @@ public class CommandLineOptions private constructor(
         ?: error("Unknown backend option: '$config'")
     }
 
-    private fun CompilerConfiguration.parseModuleMergingBackend(): ModuleMergingBackend {
-      val config = get(moduleMergingBackendKey, ModuleMergingBackend.IR.name)
+    private fun CompilerConfiguration.parseComponentMergingBackend(): ComponentMergingBackend {
+      val config = get(componentMergingBackendKey, ComponentMergingBackend.IR.name)
       return config
         .uppercase(Locale.US)
-        .let { value -> ModuleMergingBackend.entries.find { it.name == value } }
+        .let { value -> ComponentMergingBackend.entries.find { it.name == value } }
         ?: error("Unknown backend option: '$config'")
     }
   }

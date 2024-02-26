@@ -69,9 +69,9 @@ public interface VariantFilter : Named {
    * Enables KSP module merging support for this variant.
    * The default value comes from the [AnvilExtension].
    *
-   * @see AnvilExtension.useKspModuleMergingBackend for more details.
+   * @see AnvilExtension.useKspComponentMergingBackend for more details.
    */
-  public var useKspModuleMergingBackend: Boolean
+  public var useKspComponentMergingBackend: Boolean
 }
 
 internal class CommonFilter(
@@ -130,11 +130,11 @@ internal class CommonFilter(
       useKspBackendOverride = value
     }
 
-  private var useKspModuleMergingBackendOverride: Boolean? = null
-  override var useKspModuleMergingBackend: Boolean
-    get() = useKspModuleMergingBackendOverride ?: extension.useKspModuleMergingBackend.get()
+  private var useKspComponentMergingBackendOverride: Boolean? = null
+  override var useKspComponentMergingBackend: Boolean
+    get() = useKspComponentMergingBackendOverride ?: extension.useKspComponentMergingBackend.get()
     set(value) {
-      useKspModuleMergingBackendOverride = value
+      useKspComponentMergingBackendOverride = value
     }
 }
 

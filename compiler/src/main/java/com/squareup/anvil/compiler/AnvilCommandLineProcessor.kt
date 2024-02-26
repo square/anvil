@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.api.AnvilBackend
-import com.squareup.anvil.compiler.api.ModuleMergingBackend
+import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
@@ -41,9 +41,9 @@ internal const val backendName = "backend"
 internal val backendKey =
   CompilerConfigurationKey.create<String>("anvil $backendName")
 
-internal const val moduleMergingBackendName = "module-merging-backend"
-internal val moduleMergingBackendKey =
-  CompilerConfigurationKey.create<String>("anvil $moduleMergingBackendName")
+internal const val componentMergingBackendName = "component-merging-backend"
+internal val componentMergingBackendKey =
+  CompilerConfigurationKey.create<String>("anvil $componentMergingBackendName")
 
 /**
  * Parses arguments from the Gradle plugin for the compiler plugin.
@@ -115,8 +115,8 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       allowMultipleOccurrences = false,
     ),
     CliOption(
-      optionName = moduleMergingBackendName,
-      valueDescription = ModuleMergingBackend.entries.joinToString("|", "<", ">"),
+      optionName = componentMergingBackendName,
+      valueDescription = ComponentMergingBackend.entries.joinToString("|", "<", ">"),
       description = "Controls whether module merging is running as an IR plugin or as KSP.",
       required = false,
       allowMultipleOccurrences = false,

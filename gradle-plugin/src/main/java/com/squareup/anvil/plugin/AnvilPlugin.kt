@@ -231,8 +231,8 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
           lazy { if (variant.variantFilter.useKspBackend) "KSP" else "EMBEDDED" },
         ),
         SubpluginOption(
-          key = "module-merging-backend",
-          lazy { if (variant.variantFilter.useKspModuleMergingBackend) "KSP" else "IR" },
+          key = "component-merging-backend",
+          lazy { if (variant.variantFilter.useKspComponentMergingBackend) "KSP" else "IR" },
         ),
       )
     }
