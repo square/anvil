@@ -8,13 +8,9 @@ interface AnvilFilePathExtensions {
   val File.anvilMainGenerated: File
     get() = resolve("build/anvil/main/generated")
 
-  /** resolves `anvil/hint/binding` */
-  val File.anvilHintBinding: File
-    get() = resolve("anvil/hint/binding")
-
-  /** resolves `anvil/module` */
-  val File.anvilModule: File
-    get() = resolve("anvil/module")
+  /** resolves `anvil/hint/merge` */
+  val File.anvilHintMerge: File
+    get() = resolve("anvil/hint/merge")
 
   /** resolves `com/squareup/test/InjectClass_Factory.kt` */
   val File.injectClassFactory: File

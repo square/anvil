@@ -7,6 +7,8 @@ import com.rickbusarow.kase.kases
 import com.rickbusarow.kase.stdlib.createSafely
 import com.rickbusarow.kase.stdlib.div
 import com.rickbusarow.kase.wrap
+import dagger.Component
+import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.file.shouldExist
 import io.kotest.matchers.file.shouldNotExist
 import io.kotest.matchers.shouldBe
@@ -14,6 +16,7 @@ import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.DynamicNode
 import org.junit.jupiter.api.TestFactory
 import java.io.File
+import java.net.URLClassLoader
 import java.util.stream.Stream
 
 class IncrementalTest : BaseGradleTest() {
@@ -287,24 +290,32 @@ class IncrementalTest : BaseGradleTest() {
 
     val otherClassFactory = rootAnvilMainGenerated
       .resolve("com/squareup/test/OtherClass_Factory.kt")
-    val otherClassHint = rootAnvilMainGenerated
-      .anvilHintBinding
-      .resolve("com/squareup/test/OtherClass.kt")
+    val otherClassAHint = rootAnvilMainGenerated
+      .anvilHintMerge
+      .resolve("com/squareup/test/OtherClassAsComSquareupTestTypeAToKotlinAnyBindingModule.kt")
+    val otherClassBHint = rootAnvilMainGenerated
+      .anvilHintMerge
+      .resolve("com/squareup/test/OtherClassAsComSquareupTestTypeBToKotlinAnyBindingModule.kt")
 
-    val componentModuleFile = rootAnvilMainGenerated
-      .anvilModule
-      .resolve("com/squareup/test/AppComponent.kt")
+    val bindingModule = rootAnvilMainGenerated
+      .resolve("com/squareup/test/OtherClassBindingModule.kt")
 
     rootAnvilMainGenerated.injectClassFactory.shouldExist()
     otherClassFactory.shouldExist()
-    otherClassHint.shouldExist()
+    otherClassAHint.shouldExist()
+    otherClassBHint.shouldNotExist()
 
-    componentModuleFile shouldExistWithTextContaining """
+    bindingModule shouldExistWithTextContaining """
         @Module
-        @ContributesTo(Any::class)
-        public abstract class AppComponentAnvilModule {
+        @ContributesTo(scope = Any::class)
+        @InternalBindingMarker(
+          originClass = OtherClass::class,
+          isMultibinding = false,
+          priority = "NORMAL",
+        )
+        public interface OtherClassAsComSquareupTestTypeAToKotlinAnyBindingModule {
           @Binds
-          public abstract fun bindTypeA(otherClass: OtherClass): TypeA
+          public fun bindTypeA(real: OtherClass): TypeA
         }
     """.trimIndent()
 
@@ -340,14 +351,20 @@ class IncrementalTest : BaseGradleTest() {
 
     rootAnvilMainGenerated.injectClassFactory.shouldExist()
     otherClassFactory.shouldExist()
-    otherClassHint.shouldExist()
+    otherClassAHint.shouldNotExist()
+    otherClassBHint.shouldExist()
 
-    componentModuleFile shouldExistWithTextContaining """
+    bindingModule shouldExistWithTextContaining """
         @Module
-        @ContributesTo(Any::class)
-        public abstract class AppComponentAnvilModule {
+        @ContributesTo(scope = Any::class)
+        @InternalBindingMarker(
+          originClass = OtherClass::class,
+          isMultibinding = false,
+          priority = "NORMAL",
+        )
+        public interface OtherClassAsComSquareupTestTypeBToKotlinAnyBindingModule {
           @Binds
-          public abstract fun bindTypeB(otherClass: OtherClass): TypeB
+          public fun bindTypeB(real: OtherClass): TypeB
         }
     """.trimIndent()
   }
@@ -447,19 +464,48 @@ class IncrementalTest : BaseGradleTest() {
 
       shouldSucceed(":app:compileJava")
 
-      val componentModuleFile = rootProject.path.resolve("app")
-        .anvilMainGenerated
-        .anvilModule
-        .resolve("com/squareup/test/app/AppComponent.kt")
+      fun mergedModules(): Set<String> {
+        val compiledAppClasses = rootProject.path.resolve("app")
+          .resolve("build/classes")
+        val compiledLibClasses = rootProject.path.resolve("lib")
+          .resolve("build/classes")
+        val classLoader =
+          URLClassLoader(
+            listOf(compiledAppClasses, compiledLibClasses).flatMap {
+              it.walkTopDown()
+                .filter { it.isDirectory }
+                .map { it.toURI().toURL() }
+            }
+              .toList()
+              .toTypedArray(),
+            this::class.java.classLoader,
+          )
+        val appComponent = classLoader.loadClass("com.squareup.test.app.AppComponent")
+        val componentAnnotation = appComponent.getAnnotation(Component::class.java)
+        return componentAnnotation.modules.map { it.java.canonicalName }.toSet()
+      }
 
-      componentModuleFile shouldExistWithTextContaining """
+      val bindingModule = rootProject.path.resolve("lib")
+        .anvilMainGenerated
+        .resolve("com/squareup/test/lib/OtherClassBindingModule.kt")
+
+      bindingModule shouldExistWithTextContaining """
         @Module
-        @ContributesTo(Any::class)
-        public abstract class AppComponentAnvilModule {
+        @ContributesTo(scope = Any::class)
+        @InternalBindingMarker(
+          originClass = OtherClass::class,
+          isMultibinding = false,
+          priority = "NORMAL",
+        )
+        public interface OtherClassAsComSquareupTestLibTypeAToKotlinAnyBindingModule {
           @Binds
-          public abstract fun bindTypeA(otherClass: OtherClass): TypeA
+          public fun bindTypeA(real: OtherClass): TypeA
         }
       """.trimIndent()
+
+      mergedModules() shouldContainExactly setOf(
+        "com.squareup.test.lib.OtherClassAsComSquareupTestLibTypeAToKotlinAnyBindingModule",
+      )
 
       otherClassPath.writeText(otherClassContent("TypeB"))
 
@@ -467,14 +513,24 @@ class IncrementalTest : BaseGradleTest() {
         task(":app:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }
 
-      componentModuleFile shouldExistWithTextContaining """
+      bindingModule shouldExistWithTextContaining """
         @Module
-        @ContributesTo(Any::class)
-        public abstract class AppComponentAnvilModule {
+        @ContributesTo(scope = Any::class)
+        @InternalBindingMarker(
+          originClass = OtherClass::class,
+          isMultibinding = false,
+          priority = "NORMAL",
+        )
+        public interface OtherClassAsComSquareupTestLibTypeBToKotlinAnyBindingModule {
           @Binds
-          public abstract fun bindTypeB(otherClass: OtherClass): TypeB
+          public fun bindTypeB(real: OtherClass): TypeB
         }
       """.trimIndent()
+
+      // TODO this doesn't work, which... suggests to me that IC might be broken here?
+      mergedModules() shouldContainExactly setOf(
+        "com.squareup.test.lib.OtherClassAsComSquareupTestLibTypeBToKotlinAnyBindingModule",
+      )
     }
 
   @TestFactory
