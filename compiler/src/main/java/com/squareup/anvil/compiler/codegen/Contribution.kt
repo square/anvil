@@ -35,7 +35,8 @@ internal sealed interface Contribution {
   val qualifier: QualifierData?
   val bindingModuleNameSuffix: String
 
-  private fun generateBindingModule(): TypeSpec {
+  // Can't be private until we move off jvmTarget 8
+  fun generateBindingModule(): TypeSpec {
     val contribution = this
     // Combination name of origin, scope, and boundType
     val suffix = "As" +
