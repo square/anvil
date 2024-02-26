@@ -234,9 +234,9 @@ internal fun Class<*>.mergedModules(mergeAnnotation: KClass<out Annotation>): Ar
     else -> error("Unknown merge annotation class: $mergeAnnotation")
   }
   return when (val annotation = getAnnotation(mergedAnnotation.java)) {
-    is Component -> return annotation.modules
-    is Subcomponent -> return annotation.modules
-    is Module -> return annotation.includes
+    is Component -> annotation.modules
+    is Subcomponent -> annotation.modules
+    is Module -> annotation.includes
     else -> error("Unknown merge annotation class: $mergeAnnotation")
   }
 }
