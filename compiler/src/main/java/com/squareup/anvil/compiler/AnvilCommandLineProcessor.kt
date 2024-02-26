@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.api.AnvilBackend
+import com.squareup.anvil.compiler.api.ModuleMergingBackend
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
@@ -39,6 +40,10 @@ internal val trackSourceFilesKey =
 internal const val backendName = "backend"
 internal val backendKey =
   CompilerConfigurationKey.create<String>("anvil $backendName")
+
+internal const val moduleMergingBackendName = "moduleMergingBackend"
+internal val moduleMergingBackendKey =
+  CompilerConfigurationKey.create<String>("anvil $moduleMergingBackendName")
 
 /**
  * Parses arguments from the Gradle plugin for the compiler plugin.
@@ -106,6 +111,13 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       optionName = backendName,
       valueDescription = AnvilBackend.entries.joinToString("|", "<", ">"),
       description = "Controls whether Anvil is running as an embedded plugin or as KSP.",
+      required = false,
+      allowMultipleOccurrences = false,
+    ),
+    CliOption(
+      optionName = moduleMergingBackendName,
+      valueDescription = ModuleMergingBackend.entries.joinToString("|", "<", ">"),
+      description = "Controls whether module merging is running as an IR plugin or as KSP.",
       required = false,
       allowMultipleOccurrences = false,
     ),
