@@ -45,7 +45,7 @@ class GeneratedCodeTest {
       ).kotlin
 
     val annotation = AppComponent::class.java.getAnnotation(Component::class.java)!!
-    assertThat(annotation.modules.withoutAnvilModules())
+    assertThat(annotation.modules.toList())
       .containsExactly(contributedModule, contributedBindingModule)
   }
 
