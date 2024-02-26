@@ -583,20 +583,23 @@ class BindingModuleCodegenTest(
     ) {
       val methods = componentInterface.mergedModules(annotationClass).flatMapArray {
         it.java.declaredMethods
-      }.sortedWith(
-        compareBy<Method> { it.name }
-          .thenBy { it.returnType.canonicalName }
-          .thenBy { it.parameters.firstOrNull()?.type?.canonicalName.orEmpty() },
-      )
+      }
       assertThat(methods).hasSize(2)
 
-      with(methods[0]) {
+      // Order of loading classes in the jvm here isn't super guaranteed across local and CI, so
+      // we just look up the methods directly
+      val parentInterface1Method = methods.find { it.returnType == parentInterface1 }
+        ?: error("No method found for $parentInterface1")
+      val parentInterface2Method = methods.find { it.returnType == parentInterface2 }
+        ?: error("No method found for $parentInterface2")
+
+      with(parentInterface1Method) {
         assertThat(returnType).isEqualTo(parentInterface1)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
-      with(methods[1]) {
+      with(parentInterface2Method) {
         assertThat(returnType).isEqualTo(parentInterface2)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
