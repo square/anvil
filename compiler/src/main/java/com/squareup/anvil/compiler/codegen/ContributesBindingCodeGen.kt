@@ -10,13 +10,13 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
-import com.squareup.anvil.compiler.BINDING_MODULE_SUFFIX
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.checkNotGeneric
+import com.squareup.anvil.compiler.codegen.Contribution.Companion.generateFileSpec
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.checkClassExtendsBoundType
@@ -32,33 +32,15 @@ import com.squareup.anvil.compiler.codegen.ksp.replaces
 import com.squareup.anvil.compiler.codegen.ksp.resolveBoundType
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesBindingFqName
-import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.reference.generateClassNameString
-import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.qualifierKey
-import com.squareup.kotlinpoet.AnnotationSpec
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.CodeBlock
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.KModifier
-import com.squareup.kotlinpoet.TypeSpec
-import com.squareup.kotlinpoet.asClassName
-import com.squareup.kotlinpoet.joinToCode
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
-import dagger.Binds
-import dagger.Module
-import dagger.Provides
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
-import java.util.Comparator
 
 /**
  * Generates binding modules for every [ContributesBinding]-annotated class. If a class has repeated
@@ -71,112 +53,6 @@ import java.util.Comparator
 internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
 
   override fun isApplicable(context: AnvilContext) = !context.generateFactoriesOnly
-
-  private data class Contribution(
-    val origin: ClassName,
-    val scope: ClassName,
-    val isObject: Boolean,
-    val boundType: ClassName,
-    val priority: ContributesBinding.Priority,
-    val replaces: List<ClassName>,
-    val qualifier: QualifierData?,
-  ) {
-    data class QualifierData(
-      val annotationSpec: AnnotationSpec,
-      val key: String,
-    )
-    companion object {
-      val COMPARATOR: Comparator<Contribution> = compareBy<Contribution> { it.scope.canonicalName }
-        .thenComparing(compareBy { it.boundType.canonicalName })
-        .thenComparing(compareBy { it.priority })
-        .thenComparing(compareBy { it.replaces.joinToString(transform = ClassName::canonicalName) })
-    }
-  }
-
-  private fun generate(
-    originClass: ClassName,
-    contributions: Iterable<Contribution>,
-  ): FileSpec {
-    val fileName = originClass.generateClassName(suffix = "BindingModule").simpleName
-    val generatedPackage = originClass.packageName.safePackageString(dotPrefix = true)
-
-    val specs = contributions.map { contribution ->
-      // Combination name of origin, scope, and boundType
-      val suffix = "As" +
-        contribution.boundType.generateClassNameString().capitalize() +
-        "To" +
-        contribution.scope.generateClassNameString().capitalize() +
-        BINDING_MODULE_SUFFIX
-
-      val contributionName =
-        originClass.generateClassName(suffix = suffix).simpleName
-
-      val builder = if (contribution.isObject) {
-        TypeSpec.objectBuilder(contributionName)
-      } else {
-        TypeSpec.interfaceBuilder(contributionName)
-      }
-
-      builder.apply {
-        addAnnotation(Module::class)
-        addAnnotation(
-          AnnotationSpec.builder(ContributesTo::class)
-            .addMember("scope = %T::class", contribution.scope)
-            .apply {
-              if (contribution.replaces.isNotEmpty()) {
-                addMember(
-                  "replaces = %L",
-                  contribution.replaces.map { CodeBlock.of("%T::class", it) }
-                    .joinToCode(prefix = "[", suffix = "]"),
-                )
-              }
-            }
-            .build(),
-        )
-        addAnnotation(
-          AnnotationSpec.builder(
-            InternalBindingMarker::class.asClassName(),
-          )
-            .addMember("originClass = %T::class", contribution.origin)
-            .addMember("isMultibinding = false")
-            .apply {
-              contribution.qualifier?.key?.let { qualifierKey ->
-                addMember("qualifierKey = %S", qualifierKey)
-              }
-            }
-            .addMember(
-              "priority = %S",
-              contribution.priority.name,
-            )
-            .build(),
-        )
-
-        val nameSuffix = contribution.boundType.simpleName.capitalize()
-        val functionBuilder = if (contribution.isObject) {
-          FunSpec.builder("provide$nameSuffix")
-            .addAnnotation(Provides::class)
-            .addStatement("return %T", originClass)
-        } else {
-          FunSpec.builder("bind$nameSuffix")
-            .addModifiers(KModifier.ABSTRACT)
-            .addAnnotation(Binds::class)
-            .addParameter("real", originClass)
-        }
-
-        addFunction(
-          functionBuilder.apply {
-            contribution.qualifier?.let { addAnnotation(it.annotationSpec) }
-          }
-            .returns(contribution.boundType)
-            .build(),
-        )
-      }
-        .build()
-    }
-    return FileSpec.createAnvilSpec(generatedPackage, fileName) {
-      addTypes(specs.sortedBy { it.name })
-    }
-  }
 
   internal class KspGenerator(
     override val env: SymbolProcessorEnvironment,
@@ -208,8 +84,6 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
           it.checkClassExtendsBoundType(contributesBindingFqName, resolver)
         }
         .forEach { clazz ->
-          val className = clazz.toClassName()
-
           val contributions = clazz.getKSAnnotationsByType(ContributesBinding::class)
             .toList()
             .also { it.checkNoDuplicateScopeAndBoundType(clazz) }
@@ -229,7 +103,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                   Contribution.QualifierData(annotationSpec, key)
                 }
               }
-              Contribution(
+              Contribution.Binding(
                 clazz.toClassName(),
                 scope,
                 clazz.classKind == ClassKind.OBJECT,
@@ -239,11 +113,8 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                 qualifierData,
               )
             }
-            .distinct()
-            // Give it a stable sort.
-            .sortedWith(Contribution.COMPARATOR)
 
-          val spec = generate(className, contributions)
+          val spec = contributions.generateFileSpec()
 
           spec.writeTo(
             env.codeGenerator,
@@ -283,8 +154,6 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
           clazz.checkClassExtendsBoundType(contributesBindingFqName)
         }
         .map { clazz ->
-          val className = clazz.asClassName()
-
           val contributions = clazz.annotations
             .find(contributesBindingFqName)
             .also { it.checkNoDuplicateScopeAndBoundType() }
@@ -306,7 +175,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                   Contribution.QualifierData(annotationSpec, key)
                 }
               }
-              Contribution(
+              Contribution.Binding(
                 clazz.asClassName(),
                 scope,
                 clazz.isObject(),
@@ -316,11 +185,8 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                 qualifierData,
               )
             }
-            .distinct()
-            // Give it a stable sort.
-            .sortedWith(Contribution.COMPARATOR)
 
-          val spec = generate(className, contributions)
+          val spec = contributions.generateFileSpec()
 
           createGeneratedFile(
             codeGenDir = codeGenDir,
