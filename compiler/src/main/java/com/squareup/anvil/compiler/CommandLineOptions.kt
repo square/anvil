@@ -25,7 +25,7 @@ public class CommandLineOptions private constructor(
       )
 
     private fun CompilerConfiguration.parseBackend(): AnvilBackend {
-      val config = get(backendKey, AnvilBackend.EMBEDDED.name)
+      val config = get(analysisBackendKey, AnvilBackend.EMBEDDED.name)
       return config
         .uppercase(Locale.US)
         .let { value -> AnvilBackend.entries.find { it.name == value } }
@@ -33,7 +33,7 @@ public class CommandLineOptions private constructor(
     }
 
     private fun CompilerConfiguration.parseComponentMergingBackend(): ComponentMergingBackend {
-      val config = get(componentMergingBackendKey, ComponentMergingBackend.IR.name)
+      val config = get(mergingBackendKey, ComponentMergingBackend.IR.name)
       return config
         .uppercase(Locale.US)
         .let { value -> ComponentMergingBackend.entries.find { it.name == value } }
