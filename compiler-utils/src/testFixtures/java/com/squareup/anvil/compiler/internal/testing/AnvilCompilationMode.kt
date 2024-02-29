@@ -6,7 +6,7 @@ import com.squareup.anvil.compiler.api.AnalysisBackend.EMBEDDED
 import com.squareup.anvil.compiler.api.AnalysisBackend.KSP
 import com.squareup.anvil.compiler.api.CodeGenerator
 
-public sealed class AnvilCompilationMode(public val backend: AnalysisBackend) {
+public sealed class AnvilCompilationMode(public val analysisBackend: AnalysisBackend) {
   public data class Embedded(
     val codeGenerators: List<CodeGenerator> = emptyList(),
   ) : AnvilCompilationMode(EMBEDDED)
