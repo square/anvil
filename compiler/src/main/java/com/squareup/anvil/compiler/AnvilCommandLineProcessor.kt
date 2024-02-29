@@ -1,7 +1,7 @@
 package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
-import com.squareup.anvil.compiler.api.AnvilBackend
+import com.squareup.anvil.compiler.api.AnalysisBackend
 import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
@@ -109,7 +109,7 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
     ),
     CliOption(
       optionName = analysisBackendName,
-      valueDescription = AnvilBackend.entries.joinToString("|", "<", ">"),
+      valueDescription = AnalysisBackend.entries.joinToString("|", "<", ">"),
       description = "Controls whether Anvil analysis is running as an embedded plugin or as KSP.",
       required = false,
       allowMultipleOccurrences = false,

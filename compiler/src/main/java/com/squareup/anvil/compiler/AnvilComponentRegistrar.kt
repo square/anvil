@@ -6,7 +6,7 @@ package com.squareup.anvil.compiler
 import com.google.auto.service.AutoService
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.CommandLineOptions.Companion.commandLineOptions
-import com.squareup.anvil.compiler.api.AnvilBackend
+import com.squareup.anvil.compiler.api.AnalysisBackend
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
@@ -59,7 +59,7 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
 
     // Everything below this point is only when running in embedded compilation mode. If running in
     // KSP, there's nothing else to do.
-    if (commandLineOptions.backend != AnvilBackend.EMBEDDED) {
+    if (commandLineOptions.backend != AnalysisBackend.EMBEDDED) {
       return
     }
 
