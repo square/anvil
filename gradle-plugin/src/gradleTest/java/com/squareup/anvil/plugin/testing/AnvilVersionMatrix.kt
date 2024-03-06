@@ -1,4 +1,4 @@
-package com.squareup.anvil.plugin
+package com.squareup.anvil.plugin.testing
 
 import com.rickbusarow.kase.KaseMatrix
 import com.rickbusarow.kase.gradle.AgpDependencyVersion

@@ -1,4 +1,4 @@
-package com.squareup.anvil.plugin
+package com.squareup.anvil.plugin.testing
 
 import io.kotest.assertions.print.print
 import io.kotest.matchers.EqualityMatcherResult
