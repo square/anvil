@@ -4,6 +4,8 @@ import com.rickbusarow.kase.gradle.dsl.buildFile
 import com.rickbusarow.kase.gradle.rootProject
 import com.rickbusarow.kase.stdlib.div
 import com.squareup.anvil.plugin.buildProperties.kotlinVersion
+import com.squareup.anvil.plugin.testing.BaseGradleTest
+import com.squareup.anvil.plugin.testing.anvil
 import io.kotest.matchers.file.shouldExist
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldInclude

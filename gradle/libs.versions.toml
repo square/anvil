@@ -18,6 +18,7 @@ androidx-test-ext = "1.1.5"
 autoService = "1.1.1"
 autoValue = "1.10.4"
 buildconfig = "5.3.5"
+classgraph = "4.8.165"
 dagger = "2.51"
 dropbox-dependencyGuard = "0.5.0"
 dokka = "1.9.20"
@@ -87,6 +88,8 @@ auto-service-annotations = { module = "com.google.auto.service:auto-service-anno
 auto-service-processor = { module = "com.google.auto.service:auto-service", version.ref = "autoService" }
 auto-value-annotations = { module = "com.google.auto.value:auto-value-annotations", version.ref = "autoValue" }
 auto-value-processor = { module = "com.google.auto.value:auto-value", version.ref = "autoValue" }
+
+classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
 
 dagger2 = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger2-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }

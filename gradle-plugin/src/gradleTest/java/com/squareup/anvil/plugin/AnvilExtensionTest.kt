@@ -9,7 +9,8 @@ import com.rickbusarow.kase.gradle.HasKotlinDependencyVersion
 import com.rickbusarow.kase.gradle.KotlinDependencyVersion
 import com.rickbusarow.kase.kase
 import com.rickbusarow.kase.times
-import io.kotest.matchers.string.shouldContain
+import com.squareup.anvil.plugin.testing.AnvilGradleTestEnvironment
+import com.squareup.anvil.plugin.testing.BaseGradleTest
 import org.junit.jupiter.api.DynamicNode
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.TestFactory

@@ -1,12 +1,19 @@
 package com.squareup.anvil.plugin
 
 import com.rickbusarow.kase.Kase1
+import com.rickbusarow.kase.files.DirectoryBuilder
 import com.rickbusarow.kase.gradle.dsl.buildFile
+import com.rickbusarow.kase.gradle.getValue
 import com.rickbusarow.kase.gradle.rootProject
 import com.rickbusarow.kase.kases
 import com.rickbusarow.kase.stdlib.createSafely
 import com.rickbusarow.kase.stdlib.div
 import com.rickbusarow.kase.wrap
+import com.squareup.anvil.plugin.testing.AnvilGradleTestEnvironment
+import com.squareup.anvil.plugin.testing.BaseGradleTest
+import com.squareup.anvil.plugin.testing.allBoundTypes
+import com.squareup.anvil.plugin.testing.anvil
+import com.squareup.anvil.plugin.testing.classGraphResult
 import io.kotest.matchers.file.shouldExist
 import io.kotest.matchers.file.shouldNotExist
 import io.kotest.matchers.shouldBe
@@ -85,7 +92,15 @@ class IncrementalTest : BaseGradleTest() {
       )
     }
 
-    shouldSucceed("compileJava")
+    shouldSucceed("jar")
+
+    rootProject.classGraphResult().allClasses shouldContainExactly listOf(
+      "com.squareup.test.InjectClass",
+      "com.squareup.test.InjectClass_Factory",
+      "com.squareup.test.OtherClass",
+      "com.squareup.test.OtherClass_Factory",
+    )
+
     val otherClassFactory = rootAnvilMainGenerated
       .resolve("com/squareup/test/OtherClass_Factory.kt")
 
@@ -96,17 +111,56 @@ class IncrementalTest : BaseGradleTest() {
       .resolve(injectClassPath)
       .delete()
 
-    shouldSucceed("compileJava") {
+    shouldSucceed("jar") {
       task(":compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
     }
+
+    rootProject.classGraphResult().allClasses shouldContainExactly listOf(
+      "com.squareup.test.OtherClass",
+      "com.squareup.test.OtherClass_Factory",
+    )
 
     rootAnvilMainGenerated.injectClassFactory.shouldNotExist()
     otherClassFactory.shouldExist()
   }
 
   @TestFactory
+  fun `everything in the generated directory is deleted if the cache file doesn't exist`() =
+    testFactory {
+
+      rootProject {
+        dir("src/main/kotlin") {
+          injectClass()
+        }
+        gradlePropertiesFile(
+          """
+            com.squareup.anvil.trackSourceFiles=true
+          """.trimIndent(),
+        )
+      }
+
+      val notRealKotlinFile = rootProject.path.anvilMainGenerated
+        .resolve("com/squareup/test/NotRealKotlin.kt")
+        .createSafely("This won't compile")
+
+      rootProject.path.anvilMainCaches.shouldNotExist()
+
+      shouldSucceed("jar")
+
+      rootProject.classGraphResult().allClasses shouldContainExactly listOf(
+        "com.squareup.test.InjectClass",
+        "com.squareup.test.InjectClass_Factory",
+      )
+
+      notRealKotlinFile.shouldNotExist()
+
+      rootProject.path.anvilMainGenerated.injectClassFactory.shouldExist()
+    }
+
+  @TestFactory
   fun `a generated factory is deleted if the @Inject annotation is removed`() =
-    withTrackSourceFiles { (trackSourceFiles) ->
+    // This should work with or without the `trackSourceFiles` feature toggle.
+    testFactoryWithTrackSourceFiles { (trackSourceFiles) ->
 
       lateinit var injectClassPath: File
 
@@ -122,7 +176,12 @@ class IncrementalTest : BaseGradleTest() {
         )
       }
 
-      shouldSucceed("compileJava")
+      shouldSucceed("jar")
+
+      rootProject.classGraphResult().allClasses shouldContainExactly listOf(
+        "com.squareup.test.InjectClass",
+        "com.squareup.test.InjectClass_Factory",
+      )
 
       rootAnvilMainGenerated.injectClassFactory.shouldExist()
 
@@ -134,9 +193,13 @@ class IncrementalTest : BaseGradleTest() {
         """.trimIndent(),
       )
 
-      shouldSucceed("compileJava") {
+      shouldSucceed("jar") {
         task(":compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }
+
+      rootProject.classGraphResult().allClasses shouldContainExactly listOf(
+        "com.squareup.test.InjectClass",
+      )
 
       rootAnvilMainGenerated.injectClassFactory.shouldNotExist()
     }
@@ -175,9 +238,15 @@ class IncrementalTest : BaseGradleTest() {
         """.trimIndent(),
       )
 
-      shouldSucceed("compileJava") {
+      shouldSucceed("jar") {
         task(":compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }
+
+      rootProject.classGraphResult().allClasses shouldContainExactly listOf(
+        "com.squareup.test.InjectClass",
+        "com.squareup.test.InjectClass_Factory",
+        "com.squareup.test.InjectClass_Factory\$Companion",
+      )
 
       // now we have constructor parameters
       rootAnvilMainGenerated.injectClassFactory shouldExistWithTextContaining """
@@ -214,7 +283,14 @@ class IncrementalTest : BaseGradleTest() {
       )
     }
 
-    shouldSucceed("compileJava")
+    shouldSucceed("jar")
+
+    rootProject.classGraphResult().allClasses shouldContainExactly listOf(
+      "com.squareup.test.InjectClass",
+      "com.squareup.test.InjectClass_Factory",
+      "com.squareup.test.OtherClass",
+      "com.squareup.test.OtherClass_Factory",
+    )
 
     val otherClassFactory = rootAnvilMainGenerated
       .resolve("com/squareup/test/OtherClass_Factory.kt")
@@ -235,9 +311,15 @@ class IncrementalTest : BaseGradleTest() {
       }
     }
 
-    shouldSucceed("compileJava") {
+    shouldSucceed("jar") {
       task(":compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
     }
+
+    rootProject.classGraphResult().allClasses shouldContainExactly listOf(
+      "com.squareup.test.InjectClass",
+      "com.squareup.test.InjectClass_Factory",
+      "com.squareup.test.OtherClass",
+    )
 
     rootAnvilMainGenerated.injectClassFactory.shouldExist()
     otherClassFactory.shouldNotExist()
@@ -246,34 +328,40 @@ class IncrementalTest : BaseGradleTest() {
   @TestFactory
   fun `compilation re-runs when a @ContributesBinding type supertype changes`() = testFactory {
 
-    val otherClassPath = "com/squareup/test/OtherClass.kt"
+    fun DirectoryBuilder.otherClassContent(
+      superType: String,
+      packageName: String = "com.squareup.test",
+    ): File {
+      return kotlinFile(
+        path = packageName.replace(".", "/") / "OtherClass.kt",
+        content = """
+          package $packageName
+          
+          import com.squareup.anvil.annotations.MergeComponent
+          import com.squareup.anvil.annotations.ContributesBinding
+          import javax.inject.Inject
+          
+          @ContributesBinding(Any::class)
+          class OtherClass @Inject constructor() : $superType
+          
+          interface TypeA
+          interface TypeB
+          
+          class Consumer @Inject constructor(
+           private val dep: $superType
+          )
+          
+          @MergeComponent(Any::class)
+          interface AppComponent
+        """.trimIndent(),
+      )
+    }
 
     rootProject {
       dir("src/main/java") {
 
-        kotlinFile(
-          otherClassPath,
-          """
-          package com.squareup.test
+        otherClassContent(superType = "TypeA", packageName = "com.squareup.test")
 
-          import com.squareup.anvil.annotations.ContributesBinding
-          import com.squareup.anvil.annotations.MergeComponent
-          import javax.inject.Inject
-
-          @ContributesBinding(Any::class)
-          class OtherClass @Inject constructor() : TypeA
-
-          interface TypeA
-          interface TypeB
-
-          class Consumer @Inject constructor(
-            private val dep: TypeA
-          )
-
-          @MergeComponent(Any::class)
-          interface AppComponent
-          """.trimIndent(),
-        )
         injectClass()
       }
       gradlePropertiesFile(
@@ -283,7 +371,7 @@ class IncrementalTest : BaseGradleTest() {
       )
     }
 
-    shouldSucceed("compileJava")
+    shouldSucceed("jar")
 
     val otherClassFactory = rootAnvilMainGenerated
       .resolve("com/squareup/test/OtherClass_Factory.kt")
@@ -291,50 +379,21 @@ class IncrementalTest : BaseGradleTest() {
       .anvilHintBinding
       .resolve("com/squareup/test/OtherClass.kt")
 
-    val componentModuleFile = rootAnvilMainGenerated
-      .anvilModule
-      .resolve("com/squareup/test/AppComponent.kt")
-
     rootAnvilMainGenerated.injectClassFactory.shouldExist()
     otherClassFactory.shouldExist()
     otherClassHint.shouldExist()
 
-    componentModuleFile shouldExistWithTextContaining """
-        @Module
-        @ContributesTo(Any::class)
-        public abstract class AppComponentAnvilModule {
-          @Binds
-          public abstract fun bindTypeA(otherClass: OtherClass): TypeA
-        }
-    """.trimIndent()
+    rootProject.classGraphResult().allBoundTypes() shouldBe listOf(
+      "com.squareup.test.OtherClass" to "com.squareup.test.TypeA",
+    )
 
-    rootProject.path
-      .resolve("src/main/java")
-      .resolve(otherClassPath)
-      .kotlin(
-        """
-        package com.squareup.test
-  
-        import com.squareup.anvil.annotations.ContributesBinding
-        import com.squareup.anvil.annotations.MergeComponent
-        import javax.inject.Inject
-  
-        @ContributesBinding(Any::class)
-        class OtherClass @Inject constructor() : TypeB
-  
-        interface TypeA
-        interface TypeB
-  
-        class Consumer @Inject constructor(
-          private val dep: TypeA
-        )
-  
-        @MergeComponent(Any::class)
-        interface AppComponent
-        """.trimIndent(),
-      )
+    rootProject {
+      dir("src/main/java") {
+        otherClassContent(superType = "TypeB", packageName = "com.squareup.test")
+      }
+    }
 
-    shouldSucceed("compileJava") {
+    shouldSucceed("jar") {
       task(":compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
     }
 
@@ -342,42 +401,40 @@ class IncrementalTest : BaseGradleTest() {
     otherClassFactory.shouldExist()
     otherClassHint.shouldExist()
 
-    componentModuleFile shouldExistWithTextContaining """
-        @Module
-        @ContributesTo(Any::class)
-        public abstract class AppComponentAnvilModule {
-          @Binds
-          public abstract fun bindTypeB(otherClass: OtherClass): TypeB
-        }
-    """.trimIndent()
+    rootProject.classGraphResult().allBoundTypes() shouldBe listOf(
+      "com.squareup.test.OtherClass" to "com.squareup.test.TypeB",
+    )
   }
 
   @TestFactory
   fun `compilation re-runs when a dependency module's @ContributesBinding type supertype changes`() =
     testFactory {
 
-      val otherClassPath = rootProject.path.resolve("lib")
-        .resolve("src/main/java")
-        .resolve("com/squareup/test/lib/OtherClass.kt")
-
-      fun otherClassContent(superType: String) =
-        //language=kotlin
-        """
-          package com.squareup.test.lib
-
-          import com.squareup.anvil.annotations.ContributesBinding
-          import javax.inject.Inject
-
-          @ContributesBinding(Any::class)
-          class OtherClass @Inject constructor() : $superType
-
-          interface TypeA
-          interface TypeB
-
-          class Consumer @Inject constructor(
-            private val dep: $superType
-          )
-        """.trimIndent()
+      fun DirectoryBuilder.otherClassContent(
+        superType: String,
+        packageName: String = "com.squareup.test",
+      ): File {
+        return kotlinFile(
+          path = packageName.replace(".", "/") / "OtherClass.kt",
+          content = """
+            package $packageName
+            
+            import com.squareup.anvil.annotations.MergeComponent
+            import com.squareup.anvil.annotations.ContributesBinding
+            import javax.inject.Inject
+            
+            @ContributesBinding(Any::class)
+            class OtherClass @Inject constructor() : $superType
+            
+            interface TypeA
+            interface TypeB
+            
+            class Consumer @Inject constructor(
+             private val dep: $superType
+            )
+          """.trimIndent(),
+        )
+      }
 
       rootProject {
         gradlePropertiesFile(
@@ -408,7 +465,9 @@ class IncrementalTest : BaseGradleTest() {
               implementation(libs.dagger2.annotations)
             }
           }
-          otherClassPath.createSafely(otherClassContent("TypeA"))
+          dir("src/main/java") {
+            otherClassContent("TypeA", "com.squareup.test.lib")
+          }
         }
 
         project("app") {
@@ -445,36 +504,26 @@ class IncrementalTest : BaseGradleTest() {
         }
       }
 
-      shouldSucceed(":app:compileJava")
+      val lib by rootProject.subprojects
+      val app by rootProject.subprojects
 
-      val componentModuleFile = rootProject.path.resolve("app")
-        .anvilMainGenerated
-        .anvilModule
-        .resolve("com/squareup/test/app/AppComponent.kt")
+      shouldSucceed("jar")
 
-      componentModuleFile shouldExistWithTextContaining """
-        @Module
-        @ContributesTo(Any::class)
-        public abstract class AppComponentAnvilModule {
-          @Binds
-          public abstract fun bindTypeA(otherClass: OtherClass): TypeA
-        }
-      """.trimIndent()
+      app.classGraphResult(lib).allBoundTypes() shouldBe listOf(
+        "com.squareup.test.lib.OtherClass" to "com.squareup.test.lib.TypeA",
+      )
 
-      otherClassPath.writeText(otherClassContent("TypeB"))
+      lib.dir("src/main/java") {
+        otherClassContent("TypeB", "com.squareup.test.lib")
+      }
 
-      shouldSucceed(":app:compileJava") {
+      shouldSucceed(":app:jar") {
         task(":app:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }
 
-      componentModuleFile shouldExistWithTextContaining """
-        @Module
-        @ContributesTo(Any::class)
-        public abstract class AppComponentAnvilModule {
-          @Binds
-          public abstract fun bindTypeB(otherClass: OtherClass): TypeB
-        }
-      """.trimIndent()
+      app.classGraphResult(lib).allBoundTypes() shouldBe listOf(
+        "com.squareup.test.lib.OtherClass" to "com.squareup.test.lib.TypeB",
+      )
     }
 
   @TestFactory
@@ -483,30 +532,30 @@ class IncrementalTest : BaseGradleTest() {
 
       // minimal reproducer for https://github.com/square/anvil/issues/876
 
-      val assistedClassPath = rootProject.path.resolve("lib")
-        .resolve("src/main/java")
-        .resolve("com/squareup/test/lib/AssistedClass.kt")
-
-      fun assistedClassContent(vararg assistedParams: String): String =
-        """
-          |package com.squareup.test.lib
-          |
-          |import dagger.assisted.Assisted
-          |import dagger.assisted.AssistedFactory
-          |import dagger.assisted.AssistedInject
-          |
-          |class AssistedClass @AssistedInject constructor(
-          |  ${assistedParams.joinToString(",\n")}
-          |) {
-          |
-          |  @AssistedFactory
-          |  interface Factory {
-          |    fun create(
-          |      ${assistedParams.joinToString(",\n")}
-          |    ): AssistedClass
-          |  }
-          |}
-        """.trimMargin()
+      fun DirectoryBuilder.assistedClassContent(vararg assistedParams: String): File {
+        return kotlinFile(
+          "com/squareup/test/lib/AssistedClass.kt",
+          """
+            |package com.squareup.test.lib
+            |
+            |import dagger.assisted.Assisted
+            |import dagger.assisted.AssistedFactory
+            |import dagger.assisted.AssistedInject
+            |
+            |class AssistedClass @AssistedInject constructor(
+            |  ${assistedParams.joinToString(",\n")}
+            |) {
+            |
+            |  @AssistedFactory
+            |  interface Factory {
+            |    fun create(
+            |      ${assistedParams.joinToString(",\n")}
+            |    ): AssistedClass
+            |  }
+            |}
+          """.trimMargin(),
+        )
+      }
 
       rootProject {
         gradlePropertiesFile(
@@ -537,11 +586,11 @@ class IncrementalTest : BaseGradleTest() {
               implementation(libs.dagger2.annotations)
             }
           }
-          assistedClassPath.createSafely(
-            assistedClassContent("""@Assisted("arg1") arg1: String"""),
-          )
 
           dir("src/main/java") {
+
+            assistedClassContent("""@Assisted("arg1") arg1: String""")
+
             kotlinFile(
               "com/squareup/test/lib/LibComponent.kt",
               """
@@ -593,9 +642,11 @@ class IncrementalTest : BaseGradleTest() {
         }
       }
 
-      shouldSucceed(":app:compileJava")
+      shouldSucceed("jar")
 
-      val assistedClassFactoryImpl = rootProject.path.resolve("lib")
+      val lib by rootProject.subprojects
+
+      val assistedClassFactoryImpl = lib.path
         .anvilMainGenerated
         .resolve("com/squareup/test/lib/AssistedClass_Factory_Impl.kt")
 
@@ -606,14 +657,15 @@ class IncrementalTest : BaseGradleTest() {
           override fun create(arg1: String): AssistedClass = delegateFactory.get(arg1)
       """.trimIndent()
 
-      assistedClassPath.writeText(
+      lib.dir("src/main/java") {
+
         assistedClassContent(
           """@Assisted("arg1") arg1: String""",
           """@Assisted("arg2") arg2: String""",
-        ),
-      )
+        )
+      }
 
-      shouldSucceed(":app:compileJava") {
+      shouldSucceed("jar") {
         task(":app:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }
 
@@ -634,13 +686,13 @@ class IncrementalTest : BaseGradleTest() {
       // to simulate having a shared remote build cache.
       val runner = gradleRunner
         .withTestKitDir(workingDir / "testKit")
-        .withArguments("compileKotlin", "--stacktrace")
+        .withArguments("jar", "--stacktrace")
 
-      val rootA = workingDir.resolve("a/root-a")
-      val rootB = workingDir.resolve("b/root-b")
+      val rootA = rootProject(workingDir.resolve("a/root-a")) {}
+      val rootB = rootProject(workingDir.resolve("b/root-b")) {}
 
       for (root in listOf(rootA, rootB)) {
-        rootProject(path = root) {
+        root.apply {
           // Copy the normal root project's build and settings files to the new projects.
           rootProject.buildFileAsFile.copyTo(buildFileAsFile)
           rootProject.settingsFileAsFile.copyTo(settingsFileAsFile)
@@ -662,23 +714,28 @@ class IncrementalTest : BaseGradleTest() {
       rootProject.buildFileAsFile.delete()
       rootProject.settingsFileAsFile.delete()
 
-      with(runner.withProjectDir(rootA).build()) {
+      with(runner.withProjectDir(rootA.path).build()) {
         task(":compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }
 
-      rootA.deleteRecursively()
-      rootA.shouldNotExist()
+      rootA.path.deleteRecursively()
+      rootA.path.shouldNotExist()
 
-      with(runner.withProjectDir(rootB).build()) {
+      with(runner.withProjectDir(rootB.path).build()) {
         task(":compileKotlin")?.outcome shouldBe TaskOutcome.FROM_CACHE
 
         // This file wasn't generated in the `root-b` project,
         // but it was cached and restored even though it isn't part of the normal 'classes' output.
-        rootB.anvilMainGenerated.injectClassFactory.shouldExist()
+        rootB.path.anvilMainGenerated.injectClassFactory.shouldExist()
+
+        rootB.classGraphResult().allClasses shouldContainExactly listOf(
+          "com.squareup.test.InjectClass",
+          "com.squareup.test.InjectClass_Factory",
+        )
       }
     }
 
-  private fun withTrackSourceFiles(
+  private fun testFactoryWithTrackSourceFiles(
     testAction: suspend AnvilGradleTestEnvironment.(Kase1<Boolean>) -> Unit,
   ): Stream<out DynamicNode> = params.asContainers { versions ->
 
