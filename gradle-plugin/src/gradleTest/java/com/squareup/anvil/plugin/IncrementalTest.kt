@@ -257,6 +257,37 @@ class IncrementalTest : BaseGradleTest() {
     }
 
   @TestFactory
+  fun `generated files are restored if they're deleted without any changes to source files`() =
+    testFactory {
+
+      rootProject {
+        dir("src/main/java") {
+
+          injectClass()
+          boundClass("com.squareup.test.TypeA")
+          simpleInterface("TypeA")
+        }
+        gradlePropertiesFile(
+          """
+            com.squareup.anvil.trackSourceFiles=true
+          """.trimIndent(),
+        )
+      }
+
+      shouldSucceed("compileJava")
+
+      val firstRunGeneratedPaths = rootAnvilMainGenerated.listRelativeFilePaths()
+
+      rootAnvilMainGenerated.deleteRecursivelyOrFail()
+
+      shouldSucceed("jar") {
+        task(":compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      }
+
+      rootAnvilMainGenerated.listRelativeFilePaths() shouldBe firstRunGeneratedPaths
+    }
+
+  @TestFactory
   fun `generated files are retained after an unrelated incremental change`() = testFactory {
 
     val otherClassPath = "com/squareup/test/OtherClass.kt"
@@ -718,8 +749,7 @@ class IncrementalTest : BaseGradleTest() {
         task(":compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }
 
-      rootA.path.deleteRecursively()
-      rootA.path.shouldNotExist()
+      rootA.path.deleteRecursivelyOrFail()
 
       with(runner.withProjectDir(rootB.path).build()) {
         task(":compileKotlin")?.outcome shouldBe TaskOutcome.FROM_CACHE

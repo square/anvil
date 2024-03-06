@@ -3,12 +3,23 @@ package com.squareup.anvil.plugin.testing
 import io.kotest.assertions.print.print
 import io.kotest.matchers.EqualityMatcherResult
 import io.kotest.matchers.file.shouldExist
+import io.kotest.matchers.file.shouldNotExist
 import io.kotest.matchers.neverNullMatcher
 import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import java.io.File
 
 interface MoreAsserts {
+
+  fun File.deleteOrFail() {
+    delete()
+    shouldNotExist()
+  }
+
+  fun File.deleteRecursivelyOrFail() {
+    deleteRecursively()
+    shouldNotExist()
+  }
 
   infix fun File.shouldExistWithText(expectedText: String) {
     shouldExist()

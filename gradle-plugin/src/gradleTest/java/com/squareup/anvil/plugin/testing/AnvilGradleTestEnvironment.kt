@@ -43,6 +43,20 @@ class AnvilGradleTestEnvironment(
   val GradleProjectBuilder.settingsFileAsFile: File
     get() = path.resolve(dslLanguage.settingsFileName)
 
+  /**
+   * ```
+   * rootAnvilMainGenerated.listRelativeFilePaths() shouldBe listOf(
+   *     "com/squareup/test/InjectClass_Factory.kt",
+   *     "com/squareup/test/OtherClass_Factory.kt",
+   *   )
+   * ```
+   */
+  fun File.listRelativeFilePaths(): List<String> = walkBottomUp()
+    .filter { it.isFile }
+    .map { it.toRelativeString(rootAnvilMainGenerated) }
+    .sorted()
+    .toList()
+
   override fun toString(): String = ""
 
   class Factory :
