@@ -14,6 +14,8 @@ import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerat
 import com.squareup.anvil.compiler.codegen.incremental.ProjectDir
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
+import org.jetbrains.kotlin.cli.common.CLIConfigurationKeys
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
@@ -64,6 +66,11 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
       return
     }
 
+    val messageCollector = configuration.get(
+      CLIConfigurationKeys.MESSAGE_COLLECTOR_KEY,
+      MessageCollector.NONE,
+    )
+
     val sourceGenFolder = configuration.getNotNull(srcGenDirKey)
     val cacheDir = configuration.getNotNull(anvilCacheDirKey)
     val projectDir = ProjectDir(configuration.getNotNull(gradleProjectDirKey))
@@ -92,6 +99,7 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
         generatedDir = sourceGenFolder,
         cacheDir = cacheDir,
         trackSourceFiles = trackSourceFiles,
+        messageCollector = messageCollector,
       ),
     )
   }
