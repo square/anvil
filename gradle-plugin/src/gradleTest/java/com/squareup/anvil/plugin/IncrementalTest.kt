@@ -297,15 +297,18 @@ class IncrementalTest : BaseGradleTest() {
       .anvilHintMerge
       .resolve("com/squareup/test/OtherClassAsComSquareupTestTypeBToKotlinAnyBindingModule.kt")
 
-    val bindingModule = rootAnvilMainGenerated
-      .resolve("com/squareup/test/OtherClassBindingModule.kt")
+    val bindingModuleA = rootAnvilMainGenerated
+      .resolve("com/squareup/test/OtherClassAsComSquareupTestTypeAToKotlinAnyBindingModule.kt")
+
+    val bindingModuleB = rootAnvilMainGenerated
+      .resolve("com/squareup/test/OtherClassAsComSquareupTestTypeBToKotlinAnyBindingModule.kt")
 
     rootAnvilMainGenerated.injectClassFactory.shouldExist()
     otherClassFactory.shouldExist()
     otherClassAHint.shouldExist()
     otherClassBHint.shouldNotExist()
 
-    bindingModule shouldExistWithTextContaining """
+    bindingModuleA shouldExistWithTextContaining """
         @Module
         @ContributesTo(scope = Any::class)
         @InternalBindingMarker(
@@ -352,9 +355,10 @@ class IncrementalTest : BaseGradleTest() {
     rootAnvilMainGenerated.injectClassFactory.shouldExist()
     otherClassFactory.shouldExist()
     otherClassAHint.shouldNotExist()
+    bindingModuleA.shouldNotExist()
     otherClassBHint.shouldExist()
 
-    bindingModule shouldExistWithTextContaining """
+    bindingModuleB shouldExistWithTextContaining """
         @Module
         @ContributesTo(scope = Any::class)
         @InternalBindingMarker(

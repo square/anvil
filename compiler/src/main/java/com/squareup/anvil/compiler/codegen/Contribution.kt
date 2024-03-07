@@ -24,7 +24,6 @@ import dagger.Module
 import dagger.Provides
 import dagger.multibindings.IntoMap
 import dagger.multibindings.IntoSet
-import java.util.Comparator
 
 internal sealed interface Contribution {
   val origin: ClassName
@@ -122,27 +121,18 @@ internal sealed interface Contribution {
 
   companion object {
     // The generic ensures the list is of the same subtype
-    fun <T : Contribution> List<T>.generateFileSpec(): FileSpec {
-      val first = first()
-      val origin = first.origin
-      val suffix = first.bindingModuleNameSuffix
-      val fileName = origin.generateClassName(suffix = suffix).simpleName
-      val generatedPackage = origin.packageName.safePackageString(dotPrefix = true)
-      // Give it a stable sort.
-      val specs = distinct()
-        .sortedWith(COMPARATOR)
-        .map(Contribution::generateBindingModule)
-      return FileSpec.createAnvilSpec(generatedPackage, fileName) {
-        addTypes(specs.sortedBy { it.name })
+    fun <T : Contribution> List<T>.generateFileSpecs(): List<FileSpec> {
+      return distinct().map {
+        val first = it
+        val origin = first.origin
+        val type = it.generateBindingModule()
+        val fileName = type.name!!
+        val generatedPackage = origin.packageName.safePackageString(dotPrefix = true)
+        FileSpec.createAnvilSpec(generatedPackage, fileName) {
+          addType(type)
+        }
       }
     }
-
-    private val COMPARATOR: Comparator<Contribution> = compareBy<Contribution> {
-      it.scope.canonicalName
-    }
-      .thenComparing(compareBy { it.boundType.canonicalName })
-      .thenComparing(compareBy { if (it is Binding) it.priority else 0 })
-      .thenComparing(compareBy { it.replaces.joinToString(transform = ClassName::canonicalName) })
   }
 
   data class QualifierData(
