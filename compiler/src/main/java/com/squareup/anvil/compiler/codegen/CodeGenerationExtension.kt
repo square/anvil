@@ -11,8 +11,12 @@ import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache
 import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache.Companion.GENERATED_FILE_CACHE_NAME
 import com.squareup.anvil.compiler.codegen.incremental.ProjectDir
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
+import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor.Factory
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.analyzer.AnalysisResult.RetryWithAdditionalRoots
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
+import org.jetbrains.kotlin.cli.common.messages.MessageCollector
+import org.jetbrains.kotlin.cli.common.toLogger
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.com.intellij.testFramework.LightVirtualFile
@@ -29,11 +33,12 @@ import kotlin.LazyThreadSafetyMode.NONE
 internal class CodeGenerationExtension(
   codeGenerators: List<CodeGenerator>,
   private val commandLineOptions: CommandLineOptions,
-  private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
+  private val moduleDescriptorFactory: Factory,
   private val projectDir: ProjectDir,
   private val generatedDir: File,
   private val cacheDir: File,
   private val trackSourceFiles: Boolean,
+  private val messageCollector: MessageCollector,
 ) : AnalysisHandlerExtension {
 
   private val generatedFileCache by lazy(NONE) {
@@ -102,6 +107,24 @@ internal class CodeGenerationExtension(
       generatedDir.listFiles()?.forEach {
         check(it.deleteRecursively()) { "Could not clean file: $it" }
       }
+    }
+
+    CompilerMessageSeverity.values().forEach { severity ->
+      messageCollector.report(
+        severity,
+        "~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ MessageCollector - $severity",
+      )
+    }
+
+    val logger = messageCollector.toLogger()
+
+    listOf(
+      logger::log,
+      logger::warning,
+      logger::error,
+      // logger::fatal,
+    ).forEach {
+      it("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Logger - ${it::class.simpleName}")
     }
 
     // The files in `files` can include generated files.
