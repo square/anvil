@@ -66,6 +66,8 @@ class AnvilGradleTestEnvironment(
   val GradleProjectBuilder.settingsFileAsFile: File
     get() = path.resolve(dslLanguage.settingsFileName)
 
+  override fun toString() = ""
+
   class Factory : GradleTestEnvironmentFactory<GradleKotlinTestVersions, AnvilGradleTestEnvironment> {
 
     override val localM2Path: File

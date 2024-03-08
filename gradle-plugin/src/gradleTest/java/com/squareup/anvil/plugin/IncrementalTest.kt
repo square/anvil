@@ -12,6 +12,7 @@ import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.file.shouldExist
 import io.kotest.matchers.file.shouldNotExist
 import io.kotest.matchers.shouldBe
+import kotlinx.metadata.jvm.UnstableMetadataApi
 import org.gradle.testkit.runner.TaskOutcome
 import org.junit.jupiter.api.DynamicNode
 import org.junit.jupiter.api.TestFactory
@@ -19,6 +20,7 @@ import java.io.File
 import java.net.URLClassLoader
 import java.util.stream.Stream
 
+@OptIn(UnstableMetadataApi::class)
 class IncrementalTest : BaseGradleTest() {
 
   @TestFactory
@@ -387,6 +389,7 @@ class IncrementalTest : BaseGradleTest() {
           package com.squareup.test.lib
 
           import com.squareup.anvil.annotations.ContributesBinding
+          import com.squareup.anvil.annotations.ContributesTo
           import javax.inject.Inject
 
           @ContributesBinding(Any::class)
@@ -398,6 +401,11 @@ class IncrementalTest : BaseGradleTest() {
           class Consumer @Inject constructor(
             private val dep: $superType
           )
+
+          @ContributesTo(Any::class)
+          interface LibComponent {
+            val consumer: Consumer
+          }
         """.trimIndent()
 
       rootProject {
@@ -438,8 +446,16 @@ class IncrementalTest : BaseGradleTest() {
             plugins {
               kotlin("jvm")
               kotlin("kapt")
+              id("application")
               id("com.squareup.anvil")
             }
+            raw(
+              """
+              application {
+                mainClass = "com.squareup.test.app.AppKt"
+              }
+              """.trimIndent(),
+            )
             dependencies {
               compileOnly(libs.dagger2.annotations)
               implementation(project(":lib"))
@@ -448,6 +464,43 @@ class IncrementalTest : BaseGradleTest() {
           }
 
           dir("src/main/java") {
+            kotlinFile(
+              "com/squareup/test/app/App.kt",
+              """
+              package com.squareup.test.app
+
+              import com.squareup.test.lib.LibComponent
+
+              fun main() {
+                val consumer = (DaggerAppComponent.create() as LibComponent).consumer
+
+                println(
+                  ""${'"'}
+                  |            |\|\,'\,'\ ,.
+                  |            )        ;' |,'
+                  |           /              |,'|,.
+                  |          /                  ` /__
+                  |         ,'                    ,-'
+                  |        ,'                    :
+                  |       (_                     '
+                  |     ,'                      ;
+                  |     |---._ ,'     .        '
+                  |     :   o Y---.__  ;      ;
+                  |     /`,""-|     o`.|     /
+                  |    ,  `._  `.    ,'     ;
+                  |    ;         `""'      ;     ${'$'}consumer
+                  |   /                   -'.
+                  |   \                   G  )
+                  |    `-.__________,   `._,'
+                  |            (`   `     |)\
+                  |           / `.       ,'  \
+                  |          /    `-----'     \
+                  |         /
+                  ""${'"'}.trimMargin()
+                )
+              }
+              """.trimIndent(),
+            )
             kotlinFile(
               "com/squareup/test/app/AppComponent.kt",
               """
@@ -466,7 +519,7 @@ class IncrementalTest : BaseGradleTest() {
         }
       }
 
-      shouldSucceed(":app:compileJava")
+      shouldSucceed(":app:jar")
 
       fun mergedModules(): Set<String> {
         val compiledAppClasses = rootProject.path.resolve("app")
@@ -489,23 +542,13 @@ class IncrementalTest : BaseGradleTest() {
         return componentAnnotation.modules.map { it.java.canonicalName }.toSet()
       }
 
-      val bindingModule = rootProject.path.resolve("lib")
+      val bindingModuleA = rootProject.path.resolve("lib")
         .anvilMainGenerated
-        .resolve("com/squareup/test/lib/OtherClassBindingModule.kt")
-
-      bindingModule shouldExistWithTextContaining """
-        @Module
-        @ContributesTo(scope = Any::class)
-        @InternalBindingMarker(
-          originClass = OtherClass::class,
-          isMultibinding = false,
-          priority = "NORMAL",
+        .resolve(
+          "com/squareup/test/lib/OtherClassAsComSquareupTestLibTypeAToKotlinAnyBindingModule.kt",
         )
-        public interface OtherClassAsComSquareupTestLibTypeAToKotlinAnyBindingModule {
-          @Binds
-          public fun bindTypeA(real: OtherClass): TypeA
-        }
-      """.trimIndent()
+
+      bindingModuleA.shouldExist()
 
       mergedModules() shouldContainExactly setOf(
         "com.squareup.test.lib.OtherClassAsComSquareupTestLibTypeAToKotlinAnyBindingModule",
@@ -513,23 +556,18 @@ class IncrementalTest : BaseGradleTest() {
 
       otherClassPath.writeText(otherClassContent("TypeB"))
 
-      shouldSucceed(":app:compileJava") {
+      shouldSucceed("jar") {
+        task(":lib:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
         task(":app:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }
+      bindingModuleA.shouldNotExist()
 
-      bindingModule shouldExistWithTextContaining """
-        @Module
-        @ContributesTo(scope = Any::class)
-        @InternalBindingMarker(
-          originClass = OtherClass::class,
-          isMultibinding = false,
-          priority = "NORMAL",
+      val bindingModuleB = rootProject.path.resolve("lib")
+        .anvilMainGenerated
+        .resolve(
+          "com/squareup/test/lib/OtherClassAsComSquareupTestLibTypeBToKotlinAnyBindingModule.kt",
         )
-        public interface OtherClassAsComSquareupTestLibTypeBToKotlinAnyBindingModule {
-          @Binds
-          public fun bindTypeB(real: OtherClass): TypeB
-        }
-      """.trimIndent()
+      bindingModuleB.shouldExist()
 
       // TODO this doesn't work, which... suggests to me that IC might be broken here?
       mergedModules() shouldContainExactly setOf(

@@ -88,6 +88,7 @@ dependencies {
   testImplementation(libs.truth)
 
   gradleTestImplementation(gradleTestKit())
+  gradleTestImplementation(libs.classgraph)
   gradleTestImplementation(libs.dagger2)
   gradleTestImplementation(libs.junit.jupiter)
   gradleTestImplementation(libs.junit.jupiter.api)
@@ -97,6 +98,7 @@ dependencies {
   gradleTestImplementation(libs.kase.gradle.dsl)
   gradleTestImplementation(libs.kotest.assertions.api)
   gradleTestImplementation(libs.kotest.assertions.core.jvm)
+  gradleTestImplementation(libs.kotlin.metadata)
   gradleTestImplementation(libs.kotlin.test)
   gradleTestImplementation(libs.truth)
 }
