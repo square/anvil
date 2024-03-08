@@ -14,6 +14,19 @@ open class KtlintConventionPlugin : Plugin<Project> {
     target.extensions.configure(KtlintExtension::class.java) { ktlint ->
       ktlint.version.set(target.libs.versions.ktlint)
       ktlint.verbose.set(true)
+
+      val pathsToExclude = listOf(
+        "build/generated",
+        "root-build/generated",
+        "included-build/generated",
+      )
+      ktlint.filter {
+        it.exclude {
+          pathsToExclude.any { excludePath ->
+            it.file.path.contains(excludePath)
+          }
+        }
+      }
     }
   }
 }
