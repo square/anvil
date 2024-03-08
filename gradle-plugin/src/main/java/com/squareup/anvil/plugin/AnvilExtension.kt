@@ -113,6 +113,33 @@ public abstract class AnvilExtension @Inject constructor(
   public val trackSourceFiles: Property<Boolean> = objects.property(Boolean::class.java)
     .conventionFromProperty("com.squareup.anvil.trackSourceFiles", false)
 
+  /**
+   * Enables the new KSP backend for Anvil _source generation_. This is an experimental feature that
+   * replaces the previous `AnalysisHandlerExtension`-based backend, which is removed in Kotlin 2.0
+   * and struggled with incremental compilation.
+   *
+   * ```properties
+   * com.squareup.anvil.useKspBackend=true
+   * ```
+   */
+  public val useKspBackend: Property<Boolean> = objects.property(Boolean::class.java)
+    .conventionFromProperty("com.squareup.anvil.useKspBackend", false)
+
+  /**
+   * Enables the new KSP backend for Anvil _component merging_. This is an experimental feature that
+   * currently does nothing. It's a placeholder for future work.
+   *
+   * Requires [disableComponentMerging] to be `false`.
+   *
+   * ```properties
+   * com.squareup.anvil.useKspComponentMergingBackend=true
+   * ```
+   */
+  public val useKspComponentMergingBackend: Property<Boolean> = objects.property(
+    Boolean::class.java,
+  )
+    .conventionFromProperty("com.squareup.anvil.useKspComponentMergingBackend", false)
+
   @Suppress("PropertyName")
   internal var _variantFilter: Action<VariantFilter>? = null
 
