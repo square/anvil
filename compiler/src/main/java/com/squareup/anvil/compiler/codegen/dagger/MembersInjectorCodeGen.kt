@@ -97,7 +97,7 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
 
       @JvmInline
       value class Declaration(
-        val node: KSPropertyDeclaration
+        val node: KSPropertyDeclaration,
       ) : SettableProperty {
         override val parentDeclaration: KSDeclaration?
           get() = node.parentDeclaration
@@ -107,7 +107,7 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
 
       @JvmInline
       value class Setter(
-        val node: KSPropertySetter
+        val node: KSPropertySetter,
       ) : SettableProperty {
         override val parentDeclaration: KSDeclaration?
           get() = node.receiver.parentDeclaration
