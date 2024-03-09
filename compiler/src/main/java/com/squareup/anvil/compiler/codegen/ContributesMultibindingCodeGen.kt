@@ -94,7 +94,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
                   Contribution.QualifierData(annotationSpec, key)
                 }
               }
-              val mapKey = clazz.getKSAnnotationsByType(ContributesMultibinding::class)
+              val mapKey = clazz.annotations
                 .filter { it.isMapKey() }
                 .singleOrNull()
                 ?.toAnnotationSpec()
