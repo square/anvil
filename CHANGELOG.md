@@ -18,6 +18,12 @@
 
 ### Other Notes & Contributions
 
+## [2.5.0-beta03] - 2024-02-26
+
+### Fixed
+- Don't fail the build when a `@Binds`-annotated function binds a generic type ([#885](https://github.com/square/anvil/issues/885))
+  - This is a revert of the changes in ([#833](https://github.com/square/anvil/issues/833)).
+
 ## [2.5.0-beta02] - 2024-02-23
 
 ### Fixed
@@ -668,6 +674,7 @@
 
 
 [Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta02...HEAD
+[2.5.0-beta03]: https://github.com/square/anvil/releases/tag/v2.5.0-beta03
 [2.5.0-beta02]: https://github.com/square/anvil/releases/tag/v2.5.0-beta02
 [2.5.0-beta01]: https://github.com/square/anvil/releases/tag/v2.5.0-beta01
 [2.4.9]: https://github.com/square/anvil/releases/tag/v2.4.9

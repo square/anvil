@@ -630,8 +630,6 @@ public final class com/squareup/anvil/compiler/internal/reference/TypeReference$
 public final class com/squareup/anvil/compiler/internal/reference/TypeReferenceKt {
 	public static final fun AnvilCompilationExceptionTypReference (Lcom/squareup/anvil/compiler/internal/reference/TypeReference;Ljava/lang/String;Ljava/lang/Throwable;)Lcom/squareup/anvil/compiler/api/AnvilCompilationException;
 	public static synthetic fun AnvilCompilationExceptionTypReference$default (Lcom/squareup/anvil/compiler/internal/reference/TypeReference;Ljava/lang/String;Ljava/lang/Throwable;ILjava/lang/Object;)Lcom/squareup/anvil/compiler/api/AnvilCompilationException;
-	public static final fun allSuperTypeReferences (Lcom/squareup/anvil/compiler/internal/reference/TypeReference;Z)Lkotlin/sequences/Sequence;
-	public static synthetic fun allSuperTypeReferences$default (Lcom/squareup/anvil/compiler/internal/reference/TypeReference;ZILjava/lang/Object;)Lkotlin/sequences/Sequence;
 	public static final fun toTypeReference (Lorg/jetbrains/kotlin/psi/KtTypeReference;Lcom/squareup/anvil/compiler/internal/reference/ClassReference$Psi;Lcom/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor;)Lcom/squareup/anvil/compiler/internal/reference/TypeReference$Psi;
 	public static final fun toTypeReference (Lorg/jetbrains/kotlin/types/KotlinType;Lcom/squareup/anvil/compiler/internal/reference/ClassReference;Lcom/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor;)Lcom/squareup/anvil/compiler/internal/reference/TypeReference$Descriptor;
 }
