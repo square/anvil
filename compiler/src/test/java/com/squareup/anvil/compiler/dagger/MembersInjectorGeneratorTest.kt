@@ -19,7 +19,6 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
 import dagger.MembersInjector
 import org.intellij.lang.annotations.Language
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -2225,8 +2224,6 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
   @Test
   fun `a member injector is generated for a class with a typealias superclass`() {
-    // TODO remove after next dagger release with a fix https://github.com/google/dagger/issues/4199
-    assumeTrue(mode is AnvilCompilationMode.Embedded)
     compile(
       """
       package com.squareup.test
@@ -2298,8 +2295,6 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
   @Test
   fun `a member injector is generated for a class with a typealias superclass in another module`() {
-    // TODO remove after next dagger release with a fix https://github.com/google/dagger/issues/4199
-    assumeTrue(mode is AnvilCompilationMode.Embedded)
     val otherModuleResult = compile(
       """
       package com.squareup.test
