@@ -57,17 +57,18 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
       }
     }
 
-    // Everything below this point is only when running in embedded compilation mode. If running in
-    // KSP, there's nothing else to do.
-    if (commandLineOptions.backend != AnalysisBackend.EMBEDDED) {
-      return
-    }
-
+    // TODO this won't work in K2, we will eventually need an InterfaceMergerIr
     if (mergingEnabled) {
       SyntheticResolveExtension.registerExtension(
         project,
         InterfaceMerger(scanner, moduleDescriptorFactory),
       )
+    }
+
+    // Everything below this point is only when running in embedded compilation mode. If running in
+    // KSP, there's nothing else to do.
+    if (commandLineOptions.backend != AnalysisBackend.EMBEDDED) {
+      return
     }
 
     val sourceGenFolder = configuration.getNotNull(srcGenDirKey)
