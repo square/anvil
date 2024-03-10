@@ -8,7 +8,6 @@ import com.squareup.anvil.compiler.compilationErrorLine
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
-import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
@@ -21,7 +20,6 @@ import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -1925,8 +1923,6 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   }
 
   @Test fun `assisted injections can be provided with a qualifier`() {
-    // TODO enable on KSP after BindingModuleGenerator supports KSP
-    assumeTrue(mode is Embedded)
     compile(
       """
       package com.squareup.test
