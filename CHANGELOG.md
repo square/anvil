@@ -6,11 +6,15 @@
 
 ### Changed
 
+- Interface merging is now done in the IR backend, improving performance and future compatibility with K2.
+
 ### Deprecated
 
 ### Removed
 
 ### Fixed
+
+- Nested interfaces and modules can now be contributed to enclosing classes.
 
 ### Security
 
