@@ -8,7 +8,7 @@ import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.codegen.incremental.AbsoluteFile
 import com.squareup.anvil.compiler.codegen.incremental.FileCacheOperations
 import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache
-import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache.Companion.GENERATED_FILE_CACHE_NAME
+import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache.Companion.binaryFile
 import com.squareup.anvil.compiler.codegen.incremental.ProjectDir
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import org.jetbrains.kotlin.analyzer.AnalysisResult
@@ -37,9 +37,8 @@ internal class CodeGenerationExtension(
 ) : AnalysisHandlerExtension {
 
   private val generatedFileCache by lazy(NONE) {
-    val binaryFile = cacheDir.resolve(GENERATED_FILE_CACHE_NAME)
     GeneratedFileCache.fromFile(
-      binaryFile = binaryFile,
+      binaryFile = binaryFile(cacheDir),
       projectDir = projectDir,
     )
   }
@@ -87,23 +86,6 @@ internal class CodeGenerationExtension(
     if (didRecompile) return null
     didRecompile = true
 
-    val filesAsAbsoluteFiles by lazy(NONE) {
-      files.map { AbsoluteFile(File(it.virtualFilePath)) }
-    }
-
-    // For incremental compilation: restore any missing generated files from the cache,
-    // and delete any generated files that are out-of-date due to source changes.
-    if (trackSourceFiles) {
-      cacheOperations.restoreFromCache(inputSourceFiles = filesAsAbsoluteFiles)
-    }
-
-    // OLD incremental behavior: just delete everything if we're not tracking source files
-    if (!trackSourceFiles) {
-      generatedDir.listFiles()?.forEach {
-        check(it.deleteRecursively()) { "Could not clean file: $it" }
-      }
-    }
-
     // The files in `files` can include generated files.
     // Those files must exist when they're passed in to `anvilModule.addFiles(...)` to avoid:
     // https://youtrack.jetbrains.com/issue/KT-49340
@@ -111,10 +93,26 @@ internal class CodeGenerationExtension(
     val anvilModule = moduleDescriptorFactory.create(module)
     anvilModule.addFiles(files)
 
+    val restoredFiles = if (shouldRestoreFromCache()) {
+      // For incremental compilation: restore any missing generated files from the cache,
+      // and delete any generated files that are out-of-date due to source changes.
+      cacheOperations.restoreFromCache(generatedDir)
+        .toKtFiles(psiManager, anvilModule)
+    } else {
+      // OLD incremental behavior: just delete everything if we're not tracking source files
+      generatedDir.listFiles()?.forEach {
+        check(it.deleteRecursively()) { "Could not clean file: $it" }
+      }
+      emptyList()
+    }
+
+    val inputsAndRestored = restoredFiles + files
+      .filter { File(it.virtualFilePath).exists() }
+
     // If there are no changed files,
     // don't parse or generate anything all over again for the same results.
     // We can't return null, but we can return an empty AnalysisResult.
-    if (trackSourceFiles && files.isEmpty()) {
+    if (trackSourceFiles && inputsAndRestored.isEmpty()) {
       return RetryWithAdditionalRoots(
         bindingContext = bindingTrace.bindingContext,
         moduleDescriptor = anvilModule,
@@ -128,10 +126,13 @@ internal class CodeGenerationExtension(
       codeGenerators = codeGenerators,
       psiManager = psiManager,
       anvilModule = anvilModule,
-      files = files,
+      files = inputsAndRestored,
     )
 
     if (trackSourceFiles) {
+
+      val filesAsAbsoluteFiles = files.map { AbsoluteFile(File(it.virtualFilePath)) }
+
       // Add all generated files to the cache.
       cacheOperations.addToCache(
         sourceFiles = filesAsAbsoluteFiles,
@@ -152,6 +153,17 @@ internal class CodeGenerationExtension(
       additionalKotlinRoots = listOf(generatedDir),
       addToEnvironment = true,
     )
+  }
+
+  private fun shouldRestoreFromCache(): Boolean {
+    return when {
+      !trackSourceFiles -> false
+      // If caching is enabled but the cache doesn't exist,
+      // we still need to treat any files in the generated directory as untracked.
+      // The cache file will be created at the end of onAnalysisCompleted.
+      !binaryFile(cacheDir).exists() -> false
+      else -> true
+    }
   }
 
   private fun generateCode(

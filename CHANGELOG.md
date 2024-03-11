@@ -7,6 +7,7 @@
 ### Changed
 
 - Interface merging is now done in the IR backend, improving performance and future compatibility with K2.
+- Update Dagger to `2.51`.
 
 ### Deprecated
 

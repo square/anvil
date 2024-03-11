@@ -3,8 +3,10 @@ package com.squareup.anvil.compiler.codegen.incremental
 import com.rickbusarow.kase.stdlib.createSafely
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.equality.shouldBeEqualUsingFields
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldNotBeSameInstanceAs
 import org.junit.Test
 
 internal class GeneratedFileCacheTest : CacheTests {
@@ -188,6 +190,7 @@ internal class GeneratedFileCacheTest : CacheTests {
   @Test
   fun `serialization and deserialization work`() = test {
 
+    // use `use { }` to ensure the file is closed and the cache is written to disk
     cache.use {
       it.addAll(
         gen1.withSources(source1),
@@ -201,6 +204,8 @@ internal class GeneratedFileCacheTest : CacheTests {
     val deserializedCache = GeneratedFileCache.fromFile(binaryFile, projectDir)
 
     deserializedCache shouldBe cache
+    deserializedCache shouldBeEqualUsingFields cache
+    deserializedCache shouldNotBeSameInstanceAs cache
   }
 
   @Test
