@@ -1,7 +1,8 @@
 package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
-import com.squareup.anvil.compiler.api.AnvilBackend
+import com.squareup.anvil.compiler.api.AnalysisBackend
+import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
@@ -36,9 +37,13 @@ internal const val trackSourceFilesName = "track-source-files"
 internal val trackSourceFilesKey =
   CompilerConfigurationKey.create<Boolean>("anvil $trackSourceFilesName")
 
-internal const val backendName = "backend"
-internal val backendKey =
-  CompilerConfigurationKey.create<String>("anvil $backendName")
+internal const val analysisBackendName = "analysis-backend"
+internal val analysisBackendKey =
+  CompilerConfigurationKey.create<String>("anvil $analysisBackendName")
+
+internal const val mergingBackendName = "merging-backend"
+internal val mergingBackendKey =
+  CompilerConfigurationKey.create<String>("anvil $mergingBackendName")
 
 /**
  * Parses arguments from the Gradle plugin for the compiler plugin.
@@ -103,9 +108,16 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       allowMultipleOccurrences = false,
     ),
     CliOption(
-      optionName = backendName,
-      valueDescription = AnvilBackend.entries.joinToString("|", "<", ">"),
-      description = "Controls whether Anvil is running as an embedded plugin or as KSP.",
+      optionName = analysisBackendName,
+      valueDescription = AnalysisBackend.entries.joinToString("|", "<", ">"),
+      description = "Controls whether Anvil analysis is running as an embedded plugin or as KSP.",
+      required = false,
+      allowMultipleOccurrences = false,
+    ),
+    CliOption(
+      optionName = mergingBackendName,
+      valueDescription = ComponentMergingBackend.entries.joinToString("|", "<", ">"),
+      description = "Controls whether module merging is running as an IR plugin or as KSP.",
       required = false,
       allowMultipleOccurrences = false,
     ),
@@ -133,7 +145,7 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       trackSourceFilesName ->
         configuration.put(trackSourceFilesKey, value.toBoolean())
 
-      backendName -> configuration.put(backendKey, value)
+      analysisBackendName -> configuration.put(analysisBackendKey, value)
     }
   }
 }
