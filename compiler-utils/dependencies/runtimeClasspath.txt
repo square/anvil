@@ -1,4 +1,4 @@
-com.google.dagger:dagger:2.50
+com.google.dagger:dagger:2.51
 com.squareup:kotlinpoet-jvm:1.16.0
 com.squareup:kotlinpoet:1.16.0
 javax.inject:javax.inject:1
