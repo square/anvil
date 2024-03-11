@@ -243,7 +243,6 @@ internal class InterfaceMergerIr(
   }
 }
 
-// TODO is this necessary in IR? Think all supertypes should already be resolved
 internal fun ClassReferenceIr.allSuperTypeClassReferences(
   context: IrPluginContext,
   includeSelf: Boolean = false,
