@@ -50,13 +50,14 @@ buildConfig {
       topLevelConstants = true
     }
 
-    val buildM2 = rootProject.layout.buildDirectory.dir("m2").map { "File(\"${it}\")" }
-    buildConfigField("java.io.File", "localBuildM2Dir", buildM2)
-    buildConfigField("String", "anvilVersion", "\"$VERSION_NAME\"")
-    buildConfigField("String", "kotlinVersion", "\"${libs.versions.kotlin.get()}\"")
-    buildConfigField("String", "gradleVersion", "\"${gradle.gradleVersion}\"")
-    buildConfigField("String", "daggerVersion", "\"${libs.versions.dagger.get()}\"")
-    buildConfigField("kotlin.Boolean", "fullTestRun", libs.versions.config.fullTestRun.get())
+    val buildM2 = rootProject.layout.buildDirectory.dir("m2").map { it.asFile }
+    buildConfigField("anvilVersion", VERSION_NAME)
+    buildConfigField("daggerVersion", libs.versions.dagger)
+    buildConfigField("fullTestRun", libs.versions.config.fullTestRun.map(String::toBoolean))
+    buildConfigField("gradleVersion", gradle.gradleVersion)
+    buildConfigField("kotlinVersion", libs.versions.kotlin)
+    buildConfigField("kspVersion", libs.versions.ksp)
+    buildConfigField("localBuildM2Dir", buildM2)
   }
 }
 
