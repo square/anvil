@@ -27,6 +27,7 @@ internal class CacheTestEnvironment(
   val binaryFile = workingDir.resolve("cache.bin")
 
   val projectDir = ProjectDir(workingDir)
+  val generatedDir = workingDir.resolve("generated")
 
   val cache = GeneratedFileCache.fromFile(
     binaryFile = binaryFile,
@@ -86,7 +87,7 @@ internal class CacheTestEnvironment(
     path: String,
     content: String = "content for $path",
   ): GeneratedFileWithSources = GeneratedFileWithSources(
-    file = workingDir.resolve("generated/$path").createSafely(content = content),
+    file = generatedDir.resolve(path).createSafely(content = content),
     content = content,
     sourceFiles = emptySet(),
   )
@@ -119,17 +120,6 @@ internal class CacheTestEnvironment(
 
   fun FileCacheOperations.addToCache(vararg gens: GeneratedFileWithSources) {
     addToCache(emptyList(), gens.toList())
-  }
-
-  fun FileCacheOperations.restoreFromCache(vararg sources: FileType) {
-    restoreFromCache(
-      sources.map {
-        when (it) {
-          is AbsoluteFile -> it
-          is RelativeFile -> it.absolute
-        }
-      },
-    )
   }
 
   fun newCache(binaryFile: File = this.binaryFile): GeneratedFileCache {

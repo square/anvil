@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.codegen.incremental
 
+import com.rickbusarow.kase.stdlib.createSafely
 import io.kotest.matchers.shouldBe
 import org.junit.Test
 
@@ -15,7 +16,7 @@ internal class FileCacheOperationsTest : CacheTests {
 
     val newCache = newCache()
 
-    newCache.sourceFiles shouldBe setOf(source1, source2)
+    newCache.rootSourceFiles shouldBe setOf(source1, source2)
 
     newCache.getGeneratedFilesRecursive(source1) shouldBe setOf(gen1.relativeFile)
     newCache.getGeneratedFilesRecursive(source2) shouldBe setOf(gen2.relativeFile)
@@ -33,7 +34,7 @@ internal class FileCacheOperationsTest : CacheTests {
     listOf(gen1, gen2, gen3)
       .forEach { it.file.delete() }
 
-    fileOperations.restoreFromCache(source1, source2)
+    fileOperations.restoreFromCache(generatedDir)
 
     currentFiles() shouldBe listOf(
       gen1.relativeFile,
@@ -63,7 +64,7 @@ internal class FileCacheOperationsTest : CacheTests {
       gen3.withSources(gen2.toSourceFile()),
     )
 
-    fileOperations.restoreFromCache(inputSourceFiles = emptyList())
+    fileOperations.restoreFromCache(generatedDir)
 
     currentFiles() shouldBe listOf(
       gen1.relativeFile,
@@ -86,7 +87,7 @@ internal class FileCacheOperationsTest : CacheTests {
 
       source1.writeText("changed")
 
-      fileOperations.restoreFromCache(source1)
+      fileOperations.restoreFromCache(generatedDir)
 
       currentFiles() shouldBe listOf(gen3.relativeFile, source1, source2)
     }
@@ -102,9 +103,27 @@ internal class FileCacheOperationsTest : CacheTests {
 
     source2.writeText("changed")
 
-    fileOperations.restoreFromCache(source2)
+    fileOperations.restoreFromCache(generatedDir)
 
     currentFiles() shouldBe listOf(gen1.relativeFile, source1, source2)
+  }
+
+  @Test
+  fun `restoreFromCache deletes any un-tracked files in the generated directory`() = test {
+
+    fileOperations.addToCache(
+      gen1.withSources(source1),
+    )
+
+    val untracked = generatedDir.resolve("untracked.kt")
+      .createSafely("// this is not tracked")
+      .let { AbsoluteFile(it).relativeTo(projectDir) }
+
+    currentFiles() shouldBe listOf(gen1.relativeFile, untracked, source1)
+
+    fileOperations.restoreFromCache(generatedDir)
+
+    currentFiles() shouldBe listOf(gen1.relativeFile, source1)
   }
 
   @Test
@@ -124,7 +143,7 @@ internal class FileCacheOperationsTest : CacheTests {
     )
       .forEach { it.absoluteFile.delete() }
 
-    fileOperations.restoreFromCache(source2)
+    fileOperations.restoreFromCache(generatedDir)
 
     currentFiles() shouldBe listOf(gen2.relativeFile, gen3.relativeFile, source2)
   }
