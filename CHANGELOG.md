@@ -6,6 +6,8 @@
 
 ### Changed
 
+- Update Dagger to `2.51`.
+
 ### Deprecated
 
 ### Removed
