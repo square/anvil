@@ -1,8 +1,8 @@
 package com.squareup.anvil.compiler.codegen.incremental
 
-import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.FileWithContent
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
+import com.squareup.anvil.compiler.requireDelete
 import java.io.File
 import java.io.Serializable
 
@@ -46,7 +46,7 @@ internal class FileCacheOperations(
    * With the incomplete list, any missing files
    * that were generated from an unchanged source file would not be restored.
    */
-  fun restoreFromCache(generatedDir: File): List<FileWithContent> {
+  fun restoreFromCache(generatedDir: File): RestoreCacheResult {
 
     // Files that weren't generated.
     val rootSourceFiles = cache.rootSourceFiles
@@ -54,7 +54,10 @@ internal class FileCacheOperations(
     val (changedSourceFiles, unchangedSourceFiles) = rootSourceFiles
       .partition { cache.hasChanged(it) }
 
-    deleteInvalidFiles(rootSourceFiles = rootSourceFiles, changedSourceFiles = changedSourceFiles)
+    val deletedInvalid = deleteInvalidFiles(
+      rootSourceFiles = rootSourceFiles,
+      changedSourceFiles = changedSourceFiles,
+    )
 
     val restoredFiles = unchangedSourceFiles
       .flatMapTo(mutableSetOf()) { cache.getGeneratedFilesRecursive(it) }
@@ -76,9 +79,15 @@ internal class FileCacheOperations(
         )
       }
 
-    deleteUntrackedFiles(generatedDir = generatedDir, validGeneratedFiles = restoredFiles)
+    val deletedUntracked = deleteUntrackedFiles(
+      generatedDir = generatedDir,
+      validGeneratedFiles = restoredFiles,
+    )
 
-    return restoredFiles
+    return RestoreCacheResult(
+      restoredFiles = restoredFiles,
+      deletedFiles = deletedInvalid + deletedUntracked,
+    )
   }
 
   /**
@@ -92,19 +101,20 @@ internal class FileCacheOperations(
   private fun deleteUntrackedFiles(
     generatedDir: File,
     validGeneratedFiles: Collection<FileWithContent>,
-  ) {
+  ): List<AbsoluteFile> {
     val validFilesAsFiles = validGeneratedFiles.mapTo(mutableSetOf()) { it.file }
 
-    generatedDir.walkBottomUp()
+    return generatedDir.walkBottomUp()
       .filter { it.isFile }
       .filter { it !in validFilesAsFiles }
-      .forEach { it.requireDelete() }
+      .onEach { it.requireDelete() }
+      .mapTo(mutableListOf()) { AbsoluteFile(it) }
   }
 
   private fun deleteInvalidFiles(
     rootSourceFiles: Iterable<RelativeFile>,
     changedSourceFiles: List<RelativeFile>,
-  ) {
+  ): List<AbsoluteFile> {
     // Root source files aren't generated,
     // so if they don't exist, that means they were deleted intentionally.
     val deletedSources = rootSourceFiles.filter { !it.exists(projectDir) }
@@ -115,31 +125,28 @@ internal class FileCacheOperations(
     // For example, if `Source.kt` triggered the generation of `GenA.kt`
     // and `GenA.kt` triggered the generation of `GenB.kt`, then removing `Source.kt` should
     // invalidate `GenA.kt` and `GenB.kt`.
-    // Add the ANY token here so that anything using it as a source file is invalidated.
+    // Add the `ANY` token here so that anything using it as a source file is invalidated.
     val invalidSource = deletedOrChanged + RelativeFile.ANY
-    val toInvalidate = invalidSource
+
+    return invalidSource
       .plus(invalidSource.flatMap { cache.getGeneratedFilesRecursive(it) })
-      .toSet()
+      .mapNotNull { invalid ->
 
-    for (invalid in toInvalidate) {
+        val isSourceFile = rootSourceFiles.contains(invalid)
 
-      val isSourceFile = rootSourceFiles.contains(invalid)
+        cache.removeSource(invalid)
 
-      cache.removeSource(invalid)
+        if (isSourceFile) return@mapNotNull null
 
-      // There's nothing more to do for source files.
-      if (isSourceFile) continue
+        if (!invalid.exists(projectDir)) return@mapNotNull null
 
-      val absoluteFile = invalid.absolute(projectDir).file
-
-      // If the file is generated and it exists on the disk, delete it.
-      absoluteFile.requireDelete()
-    }
+        // If the file is generated and it exists on the disk, delete it.
+        invalid.absolute(projectDir).also { it.file.requireDelete() }
+      }
   }
 
-  private fun File.requireDelete() {
-    if (!deleteRecursively()) {
-      throw AnvilCompilationException("Could not delete file: $this")
-    }
-  }
+  internal data class RestoreCacheResult(
+    val restoredFiles: List<FileWithContent>,
+    val deletedFiles: List<AbsoluteFile>,
+  )
 }
