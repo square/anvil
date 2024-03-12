@@ -19,7 +19,6 @@ import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.util.ServiceLoader
 import kotlin.LazyThreadSafetyMode.NONE
@@ -52,6 +51,10 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
           project,
           ModuleMergerIr(scanner, moduleDescriptorFactory),
         )
+        IrGenerationExtension.registerExtension(
+          project,
+          InterfaceMergerIr(scanner, moduleDescriptorFactory),
+        )
       } else {
         // TODO in dagger-ksp support
       }
@@ -61,13 +64,6 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
     // KSP, there's nothing else to do.
     if (commandLineOptions.backend != AnalysisBackend.EMBEDDED) {
       return
-    }
-
-    if (mergingEnabled) {
-      SyntheticResolveExtension.registerExtension(
-        project,
-        InterfaceMerger(scanner, moduleDescriptorFactory),
-      )
     }
 
     val sourceGenFolder = configuration.getNotNull(srcGenDirKey)
