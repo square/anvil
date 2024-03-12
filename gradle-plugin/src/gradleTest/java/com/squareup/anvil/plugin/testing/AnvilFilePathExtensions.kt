@@ -1,8 +1,12 @@
-package com.squareup.anvil.plugin
+package com.squareup.anvil.plugin.testing
 
 import java.io.File
 
 interface AnvilFilePathExtensions {
+
+  /** resolves `build/anvil/main/caches` */
+  val File.anvilMainCaches: File
+    get() = resolve("build/anvil/main/caches")
 
   /** resolves `build/anvil/main/generated` */
   val File.anvilMainGenerated: File
