@@ -8,6 +8,7 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.toClassReferenceOrNull
@@ -29,6 +30,7 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.DescriptorUtils
 import org.jetbrains.kotlin.resolve.descriptorUtil.classId
+import java.io.File
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Qualifier
@@ -131,3 +133,10 @@ private val truePredicate: (Any?) -> Boolean = { true }
  * method throws an exception if more than one element is found.
  */
 internal fun <T> Iterable<T>.singleOrEmpty(): T? = singleOrEmpty(truePredicate)
+
+/** Deletes the receiver file or throws an exception if it couldn't be deleted. */
+internal fun File.requireDelete() {
+  if (!deleteRecursively()) {
+    throw AnvilCompilationException("Could not delete file: $this")
+  }
+}

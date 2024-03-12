@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache
 import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache.Companion.binaryFile
 import com.squareup.anvil.compiler.codegen.incremental.ProjectDir
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
+import com.squareup.anvil.compiler.requireDelete
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.analyzer.AnalysisResult.RetryWithAdditionalRoots
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -72,9 +73,43 @@ internal class CodeGenerationExtension(
     bindingTrace: BindingTrace,
     componentProvider: ComponentProvider,
   ): AnalysisResult? {
-    // Tell the compiler that we have something to do in the analysisCompleted() method if
-    // necessary.
-    return if (!didRecompile) AnalysisResult.EMPTY else null
+    // If we already went through the `analysisCompleted` stage, then there's nothing more to do.
+    // Returning null ends the cycle.
+    if (didRecompile) return null
+
+    // Either sync the local file state with our internal cache,
+    // or delete any existing generated files (if caching isn't enabled).
+    val createdChanges = if (shouldRestoreFromCache()) {
+      // For incremental compilation: restore any missing generated files from the cache,
+      // and delete any generated files that are out-of-date due to source changes.
+      cacheOperations.restoreFromCache(generatedDir)
+        .let { it.restoredFiles.isNotEmpty() || it.deletedFiles.isNotEmpty() }
+    } else {
+      // OLD incremental behavior: just delete everything if we're not tracking source files
+      generatedDir
+        .walkBottomUp()
+        .filter { it.isFile }
+        .also { it.forEach(File::requireDelete) }
+        .any()
+    }
+
+    return if (createdChanges) {
+      // Tell the compiler to analyze the generated files *before* calling `analysisCompleted()`.
+      // This ensures that the compiler will update/delete any references to stale code in the
+      // ModuleDescriptor, as well as updating/deleting any stale .class files.
+      // Without redoing the analysis, the PSI and Descriptor APIs are out of sync.
+      // See discussion here: https://github.com/square/anvil/pull/877#discussion_r1517184297
+      RetryWithAdditionalRoots(
+        bindingContext = bindingTrace.bindingContext,
+        moduleDescriptor = module,
+        additionalJavaRoots = emptyList(),
+        additionalKotlinRoots = listOf(generatedDir),
+        addToEnvironment = true,
+      )
+    } else {
+      // Tell the compiler that we have something to do in `analysisCompleted()`.
+      AnalysisResult.EMPTY
+    }
   }
 
   override fun analysisCompleted(
@@ -93,40 +128,11 @@ internal class CodeGenerationExtension(
     val anvilModule = moduleDescriptorFactory.create(module)
     anvilModule.addFiles(files)
 
-    val restoredFiles = if (shouldRestoreFromCache()) {
-      // For incremental compilation: restore any missing generated files from the cache,
-      // and delete any generated files that are out-of-date due to source changes.
-      cacheOperations.restoreFromCache(generatedDir)
-        .toKtFiles(psiManager, anvilModule)
-    } else {
-      // OLD incremental behavior: just delete everything if we're not tracking source files
-      generatedDir.listFiles()?.forEach {
-        check(it.deleteRecursively()) { "Could not clean file: $it" }
-      }
-      emptyList()
-    }
-
-    val inputsAndRestored = restoredFiles + files
-      .filter { File(it.virtualFilePath).exists() }
-
-    // If there are no changed files,
-    // don't parse or generate anything all over again for the same results.
-    // We can't return null, but we can return an empty AnalysisResult.
-    if (trackSourceFiles && inputsAndRestored.isEmpty()) {
-      return RetryWithAdditionalRoots(
-        bindingContext = bindingTrace.bindingContext,
-        moduleDescriptor = anvilModule,
-        additionalJavaRoots = emptyList(),
-        additionalKotlinRoots = listOf(generatedDir),
-        addToEnvironment = true,
-      )
-    }
-
     val generatedFiles = generateCode(
       codeGenerators = codeGenerators,
       psiManager = psiManager,
       anvilModule = anvilModule,
-      files = inputsAndRestored,
+      files = files,
     )
 
     if (trackSourceFiles) {
