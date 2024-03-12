@@ -88,6 +88,7 @@ dependencies {
   testImplementation(libs.truth)
 
   gradleTestImplementation(gradleTestKit())
+  gradleTestImplementation(libs.classgraph)
   gradleTestImplementation(libs.dagger2)
   gradleTestImplementation(libs.junit.jupiter)
   gradleTestImplementation(libs.junit.jupiter.api)

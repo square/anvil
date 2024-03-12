@@ -1,4 +1,4 @@
-package com.squareup.anvil.plugin
+package com.squareup.anvil.plugin.testing
 
 import com.rickbusarow.kase.gradle.dsl.BuildFileSpec
 import com.rickbusarow.kase.gradle.dsl.model.AbstractDslElementContainer
