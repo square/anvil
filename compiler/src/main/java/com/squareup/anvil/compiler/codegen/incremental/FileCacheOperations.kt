@@ -1,7 +1,9 @@
 package com.squareup.anvil.compiler.codegen.incremental
 
-import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.api.FileWithContent
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
+import com.squareup.anvil.compiler.requireDelete
+import java.io.File
 import java.io.Serializable
 
 internal class FileCacheOperations(
@@ -32,76 +34,119 @@ internal class FileCacheOperations(
   }
 
   /**
-   * @param inputSourceFiles The source files that have changed since the last compilation.
+   * For any non-generated file in the cache that no longer exists on disk,
+   * delete any downstream generated files from the disk.
+   *
+   * For any non-generated file on disk that is identical to its version in the cache,
+   * restore any downstream generated files from the cache to the disk.
+   *
+   * We use all cached source files as the basis for cache restoration,
+   * instead of using the `List<KtFile>` passed in by the compiler.
+   * The file list from the compiler can be incremental, not including all extant source files.
+   * With the incomplete list, any missing files
+   * that were generated from an unchanged source file would not be restored.
    */
-  fun restoreFromCache(inputSourceFiles: List<AbsoluteFile>) {
+  fun restoreFromCache(generatedDir: File): RestoreCacheResult {
 
-    val (changedInput, unchangedInput) = inputSourceFiles.partition { cache.hasChanged(it) }
+    // Files that weren't generated.
+    val rootSourceFiles = cache.rootSourceFiles
 
-    val changedSource = changedInput
-      .mapTo(mutableSetOf()) { it.relativeTo(projectDir) }
+    val (changedSourceFiles, unchangedSourceFiles) = rootSourceFiles
+      .partition { cache.hasChanged(it) }
 
-    // Source files that don't have any source files of their own.
-    val rootSourceFiles = cache.sourceFiles
-      .filter { source ->
-        source != RelativeFile.ANY &&
-          cache.getSourceFiles(source).isEmpty()
+    val deletedInvalid = deleteInvalidFiles(
+      rootSourceFiles = rootSourceFiles,
+      changedSourceFiles = changedSourceFiles,
+    )
+
+    val restoredFiles = unchangedSourceFiles
+      .flatMapTo(mutableSetOf()) { cache.getGeneratedFilesRecursive(it) }
+      .map { relative ->
+        val absolute = projectDir.resolve(relative).file
+
+        if (!absolute.isFile) {
+          absolute.parentFile.mkdirs()
+          absolute.createNewFile()
+        }
+
+        val cachedContent = cache.getContent(relative)
+        absolute.writeText(cachedContent)
+
+        GeneratedFileWithSources(
+          file = absolute,
+          content = cachedContent,
+          sourceFiles = emptySet(),
+        )
       }
 
+    val deletedUntracked = deleteUntrackedFiles(
+      generatedDir = generatedDir,
+      validGeneratedFiles = restoredFiles,
+    )
+
+    return RestoreCacheResult(
+      restoredFiles = restoredFiles,
+      deletedFiles = deletedInvalid + deletedUntracked,
+    )
+  }
+
+  /**
+   * If there are any files in the generated directory that aren't valid files
+   * (derived from current, unchanged source files), delete them.
+   * They aren't tracked in the cache, or they would have been deleted already.
+   *
+   * This should theoretically never happen because of how Gradle treats
+   * the generated "output" directory, but that's technically not a guarantee.
+   */
+  private fun deleteUntrackedFiles(
+    generatedDir: File,
+    validGeneratedFiles: Collection<FileWithContent>,
+  ): List<AbsoluteFile> {
+    val validFilesAsFiles = validGeneratedFiles.mapTo(mutableSetOf()) { it.file }
+
+    return generatedDir.walkBottomUp()
+      .filter { it.isFile }
+      .filter { it !in validFilesAsFiles }
+      .onEach { it.requireDelete() }
+      .mapTo(mutableListOf()) { AbsoluteFile(it) }
+  }
+
+  private fun deleteInvalidFiles(
+    rootSourceFiles: Iterable<RelativeFile>,
+    changedSourceFiles: List<RelativeFile>,
+  ): List<AbsoluteFile> {
     // Root source files aren't generated,
     // so if they don't exist, that means they were deleted intentionally.
     val deletedSources = rootSourceFiles.filter { !it.exists(projectDir) }
 
-    val deletedOrChanged = deletedSources + changedSource
+    val deletedOrChanged = deletedSources + changedSourceFiles
 
     // All generated files that are downstream of changed or deleted source files.
     // For example, if `Source.kt` triggered the generation of `GenA.kt`
     // and `GenA.kt` triggered the generation of `GenB.kt`, then removing `Source.kt` should
     // invalidate `GenA.kt` and `GenB.kt`.
-    val toInvalidate = deletedOrChanged
-      // Add the ANY token here so that anything using it as a source file is invalidated.
-      .plus(RelativeFile.ANY)
-      .flatMap(cache::getGeneratedFilesRecursive)
-      .plus(deletedOrChanged)
-      .toSet()
+    // Add the `ANY` token here so that anything using it as a source file is invalidated.
+    val invalidSource = deletedOrChanged + RelativeFile.ANY
 
-    // For each invalid file:
-    // - remove it from the cache
-    // - delete any generated files that claim it as a source
-    for (file in toInvalidate) {
-      cache.removeSource(file)
+    return invalidSource
+      .plus(invalidSource.flatMap { cache.getGeneratedFilesRecursive(it) })
+      .mapNotNull { invalid ->
 
-      // Delete generated files, not source files.
-      if (cache.isGenerated(file)) {
-        val abs = file.absolute(projectDir).file
-        if (abs.exists()) {
+        val isSourceFile = rootSourceFiles.contains(invalid)
 
-          if (inputSourceFiles.toSet().contains(file.absolute(projectDir))) {
-            throw AnvilCompilationException(
-              "Generated file ${file.absolute(projectDir)} was marked as changed, but it was " +
-                "also marked as a source file. This is a bug in Anvil. Please report it.",
-            )
-          }
+        cache.removeSource(invalid)
 
-          if (!abs.deleteRecursively() && abs.exists()) {
-            throw AnvilCompilationException("Could not delete file: $abs")
-          }
-        }
+        if (isSourceFile) return@mapNotNull null
+
+        if (!invalid.exists(projectDir)) return@mapNotNull null
+
+        // If the file is generated and it exists on the disk, delete it.
+        invalid.absolute(projectDir).also { it.file.requireDelete() }
       }
-    }
-
-    val unchangedGenerated =
-      unchangedInput.flatMapTo(mutableSetOf()) { cache.getGeneratedFilesRecursive(it) }
-
-    for (gen in unchangedGenerated) {
-      val file = projectDir.resolve(gen).file
-      // `File.isFile` implies that the file exists as well. We will write the file if nothing is
-      // there, and we will overwrite the file if it exists but is a directory.
-      if (!file.isFile) {
-        file.parentFile.mkdirs()
-        file.createNewFile()
-        file.writeText(cache.getContent(gen))
-      }
-    }
   }
+
+  internal data class RestoreCacheResult(
+    val restoredFiles: List<FileWithContent>,
+    val deletedFiles: List<AbsoluteFile>,
+  )
 }

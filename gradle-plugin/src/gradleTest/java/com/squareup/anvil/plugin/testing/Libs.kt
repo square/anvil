@@ -1,4 +1,4 @@
-package com.squareup.anvil.plugin
+package com.squareup.anvil.plugin.testing
 
 // TODO (rbusarow) generate this automatically from the version catalog
 class Libs(

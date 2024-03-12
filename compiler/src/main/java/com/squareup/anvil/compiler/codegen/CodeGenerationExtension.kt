@@ -8,9 +8,10 @@ import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.codegen.incremental.AbsoluteFile
 import com.squareup.anvil.compiler.codegen.incremental.FileCacheOperations
 import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache
-import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache.Companion.GENERATED_FILE_CACHE_NAME
+import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache.Companion.binaryFile
 import com.squareup.anvil.compiler.codegen.incremental.ProjectDir
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
+import com.squareup.anvil.compiler.requireDelete
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.analyzer.AnalysisResult.RetryWithAdditionalRoots
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
@@ -37,9 +38,8 @@ internal class CodeGenerationExtension(
 ) : AnalysisHandlerExtension {
 
   private val generatedFileCache by lazy(NONE) {
-    val binaryFile = cacheDir.resolve(GENERATED_FILE_CACHE_NAME)
     GeneratedFileCache.fromFile(
-      binaryFile = binaryFile,
+      binaryFile = binaryFile(cacheDir),
       projectDir = projectDir,
     )
   }
@@ -73,9 +73,43 @@ internal class CodeGenerationExtension(
     bindingTrace: BindingTrace,
     componentProvider: ComponentProvider,
   ): AnalysisResult? {
-    // Tell the compiler that we have something to do in the analysisCompleted() method if
-    // necessary.
-    return if (!didRecompile) AnalysisResult.EMPTY else null
+    // If we already went through the `analysisCompleted` stage, then there's nothing more to do.
+    // Returning null ends the cycle.
+    if (didRecompile) return null
+
+    // Either sync the local file state with our internal cache,
+    // or delete any existing generated files (if caching isn't enabled).
+    val createdChanges = if (shouldRestoreFromCache()) {
+      // For incremental compilation: restore any missing generated files from the cache,
+      // and delete any generated files that are out-of-date due to source changes.
+      cacheOperations.restoreFromCache(generatedDir)
+        .let { it.restoredFiles.isNotEmpty() || it.deletedFiles.isNotEmpty() }
+    } else {
+      // OLD incremental behavior: just delete everything if we're not tracking source files
+      generatedDir
+        .walkBottomUp()
+        .filter { it.isFile }
+        .also { it.forEach(File::requireDelete) }
+        .any()
+    }
+
+    return if (createdChanges) {
+      // Tell the compiler to analyze the generated files *before* calling `analysisCompleted()`.
+      // This ensures that the compiler will update/delete any references to stale code in the
+      // ModuleDescriptor, as well as updating/deleting any stale .class files.
+      // Without redoing the analysis, the PSI and Descriptor APIs are out of sync.
+      // See discussion here: https://github.com/square/anvil/pull/877#discussion_r1517184297
+      RetryWithAdditionalRoots(
+        bindingContext = bindingTrace.bindingContext,
+        moduleDescriptor = module,
+        additionalJavaRoots = emptyList(),
+        additionalKotlinRoots = listOf(generatedDir),
+        addToEnvironment = true,
+      )
+    } else {
+      // Tell the compiler that we have something to do in `analysisCompleted()`.
+      AnalysisResult.EMPTY
+    }
   }
 
   override fun analysisCompleted(
@@ -87,42 +121,12 @@ internal class CodeGenerationExtension(
     if (didRecompile) return null
     didRecompile = true
 
-    val filesAsAbsoluteFiles by lazy(NONE) {
-      files.map { AbsoluteFile(File(it.virtualFilePath)) }
-    }
-
-    // For incremental compilation: restore any missing generated files from the cache,
-    // and delete any generated files that are out-of-date due to source changes.
-    if (trackSourceFiles) {
-      cacheOperations.restoreFromCache(inputSourceFiles = filesAsAbsoluteFiles)
-    }
-
-    // OLD incremental behavior: just delete everything if we're not tracking source files
-    if (!trackSourceFiles) {
-      generatedDir.listFiles()?.forEach {
-        check(it.deleteRecursively()) { "Could not clean file: $it" }
-      }
-    }
-
     // The files in `files` can include generated files.
     // Those files must exist when they're passed in to `anvilModule.addFiles(...)` to avoid:
     // https://youtrack.jetbrains.com/issue/KT-49340
     val psiManager = PsiManager.getInstance(project)
     val anvilModule = moduleDescriptorFactory.create(module)
     anvilModule.addFiles(files)
-
-    // If there are no changed files,
-    // don't parse or generate anything all over again for the same results.
-    // We can't return null, but we can return an empty AnalysisResult.
-    if (trackSourceFiles && files.isEmpty()) {
-      return RetryWithAdditionalRoots(
-        bindingContext = bindingTrace.bindingContext,
-        moduleDescriptor = anvilModule,
-        additionalJavaRoots = emptyList(),
-        additionalKotlinRoots = listOf(generatedDir),
-        addToEnvironment = true,
-      )
-    }
 
     val generatedFiles = generateCode(
       codeGenerators = codeGenerators,
@@ -132,6 +136,9 @@ internal class CodeGenerationExtension(
     )
 
     if (trackSourceFiles) {
+
+      val filesAsAbsoluteFiles = files.map { AbsoluteFile(File(it.virtualFilePath)) }
+
       // Add all generated files to the cache.
       cacheOperations.addToCache(
         sourceFiles = filesAsAbsoluteFiles,
@@ -152,6 +159,17 @@ internal class CodeGenerationExtension(
       additionalKotlinRoots = listOf(generatedDir),
       addToEnvironment = true,
     )
+  }
+
+  private fun shouldRestoreFromCache(): Boolean {
+    return when {
+      !trackSourceFiles -> false
+      // If caching is enabled but the cache doesn't exist,
+      // we still need to treat any files in the generated directory as untracked.
+      // The cache file will be created at the end of onAnalysisCompleted.
+      !binaryFile(cacheDir).exists() -> false
+      else -> true
+    }
   }
 
   private fun generateCode(
