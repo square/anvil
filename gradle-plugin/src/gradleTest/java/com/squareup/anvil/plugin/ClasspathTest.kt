@@ -6,6 +6,7 @@ import com.rickbusarow.kase.gradle.GradleKotlinTestVersions
 import com.rickbusarow.kase.gradle.versions
 import com.rickbusarow.kase.kase
 import com.squareup.anvil.plugin.buildProperties.anvilVersion
+import com.squareup.anvil.plugin.testing.BaseGradleTest
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestFactory
 
