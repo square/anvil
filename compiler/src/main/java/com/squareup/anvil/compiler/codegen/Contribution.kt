@@ -40,7 +40,6 @@ internal sealed interface Contribution {
     val contribution = this
     // Combination name of origin, scope, and boundType
     val suffix = origin.simpleName.capitalize() +
-      bindingModuleNameSuffix +
       "As" +
       contribution.boundType.generateClassNameString().capitalize() +
       "To" +
