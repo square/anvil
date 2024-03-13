@@ -51,10 +51,6 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
           project,
           ModuleMergerIr(scanner, moduleDescriptorFactory),
         )
-        IrGenerationExtension.registerExtension(
-          project,
-          InterfaceMergerIr(scanner, moduleDescriptorFactory),
-        )
       } else {
         // TODO in dagger-ksp support
       }
