@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.codegen.incremental
 
 import com.squareup.anvil.compiler.api.FileWithContent
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
+import com.squareup.anvil.compiler.mapToSet
 import com.squareup.anvil.compiler.requireDelete
 import java.io.File
 import java.io.Serializable
@@ -35,24 +36,40 @@ internal class FileCacheOperations(
 
   /**
    * For any non-generated file in the cache that no longer exists on disk,
-   * delete any downstream generated files from the disk.
+   * we delete any downstream generated files from the disk.
    *
-   * For any non-generated file on disk that is identical to its version in the cache,
-   * restore any downstream generated files from the cache to the disk.
+   * The [inputKtFiles] parameter should correspond to the `files: List<KtFile>` parameters in
+   * [doAnalysis][com.squareup.anvil.compiler.codegen.CodeGenerationExtension.doAnalysis].
+   *
+   * For any file in [inputKtFiles], we delete it and everything generated from it from the cache,
+   * and we delete anything generated from it from the disk.
+   * This is because we'll be passing those files through the code generators again anyway,
+   * so we'll get up-to-date results. This is also useful when a file's content is unchanged,
+   * but there was a classpath change that would result in different bindings or interface merges.
+   *
+   * For any non-generated file on disk that was *not* passed in as `inputKtFiles`
+   * *and* is identical to its version in the cache,
+   * we restore any downstream generated files from the cache to the disk.
    *
    * We use all cached source files as the basis for cache restoration,
-   * instead of using the `List<KtFile>` passed in by the compiler.
-   * The file list from the compiler can be incremental, not including all extant source files.
-   * With the incomplete list, any missing files
-   * that were generated from an unchanged source file would not be restored.
+   * instead of using the [inputKtFiles] passed in by the compiler.
+   * Those `inputKtFiles` are an incremental, possibly partial list of source files.
+   * If a source file exists on disk but isn't in the list,
+   * that means the compiler expects it and any generated files to be up-to-date --
+   * so that's what we need to restore.
    */
-  fun restoreFromCache(generatedDir: File): RestoreCacheResult {
+  fun restoreFromCache(generatedDir: File, inputKtFiles: Set<RelativeFile>): RestoreCacheResult {
 
     // Files that weren't generated.
     val rootSourceFiles = cache.rootSourceFiles
 
     val (changedSourceFiles, unchangedSourceFiles) = rootSourceFiles
-      .partition { cache.hasChanged(it) }
+      .partition {
+        // We treat anything in `inputKtFiles` as changed.
+        // If our cache is somehow out of sync with the file's content,
+        // then we can't trust anything else in the cache related to this file either.
+        it in inputKtFiles || cache.hasChanged(it)
+      }
 
     val deletedInvalid = deleteInvalidFiles(
       rootSourceFiles = rootSourceFiles,
@@ -102,7 +119,7 @@ internal class FileCacheOperations(
     generatedDir: File,
     validGeneratedFiles: Collection<FileWithContent>,
   ): List<AbsoluteFile> {
-    val validFilesAsFiles = validGeneratedFiles.mapTo(mutableSetOf()) { it.file }
+    val validFilesAsFiles = validGeneratedFiles.mapToSet { it.file }
 
     return generatedDir.walkBottomUp()
       .filter { it.isFile }
