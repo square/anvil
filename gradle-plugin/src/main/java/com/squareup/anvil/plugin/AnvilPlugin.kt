@@ -8,7 +8,6 @@ import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.TestExtension
 import com.android.build.gradle.TestedExtension
-import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -18,10 +17,8 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9
 import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0
-import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.FilesSubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
@@ -34,7 +31,6 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.util.Locale
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("DEPRECATION")
@@ -49,14 +45,10 @@ private typealias UnitTestVariantDeprecated = com.android.build.gradle.api.UnitT
 @Suppress("unused")
 internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
-  private companion object {
-    val SUPPORTED_PLATFORMS = setOf(androidJvm, jvm)
-  }
-
   private val variantCache = ConcurrentHashMap<String, Variant>()
 
   override fun apply(target: Project) {
-    val extension = target.extensions.create("anvil", AnvilExtension::class.java)
+    target.extensions.create("anvil", AnvilExtension::class.java, target)
 
     // TODO consider only lazily setting up these `anvil()` configurations in embedded mode?
     // Create a configuration for collecting CodeGenerator dependencies. We need to create all
@@ -101,58 +93,6 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         // for JVM modules. We already do this for the test configuration above, which is shared
         // between JVM and Android. The main configuration is specific to the JVM.
         getConfiguration(target, "main").extendsFrom(commonConfiguration)
-      }
-    }
-
-    target.afterEvaluate {
-      if (extension.useKspBackend.get() || extension.useKspComponentMergingBackend.get()) {
-        // Wire KSP
-        try {
-          target.pluginManager.apply("com.google.devtools.ksp")
-        } catch (e: Exception) {
-          // KSP not on the classpath, ask them to add it
-          error(
-            "Anvil's KSP backends require the KSP plugin to be applied to the project. " +
-              "Please apply the KSP Gradle plugin ('com.google.devtools.ksp') to your buildscript " +
-              "and try again.",
-          )
-        }
-        fun addKspDep(configurationName: String) {
-          target.dependencies.add(
-            configurationName,
-            "com.squareup.anvil:compiler:$VERSION",
-          )
-        }
-        // Add the KSP dependency to the appropriate configurations
-        // In KMP, we only add to androidJvm/jvm targets
-        val kExtension = target.kotlinExtension
-        if (kExtension is KotlinMultiplatformExtension) {
-          kExtension.targets
-            .matching { it.platformType in SUPPORTED_PLATFORMS }
-            .configureEach {
-              addKspDep(
-                "ksp${it.targetName.replaceFirstChar {
-                  if (it.isLowerCase()) {
-                    it.titlecase(
-                      Locale.US,
-                    )
-                  } else {
-                    it.toString()
-                  }
-                }}",
-              )
-            }
-        } else {
-          addKspDep("ksp")
-        }
-        target.extensions.configure(KspExtension::class.java) {
-          it.arg("generate-dagger-factories", extension.generateDaggerFactories.get().toString())
-          it.arg(
-            "generate-dagger-factories-only",
-            extension.generateDaggerFactoriesOnly.get().toString(),
-          )
-          it.arg("disable-component-merging", extension.disableComponentMerging.get().toString())
-        }
       }
     }
   }
