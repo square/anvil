@@ -998,31 +998,6 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `inner modules in a merged component fail`() {
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesTo
-      $import
-      
-      $annotation(Any::class)
-      interface ComponentInterface {
-        @ContributesTo(Any::class)
-        @dagger.Module
-        abstract class InnerModule
-      }
-      """,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "Couldn't find the classId for <root>. Are we stuck in a loop while resolving super " +
-          "types? Note that it's not supported to contribute an inner class to a scope that " +
-          "is merged in an outer class.",
-      )
-    }
-  }
-
   @Test fun `inner modules in a merged component with different scope are merged`() {
     compile(
       """

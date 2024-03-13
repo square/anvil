@@ -2493,6 +2493,58 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     }
   }
 
+  @Test
+  fun `a member injector is generated for a class only injected property setters`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+
+      class InjectClass {
+        @set:Inject
+        var value: String = "initial"
+          set(value) {
+            field = value
+          }
+     
+        override fun equals(other: Any?): Boolean {
+          if (this === other) return true
+          if (javaClass != other?.javaClass) return false
+     
+          other as InjectClass
+     
+          if (value != other.value) return false
+     
+          return true
+        }
+        
+        override fun hashCode() = value.hashCode()
+      }
+      """,
+    ) {
+      val injectClassMembersInjector = injectClass.membersInjector()
+
+      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
+
+      val membersInjectorInstance = constructor
+        .newInstance(Provider { "a" }) as MembersInjector<Any>
+
+      val injectInstanceConstructor = injectClass.createInstance()
+      membersInjectorInstance.injectMembers(injectInstanceConstructor)
+
+      val injectInstanceStatic = injectClass.createInstance()
+
+      injectClassMembersInjector.staticInjectMethod("setValue")
+        .invoke(null, injectInstanceStatic, "a")
+
+      assertThat(injectInstanceConstructor).isEqualTo(injectInstanceStatic)
+      assertThat(injectInstanceConstructor).isNotSameInstanceAs(injectInstanceStatic)
+    }
+  }
+
   private fun Class<*>.staticInjectMethod(memberName: String): Method {
     // We can't check the @InjectedFieldSignature annotation unfortunately, because it has class
     // retention.
