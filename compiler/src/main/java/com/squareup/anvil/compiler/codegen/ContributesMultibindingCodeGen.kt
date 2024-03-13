@@ -15,7 +15,7 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.checkNotGeneric
-import com.squareup.anvil.compiler.codegen.Contribution.Companion.generateFileSpec
+import com.squareup.anvil.compiler.codegen.Contribution.Companion.generateFileSpecs
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.checkClassExtendsBoundType
@@ -109,12 +109,13 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
               )
             }
 
-          contributions.generateFileSpec()
-            .writeTo(
+          for (spec in contributions.generateFileSpecs()) {
+            spec.writeTo(
               codeGenerator = env.codeGenerator,
               aggregating = false,
               originatingKSFiles = listOf(clazz.containingFile!!),
             )
+          }
         }
 
       return emptyList()
@@ -148,7 +149,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
           clazz.checkSingleSuperType(contributesMultibindingFqName)
           clazz.checkClassExtendsBoundType(contributesMultibindingFqName)
         }
-        .map { clazz ->
+        .flatMap { clazz ->
           val contributions = clazz.annotations
             .find(contributesMultibindingFqName)
             .also { it.checkNoDuplicateScopeAndBoundType() }
@@ -183,15 +184,15 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
               )
             }
 
-          val spec = contributions.generateFileSpec()
-
-          createGeneratedFile(
-            codeGenDir = codeGenDir,
-            packageName = spec.packageName,
-            fileName = spec.name,
-            content = spec.toString(),
-            sourceFile = clazz.containingFileAsJavaFile,
-          )
+          contributions.generateFileSpecs().map { spec ->
+            createGeneratedFile(
+              codeGenDir = codeGenDir,
+              packageName = spec.packageName,
+              fileName = spec.name,
+              content = spec.toString(),
+              sourceFile = clazz.containingFileAsJavaFile,
+            )
+          }
         }
         .toList()
     }

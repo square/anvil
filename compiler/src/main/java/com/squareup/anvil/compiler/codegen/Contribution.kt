@@ -39,7 +39,9 @@ internal sealed interface Contribution {
   fun generateBindingModule(): TypeSpec {
     val contribution = this
     // Combination name of origin, scope, and boundType
-    val suffix = "As" +
+    val suffix = origin.simpleName.capitalize() +
+      bindingModuleNameSuffix +
+      "As" +
       contribution.boundType.generateClassNameString().capitalize() +
       "To" +
       contribution.scope.generateClassNameString().capitalize() +
@@ -122,19 +124,18 @@ internal sealed interface Contribution {
 
   companion object {
     // The generic ensures the list is of the same subtype
-    fun <T : Contribution> List<T>.generateFileSpec(): FileSpec {
-      val first = first()
-      val origin = first.origin
-      val suffix = first.bindingModuleNameSuffix
-      val fileName = origin.generateClassName(suffix = suffix).simpleName
+    fun <T : Contribution> List<T>.generateFileSpecs(): List<FileSpec> {
+      val origin = first().origin
       val generatedPackage = origin.packageName.safePackageString(dotPrefix = true)
       // Give it a stable sort.
-      val specs = distinct()
+      return distinct()
         .sortedWith(COMPARATOR)
         .map(Contribution::generateBindingModule)
-      return FileSpec.createAnvilSpec(generatedPackage, fileName) {
-        addTypes(specs.sortedBy { it.name })
-      }
+        .map { spec ->
+          FileSpec.createAnvilSpec(generatedPackage, spec.name!!) {
+            addType(spec)
+          }
+        }
     }
 
     private val COMPARATOR: Comparator<Contribution> = compareBy<Contribution> {
