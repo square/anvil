@@ -48,8 +48,9 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   private val variantCache = ConcurrentHashMap<String, Variant>()
 
   override fun apply(target: Project) {
-    target.extensions.create("anvil", AnvilExtension::class.java)
+    target.extensions.create("anvil", AnvilExtension::class.java, target)
 
+    // TODO consider only lazily setting up these `anvil()` configurations in embedded mode?
     // Create a configuration for collecting CodeGenerator dependencies. We need to create all
     // configurations eagerly and cannot wait for applyToCompilation(..) below, because this
     // function is called in an afterEvaluate block by the Kotlin Gradle Plugin. That's too late
@@ -63,6 +64,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       extendsFrom(commonConfiguration)
     }
 
+    //  Wire up embedded plugins
     agpPlugins.forEach { agpPlugin ->
       target.pluginManager.withPlugin(agpPlugin) {
         // This is the common android test variant, similar to anvilTest above.

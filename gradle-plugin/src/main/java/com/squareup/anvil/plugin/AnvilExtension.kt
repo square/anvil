@@ -1,15 +1,39 @@
 package com.squareup.anvil.plugin
 
+import com.android.build.gradle.internal.utils.setDisallowChanges
+import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.Action
+import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.ProviderFactory
+import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm
+import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm
+import java.util.Locale
 import javax.inject.Inject
 
 public abstract class AnvilExtension @Inject constructor(
+  project: Project,
   objects: ObjectFactory,
   private val providers: ProviderFactory,
 ) {
+
+  init {
+    val useKspBackend = providers.gradleProperty("com.squareup.anvil.useKspBackend")
+      .map { it.toBoolean() }
+      .getOrElse(false)
+    val useKspComponentMergingBackend = providers.gradleProperty(
+      "com.squareup.anvil.useKspComponentMergingBackend",
+    )
+      .map { it.toBoolean() }
+      .getOrElse(false)
+    if (useKspBackend || useKspComponentMergingBackend) {
+      useKsp(project, useKspBackend, useKspComponentMergingBackend)
+    }
+  }
+
   /**
    * Allows you to use Anvil to generate Factory classes that usually the Dagger annotation
    * processor would generate for `@Provides` methods, `@Inject` constructors and `@Inject` fields.
@@ -114,31 +138,96 @@ public abstract class AnvilExtension @Inject constructor(
     .conventionFromProperty("com.squareup.anvil.trackSourceFiles", false)
 
   /**
-   * Enables the new KSP backend for Anvil _source generation_. This is an experimental feature that
-   * replaces the previous `AnalysisHandlerExtension`-based backend, which is removed in Kotlin 2.0
-   * and struggled with incremental compilation.
-   *
-   * ```properties
-   * com.squareup.anvil.useKspBackend=true
-   * ```
+   * @see useKsp
    */
   public val useKspBackend: Property<Boolean> = objects.property(Boolean::class.java)
-    .conventionFromProperty("com.squareup.anvil.useKspBackend", false)
+    .convention(false)
 
   /**
-   * Enables the new KSP backend for Anvil _component merging_. This is an experimental feature that
-   * currently does nothing. It's a placeholder for future work.
-   *
-   * Requires [disableComponentMerging] to be `false`.
-   *
-   * ```properties
-   * com.squareup.anvil.useKspComponentMergingBackend=true
-   * ```
+   * @see useKsp
    */
   public val useKspComponentMergingBackend: Property<Boolean> = objects.property(
     Boolean::class.java,
-  )
-    .conventionFromProperty("com.squareup.anvil.useKspComponentMergingBackend", false)
+  ).convention(false)
+
+  /**
+   * Enables the new [KSP](https://github.com/google/ksp) backends for Anvil. Note that this
+   * requires the KSP plugin to already be on the buildscript classpath.
+   *
+   * These modes can optionally be enabled via these gradle properties:
+   * ```properties
+   * com.squareup.anvil.useKspBackend=true
+   * com.squareup.anvil.useKspComponentMergingBackend=true
+   * ```
+   *
+   * @param project the Gradle project this is operating on. Annoying but necessary to pass this
+   *   param in order to support configuration caching.
+   * @param contributesAndFactoryGeneration This is an experimental feature that
+   *   replaces the previous `AnalysisHandlerExtension`-based backend, which is removed in Kotlin
+   *   2.0 and struggled with incremental compilation.
+   * @param componentMerging This is an experimental feature that currently does nothing. It's a
+   *   placeholder for future work. Requires [disableComponentMerging] to be `false`.
+   */
+  public fun useKsp(
+    project: Project,
+    contributesAndFactoryGeneration: Boolean,
+    componentMerging: Boolean = false,
+  ) {
+    useKspBackend.setDisallowChanges(contributesAndFactoryGeneration)
+    useKspComponentMergingBackend.setDisallowChanges(componentMerging)
+    // Wire KSP
+    try {
+      project.pluginManager.apply("com.google.devtools.ksp")
+    } catch (e: Exception) {
+      // KSP not on the classpath, ask them to add it
+      error(
+        "Anvil's KSP backends require the KSP plugin to be applied to the project. " +
+          "Please apply the KSP Gradle plugin ('com.google.devtools.ksp') to your buildscript " +
+          "and try again.",
+      )
+    }
+    // Add the KSP dependency to the appropriate configurations
+    // In KMP, we only add to androidJvm/jvm targets
+    val kExtension = project.kotlinExtension
+    if (kExtension is KotlinMultiplatformExtension) {
+      kExtension.targets
+        .matching { it.platformType in SUPPORTED_PLATFORMS }
+        .configureEach {
+          addKspDep(
+            project,
+            "ksp${
+              it.targetName.replaceFirstChar {
+                if (it.isLowerCase()) {
+                  it.titlecase(
+                    Locale.US,
+                  )
+                } else {
+                  it.toString()
+                }
+              }
+            }",
+          )
+        }
+    } else {
+      addKspDep(project, "ksp")
+    }
+    project.extensions.configure(KspExtension::class.java) {
+      it.arg {
+        listOf(
+          "generate-dagger-factories=${generateDaggerFactories.get()}",
+          "generate-dagger-factories-only=${generateDaggerFactoriesOnly.get()}",
+          "disable-component-merging=${disableComponentMerging.get()}",
+        )
+      }
+    }
+  }
+
+  private fun addKspDep(project: Project, configurationName: String) {
+    project.dependencies.add(
+      configurationName,
+      "com.squareup.anvil:compiler:$VERSION",
+    )
+  }
 
   @Suppress("PropertyName")
   internal var _variantFilter: Action<VariantFilter>? = null
@@ -159,4 +248,8 @@ public abstract class AnvilExtension @Inject constructor(
       .map(String::toBoolean)
       .orElse(default),
   )
+
+  private companion object {
+    val SUPPORTED_PLATFORMS = setOf(androidJvm, jvm)
+  }
 }

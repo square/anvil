@@ -22,7 +22,7 @@ public final class com/squareup/anvil/plugin/AndroidVariantFilter : com/squareup
 }
 
 public abstract class com/squareup/anvil/plugin/AnvilExtension {
-	public fun <init> (Lorg/gradle/api/model/ObjectFactory;Lorg/gradle/api/provider/ProviderFactory;)V
+	public fun <init> (Lorg/gradle/api/Project;Lorg/gradle/api/model/ObjectFactory;Lorg/gradle/api/provider/ProviderFactory;)V
 	public final fun getAddOptionalAnnotations ()Lorg/gradle/api/provider/Property;
 	public final fun getDisableComponentMerging ()Lorg/gradle/api/provider/Property;
 	public final fun getGenerateDaggerFactories ()Lorg/gradle/api/provider/Property;
@@ -31,6 +31,8 @@ public abstract class com/squareup/anvil/plugin/AnvilExtension {
 	public final fun getTrackSourceFiles ()Lorg/gradle/api/provider/Property;
 	public final fun getUseKspBackend ()Lorg/gradle/api/provider/Property;
 	public final fun getUseKspComponentMergingBackend ()Lorg/gradle/api/provider/Property;
+	public final fun useKsp (Lorg/gradle/api/Project;ZZ)V
+	public static synthetic fun useKsp$default (Lcom/squareup/anvil/plugin/AnvilExtension;Lorg/gradle/api/Project;ZZILjava/lang/Object;)V
 	public final fun variantFilter (Lorg/gradle/api/Action;)V
 }
 
