@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache
 import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache.Companion.binaryFile
 import com.squareup.anvil.compiler.codegen.incremental.ProjectDir
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
+import com.squareup.anvil.compiler.mapToSet
 import com.squareup.anvil.compiler.requireDelete
 import org.jetbrains.kotlin.analyzer.AnalysisResult
 import org.jetbrains.kotlin.analyzer.AnalysisResult.RetryWithAdditionalRoots
@@ -82,7 +83,12 @@ internal class CodeGenerationExtension(
     val createdChanges = if (shouldRestoreFromCache()) {
       // For incremental compilation: restore any missing generated files from the cache,
       // and delete any generated files that are out-of-date due to source changes.
-      cacheOperations.restoreFromCache(generatedDir)
+      cacheOperations.restoreFromCache(
+        generatedDir = generatedDir,
+        inputKtFiles = files.mapToSet {
+          AbsoluteFile(File(it.virtualFilePath)).relativeTo(projectDir)
+        },
+      )
         .let { it.restoredFiles.isNotEmpty() || it.deletedFiles.isNotEmpty() }
     } else {
       // OLD incremental behavior: just delete everything if we're not tracking source files
@@ -118,6 +124,7 @@ internal class CodeGenerationExtension(
     bindingTrace: BindingTrace,
     files: Collection<KtFile>,
   ): AnalysisResult? {
+
     if (didRecompile) return null
     didRecompile = true
 

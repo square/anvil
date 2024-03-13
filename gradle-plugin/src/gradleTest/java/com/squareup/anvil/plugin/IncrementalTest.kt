@@ -1,6 +1,7 @@
 package com.squareup.anvil.plugin
 
 import com.rickbusarow.kase.Kase1
+import com.rickbusarow.kase.asClueCatching
 import com.rickbusarow.kase.files.DirectoryBuilder
 import com.rickbusarow.kase.gradle.dsl.buildFile
 import com.rickbusarow.kase.gradle.getValue
@@ -12,8 +13,10 @@ import com.rickbusarow.kase.wrap
 import com.squareup.anvil.plugin.testing.AnvilGradleTestEnvironment
 import com.squareup.anvil.plugin.testing.BaseGradleTest
 import com.squareup.anvil.plugin.testing.allBoundTypes
+import com.squareup.anvil.plugin.testing.allMergedModulesForComponent
 import com.squareup.anvil.plugin.testing.anvil
 import com.squareup.anvil.plugin.testing.classGraphResult
+import com.squareup.anvil.plugin.testing.names
 import io.kotest.matchers.file.shouldExist
 import io.kotest.matchers.file.shouldNotExist
 import io.kotest.matchers.shouldBe
@@ -555,6 +558,158 @@ class IncrementalTest : BaseGradleTest() {
       app.classGraphResult(lib).allBoundTypes() shouldBe listOf(
         "com.squareup.test.lib.OtherClass" to "com.squareup.test.lib.TypeB",
       )
+    }
+
+  @TestFactory
+  fun `a generated merged Subcomponent is deleted when a dependency module's @ContributesSubcomponent type is deleted`() =
+    testFactory {
+
+      // repro for https://github.com/square/anvil/issues/898
+
+      rootProject {
+        gradlePropertiesFile(
+          """
+          com.squareup.anvil.trackSourceFiles=true
+          com.squareup.anvil.addOptionalAnnotations=true
+          """.trimIndent(),
+        )
+
+        settingsFileAsFile.appendText(
+          """
+
+          include(":lib")
+          include(":app")
+          """.trimIndent(),
+        )
+
+        project("lib") {
+          buildFile {
+            plugins {
+              kotlin("jvm")
+              id("com.squareup.anvil")
+            }
+            anvil {
+              generateDaggerFactories.set(true)
+            }
+            dependencies {
+              implementation(libs.dagger2.annotations)
+            }
+          }
+          dir("src/main/java") {
+
+            injectClass(packageName = "com.squareup.test.lib")
+
+            kotlinFile(
+              "com/squareup/test/lib/LibComponent.kt",
+              """
+              package com.squareup.test.lib
+
+              import com.squareup.anvil.annotations.ContributesTo
+              import com.squareup.anvil.annotations.optional.SingleIn
+
+              @ContributesTo(Any::class)
+              interface LibComponent {
+                fun injectClass(): InjectClass
+              }
+              """.trimIndent(),
+            )
+          }
+        }
+
+        project("app") {
+
+          buildFile {
+            plugins {
+              kotlin("jvm")
+              kotlin("kapt")
+              id("com.squareup.anvil")
+            }
+            dependencies {
+              compileOnly(libs.dagger2.annotations)
+              implementation(project(":lib"))
+              kapt(libs.dagger2.compiler)
+            }
+          }
+
+          dir("src/main/java") {
+            kotlinFile(
+              "com/squareup/test/app/AppComponent.kt",
+              """
+              package com.squareup.test.app
+
+              import com.squareup.anvil.annotations.MergeComponent
+              import com.squareup.anvil.annotations.optional.SingleIn
+
+              @SingleIn(Any::class)
+              @MergeComponent(Any::class)
+              interface AppComponent
+              """.trimIndent(),
+            )
+          }
+        }
+      }
+
+      val lib by rootProject.subprojects
+      val app by rootProject.subprojects
+
+      val subcomponentSrc = lib.path.resolve("src/main/java")
+        .resolve("com/squareup/test/lib/LibSubcomponent.kt")
+
+      "the first compilation happens with LibSubcomponent in the dependency module".asClueCatching {
+
+        subcomponentSrc.kotlin(
+          """
+          package com.squareup.test.lib
+
+          import com.squareup.anvil.annotations.ContributesTo
+          import com.squareup.anvil.annotations.ContributesSubcomponent
+
+          @ContributesSubcomponent(Unit::class, Any::class)
+          interface LibSubcomponent {
+            fun injectClass(): InjectClass
+            
+            @ContributesSubcomponent.Factory
+            interface Factory {
+              fun create(): LibSubcomponent
+            }
+
+            @ContributesTo(Any::class)
+            interface ParentComponent {
+              fun libSubcomponentFactory(): Factory
+            }
+          }
+          """.trimIndent(),
+        )
+
+        shouldSucceed("jar")
+
+        app.classGraphResult(lib).apply {
+
+          allMergedModulesForComponent("com.squareup.test.app.AppComponent")
+            .names() shouldBe listOf(
+            "anvil.module.com.squareup.test.app.AppComponentAnvilModule",
+            "anvil.component.com.squareup.test.app.appcomponent.LibSubcomponentA\$SubcomponentModule",
+          )
+        }
+      }
+
+      "The second compilation happens after deleting LibSubcomponent".asClueCatching {
+
+        subcomponentSrc.deleteOrFail()
+
+        shouldSucceed("jar") {
+          task(":lib:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+          task(":app:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+        }
+
+        app.classGraphResult(lib).apply {
+
+          allMergedModulesForComponent("com.squareup.test.app.AppComponent")
+            .names() shouldBe listOf(
+            "anvil.module.com.squareup.test.app.AppComponentAnvilModule",
+          )
+        }
+      }
     }
 
   @TestFactory

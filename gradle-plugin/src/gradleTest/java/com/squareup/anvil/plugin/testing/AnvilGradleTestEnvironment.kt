@@ -51,9 +51,9 @@ class AnvilGradleTestEnvironment(
    *   )
    * ```
    */
-  fun File.listRelativeFilePaths(): List<String> = walkBottomUp()
+  fun File.listRelativeFilePaths(parentDir: File = this): List<String> = walkBottomUp()
     .filter { it.isFile }
-    .map { it.toRelativeString(rootAnvilMainGenerated) }
+    .map { it.toRelativeString(parentDir) }
     .sorted()
     .toList()
 
