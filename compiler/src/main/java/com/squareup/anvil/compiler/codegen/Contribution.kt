@@ -39,8 +39,7 @@ internal sealed interface Contribution {
   fun generateBindingModule(): TypeSpec {
     val contribution = this
     // Combination name of origin, scope, and boundType
-    val suffix = origin.simpleName.capitalize() +
-      "As" +
+    val suffix = "As" +
       contribution.boundType.generateClassNameString().capitalize() +
       "To" +
       contribution.scope.generateClassNameString().capitalize() +

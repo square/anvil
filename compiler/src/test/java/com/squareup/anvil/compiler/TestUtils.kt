@@ -316,12 +316,12 @@ internal fun JvmCompilationResult.assertFileGenerated(
   fileName: String,
 ) {
   if (generatedFileOrNull(mode, fileName) == null) {
-    val files = walkGeneratedFiles(mode).toList()
+    val files = walkGeneratedFiles(mode)
     fail(
       buildString {
         appendLine("Could not find file '$fileName' in the generated files:")
         for (file in files.sorted()) {
-          appendLine("\t- ${file.name}")
+          appendLine("\t- ${file.path}")
         }
       },
     )
@@ -331,7 +331,8 @@ internal fun JvmCompilationResult.assertFileGenerated(
 internal fun JvmCompilationResult.generatedFileOrNull(
   mode: AnvilCompilationMode,
   fileName: String,
-): File? = walkGeneratedFiles(mode).singleOrNull { it.name == fileName }
+): File? = walkGeneratedFiles(mode)
+  .singleOrNull { it.name == fileName && "anvil/hint" !in it.absolutePath }
 
 /**
  * Parameters for configuring [AnvilCompilationMode] and whether to run a full test run or not.
@@ -366,14 +367,6 @@ internal fun CompilationResult.compilationErrorLine(): String {
   return messages
     .lineSequence()
     .first { it.startsWith("e:") && KSP_ERROR_HEADER !in it }
-}
-
-internal fun File.assertStableInterfaceOrder() {
-  val classNamesAndLineNumbers = readText().lines().withIndex()
-    .filter { (_, line) -> line.startsWith("public interface ") }
-    .sortedBy { it.value }
-
-  assertThat(classNamesAndLineNumbers).isEqualTo(classNamesAndLineNumbers.sortedBy { it.index })
 }
 
 internal inline fun <T, R> Array<out T>.flatMapArray(transform: (T) -> Array<R>) =

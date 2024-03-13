@@ -3,11 +3,9 @@ package com.squareup.anvil.compiler.codegen
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.assertFileGenerated
-import com.squareup.anvil.compiler.assertStableInterfaceOrder
 import com.squareup.anvil.compiler.codegen.ksp.simpleSymbolProcessor
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
-import com.squareup.anvil.compiler.generatedFileOrNull
 import com.squareup.anvil.compiler.includeKspTests
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
@@ -59,7 +57,10 @@ class ContributesMultibindingGeneratorTest(
       ).isEqualTo(contributingInterface)
       assertThat(contributingInterface.multibindingModuleScope).isEqualTo(Any::class)
 
-      assertFileGenerated(mode, "ContributingInterfaceMultiBindingModule.kt")
+      assertFileGenerated(
+        mode,
+        "ContributingInterfaceAsComSquareupTestParentInterfaceToKotlinAnyMultiBindingModule.kt",
+      )
     }
   }
 
@@ -169,7 +170,10 @@ class ContributesMultibindingGeneratorTest(
       assertThat(contributingClass.multibindingOriginClass?.java).isEqualTo(contributingClass)
       assertThat(contributingClass.multibindingModuleScope).isEqualTo(Any::class)
 
-      assertFileGenerated(mode, "Abc_ContributingClassMultiBindingModule.kt")
+      assertFileGenerated(
+        mode,
+        "Abc_ContributingClassAsComSquareupTestParentInterfaceToKotlinAnyMultiBindingModule.kt",
+      )
     }
   }
 
@@ -365,7 +369,6 @@ class ContributesMultibindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      println(generatedFiles.toList().joinToString("\n"))
       assertThat(
         contributingInterface.multibindingOriginClass?.java,
       ).isEqualTo(contributingInterface)
@@ -508,32 +511,6 @@ class ContributesMultibindingGeneratorTest(
       ).isEqualTo(contributingInterface)
       assertThat(contributingInterface.multibindingModuleScopes)
         .containsExactly(Any::class, Unit::class)
-    }
-  }
-
-  @Test fun `the scopes for multiple contributions have a stable sort`() {
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesMultibinding
-
-      interface ParentInterface
-
-      @ContributesMultibinding(Any::class)
-      @ContributesMultibinding(Unit::class)
-      class ContributingInterface : ParentInterface
-      
-      @ContributesMultibinding(Unit::class)
-      @ContributesMultibinding(Any::class)
-      class SecondContributingInterface : ParentInterface
-      """,
-      mode = mode,
-    ) {
-      generatedFileOrNull(mode, "ContributingInterfaceMultiBindingModule.kt")!!
-        .assertStableInterfaceOrder()
-      generatedFileOrNull(mode, "SecondContributingInterfaceMultiBindingModule.kt")!!
-        .assertStableInterfaceOrder()
     }
   }
 

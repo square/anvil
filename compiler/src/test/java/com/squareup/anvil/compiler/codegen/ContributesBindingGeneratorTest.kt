@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.assertFileGenerated
-import com.squareup.anvil.compiler.assertStableInterfaceOrder
 import com.squareup.anvil.compiler.bindingModuleScope
 import com.squareup.anvil.compiler.bindingModuleScopes
 import com.squareup.anvil.compiler.bindingOriginKClass
@@ -11,7 +10,6 @@ import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.generatedFileOrNull
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.walkGeneratedFiles
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -50,7 +48,10 @@ class ContributesBindingGeneratorTest(
       assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
 
-      assertFileGenerated(mode, "ContributingInterfaceBindingModule.kt")
+      assertFileGenerated(
+        mode,
+        "ContributingInterfaceAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
+      )
     }
   }
 
@@ -154,7 +155,10 @@ class ContributesBindingGeneratorTest(
       assertThat(contributingClass.bindingOriginKClass?.java).isEqualTo(contributingClass)
       assertThat(contributingClass.bindingModuleScope).isEqualTo(Any::class)
 
-      assertFileGenerated(mode, "Abc_ContributingClassBindingModule.kt")
+      assertFileGenerated(
+        mode,
+        "Abc_ContributingClassAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
+      )
     }
   }
 
@@ -394,10 +398,14 @@ class ContributesBindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      generatedFileOrNull(mode, "ContributingInterfaceBindingModule.kt")!!
-        .assertStableInterfaceOrder()
-      generatedFileOrNull(mode, "SecondContributingInterfaceBindingModule.kt")!!
-        .assertStableInterfaceOrder()
+      generatedFileOrNull(
+        mode,
+        "ContributingInterfaceAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
+      )!!
+      generatedFileOrNull(
+        mode,
+        "SecondContributingInterfaceAsComSquareupTestParentInterfaceToKotlinUnitBindingModule.kt",
+      )!!
     }
   }
 
@@ -466,7 +474,6 @@ class ContributesBindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      println(walkGeneratedFiles(mode).toList().joinToString("\n"))
       assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
       assertThat(
         contributingInterface.bindingModuleScopes.toSet(),
