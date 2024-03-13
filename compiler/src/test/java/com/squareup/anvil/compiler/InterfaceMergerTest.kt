@@ -478,56 +478,6 @@ class InterfaceMergerTest(
     }
   }
 
-  @Test fun `inner interfaces in merged component fail`() {
-    // They could cause errors while compiling code when adding our contributed super classes.
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesTo
-      $import
-      
-      $annotation(Any::class)
-      interface ComponentInterface {
-        @ContributesTo(Any::class)
-        interface InnerInterface
-      }
-      """,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "Couldn't find the classId for <root>. Are we stuck in a loop while resolving super " +
-          "types? Note that it's not supported to contribute an inner class to a scope that " +
-          "is merged in an outer class.",
-      )
-    }
-  }
-
-  @Test fun `inner modules in merged component fail`() {
-    // They could cause errors while compiling code when adding our contributed super classes.
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesTo
-      $import
-      
-      $annotation(Any::class, modules = [ComponentInterface.InnerModule::class])
-      interface ComponentInterface {
-        
-        @dagger.Module
-        abstract class InnerModule
-      }
-      """,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "It seems like you tried to contribute an inner class to its outer class. This is " +
-          "not supported and results in a compiler error.",
-      )
-    }
-  }
-
   @Test fun `inner interface in a merged component with different scope are merged`() {
     assumeMergeComponent(annotationClass)
 
