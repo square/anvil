@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.internal.testing.extends
-import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
+import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
 import dagger.Component
 import dagger.Subcomponent
 import org.junit.Test
@@ -15,7 +15,7 @@ internal class MergeComponentTest {
 
   @Test fun `component merges modules and interfaces`() {
     val annotation = AppComponent::class.java.getAnnotation(Component::class.java)!!
-    assertThat(annotation.modules.withoutAnvilModule())
+    assertThat(annotation.modules.withoutAnvilModules())
       .containsExactly(AppModule1::class, AppModule2::class)
 
     assertThat(AppComponent::class extends AppComponentInterface::class).isTrue()
@@ -25,7 +25,7 @@ internal class MergeComponentTest {
 
   @Test fun `subcomponent merges modules and interfaces`() {
     val annotation = SubComponent::class.java.getAnnotation(Subcomponent::class.java)!!
-    assertThat(annotation.modules.withoutAnvilModule())
+    assertThat(annotation.modules.withoutAnvilModules())
       .containsExactly(SubModule1::class, SubModule2::class)
 
     assertThat(SubComponent::class extends SubComponentInterface::class).isTrue()

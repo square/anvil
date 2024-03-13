@@ -1,15 +1,15 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.assertFileGenerated
+import com.squareup.anvil.compiler.bindingModuleScope
+import com.squareup.anvil.compiler.bindingModuleScopes
+import com.squareup.anvil.compiler.bindingOriginKClass
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
-import com.squareup.anvil.compiler.hintBinding
-import com.squareup.anvil.compiler.hintBindingScope
-import com.squareup.anvil.compiler.hintBindingScopes
+import com.squareup.anvil.compiler.generatedFileOrNull
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.secondContributingInterface
-import com.squareup.anvil.compiler.walkGeneratedFiles
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -31,7 +31,7 @@ class ContributesBindingGeneratorTest(
     }
   }
 
-  @Test fun `there is a hint for a contributed binding for interfaces`() {
+  @Test fun `there is a binding module for a contributed binding for interfaces`() {
     compile(
       """
       package com.squareup.test
@@ -45,17 +45,17 @@ class ContributesBindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
+      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
 
-      val generatedFile = walkGeneratedFiles(mode)
-        .single()
-
-      assertThat(generatedFile.name).isEqualTo("ContributingInterface.kt")
+      assertFileGenerated(
+        mode,
+        "ContributingInterfaceAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
+      )
     }
   }
 
-  @Test fun `there is a hint for a contributed binding for classes`() {
+  @Test fun `there is a binding module for a contributed binding for classes`() {
     compile(
       """
       package com.squareup.test
@@ -69,12 +69,12 @@ class ContributesBindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
+      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
     }
   }
 
-  @Test fun `there is a hint for a contributed binding for an object`() {
+  @Test fun `there is a binding module for a contributed binding for an object`() {
     compile(
       """
       package com.squareup.test
@@ -88,8 +88,8 @@ class ContributesBindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
+      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
     }
   }
 
@@ -107,11 +107,11 @@ class ContributesBindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.hintBindingScope).isEqualTo(Int::class)
+      assertThat(contributingInterface.bindingModuleScope).isEqualTo(Int::class)
     }
   }
 
-  @Test fun `there is a hint for a contributed binding for inner interfaces`() {
+  @Test fun `there is a binding module for a contributed binding for inner interfaces`() {
     compile(
       """
       package com.squareup.test
@@ -129,12 +129,12 @@ class ContributesBindingGeneratorTest(
     ) {
       val contributingInterface =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingInterface")
-      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.hintBindingScope).isEqualTo(Any::class)
+      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
     }
   }
 
-  @Test fun `there is a hint for a contributed binding for inner classes`() {
+  @Test fun `there is a binding module for a contributed binding for inner classes`() {
     compile(
       """
       package com.squareup.test
@@ -152,13 +152,13 @@ class ContributesBindingGeneratorTest(
     ) {
       val contributingClass =
         classLoader.loadClass("com.squareup.test.Abc\$ContributingClass")
-      assertThat(contributingClass.hintBinding?.java).isEqualTo(contributingClass)
-      assertThat(contributingClass.hintBindingScope).isEqualTo(Any::class)
+      assertThat(contributingClass.bindingOriginKClass?.java).isEqualTo(contributingClass)
+      assertThat(contributingClass.bindingModuleScope).isEqualTo(Any::class)
 
-      val generatedFile = walkGeneratedFiles(mode)
-        .single()
-
-      assertThat(generatedFile.name).isEqualTo("Abc_ContributingClass.kt")
+      assertFileGenerated(
+        mode,
+        "Abc_ContributingClassAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
+      )
     }
   }
 
@@ -309,8 +309,8 @@ class ContributesBindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.hintBindingScope).isEqualTo(Int::class)
+      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.bindingModuleScope).isEqualTo(Int::class)
     }
   }
 
@@ -354,8 +354,8 @@ class ContributesBindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.hintBindingScope).isEqualTo(Int::class)
+      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.bindingModuleScope).isEqualTo(Int::class)
     }
   }
 
@@ -374,8 +374,8 @@ class ContributesBindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.hintBindingScopes).containsExactly(Any::class, Unit::class)
+      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.bindingModuleScopes).containsExactly(Any::class, Unit::class)
     }
   }
 
@@ -398,13 +398,14 @@ class ContributesBindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.hintBindingScopes)
-        .containsExactly(Any::class, Unit::class)
-        .inOrder()
-
-      assertThat(secondContributingInterface.hintBindingScopes)
-        .containsExactly(Any::class, Unit::class)
-        .inOrder()
+      generatedFileOrNull(
+        mode,
+        "ContributingInterfaceAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
+      )!!
+      generatedFileOrNull(
+        mode,
+        "SecondContributingInterfaceAsComSquareupTestParentInterfaceToKotlinUnitBindingModule.kt",
+      )!!
     }
   }
 
@@ -423,8 +424,8 @@ class ContributesBindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.hintBindingScopes).containsExactly(Any::class, Unit::class)
+      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.bindingModuleScopes).containsExactly(Any::class, Unit::class)
     }
   }
 
@@ -473,8 +474,10 @@ class ContributesBindingGeneratorTest(
       """,
       mode = mode,
     ) {
-      assertThat(contributingInterface.hintBinding?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.hintBindingScopes).containsExactly(Any::class, Unit::class)
+      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+      assertThat(
+        contributingInterface.bindingModuleScopes.toSet(),
+      ).containsExactly(Any::class, Unit::class)
     }
   }
 }

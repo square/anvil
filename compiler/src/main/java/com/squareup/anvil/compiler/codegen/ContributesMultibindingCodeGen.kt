@@ -4,17 +4,18 @@ import com.google.auto.service.AutoService
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
+import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesMultibinding
-import com.squareup.anvil.compiler.HINT_MULTIBINDING_PACKAGE_PREFIX
-import com.squareup.anvil.compiler.REFERENCE_SUFFIX
-import com.squareup.anvil.compiler.SCOPE_SUFFIX
+import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
+import com.squareup.anvil.compiler.checkNotGeneric
+import com.squareup.anvil.compiler.codegen.Contribution.Companion.generateFileSpecs
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.checkClassExtendsBoundType
@@ -24,69 +25,29 @@ import com.squareup.anvil.compiler.codegen.ksp.checkNotMoreThanOneMapKey
 import com.squareup.anvil.compiler.codegen.ksp.checkNotMoreThanOneQualifier
 import com.squareup.anvil.compiler.codegen.ksp.checkSingleSuperType
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
+import com.squareup.anvil.compiler.codegen.ksp.ignoreQualifier
+import com.squareup.anvil.compiler.codegen.ksp.isMapKey
+import com.squareup.anvil.compiler.codegen.ksp.qualifierAnnotation
+import com.squareup.anvil.compiler.codegen.ksp.replaces
+import com.squareup.anvil.compiler.codegen.ksp.resolveBoundType
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesMultibindingFqName
-import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.KModifier.PUBLIC
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.asClassName
+import com.squareup.anvil.compiler.qualifierKey
+import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
-import kotlin.reflect.KClass
 
 /**
- * Generates a hint for each contributed class in the `anvil.hint.multibinding` package. This
- * allows the compiler plugin to find all contributed multibindings a lot faster when merging
- * modules and component interfaces.
+ * Generates binding modules for every [ContributesMultibinding]-annotated class. If a class has repeated
+ * annotations, a binding module will be generated for each contribution. Each generated module is
+ * annotated with [ContributesTo] for merging.
  */
 internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
-
-  fun generate(
-    className: ClassName,
-    scopes: List<ClassName>,
-  ): FileSpec {
-    val fileName = className.generateClassName().simpleName
-    val generatedPackage = HINT_MULTIBINDING_PACKAGE_PREFIX +
-      className.packageName.safePackageString(dotPrefix = true)
-    val classFqName = className.canonicalName
-    val propertyName = classFqName.replace('.', '_')
-
-    return FileSpec.createAnvilSpec(generatedPackage, fileName) {
-      addProperty(
-        PropertySpec
-          .builder(
-            name = propertyName + REFERENCE_SUFFIX,
-            type = KClass::class.asClassName().parameterizedBy(className),
-          )
-          .initializer("%T::class", className)
-          .addModifiers(PUBLIC)
-          .build(),
-      )
-
-      scopes.forEachIndexed { index, scope ->
-        addProperty(
-          PropertySpec
-            .builder(
-              name = propertyName + SCOPE_SUFFIX + index,
-              type = KClass::class.asClassName().parameterizedBy(scope),
-            )
-            .initializer("%T::class", scope)
-            .addModifiers(PUBLIC)
-            .build(),
-        )
-      }
-    }
-  }
 
   override fun isApplicable(context: AnvilContext) = !context.generateFactoriesOnly
 
@@ -114,21 +75,47 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
           clazz.checkClassExtendsBoundType(contributesMultibindingFqName, resolver)
 
           // All good, generate away
-          val className = clazz.toClassName()
-          val scopes = clazz.getKSAnnotationsByType(ContributesMultibinding::class)
+          val contributions = clazz.getKSAnnotationsByType(ContributesMultibinding::class)
             .toList()
             .also { it.checkNoDuplicateScopeAndBoundType(clazz) }
-            .map { it.scope().toClassName() }
-            .distinct()
-            // Give it a stable sort.
-            .sortedBy { it.canonicalName }
+            .map {
+              val scope = it.scope().toClassName()
 
-          generate(className, scopes)
-            .writeTo(
+              val boundTypeDeclaration = it.resolveBoundType(resolver, clazz)
+              boundTypeDeclaration.checkNotGeneric(clazz)
+              val boundType = boundTypeDeclaration.toClassName()
+              val replaces = it.replaces().map { it.toClassName() }
+              val qualifierData = if (it.ignoreQualifier()) {
+                null
+              } else {
+                clazz.qualifierAnnotation()?.let { qualifierAnnotation ->
+                  val annotationSpec = qualifierAnnotation.toAnnotationSpec()
+                  val key = qualifierAnnotation.qualifierKey()
+                  Contribution.QualifierData(annotationSpec, key)
+                }
+              }
+              val mapKey = clazz.annotations
+                .filter { it.isMapKey() }
+                .singleOrNull()
+                ?.toAnnotationSpec()
+              Contribution.MultiBinding(
+                clazz.toClassName(),
+                scope,
+                clazz.classKind == ClassKind.OBJECT,
+                boundType,
+                replaces,
+                qualifierData,
+                mapKey,
+              )
+            }
+
+          for (spec in contributions.generateFileSpecs()) {
+            spec.writeTo(
               codeGenerator = env.codeGenerator,
               aggregating = false,
               originatingKSFiles = listOf(clazz.containingFile!!),
             )
+          }
         }
 
       return emptyList()
@@ -162,25 +149,50 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
           clazz.checkSingleSuperType(contributesMultibindingFqName)
           clazz.checkClassExtendsBoundType(contributesMultibindingFqName)
         }
-        .map { clazz ->
-          val className = clazz.asClassName()
-          val scopes = clazz.annotations
+        .flatMap { clazz ->
+          val contributions = clazz.annotations
             .find(contributesMultibindingFqName)
             .also { it.checkNoDuplicateScopeAndBoundType() }
-            .distinctBy { it.scope() }
-            // Give it a stable sort.
-            .sortedBy { it.scope() }
-            .map { it.scope().asClassName() }
+            .map {
+              val scope = it.scope().asClassName()
+              // TODO if we support generic bound types in the future, we would change the below
+              //  to use asTypeName() + remove the checkNotGeneric call.
+              val boundTypeReference = it.resolveBoundType()
+              boundTypeReference.checkNotGeneric(clazz)
+              val boundType = boundTypeReference.asClassName()
+              val replaces = it.replaces().map { it.asClassName() }
+              val qualifierData = if (it.ignoreQualifier()) {
+                null
+              } else {
+                clazz.qualifierAnnotation()?.let { qualifierAnnotation ->
+                  val annotationSpec = qualifierAnnotation.toAnnotationSpec()
+                  val key = qualifierAnnotation.qualifierKey()
+                  Contribution.QualifierData(annotationSpec, key)
+                }
+              }
+              val mapKey = clazz.annotations
+                .find { it.isMapKey() }
+                ?.toAnnotationSpec()
+              Contribution.MultiBinding(
+                clazz.asClassName(),
+                scope,
+                clazz.isObject(),
+                boundType,
+                replaces,
+                qualifierData,
+                mapKey,
+              )
+            }
 
-          val spec = generate(className, scopes)
-
-          createGeneratedFile(
-            codeGenDir = codeGenDir,
-            packageName = spec.packageName,
-            fileName = spec.name,
-            content = spec.toString(),
-            sourceFile = clazz.containingFileAsJavaFile,
-          )
+          contributions.generateFileSpecs().map { spec ->
+            createGeneratedFile(
+              codeGenDir = codeGenDir,
+              packageName = spec.packageName,
+              fileName = spec.name,
+              content = spec.toString(),
+              sourceFile = clazz.containingFileAsJavaFile,
+            )
+          }
         }
         .toList()
     }

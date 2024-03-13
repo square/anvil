@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.containingFileAsJavaFile
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
@@ -392,6 +393,16 @@ public fun ClassName.generateClassName(
 ): ClassName {
   val className = simpleNames.joinToString(separator = separator)
   return ClassName(packageName, className + suffix)
+}
+
+@ExperimentalAnvilApi
+public fun ClassName.generateClassNameString(
+  separator: String = "",
+  suffix: String = "",
+): String {
+  return packageName.split('.').plus(simpleNames).joinToString(separator = separator) {
+    it.capitalize()
+  } + suffix
 }
 
 @ExperimentalAnvilApi

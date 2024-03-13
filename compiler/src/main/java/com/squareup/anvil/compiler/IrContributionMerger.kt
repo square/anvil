@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler
 
+import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
 import com.squareup.anvil.compiler.codegen.reference.AnnotationReferenceIr
@@ -31,6 +32,7 @@ import org.jetbrains.kotlin.ir.types.starProjectedType
 import org.jetbrains.kotlin.ir.types.superTypes
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
+import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -125,7 +127,8 @@ internal class IrContributionMerger(
 
     val anvilModuleName = createAnvilModuleName(declaration)
 
-    val contributesAnnotations = annotations
+    val allContributesAnnotations: List<AnnotationReferenceIr> = annotations
+      .asSequence()
       .flatMap { annotation ->
         classScanner
           .findContributedClasses(
@@ -144,7 +147,9 @@ internal class IrContributionMerger(
         // modules contain the same bindings and are contributed to the same scope. To avoid this
         // issue we filter all generated Anvil modules except for the one that was generated for
         // this specific class.
-        !it.fqName.isAnvilModule() || it.fqName == anvilModuleName
+        !it.fqName.isAnvilModule() ||
+          it.fqName == anvilModuleName ||
+          it.isAnnotatedWith(internalBindingMarkerFqName)
       }
       .flatMap { contributedClass ->
         contributedClass.annotations
@@ -185,6 +190,10 @@ internal class IrContributionMerger(
       // for replaced classes and the final result.
       .toList()
 
+    val (bindingModuleContributesAnnotations, contributesAnnotations) = allContributesAnnotations.partition {
+      it.declaringClass.isAnnotatedWith(internalBindingMarkerFqName)
+    }
+
     val excludedModules = annotations
       .flatMap { it.excludedClasses }
       .onEach { excludedClass ->
@@ -201,17 +210,19 @@ internal class IrContributionMerger(
           .any { scope -> scope in scopes }
 
         if (!contributesToOurScope) {
+          val origin = declaration.originClass()
           throw AnvilCompilationExceptionClassReferenceIr(
-            message = "${declaration.fqName} with scopes " +
+            message = "${origin.fqName} with scopes " +
               "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
               "wants to exclude ${excludedClass.fqName}, but the excluded class isn't " +
               "contributed to the same scope.",
-            classReference = declaration,
+            classReference = origin,
           )
         }
       }
+      .toSet()
 
-    val replacedModules = contributesAnnotations
+    val replacedModules = allContributesAnnotations
       // Ignore replaced modules or bindings specified by excluded modules.
       .filter { contributesAnnotation ->
         contributesAnnotation.declaringClass !in excludedModules
@@ -226,50 +237,63 @@ internal class IrContributionMerger(
               !classToReplace.isAnnotatedWith(contributesBindingFqName) &&
               !classToReplace.isAnnotatedWith(contributesMultibindingFqName)
             ) {
+              val origin = contributedClass.originClass()
               throw AnvilCompilationExceptionClassReferenceIr(
-                message = "${contributedClass.fqName} wants to replace " +
+                message = "${origin.fqName} wants to replace " +
                   "${classToReplace.fqName}, but the class being " +
                   "replaced is not a Dagger module.",
-                classReference = contributedClass,
+                classReference = origin,
               )
             }
 
             checkSameScope(contributedClass, classToReplace, scopes)
           }
       }
+      .toSet()
 
-    fun replacedModulesByContributedBinding(
-      annotationFqName: FqName,
-    ): Sequence<ClassReferenceIr> {
-      return scopes.asSequence()
-        .flatMap { scope ->
-          classScanner
-            .findContributedClasses(
-              pluginContext = pluginContext,
-              moduleFragment = moduleFragment,
-              annotation = annotationFqName,
-              scope = scope,
-              moduleDescriptorFactory = moduleDescriptorFactory,
-            )
+    val bindings = bindingModuleContributesAnnotations
+      .mapNotNull { contributedAnnotation ->
+        val moduleClass = contributedAnnotation.declaringClass
+        val internalBindingMarker =
+          moduleClass.annotations.single { it.fqName == internalBindingMarkerFqName }
+
+        val bindingFunction = moduleClass.clazz.functions.single {
+          val functionName = it.owner.name.asString()
+          functionName.startsWith("bind") || functionName.startsWith("provide")
         }
-        .flatMap { contributedClass ->
-          contributedClass.annotations
-            .find(annotationName = annotationFqName)
-            .filter { it.scope in scopes }
-            .flatMap { it.replacedClasses }
-            .onEach { classToReplace ->
-              checkSameScope(contributedClass, classToReplace, scopes)
-            }
-        }
-    }
 
-    val replacedModulesByContributedBindings = replacedModulesByContributedBinding(
-      annotationFqName = contributesBindingFqName,
-    )
+        val originClass = internalBindingMarker.argumentOrNull("originClass")?.value<ClassReferenceIr>() ?: throw AnvilCompilationExceptionClassReferenceIr(
+          message = "The origin type of a contributed binding is null.",
+          classReference = moduleClass,
+        )
 
-    val replacedModulesByContributedMultibindings = replacedModulesByContributedBinding(
-      annotationFqName = contributesMultibindingFqName,
-    )
+        if (originClass in excludedModules || originClass in replacedModules) return@mapNotNull null
+        if (moduleClass in excludedModules || moduleClass in replacedModules) return@mapNotNull null
+
+        val boundType = bindingFunction.owner.returnType.classOrFail.toClassReference(
+          pluginContext,
+        )
+        val isMultibinding =
+          internalBindingMarker.argumentOrNull("isMultibinding")
+            ?.value<Boolean>() == true
+        val qualifierKey =
+          internalBindingMarker.argumentOrNull("qualifierKey")?.value<String>().orEmpty()
+        val priority = internalBindingMarker.argumentOrNull("priority")
+          ?.value<String>()
+          ?.let { ContributesBinding.Priority.valueOf(it) }
+          ?: ContributesBinding.Priority.NORMAL
+        val scope = contributedAnnotation.scope
+        ContributedBinding(
+          scope = scope,
+          isMultibinding = isMultibinding,
+          bindingModule = moduleClass,
+          originClass = originClass,
+          boundType = boundType,
+          qualifierKey = qualifierKey,
+          priority = priority,
+        )
+      }
+      .let { ContributedBindings.from(it) }
 
     if (predefinedModules.isNotEmpty()) {
       val intersect = predefinedModules.intersect(excludedModules.toSet())
@@ -293,10 +317,9 @@ internal class IrContributionMerger(
     val contributedModules = contributesAnnotations
       .asSequence()
       .map { it.declaringClass }
-      .minus(replacedModules.toSet())
-      .minus(replacedModulesByContributedBindings.toSet())
-      .minus(replacedModulesByContributedMultibindings.toSet())
-      .minus(excludedModules.toSet())
+      .plus(bindings.bindings.values.flatMap { it.values }.flatten().map { it.bindingModule })
+      .minus(replacedModules)
+      .minus(excludedModules)
       .plus(predefinedModules)
       .plus(contributedSubcomponentModules)
       .distinct()
@@ -375,14 +398,24 @@ internal class IrContributionMerger(
       .any { scope -> scope in scopes }
 
     if (!contributesToOurScope) {
+      val origin = contributedClass.originClass()
       throw AnvilCompilationExceptionClassReferenceIr(
-        classReference = contributedClass,
-        message = "${contributedClass.fqName} with scopes " +
+        classReference = origin,
+        message = "${origin.fqName} with scopes " +
           "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
           "wants to replace ${classToReplace.fqName}, but the replaced class isn't " +
           "contributed to the same scope.",
       )
     }
+  }
+
+  private fun ClassReferenceIr.originClass(): ClassReferenceIr {
+    val originClass = annotations
+      .find(internalBindingMarkerFqName)
+      .singleOrNull()
+      ?.argumentOrNull("originClass")
+      ?.value<ClassReferenceIr>()
+    return originClass ?: this
   }
 
   private fun findContributedSubcomponentModules(

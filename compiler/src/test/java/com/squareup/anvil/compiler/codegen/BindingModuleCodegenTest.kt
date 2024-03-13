@@ -4,18 +4,18 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
-import com.squareup.anvil.compiler.anvilModule
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule1
-import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
+import com.squareup.anvil.compiler.flatMapArray
+import com.squareup.anvil.compiler.generatedBindingModule
 import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
-import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.isAbstract
 import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.mergedModules
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.parentInterface1
 import com.squareup.anvil.compiler.parentInterface2
@@ -31,8 +31,8 @@ import org.junit.runners.Parameterized.Parameters
 import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
-class BindingModuleGeneratorTest(
-  private val annotationClass: KClass<*>,
+class BindingModuleCodegenTest(
+  private val annotationClass: KClass<out Annotation>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -52,27 +52,7 @@ class BindingModuleGeneratorTest(
     }
   }
 
-  @Test fun `a Dagger module is generated for a merged class and added to the component`() {
-    compile(
-      """
-      package com.squareup.test
-      
-      $import
-      
-      $annotation(Any::class)
-      interface ComponentInterface
-      """,
-    ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
-    }
-  }
-
-  @Test fun `the Anvil module is merged with other modules`() {
+  @Test fun `binding modules are merged with other modules`() {
     compile(
       """
       package com.squareup.test
@@ -88,62 +68,9 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
+      val modules = componentInterface.mergedModules(annotationClass).toList()
       assertThat(modules)
-        .containsExactly(componentInterface.anvilModule.kotlin, daggerModule1.kotlin)
-    }
-  }
-
-  @Test fun `there is an Anvil module for each component`() {
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesTo
-      $import
-
-      $annotation(Any::class)
-      interface ComponentInterface
-
-      $annotation(Unit::class)
-      interface SubcomponentInterface
-      """,
-    ) {
-      if (annotationClass == MergeModules::class) {
-        assertThat(componentInterface.daggerModule.includes.toList())
-          .containsExactly(componentInterface.anvilModule.kotlin)
-        assertThat(subcomponentInterface.daggerModule.includes.toList())
-          .containsExactly(subcomponentInterface.anvilModule.kotlin)
-      } else {
-        assertThat(componentInterface.anyDaggerComponent.modules)
-          .containsExactly(componentInterface.anvilModule.kotlin)
-        assertThat(subcomponentInterface.anyDaggerComponent.modules)
-          .containsExactly(subcomponentInterface.anvilModule.kotlin)
-      }
-    }
-  }
-
-  @Test fun `Anvil modules for inner classes are generated`() {
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesTo
-      $import
-      
-      class SomeClass {
-        $annotation(Any::class)
-        interface ComponentInterface
-      }
-      """,
-    ) {
-      assertThat(
-        classLoader.loadClass("com.squareup.test.SomeClass\$ComponentInterface").anvilModule,
-      ).isNotNull()
+        .containsExactly(daggerModule1.kotlin)
     }
   }
 
@@ -166,12 +93,8 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
+      val modules = componentInterface.mergedModules(annotationClass).toList()
+      assertThat(modules).containsExactly(contributingInterface.generatedBindingModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -204,12 +127,8 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
+      val modules = componentInterface.mergedModules(annotationClass).toList()
+      assertThat(modules).containsExactly(contributingInterface.generatedBindingModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -247,12 +166,8 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
+      val modules = componentInterface.mergedModules(annotationClass).toList()
+      assertThat(modules).containsExactly(contributingInterface.generatedBindingModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -289,12 +204,8 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
+      val modules = componentInterface.mergedModules(annotationClass).toList()
+      assertThat(modules).containsExactly(secondContributingInterface.generatedBindingModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -331,12 +242,8 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
+      val modules = componentInterface.mergedModules(annotationClass).toList()
+      assertThat(modules).containsExactly(secondContributingInterface.generatedBindingModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -347,30 +254,6 @@ class BindingModuleGeneratorTest(
         assertThat(isAbstract).isFalse()
         assertThat(isAnnotationPresent(Provides::class.java)).isTrue()
       }
-    }
-  }
-
-  @Test
-  fun `a Dagger module is generated for a merged class and added to the component without a package`() {
-    compile(
-      """
-      $import
-      
-      $annotation(Any::class)
-      interface ComponentInterface
-      """,
-    ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        classLoader.loadClass("ComponentInterface").daggerModule.includes.toList()
-      } else {
-        classLoader.loadClass("ComponentInterface").anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(
-        classLoader
-          .loadClass("ComponentInterface")
-          .anvilModule
-          .kotlin,
-      )
     }
   }
 
@@ -463,12 +346,8 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
+      val modules = componentInterface.mergedModules(annotationClass).toList()
+      assertThat(modules).containsExactly(contributingInterface.generatedBindingModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -506,22 +385,16 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface2
       """,
     ) {
-      val anvilModule1 = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }.single()
+      val componentInterfaceModules = componentInterface.mergedModules(
+        annotationClass,
+      ).toList().single()
 
-      val anvilModule2 = if (annotationClass == MergeModules::class) {
-        classLoader.loadClass("com.squareup.test.ComponentInterface2")
-          .daggerModule.includes.toList()
-      } else {
-        classLoader.loadClass("com.squareup.test.ComponentInterface2")
-          .anyDaggerComponent.modules
-      }.single()
+      val componentInterface2Modules = classLoader.loadClass(
+        "com.squareup.test.ComponentInterface2",
+      ).mergedModules(annotationClass)
 
-      assertThat(anvilModule1.java.declaredMethods).hasLength(1)
-      assertThat(anvilModule2.java.declaredMethods).isEmpty()
+      assertThat(componentInterfaceModules.java.declaredMethods).hasLength(1)
+      assertThat(componentInterface2Modules).isEmpty()
     }
   }
 
@@ -544,12 +417,8 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
+      val modules = componentInterface.mergedModules(annotationClass).toList()
+      assertThat(modules).containsExactly(contributingInterface.generatedBindingModule.kotlin)
 
       val methods = modules.single().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -563,7 +432,7 @@ class BindingModuleGeneratorTest(
     }
   }
 
-  @Test fun `methods are generated for bindings contributed to multiple scopes`() {
+  @Test fun `binding modules are generated for bindings contributed to multiple scopes`() {
     compile(
       """
       package com.squareup.test
@@ -585,7 +454,11 @@ class BindingModuleGeneratorTest(
       """,
     ) {
       listOf(componentInterface, subcomponentInterface).forEach { component ->
-        with(component.anvilModule.declaredMethods.single()) {
+        with(
+          component.mergedModules(
+            annotationClass,
+          ).flatMapArray { it.java.declaredMethods }.single(),
+        ) {
           assertThat(returnType).isEqualTo(parentInterface)
           assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
           assertThat(isAbstract).isTrue()
@@ -596,7 +469,7 @@ class BindingModuleGeneratorTest(
   }
 
   @Test
-  fun `methods are generated for bindings contributed to multiple scopes with multiple compilations`() {
+  fun `binding modules are generated for bindings contributed to multiple scopes with multiple compilations`() {
     val previousResult = compile(
       """
       package com.squareup.test
@@ -628,7 +501,11 @@ class BindingModuleGeneratorTest(
       previousCompilationResult = previousResult,
     ) {
       listOf(componentInterface, subcomponentInterface).forEach { component ->
-        with(component.anvilModule.declaredMethods.single()) {
+        with(
+          component.mergedModules(
+            annotationClass,
+          ).flatMapArray { it.java.declaredMethods }.single(),
+        ) {
           assertThat(returnType).isEqualTo(parentInterface)
           assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
           assertThat(isAbstract).isTrue()
@@ -660,14 +537,22 @@ class BindingModuleGeneratorTest(
       interface SubcomponentInterface
       """,
     ) {
-      with(componentInterface.anvilModule.declaredMethods.single()) {
+      with(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        }.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface1)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
 
-      with(subcomponentInterface.anvilModule.declaredMethods.single()) {
+      with(
+        subcomponentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        }.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface2)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -695,16 +580,25 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """,
     ) {
-      val methods = componentInterface.anvilModule.declaredMethods.sortedBy { it.name }
+      val methods = componentInterface.mergedModules(annotationClass).flatMapArray {
+        it.java.declaredMethods
+      }
       assertThat(methods).hasSize(2)
 
-      with(methods[0]) {
+      // Order of loading classes in the jvm here isn't super guaranteed across local and CI, so
+      // we just look up the methods directly
+      val parentInterface1Method = methods.find { it.returnType == parentInterface1 }
+        ?: error("No method found for $parentInterface1")
+      val parentInterface2Method = methods.find { it.returnType == parentInterface2 }
+        ?: error("No method found for $parentInterface2")
+
+      with(parentInterface1Method) {
         assertThat(returnType).isEqualTo(parentInterface1)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
-      with(methods[1]) {
+      with(parentInterface2Method) {
         assertThat(returnType).isEqualTo(parentInterface2)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -736,19 +630,29 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """,
     ) {
-      val methods = componentInterface.anvilModule.declaredMethods.sortedBy { it.name }
+      val methods = componentInterface.mergedModules(annotationClass).flatMapArray { moduleClass ->
+        moduleClass.java.declaredMethods
+      }
       assertThat(methods).hasSize(2)
+      val otherParentInterface = classLoader.loadClass("com.squareup.test.other.ParentInterface")
 
-      with(methods[0]) {
-        assertThat(returnType).isEqualTo(parentInterface)
+      // Order of loading classes in the jvm here isn't super guaranteed across local and CI, so
+      // we just look up the methods directly
+      val parentInterfaceMethod = methods.find { it.returnType == parentInterface }
+        ?: error("No method found for $parentInterface")
+      val otherParentInterfaceMethod = methods.find { it.returnType == otherParentInterface }
+        ?: error("No method found for $otherParentInterface")
+
+      with(otherParentInterfaceMethod) {
+        assertThat(returnType).isEqualTo(
+          classLoader.loadClass("com.squareup.test.other.ParentInterface"),
+        )
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
-      with(methods[1]) {
-        assertThat(returnType).isEqualTo(
-          classLoader.loadClass("com.squareup.test.other.ParentInterface"),
-        )
+      with(parentInterfaceMethod) {
+        assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
@@ -780,7 +684,11 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -812,14 +720,22 @@ class BindingModuleGeneratorTest(
       interface SubcomponentInterface
       """,
     ) {
-      with(componentInterface.anvilModule.declaredMethods.single()) {
+      with(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        }.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(secondContributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
 
-      with(subcomponentInterface.anvilModule.declaredMethods.single()) {
+      with(
+        subcomponentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        }.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -853,63 +769,22 @@ class BindingModuleGeneratorTest(
       interface SubcomponentInterface
       """,
     ) {
-      with(componentInterface.anvilModule.declaredMethods.single()) {
-        assertThat(returnType).isEqualTo(parentInterface)
-        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
-        assertThat(isAbstract).isTrue()
-        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
-      }
-
-      assertThat(subcomponentInterface.anvilModule.declaredMethods).isEmpty()
-    }
-  }
-
-  @Test fun `contributed bindings in the old format are picked up`() {
-    val result = AnvilCompilation()
-      .configureAnvil(enableAnvil = false)
-      .compile(
-        """
-        package com.squareup.test
-      
-        import com.squareup.anvil.annotations.ContributesBinding
-        
-        interface ParentInterface
-      
-        @ContributesBinding(Any::class)
-        interface ContributingInterface : ParentInterface  
-        """,
-        """
-        package anvil.hint.binding.com.squareup.test
-
-        import com.squareup.test.ContributingInterface
-        import kotlin.reflect.KClass
-        
-        public val com_squareup_test_ContributingInterface_reference: KClass<ContributingInterface> = ContributingInterface::class
-        
-        // Note that the number is missing after the scope. 
-        public val com_squareup_test_ContributingInterface_scope: KClass<Any> = Any::class
-        """.trimIndent(),
+      with(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        }.single(),
       ) {
-        assertThat(exitCode).isEqualTo(OK)
-      }
-
-    compile(
-      """
-      package com.squareup.test
-      
-      $import
-      
-      $annotation(Any::class)
-      interface ComponentInterface
-      """,
-      previousCompilationResult = result,
-    ) {
-      with(componentInterface.anvilModule.declaredMethods.single()) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
+
+      assertThat(
+        subcomponentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -936,7 +811,11 @@ class BindingModuleGeneratorTest(
       """,
     ) {
       listOf(componentInterface, subcomponentInterface).forEach { component ->
-        with(component.anvilModule.declaredMethods.single()) {
+        with(
+          component.mergedModules(
+            annotationClass,
+          ).flatMapArray { it.java.declaredMethods }.single(),
+        ) {
           assertThat(returnType).isEqualTo(parentInterface)
           assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
           assertThat(isAbstract).isTrue()
@@ -969,13 +848,17 @@ class BindingModuleGeneratorTest(
       interface SubcomponentInterface
       """,
     ) {
-      with(componentInterface.anvilModule.declaredMethods.single()) {
-        assertThat(returnType).isEqualTo(parentInterface)
-        assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
-        assertThat(isAbstract).isTrue()
-        assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+      componentInterface.mergedModules(annotationClass).flatMapArray {
+        it.java.declaredMethods
+      }.forEach { method ->
+        with(method) {
+          assertThat(returnType).isEqualTo(parentInterface)
+          assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
+          assertThat(isAbstract).isTrue()
+          assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
+        }
       }
-      assertThat(subcomponentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(subcomponentInterface.mergedModules(annotationClass)).isEmpty()
     }
   }
 
@@ -999,13 +882,9 @@ class BindingModuleGeneratorTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
+      val modules = componentInterface.mergedModules(annotationClass).toList()
       assertThat(modules)
-        .containsExactly(componentInterface.anvilModule.kotlin, daggerModule1.kotlin)
+        .containsExactly(daggerModule1.kotlin)
     }
   }
 

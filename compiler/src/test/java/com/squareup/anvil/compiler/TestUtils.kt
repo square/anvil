@@ -3,9 +3,16 @@ package com.squareup.anvil.compiler
 import com.google.common.collect.Lists.cartesianProduct
 import com.google.common.truth.ComparableSubject
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.annotations.ContributesMultibinding
+import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeComponent
+import com.squareup.anvil.annotations.MergeSubcomponent
+import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.reference.generateClassNameString
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
@@ -13,15 +20,20 @@ import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
+import com.squareup.kotlinpoet.asClassName
 import com.tschuchort.compiletesting.CompilationResult
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
+import dagger.Component
+import dagger.Module
+import dagger.Subcomponent
 import org.intellij.lang.annotations.Language
 import org.junit.Assume.assumeTrue
 import java.io.File
 import kotlin.reflect.KClass
+import kotlin.test.fail
 
 internal fun compile(
   @Language("kotlin") vararg sources: String,
@@ -30,7 +42,7 @@ internal fun compile(
   trackSourceFiles: Boolean = true,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
-  mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
+  mode: AnvilCompilationMode = Embedded(codeGenerators),
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult = compileAnvil(
   sources = sources,
@@ -109,23 +121,125 @@ internal val Class<*>.hintContributesScope: KClass<*>?
 internal val Class<*>.hintContributesScopes: List<KClass<*>>
   get() = getHintScopes(HINT_CONTRIBUTES_PACKAGE_PREFIX)
 
-internal val Class<*>.hintBinding: KClass<*>?
-  get() = getHint(HINT_BINDING_PACKAGE_PREFIX)
+internal val Class<*>.generatedBindingModule: Class<*> get() = generatedBindingModules(
+  ContributesBinding::class,
+).single()
+internal val Class<*>.generatedMultiBindingModule: Class<*> get() = generatedBindingModules(
+  ContributesMultibinding::class,
+).single()
 
-internal val Class<*>.hintBindingScope: KClass<*>?
-  get() = hintBindingScopes.takeIf { it.isNotEmpty() }?.single()
+private fun Class<*>.generatedBindingModules(): List<Class<*>> {
+  return generatedBindingModules(ContributesBinding::class)
+}
 
-internal val Class<*>.hintBindingScopes: List<KClass<*>>
-  get() = getHintScopes(HINT_BINDING_PACKAGE_PREFIX)
+private val Annotation.scope: KClass<*>
+  get() {
+    return when (this) {
+      is ContributesTo -> scope
+      is ContributesBinding -> scope
+      is ContributesMultibinding -> scope
+      else -> error("Unknown annotation class: $this")
+    }
+  }
 
-internal val Class<*>.hintMultibinding: KClass<*>?
-  get() = getHint(HINT_MULTIBINDING_PACKAGE_PREFIX)
+private val Annotation.boundType: KClass<*>
+  get() {
+    return when (this) {
+      is ContributesBinding -> boundType
+      is ContributesMultibinding -> boundType
+      else -> error("Unknown annotation class: $this")
+    }
+  }
 
-internal val Class<*>.hintMultibindingScope: KClass<*>?
-  get() = hintMultibindingScopes.takeIf { it.isNotEmpty() }?.single()
+private fun Class<*>.generatedBindingModules(annotationClass: KClass<out Annotation>): List<Class<*>> {
+  return getAnnotationsByType(annotationClass.java)
+    .map { bindingAnnotation ->
+      val scope = bindingAnnotation.scope.asClassName().generateClassNameString().capitalize()
+      val boundType = bindingAnnotation.boundType
+        .let {
+          if (it == Unit::class) {
+            interfaces.singleOrNull()?.kotlin ?: superclass.kotlin
+          } else {
+            it
+          }
+        }
+        .asClassName().generateClassNameString().capitalize()
+      val suffix = when (annotationClass) {
+        ContributesBinding::class -> BINDING_MODULE_SUFFIX
+        ContributesMultibinding::class -> MULTIBINDING_MODULE_SUFFIX
+        else -> error("Unknown annotation class: $annotationClass")
+      }
+      val className = "${generatedClassesString()}As${boundType}To${scope}$suffix"
+      classLoader.loadClass(className)
+    }
+}
 
-internal val Class<*>.hintMultibindingScopes: List<KClass<*>>
-  get() = getHintScopes(HINT_MULTIBINDING_PACKAGE_PREFIX)
+internal val Class<*>.bindingOriginKClass: KClass<*>?
+  get() {
+    return resolveOriginClass(ContributesBinding::class)
+  }
+
+internal val Class<*>.bindingModuleScope: KClass<*>
+  get() = bindingModuleScopes.first()
+
+internal val Class<*>.bindingModuleScopes: List<KClass<*>>
+  get() = generatedBindingModules()
+    .map { generatedBindingModule ->
+      val contributesTo = generatedBindingModule.getAnnotation(ContributesTo::class.java)
+      contributesTo.scope
+    }
+
+internal val Class<*>.multibindingOriginClass: KClass<*>?
+  get() = resolveOriginClass(ContributesMultibinding::class)
+
+internal fun Class<*>.resolveOriginClass(bindingAnnotation: KClass<out Annotation>): KClass<*>? {
+  val generatedBindingModule = generatedBindingModules(bindingAnnotation).firstOrNull() ?: return null
+  val bindingFunction = generatedBindingModule.declaredMethods[0]
+  val parameterImplType = bindingFunction.parameterTypes.firstOrNull()
+  val internalBindingMarker: InternalBindingMarker =
+    generatedBindingModule.kotlin.annotations.filterIsInstance<InternalBindingMarker>().single()
+  val bindingMarkerOriginType = internalBindingMarker.originClass
+  if (parameterImplType == null) {
+    // Validate that the function is a provider in an object
+    assertThat(generatedBindingModule.kotlin.objectInstance).isNotNull()
+  } else {
+    assertThat(generatedBindingModule.isInterface).isTrue()
+    // Added validation that the binding marker type matches the binds param
+    assertThat(parameterImplType).isEqualTo(bindingMarkerOriginType.java)
+  }
+  return bindingMarkerOriginType
+}
+
+internal val Class<*>.multibindingModuleScope: KClass<*>?
+  get() = multibindingModuleScopes.takeIf { it.isNotEmpty() }?.single()
+
+internal val Class<*>.multibindingModuleScopes: List<KClass<*>>
+  get() = generatedBindingModules(ContributesMultibinding::class)
+    .map { generatedBindingModule ->
+      val contributesTo = generatedBindingModule.getAnnotation(ContributesTo::class.java)
+      contributesTo.scope
+    }
+
+/**
+ * Given a [mergeAnnotation], finds and returns the resulting merged Dagger annotation's modules.
+ *
+ * This is useful for testing that module merging worked correctly in the final Dagger component
+ * during IR.
+ */
+internal fun Class<*>.mergedModules(mergeAnnotation: KClass<out Annotation>): Array<KClass<*>> {
+  val mergedAnnotation = when (mergeAnnotation) {
+    MergeComponent::class -> Component::class
+    MergeSubcomponent::class -> Subcomponent::class
+    MergeModules::class -> Module::class
+    else -> error("Unknown merge annotation class: $mergeAnnotation")
+  }
+  return when (val annotation = getAnnotation(mergedAnnotation.java)) {
+    is Component -> annotation.modules
+    is Subcomponent -> annotation.modules
+    is Module -> annotation.includes
+    else -> error("Unknown merge annotation class: $mergeAnnotation")
+  }
+}
 
 internal val Class<*>.hintSubcomponent: KClass<*>?
   get() = getHint(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
@@ -135,11 +249,6 @@ internal val Class<*>.hintSubcomponentParentScope: KClass<*>?
 
 internal val Class<*>.hintSubcomponentParentScopes: List<KClass<*>>
   get() = getHintScopes(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
-
-internal val Class<*>.anvilModule: Class<*>
-  get() = classLoader.loadClass(
-    "$MODULE_PACKAGE_PREFIX.${generatedClassesString(separator = "")}$ANVIL_MODULE_SUFFIX",
-  )
 
 private fun Class<*>.getHint(prefix: String): KClass<*>? = contributedProperties(prefix)
   ?.filter { it.java == this }
@@ -187,14 +296,43 @@ internal fun includeKspTests(): Boolean = INCLUDE_KSP_TESTS
 
 internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
   val dirToSearch = when (mode) {
-    is AnvilCompilationMode.Embedded ->
+    is Embedded ->
       outputDirectory.parentFile.resolve("build${File.separator}anvil")
 
-    is AnvilCompilationMode.Ksp -> outputDirectory.parentFile.resolve("ksp${File.separator}sources")
+    is Ksp -> outputDirectory.parentFile.resolve("ksp${File.separator}sources")
   }
   return dirToSearch.walkTopDown()
     .filter { it.isFile && it.extension == "kt" }
 }
+
+internal fun JvmCompilationResult.singleGeneratedFile(mode: AnvilCompilationMode): File {
+  val files = walkGeneratedFiles(mode).toList()
+  assertThat(files).hasSize(1)
+  return files[0]
+}
+
+internal fun JvmCompilationResult.assertFileGenerated(
+  mode: AnvilCompilationMode,
+  fileName: String,
+) {
+  if (generatedFileOrNull(mode, fileName) == null) {
+    val files = walkGeneratedFiles(mode)
+    fail(
+      buildString {
+        appendLine("Could not find file '$fileName' in the generated files:")
+        for (file in files.sorted()) {
+          appendLine("\t- ${file.path}")
+        }
+      },
+    )
+  }
+}
+
+internal fun JvmCompilationResult.generatedFileOrNull(
+  mode: AnvilCompilationMode,
+  fileName: String,
+): File? = walkGeneratedFiles(mode)
+  .singleOrNull { it.name == fileName && "anvil${File.separatorChar}hint" !in it.absolutePath }
 
 /**
  * Parameters for configuring [AnvilCompilationMode] and whether to run a full test run or not.
@@ -230,3 +368,8 @@ internal fun CompilationResult.compilationErrorLine(): String {
     .lineSequence()
     .first { it.startsWith("e:") && KSP_ERROR_HEADER !in it }
 }
+
+internal inline fun <T, R> Array<out T>.flatMapArray(transform: (T) -> Array<R>) =
+  flatMapTo(ArrayList()) {
+    transform(it).asIterable()
+  }

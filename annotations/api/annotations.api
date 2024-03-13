@@ -94,3 +94,14 @@ public abstract interface annotation class com/squareup/anvil/annotations/compat
 	public abstract fun value ()[Lcom/squareup/anvil/annotations/compat/MergeModules;
 }
 
+public abstract interface annotation class com/squareup/anvil/annotations/internal/InternalBindingMarker : java/lang/annotation/Annotation {
+	public abstract fun isMultibinding ()Z
+	public abstract fun originClass ()Ljava/lang/Class;
+	public abstract fun priority ()Ljava/lang/String;
+	public abstract fun qualifierKey ()Ljava/lang/String;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/internal/InternalBindingMarker$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/internal/InternalBindingMarker;
+}
+

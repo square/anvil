@@ -4,6 +4,7 @@ package com.squareup.anvil.compiler.internal.testing
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
+import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.internal.capitalize
 import dagger.Component
 import dagger.Module
@@ -78,12 +79,35 @@ public infix fun Class<*>.extends(other: Class<*>): Boolean = other.isAssignable
 public infix fun KClass<*>.extends(other: KClass<*>): Boolean =
   other.java.isAssignableFrom(this.java)
 
+@Deprecated(
+  "Use withoutAnvilModules() instead",
+  ReplaceWith(
+    "withoutAnvilModules()",
+    imports = ["com.squareup.anvil.compiler.internal.testing.withoutAnvilModules"],
+  ),
+)
 @ExperimentalAnvilApi
-public fun Array<KClass<*>>.withoutAnvilModule(): List<KClass<*>> = toList().withoutAnvilModule()
+public fun Array<KClass<*>>.withoutAnvilModule(): List<KClass<*>> = withoutAnvilModules()
 
+@Deprecated(
+  "Use withoutAnvilModules() instead",
+  ReplaceWith(
+    "withoutAnvilModules()",
+    imports = ["com.squareup.anvil.compiler.internal.testing.withoutAnvilModules"],
+  ),
+)
 @ExperimentalAnvilApi
 public fun Collection<KClass<*>>.withoutAnvilModule(): List<KClass<*>> =
-  filterNot { it.qualifiedName!!.startsWith("anvil.module") }
+  withoutAnvilModules()
+
+@ExperimentalAnvilApi
+public fun Array<KClass<*>>.withoutAnvilModules(): List<KClass<*>> = toList().withoutAnvilModules()
+
+@ExperimentalAnvilApi
+public fun Collection<KClass<*>>.withoutAnvilModules(): List<KClass<*>> =
+  filterNot {
+    it.qualifiedName!!.startsWith("anvil.module") || it.java.isAnnotationPresent(InternalBindingMarker::class.java)
+  }
 
 @ExperimentalAnvilApi
 public fun Any.invokeGet(vararg args: Any?): Any {

@@ -106,6 +106,7 @@ public abstract class com/squareup/anvil/compiler/internal/reference/AnnotationR
 	public final fun isQualifier ()Z
 	public final fun replaces (I)Ljava/util/List;
 	public static synthetic fun replaces$default (Lcom/squareup/anvil/compiler/internal/reference/AnnotationReference;IILjava/lang/Object;)Ljava/util/List;
+	public final fun resolveBoundType ()Lcom/squareup/anvil/compiler/internal/reference/ClassReference;
 	public final fun scope (I)Lcom/squareup/anvil/compiler/internal/reference/ClassReference;
 	public static synthetic fun scope$default (Lcom/squareup/anvil/compiler/internal/reference/AnnotationReference;IILjava/lang/Object;)Lcom/squareup/anvil/compiler/internal/reference/ClassReference;
 	public abstract fun scopeOrNull (I)Lcom/squareup/anvil/compiler/internal/reference/ClassReference;
@@ -260,6 +261,8 @@ public final class com/squareup/anvil/compiler/internal/reference/ClassReference
 	public static final fun generateClassName (Lcom/squareup/kotlinpoet/ClassName;Ljava/lang/String;Ljava/lang/String;)Lcom/squareup/kotlinpoet/ClassName;
 	public static synthetic fun generateClassName$default (Lcom/squareup/anvil/compiler/internal/reference/ClassReference;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lorg/jetbrains/kotlin/name/ClassId;
 	public static synthetic fun generateClassName$default (Lcom/squareup/kotlinpoet/ClassName;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/squareup/kotlinpoet/ClassName;
+	public static final fun generateClassNameString (Lcom/squareup/kotlinpoet/ClassName;Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+	public static synthetic fun generateClassNameString$default (Lcom/squareup/kotlinpoet/ClassName;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Ljava/lang/String;
 	public static final fun toClassReference (Lorg/jetbrains/kotlin/descriptors/ClassDescriptor;Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;)Lcom/squareup/anvil/compiler/internal/reference/ClassReference$Descriptor;
 	public static final fun toClassReference (Lorg/jetbrains/kotlin/name/FqName;Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;)Lcom/squareup/anvil/compiler/internal/reference/ClassReference;
 	public static final fun toClassReference (Lorg/jetbrains/kotlin/psi/KtClassOrObject;Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;)Lcom/squareup/anvil/compiler/internal/reference/ClassReference$Psi;

@@ -9,7 +9,7 @@ import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.daggerSubcomponent
-import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
+import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Component
 import dagger.Subcomponent
@@ -21,7 +21,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class ModuleMergerTest(
-  private val annotationClass: KClass<*>,
+  private val annotationClass: KClass<out Annotation>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -51,7 +51,7 @@ class ModuleMergerTest(
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule()).isEmpty()
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules()).isEmpty()
 
       if (annotationClass == MergeComponent::class) {
         assertThat(componentInterface.daggerComponent.dependencies).isEmpty()
@@ -77,7 +77,9 @@ class ModuleMergerTest(
       """,
     ) {
       val component = componentInterface.anyDaggerComponent
-      assertThat(component.modules.withoutAnvilModule()).containsExactly(Boolean::class, Int::class)
+      assertThat(
+        component.modules.withoutAnvilModules(),
+      ).containsExactly(Boolean::class, Int::class)
     }
   }
 
@@ -105,7 +107,9 @@ class ModuleMergerTest(
       """,
     ) {
       val component = componentInterface.daggerComponent
-      assertThat(component.modules.withoutAnvilModule()).containsExactly(Boolean::class, Int::class)
+      assertThat(
+        component.modules.withoutAnvilModules(),
+      ).containsExactly(Boolean::class, Int::class)
       assertThat(component.dependencies.toList()).containsExactly(Boolean::class, Int::class)
     }
   }
@@ -151,7 +155,7 @@ class ModuleMergerTest(
       """,
     ) {
       val component = componentInterface.anyDaggerComponent
-      assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule1.kotlin)
+      assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule1.kotlin)
     }
   }
 
@@ -172,7 +176,7 @@ class ModuleMergerTest(
       """,
     ) {
       val component = componentInterface.anyDaggerComponent
-      assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule1.kotlin)
+      assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule1.kotlin)
     }
   }
 
@@ -199,7 +203,7 @@ class ModuleMergerTest(
       """,
     ) {
       val component = componentInterface.anyDaggerComponent
-      assertThat(component.modules.withoutAnvilModule())
+      assertThat(component.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin, Int::class, Boolean::class)
     }
   }
@@ -248,7 +252,7 @@ class ModuleMergerTest(
       """,
     ) {
       val component = componentInterface.anyDaggerComponent
-      assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule2.kotlin)
+      assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule2.kotlin)
     }
   }
 
@@ -277,10 +281,14 @@ class ModuleMergerTest(
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
 
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -309,10 +317,14 @@ class ModuleMergerTest(
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
 
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -411,8 +423,12 @@ class ModuleMergerTest(
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule()).isEmpty()
-      assertThat(componentInterface.anvilModule.declaredMethods).hasLength(1)
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules()).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).hasSize(1)
     }
   }
 
@@ -441,8 +457,12 @@ class ModuleMergerTest(
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule()).isEmpty()
-      assertThat(componentInterface.anvilModule.declaredMethods).hasLength(1)
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules()).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).hasSize(1)
     }
   }
 
@@ -604,7 +624,7 @@ class ModuleMergerTest(
       """,
     ) {
       val component = componentInterface.anyDaggerComponent
-      assertThat(component.modules.withoutAnvilModule())
+      assertThat(component.modules.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin, daggerModule1.kotlin)
     }
   }
@@ -635,7 +655,7 @@ class ModuleMergerTest(
       """,
     ) {
       val component = componentInterface.anyDaggerComponent
-      assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule2.kotlin)
+      assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule2.kotlin)
     }
   }
 
@@ -700,7 +720,7 @@ class ModuleMergerTest(
       """,
     ) {
       val component = componentInterface.anyDaggerComponent
-      assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule2.kotlin)
+      assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule2.kotlin)
     }
   }
 
@@ -731,11 +751,11 @@ class ModuleMergerTest(
       """,
     ) {
       val component1 = componentInterface.anyDaggerComponent
-      assertThat(component1.modules.withoutAnvilModule()).containsExactly(daggerModule1.kotlin)
+      assertThat(component1.modules.withoutAnvilModules()).containsExactly(daggerModule1.kotlin)
 
       val component2 =
         classLoader.loadClass("com.squareup.test.ComponentInterface2").anyDaggerComponent
-      assertThat(component2.modules.withoutAnvilModule()).containsExactly(daggerModule2.kotlin)
+      assertThat(component2.modules.withoutAnvilModules()).containsExactly(daggerModule2.kotlin)
     }
   }
 
@@ -761,7 +781,11 @@ class ModuleMergerTest(
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -787,7 +811,11 @@ class ModuleMergerTest(
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -878,9 +906,9 @@ class ModuleMergerTest(
       interface SubcomponentInterface
       """,
     ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
-      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
     }
   }
@@ -911,9 +939,9 @@ class ModuleMergerTest(
       interface SubcomponentInterface
       """,
     ) {
-      assertThat(componentInterface.daggerComponent.modules.withoutAnvilModule())
+      assertThat(componentInterface.daggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
-      assertThat(subcomponentInterface.daggerSubcomponent.modules.withoutAnvilModule())
+      assertThat(subcomponentInterface.daggerSubcomponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
     }
   }
@@ -965,7 +993,7 @@ class ModuleMergerTest(
       interface SubcomponentInterface
       """,
     ) {
-      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(innerModule.kotlin)
     }
   }
@@ -991,9 +1019,9 @@ class ModuleMergerTest(
     ) {
       val innerModule = classLoader
         .loadClass("com.squareup.test.SubcomponentInterface\$InnerModule")
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(innerModule.kotlin)
-      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule()).isEmpty()
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModules()).isEmpty()
     }
   }
 
@@ -1012,7 +1040,7 @@ class ModuleMergerTest(
       """,
     ) {
       val component = classLoader.loadClass("ComponentInterface").anyDaggerComponent
-      assertThat(component.modules.withoutAnvilModule())
+      assertThat(component.modules.withoutAnvilModules())
         .containsExactly(classLoader.loadClass("DaggerModule1").kotlin)
     }
   }
@@ -1086,11 +1114,11 @@ class ModuleMergerTest(
       interface ComponentInterface
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
 
       val component = componentInterface.anyDaggerComponent
-      assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule1.kotlin)
+      assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule1.kotlin)
     }
   }
 
@@ -1162,10 +1190,10 @@ class ModuleMergerTest(
       interface SubcomponentInterface
       """,
     ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin, daggerModule2.kotlin)
 
-      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
     }
   }
@@ -1206,10 +1234,10 @@ class ModuleMergerTest(
       """,
       previousCompilationResult = firstResult,
     ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin, daggerModule2.kotlin)
 
-      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
     }
   }
@@ -1238,10 +1266,10 @@ class ModuleMergerTest(
       interface SubcomponentInterface
       """,
     ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
 
-      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
     }
   }
@@ -1307,10 +1335,10 @@ class ModuleMergerTest(
       interface SubcomponentInterface
       """,
     ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
 
-      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
     }
   }
@@ -1355,7 +1383,7 @@ class ModuleMergerTest(
       """,
       previousCompilationResult = result,
     ) {
-      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModule())
+      assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
     }
   }
