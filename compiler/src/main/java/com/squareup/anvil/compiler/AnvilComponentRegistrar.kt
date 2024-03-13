@@ -49,7 +49,7 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
       if (commandLineOptions.componentMergingBackend == ComponentMergingBackend.IR) {
         IrGenerationExtension.registerExtension(
           project,
-          ModuleMergerIr(scanner, moduleDescriptorFactory),
+          IrContributionMerger(scanner, moduleDescriptorFactory),
         )
       } else {
         // TODO in dagger-ksp support

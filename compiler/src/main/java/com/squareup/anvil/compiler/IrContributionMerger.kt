@@ -45,7 +45,7 @@ import org.jetbrains.kotlin.name.Name
  * as super types to Dagger components annotated with `@MergeComponent` or `@MergeSubcomponent`.
  * This also supports arbitrary interface merging on interfaces annotated with `@MergeInterfaces`.
  */
-internal class ModuleMergerIr(
+internal class IrContributionMerger(
   private val classScanner: ClassScanner,
   private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
 ) : IrGenerationExtension {
