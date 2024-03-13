@@ -33,7 +33,7 @@ jobs:
         uses: ffurrer2/extract-release-notes@4a5a562549e21065f6791b32ec5415bd33045cd2 # v2
 
       - name: Create release
-        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
+        uses: softprops/action-gh-release@9d7c94cfd0a1f3ed45544c887983e9fa900f0564 # v2
         with:
           body: ${{ steps.release_notes.outputs.release_notes }}
         env:

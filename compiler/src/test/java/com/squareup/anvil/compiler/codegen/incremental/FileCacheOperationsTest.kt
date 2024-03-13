@@ -23,6 +23,30 @@ internal class FileCacheOperationsTest : CacheTests {
   }
 
   @Test
+  fun `restoreFromCache passing a source file as input deletes it and everything downstream`() = test {
+
+    fileOperations.addToCache(
+      gen1.withSources(source1),
+      gen2.withSources(source2),
+      gen3.withSources(gen2.toSourceFile()),
+      gen4.withSources(source3),
+    )
+
+    listOf(gen1, gen2, gen3)
+      .forEach { it.file.delete() }
+
+    fileOperations.restoreFromCache(generatedDir, setOf(source2))
+
+    currentFiles() shouldBe listOf(
+      gen1.relativeFile,
+      gen4.relativeFile,
+      source1,
+      source2,
+      source3,
+    )
+  }
+
+  @Test
   fun `restoreFromCache missing generated files are restored`() = test {
 
     fileOperations.addToCache(
@@ -34,7 +58,7 @@ internal class FileCacheOperationsTest : CacheTests {
     listOf(gen1, gen2, gen3)
       .forEach { it.file.delete() }
 
-    fileOperations.restoreFromCache(generatedDir)
+    fileOperations.restoreFromCache()
 
     currentFiles() shouldBe listOf(
       gen1.relativeFile,
@@ -64,7 +88,7 @@ internal class FileCacheOperationsTest : CacheTests {
       gen3.withSources(gen2.toSourceFile()),
     )
 
-    fileOperations.restoreFromCache(generatedDir)
+    fileOperations.restoreFromCache()
 
     currentFiles() shouldBe listOf(
       gen1.relativeFile,
@@ -87,7 +111,7 @@ internal class FileCacheOperationsTest : CacheTests {
 
       source1.writeText("changed")
 
-      fileOperations.restoreFromCache(generatedDir)
+      fileOperations.restoreFromCache(source1)
 
       currentFiles() shouldBe listOf(gen3.relativeFile, source1, source2)
     }
@@ -103,7 +127,7 @@ internal class FileCacheOperationsTest : CacheTests {
 
     source2.writeText("changed")
 
-    fileOperations.restoreFromCache(generatedDir)
+    fileOperations.restoreFromCache(source2)
 
     currentFiles() shouldBe listOf(gen1.relativeFile, source1, source2)
   }
@@ -121,7 +145,7 @@ internal class FileCacheOperationsTest : CacheTests {
 
     currentFiles() shouldBe listOf(gen1.relativeFile, untracked, source1)
 
-    fileOperations.restoreFromCache(generatedDir)
+    fileOperations.restoreFromCache()
 
     currentFiles() shouldBe listOf(gen1.relativeFile, source1)
   }
@@ -143,7 +167,7 @@ internal class FileCacheOperationsTest : CacheTests {
     )
       .forEach { it.absoluteFile.delete() }
 
-    fileOperations.restoreFromCache(generatedDir)
+    fileOperations.restoreFromCache()
 
     currentFiles() shouldBe listOf(gen2.relativeFile, gen3.relativeFile, source2)
   }
