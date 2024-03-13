@@ -31,6 +31,7 @@ public abstract class com/squareup/anvil/plugin/AnvilExtension {
 	public final fun getTrackSourceFiles ()Lorg/gradle/api/provider/Property;
 	public final fun getUseKspBackend ()Lorg/gradle/api/provider/Property;
 	public final fun getUseKspComponentMergingBackend ()Lorg/gradle/api/provider/Property;
+	public final fun useKsp (Lorg/gradle/api/Project;Z)V
 	public final fun useKsp (Lorg/gradle/api/Project;ZZ)V
 	public static synthetic fun useKsp$default (Lcom/squareup/anvil/plugin/AnvilExtension;Lorg/gradle/api/Project;ZZILjava/lang/Object;)V
 	public final fun variantFilter (Lorg/gradle/api/Action;)V

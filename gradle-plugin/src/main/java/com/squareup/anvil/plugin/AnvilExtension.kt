@@ -168,6 +168,7 @@ public abstract class AnvilExtension @Inject constructor(
    * @param componentMerging This is an experimental feature that currently does nothing. It's a
    *   placeholder for future work. Requires [disableComponentMerging] to be `false`.
    */
+  @JvmOverloads
   public fun useKsp(
     project: Project,
     contributesAndFactoryGeneration: Boolean,
