@@ -692,7 +692,6 @@ class IncrementalTest : BaseGradleTest() {
 
           allMergedModulesForComponent("com.squareup.test.app.AppComponent")
             .names() shouldBe listOf(
-            "anvil.module.com.squareup.test.app.AppComponentAnvilModule",
             "anvil.component.com.squareup.test.app.appcomponent.LibSubcomponentA\$SubcomponentModule",
           )
         }
@@ -710,9 +709,7 @@ class IncrementalTest : BaseGradleTest() {
         app.classGraphResult(lib).apply {
 
           allMergedModulesForComponent("com.squareup.test.app.AppComponent")
-            .names() shouldBe listOf(
-            "anvil.module.com.squareup.test.app.AppComponentAnvilModule",
-          )
+            .names() shouldBe emptyList()
         }
       }
     }
