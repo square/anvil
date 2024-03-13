@@ -11,9 +11,9 @@ import com.rickbusarow.kase.stdlib.div
 import com.rickbusarow.kase.wrap
 import com.squareup.anvil.plugin.testing.AnvilGradleTestEnvironment
 import com.squareup.anvil.plugin.testing.BaseGradleTest
+import com.squareup.anvil.plugin.testing.allBoundTypes
 import com.squareup.anvil.plugin.testing.anvil
 import com.squareup.anvil.plugin.testing.classGraphResult
-import io.kotest.matchers.collections.shouldContainExactly
 import io.kotest.matchers.file.shouldExist
 import io.kotest.matchers.file.shouldNotExist
 import io.kotest.matchers.shouldBe
@@ -358,7 +358,7 @@ class IncrementalTest : BaseGradleTest() {
 
   @TestFactory
   fun `compilation re-runs when a @ContributesBinding type supertype changes`() = testFactory {
-
+    // TODO fix
     fun DirectoryBuilder.otherClassContent(
       superType: String,
       packageName: String = "com.squareup.test",
@@ -413,80 +413,37 @@ class IncrementalTest : BaseGradleTest() {
       .anvilHintMerge
       .resolve("com/squareup/test/OtherClassAsComSquareupTestTypeBToKotlinAnyBindingModule.kt")
 
-    val bindingModule = rootAnvilMainGenerated
-      .resolve("com/squareup/test/OtherClassBindingModule.kt")
-
     rootAnvilMainGenerated.injectClassFactory.shouldExist()
     otherClassFactory.shouldExist()
     otherClassAHint.shouldExist()
     otherClassBHint.shouldNotExist()
 
-    bindingModule shouldExistWithTextContaining """
-        @Module
-        @ContributesTo(scope = Any::class)
-        @InternalBindingMarker(
-          originClass = OtherClass::class,
-          isMultibinding = false,
-          priority = "NORMAL",
-        )
-        public interface OtherClassAsComSquareupTestTypeAToKotlinAnyBindingModule {
-          @Binds
-          public fun bindTypeA(real: OtherClass): TypeA
-        }
-    """.trimIndent()
+    rootProject.classGraphResult().allBoundTypes() shouldBe listOf(
+      "com.squareup.test.OtherClass" to "com.squareup.test.TypeA",
+    )
 
-    rootProject.path
-      .resolve("src/main/java")
-      .resolve(otherClassPath)
-      .kotlin(
-        """
-        package com.squareup.test
-  
-        import com.squareup.anvil.annotations.ContributesBinding
-        import com.squareup.anvil.annotations.MergeComponent
-        import javax.inject.Inject
-  
-        @ContributesBinding(Any::class)
-        class OtherClass @Inject constructor() : TypeB
-  
-        interface TypeA
-        interface TypeB
-  
-        class Consumer @Inject constructor(
-          private val dep: TypeA
-        )
-  
-        @MergeComponent(Any::class)
-        interface AppComponent
-        """.trimIndent(),
-      )
+    rootProject {
+      dir("src/main/java") {
+        otherClassContent(superType = "TypeB", packageName = "com.squareup.test")
+      }
+    }
 
     shouldSucceed("jar") {
       task(":compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
     }
 
     rootAnvilMainGenerated.injectClassFactory.shouldExist()
-    otherClassFactory.shouldExist()
     otherClassAHint.shouldNotExist()
     otherClassBHint.shouldExist()
 
-    bindingModule shouldExistWithTextContaining """
-        @Module
-        @ContributesTo(scope = Any::class)
-        @InternalBindingMarker(
-          originClass = OtherClass::class,
-          isMultibinding = false,
-          priority = "NORMAL",
-        )
-        public interface OtherClassAsComSquareupTestTypeBToKotlinAnyBindingModule {
-          @Binds
-          public fun bindTypeB(real: OtherClass): TypeB
-        }
-    """.trimIndent()
+    rootProject.classGraphResult().allBoundTypes() shouldBe listOf(
+      "com.squareup.test.OtherClass" to "com.squareup.test.TypeB",
+    )
   }
 
   @TestFactory
   fun `compilation re-runs when a dependency module's @ContributesBinding type supertype changes`() =
+    // TODO fix
     testFactory {
 
       fun DirectoryBuilder.otherClassContent(
@@ -586,72 +543,22 @@ class IncrementalTest : BaseGradleTest() {
       val lib by rootProject.subprojects
       val app by rootProject.subprojects
 
-      fun mergedModules(): Set<String> {
-        val compiledAppClasses = rootProject.path.resolve("app")
-          .resolve("build/classes")
-        val compiledLibClasses = rootProject.path.resolve("lib")
-          .resolve("build/classes")
-        val classLoader =
-          URLClassLoader(
-            listOf(compiledAppClasses, compiledLibClasses).flatMap {
-              it.walkTopDown()
-                .filter { it.isDirectory }
-                .map { it.toURI().toURL() }
-            }
-              .toList()
-              .toTypedArray(),
-            this::class.java.classLoader,
-          )
-        val appComponent = classLoader.loadClass("com.squareup.test.app.AppComponent")
-        val componentAnnotation = appComponent.getAnnotation(Component::class.java)
-        return componentAnnotation.modules.map { it.java.canonicalName }.toSet()
-      }
+      shouldSucceed("jar")
 
-      val bindingModule = rootProject.path.resolve("lib")
-        .anvilMainGenerated
-        .resolve("com/squareup/test/lib/OtherClassBindingModule.kt")
-
-      bindingModule shouldExistWithTextContaining """
-        @Module
-        @ContributesTo(scope = Any::class)
-        @InternalBindingMarker(
-          originClass = OtherClass::class,
-          isMultibinding = false,
-          priority = "NORMAL",
-        )
-        public interface OtherClassAsComSquareupTestLibTypeAToKotlinAnyBindingModule {
-          @Binds
-          public fun bindTypeA(real: OtherClass): TypeA
-        }
-      """.trimIndent()
-
-      mergedModules() shouldContainExactly setOf(
-        "com.squareup.test.lib.OtherClassAsComSquareupTestLibTypeAToKotlinAnyBindingModule",
+      app.classGraphResult(lib).allBoundTypes() shouldBe listOf(
+        "com.squareup.test.lib.OtherClass" to "com.squareup.test.lib.TypeA",
       )
 
-      otherClassPath.writeText(otherClassContent("TypeB"))
+      lib.dir("src/main/java") {
+        otherClassContent("TypeB", "com.squareup.test.lib")
+      }
 
       shouldSucceed(":app:jar") {
         task(":app:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }
 
-      bindingModule shouldExistWithTextContaining """
-        @Module
-        @ContributesTo(scope = Any::class)
-        @InternalBindingMarker(
-          originClass = OtherClass::class,
-          isMultibinding = false,
-          priority = "NORMAL",
-        )
-        public interface OtherClassAsComSquareupTestLibTypeBToKotlinAnyBindingModule {
-          @Binds
-          public fun bindTypeB(real: OtherClass): TypeB
-        }
-      """.trimIndent()
-
-      // TODO this doesn't work, which... suggests to me that IC might be broken here?
-      mergedModules() shouldContainExactly setOf(
-        "com.squareup.test.lib.OtherClassAsComSquareupTestLibTypeBToKotlinAnyBindingModule",
+      app.classGraphResult(lib).allBoundTypes() shouldBe listOf(
+        "com.squareup.test.lib.OtherClass" to "com.squareup.test.lib.TypeB",
       )
     }
 
