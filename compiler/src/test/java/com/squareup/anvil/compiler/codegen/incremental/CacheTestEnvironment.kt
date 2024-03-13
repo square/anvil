@@ -7,6 +7,7 @@ import com.rickbusarow.kase.NoParamTestEnvironmentFactory
 import com.rickbusarow.kase.files.TestLocation
 import com.rickbusarow.kase.stdlib.createSafely
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
+import com.squareup.anvil.compiler.mapToSet
 import io.kotest.matchers.file.shouldExist
 import io.kotest.matchers.shouldBe
 import java.io.File
@@ -120,6 +121,18 @@ internal class CacheTestEnvironment(
 
   fun FileCacheOperations.addToCache(vararg gens: GeneratedFileWithSources) {
     addToCache(emptyList(), gens.toList())
+  }
+
+  fun FileCacheOperations.restoreFromCache(vararg sources: FileType) {
+    restoreFromCache(
+      generatedDir = generatedDir,
+      inputKtFiles = sources.mapToSet { fileType ->
+        when (fileType) {
+          is AbsoluteFile -> fileType.relativeTo(projectDir)
+          is RelativeFile -> fileType
+        }
+      },
+    )
   }
 
   fun newCache(binaryFile: File = this.binaryFile): GeneratedFileCache {

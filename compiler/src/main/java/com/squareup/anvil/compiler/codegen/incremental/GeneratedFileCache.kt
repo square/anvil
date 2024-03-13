@@ -4,6 +4,7 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.codegen.incremental.collections.Multimap
 import com.squareup.anvil.compiler.codegen.incremental.collections.MutableBiMap
+import com.squareup.anvil.compiler.mapToSet
 import java.io.Closeable
 import java.io.File
 import java.io.IOException
@@ -217,7 +218,7 @@ internal class GeneratedFileCache private constructor(
 
     fun getSourceFilesWithoutGeneratedContent(): Set<RelativeFile> = sourcesToGenerated.keys
       .filter { !generatedToContent.containsKey(it) }
-      .mapTo(mutableSetOf()) { fileIds.inverse.getValue(it) }
+      .mapToSet { fileIds.inverse.getValue(it) }
 
     fun putSourceGeneratedPair(sourceFile: RelativeFile, generatedFile: RelativeFile) {
       sourcesToGenerated.add(sourceFile.id, generatedFile.id)
@@ -248,11 +249,11 @@ internal class GeneratedFileCache private constructor(
 
     fun getSourceFiles(generatedFile: RelativeFile): Set<RelativeFile> =
       generatedToSources[generatedFile.id]
-        .mapTo(mutableSetOf()) { fileIds.inverse.getValue(it) }
+        .mapToSet { fileIds.inverse.getValue(it) }
 
     fun getGeneratedFiles(sourceFile: RelativeFile): Set<RelativeFile> =
       sourcesToGenerated[sourceFile.id]
-        .mapTo(mutableSetOf()) { fileIds.inverse.getValue(it) }
+        .mapToSet { fileIds.inverse.getValue(it) }
 
     fun putGeneratedContent(generatedFile: RelativeFile, content: String): String? {
       return generatedToContent.put(generatedFile.id, content)
