@@ -15,7 +15,7 @@ import java.util.Locale
 import javax.inject.Inject
 
 public abstract class AnvilExtension @Inject constructor(
-  private val project: Project,
+  project: Project,
   objects: ObjectFactory,
   private val providers: ProviderFactory,
 ) {
@@ -30,7 +30,7 @@ public abstract class AnvilExtension @Inject constructor(
       .map { it.toBoolean() }
       .getOrElse(false)
     if (useKspBackend || useKspComponentMergingBackend) {
-      useKsp(useKspBackend, useKspComponentMergingBackend)
+      useKsp(project, useKspBackend, useKspComponentMergingBackend)
     }
   }
 
@@ -160,6 +160,8 @@ public abstract class AnvilExtension @Inject constructor(
    * com.squareup.anvil.useKspComponentMergingBackend=true
    * ```
    *
+   * @param project the Gradle project this is operating on. Annoying but necessary to pass this
+   *   param in order to support configuration caching.
    * @param contributesAndFactoryGeneration This is an experimental feature that
    *   replaces the previous `AnalysisHandlerExtension`-based backend, which is removed in Kotlin
    *   2.0 and struggled with incremental compilation.
@@ -167,6 +169,7 @@ public abstract class AnvilExtension @Inject constructor(
    *   placeholder for future work. Requires [disableComponentMerging] to be `false`.
    */
   public fun useKsp(
+    project: Project,
     contributesAndFactoryGeneration: Boolean,
     componentMerging: Boolean = false,
   ) {
@@ -191,6 +194,7 @@ public abstract class AnvilExtension @Inject constructor(
         .matching { it.platformType in SUPPORTED_PLATFORMS }
         .configureEach {
           addKspDep(
+            project,
             "ksp${
               it.targetName.replaceFirstChar {
                 if (it.isLowerCase()) {
@@ -205,7 +209,7 @@ public abstract class AnvilExtension @Inject constructor(
           )
         }
     } else {
-      addKspDep("ksp")
+      addKspDep(project, "ksp")
     }
     project.extensions.configure(KspExtension::class.java) {
       it.arg {
@@ -218,7 +222,7 @@ public abstract class AnvilExtension @Inject constructor(
     }
   }
 
-  private fun addKspDep(configurationName: String) {
+  private fun addKspDep(project: Project, configurationName: String) {
     project.dependencies.add(
       configurationName,
       "com.squareup.anvil:compiler:$VERSION",
