@@ -3,7 +3,7 @@
   "extends" : [
     "config:best-practices"
   ],
-  "rebaseWhen" : "conflicted",
+  "rebaseWhen" : "auto",
   "rebaseLabel" : "rebase",
   "packageRules" : [
     {
