@@ -332,7 +332,7 @@ internal fun JvmCompilationResult.generatedFileOrNull(
   mode: AnvilCompilationMode,
   fileName: String,
 ): File? = walkGeneratedFiles(mode)
-  .singleOrNull { it.name == fileName && "anvil/hint" !in it.absolutePath }
+  .singleOrNull { it.name == fileName && "anvil${File.separatorChar}hint" !in it.absolutePath }
 
 /**
  * Parameters for configuring [AnvilCompilationMode] and whether to run a full test run or not.
