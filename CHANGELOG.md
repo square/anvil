@@ -8,6 +8,7 @@
 
 - Interface merging is now done in the IR backend, improving performance and future compatibility with K2.
 - Update Dagger to `2.51`.
+- `@ContributesBinding` and `@ContributesMultibinding` have been completely reworked to a new implementation that generates one binding dagger module for each contributed binding. While not an ABI-breaking change, this _does_ change the generated code and requires users to re-run Anvil's code gen over any projects contributing bindings in order to be merged with the new implementation.
 
 ### Deprecated
 
