@@ -90,7 +90,8 @@ internal class IrContributionMerger(
             if (!mergeAnnotatedClass.isInterface) {
               throw AnvilCompilationExceptionClassReferenceIr(
                 classReference = mergeAnnotatedClass,
-                message = "Dagger components must be interfaces.",
+                message = "Dagger components (or classes annotated with @MergeInterfaces)" +
+                  " must be interfaces.",
               )
             }
 
