@@ -12,7 +12,6 @@ import com.squareup.anvil.compiler.codegen.reference.findAll
 import com.squareup.anvil.compiler.codegen.reference.toClassReference
 import com.squareup.anvil.compiler.internal.classIdBestGuess
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
-import com.squareup.anvil.compiler.internal.safePackageString
 import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -136,17 +135,6 @@ internal class IrContributionMerger(
             scope = annotation.scope,
             moduleDescriptorFactory = moduleDescriptorFactory,
           )
-      }
-      .filter {
-        // We generate a Dagger module for each merged component. We use Anvil itself to
-        // contribute this generated module. It's possible that there are multiple components
-        // merging the same scope or the same scope is merged in different Gradle modules which
-        // depend on each other. This would cause duplicate bindings, because the generated
-        // modules contain the same bindings and are contributed to the same scope. To avoid this
-        // issue we filter all generated Anvil modules except for the one that was generated for
-        // this specific class.
-        !it.fqName.isAnvilModule() ||
-          it.isAnnotatedWith(internalBindingMarkerFqName)
       }
       .flatMap { contributedClass ->
         contributedClass.annotations
