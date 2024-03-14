@@ -6,23 +6,30 @@
 
 ### Changed
 
-- Interface merging is now done in the IR backend, improving performance and future compatibility with K2.
-- Update Dagger to `2.51`.
-- `@ContributesBinding` and `@ContributesMultibinding` have been completely reworked to a new implementation that generates one binding dagger module for each contributed binding. While not an ABI-breaking change, this _does_ change the generated code and requires users to re-run Anvil's code gen over any projects contributing bindings in order to be merged with the new implementation.
-
 ### Deprecated
 
 ### Removed
 
 ### Fixed
 
-- Nested interfaces and modules can now be contributed to enclosing classes.
-
 ### Security
 
 ### Custom Code Generator
 
 ### Other Notes & Contributions
+
+## [2.5.0-beta04] - 2024-03-14
+
+### Changed
+
+- Interface merging is now done in the IR backend, improving performance and future compatibility with K2.
+- Update Dagger to `2.51`.
+- `@ContributesBinding` and `@ContributesMultibinding` have been completely reworked to a new implementation that generates one binding dagger module for each contributed binding. While not an ABI-breaking change, this _does_ change the generated code and requires users to re-run Anvil's code gen over any projects contributing bindings in order to be merged with the new implementation.
+
+### Fixed
+
+- Code generated because of a `@Contributes___` annotation in a dependency module is now correctly deleted when there is a relevant change in the dependency module.
+- Nested interfaces and modules can now be contributed to enclosing classes.
 
 ## [2.5.0-beta03] - 2024-02-26
 
@@ -679,7 +686,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta02...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta04...HEAD
+[2.5.0-beta04]: https://github.com/square/anvil/releases/tag/v2.5.0-beta04
 [2.5.0-beta03]: https://github.com/square/anvil/releases/tag/v2.5.0-beta03
 [2.5.0-beta02]: https://github.com/square/anvil/releases/tag/v2.5.0-beta02
 [2.5.0-beta01]: https://github.com/square/anvil/releases/tag/v2.5.0-beta01
