@@ -254,8 +254,8 @@ jobs:
 
   gradle-integration-tests:
     name: Gradle integration tests
-    runs-on: macos-latest
-    timeout-minutes: 20
+    runs-on: macos-14
+    timeout-minutes: 25
 
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4

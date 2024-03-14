@@ -142,11 +142,11 @@ class IncrementalTest : BaseGradleTest() {
         )
       }
 
-      val notRealKotlinFile = rootProject.path.anvilMainGenerated
+      val notRealKotlinFile = rootAnvilMainGenerated
         .resolve("com/squareup/test/NotRealKotlin.kt")
         .createSafely("This won't compile")
 
-      rootProject.path.anvilMainCaches.shouldNotExist()
+      rootProject.path.buildAnvilMainCaches.shouldNotExist()
 
       shouldSucceed("jar")
 
@@ -157,7 +157,7 @@ class IncrementalTest : BaseGradleTest() {
 
       notRealKotlinFile.shouldNotExist()
 
-      rootProject.path.anvilMainGenerated.injectClassFactory.shouldExist()
+      rootAnvilMainGenerated.injectClassFactory.shouldExist()
     }
 
   @TestFactory
@@ -834,8 +834,7 @@ class IncrementalTest : BaseGradleTest() {
 
       val lib by rootProject.subprojects
 
-      val assistedClassFactoryImpl = lib.path
-        .anvilMainGenerated
+      val assistedClassFactoryImpl = lib.generatedDir(false)
         .resolve("com/squareup/test/lib/AssistedClass_Factory_Impl.kt")
 
       assistedClassFactoryImpl shouldExistWithTextContaining """
@@ -913,7 +912,7 @@ class IncrementalTest : BaseGradleTest() {
 
         // This file wasn't generated in the `root-b` project,
         // but it was cached and restored even though it isn't part of the normal 'classes' output.
-        rootB.path.anvilMainGenerated.injectClassFactory.shouldExist()
+        rootB.generatedDir(false).injectClassFactory.shouldExist()
 
         rootB.classGraphResult().allClasses shouldContainExactly listOf(
           "com.squareup.test.InjectClass",

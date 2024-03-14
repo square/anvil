@@ -3,6 +3,7 @@ package com.squareup.anvil.plugin.testing
 import com.rickbusarow.kase.gradle.dsl.BuildFileSpec
 import com.rickbusarow.kase.gradle.dsl.model.AbstractDslElementContainer
 import com.rickbusarow.kase.gradle.dsl.model.LambdaParameter
+import com.rickbusarow.kase.gradle.dsl.model.ValueParameter
 import com.rickbusarow.kase.gradle.dsl.model.gradlePropertyReference
 
 /** Adds an [AnvilExtensionSpec] to a [BuildFileSpec]. */
@@ -41,4 +42,13 @@ class AnvilExtensionSpec : AbstractDslElementContainer<AnvilExtensionSpec>() {
   val syncGeneratedSources by gradlePropertyReference()
   val addOptionalAnnotations by gradlePropertyReference()
   val trackSourceFiles by gradlePropertyReference()
+
+  fun useKsp(
+    contributesAndFactoryGeneration: Boolean = false,
+    componentMerging: Boolean = false,
+  ) = functionCall(
+    "useKsp",
+    ValueParameter("contributesAndFactoryGeneration", "$contributesAndFactoryGeneration"),
+    ValueParameter("componentMerging", "$componentMerging"),
+  )
 }

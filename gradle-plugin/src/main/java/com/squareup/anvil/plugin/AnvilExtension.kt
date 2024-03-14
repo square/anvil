@@ -5,7 +5,9 @@ import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
+import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
+import org.gradle.process.CommandLineArgumentProvider
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm
@@ -14,7 +16,7 @@ import java.util.Locale
 import javax.inject.Inject
 
 public abstract class AnvilExtension @Inject constructor(
-  project: Project,
+  private val project: Project,
   objects: ObjectFactory,
   private val providers: ProviderFactory,
 ) {
@@ -29,7 +31,7 @@ public abstract class AnvilExtension @Inject constructor(
       .map { it.toBoolean() }
       .getOrElse(false)
     if (useKspBackend || useKspComponentMergingBackend) {
-      useKsp(project, useKspBackend, useKspComponentMergingBackend)
+      useKsp(useKspBackend, useKspComponentMergingBackend)
     }
   }
 
@@ -159,8 +161,6 @@ public abstract class AnvilExtension @Inject constructor(
    * com.squareup.anvil.useKspComponentMergingBackend=true
    * ```
    *
-   * @param project the Gradle project this is operating on. Annoying but necessary to pass this
-   *   param in order to support configuration caching.
    * @param contributesAndFactoryGeneration This is an experimental feature that
    *   replaces the previous `AnalysisHandlerExtension`-based backend, which is removed in Kotlin
    *   2.0 and struggled with incremental compilation.
@@ -169,7 +169,6 @@ public abstract class AnvilExtension @Inject constructor(
    */
   @JvmOverloads
   public fun useKsp(
-    project: Project,
     contributesAndFactoryGeneration: Boolean,
     componentMerging: Boolean = false,
   ) {
@@ -194,13 +193,10 @@ public abstract class AnvilExtension @Inject constructor(
         .matching { it.platformType in SUPPORTED_PLATFORMS }
         .configureEach {
           addKspDep(
-            project,
             "ksp${
               it.targetName.replaceFirstChar {
                 if (it.isLowerCase()) {
-                  it.titlecase(
-                    Locale.US,
-                  )
+                  it.titlecase(Locale.US)
                 } else {
                   it.toString()
                 }
@@ -209,20 +205,23 @@ public abstract class AnvilExtension @Inject constructor(
           )
         }
     } else {
-      addKspDep(project, "ksp")
+      addKspDep("ksp")
     }
+
     project.extensions.configure(KspExtension::class.java) {
-      it.arg {
-        listOf(
-          "generate-dagger-factories=${generateDaggerFactories.get()}",
-          "generate-dagger-factories-only=${generateDaggerFactoriesOnly.get()}",
-          "disable-component-merging=${disableComponentMerging.get()}",
-        )
-      }
+      // Do not convert this to a lambda.
+      // It will leak the AnvilExtension instance and break configuration caching.
+      it.arg(
+        commandLineArgumentProvider(
+          "generate-dagger-factories" to generateDaggerFactories,
+          "generate-dagger-factories-only" to generateDaggerFactoriesOnly,
+          "disable-component-merging" to disableComponentMerging,
+        ),
+      )
     }
   }
 
-  private fun addKspDep(project: Project, configurationName: String) {
+  private fun addKspDep(configurationName: String) {
     project.dependencies.add(
       configurationName,
       "com.squareup.anvil:compiler:$VERSION",
@@ -256,5 +255,24 @@ public abstract class AnvilExtension @Inject constructor(
 
   private companion object {
     val SUPPORTED_PLATFORMS = setOf(androidJvm, jvm)
+  }
+}
+
+/**
+ * This function is propping up configuration caching in two ways:
+ *
+ * 1. It creates local references to the providers,
+ *    so that we can pass them to the KSP task without a reference to `AnvilExtension`.
+ * 2. It creates the `CommandLineArgumentProvider` lambda outside the `AnvilExtension` class,
+ *    so that we can't accidentally capture `AnvilExtension` in the lambda.
+ *
+ * [AnvilExtension] currently isn't serializable for configuration caching
+ * because of its `Project` property.
+ */
+private fun commandLineArgumentProvider(
+  vararg args: Pair<String, Provider<Boolean>>,
+): CommandLineArgumentProvider {
+  return CommandLineArgumentProvider {
+    args.map { (arg, provider) -> "$arg=${provider.get()}" }
   }
 }
