@@ -1,6 +1,5 @@
 package com.squareup.anvil.plugin
 
-import com.android.build.gradle.internal.utils.setDisallowChanges
 import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.Action
 import org.gradle.api.Project
@@ -249,6 +248,11 @@ public abstract class AnvilExtension @Inject constructor(
       .map(String::toBoolean)
       .orElse(default),
   )
+
+  private fun <T> Property<T>.setDisallowChanges(value: T?) {
+    set(value)
+    disallowChanges()
+  }
 
   private companion object {
     val SUPPORTED_PLATFORMS = setOf(androidJvm, jvm)
