@@ -125,8 +125,6 @@ internal class IrContributionMerger(
       it.argumentOrNull(it.modulesKeyword)?.value<List<ClassReferenceIr>>().orEmpty()
     }
 
-    val anvilModuleName = createAnvilModuleName(declaration)
-
     val allContributesAnnotations: List<AnnotationReferenceIr> = annotations
       .asSequence()
       .flatMap { annotation ->
@@ -148,7 +146,6 @@ internal class IrContributionMerger(
         // issue we filter all generated Anvil modules except for the one that was generated for
         // this specific class.
         !it.fqName.isAnvilModule() ||
-          it.fqName == anvilModuleName ||
           it.isAnnotatedWith(internalBindingMarkerFqName)
       }
       .flatMap { contributedClass ->
@@ -374,17 +371,6 @@ internal class IrContributionMerger(
     // Since we are modifying the state of the code here, this does not need to be reflected in
     // the associated [ClassReferenceIr] which is more of an initial snapshot.
     declaration.clazz.owner.annotations += annotationConstructorCall
-  }
-
-  private fun createAnvilModuleName(declaration: ClassReferenceIr): FqName {
-    val packageName = declaration.packageFqName?.safePackageString() ?: ""
-
-    val name = "$MODULE_PACKAGE_PREFIX.$packageName" +
-      declaration.enclosingClassesWithSelf
-        .joinToString(separator = "", postfix = ANVIL_MODULE_SUFFIX) {
-          it.shortName
-        }
-    return FqName(name)
   }
 
   private fun checkSameScope(
