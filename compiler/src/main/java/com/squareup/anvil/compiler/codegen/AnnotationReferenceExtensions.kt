@@ -50,11 +50,7 @@ internal fun AnnotationReference.priority(): Int {
 
 @Suppress("DEPRECATION")
 internal fun AnnotationReference.priorityLegacy(): Int? {
-  val priorityDeprecated = when (this) {
-    is Descriptor -> "priority"
-    is Psi -> "priorityDeprecated"
-  }
-  val priority = argumentAt(priorityDeprecated, index = 4)
+  val priority = argumentAt("priority", index = 4)
     ?.value<FqName>()
     ?.let { ContributesBinding.Priority.valueOf(it.shortName().asString()) }
 
@@ -62,11 +58,7 @@ internal fun AnnotationReference.priorityLegacy(): Int? {
 }
 
 internal fun AnnotationReference.priorityNew(): Int? {
-  val priorityInt = when (this) {
-    is Descriptor -> "priorityInt"
-    is Psi -> "priority"
-  }
-  return argumentAt(priorityInt, index = 6)
+  return argumentAt("priorityInt", index = 6)
     ?.value()
 }
 
