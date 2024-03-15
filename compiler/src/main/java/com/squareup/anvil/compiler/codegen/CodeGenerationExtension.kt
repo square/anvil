@@ -53,6 +53,7 @@ internal class CodeGenerationExtension(
   }
 
   private var didRecompile = false
+  private var didSyncGeneratedDir = false
 
   private val codeGenerators = codeGenerators
     .onEach {
@@ -76,46 +77,7 @@ internal class CodeGenerationExtension(
   ): AnalysisResult? {
     // If we already went through the `analysisCompleted` stage, then there's nothing more to do.
     // Returning null ends the cycle.
-    if (didRecompile) return null
-
-    // Either sync the local file state with our internal cache,
-    // or delete any existing generated files (if caching isn't enabled).
-    val createdChanges = if (shouldRestoreFromCache()) {
-      // For incremental compilation: restore any missing generated files from the cache,
-      // and delete any generated files that are out-of-date due to source changes.
-      cacheOperations.restoreFromCache(
-        generatedDir = generatedDir,
-        inputKtFiles = files.mapToSet {
-          AbsoluteFile(File(it.virtualFilePath)).relativeTo(projectDir)
-        },
-      )
-        .let { it.restoredFiles.isNotEmpty() || it.deletedFiles.isNotEmpty() }
-    } else {
-      // OLD incremental behavior: just delete everything if we're not tracking source files
-      generatedDir
-        .walkBottomUp()
-        .filter { it.isFile }
-        .also { it.forEach(File::requireDelete) }
-        .any()
-    }
-
-    return if (createdChanges) {
-      // Tell the compiler to analyze the generated files *before* calling `analysisCompleted()`.
-      // This ensures that the compiler will update/delete any references to stale code in the
-      // ModuleDescriptor, as well as updating/deleting any stale .class files.
-      // Without redoing the analysis, the PSI and Descriptor APIs are out of sync.
-      // See discussion here: https://github.com/square/anvil/pull/877#discussion_r1517184297
-      RetryWithAdditionalRoots(
-        bindingContext = bindingTrace.bindingContext,
-        moduleDescriptor = module,
-        additionalJavaRoots = emptyList(),
-        additionalKotlinRoots = listOf(generatedDir),
-        addToEnvironment = true,
-      )
-    } else {
-      // Tell the compiler that we have something to do in `analysisCompleted()`.
-      AnalysisResult.EMPTY
-    }
+    return if (!didRecompile) AnalysisResult.EMPTY else null
   }
 
   override fun analysisCompleted(
@@ -124,6 +86,26 @@ internal class CodeGenerationExtension(
     bindingTrace: BindingTrace,
     files: Collection<KtFile>,
   ): AnalysisResult? {
+
+    // Either sync the local file state with our internal cache,
+    // or delete any existing generated files (if caching isn't enabled).
+    val createdChanges = syncGeneratedDir(files)
+    didSyncGeneratedDir = true
+
+    if (createdChanges) {
+      // Tell the compiler to analyze the generated files *before* calling `analysisCompleted()`.
+      // This ensures that the compiler will update/delete any references to stale code in the
+      // ModuleDescriptor, as well as updating/deleting any stale .class files.
+      // Without redoing the analysis, the PSI and Descriptor APIs are out of sync.
+      // See discussion here: https://github.com/square/anvil/pull/877#discussion_r1517184297
+      return RetryWithAdditionalRoots(
+        bindingContext = bindingTrace.bindingContext,
+        moduleDescriptor = module,
+        additionalJavaRoots = emptyList(),
+        additionalKotlinRoots = listOf(generatedDir),
+        addToEnvironment = true,
+      )
+    }
 
     if (didRecompile) return null
     didRecompile = true
@@ -168,8 +150,35 @@ internal class CodeGenerationExtension(
     )
   }
 
+  private fun syncGeneratedDir(files: Collection<KtFile>): Boolean {
+    return when {
+      // If we already synced the generated directory (in an earlier round),
+      // don't sync again or it'll delete files that were generated in this round.
+      didSyncGeneratedDir -> false
+      // For incremental compilation: restore any missing generated files from the cache,
+      // and delete any generated files that are out-of-date due to source changes.
+      shouldRestoreFromCache() -> {
+        cacheOperations.restoreFromCache(
+          generatedDir = generatedDir,
+          inputKtFiles = files.mapToSet {
+            AbsoluteFile(File(it.virtualFilePath)).relativeTo(projectDir)
+          },
+        )
+          .run { restoredFiles.isNotEmpty() || deletedFiles.isNotEmpty() }
+      }
+      // OLD incremental behavior: just delete everything if we're not tracking source files
+      else -> {
+        generatedDir.walkBottomUp()
+          .filter { it.isFile }
+          .also { it.forEach(File::requireDelete) }
+          .any()
+      }
+    }
+  }
+
   private fun shouldRestoreFromCache(): Boolean {
     return when {
+      didSyncGeneratedDir -> false
       !trackSourceFiles -> false
       // If caching is enabled but the cache doesn't exist,
       // we still need to treat any files in the generated directory as untracked.
