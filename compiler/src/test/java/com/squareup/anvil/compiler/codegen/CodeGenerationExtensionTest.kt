@@ -1,7 +1,11 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.rickbusarow.kase.HasTestEnvironmentFactory
+import com.squareup.anvil.compiler.AnvilEmbeddedCompilationTestEnvironment
+import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.compile
+import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.testing.SimpleCodeGenerator
 import com.squareup.anvil.compiler.internal.testing.SimpleSourceFileTrackingBehavior.NO_SOURCE_TRACKING
 import com.squareup.anvil.compiler.internal.testing.SimpleSourceFileTrackingBehavior.TRACKING_WITH_NO_SOURCES
@@ -10,9 +14,12 @@ import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import org.junit.Test
+import io.kotest.matchers.shouldBe
+import org.junit.jupiter.api.Test
 
-class CodeGenerationExtensionTest {
+class CodeGenerationExtensionTest : HasTestEnvironmentFactory<AnvilEmbeddedCompilationTestEnvironment.Factory> {
+
+  override val testEnvironmentFactory = AnvilEmbeddedCompilationTestEnvironment.Factory
 
   @Test fun `generated files with the same path and different content are an error`() {
     val codeGenerator = simpleCodeGenerator { clazz ->
@@ -81,7 +88,7 @@ class CodeGenerationExtensionTest {
       """,
       codeGenerators = listOf(codeGenerator),
     ) {
-      assertThat(exitCode).isEqualTo(OK)
+      exitCode shouldBe OK
     }
   }
 
@@ -100,9 +107,9 @@ class CodeGenerationExtensionTest {
       componentInterface,
       codeGenerators = listOf(codeGenerator),
     ) {
-      assertThat(exitCode).isEqualTo(OK)
-      assertThat(codeGenerator.isApplicableCalls).isEqualTo(1)
-      assertThat(codeGenerator.getGenerateCallsForInputFileContent(componentInterface)).isEqualTo(0)
+      exitCode shouldBe OK
+      codeGenerator.isApplicableCalls shouldBe 1
+      codeGenerator.getGenerateCallsForInputFileContent(componentInterface) shouldBe 0
     }
   }
 
@@ -133,10 +140,10 @@ class CodeGenerationExtensionTest {
       codeGenerators = listOf(codeGenerator),
       trackSourceFiles = true,
     ) {
-      assertThat(codeGenerator.isApplicableCalls).isEqualTo(1)
-      assertThat(codeGenerator.getGenerateCallsForInputFileContent(componentInterface)).isEqualTo(1)
+      codeGenerator.isApplicableCalls shouldBe 1
+      codeGenerator.getGenerateCallsForInputFileContent(componentInterface) shouldBe 1
 
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
+      exitCode shouldBe COMPILATION_ERROR
 
       val abcPath = outputDirectory
         .resolveSibling("build/anvil/com/squareup/test/Abc.kt")
@@ -195,10 +202,10 @@ class CodeGenerationExtensionTest {
       codeGenerators = listOf(codeGenerator),
       trackSourceFiles = true,
     ) {
-      assertThat(codeGenerator.isApplicableCalls).isEqualTo(1)
-      assertThat(codeGenerator.getGenerateCallsForInputFileContent(componentInterface)).isEqualTo(1)
+      codeGenerator.isApplicableCalls shouldBe 1
+      codeGenerator.getGenerateCallsForInputFileContent(componentInterface) shouldBe 1
 
-      assertThat(exitCode).isEqualTo(OK)
+      exitCode shouldBe OK
       assertThat(classLoader.loadClass("com.squareup.test.Abc")).isNotNull()
     }
   }
@@ -231,10 +238,10 @@ class CodeGenerationExtensionTest {
       codeGenerators = listOf(codeGenerator),
       trackSourceFiles = true,
     ) {
-      assertThat(codeGenerator.isApplicableCalls).isEqualTo(1)
-      assertThat(codeGenerator.getGenerateCallsForInputFileContent(componentInterface)).isEqualTo(1)
+      codeGenerator.isApplicableCalls shouldBe 1
+      codeGenerator.getGenerateCallsForInputFileContent(componentInterface) shouldBe 1
 
-      assertThat(exitCode).isEqualTo(OK)
+      exitCode shouldBe OK
       assertThat(classLoader.loadClass("com.squareup.test.Abc")).isNotNull()
     }
   }
@@ -266,11 +273,157 @@ class CodeGenerationExtensionTest {
       codeGenerators = listOf(codeGenerator),
       trackSourceFiles = false,
     ) {
-      assertThat(codeGenerator.isApplicableCalls).isEqualTo(1)
-      assertThat(codeGenerator.getGenerateCallsForInputFileContent(componentInterface)).isEqualTo(1)
+      codeGenerator.isApplicableCalls shouldBe 1
+      codeGenerator.getGenerateCallsForInputFileContent(componentInterface) shouldBe 1
 
-      assertThat(exitCode).isEqualTo(OK)
+      exitCode shouldBe OK
       assertThat(classLoader.loadClass("com.squareup.test.Abc")).isNotNull()
+    }
+  }
+
+  @Test
+  fun `jfc dude stop reclining your seat`() = test {
+    val codeGenerator = simpleCodeGenerator { codeGenDir, module, files ->
+
+      files.classAndInnerClassReferences(module)
+        .mapNotNull { clazz ->
+          clazz.annotations
+            .singleOrNull { it.fqName.asString() == "anvil.Trigger" }
+            ?.let { annotation -> clazz to annotation }
+        }
+        .map { (clazz, annotation) ->
+          val packageFqName = clazz.packageFqName
+          val shortName = clazz.shortName
+
+          val superRef = clazz.directSuperTypeReferences()
+            .single()
+            .asClassReference()
+
+          val packagePrefix = "anvil.scoped"
+
+          val supPackage = superRef.packageFqName
+          val supSimpleName = superRef.shortName
+
+          val scope = annotation.scope().fqName
+          val replaces = annotation.replaces(1)
+
+          val replacesString = if (replaces.isEmpty()) {
+            ""
+          } else {
+            ", replaces = [${replaces.joinToString { "$packagePrefix.${it.fqName.asString()}ExtraModule::class" }}]"
+          }
+
+          createGeneratedFile(
+            codeGenDir = codeGenDir,
+            packageName = "$packagePrefix.${packageFqName.asString()}",
+            fileName = "${shortName}ExtraModule",
+            //language=kotlin
+            content = """
+              package anvil.scoped.$packageFqName
+              
+              import $packageFqName.$shortName
+              import $scope
+              import $supPackage.$supSimpleName
+              import com.squareup.anvil.annotations.ContributesTo
+              import dagger.Binds
+              import dagger.Module
+              
+              @Module
+              @ContributesTo(${scope.shortName()}::class$replacesString)
+              interface ${shortName}ExtraModule {
+                @Binds
+                fun seriouslyFuckThisGuy(b: $shortName): $supSimpleName
+              }
+            """.trimIndent(),
+            sourceFile = clazz.containingFileAsJavaFile,
+          )
+        }.toList()
+    }
+
+    //language=kotlin
+    val componentInterface = """
+      package anvil
+
+      import com.squareup.anvil.annotations.ContributesTo
+      import com.squareup.anvil.annotations.MergeComponent
+      import kotlin.reflect.KClass
+      import javax.inject.Inject
+
+      annotation class Trigger(
+        val scope: KClass<*>,
+        val replaces: Array<KClass<*>> = []
+      )
+    
+      interface TypeA
+
+      @Trigger(Any::class)
+      class TypeAImpl @Inject constructor() : TypeA
+
+      @ContributesTo(Any::class)
+      interface ContributingInterface {
+        val typeA: TypeA
+      }
+
+      @MergeComponent(Any::class)
+      interface ComponentInterface
+    """.trimIndent()
+
+    //language=kotlin
+    val fakeTypeA = """
+      package anvil
+
+      import javax.inject.Inject
+
+      @Trigger(Any::class, replaces = [TypeAImpl::class]) 
+      class FakeTypeA @Inject constructor() : TypeA
+    """.trimIndent()
+
+    val result1 = compile(
+      componentInterface,
+      fakeTypeA,
+      // generateDaggerFactories = true,
+      generateDaggerFactories = false,
+      enableDaggerAnnotationProcessor = true,
+      codeGenerators = listOf(codeGenerator),
+      trackSourceFiles = true,
+    ) {
+
+      exitCode shouldBe OK
+    }
+
+    println(
+      """
+      ###########################################################################################  
+      ###########################################################################################  
+      ###########################################################################################  
+      ###########################################################################################  
+      """.trimIndent(),
+    )
+
+    //language=kotlin
+    val fakeTypeA2 = """
+      package anvil
+
+      import javax.inject.Inject
+
+      @Trigger(Any::class, replaces = [TypeAImpl::class]) 
+      class FakeTypeA @Inject constructor() : TypeA {
+        fun noOp() = Unit
+      }
+    """.trimIndent()
+
+    val result2 = compile(
+      componentInterface,
+      fakeTypeA2,
+      previousCompilationResult = result1,
+      // generateDaggerFactories = true,
+      generateDaggerFactories = false,
+      enableDaggerAnnotationProcessor = true,
+      codeGenerators = listOf(codeGenerator),
+      trackSourceFiles = true,
+    ) {
+
+      exitCode shouldBe OK
     }
   }
 
@@ -297,7 +450,7 @@ class CodeGenerationExtensionTest {
       class SomeClass @Inject constructor() : Type 
       """,
     ) {
-      assertThat(exitCode).isEqualTo(OK)
+      exitCode shouldBe OK
     }
   }
 }

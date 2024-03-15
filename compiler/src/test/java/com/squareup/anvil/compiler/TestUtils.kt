@@ -55,7 +55,10 @@ interface CompilationEnvironment : HasWorkingDir {
   fun compile(
     @Language("kotlin") source: String,
     previousCompilationResult: JvmCompilationResult? = null,
+    generateDaggerFactories: Boolean = false,
+    generateDaggerFactoriesOnly: Boolean = false,
     enableDaggerAnnotationProcessor: Boolean = false,
+    trackSourceFiles: Boolean = true,
     disableComponentMerging: Boolean = false,
     codeGenerators: List<CodeGenerator> = emptyList(),
     allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
@@ -66,10 +69,15 @@ interface CompilationEnvironment : HasWorkingDir {
     source,
     allWarningsAsErrors = allWarningsAsErrors,
     previousCompilationResult = previousCompilationResult,
+    generateDaggerFactories = generateDaggerFactories,
+    generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
     enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+    trackSourceFiles = trackSourceFiles,
     disableComponentMerging = disableComponentMerging,
     workingDir = workingDir,
-    mode = mode,
+    mode = (mode as? Embedded)?.let {
+      it.copy(codeGenerators = it.codeGenerators + codeGenerators)
+    } ?: mode,
     block = block,
   )
 
@@ -77,7 +85,10 @@ interface CompilationEnvironment : HasWorkingDir {
     @Language("kotlin") source0: String,
     @Language("kotlin") vararg additionalSources: String,
     previousCompilationResult: JvmCompilationResult? = null,
+    generateDaggerFactories: Boolean = false,
+    generateDaggerFactoriesOnly: Boolean = false,
     enableDaggerAnnotationProcessor: Boolean = false,
+    trackSourceFiles: Boolean = true,
     disableComponentMerging: Boolean = false,
     codeGenerators: List<CodeGenerator> = emptyList(),
     allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
@@ -89,10 +100,15 @@ interface CompilationEnvironment : HasWorkingDir {
     *additionalSources,
     allWarningsAsErrors = allWarningsAsErrors,
     previousCompilationResult = previousCompilationResult,
+    generateDaggerFactories = generateDaggerFactories,
+    generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
     enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+    trackSourceFiles = trackSourceFiles,
     disableComponentMerging = disableComponentMerging,
     workingDir = workingDir,
-    mode = mode,
+    mode = (mode as? Embedded)?.let {
+      it.copy(codeGenerators = it.codeGenerators + codeGenerators)
+    } ?: mode,
     block = block,
   )
 }
@@ -183,12 +199,14 @@ internal val Class<*>.hintContributesScope: KClass<*>?
 internal val Class<*>.hintContributesScopes: List<KClass<*>>
   get() = getHintScopes(HINT_CONTRIBUTES_PACKAGE_PREFIX)
 
-internal val Class<*>.generatedBindingModule: Class<*> get() = generatedBindingModules(
-  ContributesBinding::class,
-).single()
-internal val Class<*>.generatedMultiBindingModule: Class<*> get() = generatedBindingModules(
-  ContributesMultibinding::class,
-).single()
+internal val Class<*>.generatedBindingModule: Class<*>
+  get() = generatedBindingModules(
+    ContributesBinding::class,
+  ).single()
+internal val Class<*>.generatedMultiBindingModule: Class<*>
+  get() = generatedBindingModules(
+    ContributesMultibinding::class,
+  ).single()
 
 internal fun Class<*>.generatedBindingModules(): List<Class<*>> {
   return generatedBindingModules(ContributesBinding::class)
@@ -213,7 +231,9 @@ private val Annotation.boundType: KClass<*>
     }
   }
 
-private fun Class<*>.generatedBindingModules(annotationClass: KClass<out Annotation>): List<Class<*>> {
+private fun Class<*>.generatedBindingModules(
+  annotationClass: KClass<out Annotation>,
+): List<Class<*>> {
   return getAnnotationsByType(annotationClass.java)
     .map { bindingAnnotation ->
       val scope = bindingAnnotation.scope.asClassName().generateClassNameString().capitalize()
@@ -255,7 +275,9 @@ internal val Class<*>.multibindingOriginClass: KClass<*>?
   get() = resolveOriginClass(ContributesMultibinding::class)
 
 internal fun Class<*>.resolveOriginClass(bindingAnnotation: KClass<out Annotation>): KClass<*>? {
-  val generatedBindingModule = generatedBindingModules(bindingAnnotation).firstOrNull() ?: return null
+  val generatedBindingModule = generatedBindingModules(
+    bindingAnnotation,
+  ).firstOrNull() ?: return null
   val bindingFunction = generatedBindingModule.declaredMethods[0]
   val parameterImplType = bindingFunction.parameterTypes.firstOrNull()
   val internalBindingMarker: InternalBindingMarker =

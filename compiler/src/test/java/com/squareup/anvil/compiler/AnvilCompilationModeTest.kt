@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler
 import com.rickbusarow.kase.DefaultTestEnvironment
 import com.rickbusarow.kase.Kase1
 import com.rickbusarow.kase.KaseTestFactory
+import com.rickbusarow.kase.NoParamTestEnvironmentFactory
 import com.rickbusarow.kase.ParamTestEnvironmentFactory
 import com.rickbusarow.kase.files.HasWorkingDir
 import com.rickbusarow.kase.files.TestLocation
@@ -26,6 +27,23 @@ class AnvilCompilationModeTestEnvironment(
       location: TestLocation,
     ): AnvilCompilationModeTestEnvironment = AnvilCompilationModeTestEnvironment(
       mode = params.a1,
+      hasWorkingDir = HasWorkingDir(names, location),
+    )
+  }
+}
+
+class AnvilEmbeddedCompilationTestEnvironment(
+  hasWorkingDir: HasWorkingDir,
+) : DefaultTestEnvironment(hasWorkingDir),
+  CompilationEnvironment {
+
+  override val mode: AnvilCompilationMode = AnvilCompilationMode.Embedded()
+
+  companion object Factory : NoParamTestEnvironmentFactory<AnvilEmbeddedCompilationTestEnvironment> {
+    override fun create(
+      names: List<String>,
+      location: TestLocation,
+    ): AnvilEmbeddedCompilationTestEnvironment = AnvilEmbeddedCompilationTestEnvironment(
       hasWorkingDir = HasWorkingDir(names, location),
     )
   }
