@@ -1,6 +1,5 @@
 package com.squareup.anvil.annotations
 
-import com.squareup.anvil.annotations.ContributesBinding.Priority.NORMAL
 import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.annotation.AnnotationTarget.CLASS
 import kotlin.reflect.KClass
@@ -107,7 +106,7 @@ public annotation class ContributesBinding(
   @Suppress("DEPRECATION")
   @Deprecated("Use the new int-based priority", ReplaceWith("priority"))
   @get:JvmName("priority")
-  val priorityDeprecated: Priority = NORMAL,
+  val priorityDeprecated: Priority = Priority.NORMAL,
   /**
    * Whether the qualifier for this class should be included in the generated binding method. This
    * parameter is only necessary to use when [ContributesBinding] and [ContributesMultibinding]
