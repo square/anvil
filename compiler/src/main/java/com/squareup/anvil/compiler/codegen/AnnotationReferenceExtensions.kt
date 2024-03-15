@@ -8,6 +8,8 @@ import com.squareup.anvil.compiler.daggerComponentFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerSubcomponentFqName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
+import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Descriptor
+import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Psi
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionAnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -48,7 +50,11 @@ internal fun AnnotationReference.priority(): Int {
 
 @Suppress("DEPRECATION")
 internal fun AnnotationReference.priorityLegacy(): Int? {
-  val priority = argumentAt("priorityDeprecated", index = 4)
+  val priorityDeprecated = when (this) {
+    is Descriptor -> "priority"
+    is Psi -> "priorityDeprecated"
+  }
+  val priority = argumentAt(priorityDeprecated, index = 4)
     ?.value<FqName>()
     ?.let { ContributesBinding.Priority.valueOf(it.shortName().asString()) }
 
@@ -56,7 +62,11 @@ internal fun AnnotationReference.priorityLegacy(): Int? {
 }
 
 internal fun AnnotationReference.priorityNew(): Int? {
-  return argumentAt("priority", index = 6)
+  val priorityInt = when (this) {
+    is Descriptor -> "priorityInt"
+    is Psi -> "priority"
+  }
+  return argumentAt(priorityInt, index = 6)
     ?.value()
 }
 
