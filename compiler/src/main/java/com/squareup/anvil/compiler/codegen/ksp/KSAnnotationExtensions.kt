@@ -7,7 +7,6 @@ import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSName
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueArgument
 import com.squareup.anvil.annotations.ContributesBinding.Priority
@@ -155,7 +154,7 @@ internal fun KSAnnotation.ignoreQualifier(): Boolean =
   argumentAt("ignoreQualifier")?.value as? Boolean? == true
 
 internal fun KSAnnotation.priority(): Priority {
-  return (argumentAt("priority")?.value as? KSName)
-    ?.let { Priority.valueOf(it.getShortName()) }
-    ?: NORMAL
+  val priorityEntry = argumentAt("priority")?.value as KSType? ?: return NORMAL
+  val name = priorityEntry.resolveKSClassDeclaration()?.simpleName?.asString() ?: return NORMAL
+  return Priority.valueOf(name)
 }

@@ -1,12 +1,15 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.annotations.ContributesBinding.Priority
+import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.assertFileGenerated
 import com.squareup.anvil.compiler.bindingModuleScope
 import com.squareup.anvil.compiler.bindingModuleScopes
 import com.squareup.anvil.compiler.bindingOriginKClass
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
+import com.squareup.anvil.compiler.generatedBindingModules
 import com.squareup.anvil.compiler.generatedFileOrNull
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.isError
@@ -478,6 +481,45 @@ class ContributesBindingGeneratorTest(
       assertThat(
         contributingInterface.bindingModuleScopes.toSet(),
       ).containsExactly(Any::class, Unit::class)
+    }
+  }
+
+  @Test fun `priority is correctly propagated`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.ContributesBinding.Priority
+
+      interface ParentInterface1
+      interface ParentInterface2
+
+      @ContributesBinding(Any::class, boundType = ParentInterface1::class) // Default case is NORMAL
+      @ContributesBinding(Any::class, boundType = ParentInterface2::class, priority = Priority.NORMAL)
+      @ContributesBinding(Unit::class, boundType = ParentInterface1::class, priority = Priority.HIGH)
+      @ContributesBinding(Unit::class, boundType = ParentInterface2::class, priority = Priority.HIGHEST)
+      class ContributingInterface : ParentInterface1, ParentInterface2
+      """,
+      mode = mode,
+    ) {
+      val bindingModules = contributingInterface.generatedBindingModules()
+        .associate { clazz ->
+          val bindingMarker = clazz.getAnnotation(InternalBindingMarker::class.java)
+          clazz.simpleName to Priority.valueOf(bindingMarker.priority)
+        }
+      assertThat(
+        bindingModules["ContributingInterfaceAsComSquareupTestParentInterface1ToKotlinAnyBindingModule"],
+      ).isEqualTo(Priority.NORMAL)
+      assertThat(
+        bindingModules["ContributingInterfaceAsComSquareupTestParentInterface2ToKotlinAnyBindingModule"],
+      ).isEqualTo(Priority.NORMAL)
+      assertThat(
+        bindingModules["ContributingInterfaceAsComSquareupTestParentInterface1ToKotlinUnitBindingModule"],
+      ).isEqualTo(Priority.HIGH)
+      assertThat(
+        bindingModules["ContributingInterfaceAsComSquareupTestParentInterface2ToKotlinUnitBindingModule"],
+      ).isEqualTo(Priority.HIGHEST)
     }
   }
 }
