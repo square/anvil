@@ -10,7 +10,6 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueArgument
 import com.squareup.anvil.annotations.ContributesBinding
-import com.squareup.anvil.annotations.ContributesBinding.Priority
 import com.squareup.anvil.compiler.internal.mapKeyFqName
 import com.squareup.anvil.compiler.qualifierFqName
 import com.squareup.kotlinpoet.ksp.toClassName
@@ -159,7 +158,7 @@ internal fun KSAnnotation.priority(): Int {
 internal fun KSAnnotation.priorityLegacy(): Int? {
   val priorityEntry = argumentAt("priorityDeprecated")?.value as KSType? ?: return null
   val name = priorityEntry.resolveKSClassDeclaration()?.simpleName?.asString() ?: return null
-  val priority = Priority.valueOf(name)
+  val priority = ContributesBinding.Priority.valueOf(name)
   return priority.value
 }
 
