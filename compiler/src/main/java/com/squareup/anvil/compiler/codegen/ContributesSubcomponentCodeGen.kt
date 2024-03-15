@@ -205,13 +205,7 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
       }
 
       val functions = factory.getAllFunctions()
-        .let { functions ->
-          if (factory.isInterface()) {
-            functions
-          } else {
-            functions.filter { it.isAbstract }
-          }
-        }
+        .filter { it.isAbstract }
         .toList()
 
       if (functions.size != 1 || functions[0].returnType?.resolve()
