@@ -1,7 +1,7 @@
 package com.squareup.anvil.test
 
 import com.squareup.anvil.annotations.ContributesBinding
-import com.squareup.anvil.annotations.ContributesBinding.Priority.PRIORITY_HIGH
+import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGH
 
 public interface PriorityBinding
 

@@ -50,7 +50,11 @@ internal fun AnnotationReference.priority(): Int {
 
 @Suppress("DEPRECATION")
 internal fun AnnotationReference.priorityLegacy(): Int? {
-  val priority = argumentAt("priority", index = 4)
+  val priorityDeprecated = when (this) {
+    is Descriptor -> "priority"
+    is Psi -> "priorityDeprecated"
+  }
+  val priority = argumentAt(priorityDeprecated, index = 4)
     ?.value<FqName>()
     ?.let { ContributesBinding.Priority.valueOf(it.shortName().asString()) }
 
@@ -58,8 +62,19 @@ internal fun AnnotationReference.priorityLegacy(): Int? {
 }
 
 internal fun AnnotationReference.priorityNew(): Int? {
-  return argumentAt("priorityInt", index = 6)
-    ?.value()
+  val priorityInt = when (this) {
+    is Descriptor -> "priorityInt"
+    is Psi -> "priority"
+  }
+  try {
+    return argumentAt(priorityInt, index = 6)
+      ?.value()
+  } catch (e: ClassCastException) {
+    throw AnvilCompilationExceptionAnnotationReference(
+      message = "Could not parse priority. This can happen if you haven't migrated to the new int-based priority API",
+      annotationReference = this,
+    )
+  }
 }
 
 internal fun AnnotationReference.modules(
