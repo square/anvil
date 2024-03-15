@@ -135,6 +135,33 @@ class ContributesSubcomponentGeneratorTest(
     }
   }
 
+  @Test fun `there is a hint for contributed subcomponents with an abstract class factory`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesSubcomponent
+      import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+
+      @ContributesSubcomponent(Any::class, Unit::class)
+      interface SubcomponentInterface {
+        @Factory
+        abstract class SubcomponentFactory {
+          abstract fun create(): SubcomponentInterface
+        }
+      }
+      """,
+      mode = mode,
+    ) {
+      assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
+      assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
+
+      val generatedFile = walkGeneratedFiles(mode).single()
+
+      assertThat(generatedFile.name).isEqualTo("SubcomponentInterface.kt")
+    }
+  }
+
   @Test fun `contributed subcomponents must be a interfaces or abstract classes`() {
     compile(
       """
