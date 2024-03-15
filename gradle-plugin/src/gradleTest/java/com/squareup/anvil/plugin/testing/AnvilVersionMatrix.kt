@@ -10,6 +10,7 @@ import com.rickbusarow.kase.gradle.KspDependencyVersion
 import com.squareup.anvil.plugin.buildProperties.daggerVersion
 import com.squareup.anvil.plugin.buildProperties.gradleVersion
 import com.squareup.anvil.plugin.buildProperties.kotlinVersion
+import com.squareup.anvil.plugin.buildProperties.kspVersion as buildPropertyKspVersion
 
 // TODO (rbusarow) move this to build-logic and sync it with the version catalog and `ci.yml`.
 class AnvilVersionMatrix(
@@ -34,12 +35,12 @@ class AnvilVersionMatrix(
 /**
  * Returns the latest KSP version that's compatible with the receiver Kotlin version
  */
-val HasKotlinDependencyVersion.kspDependencyVersion: KspDependencyVersion
+val HasKotlinDependencyVersion.kspVersion: KspDependencyVersion
   get() {
     val kspPart = when (kotlinVersion) {
       in ("1.9.0"..<"1.9.10") -> "1.0.11"
       in ("1.9.10"..<"1.9.20") -> "1.0.13"
-      else -> "1.0.17"
+      else -> buildPropertyKspVersion.substringAfterLast("-")
     }
     return KspDependencyVersion("$kotlinVersion-$kspPart")
   }
