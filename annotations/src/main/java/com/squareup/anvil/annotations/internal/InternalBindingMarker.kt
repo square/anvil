@@ -1,6 +1,6 @@
 package com.squareup.anvil.annotations.internal
 
-import com.squareup.anvil.annotations.ContributesBinding.Priority
+import com.squareup.anvil.annotations.ContributesBinding
 import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.annotation.AnnotationTarget.CLASS
 import kotlin.reflect.KClass
@@ -13,10 +13,11 @@ import kotlin.reflect.KClass
  * read the bound type, possible qualifier, and possible `@MapKey`/`@IntoSet` annotations.
  *
  * @param originClass the origin class that contributed the binding. This is important to include
- *               because the contributed binding may be an `object` and cannot be specified as a
- *               binding parameter.
+ *   because the contributed binding may be an `object` and cannot be specified as a
+ *   binding parameter.
  * @param isMultibinding Whether this is a multibinding.
- * @param priority The priority of the contributed binding. Corresponds to a [Priority.name].
+ * @param priority The priority of the contributed binding. Corresponds to a
+ *   [ContributesBinding.priority].
  * @param qualifierKey The computed key of the qualifier annotation if present. Empty otherwise.
  */
 @Target(CLASS)
@@ -25,6 +26,6 @@ import kotlin.reflect.KClass
 public annotation class InternalBindingMarker(
   val originClass: KClass<*>,
   val isMultibinding: Boolean,
-  val priority: String = "",
+  val priority: Int = Int.MIN_VALUE,
   val qualifierKey: String = "",
 )

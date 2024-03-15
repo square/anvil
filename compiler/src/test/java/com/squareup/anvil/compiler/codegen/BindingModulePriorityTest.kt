@@ -47,16 +47,16 @@ class BindingModulePriorityTest(
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesBinding
-      import com.squareup.anvil.annotations.ContributesBinding.Priority.HIGH
-      import com.squareup.anvil.annotations.ContributesBinding.Priority.HIGHEST
+      import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGH
+      import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGHEST
       $import
       
       interface ParentInterface
       
-      @ContributesBinding(Any::class, priority = HIGHEST)
+      @ContributesBinding(Any::class, priority = PRIORITY_HIGHEST)
       interface ContributingInterface : ParentInterface
       
-      @ContributesBinding(Any::class, priority = HIGH)
+      @ContributesBinding(Any::class, priority = PRIORITY_HIGH)
       interface ContributingInterface2 : ParentInterface
       
       @ContributesBinding(Any::class)
@@ -83,16 +83,16 @@ class BindingModulePriorityTest(
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesBinding
-      import com.squareup.anvil.annotations.ContributesBinding.Priority.HIGH
-      import com.squareup.anvil.annotations.ContributesBinding.Priority.HIGHEST
+      import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGH
+      import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGHEST
       $import
       
       interface ParentInterface
       
-      @ContributesBinding(Any::class, priority = HIGHEST)
+      @ContributesBinding(Any::class, priority = PRIORITY_HIGHEST)
       interface ContributingInterface : ParentInterface
       
-      @ContributesBinding(Any::class, priority = HIGH, replaces = [ContributingInterface::class])
+      @ContributesBinding(Any::class, priority = PRIORITY_HIGH, replaces = [ContributingInterface::class])
       interface SecondContributingInterface : ParentInterface
       
       @ContributesBinding(Any::class)
@@ -385,16 +385,16 @@ class BindingModulePriorityTest(
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesBinding
-      import com.squareup.anvil.annotations.ContributesBinding.Priority.HIGH
-      import com.squareup.anvil.annotations.ContributesBinding.Priority.HIGHEST
+      import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGH
+      import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGHEST
       $import
       
       interface ParentInterface
       
-      @ContributesBinding(Any::class, priority = HIGHEST)
+      @ContributesBinding(Any::class, priority = PRIORITY_HIGHEST)
       interface ContributingInterface : ParentInterface
       
-      @ContributesBinding(Any::class, priority = HIGH)
+      @ContributesBinding(Any::class, priority = PRIORITY_HIGH)
       interface ContributingInterface2 : ParentInterface
       
       @ContributesBinding(Any::class)
