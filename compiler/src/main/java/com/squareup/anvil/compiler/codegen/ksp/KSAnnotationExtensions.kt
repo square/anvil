@@ -14,8 +14,6 @@ import com.squareup.anvil.annotations.ContributesBinding.Priority
 import com.squareup.anvil.annotations.ContributesBinding.Priority.NORMAL
 import com.squareup.anvil.compiler.internal.daggerScopeFqName
 import com.squareup.anvil.compiler.internal.mapKeyFqName
-import com.squareup.anvil.compiler.internal.reference.argumentAt
-import com.squareup.anvil.compiler.isAnvilModule
 import com.squareup.anvil.compiler.qualifierFqName
 import com.squareup.kotlinpoet.ksp.toClassName
 import org.jetbrains.kotlin.name.FqName
@@ -27,9 +25,6 @@ internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScope(
   // Exit early to avoid allocating additional collections.
   if (size < 2) return
   if (size == 2 && this[0].scope() != this[1].scope()) return
-
-  // Ignore generated Anvil modules. We'll throw a better error later for @Merge* annotations.
-  if (annotatedType.qualifiedName?.asString().orEmpty().isAnvilModule()) return
 
   // Check for duplicate scopes. Multiple contributions to the same scope are forbidden.
   val duplicates = groupBy { it.scope() }.filterValues { it.size > 1 }

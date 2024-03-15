@@ -11,8 +11,6 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.fqName
-import com.squareup.anvil.compiler.internal.reference.ClassReference
-import com.squareup.anvil.compiler.internal.reference.toClassReferenceOrNull
 import com.squareup.kotlinpoet.asClassName
 import dagger.Binds
 import dagger.Component
@@ -25,12 +23,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.internal.DoubleCheck
-import org.jetbrains.kotlin.descriptors.ClassDescriptor
-import org.jetbrains.kotlin.descriptors.ModuleDescriptor
-import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.resolve.DescriptorUtils
-import org.jetbrains.kotlin.resolve.descriptorUtil.classId
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Provider
@@ -75,10 +67,8 @@ internal val isWordPrefixRegex = "^is([^a-z].*)".toRegex()
 internal const val HINT_CONTRIBUTES_PACKAGE_PREFIX = "anvil.hint.merge"
 
 internal const val HINT_SUBCOMPONENTS_PACKAGE_PREFIX = "anvil.hint.subcomponent"
-internal const val MODULE_PACKAGE_PREFIX = "anvil.module"
 internal const val COMPONENT_PACKAGE_PREFIX = "anvil.component"
 
-internal const val ANVIL_MODULE_SUFFIX = "AnvilModule"
 internal const val BINDING_MODULE_SUFFIX = "BindingModule"
 internal const val MULTIBINDING_MODULE_SUFFIX = "MultiBindingModule"
 
@@ -90,23 +80,6 @@ internal const val SUBCOMPONENT_MODULE = "SubcomponentModule"
 
 internal const val REFERENCE_SUFFIX = "_reference"
 internal const val SCOPE_SUFFIX = "_scope"
-
-internal fun FqName.isAnvilModule(): Boolean = asString().isAnvilModule()
-
-internal fun String.isAnvilModule(): Boolean {
-  return startsWith(MODULE_PACKAGE_PREFIX) && endsWith(ANVIL_MODULE_SUFFIX)
-}
-
-@Suppress("UNCHECKED_CAST")
-internal fun <T : ClassReference> ClassId.classReferenceOrNull(
-  module: ModuleDescriptor,
-): T? = asSingleFqName().toClassReferenceOrNull(module) as T?
-
-// If we're evaluating an anonymous inner class, it cannot merge anything and will cause
-// a failure if we try to resolve its [ClassId]
-internal fun ClassDescriptor.shouldIgnore(): Boolean {
-  return classId == null || DescriptorUtils.isAnonymousObject(this)
-}
 
 /**
  * Returns the single element matching the given [predicate], or `null` if element was not found.

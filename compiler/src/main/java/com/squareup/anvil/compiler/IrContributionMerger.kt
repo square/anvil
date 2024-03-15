@@ -12,7 +12,6 @@ import com.squareup.anvil.compiler.codegen.reference.findAll
 import com.squareup.anvil.compiler.codegen.reference.toClassReference
 import com.squareup.anvil.compiler.internal.classIdBestGuess
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
-import com.squareup.anvil.compiler.internal.safePackageString
 import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -125,8 +124,6 @@ internal class IrContributionMerger(
       it.argumentOrNull(it.modulesKeyword)?.value<List<ClassReferenceIr>>().orEmpty()
     }
 
-    val anvilModuleName = createAnvilModuleName(declaration)
-
     val allContributesAnnotations: List<AnnotationReferenceIr> = annotations
       .asSequence()
       .flatMap { annotation ->
@@ -138,18 +135,6 @@ internal class IrContributionMerger(
             scope = annotation.scope,
             moduleDescriptorFactory = moduleDescriptorFactory,
           )
-      }
-      .filter {
-        // We generate a Dagger module for each merged component. We use Anvil itself to
-        // contribute this generated module. It's possible that there are multiple components
-        // merging the same scope or the same scope is merged in different Gradle modules which
-        // depend on each other. This would cause duplicate bindings, because the generated
-        // modules contain the same bindings and are contributed to the same scope. To avoid this
-        // issue we filter all generated Anvil modules except for the one that was generated for
-        // this specific class.
-        !it.fqName.isAnvilModule() ||
-          it.fqName == anvilModuleName ||
-          it.isAnnotatedWith(internalBindingMarkerFqName)
       }
       .flatMap { contributedClass ->
         contributedClass.annotations
@@ -374,17 +359,6 @@ internal class IrContributionMerger(
     // Since we are modifying the state of the code here, this does not need to be reflected in
     // the associated [ClassReferenceIr] which is more of an initial snapshot.
     declaration.clazz.owner.annotations += annotationConstructorCall
-  }
-
-  private fun createAnvilModuleName(declaration: ClassReferenceIr): FqName {
-    val packageName = declaration.packageFqName?.safePackageString() ?: ""
-
-    val name = "$MODULE_PACKAGE_PREFIX.$packageName" +
-      declaration.enclosingClassesWithSelf
-        .joinToString(separator = "", postfix = ANVIL_MODULE_SUFFIX) {
-          it.shortName
-        }
-    return FqName(name)
   }
 
   private fun checkSameScope(
