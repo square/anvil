@@ -1,13 +1,13 @@
 package com.squareup.anvil.test
 
 import com.squareup.anvil.annotations.ContributesBinding
-import com.squareup.anvil.annotations.ContributesBinding.Priority.HIGH
+import com.squareup.anvil.annotations.ContributesBinding.Priority.PRIORITY_HIGH
 
 public interface PriorityBinding
 
 @ContributesBinding(
   scope = AppScope::class,
-  priority = HIGH,
+  priority = PRIORITY_HIGH,
 )
 public object PriorityBindingHigh : PriorityBinding
 

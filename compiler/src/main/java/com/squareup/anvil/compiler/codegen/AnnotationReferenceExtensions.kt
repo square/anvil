@@ -1,7 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
+import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesBinding.Priority
-import com.squareup.anvil.annotations.ContributesBinding.Priority.NORMAL
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
@@ -43,11 +43,22 @@ internal fun ClassReference.qualifierAnnotation(): AnnotationReference? {
   return annotations.find { it.isQualifier() }
 }
 
-internal fun AnnotationReference.priority(): Priority {
-  return argumentAt("priority", index = 4)
+internal fun AnnotationReference.priority(): Int {
+  return priorityNew() ?: priorityLegacy() ?: ContributesBinding.PRIORITY_NORMAL
+}
+
+@Suppress("DEPRECATION")
+internal fun AnnotationReference.priorityLegacy(): Int? {
+  val priority = argumentAt("priorityDeprecated", index = 4)
     ?.value<FqName>()
     ?.let { Priority.valueOf(it.shortName().asString()) }
-    ?: NORMAL
+
+  return priority?.value
+}
+
+internal fun AnnotationReference.priorityNew(): Int? {
+  return argumentAt("priority", index = 6)
+    ?.value()
 }
 
 internal fun AnnotationReference.modules(

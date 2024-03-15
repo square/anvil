@@ -104,6 +104,17 @@ public annotation class ContributesBinding(
    * use the same scope.
    */
   val replaces: Array<KClass<*>> = [],
+  @Suppress("DEPRECATION")
+  @Deprecated("Use the new int-based priority", ReplaceWith("priority"))
+  @get:JvmName("priority")
+  val priorityDeprecated: Priority = NORMAL,
+  /**
+   * Whether the qualifier for this class should be included in the generated binding method. This
+   * parameter is only necessary to use when [ContributesBinding] and [ContributesMultibinding]
+   * are used together for the same class. If not, simply remove the qualifier from the class
+   * and don't use this parameter.
+   */
+  val ignoreQualifier: Boolean = false,
   /**
    * The priority of this contributed binding. The priority should be changed only if you don't
    * have access to the contributed binding class that you want to replace at compile time. If
@@ -118,24 +129,26 @@ public annotation class ContributesBinding(
    * Note that [replaces] takes precedence. If you explicitly replace a binding it won't be
    * considered no matter what its priority is.
    *
-   * All contributed bindings have a [NORMAL] priority by default.
+   * All contributed bindings have a [PRIORITY_NORMAL] priority by default.
    */
-  val priority: Priority = NORMAL,
-  /**
-   * Whether the qualifier for this class should be included in the generated binding method. This
-   * parameter is only necessary to use when [ContributesBinding] and [ContributesMultibinding]
-   * are used together for the same class. If not, simply remove the qualifier from the class
-   * and don't use this parameter.
-   */
-  val ignoreQualifier: Boolean = false,
+  @get:JvmName("priorityInt")
+  val priority: Int = PRIORITY_NORMAL,
 ) {
+
+  public companion object {
+    public const val PRIORITY_NORMAL: Int = Int.MIN_VALUE
+    public const val PRIORITY_HIGH: Int = 0
+    public const val PRIORITY_HIGHEST: Int = Int.MAX_VALUE
+  }
+
   /**
    * The priority of a contributed binding.
    */
+  @Deprecated("Use the new int-based priority")
   @Suppress("unused")
-  public enum class Priority {
-    NORMAL,
-    HIGH,
-    HIGHEST,
+  public enum class Priority(public val value: Int) {
+    NORMAL(PRIORITY_NORMAL),
+    HIGH(PRIORITY_HIGH),
+    HIGHEST(PRIORITY_HIGHEST),
   }
 }
