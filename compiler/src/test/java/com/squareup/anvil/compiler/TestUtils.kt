@@ -128,7 +128,7 @@ internal val Class<*>.generatedMultiBindingModule: Class<*> get() = generatedBin
   ContributesMultibinding::class,
 ).single()
 
-private fun Class<*>.generatedBindingModules(): List<Class<*>> {
+internal fun Class<*>.generatedBindingModules(): List<Class<*>> {
   return generatedBindingModules(ContributesBinding::class)
 }
 
