@@ -5,10 +5,13 @@ import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor.C
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor.ClassReferenceCacheKey.Type.DESCRIPTOR
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor.ClassReferenceCacheKey.Type.PSI
 import com.squareup.anvil.compiler.internal.classIdBestGuess
+import com.squareup.anvil.compiler.internal.getContributedPropertyOrNull
+import com.squareup.anvil.compiler.internal.parentsWithSelf
 import com.squareup.anvil.compiler.internal.reference.AnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
+import com.squareup.anvil.compiler.internal.reference.PropertyReference
 import com.squareup.anvil.compiler.internal.reference.TopLevelFunctionReference
 import com.squareup.anvil.compiler.internal.reference.TopLevelPropertyReference
 import com.squareup.anvil.compiler.internal.reference.toTopLevelFunctionReference
@@ -94,6 +97,45 @@ public class RealAnvilModuleDescriptor private constructor(
   override fun getTopLevelPropertyReferences(ktFile: KtFile): List<TopLevelPropertyReference.Psi> {
     return ktFileToTopLevelPropertyReferenceMap.getOrPut(ktFile.identifier) {
       ktFile.topLevelProperties().map { it.toTopLevelPropertyReference(this) }
+    }
+  }
+
+  override fun getTopLevelPropertyReferenceOrNull(fqName: FqName): PropertyReference? {
+    val parent = fqName.parent()
+
+    fun psiReference() = allFiles
+      .filter { it.packageFqName == parent }
+      .firstNotNullOfOrNull { file ->
+        getTopLevelPropertyReferences(file)
+          .firstOrNull { it.fqName == fqName }
+      }
+
+    return psiReference() ?: fqName.getContributedPropertyOrNull(this)
+      ?.toTopLevelPropertyReference(this)
+  }
+
+  override fun resolvePropertyReferenceOrNull(fqName: FqName): PropertyReference? {
+
+    val shortName = fqName.shortName().asString()
+
+    val containingClass = fqName.parentsWithSelf()
+      .filter { !it.isRoot }
+      .firstNotNullOfOrNull { fq -> getClassReferenceOrNull(fq) }
+      // If we can't find the containing class, it could be a top-level property.
+      ?: return getTopLevelPropertyReferenceOrNull(fqName)
+
+    // If the containing class has a companion object, this `fqName` may be referencing one of its
+    // members without the `Companion` segment. This also applies to named companion objects.
+    // So we need to check the companion object as well.
+    val classAndCompanions = sequence {
+      // Add the normal class first, because the Kotlin compiler prioritizes resolving normal
+      // instance properties over companion object properties.
+      yield(containingClass)
+      yieldAll(containingClass.companionObjects())
+    }
+
+    return classAndCompanions.firstNotNullOfOrNull { clazz ->
+      clazz.properties.firstOrNull { it.name == shortName }
     }
   }
 

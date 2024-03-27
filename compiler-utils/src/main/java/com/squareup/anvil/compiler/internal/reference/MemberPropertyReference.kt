@@ -32,7 +32,7 @@ public sealed class MemberPropertyReference : AnnotatedReference, PropertyRefere
 
   public override val module: AnvilModuleDescriptor get() = declaringClass.module
 
-  public val memberName: MemberName get() = MemberName(declaringClass.asClassName(), name)
+  public override val memberName: MemberName get() = MemberName(declaringClass.asClassName(), name)
 
   protected abstract val type: TypeReference?
 
@@ -201,3 +201,10 @@ public fun KtProperty.toPropertyReference(
 public fun PropertyDescriptor.toPropertyReference(
   declaringClass: ClassReference.Descriptor,
 ): Descriptor = Descriptor(this, declaringClass)
+
+internal fun MemberPropertyReference.toDescriptorOrNull(): Descriptor? {
+  return when (this) {
+    is Descriptor -> this
+    is Psi -> declaringClass.toDescriptorReferenceOrNull()?.properties?.find { it.name == name }
+  }
+}

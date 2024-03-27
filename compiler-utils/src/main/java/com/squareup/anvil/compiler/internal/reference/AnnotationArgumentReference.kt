@@ -206,20 +206,18 @@ public sealed class AnnotationArgumentReference {
       }
 
       fun resolvePrimitiveConstant(fqName: FqName): Any? {
-        // This could be a constant from a primitive type, e.g. Int.MAX_VALUE
-        val classFqName = fqName.parent()
-        val constantName = fqName.shortName().asString()
-
         // If this constant is coming from a companion object, then we'll find it this way.
-        classFqName.toClassReferenceOrNull(module)
-          ?.let { if (it.isObject()) listOf(it) else it.companionObjects() }
-          ?.flatMap { it.properties }
-          ?.singleOrNull { it.name == constantName }
+        module.resolvePropertyReferenceOrNull(fqName)
+          // Prefer descriptor types for this since the parsing is already done.
+          // We won't be able to resolve a descriptor
+          // if the reference was also generated in this round,
+          // but Anvil itself doesn't generate consts and then use them as annotation arguments.
+          ?.let { it.toDescriptorOrNull() ?: it }
           ?.let { property ->
             return when (property) {
-              is MemberPropertyReference.Descriptor ->
+              is PropertyReference.Descriptor ->
                 property.property.compileTimeInitializer?.value
-              is MemberPropertyReference.Psi ->
+              is PropertyReference.Psi ->
                 // A PropertyReference.property may also be a KtParameter if it's in a constructor,
                 // but if we're here we're in an object, so the property must be a KtProperty.
                 (property.property as KtProperty).initializer?.let { parsePrimitiveType(it.text) }

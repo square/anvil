@@ -4,10 +4,19 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
+import io.kotest.data.blocking.forAll
+import io.kotest.data.row
+import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.name.FqName
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 
-class AnnotationReferenceTest {
+@Suppress("LocalVariableName")
+class AnnotationReferenceTest : ReferenceTests {
+
+  override val testEnvironmentFactory
+    get() = ReferencesTestEnvironment.Factory
+
   @Test fun `annotation references with different arguments aren't equal`() {
     compile(
       """
@@ -99,6 +108,137 @@ class AnnotationReferenceTest {
     }
   }
 
+  @TestFactory
+  fun `a const as annotation argument can be parsed`() = testFactory {
+    compile(
+      """
+      @file:Suppress("RedundantCompanionReference", "RedundantSuppression")
+      package com.squareup.test
+ 
+      annotation class IntQualifier(val num: Int)
+      annotation class StringQualifier(val str: String)
+
+      private const val ONE = 1
+
+      private const val TWO = ONE + ONE
+      private const val ABC = "abc.${'$'}ONE"
+
+      @IntQualifier(TWO)
+      @StringQualifier(ABC)
+      interface SomeClass1
+
+      private object SomeObject {
+        const val THREE = ONE + TWO
+        const val DEF = "def.${'$'}ONE"
+      }
+
+      @IntQualifier(SomeObject.THREE)
+      @StringQualifier(SomeObject.DEF)
+      interface SomeClass2
+
+      private class DefaultCompanionClass {
+        companion object {
+          const val FOUR = ONE + SomeObject.THREE
+          const val GHI = "ghi.${'$'}ONE"
+        }
+      }
+
+      @IntQualifier(DefaultCompanionClass.FOUR)
+      @StringQualifier(DefaultCompanionClass.GHI)
+      interface SomeClass3
+
+      @IntQualifier(DefaultCompanionClass.Companion.FOUR)
+      @StringQualifier(DefaultCompanionClass.Companion.GHI)
+      interface SomeClass4
+
+      private class NamedCompanionClass {
+        companion object SomeCompanion {
+          const val FIVE = ONE + DefaultCompanionClass.FOUR
+          const val JKL = "jkl.${'$'}ONE"
+        }
+      }
+
+      @IntQualifier(NamedCompanionClass.FIVE)
+      @StringQualifier(NamedCompanionClass.JKL)
+      interface SomeClass5
+
+      @IntQualifier(NamedCompanionClass.FIVE)
+      @StringQualifier(NamedCompanionClass.SomeCompanion.JKL)
+      interface SomeClass6
+      """,
+      allWarningsAsErrors = false,
+    ) {
+
+      fun ClassReference.stringValue() = annotations
+        .single { it.shortName == "StringQualifier" }
+        .arguments.single()
+        .value<String>()
+
+      fun ClassReference.stringAnnotationSpec() = annotations
+        .single { it.shortName == "StringQualifier" }
+        .toAnnotationSpec()
+        .toString()
+
+      fun ClassReference.intValue() = annotations
+        .single { it.shortName == "IntQualifier" }
+        .arguments.single()
+        .value<Int>()
+
+      fun ClassReference.intAnnotationSpec() = annotations
+        .single { it.shortName == "IntQualifier" }
+        .toAnnotationSpec()
+        .toString()
+
+      val SomeClass1 by classReferenceMap
+
+      SomeClass1.stringValue() shouldBe "abc.1"
+      SomeClass1.stringAnnotationSpec() shouldBe "@com.squareup.test.StringQualifier(str = \"abc.1\")"
+
+      SomeClass1.intValue() shouldBe 2
+      SomeClass1.intAnnotationSpec() shouldBe "@com.squareup.test.IntQualifier(num = 2)"
+
+      val SomeClass2 by classReferenceMap
+
+      SomeClass2.stringValue() shouldBe "def.1"
+      SomeClass2.stringAnnotationSpec() shouldBe "@com.squareup.test.StringQualifier(str = \"def.1\")"
+
+      SomeClass2.intValue() shouldBe 3
+      SomeClass2.intAnnotationSpec() shouldBe "@com.squareup.test.IntQualifier(num = 3)"
+
+      val SomeClass3 by classReferenceMap
+
+      SomeClass3.stringValue() shouldBe "ghi.1"
+      SomeClass3.stringAnnotationSpec() shouldBe "@com.squareup.test.StringQualifier(str = \"ghi.1\")"
+
+      SomeClass3.intValue() shouldBe 4
+      SomeClass3.intAnnotationSpec() shouldBe "@com.squareup.test.IntQualifier(num = 4)"
+
+      val SomeClass4 by classReferenceMap
+
+      SomeClass4.stringValue() shouldBe "ghi.1"
+      SomeClass4.stringAnnotationSpec() shouldBe "@com.squareup.test.StringQualifier(str = \"ghi.1\")"
+
+      SomeClass4.intValue() shouldBe 4
+      SomeClass4.intAnnotationSpec() shouldBe "@com.squareup.test.IntQualifier(num = 4)"
+
+      val SomeClass5 by classReferenceMap
+
+      SomeClass5.stringValue() shouldBe "jkl.1"
+      SomeClass5.stringAnnotationSpec() shouldBe "@com.squareup.test.StringQualifier(str = \"jkl.1\")"
+
+      SomeClass5.intValue() shouldBe 5
+      SomeClass5.intAnnotationSpec() shouldBe "@com.squareup.test.IntQualifier(num = 5)"
+
+      val SomeClass6 by classReferenceMap
+
+      SomeClass6.stringValue() shouldBe "jkl.1"
+      SomeClass6.stringAnnotationSpec() shouldBe "@com.squareup.test.StringQualifier(str = \"jkl.1\")"
+
+      SomeClass6.intValue() shouldBe 5
+      SomeClass6.intAnnotationSpec() shouldBe "@com.squareup.test.IntQualifier(num = 5)"
+    }
+  }
+
   @Test fun `a string annotation argument can be parsed`() {
     compile(
       """
@@ -138,7 +278,8 @@ class AnnotationReferenceTest {
     }
   }
 
-  @Test fun `an int annotation argument can be parsed`() {
+  @TestFactory
+  fun `an int annotation argument can be parsed`() = testFactory {
     @Suppress("RemoveRedundantQualifierName")
     compile(
       """
@@ -222,79 +363,61 @@ class AnnotationReferenceTest {
       const val CONSTANT_5 = 5
       """,
       allWarningsAsErrors = false,
-      codeGenerators = listOf(
-        simpleCodeGenerator { psiRef ->
-          if (psiRef.shortName in listOf("BindingKey", "SomeObject", "Abc", "Companion")) {
-            return@simpleCodeGenerator null
-          }
-
-          listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
-            when (psiRef.shortName) {
-              "SomeClass1" -> {
-                val argument = ref.annotations.single().arguments.single()
-                assertThat(argument.value<Int>()).isEqualTo(1)
-
-                assertThat(ref.annotations.single().toAnnotationSpec().toString())
-                  .isEqualTo("@com.squareup.test.BindingKey(value = 1)")
-              }
-              "SomeClass2" -> {
-                val argument = ref.annotations.single().arguments.single()
-                assertThat(argument.value<Int>()).isEqualTo(1)
-
-                assertThat(ref.annotations.single().toAnnotationSpec().toString())
-                  .isEqualTo("@com.squareup.test.BindingKey(value = 1)")
-              }
-              "SomeClass3" -> {
-                val argument = ref.annotations.single().arguments.single()
-                assertThat(argument.value<Int>()).isEqualTo(-5)
-
-                assertThat(ref.annotations.single().toAnnotationSpec().toString())
-                  .isEqualTo("@com.squareup.test.BindingKey(value = -5)")
-              }
-              "SomeClass4", "SomeClass5", "SomeClass6" -> {
-                val argument = ref.annotations.single().arguments.single()
-                assertThat(argument.value<Int>()).isEqualTo(Int.MAX_VALUE)
-
-                assertThat(ref.annotations.single().toAnnotationSpec().toString())
-                  .isEqualTo("@com.squareup.test.BindingKey(value = 2147483647)")
-              }
-              "SomeClass7", "SomeClass8" -> {
-                val argument = ref.annotations.single().arguments.single()
-                assertThat(argument.value<Int>()).isEqualTo(2)
-
-                assertThat(ref.annotations.single().toAnnotationSpec().toString())
-                  .isEqualTo("@com.squareup.test.BindingKey(value = 2)")
-              }
-              "SomeClass9", "SomeClass10", "SomeClass11" -> {
-                val argument = ref.annotations.single().arguments.single()
-                assertThat(argument.value<Int>()).isEqualTo(3)
-
-                assertThat(ref.annotations.single().toAnnotationSpec().toString())
-                  .isEqualTo("@com.squareup.test.BindingKey(value = 3)")
-              }
-              "SomeClass12", "SomeClass13", "SomeClass14" -> {
-                val argument = ref.annotations.single().arguments.single()
-                assertThat(argument.value<Int>()).isEqualTo(4)
-
-                assertThat(ref.annotations.single().toAnnotationSpec().toString())
-                  .isEqualTo("@com.squareup.test.BindingKey(value = 4)")
-              }
-              "SomeClass15" -> {
-                val argument = ref.annotations.single().arguments.single()
-                assertThat(argument.value<Int>()).isEqualTo(5)
-
-                assertThat(ref.annotations.single().toAnnotationSpec().toString())
-                  .isEqualTo("@com.squareup.test.BindingKey(value = 5)")
-              }
-              else -> throw NotImplementedError(psiRef.shortName)
-            }
-          }
-
-          null
-        },
-      ),
     ) {
-      assertThat(exitCode).isEqualTo(OK)
+
+      fun ClassReference.annotationArg() = annotations.single().arguments.single().value<Int>()
+      fun ClassReference.annotationSpec() = annotations.single().toAnnotationSpec().toString()
+
+      val SomeClass1 by classReferenceMap
+      SomeClass1.annotationArg() shouldBe 1
+      SomeClass1.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 1)"
+
+      val SomeClass2 by classReferenceMap
+      SomeClass2.annotationArg() shouldBe 1
+      SomeClass2.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 1)"
+
+      val SomeClass3 by classReferenceMap
+      SomeClass3.annotationArg() shouldBe -5
+      SomeClass3.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = -5)"
+
+      forAll(
+        row(classReferenceMap.getValue("SomeClass4")),
+        row(classReferenceMap.getValue("SomeClass5")),
+        row(classReferenceMap.getValue("SomeClass6")),
+      ) { ref ->
+        ref.annotationArg() shouldBe Int.MAX_VALUE
+        ref.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 2147483647)"
+      }
+
+      forAll(
+        row(classReferenceMap.getValue("SomeClass7")),
+        row(classReferenceMap.getValue("SomeClass8")),
+      ) { ref ->
+        ref.annotationArg() shouldBe 2
+        ref.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 2)"
+      }
+
+      forAll(
+        row(classReferenceMap.getValue("SomeClass9")),
+        row(classReferenceMap.getValue("SomeClass10")),
+        row(classReferenceMap.getValue("SomeClass11")),
+      ) { ref ->
+        ref.annotationArg() shouldBe 3
+        ref.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 3)"
+      }
+
+      forAll(
+        row(classReferenceMap.getValue("SomeClass12")),
+        row(classReferenceMap.getValue("SomeClass13")),
+        row(classReferenceMap.getValue("SomeClass14")),
+      ) { ref ->
+        ref.annotationArg() shouldBe 4
+        ref.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 4)"
+      }
+
+      val SomeClass15 by classReferenceMap
+      SomeClass15.annotationArg() shouldBe 5
+      SomeClass15.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 5)"
     }
   }
 
