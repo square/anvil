@@ -247,10 +247,12 @@ internal class IrContributionMerger(
           functionName.startsWith("bind") || functionName.startsWith("provide")
         }
 
-        val originClass = internalBindingMarker.argumentOrNull("originClass")?.value<ClassReferenceIr>() ?: throw AnvilCompilationExceptionClassReferenceIr(
-          message = "The origin type of a contributed binding is null.",
-          classReference = moduleClass,
-        )
+        val originClass =
+          internalBindingMarker.argumentOrNull("originClass")?.value<ClassReferenceIr>()
+            ?: throw AnvilCompilationExceptionClassReferenceIr(
+              message = "The origin type of a contributed binding is null.",
+              classReference = moduleClass,
+            )
 
         if (originClass in excludedModules || originClass in replacedModules) return@mapNotNull null
         if (moduleClass in excludedModules || moduleClass in replacedModules) return@mapNotNull null
