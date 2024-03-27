@@ -23,28 +23,29 @@ internal class FileCacheOperationsTest : CacheTests {
   }
 
   @Test
-  fun `restoreFromCache passing a source file as input deletes it and everything downstream`() = test {
+  fun `restoreFromCache passing a source file as input deletes it and everything downstream`() =
+    test {
 
-    fileOperations.addToCache(
-      gen1.withSources(source1),
-      gen2.withSources(source2),
-      gen3.withSources(gen2.toSourceFile()),
-      gen4.withSources(source3),
-    )
+      fileOperations.addToCache(
+        gen1.withSources(source1),
+        gen2.withSources(source2),
+        gen3.withSources(gen2.toSourceFile()),
+        gen4.withSources(source3),
+      )
 
-    listOf(gen1, gen2, gen3)
-      .forEach { it.file.delete() }
+      listOf(gen1, gen2, gen3)
+        .forEach { it.file.delete() }
 
-    fileOperations.restoreFromCache(generatedDir, setOf(source2))
+      fileOperations.restoreFromCache(generatedDir, setOf(source2))
 
-    currentFiles() shouldBe listOf(
-      gen1.relativeFile,
-      gen4.relativeFile,
-      source1,
-      source2,
-      source3,
-    )
-  }
+      currentFiles() shouldBe listOf(
+        gen1.relativeFile,
+        gen4.relativeFile,
+        source1,
+        source2,
+        source3,
+      )
+    }
 
   @Test
   fun `restoreFromCache missing generated files are restored`() = test {
