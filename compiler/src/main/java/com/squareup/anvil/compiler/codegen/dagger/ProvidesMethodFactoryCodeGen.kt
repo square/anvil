@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
 import com.google.devtools.ksp.closestClassDeclaration
-import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.getDeclaredProperties
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.Resolver
@@ -25,9 +24,11 @@ import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.getAnnotatedFunctions
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
+import com.squareup.anvil.compiler.codegen.ksp.withCompanion
 import com.squareup.anvil.compiler.codegen.ksp.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
@@ -82,23 +83,21 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       resolver.getSymbolsWithAnnotation(daggerModuleFqName.asString())
         .filterIsInstance<KSClassDeclaration>()
         .forEach { clazz ->
-          val classAndCompanion = sequenceOf(clazz)
-            .plus(
-              clazz.declarations.filterIsInstance<KSClassDeclaration>()
-                .filter { it.isCompanionObject },
-            )
-
-          val functions = classAndCompanion.flatMap { it.getDeclaredFunctions() }
-            .filter { it.isAnnotationPresent<Provides>() }
-            .onEach { function ->
-              checkFunctionIsNotAbstract(clazz, function)
-            }
-            .also { functions ->
-              assertNoDuplicateFunctions(clazz, functions)
-            }
-            .map { function ->
-              CallableReference.from(function)
-            }
+          val classAndCompanion = clazz.withCompanion()
+          val functions =
+            classAndCompanion
+              .flatMap {
+                it.getAnnotatedFunctions<Provides>()
+              }
+              .onEach { function ->
+                checkFunctionIsNotAbstract(clazz, function)
+              }
+              .also { functions ->
+                assertNoDuplicateFunctions(clazz, functions)
+              }
+              .map { function ->
+                CallableReference.from(function)
+              }
 
           val properties = classAndCompanion.flatMap { it.getDeclaredProperties() }
             .filter { it.isAnnotationPresent<Provides>() || it.getter?.isAnnotationPresent<Provides>() == true }
