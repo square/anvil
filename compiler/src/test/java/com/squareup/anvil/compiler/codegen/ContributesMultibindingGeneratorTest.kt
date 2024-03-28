@@ -6,7 +6,9 @@ import com.squareup.anvil.compiler.assertFileGenerated
 import com.squareup.anvil.compiler.codegen.ksp.simpleSymbolProcessor
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
+import com.squareup.anvil.compiler.generatedMultiBindingModule
 import com.squareup.anvil.compiler.includeKspTests
+import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.anvil.compiler.isError
@@ -15,6 +17,7 @@ import com.squareup.anvil.compiler.multibindingModuleScope
 import com.squareup.anvil.compiler.multibindingModuleScopes
 import com.squareup.anvil.compiler.multibindingOriginClass
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
+import dagger.multibindings.StringKey
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -205,6 +208,129 @@ class ContributesMultibindingGeneratorTest(
             "public. Only public types are supported.",
         )
       }
+    }
+  }
+
+  @Test
+  fun `a StringKey annotation using a top-level const property is inlined in the generated module`() {
+
+    // https://github.com/square/anvil/issues/938
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      import dagger.multibindings.StringKey
+      import com.squareup.test.other.OTHER_CONSTANT
+      import javax.inject.Inject
+
+      interface ParentInterface
+
+      private const val CONSTANT = "${'$'}OTHER_CONSTANT.foo"
+
+      @StringKey(CONSTANT)
+      @ContributesMultibinding(Any::class)
+      class InjectClass @Inject constructor() : ParentInterface
+      """,
+      """
+      package com.squareup.test.other
+      
+      const val OTHER_CONSTANT = "abc"
+      """.trimIndent(),
+      mode = mode,
+    ) {
+
+      assertThat(exitCode).isEqualTo(OK)
+
+      val stringKey = injectClass.generatedMultiBindingModule.methods.single()
+        .getDeclaredAnnotation(StringKey::class.java)
+
+      assertThat(stringKey.value).isEqualTo("abc.foo")
+    }
+  }
+
+  @Test
+  fun `a StringKey annotation using an object's const property is inlined in the generated module`() {
+
+    // https://github.com/square/anvil/issues/938
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      import dagger.multibindings.StringKey
+      import com.squareup.test.other.OTHER_CONSTANT
+      import javax.inject.Inject
+
+      private object Constants {
+        const val CONSTANT = "${'$'}OTHER_CONSTANT.foo"
+      }
+
+      interface ParentInterface
+
+      @StringKey(Constants.CONSTANT)
+      @ContributesMultibinding(Any::class)
+      class InjectClass @Inject constructor() : ParentInterface
+      """,
+      """
+      package com.squareup.test.other
+      
+      const val OTHER_CONSTANT = "abc"
+      """.trimIndent(),
+      mode = mode,
+    ) {
+
+      assertThat(exitCode).isEqualTo(OK)
+
+      val stringKey = injectClass.generatedMultiBindingModule.methods.single()
+        .getDeclaredAnnotation(StringKey::class.java)
+
+      assertThat(stringKey.value).isEqualTo("abc.foo")
+    }
+  }
+
+  @Test
+  fun `a StringKey annotation using a companion object's const property is inlined in the generated module`() {
+
+    // https://github.com/square/anvil/issues/938
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      import dagger.multibindings.StringKey
+      import com.squareup.test.other.OTHER_CONSTANT
+      import javax.inject.Inject
+
+      private interface Settings {
+        companion object {
+          const val CONSTANT = "${'$'}OTHER_CONSTANT.foo"
+        }
+      }
+
+      interface ParentInterface
+
+      @StringKey(Settings.CONSTANT)
+      @ContributesMultibinding(Any::class)
+      class InjectClass @Inject constructor() : ParentInterface
+      """,
+      """
+      package com.squareup.test.other
+      
+      const val OTHER_CONSTANT = "abc"
+      """.trimIndent(),
+      mode = mode,
+    ) {
+
+      assertThat(exitCode).isEqualTo(OK)
+
+      val stringKey = injectClass.generatedMultiBindingModule.methods.single()
+        .getDeclaredAnnotation(StringKey::class.java)
+
+      assertThat(stringKey.value).isEqualTo("abc.foo")
     }
   }
 
@@ -401,6 +527,7 @@ class ContributesMultibindingGeneratorTest(
         }
         AnvilCompilationMode.Embedded(listOf(codeGenerator))
       }
+
       is AnvilCompilationMode.Ksp -> {
         val processor = simpleSymbolProcessor { resolver ->
           resolver.getSymbolsWithAnnotation(MergeComponent::class.qualifiedName!!)
@@ -465,6 +592,7 @@ class ContributesMultibindingGeneratorTest(
         }
         AnvilCompilationMode.Embedded(listOf(codeGenerator))
       }
+
       is AnvilCompilationMode.Ksp -> {
         val processor = simpleSymbolProcessor { resolver ->
           resolver.getSymbolsWithAnnotation(MergeComponent::class.qualifiedName!!)

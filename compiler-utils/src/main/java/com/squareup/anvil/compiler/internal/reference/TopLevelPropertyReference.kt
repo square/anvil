@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.internal.reference
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.internal.getContributedPropertyOrNull
 import com.squareup.anvil.compiler.internal.reference.TopLevelPropertyReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.TopLevelPropertyReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
@@ -9,6 +10,7 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.kotlinpoet.MemberName
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget.PROPERTY_GETTER
@@ -28,6 +30,13 @@ import kotlin.LazyThreadSafetyMode.NONE
 public sealed class TopLevelPropertyReference : AnnotatedReference, PropertyReference {
 
   protected abstract val type: TypeReference?
+
+  override val memberName: MemberName by lazy(NONE) {
+    MemberName(
+      packageName = fqName.parent().asString(),
+      simpleName = name,
+    )
+  }
 
   public override fun typeOrNull(): TypeReference? = type
 
@@ -194,3 +203,11 @@ public fun KtProperty.toTopLevelPropertyReference(
 public fun PropertyDescriptor.toTopLevelPropertyReference(
   module: AnvilModuleDescriptor,
 ): Descriptor = Descriptor(property = this, module = module)
+
+internal fun TopLevelPropertyReference.toDescriptorOrNull(): Descriptor? {
+  return when (this) {
+    is Descriptor -> this
+    is Psi -> fqName.getContributedPropertyOrNull(module)
+      ?.toTopLevelPropertyReference(module)
+  }
+}
