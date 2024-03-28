@@ -200,7 +200,10 @@ public sealed class TypeReference {
       // When we fail to resolve the generic type here, we're potentially at the end of a chain of
       // generics, so we return the current type instead of null.
       return resolveGenericTypeReference(
-        implementingClass, declaringClass, type.text, module,
+        implementingClass,
+        declaringClass,
+        type.text,
+        module,
       ) ?: this
     }
 

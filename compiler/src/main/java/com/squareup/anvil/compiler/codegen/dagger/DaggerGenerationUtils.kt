@@ -13,7 +13,6 @@ import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
-import com.squareup.anvil.compiler.codegen.ksp.argumentAt
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
@@ -119,7 +118,11 @@ internal fun List<KSValueParameter>.mapToConstructorParameters(
   typeParameterResolver: TypeParameterResolver,
 ): List<ConstructorParameter> {
   return fold(listOf()) { acc, callableReference ->
-    acc + callableReference.toConstructorParameter(callableReference.name!!.asString().uniqueParameterName(acc), typeParameterResolver)
+    acc + callableReference.toConstructorParameter(
+      callableReference.name!!.asString()
+        .uniqueParameterName(acc),
+      typeParameterResolver,
+    )
   }
 }
 
@@ -474,15 +477,14 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
 
   val typeName = unwrappedType.withJvmSuppressWildcardsIfNeeded(this, resolvedType)
 
-  val resolvedTypeName = if ((resolvedType.declaration as? KSClassDeclaration)?.typeParameters.orEmpty().isNotEmpty()) {
-    unwrappedType.requireRawType()
-      .optionallyParameterizedByNames(
-        unwrappedType.unwrappedTypes,
-      )
-      .withJvmSuppressWildcardsIfNeeded(this, resolvedType)
-  } else {
-    null
-  }
+  val resolvedTypeName =
+    if ((resolvedType.declaration as? KSClassDeclaration)?.typeParameters.orEmpty().isNotEmpty()) {
+      unwrappedType.requireRawType()
+        .optionallyParameterizedByNames(unwrappedType.unwrappedTypes)
+        .withJvmSuppressWildcardsIfNeeded(this, resolvedType)
+    } else {
+      null
+    }
 
   val assistedAnnotation = getAnnotationsByType(Assisted::class)
     .singleOrNull()

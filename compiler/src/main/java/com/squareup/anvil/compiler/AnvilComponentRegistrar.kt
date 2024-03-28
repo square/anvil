@@ -45,7 +45,8 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
       RealAnvilModuleDescriptor.Factory()
     }
 
-    val mergingEnabled = !commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging
+    val mergingEnabled =
+      !commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging
     if (mergingEnabled) {
       if (commandLineOptions.componentMergingBackend == ComponentMergingBackend.IR) {
         IrGenerationExtension.registerExtension(

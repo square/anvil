@@ -146,12 +146,11 @@ public fun FileSpec.Companion.createAnvilSpec(
  * For `Map<String, Int>` this will return [`String`, `Int`]. For star projections like
  * `List<*>` the result will be mapped to [Any].
  */
-public val TypeName.unwrappedTypes: List<TypeName> get() {
-  return when (this) {
+public val TypeName.unwrappedTypes: List<TypeName>
+  get() = when (this) {
     is ParameterizedTypeName -> typeArguments
     else -> emptyList()
   }
-}
 
 /**
  * Returns the result of [findRawType] or throws.
