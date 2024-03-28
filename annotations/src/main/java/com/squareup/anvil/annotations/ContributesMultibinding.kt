@@ -65,10 +65,8 @@ import kotlin.reflect.KClass
  * abstract fun bindMainListener(listener: MainListener): Listener
  * ```
  * Note that map keys must allow classes as target. Dagger's built-in keys like `@StringKey` and
- * `@ClassKey` only allow methods as target and therefore cannot be used with this annotation. It's
- * recommended to create your own map key annotation class like in the snippet above. Furthermore,
- * Dagger allows using map keys that are not known at compile time. Anvil doesn't support them
- * either and it's recommended to contribute a normal Dagger module to the graph instead of using
+ * `@ClassKey` allow using map keys that are not known at compile time. Anvil doesn't support them,
+ * and it's recommended to contribute a normal Dagger module to the graph instead of using
  * [ContributesMultibinding].
  *
  * Contributed multibindings can replace other contributed modules and contributed multibindings
