@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.assistedServiceFactory
 import com.squareup.anvil.compiler.compilationErrorLine
@@ -2183,8 +2182,6 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   ): AnvilCompilation {
     return AnvilCompilation()
       .apply {
-        kotlinCompilation.allWarningsAsErrors = WARNINGS_AS_ERRORS
-
         if (previousCompilationResult != null) {
           addPreviousCompilationResult(previousCompilationResult)
         }
