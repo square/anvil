@@ -12,13 +12,12 @@ import com.squareup.anvil.compiler.hintContributesScopes
 import com.squareup.anvil.compiler.innerInterface
 import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.walkGeneratedFiles
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 
-@Suppress("RemoveRedundantQualifierName")
 @RunWith(Parameterized::class)
 class ContributesToCodeGenTest(
   private val mode: AnvilCompilationMode,
@@ -188,8 +187,8 @@ class ContributesToCodeGenTest(
       abstract class DaggerModule1
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule1 contributes multiple times to the same scope: " +
           "[Any, Unit]. Contributing multiple times to the same scope is forbidden and all " +
@@ -308,8 +307,8 @@ class ContributesToCodeGenTest(
       abstract class DaggerModule1
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:6")
       assertThat(messages).contains(
@@ -338,8 +337,8 @@ class ContributesToCodeGenTest(
         $visibility abstract class DaggerModule1
         """,
         mode = mode,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:7")
         assertThat(messages).contains(
@@ -368,8 +367,8 @@ class ContributesToCodeGenTest(
         $visibility interface ContributingInterface
         """,
         mode = mode,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:6")
         assertThat(messages).contains(

@@ -9,9 +9,9 @@ import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
+import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
 import dagger.internal.Factory
@@ -2550,8 +2550,8 @@ public class InjectClass_Factory<T : List<String>>(
         @Inject constructor(string: String)
       }
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(
         compilationErrorLine()
           .removeParametersAndSort(),
@@ -2737,11 +2737,13 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
+    expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
+    expectExitCode = expectExitCode,
     // Many constructor parameters are unused.
     allWarningsAsErrors = false,
     previousCompilationResult = previousCompilationResult,

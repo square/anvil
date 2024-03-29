@@ -4,13 +4,12 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.compilationErrorLine
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
-import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
+import com.tschuchort.compiletesting.KotlinCompilation
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -247,8 +246,8 @@ public final class AssistedService_Factory {
         @Assisted val type2: SomeType
       )
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@AssistedInject constructor has duplicate @Assisted type: " +
           "@Assisted com.squareup.test.SomeType",
@@ -271,8 +270,8 @@ public final class AssistedService_Factory {
         @Assisted(value = "one") val type2: SomeType
       )
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@AssistedInject constructor has duplicate @Assisted type: " +
           "@Assisted(\"one\") com.squareup.test.SomeType",
@@ -629,8 +628,8 @@ public final class AssistedService_Factory {
         @AssistedInject constructor(@Assisted string: String)
       }
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(
         compilationErrorLine()
           .removeParametersAndSort(),
@@ -658,8 +657,8 @@ public final class AssistedService_Factory {
         @Inject constructor(@Assisted string: String)
       }
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(
         compilationErrorLine()
           .removeParametersAndSort(),
@@ -673,12 +672,16 @@ public final class AssistedService_Factory {
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
+    expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
     block: JvmCompilationResult.() -> Unit = { },
-  ): JvmCompilationResult = compileAnvil(
-    sources = sources,
-    enableDaggerAnnotationProcessor = useDagger,
-    generateDaggerFactories = !useDagger,
-    mode = mode,
-    block = block,
-  )
+  ): JvmCompilationResult {
+    return com.squareup.anvil.compiler.compile(
+      *sources,
+      expectExitCode = expectExitCode,
+      enableDaggerAnnotationProcessor = useDagger,
+      generateDaggerFactories = !useDagger,
+      mode = mode,
+      block = block,
+    )
+  }
 }

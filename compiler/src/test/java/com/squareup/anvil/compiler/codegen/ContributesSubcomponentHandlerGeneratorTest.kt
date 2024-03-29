@@ -16,11 +16,11 @@ import com.squareup.anvil.compiler.internal.testing.extends
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.anvil.compiler.internal.testing.use
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.tschuchort.compiletesting.JvmCompilationResult
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Component
 import org.junit.Test
@@ -869,8 +869,8 @@ class ContributesSubcomponentHandlerGeneratorTest {
       )
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.SubcomponentInterface, but the excluded class isn't contributed " +
@@ -1929,8 +1929,6 @@ class ContributesSubcomponentHandlerGeneratorTest {
       """,
       codeGenerators = listOf(codeGenerator),
     ) {
-      assertThat(exitCode).isEqualTo(OK)
-
       val parentComponentInterface2 = subcomponentInterface2
         .anvilComponent(componentInterface)
         .parentComponentInterface

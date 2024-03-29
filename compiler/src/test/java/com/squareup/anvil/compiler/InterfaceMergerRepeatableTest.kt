@@ -5,6 +5,7 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.compiler.internal.testing.extends
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -44,8 +45,8 @@ class InterfaceMergerRepeatableTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface merges multiple times to the same scope: [Any]. " +
           "Merging multiple times to the same scope is forbidden and all scopes must be distinct.",
@@ -67,8 +68,8 @@ class InterfaceMergerRepeatableTest(
       @MergeSubcomponent(Unit::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "It's only allowed to have one single type of @Merge* annotation, however multiple " +
           "instances of the same annotation are allowed. You mix " +

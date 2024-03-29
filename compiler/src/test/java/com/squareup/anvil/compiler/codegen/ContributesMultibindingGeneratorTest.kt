@@ -14,7 +14,6 @@ import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.multibindingModuleScope
 import com.squareup.anvil.compiler.multibindingModuleScopes
@@ -22,6 +21,7 @@ import com.squareup.anvil.compiler.multibindingOriginClass
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.testing.AnvilCompilationModeTest
 import com.squareup.anvil.compiler.testing.AnvilCompilationModeTestEnvironment
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.multibindings.StringKey
 import io.kotest.matchers.shouldBe
@@ -198,8 +198,8 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
         @ContributesMultibinding(Any::class, ParentInterface::class)
         $visibility class ContributingInterface : ParentInterface
         """,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:8")
         assertThat(messages).contains(
@@ -359,8 +359,8 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
       interface ContributingInterface : ParentInterface
       """,
         mode = mode,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         assertThat(messages).contains(
           "Classes annotated with @ContributesMultibinding may not use more than one @Qualifier.",
         )
@@ -381,8 +381,8 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
       interface ContributingInterface : ParentInterface, CharSequence
       """,
         mode = mode,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         assertThat(messages).contains(
           "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
             "the bound type. This is only allowed with exactly one direct super type. If there " +
@@ -408,8 +408,8 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
       interface ContributingInterface : Abc(), ParentInterface
       """,
         mode = mode,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         assertThat(messages).contains(
           "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
             "the bound type. This is only allowed with exactly one direct super type. If there " +
@@ -431,8 +431,8 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
       object ContributingInterface
       """,
         mode = mode,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         assertThat(messages).contains(
           "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
             "the bound type. This is only allowed with exactly one direct super type. If there " +
@@ -480,8 +480,8 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
       interface ContributingInterface : CharSequence
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface contributes a binding for " +
           "com.squareup.test.ParentInterface, but doesn't extend this type.",
@@ -691,8 +691,8 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
       class ContributingInterface : ParentInterface
       """,
         mode = mode,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         assertThat(messages).contains(
           "com.squareup.test.ContributingInterface contributes multiple times to the same scope " +
             "using the same bound type: [ParentInterface]. Contributing multiple times to the " +

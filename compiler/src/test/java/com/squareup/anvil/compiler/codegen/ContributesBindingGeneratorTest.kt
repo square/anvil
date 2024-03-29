@@ -18,10 +18,10 @@ import com.squareup.anvil.compiler.generatedFileOrNull
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.testing.AnvilCompilationModeTest
 import com.squareup.anvil.compiler.testing.AnvilCompilationModeTestEnvironment
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.DynamicNode
@@ -307,8 +307,8 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
         $visibility class ContributingInterface : ParentInterface
         """,
         mode = mode,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:8")
         assertThat(messages).contains(
@@ -340,8 +340,8 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
       @AnyQualifier2
       interface ContributingInterface : ParentInterface
       """,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         assertThat(messages).contains(
           "Classes annotated with @ContributesBinding may not use more than one @Qualifier.",
         )
@@ -361,8 +361,8 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
       @ContributesBinding(Any::class)
       interface ContributingInterface : ParentInterface, CharSequence
       """,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         assertThat(messages).contains(
           "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
             "the bound type. This is only allowed with exactly one direct super type. If there " +
@@ -387,8 +387,8 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
       @ContributesBinding(Any::class)
       interface ContributingInterface : Abc(), ParentInterface
       """,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         assertThat(messages).contains(
           "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
             "the bound type. This is only allowed with exactly one direct super type. If there " +
@@ -409,8 +409,8 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
       @ContributesBinding(Any::class)
       object ContributingInterface
       """,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         assertThat(messages).contains(
           "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
             "the bound type. This is only allowed with exactly one direct super type. If there " +
@@ -450,8 +450,8 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
       @ContributesBinding(Any::class, ParentInterface::class)
       interface ContributingInterface : CharSequence
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface contributes a binding for " +
           "com.squareup.test.ParentInterface, but doesn't extend this type.",
@@ -568,8 +568,8 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
       @ContributesBinding(Unit::class, replaces = [Int::class])
       class ContributingInterface : ParentInterface
       """,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         assertThat(messages).contains(
           "com.squareup.test.ContributingInterface contributes multiple times to the same scope " +
             "using the same bound type: [ParentInterface]. Contributing multiple times to the " +

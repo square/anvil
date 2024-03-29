@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.internal.testing.daggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.daggerSubcomponent
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Component
 import dagger.Subcomponent
@@ -132,8 +133,8 @@ class ModuleMergerTest(
       @${daggerComponentClass.java.canonicalName}
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:7:11")
     }
   }
@@ -222,8 +223,8 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:7:16")
     }
   }
@@ -352,8 +353,8 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:17:16")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule1 with scopes [kotlin.Any] wants to replace " +
@@ -387,8 +388,8 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:17:16")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule1 with scopes [kotlin.Any] wants to replace " +
@@ -490,8 +491,8 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface with scopes [kotlin.Any] wants to replace " +
@@ -525,8 +526,8 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface with scopes [kotlin.Any] wants to replace " +
@@ -556,8 +557,8 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:13:16")
     }
   }
@@ -584,8 +585,8 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:15:16")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule2 with scopes [kotlin.Any] wants to replace " +
@@ -683,8 +684,8 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:20:11")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
@@ -840,8 +841,8 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
@@ -872,8 +873,8 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
@@ -968,8 +969,8 @@ class ModuleMergerTest(
         $annotation(Any::class)
         interface ComponentInterface
         """,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         assertThat(messages).contains("Source0.kt:8:")
       }
     }
@@ -1068,8 +1069,8 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:19:11")
     }
   }
@@ -1084,8 +1085,8 @@ class ModuleMergerTest(
       $annotation
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "Couldn't find scope for ${annotationClass.java.canonicalName}",
       )
@@ -1301,8 +1302,8 @@ class ModuleMergerTest(
       $annotation(Int::class)
       interface SubcomponentInterface2
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule2 with scopes [kotlin.Int] wants to replace " +
           "com.squareup.test.DaggerModule1, but the replaced class isn't contributed to the " +

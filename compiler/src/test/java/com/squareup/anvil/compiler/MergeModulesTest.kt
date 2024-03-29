@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import org.junit.Test
 
 class MergeModulesTest {
@@ -84,8 +85,8 @@ class MergeModulesTest {
       @dagger.Module
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:7:7")
     }
@@ -153,8 +154,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:7:16")
     }
@@ -284,8 +285,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:17:16")
       assertThat(messages).contains(
@@ -320,8 +321,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:17:16")
       assertThat(messages).contains(
@@ -424,8 +425,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
@@ -460,8 +461,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
@@ -492,8 +493,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:13:16")
     }
@@ -521,8 +522,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:15:16")
       assertThat(messages).contains(
@@ -616,8 +617,8 @@ class MergeModulesTest {
       )
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:16:7")
       assertThat(messages).contains(
@@ -709,8 +710,8 @@ class MergeModulesTest {
       )
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
@@ -742,8 +743,8 @@ class MergeModulesTest {
       )
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
@@ -806,8 +807,8 @@ class MergeModulesTest {
         @MergeModules(Any::class)
         class DaggerModule1
         """,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:8:")
       }
@@ -907,8 +908,8 @@ class MergeModulesTest {
       )
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:19:11")
     }
   }
