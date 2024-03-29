@@ -9,13 +9,17 @@ import com.squareup.anvil.compiler.bindingModuleScopes
 import com.squareup.anvil.compiler.bindingOriginKClass
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
+import com.squareup.anvil.compiler.generatedBindingModule
 import com.squareup.anvil.compiler.generatedBindingModules
 import com.squareup.anvil.compiler.generatedFileOrNull
+import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.isError
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
+import javax.inject.Named
 
 @Suppress("RemoveRedundantQualifierName")
 @RunWith(Parameterized::class)
@@ -74,6 +78,129 @@ class ContributesBindingGeneratorTest(
     ) {
       assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
+    }
+  }
+
+  @Test
+  fun `a Named annotation using a private top-level const property is inlined in the generated module`() {
+
+    // https://github.com/square/anvil/issues/938
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.test.other.OTHER_CONSTANT
+      import javax.inject.Inject
+      import javax.inject.Named
+
+      interface ParentInterface
+
+      private const val CONSTANT = "${'$'}OTHER_CONSTANT.foo"
+
+      @Named(CONSTANT)
+      @ContributesBinding(Any::class)
+      class InjectClass @Inject constructor() : ParentInterface
+      """,
+      """
+      package com.squareup.test.other
+      
+      const val OTHER_CONSTANT = "abc"
+      """.trimIndent(),
+      mode = mode,
+    ) {
+
+      assertThat(exitCode).isEqualTo(OK)
+
+      val stringKey = injectClass.generatedBindingModule.methods.single()
+        .getDeclaredAnnotation(Named::class.java)
+
+      assertThat(stringKey.value).isEqualTo("abc.foo")
+    }
+  }
+
+  @Test
+  fun `a Named annotation using a private object's const property is inlined in the generated module`() {
+
+    // https://github.com/square/anvil/issues/938
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.test.other.OTHER_CONSTANT
+      import javax.inject.Inject
+      import javax.inject.Named
+
+      private object Constants {
+        const val CONSTANT = "${'$'}OTHER_CONSTANT.foo"
+      }
+
+      interface ParentInterface
+
+      @Named(Constants.CONSTANT)
+      @ContributesBinding(Any::class)
+      class InjectClass @Inject constructor() : ParentInterface
+      """,
+      """
+      package com.squareup.test.other
+      
+      const val OTHER_CONSTANT = "abc"
+      """.trimIndent(),
+      mode = mode,
+    ) {
+
+      assertThat(exitCode).isEqualTo(OK)
+
+      val Named = injectClass.generatedBindingModule.methods.single()
+        .getDeclaredAnnotation(Named::class.java)
+
+      assertThat(Named.value).isEqualTo("abc.foo")
+    }
+  }
+
+  @Test
+  fun `a Named annotation using a private companion object's const property is inlined in the generated module`() {
+
+    // https://github.com/square/anvil/issues/938
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding 
+      import com.squareup.test.other.OTHER_CONSTANT
+      import javax.inject.Inject
+      import javax.inject.Named
+
+      private interface Settings {
+        companion object {
+          const val CONSTANT = "${'$'}OTHER_CONSTANT.foo"
+        }
+      }
+
+      interface ParentInterface
+
+      @Named(Settings.CONSTANT)
+      @ContributesBinding(Any::class)
+      class InjectClass @Inject constructor() : ParentInterface
+      """,
+      """
+      package com.squareup.test.other
+      
+      const val OTHER_CONSTANT = "abc"
+      """.trimIndent(),
+      mode = mode,
+    ) {
+
+      assertThat(exitCode).isEqualTo(OK)
+
+      val Named = injectClass.generatedBindingModule.methods.single()
+        .getDeclaredAnnotation(Named::class.java)
+
+      assertThat(Named.value).isEqualTo("abc.foo")
     }
   }
 

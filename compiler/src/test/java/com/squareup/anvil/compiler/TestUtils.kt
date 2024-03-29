@@ -42,7 +42,8 @@ internal fun compile(
   trackSourceFiles: Boolean = true,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
-  mode: AnvilCompilationMode = Embedded(codeGenerators),
+  mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
+  workingDir: File? = null,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult = compileAnvil(
   sources = sources,
@@ -51,6 +52,7 @@ internal fun compile(
   enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
   trackSourceFiles = trackSourceFiles,
   mode = mode,
+  workingDir = workingDir,
   block = block,
 )
 
@@ -193,7 +195,9 @@ internal val Class<*>.multibindingOriginClass: KClass<*>?
   get() = resolveOriginClass(ContributesMultibinding::class)
 
 internal fun Class<*>.resolveOriginClass(bindingAnnotation: KClass<out Annotation>): KClass<*>? {
-  val generatedBindingModule = generatedBindingModules(bindingAnnotation).firstOrNull() ?: return null
+  val generatedBindingModule = generatedBindingModules(
+    bindingAnnotation,
+  ).firstOrNull() ?: return null
   val bindingFunction = generatedBindingModule.declaredMethods[0]
   val parameterImplType = bindingFunction.parameterTypes.firstOrNull()
   val internalBindingMarker: InternalBindingMarker =
