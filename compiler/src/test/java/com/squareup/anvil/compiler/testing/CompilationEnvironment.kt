@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.tschuchort.compiletesting.JvmCompilationResult
+import com.tschuchort.compiletesting.KotlinCompilation
 import org.intellij.lang.annotations.Language
 import java.io.File
 
@@ -35,6 +36,7 @@ interface CompilationEnvironment : HasWorkingDir {
     allWarningsAsErrors: Boolean = true,
     mode: AnvilCompilationMode = modeDefault(codeGenerators),
     workingDir: File? = this@CompilationEnvironment.workingDir,
+    expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
@@ -46,6 +48,7 @@ interface CompilationEnvironment : HasWorkingDir {
     trackSourceFiles = trackSourceFiles,
     mode = mode,
     workingDir = workingDir,
+    expectExitCode = expectExitCode,
     block = block,
   )
 }

@@ -12,7 +12,6 @@ import com.squareup.anvil.compiler.internal.testing.SimpleSourceFileTrackingBeha
 import com.squareup.anvil.compiler.internal.testing.SimpleSourceFileTrackingBehavior.TRACKING_WITH_NO_SOURCES
 import com.squareup.anvil.compiler.internal.testing.SimpleSourceFileTrackingBehavior.TRACK_SOURCE_FILES
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.testing.AnvilEmbeddedCompilationTestEnvironment
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -49,8 +48,8 @@ class CodeGenerationExtensionTest : HasTestEnvironmentFactory<AnvilEmbeddedCompi
       interface ComponentInterface2
       """,
       codeGenerators = listOf(codeGenerator),
+      expectExitCode = COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
 
       val abcPath = outputDirectory
         .resolveSibling("build/anvil/generated/com/squareup/test/Abc.kt")
@@ -142,11 +141,10 @@ class CodeGenerationExtensionTest : HasTestEnvironmentFactory<AnvilEmbeddedCompi
       componentInterface,
       codeGenerators = listOf(codeGenerator),
       trackSourceFiles = true,
+      expectExitCode = COMPILATION_ERROR,
     ) {
       assertThat(codeGenerator.isApplicableCalls).isEqualTo(1)
       assertThat(codeGenerator.getGenerateCallsForInputFileContent(componentInterface)).isEqualTo(1)
-
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
 
       val abcPath = outputDirectory
         .resolveSibling("build/anvil/com/squareup/test/Abc.kt")

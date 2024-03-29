@@ -8,12 +8,12 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.mergedModules
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -133,8 +133,8 @@ class BindingModuleRankTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
 
       assertThat(messages).contains(
         "There are multiple contributed bindings with the same bound type and rank. The bound " +
@@ -270,8 +270,8 @@ class BindingModuleRankTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
 
       assertThat(messages).contains(
         "There are multiple contributed bindings with the same bound type and rank. The bound " +
@@ -306,8 +306,8 @@ class BindingModuleRankTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
 
       assertThat(messages).contains(
         "There are multiple contributed bindings with the same bound type and rank. The bound " +

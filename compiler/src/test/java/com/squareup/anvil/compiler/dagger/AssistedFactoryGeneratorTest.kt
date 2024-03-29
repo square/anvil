@@ -14,9 +14,9 @@ import com.squareup.anvil.compiler.internal.testing.implClass
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.internal.testing.use
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -1287,8 +1287,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         fun create(string: String): AssistedService
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "Invalid return type: com.squareup.test.AssistedService. An assisted factory's " +
           "abstract method must return a type with an @AssistedInject-annotated constructor.",
@@ -1313,8 +1313,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         fun create(string: String)
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Invalid return type:")
       assertThat(messages).contains(
         "An assisted factory's abstract method must return a type with an " +
@@ -1342,8 +1342,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         fun create(charSequence: CharSequence, other: String): AssistedService
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The parameters in the factory method must match the @Assisted parameters " +
           "in com.squareup.test.AssistedService.",
@@ -1370,8 +1370,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         fun create(charSequence: CharSequence, other: String): AssistedService
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The parameters in the factory method must match the @Assisted parameters " +
           "in com.squareup.test.AssistedService.",
@@ -1719,8 +1719,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         ): AssistedService
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@AssistedFactory method has duplicate @Assisted types: " +
           "@Assisted(\"one\") com.squareup.test.Type",
@@ -1748,8 +1748,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         fun create2(string: String): AssistedService
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(
         compilationErrorLine()
           .removeParametersAndSort()
@@ -1785,8 +1785,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         fun create(string: String): AssistedService
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(
         compilationErrorLine()
           .removeParametersAndSort()
@@ -1819,8 +1819,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         fun create(string: String): AssistedService
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(
         compilationErrorLine()
           .removeParametersAndSort()
@@ -1834,7 +1834,13 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   }
 
   @Test fun `default functions do not count against SAM requirement`() {
-    prepareCompilation()
+
+    AnvilCompilation()
+      .configureAnvil(
+        enableDaggerAnnotationProcessor = useDagger,
+        generateDaggerFactories = !useDagger,
+        mode = mode,
+      )
       .apply {
         // Necessary so Dagger-compiler recognizes default functions too
         kotlinCompilation.kotlincArguments += "-Xjvm-default=all"
@@ -1862,6 +1868,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
           }
         }
         """,
+        expectExitCode = ExitCode.OK,
       ) {
         assertThat(exitCode).isEqualTo(OK)
       }
@@ -1884,8 +1891,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       @AssistedFactory
       interface AssistedServiceFactory
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The @AssistedFactory-annotated type is missing an abstract, non-default method " +
           "whose return type matches the assisted injection type.",
@@ -1912,8 +1919,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         fun create(string: String): AssistedService = throw NotImplementedError()
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "The @AssistedFactory-annotated type is missing an abstract, non-default method " +
           "whose return type matches the assisted injection type.",
@@ -2177,30 +2184,21 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     }
   }
 
-  private fun prepareCompilation(
-    previousCompilationResult: JvmCompilationResult? = null,
-  ): AnvilCompilation {
-    return AnvilCompilation()
-      .apply {
-        if (previousCompilationResult != null) {
-          addPreviousCompilationResult(previousCompilationResult)
-        }
-      }
-      .configureAnvil(
-        enableDaggerAnnotationProcessor = useDagger,
-        generateDaggerFactories = !useDagger,
-        mode = mode,
-      )
-  }
-
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
+    expectExitCode: ExitCode = ExitCode.OK,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult {
-    return prepareCompilation(previousCompilationResult = previousCompilationResult)
-      .compile(*sources)
-      .apply(block)
+    return com.squareup.anvil.compiler.compile(
+      *sources,
+      previousCompilationResult = previousCompilationResult,
+      expectExitCode = expectExitCode,
+      enableDaggerAnnotationProcessor = useDagger,
+      generateDaggerFactories = !useDagger,
+      mode = mode,
+      block = block,
+    )
   }
 
   /**

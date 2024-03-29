@@ -14,12 +14,10 @@ import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.mergedModules
 import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import dagger.Lazy
 import dagger.internal.Factory
 import org.intellij.lang.annotations.Language
@@ -2462,8 +2460,8 @@ public final class DaggerComponentInterface implements ComponentInterface {
           @Provides fun provideString(s: String): Int = 1
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "Cannot have more than one binding method with the same name in a single module",
       )
@@ -2552,6 +2550,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
   }
 
   @Test fun `a return type for a provider method is required`() {
+    assumeFalse(useDagger)
     compile(
       """
       package com.squareup.test
@@ -2561,13 +2560,11 @@ public final class DaggerComponentInterface implements ComponentInterface {
         @dagger.Provides fun provideString() = "abc"
       }
       """,
+      // KSP always resolves the inferred return type
+      expectExitCode = if (mode is Ksp) ExitCode.OK else ExitCode.COMPILATION_ERROR,
     ) {
-      assumeFalse(useDagger)
-      if (mode is Ksp) {
-        // KSP always resolves the inferred return type
-        assertThat(exitCode).isEqualTo(ExitCode.OK)
-      } else {
-        assertThat(exitCode).isError()
+      if (mode is AnvilCompilationMode.Embedded) {
+
         assertThat(messages).contains("Source0.kt:5:3")
         assertThat(messages).contains(
           "Dagger provider methods must specify the return type explicitly when using Anvil. " +
@@ -3144,8 +3141,8 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
         @Provides abstract fun provideString(): String
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("@Provides methods cannot be abstract")
     }
   }
@@ -3163,8 +3160,8 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
         @Provides fun provideString(): String = ""
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("@Provides methods cannot be abstract")
     }
   }
@@ -3256,6 +3253,9 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
       assertThat(exitCode).isEqualTo(ExitCode.OK)
     }
 
+    // TODO component generation isn't possible with KSP yet
+    assumeFalse(mode is Ksp)
+
     compile(
       """
       package com.squareup.test
@@ -3272,8 +3272,6 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
       enableDagger = true,
       previousCompilationResult = otherModuleResult,
     ) {
-      // TODO component generation isn't possible with KSP yet
-      assumeFalse(mode is Ksp)
       // We are not able to directly assert that @JvmSuppressWildcards was added because it is
       // lost as part of converting to bytecode. However, we know that this would fail with an
       // 'incompatible types' error if the annotation had not been included.
@@ -3341,6 +3339,9 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
       assertThat(exitCode).isEqualTo(ExitCode.OK)
     }
 
+    // TODO component generation isn't possible with KSP yet
+    assumeFalse(mode is Ksp)
+
     compile(
       """
       package com.squareup.test
@@ -3357,8 +3358,6 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
       enableDagger = true,
       previousCompilationResult = otherModuleResult,
     ) {
-      // TODO component generation isn't possible with KSP yet
-      assumeFalse(mode is Ksp)
       // We are not able to directly assert that @JvmSuppressWildcards was added because it is
       // lost as part of converting to bytecode. However, we know that this would fail with an
       // 'incompatible types' error if the annotation had not been included.
@@ -3532,8 +3531,8 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
         fun ProvidedClass.provideValue(): String = value
       }
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       // Amusingly, these error messages are ever-so-slightly different across KSP and Kapt.
       if (mode is Ksp) {
         assertThat(messages).contains("@Provides methods cannot be extension functions")
@@ -3547,6 +3546,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     @Language("kotlin") vararg sources: String,
     enableDagger: Boolean = useDagger,
     previousCompilationResult: JvmCompilationResult? = null,
+    expectExitCode: ExitCode = ExitCode.OK,
     moduleName: String? = null,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
@@ -3556,6 +3556,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     block = block,
     mode = mode,
     previousCompilationResult = previousCompilationResult,
+    expectExitCode = expectExitCode,
     moduleName = moduleName,
   )
 }

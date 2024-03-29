@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.internal.testing
 
 import com.google.auto.value.processor.AutoAnnotationProcessor
+import com.google.common.truth.Truth.assertWithMessage
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
@@ -219,6 +220,7 @@ public class AnvilCompilation internal constructor(
    */
   public fun compile(
     @Language("kotlin") vararg sources: String,
+    expectExitCode: KotlinCompilation.ExitCode? = null,
     block: JvmCompilationResult.() -> Unit = {},
   ): JvmCompilationResult {
     checkNotCompiled()
@@ -229,7 +231,32 @@ public class AnvilCompilation internal constructor(
     addSources(*sources)
     isCompiled = true
 
-    return kotlinCompilation.compile().apply(block)
+    return kotlinCompilation.compile().apply {
+
+      if (exitCode != expectExitCode) {
+        when {
+          expectExitCode == null -> {
+            // No expected code, so no assertion to be made
+          }
+          expectExitCode == KotlinCompilation.ExitCode.OK -> {
+            assertWithMessage("Compilation failed unexpectedly\n\n$messages")
+              .that(exitCode)
+              .isEqualTo(KotlinCompilation.ExitCode.OK)
+          }
+          exitCode == KotlinCompilation.ExitCode.OK -> {
+            assertWithMessage("Compilation succeeded unexpectedly\n\n$messages")
+              .that(exitCode)
+              .isEqualTo(expectExitCode)
+          }
+          else -> {
+            assertWithMessage("Error code mismatch\n\n$messages")
+              .that(exitCode)
+              .isEqualTo(expectExitCode)
+          }
+        }
+      }
+      block()
+    }
   }
 
   public companion object {
@@ -269,6 +296,7 @@ public fun compileAnvil(
   mode: AnvilCompilationMode = Embedded(emptyList()),
   moduleName: String? = null,
   jvmTarget: JvmTarget? = null,
+  expectExitCode: KotlinCompilation.ExitCode? = null,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult {
   return AnvilCompilation()
@@ -301,6 +329,9 @@ public fun compileAnvil(
       trackSourceFiles = trackSourceFiles,
       mode = mode,
     )
-    .compile(*sources)
+    .compile(
+      *sources,
+      expectExitCode = expectExitCode,
+    )
     .also(block)
 }

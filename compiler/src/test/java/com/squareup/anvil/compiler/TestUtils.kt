@@ -24,6 +24,7 @@ import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.kotlinpoet.asClassName
 import com.tschuchort.compiletesting.CompilationResult
 import com.tschuchort.compiletesting.JvmCompilationResult
+import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
@@ -39,21 +40,29 @@ import kotlin.test.fail
 internal fun compile(
   @Language("kotlin") vararg sources: String,
   previousCompilationResult: JvmCompilationResult? = null,
+  generateDaggerFactories: Boolean = false,
+  generateDaggerFactoriesOnly: Boolean = false,
+  disableComponentMerging: Boolean = false,
   enableDaggerAnnotationProcessor: Boolean = false,
   trackSourceFiles: Boolean = true,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = true,
   mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
   workingDir: File? = null,
+  expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult = compileAnvil(
   sources = sources,
+  generateDaggerFactories = generateDaggerFactories,
+  generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
+  disableComponentMerging = disableComponentMerging,
   allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
   enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
   trackSourceFiles = trackSourceFiles,
   mode = mode,
   workingDir = workingDir,
+  expectExitCode = expectExitCode,
   block = block,
 )
 
@@ -127,12 +136,14 @@ internal val Class<*>.hintContributesScope: KClass<*>?
 internal val Class<*>.hintContributesScopes: List<KClass<*>>
   get() = getHintScopes(HINT_CONTRIBUTES_PACKAGE_PREFIX)
 
-internal val Class<*>.generatedBindingModule: Class<*> get() = generatedBindingModules(
-  ContributesBinding::class,
-).single()
-internal val Class<*>.generatedMultiBindingModule: Class<*> get() = generatedBindingModules(
-  ContributesMultibinding::class,
-).single()
+internal val Class<*>.generatedBindingModule: Class<*>
+  get() = generatedBindingModules(
+    ContributesBinding::class,
+  ).single()
+internal val Class<*>.generatedMultiBindingModule: Class<*>
+  get() = generatedBindingModules(
+    ContributesMultibinding::class,
+  ).single()
 
 internal fun Class<*>.generatedBindingModules(): List<Class<*>> {
   return generatedBindingModules(ContributesBinding::class)
@@ -157,7 +168,9 @@ private val Annotation.boundType: KClass<*>
     }
   }
 
-private fun Class<*>.generatedBindingModules(annotationClass: KClass<out Annotation>): List<Class<*>> {
+private fun Class<*>.generatedBindingModules(
+  annotationClass: KClass<out Annotation>,
+): List<Class<*>> {
   return getAnnotationsByType(annotationClass.java)
     .map { bindingAnnotation ->
       val scope = bindingAnnotation.scope.asClassName().generateClassNameString().capitalize()
@@ -297,9 +310,11 @@ internal fun assumeMergeComponent(annotationClass: KClass<*>) {
 internal fun ComparableSubject<ExitCode>.isError() {
   isIn(setOf(COMPILATION_ERROR, INTERNAL_ERROR))
 }
+
 internal fun ComparableSubject<ExitCode>.isOK() {
   isEqualTo(ExitCode.OK)
 }
+
 internal fun JvmCompilationResult.assertCompilationSucceeded() {
   assertWithMessage(messages).that(exitCode).isOK()
 }

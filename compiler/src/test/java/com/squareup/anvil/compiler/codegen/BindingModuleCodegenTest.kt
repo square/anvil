@@ -13,7 +13,6 @@ import com.squareup.anvil.compiler.generatedBindingModule
 import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.isAbstract
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
 import com.squareup.anvil.compiler.mergedModules
 import com.squareup.anvil.compiler.parentInterface
@@ -21,6 +20,7 @@ import com.squareup.anvil.compiler.parentInterface1
 import com.squareup.anvil.compiler.parentInterface2
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Binds
 import dagger.Provides
@@ -276,8 +276,8 @@ class BindingModuleCodegenTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
 
       assertThat(messages).contains("Source0.kt:6:11")
       assertThat(messages).contains(
@@ -308,8 +308,8 @@ class BindingModuleCodegenTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
 
       assertThat(messages).contains("Source0.kt:6:11")
       assertThat(messages).contains(
