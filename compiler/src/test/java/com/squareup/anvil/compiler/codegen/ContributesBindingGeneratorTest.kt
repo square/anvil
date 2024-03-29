@@ -540,6 +540,7 @@ class ContributesBindingGeneratorTest(
       class ContributingInterface : ParentInterface1, ParentInterface2
       """,
       mode = mode,
+      allWarningsAsErrors = false,
     ) {
       val bindingModules = contributingInterface.generatedBindingModules()
         .associate { clazz ->
