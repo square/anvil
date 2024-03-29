@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.compilationErrorLine
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
@@ -679,7 +678,6 @@ public final class AssistedService_Factory {
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
-    allWarningsAsErrors = WARNINGS_AS_ERRORS,
     mode = mode,
     block = block,
   )

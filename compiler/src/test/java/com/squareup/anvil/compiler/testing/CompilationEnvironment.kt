@@ -6,7 +6,6 @@ import com.rickbusarow.kase.KaseTestFactory
 import com.rickbusarow.kase.ParamTestEnvironmentFactory
 import com.rickbusarow.kase.TestEnvironment
 import com.rickbusarow.kase.files.HasWorkingDir
-import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
@@ -33,7 +32,7 @@ interface CompilationEnvironment : HasWorkingDir {
     generateDaggerFactories: Boolean = false,
     disableComponentMerging: Boolean = false,
     codeGenerators: List<CodeGenerator> = emptyList(),
-    allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
+    allWarningsAsErrors: Boolean = true,
     mode: AnvilCompilationMode = modeDefault(codeGenerators),
     workingDir: File? = this@CompilationEnvironment.workingDir,
     block: JvmCompilationResult.() -> Unit = { },

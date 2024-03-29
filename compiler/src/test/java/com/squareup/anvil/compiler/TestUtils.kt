@@ -41,7 +41,7 @@ internal fun compile(
   enableDaggerAnnotationProcessor: Boolean = false,
   trackSourceFiles: Boolean = true,
   codeGenerators: List<CodeGenerator> = emptyList(),
-  allWarningsAsErrors: Boolean = WARNINGS_AS_ERRORS,
+  allWarningsAsErrors: Boolean = true,
   mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
   workingDir: File? = null,
   block: JvmCompilationResult.() -> Unit = { },

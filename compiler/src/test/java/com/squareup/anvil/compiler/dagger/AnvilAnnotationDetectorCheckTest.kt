@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.JvmCompilationResult
@@ -146,7 +145,6 @@ class AnvilAnnotationDetectorCheckTest {
     sources = sources,
     generateDaggerFactories = true,
     generateDaggerFactoriesOnly = true,
-    allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block,
   )
 }
