@@ -68,11 +68,12 @@ public fun FqName.descendant(segments: String): FqName =
 
 /** Returns the computed [FqName] representation of this [KClass]. */
 @ExperimentalAnvilApi
-public val KClass<*>.fqName: FqName get() = FqName(
-  requireNotNull(qualifiedName) {
-    "An FqName cannot be created for a local class or class of an anonymous object."
-  },
-)
+public val KClass<*>.fqName: FqName
+  get() = FqName(
+    requireNotNull(qualifiedName) {
+      "An FqName cannot be created for a local class or class of an anonymous object."
+    },
+  )
 
 /** @see String.safePackageString */
 @ExperimentalAnvilApi
