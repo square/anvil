@@ -3,7 +3,9 @@ package com.squareup.anvil.conventions
 import com.rickbusarow.kgx.buildDir
 import com.rickbusarow.kgx.extras
 import com.rickbusarow.kgx.fromInt
+import com.rickbusarow.kgx.getValue
 import com.rickbusarow.kgx.javaExtension
+import com.rickbusarow.kgx.provideDelegate
 import com.squareup.anvil.conventions.utils.isInAnvilBuild
 import com.squareup.anvil.conventions.utils.isInAnvilIncludedBuild
 import com.squareup.anvil.conventions.utils.isInAnvilRootBuild
@@ -201,6 +203,29 @@ abstract class BasePlugin : Plugin<Project> {
 
       task.maxParallelForks = Runtime.getRuntime().availableProcessors()
 
+      task.useJUnitPlatform {
+        it.includeEngines("junit-jupiter", "junit-vintage")
+      }
+
+      val testImplementation by target.configurations
+
+      testImplementation.dependencies.addLater(target.libs.junit.jupiter.engine)
+      testImplementation.dependencies.addLater(target.libs.junit.vintage.engine)
+
+      task.systemProperties.putAll(
+        mapOf(
+          // remove parentheses from test display names
+          "junit.jupiter.displayname.generator.default" to
+            "org.junit.jupiter.api.DisplayNameGenerator\$Simple",
+
+          // Allow unit tests to run in parallel
+          // https://junit.org/junit5/docs/snapshot/user-guide/#writing-tests-parallel-execution-config-properties
+          "junit.jupiter.execution.parallel.enabled" to true,
+          "junit.jupiter.execution.parallel.mode.default" to "concurrent",
+          "junit.jupiter.execution.parallel.mode.classes.default" to "concurrent",
+        ),
+      )
+
       task.jvmArgs(
         // Fixes illegal reflective operation warnings during tests. It's a Kotlin issue.
         // https://github.com/pinterest/ktlint/issues/1618
@@ -218,7 +243,6 @@ abstract class BasePlugin : Plugin<Project> {
         "--add-opens=jdk.compiler/com.sun.tools.javac.processing=ALL-UNNAMED",
         "--add-opens=jdk.compiler/com.sun.tools.javac.tree=ALL-UNNAMED",
         "--add-opens=jdk.compiler/com.sun.tools.javac.util=ALL-UNNAMED",
-        "--illegal-access=permit",
       )
 
       task.testLogging { logging ->

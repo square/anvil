@@ -103,7 +103,10 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
             .filter { it.isAnnotationPresent<Provides>() || it.getter?.isAnnotationPresent<Provides>() == true }
             .filter { property ->
               // Must be '@get:Provides'.
-              (property.getKSAnnotationsByType(Provides::class).singleOrNull()?.useSiteTarget == GET) ||
+              (
+                property.getKSAnnotationsByType(Provides::class)
+                  .singleOrNull()?.useSiteTarget == GET
+                ) ||
                 property.getter?.isAnnotationPresent<Provides>() == true
             }
             .map { property ->
@@ -152,7 +155,9 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       fail()
     }
 
-    private fun CallableReference.Companion.from(function: KSFunctionDeclaration): CallableReference {
+    private fun CallableReference.Companion.from(
+      function: KSFunctionDeclaration,
+    ): CallableReference {
       if (function.extensionReceiver != null) {
         throw KspAnvilException(
           message = "@Provides methods cannot be extension functions",
@@ -178,7 +183,9 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       )
     }
 
-    private fun CallableReference.Companion.from(property: KSPropertyDeclaration): CallableReference {
+    private fun CallableReference.Companion.from(
+      property: KSPropertyDeclaration,
+    ): CallableReference {
       val type = property.type.resolve()
       val typeName = type.toTypeName().withJvmSuppressWildcardsIfNeeded(property, type)
       return CallableReference(
@@ -294,7 +301,9 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       fail()
     }
 
-    private fun CallableReference.Companion.from(function: MemberFunctionReference.Psi): CallableReference {
+    private fun CallableReference.Companion.from(
+      function: MemberFunctionReference.Psi,
+    ): CallableReference {
       if (function.function.isExtensionDeclaration()) {
         throw AnvilCompilationExceptionFunctionReference(
           message = "@Provides methods can not be an extension function",
@@ -319,7 +328,9 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       )
     }
 
-    private fun CallableReference.Companion.from(property: MemberPropertyReference.Psi): CallableReference {
+    private fun CallableReference.Companion.from(
+      property: MemberPropertyReference.Psi,
+    ): CallableReference {
       val type = property.type()
       val typeName = type.asTypeName().withJvmSuppressWildcardsIfNeeded(property, type)
       return CallableReference(

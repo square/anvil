@@ -33,6 +33,10 @@ public interface AnvilModuleDescriptor : ModuleDescriptor {
 
   public fun getTopLevelPropertyReferences(ktFile: KtFile): List<TopLevelPropertyReference.Psi>
 
+  public fun getTopLevelPropertyReferenceOrNull(fqName: FqName): PropertyReference?
+
+  public fun resolvePropertyReferenceOrNull(fqName: FqName): PropertyReference?
+
   public fun getClassReference(clazz: KtClassOrObject): Psi
 
   public fun getClassReference(descriptor: ClassDescriptor): Descriptor
@@ -52,7 +56,10 @@ internal inline fun ModuleDescriptor.asAnvilModuleDescriptor(): AnvilModuleDescr
 @ExperimentalAnvilApi
 public fun FqName.canResolveFqName(
   module: ModuleDescriptor,
-): Boolean = module.asAnvilModuleDescriptor().resolveClassIdOrNull(classIdBestGuess()) != null
+): Boolean = module.asAnvilModuleDescriptor().run {
+  resolveClassIdOrNull(this@canResolveFqName.classIdBestGuess()) != null ||
+    resolvePropertyReferenceOrNull(this@canResolveFqName) != null
+}
 
 @ExperimentalAnvilApi
 public fun Collection<KtFile>.classAndInnerClassReferences(

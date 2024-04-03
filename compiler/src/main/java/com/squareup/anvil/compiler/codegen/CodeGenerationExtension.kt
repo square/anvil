@@ -53,6 +53,7 @@ internal class CodeGenerationExtension(
   }
 
   private var didRecompile = false
+  private var didSyncGeneratedDir = false
 
   private val codeGenerators = codeGenerators
     .onEach {
@@ -76,46 +77,7 @@ internal class CodeGenerationExtension(
   ): AnalysisResult? {
     // If we already went through the `analysisCompleted` stage, then there's nothing more to do.
     // Returning null ends the cycle.
-    if (didRecompile) return null
-
-    // Either sync the local file state with our internal cache,
-    // or delete any existing generated files (if caching isn't enabled).
-    val createdChanges = if (shouldRestoreFromCache()) {
-      // For incremental compilation: restore any missing generated files from the cache,
-      // and delete any generated files that are out-of-date due to source changes.
-      cacheOperations.restoreFromCache(
-        generatedDir = generatedDir,
-        inputKtFiles = files.mapToSet {
-          AbsoluteFile(File(it.virtualFilePath)).relativeTo(projectDir)
-        },
-      )
-        .let { it.restoredFiles.isNotEmpty() || it.deletedFiles.isNotEmpty() }
-    } else {
-      // OLD incremental behavior: just delete everything if we're not tracking source files
-      generatedDir
-        .walkBottomUp()
-        .filter { it.isFile }
-        .also { it.forEach(File::requireDelete) }
-        .any()
-    }
-
-    return if (createdChanges) {
-      // Tell the compiler to analyze the generated files *before* calling `analysisCompleted()`.
-      // This ensures that the compiler will update/delete any references to stale code in the
-      // ModuleDescriptor, as well as updating/deleting any stale .class files.
-      // Without redoing the analysis, the PSI and Descriptor APIs are out of sync.
-      // See discussion here: https://github.com/square/anvil/pull/877#discussion_r1517184297
-      RetryWithAdditionalRoots(
-        bindingContext = bindingTrace.bindingContext,
-        moduleDescriptor = module,
-        additionalJavaRoots = emptyList(),
-        additionalKotlinRoots = listOf(generatedDir),
-        addToEnvironment = true,
-      )
-    } else {
-      // Tell the compiler that we have something to do in `analysisCompleted()`.
-      AnalysisResult.EMPTY
-    }
+    return if (!didRecompile) AnalysisResult.EMPTY else null
   }
 
   override fun analysisCompleted(
@@ -124,6 +86,26 @@ internal class CodeGenerationExtension(
     bindingTrace: BindingTrace,
     files: Collection<KtFile>,
   ): AnalysisResult? {
+
+    // Either sync the local file state with our internal cache,
+    // or delete any existing generated files (if caching isn't enabled).
+    val syncCreatedChanges = syncGeneratedDir(files)
+    didSyncGeneratedDir = true
+
+    if (syncCreatedChanges) {
+      // Tell the compiler to analyze the generated files *before* calling `analysisCompleted()`.
+      // This ensures that the compiler will update/delete any references to stale code in the
+      // ModuleDescriptor, as well as updating/deleting any stale .class files.
+      // Without redoing the analysis, the PSI and Descriptor APIs are out of sync.
+      // See discussion here: https://github.com/square/anvil/pull/877#discussion_r1517184297
+      return RetryWithAdditionalRoots(
+        bindingContext = bindingTrace.bindingContext,
+        moduleDescriptor = module,
+        additionalJavaRoots = emptyList(),
+        additionalKotlinRoots = listOf(generatedDir),
+        addToEnvironment = true,
+      )
+    }
 
     if (didRecompile) return null
     didRecompile = true
@@ -136,10 +118,8 @@ internal class CodeGenerationExtension(
     anvilModule.addFiles(files)
 
     val generatedFiles = generateCode(
-      codeGenerators = codeGenerators,
       psiManager = psiManager,
       anvilModule = anvilModule,
-      files = files,
     )
 
     if (trackSourceFiles) {
@@ -168,8 +148,35 @@ internal class CodeGenerationExtension(
     )
   }
 
+  private fun syncGeneratedDir(files: Collection<KtFile>): Boolean {
+    return when {
+      // If we already synced the generated directory (in an earlier round),
+      // don't sync again or it'll delete files that were generated in this round.
+      didSyncGeneratedDir -> false
+      // For incremental compilation: restore any missing generated files from the cache,
+      // and delete any generated files that are out-of-date due to source changes.
+      shouldRestoreFromCache() -> {
+        cacheOperations.restoreFromCache(
+          generatedDir = generatedDir,
+          inputKtFiles = files.mapToSet {
+            AbsoluteFile(File(it.virtualFilePath)).relativeTo(projectDir)
+          },
+        )
+          .run { restoredFiles.isNotEmpty() || deletedFiles.isNotEmpty() }
+      }
+      // OLD incremental behavior: just delete everything if we're not tracking source files
+      else -> {
+        generatedDir.walkBottomUp()
+          .filter { it.isFile }
+          .also { it.forEach(File::requireDelete) }
+          .any()
+      }
+    }
+  }
+
   private fun shouldRestoreFromCache(): Boolean {
     return when {
+      didSyncGeneratedDir -> false
       !trackSourceFiles -> false
       // If caching is enabled but the cache doesn't exist,
       // we still need to treat any files in the generated directory as untracked.
@@ -180,10 +187,8 @@ internal class CodeGenerationExtension(
   }
 
   private fun generateCode(
-    codeGenerators: List<CodeGenerator>,
     psiManager: PsiManager,
     anvilModule: RealAnvilModuleDescriptor,
-    files: Collection<KtFile>,
   ): MutableCollection<FileWithContent> {
 
     val anvilContext = commandLineOptions.toAnvilContext(anvilModule)
@@ -218,12 +223,12 @@ internal class CodeGenerationExtension(
       }
     }
 
-    fun Collection<CodeGenerator>.generateCode(files: Collection<KtFile>): List<KtFile> =
+    fun Collection<CodeGenerator>.generateAndCache(files: Collection<KtFile>): List<KtFile> =
       flatMap { codeGenerator ->
         codeGenerator.generateCode(generatedDir, anvilModule, files)
-          .onEach {
+          .onEach { file ->
             onGenerated(
-              generatedFile = it,
+              generatedFile = file,
               codeGenerator = codeGenerator,
               allowOverwrites = false,
             )
@@ -231,34 +236,43 @@ internal class CodeGenerationExtension(
           .toKtFiles(psiManager, anvilModule)
       }
 
-    fun Collection<CodeGenerator>.flush(): List<KtFile> =
-      filterIsInstance<FlushingCodeGenerator>()
-        .flatMap { codeGenerator ->
-          codeGenerator.flush(generatedDir, anvilModule)
-            .onEach {
-              onGenerated(
-                generatedFile = it,
-                codeGenerator = codeGenerator,
-                // flushing code generators write the files but no content during normal rounds.
-                allowOverwrites = true,
-              )
-            }
-            .toKtFiles(psiManager, anvilModule)
-        }
+    fun Collection<FlushingCodeGenerator>.flush(): List<KtFile> =
+      flatMap { codeGenerator ->
+        codeGenerator.flush(generatedDir, anvilModule)
+          .onEach {
+            onGenerated(
+              generatedFile = it,
+              codeGenerator = codeGenerator,
+              // flushing code generators write the files but no content during normal rounds.
+              allowOverwrites = true,
+            )
+          }
+          .toKtFiles(psiManager, anvilModule)
+      }
 
-    var newFiles = nonPrivateCodeGenerators.generateCode(files)
-
-    while (newFiles.isNotEmpty()) {
-      // Parse the KtFile for each generated file. Then feed the code generators with the new
-      // parsed files until no new files are generated.
-      newFiles = nonPrivateCodeGenerators.generateCode(newFiles)
+    fun List<CodeGenerator>.loopGeneration() {
+      var newFiles = generateAndCache(anvilModule.allFiles.toList())
+      while (newFiles.isNotEmpty()) {
+        // Parse the KtFile for each generated file. Then feed the code generators with the new
+        // parsed files until no new files are generated.
+        newFiles = generateAndCache(newFiles)
+      }
     }
 
-    nonPrivateCodeGenerators.flush()
+    // All non-private code generators are batched together.
+    // They will execute against the initial set of files,
+    // then loop until no generator produces any new files.
+    nonPrivateCodeGenerators.loopGeneration()
 
-    // PrivateCodeGenerators don't impact other code generators. Therefore, they can be called a
-    // single time at the end.
-    privateCodeGenerators.generateCode(anvilModule.allFiles.toList())
+    // Flushing generators are next.
+    // They have already seen all generated code.
+    // Their output may be consumed by a private generator.
+    codeGenerators.filterIsInstance<FlushingCodeGenerator>().flush()
+
+    // Private generators do not affect each other, so they're invoked last.
+    // They may require multiple iterations of their own logic, though,
+    // so we loop them individually until there are no more changes.
+    privateCodeGenerators.forEach { listOf(it).loopGeneration() }
 
     return generatedFiles.values
   }

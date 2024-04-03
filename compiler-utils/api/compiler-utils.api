@@ -10,6 +10,8 @@ public final class com/squareup/anvil/compiler/internal/FqNameKt {
 	public static final fun classIdBestGuess (Lorg/jetbrains/kotlin/name/FqName;)Lorg/jetbrains/kotlin/name/ClassId;
 	public static final fun descendant (Lorg/jetbrains/kotlin/name/FqName;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/FqName;
 	public static final fun getFqName (Lkotlin/reflect/KClass;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun parents (Lorg/jetbrains/kotlin/name/FqName;)Lkotlin/sequences/Sequence;
+	public static final fun parentsWithSelf (Lorg/jetbrains/kotlin/name/FqName;)Lkotlin/sequences/Sequence;
 	public static final fun safePackageString (Ljava/lang/String;ZZZ)Ljava/lang/String;
 	public static final fun safePackageString (Lorg/jetbrains/kotlin/name/FqName;ZZ)Ljava/lang/String;
 	public static synthetic fun safePackageString$default (Ljava/lang/String;ZZZILjava/lang/Object;)Ljava/lang/String;
@@ -147,9 +149,11 @@ public abstract interface class com/squareup/anvil/compiler/internal/reference/A
 	public abstract fun getClassReference (Lorg/jetbrains/kotlin/psi/KtClassOrObject;)Lcom/squareup/anvil/compiler/internal/reference/ClassReference$Psi;
 	public abstract fun getClassReferenceOrNull (Lorg/jetbrains/kotlin/name/FqName;)Lcom/squareup/anvil/compiler/internal/reference/ClassReference;
 	public abstract fun getTopLevelFunctionReferences (Lorg/jetbrains/kotlin/psi/KtFile;)Ljava/util/List;
+	public abstract fun getTopLevelPropertyReferenceOrNull (Lorg/jetbrains/kotlin/name/FqName;)Lcom/squareup/anvil/compiler/internal/reference/PropertyReference;
 	public abstract fun getTopLevelPropertyReferences (Lorg/jetbrains/kotlin/psi/KtFile;)Ljava/util/List;
 	public abstract fun resolveClassIdOrNull (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/FqName;
 	public abstract fun resolveFqNameOrNull (Lorg/jetbrains/kotlin/name/FqName;Lorg/jetbrains/kotlin/incremental/components/LookupLocation;)Lorg/jetbrains/kotlin/descriptors/ClassDescriptor;
+	public abstract fun resolvePropertyReferenceOrNull (Lorg/jetbrains/kotlin/name/FqName;)Lcom/squareup/anvil/compiler/internal/reference/PropertyReference;
 	public abstract fun resolveTypeAliasFqNameOrNull (Lorg/jetbrains/kotlin/name/FqName;)Lorg/jetbrains/kotlin/descriptors/TypeAliasDescriptor;
 }
 
@@ -358,7 +362,7 @@ public final class com/squareup/anvil/compiler/internal/reference/MemberFunction
 public abstract class com/squareup/anvil/compiler/internal/reference/MemberPropertyReference : com/squareup/anvil/compiler/internal/reference/AnnotatedReference, com/squareup/anvil/compiler/internal/reference/PropertyReference {
 	public fun equals (Ljava/lang/Object;)Z
 	public abstract fun getDeclaringClass ()Lcom/squareup/anvil/compiler/internal/reference/ClassReference;
-	public final fun getMemberName ()Lcom/squareup/kotlinpoet/MemberName;
+	public fun getMemberName ()Lcom/squareup/kotlinpoet/MemberName;
 	public fun getModule ()Lcom/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor;
 	protected abstract fun getType ()Lcom/squareup/anvil/compiler/internal/reference/TypeReference;
 	public fun hashCode ()I
@@ -449,6 +453,7 @@ public final class com/squareup/anvil/compiler/internal/reference/ParameterRefer
 public abstract interface class com/squareup/anvil/compiler/internal/reference/PropertyReference {
 	public abstract fun getFqName ()Lorg/jetbrains/kotlin/name/FqName;
 	public abstract fun getGetterAnnotations ()Ljava/util/List;
+	public abstract fun getMemberName ()Lcom/squareup/kotlinpoet/MemberName;
 	public abstract fun getModule ()Lcom/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor;
 	public abstract fun getName ()Ljava/lang/String;
 	public abstract fun getSetterAnnotations ()Ljava/util/List;
@@ -521,6 +526,7 @@ public final class com/squareup/anvil/compiler/internal/reference/TopLevelFuncti
 
 public abstract class com/squareup/anvil/compiler/internal/reference/TopLevelPropertyReference : com/squareup/anvil/compiler/internal/reference/AnnotatedReference, com/squareup/anvil/compiler/internal/reference/PropertyReference {
 	public fun equals (Ljava/lang/Object;)Z
+	public fun getMemberName ()Lcom/squareup/kotlinpoet/MemberName;
 	protected abstract fun getType ()Lcom/squareup/anvil/compiler/internal/reference/TypeReference;
 	public fun hashCode ()I
 	public fun isAnnotatedWith (Lorg/jetbrains/kotlin/name/FqName;)Z

@@ -65,4 +65,8 @@ dependencies {
   testImplementation(libs.kotlin.reflect)
   testImplementation(libs.ksp.compilerPlugin)
   testImplementation(libs.truth)
+
+  testRuntimeOnly(libs.kotest.assertions.core.jvm)
+  testRuntimeOnly(libs.junit.vintage.engine)
+  testRuntimeOnly(libs.junit.jupiter.engine)
 }
