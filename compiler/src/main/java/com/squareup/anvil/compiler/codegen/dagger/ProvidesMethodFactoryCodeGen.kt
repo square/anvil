@@ -136,15 +136,15 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
                     "and/or starring this issue: https://youtrack.jetbrains.com/issue/KT-66713.",
                   declaration.reportableNode as? KSNode,
                 )
+              } else {
+                generateFactoryClass(
+                  declaration.isMangled,
+                  mangledNameSuffix,
+                  className,
+                  clazz.classKind == ClassKind.OBJECT,
+                  declaration,
+                ).writeTo(env.codeGenerator, aggregating = false, listOf(containingFile))
               }
-
-              generateFactoryClass(
-                declaration.isMangled,
-                mangledNameSuffix,
-                className,
-                clazz.classKind == ClassKind.OBJECT,
-                declaration,
-              ).writeTo(env.codeGenerator, aggregating = false, listOf(containingFile))
             }
         }
       return emptyList()
