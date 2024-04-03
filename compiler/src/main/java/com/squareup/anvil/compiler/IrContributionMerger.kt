@@ -266,9 +266,8 @@ internal class IrContributionMerger(
         val qualifierKey =
           internalBindingMarker.argumentOrNull("qualifierKey")?.value<String>().orEmpty()
         val priority = internalBindingMarker.argumentOrNull("priority")
-          ?.value<String>()
-          ?.let { ContributesBinding.Priority.valueOf(it) }
-          ?: ContributesBinding.Priority.NORMAL
+          ?.value()
+          ?: ContributesBinding.PRIORITY_NORMAL
         val scope = contributedAnnotation.scope
         ContributedBinding(
           scope = scope,

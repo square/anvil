@@ -108,7 +108,7 @@ internal data class ContributedBinding(
   val originClass: OriginClass,
   val boundType: ClassReferenceIr,
   val qualifierKey: String,
-  val priority: ContributesBinding.Priority,
+  val priority: Int,
 ) {
   val bindingKey = BindingKey(scope, boundType, qualifierKey)
   val replaces = bindingModule.annotations.find(contributesToFqName).single()
@@ -124,10 +124,17 @@ internal fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedB
     .distinctBy { it.originClass }
 
   if (bindings.size > 1) {
+    val mappedName = when (val priority = bindings[0].priority) {
+      // Map to semantic names for easier error message reading
+      ContributesBinding.PRIORITY_NORMAL -> "NORMAL"
+      ContributesBinding.PRIORITY_HIGH -> "HIGH"
+      ContributesBinding.PRIORITY_HIGHEST -> "HIGHEST"
+      else -> priority.toString()
+    }
     throw AnvilCompilationExceptionClassReferenceIr(
       bindings[0].boundType,
       "There are multiple contributed bindings with the same bound type and priority. The bound type is " +
-        "${bindings[0].boundType.fqName.asString()}. The priority is ${bindings[0].priority.name}. " +
+        "${bindings[0].boundType.fqName.asString()}. The priority is $mappedName. " +
         "The contributed binding classes are: " +
         bindings.joinToString(
           prefix = "[",
