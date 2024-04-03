@@ -23,7 +23,6 @@ import dagger.Module
 import dagger.Provides
 import dagger.multibindings.IntoMap
 import dagger.multibindings.IntoSet
-import java.util.Comparator
 
 internal sealed interface Contribution {
   val origin: ClassName

@@ -98,7 +98,10 @@ internal fun KSAnnotation.resolveBoundType(
   val declaredBoundType = boundTypeOrNull()?.resolveKSClassDeclaration()
   if (declaredBoundType != null) return declaredBoundType
   // Resolve from the first and only supertype
-  return declaringClass.superTypesExcludingAny(resolver).single().resolve().resolveKSClassDeclaration() ?: throw KspAnvilException(
+  return declaringClass.superTypesExcludingAny(resolver)
+    .single()
+    .resolve()
+    .resolveKSClassDeclaration() ?: throw KspAnvilException(
     message = "Couldn't resolve bound type for ${declaringClass.qualifiedName}",
     node = declaringClass,
   )
@@ -107,7 +110,8 @@ internal fun KSAnnotation.resolveBoundType(
 @Suppress("UNCHECKED_CAST")
 internal fun KSAnnotation.replaces(): List<KSClassDeclaration> =
   (argumentAt("replaces")?.value as? List<KSType>).orEmpty().map {
-    it.resolveKSClassDeclaration() ?: throw KspAnvilException("Could not resolve replaces type $it}", this)
+    it.resolveKSClassDeclaration()
+      ?: throw KspAnvilException("Could not resolve replaces type $it}", this)
   }
 
 @Suppress("UNCHECKED_CAST")

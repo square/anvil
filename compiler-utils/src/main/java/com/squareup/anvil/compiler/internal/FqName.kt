@@ -14,6 +14,7 @@ import dagger.MapKey
 import dagger.Provides
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.parentOrNull
 import javax.inject.Inject
 import javax.inject.Qualifier
 import javax.inject.Scope
@@ -39,17 +40,40 @@ internal val mergeModulesFqName = MergeModules::class.fqName
 
 internal val anyFqName = Any::class.fqName
 
+/**
+ * Generates a sequence of [FqName] starting from the current FqName and including its parents
+ * up to the root. The sequence will include the current FqName as well.
+ */
+@ExperimentalAnvilApi
+public fun FqName.parentsWithSelf(): Sequence<FqName> {
+  return generateSequence(this) { it.parentOrNull() }
+    .map {
+      it.toUnsafe()
+      // The top-most parent is an FqName with the text "<root>",
+      // whereas the actual FqName.ROOT is an empty string.  We want the empty string.
+      if (parent().isRoot) FqName.ROOT else it
+    }
+}
+
+/**
+ * Generates a sequence of [FqName] starting from the current FqName and including its parents
+ * up to the root. The sequence will not include the current FqName.
+ */
+@ExperimentalAnvilApi
+public fun FqName.parents(): Sequence<FqName> = parentsWithSelf().drop(1)
+
 @ExperimentalAnvilApi
 public fun FqName.descendant(segments: String): FqName =
   if (isRoot) FqName(segments) else FqName("${asString()}.$segments")
 
 /** Returns the computed [FqName] representation of this [KClass]. */
 @ExperimentalAnvilApi
-public val KClass<*>.fqName: FqName get() = FqName(
-  requireNotNull(qualifiedName) {
-    "An FqName cannot be created for a local class or class of an anonymous object."
-  },
-)
+public val KClass<*>.fqName: FqName
+  get() = FqName(
+    requireNotNull(qualifiedName) {
+      "An FqName cannot be created for a local class or class of an anonymous object."
+    },
+  )
 
 /** @see String.safePackageString */
 @ExperimentalAnvilApi

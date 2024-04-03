@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.api.FileWithContent
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.testing.SimpleCodeGenerator.CodeGeneratorAction
 import com.squareup.anvil.compiler.internal.testing.SimpleSourceFileTrackingBehavior.NO_SOURCE_TRACKING
 import com.squareup.anvil.compiler.internal.testing.SimpleSourceFileTrackingBehavior.TRACKING_WITH_NO_SOURCES
 import com.squareup.anvil.compiler.internal.testing.SimpleSourceFileTrackingBehavior.TRACK_SOURCE_FILES
@@ -18,19 +19,58 @@ private var counter = 0
 public fun simpleCodeGenerator(
   trackSourceFiles: SimpleSourceFileTrackingBehavior = TRACK_SOURCE_FILES,
   applicable: (AnvilContext) -> Boolean = { true },
-  mapper: CodeGenerator.(clazz: Psi) -> String?,
-): SimpleCodeGenerator = SimpleCodeGenerator(applicable, trackSourceFiles, mapper)
+  mapper: SimpleCodeGenerator.(clazz: Psi) -> String?,
+): SimpleCodeGenerator = SimpleCodeGenerator(applicable) { codeGenDir, module, projectFiles ->
+
+  projectFiles
+    .classAndInnerClassReferences(module)
+    .mapNotNull { clazz ->
+      val content = mapper.invoke(this, clazz) ?: return@mapNotNull null
+      val (packageName, fileName) = parseSimpleFileContents(content)
+
+      when (trackSourceFiles) {
+        NO_SOURCE_TRACKING ->
+          @Suppress("DEPRECATION")
+          createGeneratedFile(
+            codeGenDir = codeGenDir,
+            packageName = packageName,
+            fileName = fileName,
+            content = content,
+          )
+
+        TRACKING_WITH_NO_SOURCES,
+        TRACK_SOURCE_FILES,
+        -> createGeneratedFile(
+          codeGenDir = codeGenDir,
+          packageName = packageName,
+          fileName = fileName,
+          content = content,
+          sourceFiles = if (trackSourceFiles == TRACKING_WITH_NO_SOURCES) {
+            emptySet()
+          } else {
+            setOf(clazz.containingFileAsJavaFile)
+          },
+        )
+      }
+    }
+    .toList()
+}
+
+public fun simpleCodeGenerator(
+  applicable: (AnvilContext) -> Boolean = { true },
+  generateCode: CodeGeneratorAction<SimpleCodeGenerator>,
+): SimpleCodeGenerator = SimpleCodeGenerator(applicable, generateCode)
 
 public class SimpleCodeGenerator internal constructor(
   private val applicable: (AnvilContext) -> Boolean = { true },
-  private val trackSourceFiles: SimpleSourceFileTrackingBehavior,
-  private val mapper: CodeGenerator.(clazz: Psi) -> String?,
+  private val codeGeneratorAction: CodeGeneratorAction<SimpleCodeGenerator>,
 ) : CodeGenerator {
   public var isApplicableCalls: Int = 0
     private set
-  private val inputFileContentToGenerateCalls = mutableMapOf<String, Int>()
+  internal val inputFileContentToGenerateCalls: MutableMap<String, Int> = mutableMapOf()
 
-  public fun getGenerateCallsForInputFileContent(content: String): Int = inputFileContentToGenerateCalls[content] ?: 0
+  public fun getGenerateCallsForInputFileContent(content: String): Int =
+    inputFileContentToGenerateCalls[content] ?: 0
 
   override fun isApplicable(context: AnvilContext): Boolean {
     isApplicableCalls++
@@ -43,41 +83,24 @@ public class SimpleCodeGenerator internal constructor(
     projectFiles: Collection<KtFile>,
   ): Collection<FileWithContent> {
     for (file in projectFiles) {
-      inputFileContentToGenerateCalls[file.text] = (inputFileContentToGenerateCalls[file.text] ?: 0) + 1
+      inputFileContentToGenerateCalls[file.text] =
+        getGenerateCallsForInputFileContent(file.text) + 1
     }
+    return with(codeGeneratorAction) {
+      generate(
+        codeGenDir = codeGenDir,
+        module = module,
+        projectFiles = projectFiles,
+      )
+    }
+  }
 
-    return projectFiles
-      .classAndInnerClassReferences(module)
-      .mapNotNull { clazz ->
-        val content = mapper.invoke(this, clazz) ?: return@mapNotNull null
-        val (packageName, fileName) = parseSimpleFileContents(content)
-
-        when (trackSourceFiles) {
-          NO_SOURCE_TRACKING ->
-            @Suppress("DEPRECATION")
-            createGeneratedFile(
-              codeGenDir = codeGenDir,
-              packageName = packageName,
-              fileName = fileName,
-              content = content,
-            )
-
-          TRACKING_WITH_NO_SOURCES,
-          TRACK_SOURCE_FILES,
-          -> createGeneratedFile(
-            codeGenDir = codeGenDir,
-            packageName = packageName,
-            fileName = fileName,
-            content = content,
-            sourceFiles = if (trackSourceFiles == TRACKING_WITH_NO_SOURCES) {
-              emptySet()
-            } else {
-              setOf(clazz.containingFileAsJavaFile)
-            },
-          )
-        }
-      }
-      .toList()
+  public fun interface CodeGeneratorAction<T : CodeGenerator> {
+    public fun T.generate(
+      codeGenDir: File,
+      module: ModuleDescriptor,
+      projectFiles: Collection<KtFile>,
+    ): Collection<FileWithContent>
   }
 }
 

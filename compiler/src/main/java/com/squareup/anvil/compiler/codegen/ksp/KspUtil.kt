@@ -72,7 +72,8 @@ internal fun TypeName.withJvmSuppressWildcardsIfNeeded(
 
   // Add the @JvmSuppressWildcards annotation even for simple generic return types like
   // Set<String>. This avoids some edge cases where Dagger chokes.
-  val isGenericType = (type.declaration as? KSClassDeclaration)?.typeParameters?.isNotEmpty() == true
+  val isGenericType =
+    (type.declaration as? KSClassDeclaration)?.typeParameters?.isNotEmpty() == true
 
   // Same for functions.
   val isFunctionType = type.isFunctionType
