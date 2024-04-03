@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
-import com.squareup.anvil.annotations.ContributesBinding.Priority
-import com.squareup.anvil.annotations.ContributesBinding.Priority.NORMAL
+import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
@@ -9,6 +8,8 @@ import com.squareup.anvil.compiler.daggerComponentFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerSubcomponentFqName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
+import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Descriptor
+import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Psi
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionAnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -43,11 +44,37 @@ internal fun ClassReference.qualifierAnnotation(): AnnotationReference? {
   return annotations.find { it.isQualifier() }
 }
 
-internal fun AnnotationReference.priority(): Priority {
-  return argumentAt("priority", index = 4)
+internal fun AnnotationReference.priority(): Int {
+  return priorityNew() ?: priorityLegacy() ?: ContributesBinding.PRIORITY_NORMAL
+}
+
+@Suppress("DEPRECATION")
+internal fun AnnotationReference.priorityLegacy(): Int? {
+  val priorityDeprecated = when (this) {
+    is Descriptor -> "priority"
+    is Psi -> "priorityDeprecated"
+  }
+  val priority = argumentAt(priorityDeprecated, index = 4)
     ?.value<FqName>()
-    ?.let { Priority.valueOf(it.shortName().asString()) }
-    ?: NORMAL
+    ?.let { ContributesBinding.Priority.valueOf(it.shortName().asString()) }
+
+  return priority?.value
+}
+
+internal fun AnnotationReference.priorityNew(): Int? {
+  val priorityInt = when (this) {
+    is Descriptor -> "priorityInt"
+    is Psi -> "priority"
+  }
+  try {
+    return argumentAt(priorityInt, index = 6)
+      ?.value()
+  } catch (e: ClassCastException) {
+    throw AnvilCompilationExceptionAnnotationReference(
+      message = "Could not parse priority. This can happen if you haven't migrated to the new int-based priority API",
+      annotationReference = this,
+    )
+  }
 }
 
 internal fun AnnotationReference.modules(

@@ -1,9 +1,20 @@
 public abstract interface annotation class com/squareup/anvil/annotations/ContributesBinding : java/lang/annotation/Annotation {
+	public static final field Companion Lcom/squareup/anvil/annotations/ContributesBinding$Companion;
+	public static final field PRIORITY_HIGH I
+	public static final field PRIORITY_HIGHEST I
+	public static final field PRIORITY_NORMAL I
 	public abstract fun boundType ()Ljava/lang/Class;
 	public abstract fun ignoreQualifier ()Z
 	public abstract fun priority ()Lcom/squareup/anvil/annotations/ContributesBinding$Priority;
+	public abstract fun priorityInt ()I
 	public abstract fun replaces ()[Ljava/lang/Class;
 	public abstract fun scope ()Ljava/lang/Class;
+}
+
+public final class com/squareup/anvil/annotations/ContributesBinding$Companion {
+	public static final field PRIORITY_HIGH I
+	public static final field PRIORITY_HIGHEST I
+	public static final field PRIORITY_NORMAL I
 }
 
 public abstract interface annotation class com/squareup/anvil/annotations/ContributesBinding$Container : java/lang/annotation/Annotation {
@@ -15,6 +26,7 @@ public final class com/squareup/anvil/annotations/ContributesBinding$Priority : 
 	public static final field HIGHEST Lcom/squareup/anvil/annotations/ContributesBinding$Priority;
 	public static final field NORMAL Lcom/squareup/anvil/annotations/ContributesBinding$Priority;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun getValue ()I
 	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/anvil/annotations/ContributesBinding$Priority;
 	public static fun values ()[Lcom/squareup/anvil/annotations/ContributesBinding$Priority;
 }
@@ -97,7 +109,7 @@ public abstract interface annotation class com/squareup/anvil/annotations/compat
 public abstract interface annotation class com/squareup/anvil/annotations/internal/InternalBindingMarker : java/lang/annotation/Annotation {
 	public abstract fun isMultibinding ()Z
 	public abstract fun originClass ()Ljava/lang/Class;
-	public abstract fun priority ()Ljava/lang/String;
+	public abstract fun priority ()I
 	public abstract fun qualifierKey ()Ljava/lang/String;
 }
 

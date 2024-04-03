@@ -9,9 +9,7 @@ import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueArgument
-import com.squareup.anvil.annotations.ContributesBinding.Priority
-import com.squareup.anvil.annotations.ContributesBinding.Priority.NORMAL
-import com.squareup.anvil.compiler.internal.daggerScopeFqName
+import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.internal.mapKeyFqName
 import com.squareup.anvil.compiler.qualifierFqName
 import com.squareup.kotlinpoet.ksp.toClassName
@@ -149,7 +147,6 @@ private fun KSAnnotation.isTypeAnnotatedWith(
 
 internal fun KSAnnotation.isQualifier(): Boolean = isTypeAnnotatedWith(qualifierFqName)
 internal fun KSAnnotation.isMapKey(): Boolean = isTypeAnnotatedWith(mapKeyFqName)
-internal fun KSAnnotation.isDaggerScope(): Boolean = isTypeAnnotatedWith(daggerScopeFqName)
 
 internal fun KSAnnotated.qualifierAnnotation(): KSAnnotation? =
   annotations.singleOrNull { it.isQualifier() }
@@ -157,8 +154,18 @@ internal fun KSAnnotated.qualifierAnnotation(): KSAnnotation? =
 internal fun KSAnnotation.ignoreQualifier(): Boolean =
   argumentAt("ignoreQualifier")?.value as? Boolean? == true
 
-internal fun KSAnnotation.priority(): Priority {
-  val priorityEntry = argumentAt("priority")?.value as KSType? ?: return NORMAL
-  val name = priorityEntry.resolveKSClassDeclaration()?.simpleName?.asString() ?: return NORMAL
-  return Priority.valueOf(name)
+internal fun KSAnnotation.priority(): Int {
+  return priorityNew() ?: priorityLegacy() ?: ContributesBinding.PRIORITY_NORMAL
+}
+
+@Suppress("DEPRECATION")
+internal fun KSAnnotation.priorityLegacy(): Int? {
+  val priorityEntry = argumentAt("priorityDeprecated")?.value as KSType? ?: return null
+  val name = priorityEntry.resolveKSClassDeclaration()?.simpleName?.asString() ?: return null
+  val priority = ContributesBinding.Priority.valueOf(name)
+  return priority.value
+}
+
+internal fun KSAnnotation.priorityNew(): Int? {
+  return argumentAt("priority")?.value as Int?
 }

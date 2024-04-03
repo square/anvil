@@ -1,6 +1,5 @@
 package com.squareup.anvil.compiler.codegen
 
-import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.BINDING_MODULE_SUFFIX
@@ -80,8 +79,8 @@ internal sealed interface Contribution {
             }
             if (contribution is Binding) {
               addMember(
-                "priority = %S",
-                contribution.priority.name,
+                "priority = %L",
+                contribution.priority,
               )
             }
           }
@@ -153,7 +152,7 @@ internal sealed interface Contribution {
     override val scope: ClassName,
     override val isObject: Boolean,
     override val boundType: ClassName,
-    val priority: ContributesBinding.Priority,
+    val priority: Int,
     override val replaces: List<ClassName>,
     override val qualifier: QualifierData?,
   ) : Contribution {
