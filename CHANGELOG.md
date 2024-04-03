@@ -8,6 +8,8 @@
 
 ### Deprecated
 
+- `ContributesBinding.priority` has been deprecated (and renamed!) in favor of an int-value-based approach. This is a binary-compatible change but not a source-compatible change. The previous `ContributesBinding.priority: Priority` property has been renamed to `ContributesBinding.priorityDeprecated` and a new `ContributesBinding.priority: Int` has been introduced to replace it. This allows for more granular prioritization, rather than just the three enum entries that `ContributesBinding.Priority` offered. 
+
 ### Removed
 
 ### Fixed
