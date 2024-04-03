@@ -8,7 +8,6 @@ import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
 import com.squareup.anvil.compiler.api.AnvilContext
-import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesSubcomponentFactoryFqName
@@ -63,7 +62,7 @@ import java.io.File
  */
 internal class ContributesSubcomponentHandlerGenerator(
   private val classScanner: ClassScanner,
-) : CodeGenerator {
+) : PrivateCodeGenerator() {
 
   private val triggers = mutableListOf<Trigger>()
   private val contributions = mutableSetOf<Contribution>()
@@ -74,7 +73,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   override fun isApplicable(context: AnvilContext): Boolean = !context.generateFactoriesOnly
 
-  override fun generateCode(
+  override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
@@ -98,22 +97,17 @@ internal class ContributesSubcomponentHandlerGenerator(
       .flatMap { it.annotations }
       .filter { it.fqName == contributesSubcomponentFqName }
       .map { Contribution(it) }
-      .toList()
-      .also { contributions ->
-        // Find all replaced subcomponents and remember them.
-        replacedReferences += contributions.flatMap { contribution ->
-          contribution.annotation
-            .replaces()
-            .also {
-              checkReplacedSubcomponentWasNotAlreadyGenerated(contribution.clazz, it)
-            }
-        }
-      }
 
-    // Remove any contribution, if it was replaced by another contribution.
-    contributions.removeAll { contribution ->
-      contribution.clazz in replacedReferences
+    // Find all replaced subcomponents and remember them.
+    replacedReferences += contributions
+      .flatMap { contribution -> contribution.annotation.replaces() }
+
+    for (contribution in contributions) {
+      checkReplacedSubcomponentWasNotAlreadyGenerated(contribution.clazz, replacedReferences)
     }
+
+    // Remove any contribution that was replaced by another contribution.
+    contributions.removeAll { it.clazz in replacedReferences }
 
     return contributions
       .flatMap { contribution ->
@@ -127,9 +121,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       }
       // Don't generate code for the same event twice.
       .minus(processedEvents)
-      .also {
-        processedEvents += it
-      }
+      .also { processedEvents += it }
       .map { generateCodeEvent ->
         val contribution = generateCodeEvent.contribution
         val generatedAnvilSubcomponent = generateCodeEvent.generatedAnvilSubcomponent
@@ -157,7 +149,7 @@ internal class ContributesSubcomponentHandlerGenerator(
                       val template = classes
                         .joinToString(prefix = "[", postfix = "]") { "%T::class" }
 
-                      addMember("$name = $template", *classes.toTypedArray())
+                      addMember("$name = $template", *classes.toTypedArray<ClassName>())
                     }
                   }
 
@@ -378,7 +370,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private fun checkReplacedSubcomponentWasNotAlreadyGenerated(
     contributedReference: ClassReference,
-    replacedReferences: List<ClassReference>,
+    replacedReferences: Collection<ClassReference>,
   ) {
     replacedReferences.forEach { replacedReference ->
       if (processedEvents.any { it.contribution.clazz == replacedReference }) {
@@ -430,15 +422,21 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private class Trigger(
-    annotation: AnnotationReference,
+    val clazz: ClassReference,
+    val scope: ClassReference,
+    val exclusions: List<ClassReference>,
   ) {
-    val clazz = annotation.declaringClass()
-    val scope = annotation.scope()
-    val exclusions = annotation.exclude()
+
+    constructor(annotation: AnnotationReference) : this(
+      clazz = annotation.declaringClass(),
+      scope = annotation.scope(),
+      exclusions = annotation.exclude(),
+    )
+
     val clazzFqName = clazz.fqName
 
     override fun toString(): String {
-      return "Trigger(clazz=$clazzFqName, scope=$scope)"
+      return "Trigger(clazz=$clazzFqName, scope=${scope.fqName})"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -460,9 +458,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     }
   }
 
-  private class Contribution(
-    val annotation: AnnotationReference,
-  ) {
+  private class Contribution(val annotation: AnnotationReference) {
     val clazz = annotation.declaringClass()
     val scope = annotation.scope()
     val parentScope = annotation.parentScope()

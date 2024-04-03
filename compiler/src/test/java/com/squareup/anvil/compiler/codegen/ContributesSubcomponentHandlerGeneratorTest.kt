@@ -1891,10 +1891,6 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
   @Test
   fun `a previously generated contributed subcomponent cannot be replaced in a later round of generations`() {
-    // This test verifies an edge case where we generate the code for a contributed subcomponent,
-    // but then later in a new code generation round another code generator generates code that
-    // is supposed to replace the already generated subcomponent. We can't revert the code and
-    // don't want to support that use case.
     val codeGenerator = simpleCodeGenerator { clazz ->
       clazz
         .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
@@ -1904,7 +1900,6 @@ class ContributesSubcomponentHandlerGeneratorTest {
             package com.squareup.test
                 
             import com.squareup.anvil.annotations.ContributesSubcomponent
-            import com.squareup.test.SubcomponentInterface1
       
             @ContributesSubcomponent(
               scope = Any::class, 
@@ -1925,7 +1920,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
   
         @ContributesSubcomponent(
           scope = Any::class, 
-          parentScope = Unit::class
+          parentScope = Unit::class,
         )
         interface SubcomponentInterface1
   
@@ -1934,12 +1929,17 @@ class ContributesSubcomponentHandlerGeneratorTest {
       """,
       codeGenerators = listOf(codeGenerator),
     ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "com.squareup.test.SubcomponentInterface2 tries to replace " +
-          "com.squareup.test.SubcomponentInterface1, but the code for " +
-          "com.squareup.test.SubcomponentInterface1 was already generated. This is not supported.",
-      )
+      assertThat(exitCode).isEqualTo(OK)
+
+      val parentComponentInterface2 = subcomponentInterface2
+        .anvilComponent(componentInterface)
+        .parentComponentInterface
+
+      assertThat(componentInterface extends parentComponentInterface2).isTrue()
+
+      assertFailsWith<ClassNotFoundException> {
+        subcomponentInterface1.anvilComponent(componentInterface)
+      }
     }
   }
 

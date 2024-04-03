@@ -89,10 +89,10 @@ internal class CodeGenerationExtension(
 
     // Either sync the local file state with our internal cache,
     // or delete any existing generated files (if caching isn't enabled).
-    val createdChanges = syncGeneratedDir(files)
+    val syncCreatedChanges = syncGeneratedDir(files)
     didSyncGeneratedDir = true
 
-    if (createdChanges) {
+    if (syncCreatedChanges) {
       // Tell the compiler to analyze the generated files *before* calling `analysisCompleted()`.
       // This ensures that the compiler will update/delete any references to stale code in the
       // ModuleDescriptor, as well as updating/deleting any stale .class files.
@@ -118,10 +118,8 @@ internal class CodeGenerationExtension(
     anvilModule.addFiles(files)
 
     val generatedFiles = generateCode(
-      codeGenerators = codeGenerators,
       psiManager = psiManager,
       anvilModule = anvilModule,
-      files = files,
     )
 
     if (trackSourceFiles) {
@@ -189,10 +187,8 @@ internal class CodeGenerationExtension(
   }
 
   private fun generateCode(
-    codeGenerators: List<CodeGenerator>,
     psiManager: PsiManager,
     anvilModule: RealAnvilModuleDescriptor,
-    files: Collection<KtFile>,
   ): MutableCollection<FileWithContent> {
 
     val anvilContext = commandLineOptions.toAnvilContext(anvilModule)
@@ -227,12 +223,12 @@ internal class CodeGenerationExtension(
       }
     }
 
-    fun Collection<CodeGenerator>.generateCode(files: Collection<KtFile>): List<KtFile> =
+    fun Collection<CodeGenerator>.generateAndCache(files: Collection<KtFile>): List<KtFile> =
       flatMap { codeGenerator ->
         codeGenerator.generateCode(generatedDir, anvilModule, files)
-          .onEach {
+          .onEach { file ->
             onGenerated(
-              generatedFile = it,
+              generatedFile = file,
               codeGenerator = codeGenerator,
               allowOverwrites = false,
             )
@@ -240,34 +236,43 @@ internal class CodeGenerationExtension(
           .toKtFiles(psiManager, anvilModule)
       }
 
-    fun Collection<CodeGenerator>.flush(): List<KtFile> =
-      filterIsInstance<FlushingCodeGenerator>()
-        .flatMap { codeGenerator ->
-          codeGenerator.flush(generatedDir, anvilModule)
-            .onEach {
-              onGenerated(
-                generatedFile = it,
-                codeGenerator = codeGenerator,
-                // flushing code generators write the files but no content during normal rounds.
-                allowOverwrites = true,
-              )
-            }
-            .toKtFiles(psiManager, anvilModule)
-        }
+    fun Collection<FlushingCodeGenerator>.flush(): List<KtFile> =
+      flatMap { codeGenerator ->
+        codeGenerator.flush(generatedDir, anvilModule)
+          .onEach {
+            onGenerated(
+              generatedFile = it,
+              codeGenerator = codeGenerator,
+              // flushing code generators write the files but no content during normal rounds.
+              allowOverwrites = true,
+            )
+          }
+          .toKtFiles(psiManager, anvilModule)
+      }
 
-    var newFiles = nonPrivateCodeGenerators.generateCode(files)
-
-    while (newFiles.isNotEmpty()) {
-      // Parse the KtFile for each generated file. Then feed the code generators with the new
-      // parsed files until no new files are generated.
-      newFiles = nonPrivateCodeGenerators.generateCode(newFiles)
+    fun List<CodeGenerator>.loopGeneration() {
+      var newFiles = generateAndCache(anvilModule.allFiles.toList())
+      while (newFiles.isNotEmpty()) {
+        // Parse the KtFile for each generated file. Then feed the code generators with the new
+        // parsed files until no new files are generated.
+        newFiles = generateAndCache(newFiles)
+      }
     }
 
-    nonPrivateCodeGenerators.flush()
+    // All non-private code generators are batched together.
+    // They will execute against the initial set of files,
+    // then loop until no generator produces any new files.
+    nonPrivateCodeGenerators.loopGeneration()
 
-    // PrivateCodeGenerators don't impact other code generators. Therefore, they can be called a
-    // single time at the end.
-    privateCodeGenerators.generateCode(anvilModule.allFiles.toList())
+    // Flushing generators are next.
+    // They have already seen all generated code.
+    // Their output may be consumed by a private generator.
+    codeGenerators.filterIsInstance<FlushingCodeGenerator>().flush()
+
+    // Private generators do not affect each other, so they're invoked last.
+    // They may require multiple iterations of their own logic, though,
+    // so we loop them individually until there are no more changes.
+    privateCodeGenerators.forEach { listOf(it).loopGeneration() }
 
     return generatedFiles.values
   }
