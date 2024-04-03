@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen.ksp
 
 import com.google.devtools.ksp.KspExperimental
+import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.isAnnotationPresent
 import com.google.devtools.ksp.isConstructor
 import com.google.devtools.ksp.processing.Resolver
@@ -13,10 +14,10 @@ import com.google.devtools.ksp.symbol.KSModifierListOwner
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.Modifier
-import com.squareup.anvil.compiler.assistedInjectFqName
-import com.squareup.anvil.compiler.injectFqName
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
+import dagger.assisted.AssistedInject
+import javax.inject.Inject
 import kotlin.reflect.KClass
 
 /**
@@ -100,35 +101,82 @@ internal tailrec fun KSType.resolveKSClassDeclaration(): KSClassDeclaration? {
  * Returns a sequence of all `@Inject` and `@AssistedInject` constructors visible to this resolver
  */
 internal fun Resolver.injectConstructors(): List<Pair<KSClassDeclaration, KSFunctionDeclaration>> {
-  return getSymbolsWithAnnotation(injectFqName.asString())
-    .plus(getSymbolsWithAnnotation(assistedInjectFqName.asString()))
+  return getAnnotatedSymbols<Inject>()
+    .plus(getAnnotatedSymbols<AssistedInject>())
     .filterIsInstance<KSFunctionDeclaration>()
     .filter { it.isConstructor() }
     .groupBy {
       it.parentDeclaration as KSClassDeclaration
     }
     .mapNotNull { (clazz, constructors) ->
-      if (constructors.size != 1) {
-        val constructorsErrorMessage = constructors.joinToString { constructor ->
-          constructor.annotations.joinToString(" ", postfix = " ") { annotation ->
-            "@${annotation.annotationType.resolve().declaration.qualifiedName!!.asString()}"
-          }
-            .replace("@javax.inject.Inject", "@Inject") +
-            clazz.qualifiedName!!.asString() + constructor.parameters.joinToString(
-              ", ",
-              prefix = "(",
-              postfix = ")",
-            ) { param ->
-              param.type.resolve().resolveKSClassDeclaration()!!.simpleName.getShortName()
-            }
-        }
-        throw KspAnvilException(
-          node = clazz,
-          message = "Type ${clazz.qualifiedName!!.asString()} may only contain one injected " +
-            "constructor. Found: [$constructorsErrorMessage]",
-        )
-      }
+      requireSingleInjectConstructor(constructors, clazz)
 
       clazz to constructors[0]
     }
 }
+
+private fun requireSingleInjectConstructor(
+  constructors: List<KSFunctionDeclaration>,
+  clazz: KSClassDeclaration,
+) {
+  if (constructors.size == 1) {
+    return
+  }
+
+  val classFqName = clazz.qualifiedName!!.asString()
+  val constructorsErrorMessage = constructors.joinToString { constructor ->
+    val formattedAnnotations =
+      constructor
+        .annotations
+        .joinToString(" ", postfix = " ") { annotation ->
+          val annotationFq = annotation.annotationType.resolve().declaration.qualifiedName
+          "@${annotationFq!!.asString()}"
+        }
+        .replace("@javax.inject.Inject", "@Inject")
+
+    val formattedConstructorParameters =
+      constructor
+        .parameters
+        .joinToString(
+          separator = ", ",
+          prefix = "(",
+          postfix = ")",
+          transform = { param ->
+            val parameterClass = param.type.resolve().resolveKSClassDeclaration()
+            parameterClass!!.simpleName.getShortName()
+          },
+        )
+
+    formattedAnnotations + classFqName + formattedConstructorParameters
+  }
+  throw KspAnvilException(
+    node = clazz,
+    message = "Type $classFqName may only contain one injected " +
+      "constructor. Found: [$constructorsErrorMessage]",
+  )
+}
+
+internal inline fun <reified T> Resolver.getAnnotatedSymbols(): Sequence<KSAnnotated> {
+  val clazz = T::class
+  val fqcn = clazz.qualifiedName
+    ?: throw IllegalArgumentException("Cannot get qualified name for annotation $clazz")
+  return getSymbolsWithAnnotation(fqcn)
+}
+
+internal fun KSClassDeclaration.withCompanion(): Sequence<KSClassDeclaration> =
+  sequence {
+    yield(this@withCompanion)
+    yieldAll(declarations.filterIsInstance<KSClassDeclaration>().filter { it.isCompanionObject })
+  }
+
+internal inline fun <reified T> KSClassDeclaration.getAnnotatedFunctions() =
+  getDeclaredFunctions()
+    .filter { it.isAnnotationPresent<T>() }
+
+internal fun KSFunctionDeclaration.isExtensionDeclaration(): Boolean =
+  extensionReceiver != null
+
+internal fun KSFunctionDeclaration.returnTypeOrNull(): KSType? =
+  returnType?.resolve()?.takeIf {
+    it.declaration.qualifiedName?.asString() != "kotlin.Unit"
+  }
