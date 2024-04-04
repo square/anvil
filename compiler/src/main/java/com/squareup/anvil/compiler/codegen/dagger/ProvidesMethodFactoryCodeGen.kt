@@ -118,7 +118,6 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
           val containingFile = clazz.containingFile!!
           // TODO we need a public API for this in KSP
           //  https://github.com/google/ksp/issues/1621
-          //  https://youtrack.jetbrains.com/issue/KT-66713
           var supportsMangledNames: Boolean = false
           var mangledNameSuffix: String = ""
           try {
@@ -132,8 +131,8 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
             .forEach { declaration ->
               if (declaration.isMangled && !supportsMangledNames) {
                 env.logger.error(
-                  "Could not determine mangled name suffix. Please consider making this public " +
-                    "and/or starring this issue: https://youtrack.jetbrains.com/issue/KT-66713.",
+                  "Could not determine mangled name suffix. This will be fixed in a future " +
+                    "release, but a temporary workaround is to make this declaration public.",
                   declaration.reportableNode as? KSNode,
                 )
               } else {
