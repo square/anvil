@@ -3,22 +3,56 @@
 package com.squareup.anvil.compiler.internal.testing
 
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.internal.capitalize
 import dagger.Component
 import dagger.Module
+import dagger.Provides
 import dagger.Subcomponent
+import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
 import kotlin.reflect.KClass
 
 @ExperimentalAnvilApi
 public fun Class<*>.moduleFactoryClass(
-  providerMethodName: String,
+  providerMethodName: String? = null,
   companion: Boolean = false,
 ): Class<*> {
   val companionString = if (companion) "_Companion" else ""
+
+  val methodsOrCompanionMethods = if (companion) {
+    fields.single { it.name == "Companion" }.type.methods
+  } else {
+    methods
+  }
+
+  val providesMethods = methodsOrCompanionMethods
+    .filter { it.isAnnotationPresent(Provides::class.java) }
+    .mapToSet { it.name }
+
+  assertWithMessage("No @Provides methods found in $this")
+    .that(providesMethods)
+    .isNotEmpty()
+
+  if (providerMethodName != null) {
+    assertWithMessage(
+      "The name '$providerMethodName' must match a function annotated with @Provides",
+    )
+      .that(providesMethods)
+      .contains(providerMethodName)
+  } else {
+    assertWithMessage(
+      "You must specify a providerMethodName value when there is more than one @Provides function",
+    )
+      .that(providesMethods)
+      .hasSize(1)
+  }
+
+  val methodName = providerMethodName ?: providesMethods.single()
+
   return classLoader.loadClass(
-    "${generatedClassesString()}${companionString}_${providerMethodName.capitalize()}Factory",
+    "${generatedClassesString()}${companionString}_${methodName.capitalize()}Factory",
   )
 }
 
@@ -106,7 +140,9 @@ public fun Array<KClass<*>>.withoutAnvilModules(): List<KClass<*>> = toList().wi
 @ExperimentalAnvilApi
 public fun Collection<KClass<*>>.withoutAnvilModules(): List<KClass<*>> =
   filterNot {
-    it.qualifiedName!!.startsWith("anvil.module") || it.java.isAnnotationPresent(InternalBindingMarker::class.java)
+    it.qualifiedName!!.startsWith("anvil.module") || it.java.isAnnotationPresent(
+      InternalBindingMarker::class.java,
+    )
   }
 
 @ExperimentalAnvilApi

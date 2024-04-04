@@ -12,6 +12,7 @@ import com.rickbusarow.kase.gradle.GradleProjectBuilder
 import com.rickbusarow.kase.gradle.GradleRootProjectBuilder
 import com.rickbusarow.kase.gradle.GradleTestEnvironment
 import com.rickbusarow.kase.gradle.GradleTestEnvironmentFactory
+import com.rickbusarow.kase.gradle.HasAgpDependencyVersion
 import com.rickbusarow.kase.gradle.dsl.BuildFileSpec
 import com.rickbusarow.kase.gradle.dsl.SettingsFileSpec
 import com.rickbusarow.kase.gradle.rootProject
@@ -116,6 +117,10 @@ class AnvilGradleTestEnvironment(
             kotlin("kapt", version = versions.kotlinVersion, apply = false)
             id("com.squareup.anvil", version = anvilVersion, apply = false)
             id("com.google.devtools.ksp", version = versions.kspVersion.value, apply = false)
+            if (versions is HasAgpDependencyVersion) {
+              id("com.android.application", versions.agpVersion, apply = false)
+              id("com.android.library", versions.agpVersion, apply = false)
+            }
           }
         }
         dependencyResolutionManagement {

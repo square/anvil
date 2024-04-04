@@ -1,6 +1,7 @@
 package com.squareup.anvil.plugin.testing
 
 import com.rickbusarow.kase.files.DirectoryBuilder
+import com.rickbusarow.kase.gradle.dsl.BuildFileSpec
 import java.io.File
 
 interface FileStubs {
@@ -87,7 +88,11 @@ interface FileStubs {
     )
   }
 
-  fun androidBlock(namespace: String = "com.squareup.anvil.android"): String {
+  fun BuildFileSpec.androidBlock(namespace: String = "com.squareup.anvil.android"): BuildFileSpec {
+    return raw(androidBlockString(namespace))
+  }
+
+  fun androidBlockString(namespace: String = "com.squareup.anvil.android"): String {
     return """
     android {
       compileSdk = 33
@@ -95,8 +100,6 @@ interface FileStubs {
 
       defaultConfig {
         minSdk = 24
-        @Suppress("UnstableApiUsage")
-        targetSdk = 33
       }
 
       compileOptions {

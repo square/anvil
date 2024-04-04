@@ -1,46 +1,43 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.rickbusarow.kase.Kase1
+import com.rickbusarow.kase.wrap
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
+import com.squareup.anvil.compiler.assertCompilationSucceeded
 import com.squareup.anvil.compiler.assertFileGenerated
 import com.squareup.anvil.compiler.bindingModuleScope
 import com.squareup.anvil.compiler.bindingModuleScopes
 import com.squareup.anvil.compiler.bindingOriginKClass
-import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.contributingInterface
+import com.squareup.anvil.compiler.contributingObject
 import com.squareup.anvil.compiler.generatedBindingModule
 import com.squareup.anvil.compiler.generatedBindingModules
 import com.squareup.anvil.compiler.generatedFileOrNull
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.parentInterface
+import com.squareup.anvil.compiler.testing.AnvilCompilationModeTest
+import com.squareup.anvil.compiler.testing.AnvilCompilationModeTestEnvironment
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
+import io.kotest.matchers.shouldBe
+import org.junit.jupiter.api.DynamicNode
+import org.junit.jupiter.api.TestFactory
+import java.util.stream.Stream
 import javax.inject.Named
 
-@Suppress("RemoveRedundantQualifierName")
-@RunWith(Parameterized::class)
-class ContributesBindingGeneratorTest(
-  private val mode: AnvilCompilationMode,
+class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
+  AnvilCompilationMode.Embedded(),
+  AnvilCompilationMode.Ksp(),
 ) {
 
-  companion object {
-    @Parameterized.Parameters(name = "{0}")
-    @JvmStatic
-    fun modes(): Collection<Any> {
-      return buildList {
-        add(AnvilCompilationMode.Embedded())
-        add(AnvilCompilationMode.Ksp())
-      }
-    }
-  }
-
-  @Test fun `there is a binding module for a contributed binding for interfaces`() {
-    compile(
-      """
+  @TestFactory fun `there is a binding module for a contributed binding for interfaces`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesBinding
@@ -50,21 +47,21 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Any::class, ParentInterface::class)
       interface ContributingInterface : ParentInterface
       """,
-      mode = mode,
-    ) {
-      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
+      ) {
+        assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+        assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
 
-      assertFileGenerated(
-        mode,
-        "ContributingInterfaceAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
-      )
+        assertFileGenerated(
+          mode,
+          "ContributingInterfaceAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
+        )
+      }
     }
-  }
 
-  @Test fun `there is a binding module for a contributed binding for classes`() {
-    compile(
-      """
+  @TestFactory fun `there is a binding module for a contributed binding for classes`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesBinding
@@ -74,139 +71,139 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Any::class, ParentInterface::class)
       class ContributingInterface : ParentInterface
       """,
-      mode = mode,
-    ) {
-      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
-    }
-  }
-
-  @Test
-  fun `a Named annotation using a private top-level const property is inlined in the generated module`() {
-
-    // https://github.com/square/anvil/issues/938
-
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesBinding
-      import com.squareup.test.other.OTHER_CONSTANT
-      import javax.inject.Inject
-      import javax.inject.Named
-
-      interface ParentInterface
-
-      private const val CONSTANT = "${'$'}OTHER_CONSTANT.foo"
-
-      @Named(CONSTANT)
-      @ContributesBinding(Any::class)
-      class InjectClass @Inject constructor() : ParentInterface
-      """,
-      """
-      package com.squareup.test.other
-      
-      const val OTHER_CONSTANT = "abc"
-      """.trimIndent(),
-      mode = mode,
-    ) {
-
-      assertThat(exitCode).isEqualTo(OK)
-
-      val stringKey = injectClass.generatedBindingModule.methods.single()
-        .getDeclaredAnnotation(Named::class.java)
-
-      assertThat(stringKey.value).isEqualTo("abc.foo")
-    }
-  }
-
-  @Test
-  fun `a Named annotation using a private object's const property is inlined in the generated module`() {
-
-    // https://github.com/square/anvil/issues/938
-
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesBinding
-      import com.squareup.test.other.OTHER_CONSTANT
-      import javax.inject.Inject
-      import javax.inject.Named
-
-      private object Constants {
-        const val CONSTANT = "${'$'}OTHER_CONSTANT.foo"
+      ) {
+        assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+        assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
       }
-
-      interface ParentInterface
-
-      @Named(Constants.CONSTANT)
-      @ContributesBinding(Any::class)
-      class InjectClass @Inject constructor() : ParentInterface
-      """,
-      """
-      package com.squareup.test.other
-      
-      const val OTHER_CONSTANT = "abc"
-      """.trimIndent(),
-      mode = mode,
-    ) {
-
-      assertThat(exitCode).isEqualTo(OK)
-
-      val Named = injectClass.generatedBindingModule.methods.single()
-        .getDeclaredAnnotation(Named::class.java)
-
-      assertThat(Named.value).isEqualTo("abc.foo")
     }
-  }
 
-  @Test
-  fun `a Named annotation using a private companion object's const property is inlined in the generated module`() {
+  @TestFactory
+  fun `a Named annotation using a private top-level const property is inlined in the generated module`() =
+    testFactory {
 
-    // https://github.com/square/anvil/issues/938
+      // https://github.com/square/anvil/issues/938
 
-    compile(
-      """
-      package com.squareup.test
+      compile(
+        """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.test.other.OTHER_CONSTANT
+        import javax.inject.Inject
+        import javax.inject.Named
+  
+        interface ParentInterface
+  
+        private const val CONSTANT = "${'$'}OTHER_CONSTANT.foo"
+  
+        @Named(CONSTANT)
+        @ContributesBinding(Any::class)
+        class InjectClass @Inject constructor() : ParentInterface
+        """,
+        """
+        package com.squareup.test.other
+        
+        const val OTHER_CONSTANT = "abc"
+        """.trimIndent(),
+      ) {
 
-      import com.squareup.anvil.annotations.ContributesBinding 
-      import com.squareup.test.other.OTHER_CONSTANT
-      import javax.inject.Inject
-      import javax.inject.Named
+        assertThat(exitCode).isEqualTo(OK)
 
-      private interface Settings {
-        companion object {
+        val stringKey = injectClass.generatedBindingModule.methods.single()
+          .getDeclaredAnnotation(Named::class.java)
+
+        assertThat(stringKey.value).isEqualTo("abc.foo")
+      }
+    }
+
+  @TestFactory
+  fun `a Named annotation using a private object's const property is inlined in the generated module`() =
+    testFactory {
+
+      // https://github.com/square/anvil/issues/938
+
+      compile(
+        """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.test.other.OTHER_CONSTANT
+        import javax.inject.Inject
+        import javax.inject.Named
+  
+        private object Constants {
           const val CONSTANT = "${'$'}OTHER_CONSTANT.foo"
         }
+  
+        interface ParentInterface
+  
+        @Named(Constants.CONSTANT)
+        @ContributesBinding(Any::class)
+        class InjectClass @Inject constructor() : ParentInterface
+        """,
+        """
+        package com.squareup.test.other
+        
+        const val OTHER_CONSTANT = "abc"
+        """.trimIndent(),
+      ) {
+
+        assertThat(exitCode).isEqualTo(OK)
+
+        val Named = injectClass.generatedBindingModule.methods.single()
+          .getDeclaredAnnotation(Named::class.java)
+
+        assertThat(Named.value).isEqualTo("abc.foo")
       }
-
-      interface ParentInterface
-
-      @Named(Settings.CONSTANT)
-      @ContributesBinding(Any::class)
-      class InjectClass @Inject constructor() : ParentInterface
-      """,
-      """
-      package com.squareup.test.other
-      
-      const val OTHER_CONSTANT = "abc"
-      """.trimIndent(),
-      mode = mode,
-    ) {
-
-      assertThat(exitCode).isEqualTo(OK)
-
-      val Named = injectClass.generatedBindingModule.methods.single()
-        .getDeclaredAnnotation(Named::class.java)
-
-      assertThat(Named.value).isEqualTo("abc.foo")
     }
-  }
 
-  @Test fun `there is a binding module for a contributed binding for an object`() {
-    compile(
-      """
+  @TestFactory
+  fun `a Named annotation using a private companion object's const property is inlined in the generated module`() =
+    testFactory {
+
+      // https://github.com/square/anvil/issues/938
+
+      compile(
+        """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesBinding 
+        import com.squareup.test.other.OTHER_CONSTANT
+        import javax.inject.Inject
+        import javax.inject.Named
+  
+        private interface Settings {
+          companion object {
+            const val CONSTANT = "${'$'}OTHER_CONSTANT.foo"
+          }
+        }
+  
+        interface ParentInterface
+  
+        @Named(Settings.CONSTANT)
+        @ContributesBinding(Any::class)
+        class InjectClass @Inject constructor() : ParentInterface
+        """,
+        """
+        package com.squareup.test.other
+        
+        const val OTHER_CONSTANT = "abc"
+        """.trimIndent(),
+      ) {
+
+        assertThat(exitCode).isEqualTo(OK)
+
+        val Named = injectClass.generatedBindingModule.methods.single()
+          .getDeclaredAnnotation(Named::class.java)
+
+        assertThat(Named.value).isEqualTo("abc.foo")
+      }
+    }
+
+  @TestFactory fun `there is a binding module for a contributed binding for an object`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesBinding
@@ -216,14 +213,13 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Any::class, ParentInterface::class)
       object ContributingInterface : ParentInterface
       """,
-      mode = mode,
-    ) {
-      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
+      ) {
+        assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+        assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
+      }
     }
-  }
 
-  @Test fun `the order of the scope can be changed with named parameters`() {
+  @TestFactory fun `the order of the scope can be changed with named parameters`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -235,15 +231,15 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(boundType = ParentInterface::class, scope = Int::class)
       class ContributingInterface : ParentInterface
       """,
-      mode = mode,
     ) {
       assertThat(contributingInterface.bindingModuleScope).isEqualTo(Int::class)
     }
   }
 
-  @Test fun `there is a binding module for a contributed binding for inner interfaces`() {
-    compile(
-      """
+  @TestFactory fun `there is a binding module for a contributed binding for inner interfaces`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesBinding
@@ -255,18 +251,18 @@ class ContributesBindingGeneratorTest(
         interface ContributingInterface : ParentInterface
       }
       """,
-      mode = mode,
-    ) {
-      val contributingInterface =
-        classLoader.loadClass("com.squareup.test.Abc\$ContributingInterface")
-      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
+      ) {
+        val contributingInterface =
+          classLoader.loadClass("com.squareup.test.Abc\$ContributingInterface")
+        assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+        assertThat(contributingInterface.bindingModuleScope).isEqualTo(Any::class)
+      }
     }
-  }
 
-  @Test fun `there is a binding module for a contributed binding for inner classes`() {
-    compile(
-      """
+  @TestFactory fun `there is a binding module for a contributed binding for inner classes`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesBinding
@@ -278,21 +274,20 @@ class ContributesBindingGeneratorTest(
         class ContributingClass : ParentInterface
       }
       """,
-      mode = mode,
-    ) {
-      val contributingClass =
-        classLoader.loadClass("com.squareup.test.Abc\$ContributingClass")
-      assertThat(contributingClass.bindingOriginKClass?.java).isEqualTo(contributingClass)
-      assertThat(contributingClass.bindingModuleScope).isEqualTo(Any::class)
+      ) {
+        val contributingClass =
+          classLoader.loadClass("com.squareup.test.Abc\$ContributingClass")
+        assertThat(contributingClass.bindingOriginKClass?.java).isEqualTo(contributingClass)
+        assertThat(contributingClass.bindingModuleScope).isEqualTo(Any::class)
 
-      assertFileGenerated(
-        mode,
-        "Abc_ContributingClassAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
-      )
+        assertFileGenerated(
+          mode,
+          "Abc_ContributingClassAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
+        )
+      }
     }
-  }
 
-  @Test fun `contributed binding class must be public`() {
+  @TestFactory fun `contributed binding class must be public`() = testFactory {
     val visibilities = setOf(
       "internal",
       "private",
@@ -324,9 +319,10 @@ class ContributesBindingGeneratorTest(
     }
   }
 
-  @Test fun `contributed bindings aren't allowed to have more than one qualifier`() {
-    compile(
-      """
+  @TestFactory fun `contributed bindings aren't allowed to have more than one qualifier`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import javax.inject.Qualifier
@@ -344,18 +340,18 @@ class ContributesBindingGeneratorTest(
       @AnyQualifier2
       interface ContributingInterface : ParentInterface
       """,
-      mode = mode,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "Classes annotated with @ContributesBinding may not use more than one @Qualifier.",
-      )
+      ) {
+        assertThat(exitCode).isError()
+        assertThat(messages).contains(
+          "Classes annotated with @ContributesBinding may not use more than one @Qualifier.",
+        )
+      }
     }
-  }
 
-  @Test fun `the bound type can only be implied with one super type (2 interfaces)`() {
-    compile(
-      """
+  @TestFactory fun `the bound type can only be implied with one super type - 2 interfaces`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesBinding
@@ -365,21 +361,21 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Any::class)
       interface ContributingInterface : ParentInterface, CharSequence
       """,
-      mode = mode,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
-          "the bound type. This is only allowed with exactly one direct super type. If there " +
-          "are multiple or none, then the bound type must be explicitly defined in the " +
-          "@ContributesBinding annotation.",
-      )
+      ) {
+        assertThat(exitCode).isError()
+        assertThat(messages).contains(
+          "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
+            "the bound type. This is only allowed with exactly one direct super type. If there " +
+            "are multiple or none, then the bound type must be explicitly defined in the " +
+            "@ContributesBinding annotation.",
+        )
+      }
     }
-  }
 
-  @Test fun `the bound type can only be implied with one super type (class and interface)`() {
-    compile(
-      """
+  @TestFactory fun `the bound type can only be implied with one super type - class and interface`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesBinding
@@ -391,21 +387,21 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Any::class)
       interface ContributingInterface : Abc(), ParentInterface
       """,
-      mode = mode,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
-          "the bound type. This is only allowed with exactly one direct super type. If there " +
-          "are multiple or none, then the bound type must be explicitly defined in the " +
-          "@ContributesBinding annotation.",
-      )
+      ) {
+        assertThat(exitCode).isError()
+        assertThat(messages).contains(
+          "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
+            "the bound type. This is only allowed with exactly one direct super type. If there " +
+            "are multiple or none, then the bound type must be explicitly defined in the " +
+            "@ContributesBinding annotation.",
+        )
+      }
     }
-  }
 
-  @Test fun `the bound type can only be implied with one super type (no super type)`() {
-    compile(
-      """
+  @TestFactory fun `the bound type can only be implied with one super type - no super type`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesBinding
@@ -413,19 +409,18 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Any::class)
       object ContributingInterface
       """,
-      mode = mode,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
-          "the bound type. This is only allowed with exactly one direct super type. If there " +
-          "are multiple or none, then the bound type must be explicitly defined in the " +
-          "@ContributesBinding annotation.",
-      )
+      ) {
+        assertThat(exitCode).isError()
+        assertThat(messages).contains(
+          "com.squareup.test.ContributingInterface contributes a binding, but does not specify " +
+            "the bound type. This is only allowed with exactly one direct super type. If there " +
+            "are multiple or none, then the bound type must be explicitly defined in the " +
+            "@ContributesBinding annotation.",
+        )
+      }
     }
-  }
 
-  @Test fun `the bound type is not implied when explicitly defined`() {
+  @TestFactory fun `the bound type is not implied when explicitly defined`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -437,14 +432,13 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Int::class, ParentInterface::class)
       interface ContributingInterface : ParentInterface, CharSequence
       """,
-      mode = mode,
     ) {
       assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.bindingModuleScope).isEqualTo(Int::class)
     }
   }
 
-  @Test fun `the contributed binding class must extend the bound type`() {
+  @TestFactory fun `the contributed binding class must extend the bound type`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -456,7 +450,6 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Any::class, ParentInterface::class)
       interface ContributingInterface : CharSequence
       """,
-      mode = mode,
     ) {
       assertThat(exitCode).isError()
       assertThat(messages).contains(
@@ -466,7 +459,7 @@ class ContributesBindingGeneratorTest(
     }
   }
 
-  @Test fun `the contributed binding class can extend Any explicitly`() {
+  @TestFactory fun `the contributed binding class can extend Any explicitly`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -482,14 +475,13 @@ class ContributesBindingGeneratorTest(
       )
       interface ComponentInterface
       """,
-      mode = mode,
     ) {
       assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.bindingModuleScope).isEqualTo(Int::class)
     }
   }
 
-  @Test fun `there are multiple hints for multiple contributed bindings`() {
+  @TestFactory fun `there are multiple hints for multiple contributed bindings`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -502,14 +494,13 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Unit::class)
       class ContributingInterface : ParentInterface
       """,
-      mode = mode,
     ) {
       assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.bindingModuleScopes).containsExactly(Any::class, Unit::class)
     }
   }
 
-  @Test fun `the scopes for multiple contributions have a stable sort`() {
+  @TestFactory fun `the scopes for multiple contributions have a stable sort`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -526,7 +517,6 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Any::class)
       class SecondContributingInterface : ParentInterface
       """,
-      mode = mode,
     ) {
       generatedFileOrNull(
         mode,
@@ -539,9 +529,10 @@ class ContributesBindingGeneratorTest(
     }
   }
 
-  @Test fun `there are multiple hints for contributed bindings with fully qualified names`() {
-    compile(
-      """
+  @TestFactory fun `there are multiple hints for contributed bindings with fully qualified names`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesBinding
@@ -552,16 +543,19 @@ class ContributesBindingGeneratorTest(
       @com.squareup.anvil.annotations.ContributesBinding(Unit::class)
       class ContributingInterface : ParentInterface
       """,
-      mode = mode,
-    ) {
-      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.bindingModuleScopes).containsExactly(Any::class, Unit::class)
+      ) {
+        assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+        assertThat(contributingInterface.bindingModuleScopes).containsExactly(
+          Any::class,
+          Unit::class,
+        )
+      }
     }
-  }
 
-  @Test fun `multiple annotations with the same scope and bound type aren't allowed`() {
-    compile(
-      """
+  @TestFactory fun `multiple annotations with the same scope and bound type aren't allowed`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesBinding
@@ -574,21 +568,21 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Unit::class, replaces = [Int::class])
       class ContributingInterface : ParentInterface
       """,
-      mode = mode,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "com.squareup.test.ContributingInterface contributes multiple times to the same scope " +
-          "using the same bound type: [ParentInterface]. Contributing multiple times to the " +
-          "same scope with the same bound type is forbidden and all scope - bound type " +
-          "combinations must be distinct.",
-      )
+      ) {
+        assertThat(exitCode).isError()
+        assertThat(messages).contains(
+          "com.squareup.test.ContributingInterface contributes multiple times to the same scope " +
+            "using the same bound type: [ParentInterface]. Contributing multiple times to the " +
+            "same scope with the same bound type is forbidden and all scope - bound type " +
+            "combinations must be distinct.",
+        )
+      }
     }
-  }
 
-  @Test fun `multiple annotations with the same scope and different bound type are allowed`() {
-    compile(
-      """
+  @TestFactory fun `multiple annotations with the same scope and different bound type are allowed`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesBinding
@@ -602,16 +596,15 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Unit::class, boundType = ParentInterface2::class)
       class ContributingInterface : ParentInterface1, ParentInterface2
       """,
-      mode = mode,
-    ) {
-      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
-      assertThat(
-        contributingInterface.bindingModuleScopes.toSet(),
-      ).containsExactly(Any::class, Unit::class)
+      ) {
+        assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+        assertThat(
+          contributingInterface.bindingModuleScopes.toSet(),
+        ).containsExactly(Any::class, Unit::class)
+      }
     }
-  }
 
-  @Test fun `priority is correctly propagated`() {
+  @TestFactory fun `priority is correctly propagated`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -627,7 +620,6 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Unit::class, boundType = ParentInterface2::class, priority = ContributesBinding.PRIORITY_HIGHEST)
       class ContributingInterface : ParentInterface1, ParentInterface2
       """,
-      mode = mode,
     ) {
       val bindingModules = contributingInterface.generatedBindingModules()
         .associate { clazz ->
@@ -649,7 +641,7 @@ class ContributesBindingGeneratorTest(
     }
   }
 
-  @Test fun `legacy priority is correctly propagated`() {
+  @TestFactory fun `legacy priority is correctly propagated`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -666,7 +658,6 @@ class ContributesBindingGeneratorTest(
       @ContributesBinding(Unit::class, boundType = ParentInterface2::class, priorityDeprecated = Priority.HIGHEST)
       class ContributingInterface : ParentInterface1, ParentInterface2
       """,
-      mode = mode,
       allWarningsAsErrors = false,
     ) {
       val bindingModules = contributingInterface.generatedBindingModules()
@@ -687,5 +678,55 @@ class ContributesBindingGeneratorTest(
         bindingModules["ContributingInterfaceAsComSquareupTestParentInterface2ToKotlinUnitBindingModule"],
       ).isEqualTo(ContributesBinding.PRIORITY_HIGHEST)
     }
+  }
+
+  @TestFactory
+  fun `a provider factory is still generated IFF no normal Dagger factory generation is enabled`() = params.withFactorySource { _, source ->
+
+    // https://github.com/square/anvil/issues/948
+
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.ContributesTo
+      import com.squareup.anvil.annotations.MergeSubcomponent
+      import javax.inject.Inject
+
+      interface ParentInterface
+
+      @ContributesBinding(Unit::class)
+      object ContributingObject : ParentInterface
+      """,
+      enableDaggerAnnotationProcessor = source == DaggerFactorySource.DAGGER,
+      generateDaggerFactories = source == DaggerFactorySource.ANVIL,
+    ) {
+      assertCompilationSucceeded()
+
+      contributingObject.generatedBindingModule
+        .moduleFactoryClass()
+        .getDeclaredMethod("get")
+        .returnType shouldBe parentInterface
+    }
+  }
+
+  enum class DaggerFactorySource {
+    DAGGER,
+    ANVIL,
+    NONE,
+  }
+
+  private inline fun List<Kase1<AnvilCompilationMode>>.withFactorySource(
+    crossinline testAction: suspend AnvilCompilationModeTestEnvironment.(
+      compilationMode: AnvilCompilationMode,
+      factoryGenMode: DaggerFactorySource,
+    ) -> Unit,
+  ): Stream<out DynamicNode> = asContainers { modeKase ->
+    DaggerFactorySource.entries.asTests(
+      testEnvironmentFactory = AnvilCompilationModeTestEnvironment.wrap(modeKase),
+      testName = { "factory source: ${it.name.lowercase()}" },
+      testAction = { testAction(mode, it) },
+    )
   }
 }

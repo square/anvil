@@ -12,8 +12,14 @@ import java.io.File
 /** A class that's annotated with `@Module` */
 typealias ModuleClassInfo = ClassInfo
 
+/** A class that implements `dagger.internal.Factory` */
+typealias DaggerFactoryClassInfo = ClassInfo
+
 /** A method that's annotated with `@Binds` */
 typealias BindsMethodInfo = MethodInfo
+
+/** A method that's annotated with `@Provides` */
+typealias ProvidesMethodInfo = MethodInfo
 
 typealias ReturnTypeName = String
 typealias ParameterTypeName = String
@@ -38,6 +44,29 @@ typealias ParameterTypeName = String
 fun ScanResult.allModuleClasses(): List<ModuleClassInfo> {
   return allClasses
     .filter { it.hasAnnotation("dagger.Module") }
+    .sortedBy { it.name }
+}
+
+/**
+ * Returns all classes that implement `dagger.internal.Factory` in this scan result.
+ * The classes are sorted by their name.
+ *
+ * ```
+ * @TestFactory
+ * fun `my test`() = testFactory {
+ *   // ...
+ *
+ *   shouldSucceed("jar") // note the "jar" task
+ *
+ *   rootProject.classGraphResult()
+ *     .allDaggerFactoryClasses()
+ *     .names() shouldBe listOf( /* ... */ )
+ * }
+ * ```
+ */
+fun ScanResult.allDaggerFactoryClasses(): List<DaggerFactoryClassInfo> {
+  return allClasses
+    .filter { it.implementsInterface("dagger.internal.Factory") }
     .sortedBy { it.name }
 }
 
@@ -124,6 +153,14 @@ fun ModuleClassInfo.allBindMethods(): List<BindsMethodInfo> {
   return methodInfo.filter { it.hasAnnotation("dagger.Binds") }
 }
 
+/**
+ * Returns all `provide___` methods declared in a particular `@Module` type.
+ * The methods are sorted by their name.
+ */
+fun ModuleClassInfo.allProvidesMethods(): List<ProvidesMethodInfo> {
+  return methodInfo.filter { it.hasAnnotation("dagger.Provides") }
+}
+
 fun BindsMethodInfo.boundTypes(): Pair<ParameterTypeName, ReturnTypeName> {
   val returnType = typeSignatureOrTypeDescriptor.resultType.toString()
   val parameterType = parameterInfo.single().typeSignatureOrTypeDescriptor.toString()
@@ -134,9 +171,31 @@ fun Collection<HasName>.names(): List<String> = map { it.name }
 
 fun GradleProjectBuilder.requireJarArtifact(): File {
 
-  val libs = path.resolve("build/libs")
+  fun Sequence<File>.requireSingle(libs: File): File {
+    val size = count()
+    require(size == 1) {
+      """
+      |Expected 1 jar file, but found $size in $libs:
+      |  ${joinToString("\n  ")}
+      |
+      """.trimMargin()
+    }
+    return single()
+  }
 
-  val jars = libs.walkBottomUp()
+  // Android libs
+  val intermediates = path.resolve("build/intermediates/aar_main_jar/debug")
+  val classesJar = intermediates
+    .walkBottomUp()
+    .filter { it.isFile && it.extension == "jar" }
+
+  if (classesJar.any()) {
+    return classesJar.requireSingle(intermediates)
+  }
+
+  // Java/Kotlin libs
+  val libs = path.resolve("build/libs")
+  return libs.walkBottomUp()
     .filter { file ->
       when {
         !file.isFile -> false
@@ -145,17 +204,7 @@ fun GradleProjectBuilder.requireJarArtifact(): File {
         file.nameWithoutExtension.matches(".*?-(?:sources|javadoc)".toRegex()) -> false
         else -> true
       }
-    }
-    .toList()
-
-  require(jars.size == 1) {
-    """
-    |Expected 1 jar file, but found ${jars.size} in $libs:
-    |  ${jars.joinToString("\n  ")}
-    |
-    """.trimMargin()
-  }
-  return jars.single()
+    }.requireSingle(libs)
 }
 
 /**

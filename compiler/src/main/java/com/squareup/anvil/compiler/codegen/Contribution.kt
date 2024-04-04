@@ -4,6 +4,7 @@ import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.BINDING_MODULE_SUFFIX
 import com.squareup.anvil.compiler.MULTIBINDING_MODULE_SUFFIX
+import com.squareup.anvil.compiler.codegen.dagger.ProvidesMethodFactoryCodeGen
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.generateClassName
@@ -24,27 +25,39 @@ import dagger.Provides
 import dagger.multibindings.IntoMap
 import dagger.multibindings.IntoSet
 
-internal sealed interface Contribution {
-  val origin: ClassName
-  val scope: ClassName
-  val isObject: Boolean
-  val boundType: ClassName
-  val replaces: List<ClassName>
-  val qualifier: QualifierData?
-  val bindingModuleNameSuffix: String
+internal sealed class Contribution {
+  abstract val origin: ClassName
+  abstract val scope: ClassName
+  abstract val isObject: Boolean
+  abstract val boundType: ClassName
+  abstract val replaces: List<ClassName>
+  abstract val qualifier: QualifierData?
+  abstract val bindingModuleNameSuffix: String
+
+  val contributionName: String by lazy(LazyThreadSafetyMode.NONE) {
+    // Combination name of origin, scope, and boundType
+    val suffix = "As" +
+      boundType.generateClassNameString().capitalize() +
+      "To" +
+      scope.generateClassNameString().capitalize() +
+      bindingModuleNameSuffix
+
+    origin.generateClassName(suffix = suffix).simpleName
+  }
+
+  val functionName: String by lazy(LazyThreadSafetyMode.NONE) {
+    val functionNameSuffix = boundType.simpleName.capitalize()
+    if (isObject) {
+      "provide$functionNameSuffix"
+    } else {
+      "bind$functionNameSuffix"
+    }
+  }
 
   // Can't be private until we move off jvmTarget 8
   fun generateBindingModule(): TypeSpec {
     val contribution = this
-    // Combination name of origin, scope, and boundType
-    val suffix = "As" +
-      contribution.boundType.generateClassNameString().capitalize() +
-      "To" +
-      contribution.scope.generateClassNameString().capitalize() +
-      bindingModuleNameSuffix
 
-    val contributionName =
-      origin.generateClassName(suffix = suffix).simpleName
     val builder = if (contribution.isObject) {
       TypeSpec.objectBuilder(contributionName)
     } else {
@@ -120,18 +133,62 @@ internal sealed interface Contribution {
 
   companion object {
     // The generic ensures the list is of the same subtype
-    fun <T : Contribution> List<T>.generateFileSpecs(): List<FileSpec> {
+    fun <T : Contribution> List<T>.generateFileSpecs(
+      generateProviderFactories: Boolean,
+    ): List<FileSpec> {
+
+      val contributions = this@generateFileSpecs
       val origin = first().origin
       val generatedPackage = origin.packageName.safePackageString(dotPrefix = true)
-      // Give it a stable sort.
-      return distinct()
-        .sortedWith(COMPARATOR)
-        .map(Contribution::generateBindingModule)
-        .map { spec ->
-          FileSpec.createAnvilSpec(generatedPackage, spec.name!!) {
-            addType(spec)
+      return buildList {
+        contributions.distinct()
+          // Give it a stable sort.
+          .sortedWith(COMPARATOR)
+          .forEach { contribution ->
+
+            val moduleType = contribution.generateBindingModule()
+            val moduleFile = FileSpec.createAnvilSpec(generatedPackage, moduleType.name!!) {
+              addType(moduleType)
+            }
+            add(moduleFile)
+
+            if (contribution.isObject && generateProviderFactories) {
+
+              val providerFactoryFile = generateProviderFactory(
+                contribution = contribution,
+                origin = origin,
+                generatedPackage = generatedPackage,
+              )
+              add(providerFactoryFile)
+            }
           }
-        }
+      }
+    }
+
+    private fun <T : Contribution> generateProviderFactory(
+      contribution: T,
+      origin: ClassName,
+      generatedPackage: String,
+    ): FileSpec {
+      val declaration = ProvidesMethodFactoryCodeGen.CallableReference(
+        isInternal = false,
+        isCompanionObject = false,
+        name = contribution.functionName,
+        isProperty = false,
+        constructorParameters = emptyList(),
+        type = contribution.boundType,
+        isNullable = origin.isNullable,
+        isPublishedApi = false,
+        reportableNode = contribution.functionName,
+      )
+      return ProvidesMethodFactoryCodeGen.generateFactoryClass(
+        isMangled = false,
+        // In this case, the suffix doesn't matter since the provider will never be mangled.
+        mangledNameSuffix = "",
+        moduleClass = ClassName(generatedPackage, contribution.contributionName),
+        isInObject = true,
+        declaration = declaration,
+      )
     }
 
     private val COMPARATOR: Comparator<Contribution> = compareBy<Contribution> {
@@ -155,7 +212,7 @@ internal sealed interface Contribution {
     val priority: Int,
     override val replaces: List<ClassName>,
     override val qualifier: QualifierData?,
-  ) : Contribution {
+  ) : Contribution() {
     override val bindingModuleNameSuffix: String = BINDING_MODULE_SUFFIX
   }
 
@@ -167,7 +224,7 @@ internal sealed interface Contribution {
     override val replaces: List<ClassName>,
     override val qualifier: QualifierData?,
     val mapKey: AnnotationSpec?,
-  ) : Contribution {
+  ) : Contribution() {
     override val bindingModuleNameSuffix: String = MULTIBINDING_MODULE_SUFFIX
   }
 }

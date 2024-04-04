@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler
 import com.google.common.collect.Lists.cartesianProduct
 import com.google.common.truth.ComparableSubject
 import com.google.common.truth.Truth.assertThat
+import com.google.common.truth.Truth.assertWithMessage
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesTo
@@ -55,6 +56,9 @@ internal fun compile(
   workingDir = workingDir,
   block = block,
 )
+
+internal val JvmCompilationResult.contributingObject: Class<*>
+  get() = classLoader.loadClass("com.squareup.test.ContributingObject")
 
 internal val JvmCompilationResult.contributingInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ContributingInterface")
@@ -292,6 +296,12 @@ internal fun assumeMergeComponent(annotationClass: KClass<*>) {
 
 internal fun ComparableSubject<ExitCode>.isError() {
   isIn(setOf(COMPILATION_ERROR, INTERNAL_ERROR))
+}
+internal fun ComparableSubject<ExitCode>.isOK() {
+  isEqualTo(ExitCode.OK)
+}
+internal fun JvmCompilationResult.assertCompilationSucceeded() {
+  assertWithMessage(messages).that(exitCode).isOK()
 }
 
 internal fun isFullTestRun(): Boolean = FULL_TEST_RUN

@@ -1,5 +1,6 @@
 package com.squareup.anvil.annotations
 
+import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_NORMAL
 import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.annotation.AnnotationTarget.CLASS
 import kotlin.reflect.KClass

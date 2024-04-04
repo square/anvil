@@ -44,6 +44,7 @@ public abstract interface class com/squareup/anvil/compiler/api/AnvilContext {
 	public abstract fun getGenerateFactoriesOnly ()Z
 	public abstract fun getModule ()Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;
 	public abstract fun getTrackSourceFiles ()Z
+	public abstract fun getWillHaveDaggerFactories ()Z
 }
 
 public abstract interface class com/squareup/anvil/compiler/api/CodeGenerator : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
