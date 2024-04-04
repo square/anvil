@@ -37,6 +37,10 @@ internal const val trackSourceFilesName = "track-source-files"
 internal val trackSourceFilesKey =
   CompilerConfigurationKey.create<Boolean>("anvil $trackSourceFilesName")
 
+internal const val willHaveDaggerFactoriesName = "will-have-dagger-factories"
+internal val willHaveDaggerFactoriesKey =
+  CompilerConfigurationKey.create<Boolean>("anvil $willHaveDaggerFactoriesName")
+
 internal const val analysisBackendName = "analysis-backend"
 internal val analysisBackendKey =
   CompilerConfigurationKey.create<String>("anvil $analysisBackendName")
@@ -108,6 +112,14 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       allowMultipleOccurrences = false,
     ),
     CliOption(
+      optionName = willHaveDaggerFactoriesName,
+      valueDescription = "<true|false>",
+      description = "Whether Anvil should expect that Dagger's Factory models will be generated " +
+        "by the end of compilation, from Anvil itself or from Dagger's generators.",
+      required = false,
+      allowMultipleOccurrences = false,
+    ),
+    CliOption(
       optionName = analysisBackendName,
       valueDescription = AnalysisBackend.entries.joinToString("|", "<", ">"),
       description = "Controls whether Anvil analysis is running as an embedded plugin or as KSP.",
@@ -141,6 +153,9 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
 
       disableComponentMergingName ->
         configuration.put(disableComponentMergingKey, value.toBoolean())
+
+      willHaveDaggerFactoriesName ->
+        configuration.put(willHaveDaggerFactoriesKey, value.toBoolean())
 
       trackSourceFilesName ->
         configuration.put(trackSourceFilesKey, value.toBoolean())

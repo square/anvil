@@ -112,6 +112,11 @@ public class AnvilCompilation internal constructor(
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "will-have-dagger-factories",
+                optionValue = (generateDaggerFactories || enableDaggerAnnotationProcessor).toString(),
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "track-source-files",
                 optionValue = trackSourceFiles.toString(),
               ),
@@ -134,6 +139,7 @@ public class AnvilCompilation internal constructor(
           }
           // Run KSP embedded directly within this kotlinc invocation
           kspWithCompilation = true
+          kspArgs["will-have-dagger-factories"] = generateDaggerFactories.toString()
           kspArgs["generate-dagger-factories"] = generateDaggerFactories.toString()
           kspArgs["generate-dagger-factories-only"] = generateDaggerFactoriesOnly.toString()
           kspArgs["disable-component-merging"] = disableComponentMerging.toString()

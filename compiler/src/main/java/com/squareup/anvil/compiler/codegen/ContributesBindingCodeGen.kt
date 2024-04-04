@@ -41,6 +41,7 @@ import com.squareup.kotlinpoet.ksp.writeTo
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
+import kotlin.properties.Delegates
 
 /**
  * Generates binding modules for every [ContributesBinding]-annotated class. If a class has repeated
@@ -52,7 +53,15 @@ import java.io.File
  */
 internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
 
-  override fun isApplicable(context: AnvilContext) = !context.generateFactoriesOnly
+  // Used to determine if this generator needs to take responsibility
+  // for generating a factory for `@Provides` functions.
+  // https://github.com/square/anvil/issues/948
+  private var willHaveDaggerFactories: Boolean by Delegates.notNull()
+
+  override fun isApplicable(context: AnvilContext): Boolean {
+    willHaveDaggerFactories = context.willHaveDaggerFactories
+    return !context.generateFactoriesOnly
+  }
 
   internal class KspGenerator(
     override val env: SymbolProcessorEnvironment,
@@ -114,13 +123,15 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
               )
             }
 
-          for (spec in contributions.generateFileSpecs()) {
-            spec.writeTo(
-              env.codeGenerator,
-              aggregating = false,
-              originatingKSFiles = listOf(clazz.containingFile!!),
-            )
-          }
+          contributions
+            .generateFileSpecs(generateProviderFactories = !willHaveDaggerFactories)
+            .forEach { spec ->
+              spec.writeTo(
+                env.codeGenerator,
+                aggregating = false,
+                originatingKSFiles = listOf(clazz.containingFile!!),
+              )
+            }
         }
 
       return emptyList()
@@ -186,15 +197,16 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
               )
             }
 
-          contributions.generateFileSpecs().map { spec ->
-            createGeneratedFile(
-              codeGenDir = codeGenDir,
-              packageName = spec.packageName,
-              fileName = spec.name,
-              content = spec.toString(),
-              sourceFile = clazz.containingFileAsJavaFile,
-            )
-          }
+          contributions.generateFileSpecs(generateProviderFactories = !willHaveDaggerFactories)
+            .map { spec ->
+              createGeneratedFile(
+                codeGenDir = codeGenDir,
+                packageName = spec.packageName,
+                fileName = spec.name,
+                content = spec.toString(),
+                sourceFile = clazz.containingFileAsJavaFile,
+              )
+            }
         }
         .toList()
     }

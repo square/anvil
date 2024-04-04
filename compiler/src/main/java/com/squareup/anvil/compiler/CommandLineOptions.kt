@@ -10,6 +10,7 @@ public class CommandLineOptions private constructor(
   public val generateFactoriesOnly: Boolean,
   public val disableComponentMerging: Boolean,
   public val trackSourceFiles: Boolean,
+  public val willHaveDaggerFactories: Boolean,
   public val backend: AnalysisBackend,
   public val componentMergingBackend: ComponentMergingBackend,
 ) {
@@ -20,6 +21,7 @@ public class CommandLineOptions private constructor(
         generateFactoriesOnly = get(generateDaggerFactoriesOnlyKey, false),
         disableComponentMerging = get(disableComponentMergingKey, false),
         trackSourceFiles = get(trackSourceFilesKey, false),
+        willHaveDaggerFactories = get(willHaveDaggerFactoriesKey, false),
         backend = parseBackend(),
         componentMergingBackend = parseComponentMergingBackend(),
       )

@@ -378,7 +378,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     }
   }
 
-  private fun generateFactoryClass(
+  internal fun generateFactoryClass(
     isMangled: Boolean,
     mangledNameSuffix: String,
     moduleClass: ClassName,
@@ -575,7 +575,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     return spec
   }
 
-  private class CallableReference(
+  internal class CallableReference(
     val isInternal: Boolean,
     val isCompanionObject: Boolean,
     val name: String,

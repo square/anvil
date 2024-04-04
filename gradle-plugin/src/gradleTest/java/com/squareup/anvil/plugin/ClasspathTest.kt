@@ -54,7 +54,7 @@ internal class ClasspathTest : BaseGradleTest() {
       id("com.squareup.anvil") version "$anvilVersion"
     }
     
-    ${androidBlock()}
+    ${androidBlockString()}
     """.trimIndent()
   }
   val androidLibrary = BuildType(
@@ -71,7 +71,7 @@ internal class ClasspathTest : BaseGradleTest() {
       id("com.squareup.anvil") version "$anvilVersion"
     }
     
-    ${androidBlock()}
+    ${androidBlockString()}
     """.trimIndent()
   }
 

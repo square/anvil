@@ -12,7 +12,8 @@ import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm
-import java.util.Locale
+import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
+import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.util.targets
 import javax.inject.Inject
 
 public abstract class AnvilExtension @Inject constructor(
@@ -190,32 +191,35 @@ public abstract class AnvilExtension @Inject constructor(
     val kExtension = project.kotlinExtension
     if (kExtension is KotlinMultiplatformExtension) {
       kExtension.targets
-        .matching { it.platformType in SUPPORTED_PLATFORMS }
+        .matching { it.isSupportedType() }
         .configureEach {
-          addKspDep(
-            "ksp${
-              it.targetName.replaceFirstChar {
-                if (it.isLowerCase()) {
-                  it.titlecase(Locale.US)
-                } else {
-                  it.toString()
-                }
-              }
-            }",
-          )
+          addKspDep(it.kspConfigName())
         }
     } else {
       addKspDep("ksp")
     }
 
-    project.extensions.configure(KspExtension::class.java) {
+    val willHaveDaggerFactories = generateDaggerFactories.map { anvilGenerated ->
+      // If Anvil is creating factories due to `generateDaggerFactories`, then we're done.
+      // Otherwise, we have to check if the Dagger compiler dependency is in KSP's classpath.
+      anvilGenerated || kExtension.targets
+        .filter { it.isSupportedType() }
+        .any { target ->
+          target.compilations.any { c ->
+            c.kspConfigOrNull(project)?.hasDaggerCompilerDependency() == true
+          }
+        }
+    }
+
+    project.extensions.configure(KspExtension::class.java) { ksp ->
       // Do not convert this to a lambda.
       // It will leak the AnvilExtension instance and break configuration caching.
-      it.arg(
+      ksp.arg(
         commandLineArgumentProvider(
           "generate-dagger-factories" to generateDaggerFactories,
           "generate-dagger-factories-only" to generateDaggerFactoriesOnly,
           "disable-component-merging" to disableComponentMerging,
+          "will-have-dagger-factories" to willHaveDaggerFactories,
         ),
       )
     }
@@ -255,6 +259,8 @@ public abstract class AnvilExtension @Inject constructor(
 
   private companion object {
     val SUPPORTED_PLATFORMS = setOf(androidJvm, jvm)
+
+    private fun KotlinTarget.isSupportedType(): Boolean = platformType in SUPPORTED_PLATFORMS
   }
 }
 
