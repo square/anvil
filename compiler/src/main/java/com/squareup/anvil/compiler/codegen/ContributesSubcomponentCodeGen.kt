@@ -146,7 +146,6 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
         )
       }
 
-      // TODO could just declared functions work?
       val functions = componentInterface.getAllFunctions()
         .filter {
           it.returnType?.resolve()?.resolveKSClassDeclaration() == this
