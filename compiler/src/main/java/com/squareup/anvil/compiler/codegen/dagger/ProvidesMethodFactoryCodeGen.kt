@@ -13,6 +13,7 @@ import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
+import com.google.devtools.ksp.symbol.KSNode
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
@@ -117,16 +118,32 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
           val containingFile = clazz.containingFile!!
           // TODO we need a public API for this in KSP
           //  https://github.com/google/ksp/issues/1621
-          val mangledNameSuffix = (resolver as ResolverImpl).module
-            .mangledNameSuffix()
+          var supportsMangledNames: Boolean = false
+          var mangledNameSuffix: String = ""
+          try {
+            mangledNameSuffix = (resolver as ResolverImpl).module
+              .mangledNameSuffix()
+            supportsMangledNames = true
+          } catch (_: ClassNotFoundException) {
+            // TODO in KSP2 this isn't supported at the moment. See above issue.
+          }
           (functions + properties)
             .forEach { declaration ->
-              generateFactoryClass(
-                mangledNameSuffix,
-                className,
-                clazz.classKind == ClassKind.OBJECT,
-                declaration,
-              ).writeTo(env.codeGenerator, aggregating = false, listOf(containingFile))
+              if (declaration.isMangled && !supportsMangledNames) {
+                env.logger.error(
+                  "Could not determine mangled name suffix. This will be fixed in a future " +
+                    "release, but a temporary workaround is to make this declaration public.",
+                  declaration.reportableNode as? KSNode,
+                )
+              } else {
+                generateFactoryClass(
+                  declaration.isMangled,
+                  mangledNameSuffix,
+                  className,
+                  clazz.classKind == ClassKind.OBJECT,
+                  declaration,
+                ).writeTo(env.codeGenerator, aggregating = false, listOf(containingFile))
+              }
             }
         }
       return emptyList()
@@ -180,6 +197,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         type = typeName,
         isNullable = type.isMarkedNullable,
         isPublishedApi = function.isAnnotationPresent<PublishedApi>(),
+        reportableNode = function,
       )
     }
 
@@ -197,6 +215,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         type = typeName,
         isNullable = type.isMarkedNullable,
         isPublishedApi = property.isAnnotationPresent<PublishedApi>(),
+        reportableNode = property,
       )
     }
   }
@@ -263,6 +282,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       declaration: CallableReference,
     ): GeneratedFileWithSources {
       val spec = generateFactoryClass(
+        declaration.isMangled,
         module.mangledNameSuffix(),
         clazz.asClassName(),
         clazz.isObject(),
@@ -325,6 +345,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         type = typeName,
         isNullable = type.isNullable(),
         isPublishedApi = function.isAnnotatedWith(publishedApiFqName),
+        reportableNode = function,
       )
     }
 
@@ -342,6 +363,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         type = typeName,
         isNullable = type.isNullable(),
         isPublishedApi = property.isAnnotatedWith(publishedApiFqName),
+        reportableNode = property,
       )
     }
   }
@@ -357,6 +379,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
   }
 
   private fun generateFactoryClass(
+    isMangled: Boolean,
     mangledNameSuffix: String,
     moduleClass: ClassName,
     isInObject: Boolean,
@@ -370,10 +393,6 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     // omit the `get-` prefix for property names starting with the *word* `is`, like `isProperty`,
     // but not for names which just start with those letters, like `issues`.
     val useGetPrefix = isProperty && !isWordPrefixRegex.matches(declarationName)
-
-    val isMangled = !isProperty &&
-      declaration.isInternal &&
-      !declaration.isPublishedApi
 
     val packageName = moduleClass.packageName.safePackageString()
     val className = buildString {
@@ -565,7 +584,12 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     val type: TypeName,
     val isNullable: Boolean,
     val isPublishedApi: Boolean,
+    val reportableNode: Any,
   ) {
+    val isMangled: Boolean get() = !isProperty &&
+      isInternal &&
+      !isPublishedApi
+
     companion object // For extension
   }
 }
