@@ -10,7 +10,6 @@ buildConfig {
   packageName("com.squareup.anvil.compiler")
   useKotlinOutput { topLevelConstants = true }
 
-  buildConfigField("boolean", "WARNINGS_AS_ERRORS", libs.versions.config.warningsAsErrors.get())
   buildConfigField("boolean", "FULL_TEST_RUN", libs.versions.config.fullTestRun.get())
   buildConfigField("boolean", "INCLUDE_KSP_TESTS", libs.versions.config.includeKspTests.get())
 }

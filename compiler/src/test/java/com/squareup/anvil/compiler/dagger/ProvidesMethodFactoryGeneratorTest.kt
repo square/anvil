@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
-import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
 import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
@@ -3554,7 +3553,6 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     sources = sources,
     enableDaggerAnnotationProcessor = enableDagger,
     generateDaggerFactories = !enableDagger,
-    allWarningsAsErrors = WARNINGS_AS_ERRORS,
     block = block,
     mode = mode,
     previousCompilationResult = previousCompilationResult,
