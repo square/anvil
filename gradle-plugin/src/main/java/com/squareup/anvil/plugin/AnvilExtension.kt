@@ -138,6 +138,10 @@ public abstract class AnvilExtension @Inject constructor(
   public val trackSourceFiles: Property<Boolean> = objects.property(Boolean::class.java)
     .conventionFromProperty("com.squareup.anvil.trackSourceFiles", false)
 
+  public val ignoreKotlinVersionCompatibilityWarnings: Property<Boolean> = objects
+    .property(Boolean::class.java)
+    .conventionFromProperty("com.squareup.anvil.ignoreKotlinVersionCompatibilityWarnings", false)
+
   /**
    * @see useKsp
    */

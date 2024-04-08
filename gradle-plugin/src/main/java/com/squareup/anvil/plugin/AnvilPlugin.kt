@@ -139,6 +139,64 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
     disableIncrementalKotlinCompilation(variant)
 
+    if (!variant.project.anvilExtension().ignoreKotlinVersionCompatibilityWarnings.get()) {
+
+      val target = KOTLIN_TARGET.split('.').let { (major, minor, patch) ->
+        KotlinVersion(
+          major = major.toInt(),
+          minor = minor.toInt(),
+          patch = patch.take(1).toInt(),
+        )
+      }
+
+      val compat = KotlinVersion.CURRENT.major == target.major &&
+        KotlinVersion.CURRENT.minor == target.minor &&
+        KotlinVersion.CURRENT.patch.mod(10) == target.patch
+
+      println(
+        "#######  ${KotlinVersion.CURRENT}  ############# doing the check  -- target patch: ${target.patch}  --  current: ${KotlinVersion.CURRENT.patch.mod(
+          10,
+        )}",
+      )
+
+      if (!compat) {
+
+        println(
+          """
+      _ _,---._
+   ,-','       `-.___
+  /-;'               `._
+ /\/          ._   _,'o \
+( /\       _,--'\,','"`. )
+ |\      ,'o     \'    //\
+ |      \        /   ,--'""`-.
+ :       \_    _/ ,-'         `-._
+  \        `--'  /                )
+   `.  \`._    ,'     ________,','
+     .--`     ,'  ,--` __\___,;'
+      \`.,-- ,' ,`_)--'  /`.,'
+       \( ;  | | )      (`-/
+         `--'| |)       |-/
+           | | |        | |
+           | | |,.,-.   | |_
+           | `./ /   )---`  )
+          _|  /    ,',   ,-'
+         ,'|_(    /-<._,' |--,
+         |    `--'---.     \/ \
+         |          / \    /\  \
+       ,-^---._     |  \  /  \  \
+    ,-'        \----'   \/    \--`.
+   /            \              \   \
+          """.trimIndent(),
+        )
+
+        kotlinCompilation.project.logger.warn(
+          "Anvil is currently only compatible with Kotlin $KOTLIN_TARGET. " +
+            "Current Kotlin version is ${KotlinVersion.CURRENT}.",
+        )
+      }
+    }
+
     if (!variant.variantFilter.generateDaggerFactoriesOnly) {
       disableCorrectErrorTypes(variant)
 
@@ -305,7 +363,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       val variant = Variant(kotlinCompilation)
 
       // The cache makes sure that we execute this filter action only once.
-      variant.project.extensions.getByType(AnvilExtension::class.java)
+      variant.project.anvilExtension()
         ._variantFilter
         ?.execute(variant.variantFilter)
 
@@ -313,6 +371,9 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     }
   }
 }
+
+private fun Project.anvilExtension(): AnvilExtension =
+  extensions.getByType(AnvilExtension::class.java)
 
 /*
  * Don't convert this to a lambda to avoid this error:
@@ -433,7 +494,7 @@ internal class Variant private constructor(
       }
 
       val project = kotlinCompilation.target.project
-      val extension = project.extensions.getByType(AnvilExtension::class.java)
+      val extension = project.anvilExtension()
       val androidVariant = (kotlinCompilation as? KotlinJvmAndroidCompilation)?.androidVariant
 
       val androidSourceSets = if (androidVariant != null) {

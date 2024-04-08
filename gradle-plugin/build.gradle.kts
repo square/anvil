@@ -39,8 +39,9 @@ buildConfig {
     topLevelConstants = true
   }
 
-  buildConfigField("String", "GROUP", "\"$GROUP\"")
-  buildConfigField("String", "VERSION", "\"$VERSION_NAME\"")
+  buildConfigField( "GROUP", GROUP)
+  buildConfigField( "VERSION", VERSION_NAME)
+  buildConfigField( "KOTLIN_TARGET", libs.versions.kotlin)
 
   sourceSets.named("gradleTest") {
     className = "BuildProperties"
