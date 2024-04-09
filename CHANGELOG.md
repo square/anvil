@@ -18,6 +18,26 @@
 
 ### Other Notes & Contributions
 
+## [2.5.0-beta05] - 2024-04-09
+
+### Added
+
+* Support KSP in BindsMethodValidator by @IlyaGulya ([#831](https://github.com/square/anvil/pull/831))
+
+### Fixed
+
+* fix interface based @ContributesSubcomponent.Factory in KSP by @gabrielittner ([#931](https://github.com/square/anvil/pull/931))
+* Fix KSP resolution of Priority ([#933](https://github.com/square/anvil/pull/933))
+* Gracefully handle module name resolution in KSP ([#947](https://github.com/square/anvil/pull/947))
+* Always generate provider factories for binding modules ([#951](https://github.com/square/anvil/pull/951))
+* use the resolved value of `const` arguments in propagated annotation arguments ([#940](https://github.com/square/anvil/pull/940))
+* re-run analysis between an incremental sync and code generation ([#943](https://github.com/square/anvil/pull/943))
+* delay `@ContributesSubcomponent` generation until the last analysis rounds ([#946](https://github.com/square/anvil/pull/946))
+
+### Dependencies
+* Update dependency gradle to v8.7 ([#937](https://github.com/square/anvil/pull/937))
+* Update dagger to v2.51.1 ([#944](https://github.com/square/anvil/pull/944))
+
 ## [2.5.0-beta04] - 2024-03-14
 
 ### Changed
@@ -203,7 +223,7 @@
 
 ### Changed
 
-- **Attention:** This version supports Kotlin `1.7.0` only. For Kotlin `1.6.*` support please use version `2.4.1-1-6` instead. Future Anvil versions will remove support for Kotlin 1.6.  
+- **Attention:** This version supports Kotlin `1.7.0` only. For Kotlin `1.6.*` support please use version `2.4.1-1-6` instead. Future Anvil versions will remove support for Kotlin 1.6.
 
 ### Fixed
 
@@ -212,7 +232,7 @@
 - Correctly merge bindings from all scopes, if multiple `@Merge*` annotations are used, see #596.
 
 ### Custom Code Generator
- 
+
 - Change the method to get all super classes for `ClassReference` to return `TypeReference` instead.
 - Avoid a stackoverflow when querying all super types, see #587.
 - Create `PropertyReference.Psi` from primary constructor properties to have the same behavior as the descriptor implementation, see #609.
@@ -232,7 +252,7 @@
 - Many of the internals of Anvil were rewritten and the non-stable APIs of the `compiler-utils` artifact have changed. Some highlights:
   - Instead of working with PSI or Descriptor APIs directly, you should work with the common `ClassReference` API.
   - `ClassReference` is a sealed class and either implemented with PSI or Descriptors, so it's easy to fallback to a specific API and add your own extensions.
-  - The entry point to iterate through all classes used be `classesAndInnerClass(module)`, use `classAndInnerClassReferences()` instead. 
+  - The entry point to iterate through all classes used be `classesAndInnerClass(module)`, use `classAndInnerClassReferences()` instead.
 
 ### Removed
 
@@ -686,7 +706,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta04...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta05...HEAD
+[2.5.0-beta05]: https://github.com/square/anvil/releases/tag/v2.5.0-beta05
 [2.5.0-beta04]: https://github.com/square/anvil/releases/tag/v2.5.0-beta04
 [2.5.0-beta03]: https://github.com/square/anvil/releases/tag/v2.5.0-beta03
 [2.5.0-beta02]: https://github.com/square/anvil/releases/tag/v2.5.0-beta02
