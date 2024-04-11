@@ -7,19 +7,19 @@ import com.rickbusarow.kase.files.HasWorkingDir
 import com.rickbusarow.kase.files.JavaFileFileInjection
 import com.rickbusarow.kase.files.LanguageInjection
 import com.rickbusarow.kase.files.TestLocation
-import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.FileWithContent
-import com.squareup.anvil.compiler.compile
+import com.squareup.anvil.compiler.assertCompilationSucceeded
+import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import com.squareup.anvil.compiler.internal.reference.ReferencesTestEnvironment.ReferenceType
-import com.tschuchort.compiletesting.KotlinCompilation
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import io.kotest.assertions.ErrorCollectionMode
 import io.kotest.assertions.ErrorCollector
 import io.kotest.assertions.collectiveError
 import io.kotest.assertions.errorCollector
 import io.kotest.assertions.pushErrors
 import io.kotest.assertions.throwCollectedErrors
-import io.kotest.matchers.shouldBe
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -40,12 +40,6 @@ class ReferencesTestEnvironment(
 ) : DefaultTestEnvironment(hasWorkingDir = hasWorkingDir),
   LanguageInjection<File> by LanguageInjection(JavaFileFileInjection()) {
 
-  lateinit var typeReferenceMap: Map<String, TypeReference>
-    private set
-
-  lateinit var classReferenceMap: Map<String, ClassReference>
-    private set
-
   operator fun <E : FunctionReference> List<E>.getValue(
     thisRef: Any?,
     property: KProperty<*>,
@@ -56,62 +50,75 @@ class ReferencesTestEnvironment(
     property: KProperty<*>,
   ): E = getValue(property.name)
 
+  class ReferencesTestCodeGenerationResult(
+    val typeReferences: Map<String, TypeReference>,
+    val classReferences: Map<String, ClassReference>,
+    val module: RealAnvilModuleDescriptor,
+    val projectFiles: Collection<KtFile>,
+  )
+
   fun compile(
     @Language("kotlin") content: String,
     @Language("kotlin") vararg additionalContent: String,
     allWarningsAsErrors: Boolean = false,
-    testAction: CodeGenerator.() -> Unit,
+    codeGenerators: List<CodeGenerator> = emptyList(),
+    testAction: ReferencesTestCodeGenerationResult.() -> Unit,
   ) {
 
-    compile(
+    val typeReferences = mutableMapOf<String, TypeReference>()
+    val classReferences = mutableMapOf<String, ClassReference>()
+
+    val referenceGenerator = simpleCodeGenerator { _, module, projectFiles ->
+
+      errorCollector.collectErrors {
+        val classes = projectFiles.classAndInnerClassReferences(module)
+
+        classReferences.putAll(classes.associateBy { it.shortName })
+
+        classes.singleOrNull { it.shortName == "RefsContainer" }
+          ?.let { refsContainer ->
+
+            val refsFun = when (referenceType) {
+              ReferenceType.Psi -> refsContainer.functions
+              ReferenceType.Descriptor -> refsContainer.toDescriptorReference().functions
+            }
+              .singleOrNull { it.name == "refs" }
+              ?: error {
+                "RefsContainer.refs not found.  " +
+                  "Existing functions: ${refsContainer.functions.map { it.name }}"
+              }
+
+            when (referenceType) {
+              ReferenceType.Psi -> typeReferences.putAll(
+                refsFun.parameters.associate { it.name to it.type() },
+              )
+              ReferenceType.Descriptor -> typeReferences.putAll(
+                refsFun.parameters.associate { it.name to it.type() },
+              )
+            }
+          }
+
+        ReferencesTestCodeGenerationResult(
+          typeReferences = typeReferences,
+          classReferences = classReferences,
+          module = module as RealAnvilModuleDescriptor,
+          projectFiles = projectFiles,
+        ).testAction()
+      }
+
+      emptyList()
+    }
+
+    compileAnvil(
       content,
       *additionalContent,
       allWarningsAsErrors = allWarningsAsErrors,
       workingDir = workingDir,
-      codeGenerators = listOf(
-        object : CodeGenerator {
-          override fun isApplicable(context: AnvilContext): Boolean = true
-          override fun generateCode(
-            codeGenDir: File,
-            module: org.jetbrains.kotlin.descriptors.ModuleDescriptor,
-            projectFiles: Collection<KtFile>,
-          ): Collection<FileWithContent> {
-
-            errorCollector.collectErrors {
-              val classes = projectFiles.classAndInnerClassReferences(module)
-
-              classReferenceMap = classes.associateBy { it.shortName }
-
-              classes.singleOrNull { it.shortName == "RefsContainer" }
-                ?.let { refsContainer ->
-
-                  val refsFun = when (referenceType) {
-                    ReferenceType.Psi -> refsContainer.functions
-                    ReferenceType.Descriptor -> refsContainer.toDescriptorReference().functions
-                  }
-                    .singleOrNull { it.name == "refs" }
-                    ?: error {
-                      "RefsContainer.refs not found.  " +
-                        "Existing functions: ${refsContainer.functions.map { it.name }}"
-                    }
-
-                  typeReferenceMap = when (referenceType) {
-                    ReferenceType.Psi -> refsFun.parameters.associate { it.name to it.type() }
-                    ReferenceType.Descriptor -> refsFun.parameters.associate { it.name to it.type() }
-                  }
-                }
-            }
-
-            testAction()
-
-            return emptyList()
-          }
-        },
-      ),
+      mode = AnvilCompilationMode.Embedded(codeGenerators + referenceGenerator),
     ) {
       errorCollector.throwCollectedErrors()
 
-      exitCode shouldBe KotlinCompilation.ExitCode.OK
+      assertCompilationSucceeded()
     }
   }
 

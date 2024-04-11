@@ -58,13 +58,15 @@ public class RealAnvilModuleDescriptor private constructor(
   private val resolveClassIdCache = mutableMapOf<ClassId, FqName?>()
   private val classReferenceCache = mutableMapOf<ClassReferenceCacheKey, ClassReference>()
 
+  private val fileIdToKtFileMap: MutableMap<String, KtFile> = mutableMapOf()
   internal val allFiles: Sequence<KtFile>
-    get() = allPsiClassReferences
-      .map { it.clazz.containingKtFile }
-      .distinctBy { it.identifier }
+    get() = fileIdToKtFileMap.values.asSequence()
 
   public fun addFiles(files: Collection<KtFile>) {
     files.forEach { ktFile ->
+
+      fileIdToKtFileMap[ktFile.identifier] = ktFile
+
       val classReferences = ktFile.classesAndInnerClasses().map { ktClass ->
         Psi(ktClass, ktClass.toClassId(), this)
       }
