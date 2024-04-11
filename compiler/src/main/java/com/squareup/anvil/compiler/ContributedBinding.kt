@@ -3,7 +3,6 @@ package com.squareup.anvil.compiler
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
-import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
@@ -108,7 +107,7 @@ internal data class ContributedBinding(
   val originClass: OriginClass,
   val boundType: ClassReferenceIr,
   val qualifierKey: String,
-  val priority: Int,
+  val rank: Int,
 ) {
   val bindingKey = BindingKey(scope, boundType, qualifierKey)
   val replaces = bindingModule.annotations.find(contributesToFqName).single()
@@ -118,23 +117,17 @@ internal data class ContributedBinding(
 internal fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBinding {
   if (size == 1) return this[0]
 
-  val bindings = groupBy { it.priority }
+  val bindings = groupBy { it.rank }
     .toSortedMap()
     .let { it.getValue(it.lastKey()) }
     .distinctBy { it.originClass }
 
   if (bindings.size > 1) {
-    val mappedName = when (val priority = bindings[0].priority) {
-      // Map to semantic names for easier error message reading
-      ContributesBinding.PRIORITY_NORMAL -> "NORMAL"
-      ContributesBinding.PRIORITY_HIGH -> "HIGH"
-      ContributesBinding.PRIORITY_HIGHEST -> "HIGHEST"
-      else -> priority.toString()
-    }
+    val rankName = bindings[0].rank.toString()
     throw AnvilCompilationExceptionClassReferenceIr(
       bindings[0].boundType,
-      "There are multiple contributed bindings with the same bound type and priority. The bound type is " +
-        "${bindings[0].boundType.fqName.asString()}. The priority is $mappedName. " +
+      "There are multiple contributed bindings with the same bound type and rank. The bound type is " +
+        "${bindings[0].boundType.fqName.asString()}. The rank is $rankName. " +
         "The contributed binding classes are: " +
         bindings.joinToString(
           prefix = "[",

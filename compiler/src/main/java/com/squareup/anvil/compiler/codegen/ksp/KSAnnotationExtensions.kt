@@ -154,18 +154,16 @@ internal fun KSAnnotated.qualifierAnnotation(): KSAnnotation? =
 internal fun KSAnnotation.ignoreQualifier(): Boolean =
   argumentAt("ignoreQualifier")?.value as? Boolean? == true
 
-internal fun KSAnnotation.priority(): Int {
-  return priorityNew() ?: priorityLegacy() ?: ContributesBinding.PRIORITY_NORMAL
+internal fun KSAnnotation.rank(): Int {
+  return argumentAt("rank")?.value as Int?
+    ?: priorityLegacy()
+    ?: ContributesBinding.RANK_NORMAL
 }
 
 @Suppress("DEPRECATION")
 internal fun KSAnnotation.priorityLegacy(): Int? {
-  val priorityEntry = argumentAt("priorityDeprecated")?.value as KSType? ?: return null
+  val priorityEntry = argumentAt("priority")?.value as KSType? ?: return null
   val name = priorityEntry.resolveKSClassDeclaration()?.simpleName?.asString() ?: return null
   val priority = ContributesBinding.Priority.valueOf(name)
   return priority.value
-}
-
-internal fun KSAnnotation.priorityNew(): Int? {
-  return argumentAt("priority")?.value as Int?
 }

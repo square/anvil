@@ -8,8 +8,6 @@ import com.squareup.anvil.compiler.daggerComponentFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerSubcomponentFqName
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
-import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Descriptor
-import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Psi
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionAnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -44,37 +42,17 @@ internal fun ClassReference.qualifierAnnotation(): AnnotationReference? {
   return annotations.find { it.isQualifier() }
 }
 
-internal fun AnnotationReference.priority(): Int {
-  return priorityNew() ?: priorityLegacy() ?: ContributesBinding.PRIORITY_NORMAL
+internal fun AnnotationReference.rank(): Int {
+  return argumentAt("rank", index = 6)?.value()
+    ?: priorityLegacy()
+    ?: ContributesBinding.RANK_NORMAL
 }
 
 @Suppress("DEPRECATION")
 internal fun AnnotationReference.priorityLegacy(): Int? {
-  val priorityDeprecated = when (this) {
-    is Descriptor -> "priority"
-    is Psi -> "priorityDeprecated"
-  }
-  val priority = argumentAt(priorityDeprecated, index = 4)
+  return argumentAt("priority", index = 4)
     ?.value<FqName>()
-    ?.let { ContributesBinding.Priority.valueOf(it.shortName().asString()) }
-
-  return priority?.value
-}
-
-internal fun AnnotationReference.priorityNew(): Int? {
-  val priorityInt = when (this) {
-    is Descriptor -> "priorityInt"
-    is Psi -> "priority"
-  }
-  try {
-    return argumentAt(priorityInt, index = 6)
-      ?.value()
-  } catch (e: ClassCastException) {
-    throw AnvilCompilationExceptionAnnotationReference(
-      message = "Could not parse priority. This can happen if you haven't migrated to the new int-based priority API",
-      annotationReference = this,
-    )
-  }
+    ?.let { ContributesBinding.Priority.valueOf(it.shortName().asString()) }?.value
 }
 
 internal fun AnnotationReference.modules(

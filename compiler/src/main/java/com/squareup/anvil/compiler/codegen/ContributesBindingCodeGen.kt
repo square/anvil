@@ -26,8 +26,8 @@ import com.squareup.anvil.compiler.codegen.ksp.checkNotMoreThanOneQualifier
 import com.squareup.anvil.compiler.codegen.ksp.checkSingleSuperType
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.ignoreQualifier
-import com.squareup.anvil.compiler.codegen.ksp.priority
 import com.squareup.anvil.compiler.codegen.ksp.qualifierAnnotation
+import com.squareup.anvil.compiler.codegen.ksp.rank
 import com.squareup.anvil.compiler.codegen.ksp.replaces
 import com.squareup.anvil.compiler.codegen.ksp.resolveBoundType
 import com.squareup.anvil.compiler.codegen.ksp.scope
@@ -48,7 +48,7 @@ import kotlin.properties.Delegates
  * annotations, a binding module will be generated for each contribution. Each generated module is
  * annotated with [ContributesTo] for merging.
  *
- * [ContributesBinding.priority] is conveyed in the generated module via [InternalBindingMarker]
+ * [ContributesBinding.rank] is conveyed in the generated module via [InternalBindingMarker]
  * annotation generated onto the binding module.
  */
 internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
@@ -101,7 +101,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
               val boundTypeDeclaration = it.resolveBoundType(resolver, clazz)
               boundTypeDeclaration.checkNotGeneric(clazz)
               val boundType = boundTypeDeclaration.toClassName()
-              val priority = it.priority()
+              val rank = it.rank()
               val replaces = it.replaces().map { it.toClassName() }
               val qualifierData = if (it.ignoreQualifier()) {
                 null
@@ -117,7 +117,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                 scope,
                 clazz.classKind == ClassKind.OBJECT,
                 boundType,
-                priority,
+                rank,
                 replaces,
                 qualifierData,
               )
@@ -175,7 +175,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
               val boundTypeReference = it.resolveBoundType()
               boundTypeReference.checkNotGeneric(clazz)
               val boundType = boundTypeReference.asClassName()
-              val priority = it.priority()
+              val rank = it.rank()
               val replaces = it.replaces().map { it.asClassName() }
               val qualifierData = if (it.ignoreQualifier()) {
                 null
@@ -187,13 +187,13 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
                 }
               }
               Contribution.Binding(
-                clazz.asClassName(),
-                scope,
-                clazz.isObject(),
-                boundType,
-                priority,
-                replaces,
-                qualifierData,
+                origin = clazz.asClassName(),
+                scope = scope,
+                isObject = clazz.isObject(),
+                boundType = boundType,
+                rank = rank,
+                replaces = replaces,
+                qualifier = qualifierData,
               )
             }
 

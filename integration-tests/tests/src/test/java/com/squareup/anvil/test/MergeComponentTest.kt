@@ -69,9 +69,9 @@ internal class MergeComponentTest {
     )
   }
 
-  @Test fun `the binding with the highest priority is bound`() {
+  @Test fun `the binding with the highest rank is bound`() {
     val appComponent = DaggerMergeComponentTest_AppComponent.create()
-    assertThat(appComponent.priorityBinding()).isEqualTo(PriorityBindingHigh)
+    assertThat(appComponent.priorityBinding()).isEqualTo(RankBindingHigh)
   }
 
   @MergeComponent(AppScope::class)
@@ -91,7 +91,7 @@ internal class MergeComponentTest {
 
     @Named("def")
     fun mapBindingsWrappedNamed(): Map<WrappedBindingKey, ParentType>
-    fun priorityBinding(): PriorityBinding
+    fun priorityBinding(): RankBinding
   }
 
   @MergeSubcomponent(SubScope::class)

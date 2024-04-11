@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
@@ -20,7 +21,7 @@ import org.junit.runners.Parameterized.Parameters
 import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
-class BindingModulePriorityTest(
+class BindingModuleRankTest(
   private val annotationClass: KClass<out Annotation>,
 ) {
 
@@ -41,22 +42,22 @@ class BindingModulePriorityTest(
     }
   }
 
-  @Test fun `the binding with the higher priority is used`() {
+  @Test fun `the binding with the higher rank is used`() {
     compile(
       """
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesBinding
-      import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGH
-      import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGHEST
+      import com.squareup.anvil.annotations.ContributesBinding.Companion.RANK_HIGH
+      import com.squareup.anvil.annotations.ContributesBinding.Companion.RANK_HIGHEST
       $import
       
       interface ParentInterface
       
-      @ContributesBinding(Any::class, priority = PRIORITY_HIGHEST)
+      @ContributesBinding(Any::class, rank = RANK_HIGHEST)
       interface ContributingInterface : ParentInterface
       
-      @ContributesBinding(Any::class, priority = PRIORITY_HIGH)
+      @ContributesBinding(Any::class, rank = RANK_HIGH)
       interface ContributingInterface2 : ParentInterface
       
       @ContributesBinding(Any::class)
@@ -77,22 +78,22 @@ class BindingModulePriorityTest(
     }
   }
 
-  @Test fun `the binding with the higher priority is used with one replaced binding`() {
+  @Test fun `the binding with the higher rank is used with one replaced binding`() {
     compile(
       """
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesBinding
-      import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGH
-      import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGHEST
+      import com.squareup.anvil.annotations.ContributesBinding.Companion.RANK_HIGH
+      import com.squareup.anvil.annotations.ContributesBinding.Companion.RANK_HIGHEST
       $import
       
       interface ParentInterface
       
-      @ContributesBinding(Any::class, priority = PRIORITY_HIGHEST)
+      @ContributesBinding(Any::class, rank = RANK_HIGHEST)
       interface ContributingInterface : ParentInterface
       
-      @ContributesBinding(Any::class, priority = PRIORITY_HIGH, replaces = [ContributingInterface::class])
+      @ContributesBinding(Any::class, rank = RANK_HIGH, replaces = [ContributingInterface::class])
       interface SecondContributingInterface : ParentInterface
       
       @ContributesBinding(Any::class)
@@ -113,7 +114,7 @@ class BindingModulePriorityTest(
     }
   }
 
-  @Test fun `bindings with the same priority throw an error`() {
+  @Test fun `bindings with the same rank throw an error`() {
     compile(
       """
       package com.squareup.test
@@ -136,8 +137,8 @@ class BindingModulePriorityTest(
       assertThat(exitCode).isError()
 
       assertThat(messages).contains(
-        "There are multiple contributed bindings with the same bound type and priority. The bound " +
-          "type is com.squareup.test.ParentInterface. The priority is NORMAL. The contributed " +
+        "There are multiple contributed bindings with the same bound type and rank. The bound " +
+          "type is com.squareup.test.ParentInterface. The rank is ${ContributesBinding.RANK_NORMAL}. The contributed " +
           "binding classes are: [",
       )
       // Check the contributed bindings separately, we cannot rely on the order in the string.
@@ -146,7 +147,7 @@ class BindingModulePriorityTest(
     }
   }
 
-  @Test fun `bindings with the same priority can be replaced and aren't duplicate bindings`() {
+  @Test fun `bindings with the same rank can be replaced and aren't duplicate bindings`() {
     compile(
       """
       package com.squareup.test
@@ -177,7 +178,7 @@ class BindingModulePriorityTest(
     }
   }
 
-  @Test fun `bindings with the same priority can be excluded and aren't duplicate bindings`() {
+  @Test fun `bindings with the same rank can be excluded and aren't duplicate bindings`() {
     compile(
       """
       package com.squareup.test
@@ -273,8 +274,8 @@ class BindingModulePriorityTest(
       assertThat(exitCode).isError()
 
       assertThat(messages).contains(
-        "There are multiple contributed bindings with the same bound type and priority. The bound " +
-          "type is com.squareup.test.ParentInterface. The priority is NORMAL. The contributed " +
+        "There are multiple contributed bindings with the same bound type and rank. The bound " +
+          "type is com.squareup.test.ParentInterface. The rank is ${ContributesBinding.RANK_NORMAL}. The contributed " +
           "binding classes are: [",
       )
       // Check the contributed bindings separately, we cannot rely on the order in the string.
@@ -309,8 +310,8 @@ class BindingModulePriorityTest(
       assertThat(exitCode).isError()
 
       assertThat(messages).contains(
-        "There are multiple contributed bindings with the same bound type and priority. The bound " +
-          "type is com.squareup.test.ParentInterface. The priority is NORMAL. The contributed " +
+        "There are multiple contributed bindings with the same bound type and rank. The bound " +
+          "type is com.squareup.test.ParentInterface. The rank is ${ContributesBinding.RANK_NORMAL}. The contributed " +
           "binding classes are: [",
       )
       // Check the contributed bindings separately, we cannot rely on the order in the string.
@@ -379,22 +380,22 @@ class BindingModulePriorityTest(
     }
   }
 
-  @Test fun `the binding with the higher priority is used with multiple contributions`() {
+  @Test fun `the binding with the higher rank is used with multiple contributions`() {
     compile(
       """
       package com.squareup.test
       
       import com.squareup.anvil.annotations.ContributesBinding
-      import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGH
-      import com.squareup.anvil.annotations.ContributesBinding.Companion.PRIORITY_HIGHEST
+      import com.squareup.anvil.annotations.ContributesBinding.Companion.RANK_HIGH
+      import com.squareup.anvil.annotations.ContributesBinding.Companion.RANK_HIGHEST
       $import
       
       interface ParentInterface
       
-      @ContributesBinding(Any::class, priority = PRIORITY_HIGHEST)
+      @ContributesBinding(Any::class, rank = RANK_HIGHEST)
       interface ContributingInterface : ParentInterface
       
-      @ContributesBinding(Any::class, priority = PRIORITY_HIGH)
+      @ContributesBinding(Any::class, rank = RANK_HIGH)
       interface ContributingInterface2 : ParentInterface
       
       @ContributesBinding(Any::class)
