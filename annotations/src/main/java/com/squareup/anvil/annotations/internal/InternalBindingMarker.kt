@@ -16,8 +16,7 @@ import kotlin.reflect.KClass
  *   because the contributed binding may be an `object` and cannot be specified as a
  *   binding parameter.
  * @param isMultibinding Whether this is a multibinding.
- * @param priority The priority of the contributed binding. Corresponds to a
- *   [ContributesBinding.priority].
+ * @param rank The rank of the contributed binding. Corresponds to a [ContributesBinding.rank].
  * @param qualifierKey The computed key of the qualifier annotation if present. Empty otherwise.
  */
 @Target(CLASS)
@@ -26,6 +25,6 @@ import kotlin.reflect.KClass
 public annotation class InternalBindingMarker(
   val originClass: KClass<*>,
   val isMultibinding: Boolean,
-  val priority: Int = Int.MIN_VALUE,
+  val rank: Int = Int.MIN_VALUE,
   val qualifierKey: String = "",
 )

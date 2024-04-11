@@ -92,8 +92,8 @@ internal sealed class Contribution {
             }
             if (contribution is Binding) {
               addMember(
-                "priority = %L",
-                contribution.priority,
+                "rank = %L",
+                contribution.rank,
               )
             }
           }
@@ -195,7 +195,7 @@ internal sealed class Contribution {
       it.scope.canonicalName
     }
       .thenComparing(compareBy { it.boundType.canonicalName })
-      .thenComparing(compareBy { if (it is Binding) it.priority else 0 })
+      .thenComparing(compareBy { if (it is Binding) it.rank else 0 })
       .thenComparing(compareBy { it.replaces.joinToString(transform = ClassName::canonicalName) })
   }
 
@@ -209,7 +209,7 @@ internal sealed class Contribution {
     override val scope: ClassName,
     override val isObject: Boolean,
     override val boundType: ClassName,
-    val priority: Int,
+    val rank: Int,
     override val replaces: List<ClassName>,
     override val qualifier: QualifierData?,
   ) : Contribution() {

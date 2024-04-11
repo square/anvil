@@ -1,5 +1,6 @@
 package com.squareup.anvil.annotations
 
+import com.squareup.anvil.annotations.ContributesBinding.Companion.RANK_NORMAL
 import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.annotation.AnnotationTarget.CLASS
 import kotlin.reflect.KClass
@@ -73,8 +74,8 @@ import kotlin.reflect.KClass
  * class FakeAuthenticator @Inject constructor() : Authenticator
  * ```
  * If you don't have access to the class of another contributed binding that you want to replace,
- * then you can change the [priority] of the bindings to avoid duplicate bindings. The contributed
- * binding with the higher priority will be used.
+ * then you can change the [rank] of the bindings to avoid duplicate bindings. The contributed
+ * binding with the higher rank will be used.
  *
  * [ContributesBinding] supports Kotlin objects, e.g.
  * ```
@@ -104,9 +105,8 @@ public annotation class ContributesBinding(
    */
   val replaces: Array<KClass<*>> = [],
   @Suppress("DEPRECATION")
-  @Deprecated("Use the new int-based priority", ReplaceWith("priority"))
-  @get:JvmName("priority")
-  val priorityDeprecated: Priority = Priority.NORMAL,
+  @Deprecated("Use the new int-based rank", ReplaceWith("rank"))
+  val priority: Priority = Priority.NORMAL,
   /**
    * Whether the qualifier for this class should be included in the generated binding method. This
    * parameter is only necessary to use when [ContributesBinding] and [ContributesMultibinding]
@@ -115,39 +115,62 @@ public annotation class ContributesBinding(
    */
   val ignoreQualifier: Boolean = false,
   /**
-   * The priority of this contributed binding. The priority should be changed only if you don't
+   * The rank of this contributed binding. The rank should be changed only if you don't
    * have access to the contributed binding class that you want to replace at compile time. If
    * you have access and can reference the other class, then it's highly suggested to
    * use [replaces] instead.
    *
-   * In case of a duplicate binding for multiple contributed bindings the binding with the highest
-   * priority will be used and replace other contributed bindings for the same type with a lower
-   * priority. If duplicate contributed bindings use the same priority, then there will be an
+   * In case of a duplicate binding for multiple contributed bindings, the binding with the highest
+   * rank will be used and replace other contributed bindings for the same type with a lower
+   * rank. If duplicate contributed bindings use the same rank, then there will be an
    * error for duplicate bindings.
    *
-   * Note that [replaces] takes precedence. If you explicitly replace a binding it won't be
-   * considered no matter what its priority is.
+   * Note that [replaces] takes precedence. If you explicitly replace a binding, it won't be
+   * considered no matter what its rank is.
    *
-   * All contributed bindings have a [PRIORITY_NORMAL] priority by default.
+   * All contributed bindings have a [RANK_NORMAL] rank by default.
    */
-  @get:JvmName("priorityInt")
-  val priority: Int = PRIORITY_NORMAL,
+  val rank: Int = RANK_NORMAL,
 ) {
 
   public companion object {
-    public const val PRIORITY_NORMAL: Int = Int.MIN_VALUE
-    public const val PRIORITY_HIGH: Int = 0
-    public const val PRIORITY_HIGHEST: Int = Int.MAX_VALUE
+    public const val RANK_NORMAL: Int = Int.MIN_VALUE
+    public const val RANK_HIGH: Int = 0
+    public const val RANK_HIGHEST: Int = Int.MAX_VALUE
   }
 
   /**
-   * The priority of a contributed binding.
+   * The rank of a contributed binding.
    */
-  @Deprecated("Use the new int-based priority")
   @Suppress("unused")
+  @Deprecated("Use the new int-based rank")
   public enum class Priority(public val value: Int) {
-    NORMAL(PRIORITY_NORMAL),
-    HIGH(PRIORITY_HIGH),
-    HIGHEST(PRIORITY_HIGHEST),
+
+    @Deprecated(
+      "Use RANK_NORMAL instead",
+      ReplaceWith(
+        "ContributesBinding.Companion.RANK_NORMAL",
+        "com.squareup.anvil.annotations.ContributesBinding",
+      ),
+    )
+    NORMAL(RANK_NORMAL),
+
+    @Deprecated(
+      "Use RANK_HIGH instead",
+      ReplaceWith(
+        "ContributesBinding.Companion.RANK_HIGH",
+        "com.squareup.anvil.annotations.ContributesBinding",
+      ),
+    )
+    HIGH(RANK_HIGH),
+
+    @Deprecated(
+      "Use RANK_HIGHEST instead",
+      ReplaceWith(
+        "ContributesBinding.Companion.RANK_HIGHEST",
+        "com.squareup.anvil.annotations.ContributesBinding",
+      ),
+    )
+    HIGHEST(RANK_HIGHEST),
   }
 }
