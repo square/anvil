@@ -189,7 +189,7 @@ class AnnotationReferenceTest : ReferenceTests {
         .toAnnotationSpec()
         .toString()
 
-      val SomeClass1 by classReferenceMap
+      val SomeClass1 by classReferences
 
       SomeClass1.stringValue() shouldBe "abc.1"
       SomeClass1.stringAnnotationSpec() shouldBe "@com.squareup.test.StringQualifier(str = \"abc.1\")"
@@ -197,7 +197,7 @@ class AnnotationReferenceTest : ReferenceTests {
       SomeClass1.intValue() shouldBe 2
       SomeClass1.intAnnotationSpec() shouldBe "@com.squareup.test.IntQualifier(num = 2)"
 
-      val SomeClass2 by classReferenceMap
+      val SomeClass2 by classReferences
 
       SomeClass2.stringValue() shouldBe "def.1"
       SomeClass2.stringAnnotationSpec() shouldBe "@com.squareup.test.StringQualifier(str = \"def.1\")"
@@ -205,7 +205,7 @@ class AnnotationReferenceTest : ReferenceTests {
       SomeClass2.intValue() shouldBe 3
       SomeClass2.intAnnotationSpec() shouldBe "@com.squareup.test.IntQualifier(num = 3)"
 
-      val SomeClass3 by classReferenceMap
+      val SomeClass3 by classReferences
 
       SomeClass3.stringValue() shouldBe "ghi.1"
       SomeClass3.stringAnnotationSpec() shouldBe "@com.squareup.test.StringQualifier(str = \"ghi.1\")"
@@ -213,7 +213,7 @@ class AnnotationReferenceTest : ReferenceTests {
       SomeClass3.intValue() shouldBe 4
       SomeClass3.intAnnotationSpec() shouldBe "@com.squareup.test.IntQualifier(num = 4)"
 
-      val SomeClass4 by classReferenceMap
+      val SomeClass4 by classReferences
 
       SomeClass4.stringValue() shouldBe "ghi.1"
       SomeClass4.stringAnnotationSpec() shouldBe "@com.squareup.test.StringQualifier(str = \"ghi.1\")"
@@ -221,7 +221,7 @@ class AnnotationReferenceTest : ReferenceTests {
       SomeClass4.intValue() shouldBe 4
       SomeClass4.intAnnotationSpec() shouldBe "@com.squareup.test.IntQualifier(num = 4)"
 
-      val SomeClass5 by classReferenceMap
+      val SomeClass5 by classReferences
 
       SomeClass5.stringValue() shouldBe "jkl.1"
       SomeClass5.stringAnnotationSpec() shouldBe "@com.squareup.test.StringQualifier(str = \"jkl.1\")"
@@ -229,7 +229,7 @@ class AnnotationReferenceTest : ReferenceTests {
       SomeClass5.intValue() shouldBe 5
       SomeClass5.intAnnotationSpec() shouldBe "@com.squareup.test.IntQualifier(num = 5)"
 
-      val SomeClass6 by classReferenceMap
+      val SomeClass6 by classReferences
 
       SomeClass6.stringValue() shouldBe "jkl.1"
       SomeClass6.stringAnnotationSpec() shouldBe "@com.squareup.test.StringQualifier(str = \"jkl.1\")"
@@ -368,54 +368,54 @@ class AnnotationReferenceTest : ReferenceTests {
       fun ClassReference.annotationArg() = annotations.single().arguments.single().value<Int>()
       fun ClassReference.annotationSpec() = annotations.single().toAnnotationSpec().toString()
 
-      val SomeClass1 by classReferenceMap
+      val SomeClass1 by classReferences
       SomeClass1.annotationArg() shouldBe 1
       SomeClass1.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 1)"
 
-      val SomeClass2 by classReferenceMap
+      val SomeClass2 by classReferences
       SomeClass2.annotationArg() shouldBe 1
       SomeClass2.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 1)"
 
-      val SomeClass3 by classReferenceMap
+      val SomeClass3 by classReferences
       SomeClass3.annotationArg() shouldBe -5
       SomeClass3.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = -5)"
 
       forAll(
-        row(classReferenceMap.getValue("SomeClass4")),
-        row(classReferenceMap.getValue("SomeClass5")),
-        row(classReferenceMap.getValue("SomeClass6")),
+        row(classReferences.getValue("SomeClass4")),
+        row(classReferences.getValue("SomeClass5")),
+        row(classReferences.getValue("SomeClass6")),
       ) { ref ->
         ref.annotationArg() shouldBe Int.MAX_VALUE
         ref.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 2147483647)"
       }
 
       forAll(
-        row(classReferenceMap.getValue("SomeClass7")),
-        row(classReferenceMap.getValue("SomeClass8")),
+        row(classReferences.getValue("SomeClass7")),
+        row(classReferences.getValue("SomeClass8")),
       ) { ref ->
         ref.annotationArg() shouldBe 2
         ref.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 2)"
       }
 
       forAll(
-        row(classReferenceMap.getValue("SomeClass9")),
-        row(classReferenceMap.getValue("SomeClass10")),
-        row(classReferenceMap.getValue("SomeClass11")),
+        row(classReferences.getValue("SomeClass9")),
+        row(classReferences.getValue("SomeClass10")),
+        row(classReferences.getValue("SomeClass11")),
       ) { ref ->
         ref.annotationArg() shouldBe 3
         ref.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 3)"
       }
 
       forAll(
-        row(classReferenceMap.getValue("SomeClass12")),
-        row(classReferenceMap.getValue("SomeClass13")),
-        row(classReferenceMap.getValue("SomeClass14")),
+        row(classReferences.getValue("SomeClass12")),
+        row(classReferences.getValue("SomeClass13")),
+        row(classReferences.getValue("SomeClass14")),
       ) { ref ->
         ref.annotationArg() shouldBe 4
         ref.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 4)"
       }
 
-      val SomeClass15 by classReferenceMap
+      val SomeClass15 by classReferences
       SomeClass15.annotationArg() shouldBe 5
       SomeClass15.annotationSpec() shouldBe "@com.squareup.test.BindingKey(value = 5)"
     }

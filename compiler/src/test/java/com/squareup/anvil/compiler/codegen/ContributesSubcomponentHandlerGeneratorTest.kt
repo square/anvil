@@ -1890,7 +1890,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
   }
 
   @Test
-  fun `a previously generated contributed subcomponent cannot be replaced in a later round of generations`() {
+  fun `a previously generated contributed subcomponent can be replaced in a later round of generations`() {
     val codeGenerator = simpleCodeGenerator { clazz ->
       clazz
         .takeIf { it.isAnnotatedWith(mergeComponentFqName) }
