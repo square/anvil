@@ -9,11 +9,12 @@ import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
 import org.gradle.process.CommandLineArgumentProvider
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
+import org.jetbrains.kotlin.gradle.dsl.KotlinSingleTargetExtension
 import org.jetbrains.kotlin.gradle.dsl.kotlinExtension
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm
 import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
-import org.jetbrains.kotlin.gradle.plugin.mpp.pm20.util.targets
 import javax.inject.Inject
 
 public abstract class AnvilExtension @Inject constructor(
@@ -282,3 +283,10 @@ private fun commandLineArgumentProvider(
     args.map { (arg, provider) -> "$arg=${provider.get()}" }
   }
 }
+
+private val KotlinProjectExtension.targets: Iterable<KotlinTarget>
+  get() = when (this) {
+    is KotlinSingleTargetExtension<*> -> listOf(this.target)
+    is KotlinMultiplatformExtension -> targets
+    else -> error("Unexpected 'kotlin' extension $this")
+  }
