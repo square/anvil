@@ -118,13 +118,13 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
           val containingFile = clazz.containingFile!!
           // TODO we need a public API for this in KSP
           //  https://github.com/google/ksp/issues/1621
-          var supportsMangledNames: Boolean = false
-          var mangledNameSuffix: String = ""
+          var supportsMangledNames = false
+          var mangledNameSuffix = ""
           try {
             mangledNameSuffix = (resolver as ResolverImpl).module
               .mangledNameSuffix()
             supportsMangledNames = true
-          } catch (_: ClassNotFoundException) {
+          } catch (_: NoClassDefFoundError) {
             // TODO in KSP2 this isn't supported at the moment. See above issue.
           }
           (functions + properties)
