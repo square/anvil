@@ -549,7 +549,8 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
                       addStatement(
                         "return module.$callableName$argumentsWithoutModule",
                       )
-                    !isObject && !returnTypeIsNullable ->
+                    // !isObject && !returnTypeIsNullable
+                    else ->
                       addStatement(
                         "return %T.checkNotNull(module.$callableName" +
                           "$argumentsWithoutModule, %S)",
