@@ -319,6 +319,12 @@ public fun compileAnvil(
       if (previousCompilationResult != null) {
         addPreviousCompilationResult(previousCompilationResult)
       }
+
+      if (mode is Embedded) {
+        println("Lowering language version to 1.9 to support embedded mode")
+        kotlinCompilation.languageVersion = "1.9"
+        kotlinCompilation.apiVersion = "1.9"
+      }
     }
     .configureAnvil(
       enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
