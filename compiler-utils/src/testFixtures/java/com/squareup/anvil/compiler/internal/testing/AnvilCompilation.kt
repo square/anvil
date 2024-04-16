@@ -16,6 +16,7 @@ import com.tschuchort.compiletesting.addPreviousResultToClasspath
 import com.tschuchort.compiletesting.kspArgs
 import com.tschuchort.compiletesting.kspWithCompilation
 import com.tschuchort.compiletesting.symbolProcessorProviders
+import com.tschuchort.compiletesting.useKsp2
 import dagger.internal.codegen.ComponentProcessor
 import dagger.internal.codegen.KspComponentProcessor
 import org.intellij.lang.annotations.Language
@@ -320,10 +321,22 @@ public fun compileAnvil(
         addPreviousCompilationResult(previousCompilationResult)
       }
 
-      if (mode is Embedded) {
-        println("Lowering language version to 1.9 to support embedded mode")
-        kotlinCompilation.languageVersion = "1.9"
-        kotlinCompilation.apiVersion = "1.9"
+      when (mode) {
+        is Embedded -> {
+          println("Lowering language version to 1.9 to support embedded mode")
+          kotlinCompilation.languageVersion = "1.9"
+          kotlinCompilation.apiVersion = "1.9"
+        }
+        is Ksp -> {
+          if (mode.useKSP2) {
+            println("Enabling KSP2 support")
+            kotlinCompilation.useKsp2()
+          } else {
+            println("Lowering language version to 1.9 to support KSP 1")
+            kotlinCompilation.languageVersion = "1.9"
+            kotlinCompilation.apiVersion = "1.9"
+          }
+        }
       }
     }
     .configureAnvil(

@@ -12,5 +12,6 @@ public sealed class AnvilCompilationMode(public val analysisBackend: AnalysisBac
   ) : AnvilCompilationMode(EMBEDDED)
   public data class Ksp(
     val symbolProcessorProviders: List<SymbolProcessorProvider> = emptyList(),
+    val useKSP2: Boolean = false,
   ) : AnvilCompilationMode(KSP)
 }
