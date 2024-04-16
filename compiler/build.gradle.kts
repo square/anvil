@@ -35,8 +35,8 @@ publish {
 
 tasks.test {
   // KSP2 needs more memory to run
-  minHeapSize = "2048m"
-  maxHeapSize = "2048m"
+  minHeapSize = "1g"
+  maxHeapSize = "4g"
 }
 
 dependencies {
