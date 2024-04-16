@@ -32,9 +32,20 @@ jobs:
         id: release_notes
         uses: ffurrer2/extract-release-notes@4a5a562549e21065f6791b32ec5415bd33045cd2 # v2
 
+      - name: Check if prerelease
+        id: prerelease
+        run: |
+          version=$(grep VERSION_NAME gradle.properties | cut -d'=' -f2)
+          if [[ $version == *"-beta"* ]]; then
+            echo "isPrerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "isPrerelease=false" >> $GITHUB_OUTPUT
+          fi
+
       - name: Create release
         uses: softprops/action-gh-release@9d7c94cfd0a1f3ed45544c887983e9fa900f0564 # v2
         with:
           body: ${{ steps.release_notes.outputs.release_notes }}
+          prerelease: ${{ steps.prerelease.outputs.isPrerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
