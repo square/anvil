@@ -111,6 +111,24 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     kotlinCompilation: KotlinCompilation<*>,
   ): Provider<List<SubpluginOption>> {
     val variant = getVariant(kotlinCompilation)
+
+    if (!variant.variantFilter.useKspBackend) {
+      kotlinCompilation.compileTaskProvider.configure {
+        it.compilerOptions.let {
+          @Suppress("DEPRECATION")
+          val useK2 = it.useK2.get()
+          if (useK2 || it.languageVersion.getOrElse(KOTLIN_1_9) >= KOTLIN_2_0) {
+            kotlinCompilation.project.logger
+              .error(
+                "NOTE: Anvil embedded mode is deprecated with the K2 compiler. Switch to KSP " +
+                  "mode for full K2 support. Related GH issue:" +
+                  "https://github.com/square/anvil/issues/733",
+              )
+          }
+        }
+      }
+    }
+
     val project = variant.project
 
     if (!variant.variantFilter.generateDaggerFactories &&
