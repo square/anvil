@@ -311,6 +311,24 @@ public fun compileAnvil(
         if (moduleName != null) {
           this.moduleName = moduleName
         }
+
+        when (mode) {
+          is Embedded -> {
+            println("Lowering language version to 1.9 to support embedded mode")
+            languageVersion = "1.9"
+            apiVersion = "1.9"
+          }
+          is Ksp -> {
+            if (mode.useKSP2) {
+              println("Enabling KSP2 support")
+              useKsp2()
+            } else {
+              println("Lowering language version to 1.9 to support KSP 1")
+              languageVersion = "1.9"
+              apiVersion = "1.9"
+            }
+          }
+        }
       }
 
       if (jvmTarget != null) {
@@ -321,23 +339,6 @@ public fun compileAnvil(
         addPreviousCompilationResult(previousCompilationResult)
       }
 
-      when (mode) {
-        is Embedded -> {
-          println("Lowering language version to 1.9 to support embedded mode")
-          kotlinCompilation.languageVersion = "1.9"
-          kotlinCompilation.apiVersion = "1.9"
-        }
-        is Ksp -> {
-          if (mode.useKSP2) {
-            println("Enabling KSP2 support")
-            kotlinCompilation.useKsp2()
-          } else {
-            println("Lowering language version to 1.9 to support KSP 1")
-            kotlinCompilation.languageVersion = "1.9"
-            kotlinCompilation.apiVersion = "1.9"
-          }
-        }
-      }
     }
     .configureAnvil(
       enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
