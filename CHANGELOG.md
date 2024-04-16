@@ -22,7 +22,7 @@
 
 ### Deprecated
 
-- `ContributesBinding.priority` has been deprecated in favor of the int-value-based `ContributesBinding.priority`. This allows for more granular prioritization, rather than just the three enum entries that `ContributesBinding.Priority` offered.
+- `ContributesBinding.priority` has been deprecated in favor of the int-value-based `ContributesBinding.rank`. This allows for more granular prioritization, rather than just the three enum entries that `ContributesBinding.Priority` offered.
 
 > [!IMPORTANT]
 > IDE auto-replace can auto-replace the enum entry with the corresponding integer, but not the named argument. Automatically-migrated code may wind up with something like `priority = RANK_NORMAL`. This is an IntelliJ limitation.
