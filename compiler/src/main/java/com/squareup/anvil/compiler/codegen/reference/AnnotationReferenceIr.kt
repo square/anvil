@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.name.FqName
 import kotlin.LazyThreadSafetyMode.NONE
 
+@UnsafeDuringIrConstructionAPI
 internal class AnnotationReferenceIr(
   val annotation: IrConstructorCall,
   val classReference: ClassReferenceIr,
@@ -95,6 +96,7 @@ internal fun IrConstructorCall.toAnnotationReference(
     declaringClass = declaringClass,
   )
 
+@UnsafeDuringIrConstructionAPI
 @Suppress("FunctionName")
 internal fun AnvilCompilationExceptionAnnotationReferenceIr(
   annotationReference: AnnotationReferenceIr,
