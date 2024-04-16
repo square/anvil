@@ -341,7 +341,6 @@ public fun compileAnvil(
       if (previousCompilationResult != null) {
         addPreviousCompilationResult(previousCompilationResult)
       }
-
     }
     .configureAnvil(
       enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
