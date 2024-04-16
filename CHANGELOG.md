@@ -8,11 +8,6 @@
 
 ### Deprecated
 
-- `ContributesBinding.priority` has been deprecated in favor of the int-value-based `ContributesBinding.priority`. This allows for more granular prioritization, rather than just the three enum entries that `ContributesBinding.Priority` offered.
-
-> [!IMPORTANT]
-> IDE auto-replace can auto-replace the enum entry with the corresponding integer, but not the named argument. Automatically-migrated code may wind up with something like `priority = RANK_NORMAL`. This is an IntelliJ limitation.
-
 ### Removed
 
 ### Fixed
@@ -22,6 +17,25 @@
 ### Custom Code Generator
 
 ### Other Notes & Contributions
+
+## [2.5.0-beta06] - 2024-04-16
+
+### Deprecated
+
+- `ContributesBinding.priority` has been deprecated in favor of the int-value-based `ContributesBinding.priority`. This allows for more granular prioritization, rather than just the three enum entries that `ContributesBinding.Priority` offered.
+
+> [!IMPORTANT]
+> IDE auto-replace can auto-replace the enum entry with the corresponding integer, but not the named argument. Automatically-migrated code may wind up with something like `priority = RANK_NORMAL`. This is an IntelliJ limitation.
+
+### Removed
+
+### Fixed
+
+* pass files with only top-level function/property declarations to `CodeGenerator` implementations ([#956](https://github.com/square/anvil/pull/956))
+* rename the new int-based priority to `rank`, restore the enum to `priority` ([#957](https://github.com/square/anvil/pull/957))
+* Fix private targets API use ([#961](https://github.com/square/anvil/pull/961))
+* Fix KSP2 fallback in mangle name checks ([#962](https://github.com/square/anvil/pull/962))
+* Simplify redundant logic ([#963](https://github.com/square/anvil/pull/963))
 
 ## [2.5.0-beta05] - 2024-04-09
 
@@ -711,7 +725,8 @@
 
 
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta05...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta06...HEAD
+[2.5.0-beta06]: https://github.com/square/anvil/releases/tag/v2.5.0-beta06
 [2.5.0-beta05]: https://github.com/square/anvil/releases/tag/v2.5.0-beta05
 [2.5.0-beta04]: https://github.com/square/anvil/releases/tag/v2.5.0-beta04
 [2.5.0-beta03]: https://github.com/square/anvil/releases/tag/v2.5.0-beta03
