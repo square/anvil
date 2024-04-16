@@ -212,18 +212,13 @@ public abstract class AnvilExtension @Inject constructor(
         }
     }
 
-    project.extensions.configure(KspExtension::class.java) { ksp ->
-      // Do not convert this to a lambda.
-      // It will leak the AnvilExtension instance and break configuration caching.
-      ksp.arg(
-        commandLineArgumentProvider(
-          "generate-dagger-factories" to generateDaggerFactories,
-          "generate-dagger-factories-only" to generateDaggerFactoriesOnly,
-          "disable-component-merging" to disableComponentMerging,
-          "will-have-dagger-factories" to willHaveDaggerFactories,
-        ),
-      )
-    }
+    configureKsp(
+      project = project,
+      generateDaggerFactories = generateDaggerFactories,
+      generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
+      disableComponentMerging = disableComponentMerging,
+      willHaveDaggerFactories = willHaveDaggerFactories,
+    )
   }
 
   private fun addKspDep(configurationName: String) {
@@ -262,6 +257,30 @@ public abstract class AnvilExtension @Inject constructor(
     val SUPPORTED_PLATFORMS = setOf(androidJvm, jvm)
 
     private fun KotlinTarget.isSupportedType(): Boolean = platformType in SUPPORTED_PLATFORMS
+  }
+}
+
+/**
+ * Extracted to avoid eager classloading of [KspExtension].
+ */
+private fun configureKsp(
+  project: Project,
+  generateDaggerFactories: Provider<Boolean>,
+  generateDaggerFactoriesOnly: Provider<Boolean>,
+  disableComponentMerging: Provider<Boolean>,
+  willHaveDaggerFactories: Provider<Boolean>,
+) {
+  project.extensions.configure(KspExtension::class.java) { ksp ->
+    // Do not convert this to a lambda.
+    // It will leak the AnvilExtension instance and break configuration caching.
+    ksp.arg(
+      commandLineArgumentProvider(
+        "generate-dagger-factories" to generateDaggerFactories,
+        "generate-dagger-factories-only" to generateDaggerFactoriesOnly,
+        "disable-component-merging" to disableComponentMerging,
+        "will-have-dagger-factories" to willHaveDaggerFactories,
+      ),
+    )
   }
 }
 
