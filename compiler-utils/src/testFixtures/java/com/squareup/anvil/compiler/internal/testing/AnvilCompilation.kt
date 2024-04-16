@@ -329,6 +329,9 @@ public fun compileAnvil(
             }
           }
         }
+
+        // TODO temporary until RC2 https://youtrack.jetbrains.com/issue/KT-66513
+        kotlincArguments += "-Xdont-warn-on-error-suppression"
       }
 
       if (jvmTarget != null) {
