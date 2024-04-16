@@ -18,6 +18,26 @@
 
 ### Other Notes & Contributions
 
+## [2.5.0-beta07] - 2024-04-16
+
+### Added
+
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+* Another mangled name workaround in KSP ([#966](https://github.com/square/anvil/pull/966))
+
+### Security
+
+### Custom Code Generator
+
+### Other Notes & Contributions
+
 ## [2.5.0-beta06] - 2024-04-16
 
 ### Deprecated
@@ -723,9 +743,8 @@
 
 - Initial release.
 
-
-
-[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta06...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta07...HEAD
+[2.5.0-beta07]: https://github.com/square/anvil/releases/tag/v2.5.0-beta07
 [2.5.0-beta06]: https://github.com/square/anvil/releases/tag/v2.5.0-beta06
 [2.5.0-beta05]: https://github.com/square/anvil/releases/tag/v2.5.0-beta05
 [2.5.0-beta04]: https://github.com/square/anvil/releases/tag/v2.5.0-beta04
