@@ -7,8 +7,10 @@ import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import kotlin.LazyThreadSafetyMode.NONE
 
+@UnsafeDuringIrConstructionAPI
 internal class AnnotationArgumentReferenceIr(
   val argumentParameter: IrValueParameter,
   val argumentExpression: IrExpression,
@@ -68,6 +70,7 @@ internal class AnnotationArgumentReferenceIr(
   }
 }
 
+@UnsafeDuringIrConstructionAPI
 internal fun Pair<IrValueParameter, IrExpression>.toAnnotationArgumentReference(
   annotation: AnnotationReferenceIr,
 ): AnnotationArgumentReferenceIr {
