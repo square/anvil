@@ -378,6 +378,7 @@ internal fun useDaggerAndKspParams(
     listOfNotNull(
       embeddedCreator(),
       kspCreator(),
+      kspCreator()?.copy(useKSP2 = true),
     ),
   ).mapNotNull { (useDagger, mode) ->
     if (useDagger == true && mode is Ksp) {
