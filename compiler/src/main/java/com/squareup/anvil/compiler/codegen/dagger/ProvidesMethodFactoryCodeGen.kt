@@ -121,10 +121,14 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
           var supportsMangledNames = false
           var mangledNameSuffix = ""
           try {
-            mangledNameSuffix = (resolver as ResolverImpl).module
-              .mangledNameSuffix()
-            supportsMangledNames = true
+            (resolver as? ResolverImpl)?.let {
+              mangledNameSuffix = it.module
+                .mangledNameSuffix()
+              supportsMangledNames = true
+            }
           } catch (_: NoClassDefFoundError) {
+            // TODO in KSP2 this isn't supported at the moment. See above issue.
+          } catch (_: ClassCastException) {
             // TODO in KSP2 this isn't supported at the moment. See above issue.
           }
           (functions + properties)
@@ -587,9 +591,10 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     val isPublishedApi: Boolean,
     val reportableNode: Any,
   ) {
-    val isMangled: Boolean get() = !isProperty &&
-      isInternal &&
-      !isPublishedApi
+    val isMangled: Boolean
+      get() = !isProperty &&
+        isInternal &&
+        !isPublishedApi
 
     companion object // For extension
   }
