@@ -7,7 +7,7 @@ import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.compiler.HINT_CONTRIBUTES_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.HINT_PACKAGE
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
@@ -62,12 +62,10 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
     scopes: List<ClassName>,
   ): FileSpec {
     val fileName = className.generateClassName().simpleName
-    val generatedPackage = HINT_CONTRIBUTES_PACKAGE_PREFIX +
-      className.packageName.safePackageString(dotPrefix = true)
     val classFqName = className.canonicalName
     val propertyName = classFqName.replace('.', '_')
 
-    return FileSpec.createAnvilSpec(generatedPackage, fileName) {
+    return FileSpec.createAnvilSpec(HINT_PACKAGE, fileName) {
       addProperty(
         PropertySpec
           .builder(

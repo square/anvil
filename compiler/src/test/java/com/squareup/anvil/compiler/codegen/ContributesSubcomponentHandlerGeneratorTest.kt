@@ -3,7 +3,7 @@ package com.squareup.anvil.compiler.codegen
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.ANVIL_SUBCOMPONENT_SUFFIX
-import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.HINT_PACKAGE
 import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
@@ -12,6 +12,7 @@ import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule1
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.extends
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
@@ -20,6 +21,7 @@ import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
+import com.squareup.anvil.compiler.walkGeneratedFiles
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Component
@@ -673,6 +675,13 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
   @Test
   fun `the parent interface of a contributed subcomponent is picked up by components and other contributed subcomponents`() {
+    // anvil/hint/SubcomponentInterface1_AnyParentComponent.kt
+    // anvil/hint/SubcomponentInterface2_AnyParentComponent.kt
+    // anvil/hint/com/squareup/test/SubcomponentInterface1.kt
+    // anvil/hint/com/squareup/test/SubcomponentInterface2.kt
+    // anvil/hint/com/squareup/test/componentinterface1/SubcomponentInterface1A.kt
+    // anvil/hint/com/squareup/test/componentinterface2/SubcomponentInterface2A.kt
+    // anvil/hint/com/squareup/test/componentinterface2/subcomponentinterface2a/SubcomponentInterface1A.kt
     compile(
       """
         package com.squareup.test
@@ -708,6 +717,12 @@ class ContributesSubcomponentHandlerGeneratorTest {
       // Keep Dagger enabled, because it complained initially.
       enableDaggerAnnotationProcessor = true,
     ) {
+      val generatedFiles = walkGeneratedFiles(AnvilCompilationMode.Embedded()).toList()
+      println(
+        generatedFiles.sortedBy { it.absolutePath }
+          .map { it.absolutePath.substringAfter("build/anvil/") }
+          .joinToString("\n"),
+      )
       assertThat(componentInterface1 extends subcomponentInterface1.anyParentComponentInterface)
       assertThat(
         componentInterface1 extends
@@ -1373,7 +1388,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         .invoke(testClassInstance1)
 
       assertThat(factory1::class.java.name)
-        .isEqualTo("com.squareup.test.DaggerComponentInterface1\$SubcomponentInterfaceAFactory")
+        .isEqualTo("com.squareup.test.DaggerComponentInterface1\$com_squareup_test_componentinterface1_SubcomponentInterfaceAFactory")
 
       val daggerComponent2 = componentInterface2.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1388,7 +1403,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
         .invoke(testClassInstance2)
 
       assertThat(factory2::class.java.name)
-        .isEqualTo("com.squareup.test.DaggerComponentInterface2\$SubcomponentInterfaceAFactory")
+        .isEqualTo("com.squareup.test.DaggerComponentInterface2\$com_squareup_test_componentinterface2_SubcomponentInterfaceAFactory")
     }
   }
 
@@ -1946,17 +1961,12 @@ class ContributesSubcomponentHandlerGeneratorTest {
   // E.g. anvil.component.com.squareup.test.componentinterface.SubcomponentInterfaceA
   private fun Class<*>.anvilComponent(parent: Class<*>): Class<*> {
     val packageName = parent.packageName()
-
-    val packagePrefix = if (packageName.startsWith(COMPONENT_PACKAGE_PREFIX)) {
-      ""
-    } else {
-      "$COMPONENT_PACKAGE_PREFIX."
-    }
+      .removePrefix("$HINT_PACKAGE.")
 
     val packageSuffix = generateSequence(parent) { it.enclosingClass }
       .toList()
       .reversed()
-      .joinToString(separator = ".") { it.simpleName }
+      .joinToString(separator = "_") { it.simpleName }
       .lowercase()
 
     val className = generateSequence(this) { it.enclosingClass }
@@ -1965,7 +1975,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
       .joinToString(separator = "_") { it.simpleName }
 
     return classLoader.loadClass(
-      "$packagePrefix$packageName$packageSuffix.$className$ANVIL_SUBCOMPONENT_SUFFIX",
+      "$HINT_PACKAGE.${packageName.replace('.', '_')}${packageSuffix}_$className$ANVIL_SUBCOMPONENT_SUFFIX",
     )
   }
 

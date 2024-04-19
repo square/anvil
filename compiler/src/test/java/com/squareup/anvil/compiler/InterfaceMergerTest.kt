@@ -774,7 +774,7 @@ class InterfaceMergerTest(
         interface ContributingInterface  
         """,
         """
-        package anvil.hint.merge.com.squareup.test
+        package anvil.hint
 
         import com.squareup.test.ContributingInterface
         import kotlin.reflect.KClass
