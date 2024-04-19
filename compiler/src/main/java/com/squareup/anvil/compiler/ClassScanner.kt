@@ -28,7 +28,9 @@ internal class ClassScanner {
     scope: FqName?,
   ): Sequence<ClassReference.Descriptor> {
     val propertyGroups = cache.getOrPut(CacheKey(annotation, module.hashCode())) {
-      module.getPackage(FqName(HINT_PACKAGE)).memberScope.getContributedDescriptors(DescriptorKindFilter.VALUES)
+      module.getPackage(
+        FqName(HINT_PACKAGE),
+      ).memberScope.getContributedDescriptors(DescriptorKindFilter.VALUES)
         .filterIsInstance<PropertyDescriptor>()
         .mapNotNull { GeneratedProperty.fromDescriptor(it) }
         .groupBy { property -> property.baseName }

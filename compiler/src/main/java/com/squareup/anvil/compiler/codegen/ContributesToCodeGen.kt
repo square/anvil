@@ -32,7 +32,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec

@@ -1388,7 +1388,9 @@ class ContributesSubcomponentHandlerGeneratorTest {
         .invoke(testClassInstance1)
 
       assertThat(factory1::class.java.name)
-        .isEqualTo("com.squareup.test.DaggerComponentInterface1\$com_squareup_test_componentinterface1_SubcomponentInterfaceAFactory")
+        .isEqualTo(
+          "com.squareup.test.DaggerComponentInterface1\$com_squareup_test_componentinterface1_SubcomponentInterfaceAFactory",
+        )
 
       val daggerComponent2 = componentInterface2.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1403,7 +1405,9 @@ class ContributesSubcomponentHandlerGeneratorTest {
         .invoke(testClassInstance2)
 
       assertThat(factory2::class.java.name)
-        .isEqualTo("com.squareup.test.DaggerComponentInterface2\$com_squareup_test_componentinterface2_SubcomponentInterfaceAFactory")
+        .isEqualTo(
+          "com.squareup.test.DaggerComponentInterface2\$com_squareup_test_componentinterface2_SubcomponentInterfaceAFactory",
+        )
     }
   }
 
@@ -1975,7 +1979,10 @@ class ContributesSubcomponentHandlerGeneratorTest {
       .joinToString(separator = "_") { it.simpleName }
 
     return classLoader.loadClass(
-      "$HINT_PACKAGE.${packageName.replace('.', '_')}${packageSuffix}_$className$ANVIL_SUBCOMPONENT_SUFFIX",
+      "$HINT_PACKAGE.${packageName.replace(
+        '.',
+        '_',
+      )}${packageSuffix}_$className$ANVIL_SUBCOMPONENT_SUFFIX",
     )
   }
 

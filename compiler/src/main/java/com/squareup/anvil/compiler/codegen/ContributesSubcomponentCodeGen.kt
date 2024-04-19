@@ -427,7 +427,7 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
     parentScope: ClassName,
   ): FileSpec {
     val fileName = className.generateClassName().canonicalName.replace('.', '_')
-      className.packageName.safePackageString(dotPrefix = true)
+    className.packageName.safePackageString(dotPrefix = true)
     val classFqName = className.canonicalName
     val propertyName = classFqName.replace('.', '_')
 

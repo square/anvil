@@ -18,7 +18,6 @@ import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedde
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedClassesString
-import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.kotlinpoet.asClassName
 import com.tschuchort.compiletesting.CompilationResult
