@@ -28,21 +28,9 @@ internal class ClassScanner {
     scope: FqName?,
   ): Sequence<ClassReference.Descriptor> {
     val propertyGroups = cache.getOrPut(CacheKey(annotation, module.hashCode())) {
-      val packageName = when (annotation) {
-        contributesToFqName -> HINT_CONTRIBUTES_PACKAGE_PREFIX
-        contributesSubcomponentFqName -> HINT_SUBCOMPONENTS_PACKAGE_PREFIX
-        else -> throw AnvilCompilationException(message = "Cannot find hints for $annotation.")
-      }
-
-      generateSequence(listOf(module.getPackage(FqName(packageName)))) { subPackages ->
-        subPackages
-          .flatMap { it.subPackages() }
-          .ifEmpty { null }
-      }
-        .flatMap { it.asSequence() }
-        .flatMap {
-          it.memberScope.getContributedDescriptors(DescriptorKindFilter.VALUES)
-        }
+      module.getPackage(
+        FqName(HINT_PACKAGE),
+      ).memberScope.getContributedDescriptors(DescriptorKindFilter.VALUES)
         .filterIsInstance<PropertyDescriptor>()
         .mapNotNull { GeneratedProperty.fromDescriptor(it) }
         .groupBy { property -> property.baseName }
