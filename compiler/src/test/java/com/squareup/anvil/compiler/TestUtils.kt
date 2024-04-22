@@ -128,13 +128,13 @@ internal val JvmCompilationResult.bindingKey: Class<out Annotation>
   get() = classLoader.loadClass("com.squareup.test.BindingKey") as Class<out Annotation>
 
 internal val Class<*>.hintContributes: KClass<*>?
-  get() = getHint(HINT_CONTRIBUTES_PACKAGE_PREFIX)
+  get() = getHint()
 
 internal val Class<*>.hintContributesScope: KClass<*>?
   get() = hintContributesScopes.takeIf { it.isNotEmpty() }?.single()
 
 internal val Class<*>.hintContributesScopes: List<KClass<*>>
-  get() = getHintScopes(HINT_CONTRIBUTES_PACKAGE_PREFIX)
+  get() = getHintScopes()
 
 internal val Class<*>.generatedBindingModule: Class<*>
   get() = generatedBindingModules(
@@ -263,36 +263,42 @@ internal fun Class<*>.mergedModules(mergeAnnotation: KClass<out Annotation>): Ar
 }
 
 internal val Class<*>.hintSubcomponent: KClass<*>?
-  get() = getHint(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
+  get() = getHint()
 
 internal val Class<*>.hintSubcomponentParentScope: KClass<*>?
   get() = hintSubcomponentParentScopes.takeIf { it.isNotEmpty() }?.single()
 
 internal val Class<*>.hintSubcomponentParentScopes: List<KClass<*>>
-  get() = getHintScopes(HINT_SUBCOMPONENTS_PACKAGE_PREFIX)
+  get() = getHintScopes()
 
-private fun Class<*>.getHint(prefix: String): KClass<*>? = contributedProperties(prefix)
+private fun Class<*>.getHint(): KClass<*>? = contributedProperties()
   ?.filter { it.java == this }
   ?.also { assertThat(it.size).isEqualTo(1) }
   ?.first()
 
-private fun Class<*>.getHintScopes(prefix: String): List<KClass<*>> =
-  contributedProperties(prefix)
+private fun Class<*>.getHintScopes(): List<KClass<*>> =
+  contributedProperties()
     ?.also { assertThat(it.size).isAtLeast(2) }
     ?.filter { it.java != this }
     ?: emptyList()
 
-private fun Class<*>.contributedProperties(packagePrefix: String): List<KClass<*>>? {
-  // The capitalize() doesn't make sense, I don't know where this is coming from. Maybe it's a
-  // bug in the compile testing library?
-  val className = generateSequence(this) { it.enclosingClass }
+private fun Class<*>.contributedProperties(): List<KClass<*>>? {
+  // The capitalize() comes from kotlinc's implicit handling of file names -> class names. It will
+  // always, unless otherwise instructed via `@file:JvmName`, capitalize its facade class.
+  val classNameSuffix = generateSequence(this) { it.enclosingClass }
     .toList()
     .reversed()
     .joinToString(separator = "_") { it.simpleName }
     .capitalize() + "Kt"
 
+  val packagePrefix = packageName().split(".")
+    .joinToString("_")
+    .capitalize()
+
+  val className = packagePrefix + classNameSuffix
+
   val clazz = try {
-    classLoader.loadClass("$packagePrefix.${packageName()}$className")
+    classLoader.loadClass("$HINT_PACKAGE.$className")
   } catch (e: ClassNotFoundException) {
     return null
   }

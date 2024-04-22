@@ -6,6 +6,8 @@
 
 ### Changed
 
+- Anvil's generated hints are now all generated to the same `anvil.hint` package, which simplifies hint lookups and better future-proofs future KSP work. Note that this is a user-invisible change, but it will require a one-time recompilation of any Anvil-generated hints.
+
 ### Deprecated
 
 ### Removed

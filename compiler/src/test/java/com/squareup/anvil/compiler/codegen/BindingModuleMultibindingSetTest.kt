@@ -7,6 +7,7 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
+import com.squareup.anvil.compiler.flatMapArray
 import com.squareup.anvil.compiler.generatedMultiBindingModule
 import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
@@ -457,16 +458,20 @@ class BindingModuleMultibindingSetTest(
       """,
     ) {
       val methods = componentInterface.mergedModules(annotationClass)
-        .flatMap { moduleClass -> moduleClass.java.declaredMethods.sortedBy { it.name } }
+        .flatMapArray { moduleClass -> moduleClass.java.declaredMethods }
       assertThat(methods).hasSize(2)
 
-      with(methods[0]) {
+      // Sorting changes across unix and windows, so we just do a manual grab
+      val method1 = methods.single { it.returnType == parentInterface1 }
+      val method2 = methods.single { it.returnType == parentInterface2 }
+
+      with(method1) {
         assertThat(returnType).isEqualTo(parentInterface1)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
-      with(methods[1]) {
+      with(method2) {
         assertThat(returnType).isEqualTo(parentInterface2)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()

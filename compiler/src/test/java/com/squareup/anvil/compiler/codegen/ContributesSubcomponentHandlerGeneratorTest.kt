@@ -3,7 +3,7 @@ package com.squareup.anvil.compiler.codegen
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.ANVIL_SUBCOMPONENT_SUFFIX
-import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.HINT_PACKAGE
 import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
@@ -1373,7 +1373,9 @@ class ContributesSubcomponentHandlerGeneratorTest {
         .invoke(testClassInstance1)
 
       assertThat(factory1::class.java.name)
-        .isEqualTo("com.squareup.test.DaggerComponentInterface1\$SubcomponentInterfaceAFactory")
+        .isEqualTo(
+          "com.squareup.test.DaggerComponentInterface1\$com_squareup_test_componentinterface1_SubcomponentInterfaceAFactory",
+        )
 
       val daggerComponent2 = componentInterface2.daggerComponent.declaredMethods
         .single { it.name == "create" }
@@ -1388,7 +1390,9 @@ class ContributesSubcomponentHandlerGeneratorTest {
         .invoke(testClassInstance2)
 
       assertThat(factory2::class.java.name)
-        .isEqualTo("com.squareup.test.DaggerComponentInterface2\$SubcomponentInterfaceAFactory")
+        .isEqualTo(
+          "com.squareup.test.DaggerComponentInterface2\$com_squareup_test_componentinterface2_SubcomponentInterfaceAFactory",
+        )
     }
   }
 
@@ -1944,17 +1948,12 @@ class ContributesSubcomponentHandlerGeneratorTest {
   // E.g. anvil.component.com.squareup.test.componentinterface.SubcomponentInterfaceA
   private fun Class<*>.anvilComponent(parent: Class<*>): Class<*> {
     val packageName = parent.packageName()
-
-    val packagePrefix = if (packageName.startsWith(COMPONENT_PACKAGE_PREFIX)) {
-      ""
-    } else {
-      "$COMPONENT_PACKAGE_PREFIX."
-    }
+      .removePrefix("$HINT_PACKAGE.")
 
     val packageSuffix = generateSequence(parent) { it.enclosingClass }
       .toList()
       .reversed()
-      .joinToString(separator = ".") { it.simpleName }
+      .joinToString(separator = "_") { it.simpleName }
       .lowercase()
 
     val className = generateSequence(this) { it.enclosingClass }
@@ -1963,7 +1962,10 @@ class ContributesSubcomponentHandlerGeneratorTest {
       .joinToString(separator = "_") { it.simpleName }
 
     return classLoader.loadClass(
-      "$packagePrefix$packageName$packageSuffix.$className$ANVIL_SUBCOMPONENT_SUFFIX",
+      "$HINT_PACKAGE.${packageName.replace(
+        '.',
+        '_',
+      )}${packageSuffix}_$className$ANVIL_SUBCOMPONENT_SUFFIX",
     )
   }
 

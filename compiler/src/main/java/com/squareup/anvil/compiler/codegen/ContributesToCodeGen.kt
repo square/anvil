@@ -7,7 +7,7 @@ import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.compiler.HINT_CONTRIBUTES_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.HINT_PACKAGE
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
@@ -32,7 +32,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -61,13 +60,13 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
     className: ClassName,
     scopes: List<ClassName>,
   ): FileSpec {
-    val fileName = className.generateClassName().simpleName
-    val generatedPackage = HINT_CONTRIBUTES_PACKAGE_PREFIX +
-      className.packageName.safePackageString(dotPrefix = true)
+    val fileName = className.generateClassName().run {
+      packageName.replace('.', '_') + '_' + simpleNames.joinToString("_")
+    }
     val classFqName = className.canonicalName
     val propertyName = classFqName.replace('.', '_')
 
-    return FileSpec.createAnvilSpec(generatedPackage, fileName) {
+    return FileSpec.createAnvilSpec(HINT_PACKAGE, fileName) {
       addProperty(
         PropertySpec
           .builder(

@@ -81,7 +81,7 @@ class ContributesToCodeGenTest(
 
       val generatedFile = walkGeneratedFiles(mode).single()
 
-      assertThat(generatedFile.name).isEqualTo("DaggerModule1.kt")
+      assertThat(generatedFile.name).isEqualTo("com_squareup_test_DaggerModule1.kt")
     }
   }
 
@@ -273,7 +273,9 @@ class ContributesToCodeGenTest(
 
       val generatedFile = walkGeneratedFiles(mode).single()
 
-      assertThat(generatedFile.name).isEqualTo("ComponentInterface_InnerModule.kt")
+      assertThat(
+        generatedFile.name,
+      ).isEqualTo("com_squareup_test_ComponentInterface_InnerModule.kt")
     }
   }
 

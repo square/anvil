@@ -10,7 +10,7 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesSubcomponent
 import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.compiler.HINT_SUBCOMPONENTS_PACKAGE_PREFIX
+import com.squareup.anvil.compiler.HINT_PACKAGE
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
@@ -40,7 +40,6 @@ import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
@@ -56,7 +55,7 @@ import java.io.File
 import kotlin.reflect.KClass
 
 /**
- * Generates a hint for each contributed subcomponent in the `anvil.hint.subcomponent` packages.
+ * Generates a hint for each contributed subcomponent in the `anvil.hint` packages.
  * This allows the compiler plugin to find all contributed classes a lot faster.
  */
 internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
@@ -425,14 +424,12 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
     className: ClassName,
     parentScope: ClassName,
   ): FileSpec {
-    val fileName = className.generateClassName().simpleName
-    val generatedPackage = HINT_SUBCOMPONENTS_PACKAGE_PREFIX +
-      className.packageName.safePackageString(dotPrefix = true)
+    val fileName = className.generateClassName().canonicalName.replace('.', '_')
     val classFqName = className.canonicalName
     val propertyName = classFqName.replace('.', '_')
 
     val spec =
-      FileSpec.createAnvilSpec(generatedPackage, fileName) {
+      FileSpec.createAnvilSpec(HINT_PACKAGE, fileName) {
         addProperty(
           PropertySpec
             .builder(

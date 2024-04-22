@@ -1359,7 +1359,7 @@ class ModuleMergerTest(
         abstract class DaggerModule1  
         """,
         """
-        package anvil.hint.merge.com.squareup.test
+        package anvil.hint
 
         import com.squareup.test.DaggerModule1
         import kotlin.reflect.KClass
