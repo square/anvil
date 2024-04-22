@@ -60,7 +60,9 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
     className: ClassName,
     scopes: List<ClassName>,
   ): FileSpec {
-    val fileName = className.generateClassName().simpleName
+    val fileName = className.generateClassName().run {
+      packageName.replace('.', '_') + '_' + simpleNames.joinToString("_")
+    }
     val classFqName = className.canonicalName
     val propertyName = classFqName.replace('.', '_')
 
