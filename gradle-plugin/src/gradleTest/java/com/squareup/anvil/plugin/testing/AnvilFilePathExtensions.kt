@@ -16,9 +16,9 @@ interface AnvilFilePathExtensions {
   val File.buildGeneratedKspMainKotlin: File
     get() = resolve("build/generated/ksp/main/kotlin")
 
-  /** resolves `anvil/hint/merge` */
-  val File.anvilHintMerge: File
-    get() = resolve("anvil/hint/merge")
+  /** resolves `anvil/hint` */
+  val File.anvilHint: File
+    get() = resolve("anvil/hint")
 
   /** resolves `com/squareup/test/InjectClass_Factory.kt` */
   val File.injectClassFactory: File
