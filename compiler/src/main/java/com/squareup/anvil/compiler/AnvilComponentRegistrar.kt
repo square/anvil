@@ -11,7 +11,7 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
-import com.squareup.anvil.compiler.codegen.incremental.ProjectDir
+import com.squareup.anvil.compiler.codegen.incremental.BaseDir
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
@@ -66,7 +66,8 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
 
     val sourceGenFolder = configuration.getNotNull(srcGenDirKey)
     val cacheDir = configuration.getNotNull(anvilCacheDirKey)
-    val projectDir = ProjectDir(configuration.getNotNull(gradleProjectDirKey))
+    val projectDir = BaseDir.ProjectDir(configuration.getNotNull(gradleProjectDirKey))
+    val buildDir = BaseDir.BuildDir(configuration.getNotNull(gradleBuildDirKey))
     val trackSourceFiles = configuration.getNotNull(trackSourceFilesKey)
 
     val codeGenerators = loadCodeGenerators() +
@@ -89,6 +90,7 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
         commandLineOptions = commandLineOptions,
         moduleDescriptorFactory = moduleDescriptorFactory,
         projectDir = projectDir,
+        buildDir = buildDir,
         generatedDir = sourceGenFolder,
         cacheDir = cacheDir,
         trackSourceFiles = trackSourceFiles,

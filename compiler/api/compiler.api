@@ -28,6 +28,11 @@ public final class com/squareup/anvil/compiler/CommandLineOptions$Companion {
 	public final fun getCommandLineOptions (Lorg/jetbrains/kotlin/config/CompilerConfiguration;)Lcom/squareup/anvil/compiler/CommandLineOptions;
 }
 
+public final class com/squareup/anvil/compiler/UtilsKt {
+	public static final fun mapNotNullToSet (Ljava/util/Collection;Ljava/util/Set;Lkotlin/jvm/functions/Function1;)Ljava/util/Set;
+	public static synthetic fun mapNotNullToSet$default (Ljava/util/Collection;Ljava/util/Set;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/util/Set;
+}
+
 public final class com/squareup/anvil/compiler/codegen/reference/RealAnvilModuleDescriptor : com/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor, org/jetbrains/kotlin/descriptors/ModuleDescriptor {
 	public synthetic fun <init> (Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public fun accept (Lorg/jetbrains/kotlin/descriptors/DeclarationDescriptorVisitor;Ljava/lang/Object;)Ljava/lang/Object;

@@ -213,6 +213,10 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
           files = listOf(project.projectDir),
         ),
         FilesSubpluginOption(
+          key = "gradle-build-dir",
+          files = listOf(project.layout.buildDirectory.get().asFile),
+        ),
+        FilesSubpluginOption(
           key = "src-gen-dir",
           files = listOf(srcGenDir.get()),
         ),

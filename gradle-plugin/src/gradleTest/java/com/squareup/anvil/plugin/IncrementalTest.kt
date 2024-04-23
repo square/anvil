@@ -921,6 +921,73 @@ class IncrementalTest : BaseGradleTest() {
       }
     }
 
+  @TestFactory
+  fun `build cache restores generated source files in a different project location and custom build dir location`() =
+    testFactory {
+
+      // The testKit directory has the daemon and build cache.
+      // We'll use the same testKit directory for both projects
+      // to simulate having a shared remote build cache.
+      val runner = gradleRunner
+        .withTestKitDir(workingDir / "testKit")
+        .withArguments("jar", "--stacktrace")
+
+      val rootA = rootProject(workingDir.resolve("a/root-a")) {}
+      val rootB = rootProject(workingDir.resolve("b/root-b")) {}
+
+      val rootBBuildDir = rootB.path.resolveSibling("root-b-build")
+
+      for (root in listOf(rootA, rootB)) {
+        root.apply {
+          // Copy the normal root project's build and settings files to the new projects.
+          rootProject.buildFileAsFile.copyTo(buildFileAsFile)
+          rootProject.settingsFileAsFile.copyTo(settingsFileAsFile)
+
+          dir("src/main/java") {
+            injectClass()
+          }
+          gradlePropertiesFile(
+            """
+            org.gradle.caching=true
+            com.squareup.anvil.trackSourceFiles=true
+            """.trimIndent(),
+          )
+        }
+      }
+
+      rootB.buildFileAsFile.appendText(
+        """
+          
+        layout.buildDirectory.set(file("../root-b-build"))
+        """.trimIndent(),
+      )
+
+      // Delete the normal auto-generated "root" Gradle files
+      // since we created other projects to work with.
+      rootProject.buildFileAsFile.delete()
+      rootProject.settingsFileAsFile.delete()
+
+      with(runner.withProjectDir(rootA.path).build()) {
+        task(":compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      }
+
+      rootA.path.deleteRecursivelyOrFail()
+
+      with(runner.withProjectDir(rootB.path).build()) {
+        task(":compileKotlin")?.outcome shouldBe TaskOutcome.FROM_CACHE
+
+        // This file wasn't generated in the `root-b` project,
+        // but it was cached and restored even though it isn't part of the normal 'classes' output.
+        rootBBuildDir.resolve("anvil/main/generated")
+          .injectClassFactory.shouldExist()
+
+        rootB.classGraphResult(buildDir = rootBBuildDir).allClasses shouldContainExactly listOf(
+          "com.squareup.test.InjectClass",
+          "com.squareup.test.InjectClass_Factory",
+        )
+      }
+    }
+
   private fun testFactoryWithTrackSourceFiles(
     testAction: suspend AnvilGradleTestEnvironment.(Kase1<Boolean>) -> Unit,
   ): Stream<out DynamicNode> = params.asContainers { versions ->

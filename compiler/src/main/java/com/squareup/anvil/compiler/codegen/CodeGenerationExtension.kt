@@ -6,10 +6,10 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.FileWithContent
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.codegen.incremental.AbsoluteFile
+import com.squareup.anvil.compiler.codegen.incremental.BaseDir
 import com.squareup.anvil.compiler.codegen.incremental.FileCacheOperations
 import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache
 import com.squareup.anvil.compiler.codegen.incremental.GeneratedFileCache.Companion.binaryFile
-import com.squareup.anvil.compiler.codegen.incremental.ProjectDir
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import com.squareup.anvil.compiler.mapToSet
 import com.squareup.anvil.compiler.requireDelete
@@ -32,7 +32,8 @@ internal class CodeGenerationExtension(
   codeGenerators: List<CodeGenerator>,
   private val commandLineOptions: CommandLineOptions,
   private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
-  private val projectDir: ProjectDir,
+  private val projectDir: BaseDir.ProjectDir,
+  private val buildDir: BaseDir.BuildDir,
   private val generatedDir: File,
   private val cacheDir: File,
   private val trackSourceFiles: Boolean,
@@ -42,13 +43,13 @@ internal class CodeGenerationExtension(
     GeneratedFileCache.fromFile(
       binaryFile = binaryFile(cacheDir),
       projectDir = projectDir,
+      buildDir = buildDir,
     )
   }
 
   private val cacheOperations by lazy(NONE) {
     FileCacheOperations(
       cache = generatedFileCache,
-      projectDir = projectDir,
     )
   }
 
@@ -159,7 +160,7 @@ internal class CodeGenerationExtension(
         cacheOperations.restoreFromCache(
           generatedDir = generatedDir,
           inputKtFiles = files.mapToSet {
-            AbsoluteFile(File(it.virtualFilePath)).relativeTo(projectDir)
+            AbsoluteFile(File(it.virtualFilePath))
           },
         )
           .run { restoredFiles.isNotEmpty() || deletedFiles.isNotEmpty() }
