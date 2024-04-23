@@ -84,6 +84,7 @@ public class AnvilCompilation internal constructor(
       when (mode) {
         is Embedded -> {
           anvilComponentRegistrar.addCodeGenerators(mode.codeGenerators)
+          val buildDir = workingDir.resolve("build")
           pluginOptions +=
             listOf(
               PluginOption(
@@ -93,13 +94,18 @@ public class AnvilCompilation internal constructor(
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "gradle-build-dir",
+                optionValue = buildDir.absolutePath,
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "src-gen-dir",
-                optionValue = File(workingDir, "build/anvil").absolutePath,
+                optionValue = buildDir.resolve("anvil").absolutePath,
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "anvil-cache-dir",
-                optionValue = File(workingDir, "build/anvil-cache").absolutePath,
+                optionValue = buildDir.resolve("anvil-cache").absolutePath,
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,

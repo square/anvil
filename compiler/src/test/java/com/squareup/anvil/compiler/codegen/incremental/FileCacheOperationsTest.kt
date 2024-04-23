@@ -1,7 +1,8 @@
 package com.squareup.anvil.compiler.codegen.incremental
 
 import com.rickbusarow.kase.stdlib.createSafely
-import io.kotest.matchers.shouldBe
+import com.rickbusarow.kase.stdlib.div
+import io.kotest.matchers.file.shouldExist
 import org.junit.Test
 
 internal class FileCacheOperationsTest : CacheTests {
@@ -18,8 +19,8 @@ internal class FileCacheOperationsTest : CacheTests {
 
     newCache.rootSourceFiles shouldBe setOf(source1, source2)
 
-    newCache.getGeneratedFilesRecursive(source1) shouldBe setOf(gen1.relativeFile)
-    newCache.getGeneratedFilesRecursive(source2) shouldBe setOf(gen2.relativeFile)
+    newCache.getGeneratedFilesRecursive(source1) shouldBe setOf(gen1)
+    newCache.getGeneratedFilesRecursive(source2) shouldBe setOf(gen2)
   }
 
   @Test
@@ -29,7 +30,7 @@ internal class FileCacheOperationsTest : CacheTests {
       fileOperations.addToCache(
         gen1.withSources(source1),
         gen2.withSources(source2),
-        gen3.withSources(gen2.toSourceFile()),
+        gen3.withSources(gen2.absolute),
         gen4.withSources(source3),
       )
 
@@ -39,8 +40,8 @@ internal class FileCacheOperationsTest : CacheTests {
       fileOperations.restoreFromCache(generatedDir, setOf(source2))
 
       currentFiles() shouldBe listOf(
-        gen1.relativeFile,
-        gen4.relativeFile,
+        gen1,
+        gen4,
         source1,
         source2,
         source3,
@@ -53,7 +54,7 @@ internal class FileCacheOperationsTest : CacheTests {
     fileOperations.addToCache(
       gen1.withSources(source1),
       gen2.withSources(source2),
-      gen3.withSources(gen2.toSourceFile()),
+      gen3.withSources(gen2.absolute),
     )
 
     listOf(gen1, gen2, gen3)
@@ -62,9 +63,9 @@ internal class FileCacheOperationsTest : CacheTests {
     fileOperations.restoreFromCache()
 
     currentFiles() shouldBe listOf(
-      gen1.relativeFile,
-      gen2.relativeFile,
-      gen3.relativeFile,
+      gen1,
+      gen2,
+      gen3,
       source1,
       source2,
     )
@@ -86,15 +87,15 @@ internal class FileCacheOperationsTest : CacheTests {
     fileOperations.addToCache(
       gen1.withSources(source1),
       gen2.withSources(source2),
-      gen3.withSources(gen2.toSourceFile()),
+      gen3.withSources(gen2.absolute),
     )
 
     fileOperations.restoreFromCache()
 
     currentFiles() shouldBe listOf(
-      gen1.relativeFile,
-      gen2.relativeFile,
-      gen3.relativeFile,
+      gen1,
+      gen2,
+      gen3,
       source1,
       source2,
     )
@@ -114,7 +115,7 @@ internal class FileCacheOperationsTest : CacheTests {
 
       fileOperations.restoreFromCache(source1)
 
-      currentFiles() shouldBe listOf(gen3.relativeFile, source1, source2)
+      currentFiles() shouldBe listOf(gen3, source1, source2)
     }
 
   @Test
@@ -123,14 +124,14 @@ internal class FileCacheOperationsTest : CacheTests {
     fileOperations.addToCache(
       gen1.withSources(source1),
       gen2.withSources(source2),
-      gen3.withSources(gen2.toSourceFile()),
+      gen3.withSources(gen2.absolute),
     )
 
     source2.writeText("changed")
 
     fileOperations.restoreFromCache(source2)
 
-    currentFiles() shouldBe listOf(gen1.relativeFile, source1, source2)
+    currentFiles() shouldBe listOf(gen1, source1, source2)
   }
 
   @Test
@@ -142,13 +143,13 @@ internal class FileCacheOperationsTest : CacheTests {
 
     val untracked = generatedDir.resolve("untracked.kt")
       .createSafely("// this is not tracked")
-      .let { AbsoluteFile(it).relativeTo(projectDir) }
+      .let(::AbsoluteFile)
 
-    currentFiles() shouldBe listOf(gen1.relativeFile, untracked, source1)
+    currentFiles() shouldBe listOf(gen1, untracked, source1)
 
     fileOperations.restoreFromCache()
 
-    currentFiles() shouldBe listOf(gen1.relativeFile, source1)
+    currentFiles() shouldBe listOf(gen1, source1)
   }
 
   @Test
@@ -157,19 +158,125 @@ internal class FileCacheOperationsTest : CacheTests {
     fileOperations.addToCache(
       gen1.withSources(source1),
       gen2.withSources(source2),
-      gen3.withSources(gen2.toSourceFile()),
+      gen3.withSources(gen2.absolute),
     )
 
     listOf(
       source1,
-      gen1.toSourceFile(),
-      gen2.toSourceFile(),
-      gen3.toSourceFile(),
+      gen1.absolute,
+      gen2.absolute,
+      gen3.absolute,
     )
       .forEach { it.absoluteFile.delete() }
 
     fileOperations.restoreFromCache()
 
-    currentFiles() shouldBe listOf(gen2.relativeFile, gen3.relativeFile, source2)
+    currentFiles() shouldBe listOf(gen2, gen3, source2)
   }
+
+  @Test
+  fun `full restoration works when the position of the build dir relative to the project dir has changed`() =
+    test {
+
+      run {
+        val projectA = BaseDir.ProjectDir(workingDir / "projectA")
+        val buildA = BaseDir.BuildDir(projectA.file / "build")
+        val generatedA = buildA.resolve("generated").file
+
+        val operations = FileCacheOperations(
+          cache = GeneratedFileCache.fromFile(
+            binaryFile = binaryFile,
+            projectDir = projectA,
+            buildDir = buildA,
+          ),
+        )
+
+        val source1 by projectA.sourceFile()
+        val source2 by projectA.sourceFile()
+
+        val gen1 by generatedA.generatedFile(source1)
+        val gen2 by generatedA.generatedFile(source2)
+        val gen3 by generatedA.generatedFile(gen2.absolute)
+
+        operations.addToCache(source1, source2, gen1, gen2, gen3)
+      }
+
+      val projectB = BaseDir.ProjectDir(workingDir / "projectB")
+      val buildB = BaseDir.BuildDir(workingDir / "projectB-build")
+      val generatedB = buildB.resolve("generated").file
+
+      val source1 by projectB.sourceFile()
+      val source2 by projectB.sourceFile()
+
+      val operations = FileCacheOperations(
+        cache = GeneratedFileCache.fromFile(
+          binaryFile = binaryFile,
+          projectDir = projectB,
+          buildDir = buildB,
+        ),
+      )
+
+      source1.file.shouldExist()
+      source2.file.shouldExist()
+
+      operations.restoreFromCache()
+
+      projectB.currentFiles() shouldBe listOf(source1, source2)
+
+      buildB.currentFiles() shouldBe listOf("gen1", "gen2", "gen3")
+        .map { AbsoluteFile(generatedB.resolve("$it.kt")) }
+    }
+
+  @Test
+  fun `incremental restoration works when the position of the build dir relative to the project dir has changed`() =
+    test {
+
+      run {
+        val projectA = BaseDir.ProjectDir(workingDir / "projectA")
+        val buildA = BaseDir.BuildDir(projectA.file / "build")
+        val generatedA = buildA.resolve("generated").file
+
+        val operations = FileCacheOperations(
+          cache = GeneratedFileCache.fromFile(
+            binaryFile = binaryFile,
+            projectDir = projectA,
+            buildDir = buildA,
+          ),
+        )
+
+        val source1 by projectA.sourceFile()
+        val source2 by projectA.sourceFile()
+
+        val gen1 by generatedA.generatedFile(source1)
+        val gen2 by generatedA.generatedFile(source2)
+        val gen3 by generatedA.generatedFile(gen2.absolute)
+
+        operations.addToCache(source1, source2, gen1, gen2, gen3)
+      }
+
+      val projectB = BaseDir.ProjectDir(workingDir / "projectB")
+      val buildB = BaseDir.BuildDir(workingDir / "projectB-build")
+      val generatedB = buildB.resolve("generated").file
+
+      val source1 by projectB.sourceFile()
+      val source2 by projectB.sourceFile()
+
+      val operations = FileCacheOperations(
+        cache = GeneratedFileCache.fromFile(
+          binaryFile = binaryFile,
+          projectDir = projectB,
+          buildDir = buildB,
+        ),
+      )
+
+      source1.file.shouldExist()
+      source2.file.shouldExist()
+
+      operations.restoreFromCache(source2)
+
+      projectB.currentFiles() shouldBe listOf(source1, source2)
+
+      buildB.currentFiles() shouldBe listOf("gen1")
+        .map { AbsoluteFile(generatedB.resolve("$it.kt")) }
+    }
 }

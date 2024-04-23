@@ -6,11 +6,14 @@ import com.rickbusarow.kase.HasTestEnvironmentFactory
 import com.rickbusarow.kase.NoParamTestEnvironmentFactory
 import com.rickbusarow.kase.files.TestLocation
 import com.rickbusarow.kase.stdlib.createSafely
+import com.rickbusarow.kase.stdlib.div
+import com.squareup.anvil.compiler.api.FileWithContent
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.mapToSet
 import io.kotest.matchers.file.shouldExist
-import io.kotest.matchers.shouldBe
 import java.io.File
+import kotlin.properties.ReadOnlyProperty
+import io.kotest.matchers.shouldBe as kotestShouldBe
 
 internal interface CacheTests :
   EnvironmentTests<Any, CacheTestEnvironment, CacheTestEnvironment.Factory>,
@@ -25,76 +28,84 @@ internal class CacheTestEnvironment(
   testLocation: TestLocation,
 ) : DefaultTestEnvironment(names = names, testLocation = testLocation) {
 
-  val binaryFile = workingDir.resolve("cache.bin")
+  val projectDir = BaseDir.ProjectDir(workingDir)
+  val buildDir = BaseDir.BuildDir(workingDir / "build")
 
-  val projectDir = ProjectDir(workingDir)
-  val generatedDir = workingDir.resolve("generated")
+  val generatedDir = buildDir.file / "anvil" / "generated"
+  val binaryFile = buildDir.file / "anvil" / "cache" / "cache.bin"
 
   val cache = GeneratedFileCache.fromFile(
     binaryFile = binaryFile,
     projectDir = projectDir,
+    buildDir = buildDir,
   )
-  val fileOperations = FileCacheOperations(
-    cache = cache,
-    projectDir = projectDir,
-  )
+  val fileOperations = FileCacheOperations(cache = cache)
 
-  val source1 by lazy(LazyThreadSafetyMode.NONE) { sourceFile("source1.kt") }
-  val source2 by lazy(LazyThreadSafetyMode.NONE) { sourceFile("source2.kt") }
-  val source3 by lazy(LazyThreadSafetyMode.NONE) { sourceFile("source3.kt") }
-  val source4 by lazy(LazyThreadSafetyMode.NONE) { sourceFile("source4.kt") }
-  val source5 by lazy(LazyThreadSafetyMode.NONE) { sourceFile("source5.kt") }
+  val source1 by projectDir.sourceFile()
+  val source2 by projectDir.sourceFile()
+  val source3 by projectDir.sourceFile()
+  val source4 by projectDir.sourceFile()
+  val source5 by projectDir.sourceFile()
 
-  val gen1 by lazy(LazyThreadSafetyMode.NONE) { generatedFile("generated1.kt") }
-  val gen2 by lazy(LazyThreadSafetyMode.NONE) { generatedFile("generated2.kt") }
-  val gen3 by lazy(LazyThreadSafetyMode.NONE) { generatedFile("generated3.kt") }
-  val gen4 by lazy(LazyThreadSafetyMode.NONE) { generatedFile("generated4.kt") }
-  val gen5 by lazy(LazyThreadSafetyMode.NONE) { generatedFile("generated5.kt") }
-  val gen6 by lazy(LazyThreadSafetyMode.NONE) { generatedFile("generated6.kt") }
-  val gen7 by lazy(LazyThreadSafetyMode.NONE) { generatedFile("generated7.kt") }
-  val gen8 by lazy(LazyThreadSafetyMode.NONE) { generatedFile("generated8.kt") }
-  val gen9 by lazy(LazyThreadSafetyMode.NONE) { generatedFile("generated9.kt") }
+  val gen1 by generatedDir.generatedFile()
+  val gen2 by generatedDir.generatedFile()
+  val gen3 by generatedDir.generatedFile()
+  val gen4 by generatedDir.generatedFile()
+  val gen5 by generatedDir.generatedFile()
+  val gen6 by generatedDir.generatedFile()
+  val gen7 by generatedDir.generatedFile()
+  val gen8 by generatedDir.generatedFile()
+  val gen9 by generatedDir.generatedFile()
 
-  val RelativeFile.absolute: AbsoluteFile
-    get() = absolute(projectDir)
+  val GeneratedFileWithSources.absolute: AbsoluteFile
+    get() = AbsoluteFile(file)
 
-  val GeneratedFileWithSources.relativeFile: RelativeFile
-    get() = AbsoluteFile(file).relativeTo(projectDir)
+  internal operator fun BaseDir.div(relativePath: String): AbsoluteFile = resolve(relativePath)
+  internal fun BaseDir.resolve(relativePath: String): AbsoluteFile {
+    return AbsoluteFile(file / relativePath)
+  }
 
-  val FileType.absoluteFile: File
-    get() = when (this) {
-      is AbsoluteFile -> file
-      is RelativeFile -> workingDir.resolve(file)
-    }
+  fun currentFiles(): List<AbsoluteFile> = workingDir.currentFiles()
 
-  fun currentFiles(): List<RelativeFile> = workingDir.walkTopDown()
+  fun BaseDir.currentFiles(): List<AbsoluteFile> = file.currentFiles()
+  fun File.currentFiles(): List<AbsoluteFile> = walkTopDown()
     .filter { it.isFile && it != binaryFile }
-    .map { it.relativeTo(workingDir) }
+    .mapTo(mutableListOf(), ::AbsoluteFile)
     .sorted()
-    .map {
-      when {
-        it.startsWith("src") -> RelativeFile(it)
-        else -> RelativeFile(it)
+
+  internal fun BaseDir.sourceFile(name: String? = null): ReadOnlyProperty<Any?, AbsoluteFile> {
+    var file: AbsoluteFile? = null
+    return ReadOnlyProperty { _, property ->
+      file ?: sourceFile(name = name?.let { "$it.kt" } ?: "${property.name}.kt")
+        .also { file = it }
+    }
+  }
+
+  private fun BaseDir.sourceFile(name: String): AbsoluteFile =
+    AbsoluteFile(file / "src" / name)
+      .also { it.file.createSafely("content for $name") }
+
+  internal fun File.generatedFile(
+    vararg sources: Comparable<AbsoluteFile>,
+    name: String? = null,
+  ): ReadOnlyProperty<Any?, GeneratedFileWithSources> {
+    var file: GeneratedFileWithSources? = null
+    return ReadOnlyProperty { _, property ->
+      file ?: run {
+        val fileName = name?.let { "$it.kt" } ?: "${property.name}.kt"
+        val content = "content for $name"
+        GeneratedFileWithSources(
+          file = resolve(relative = fileName).createSafely(content = content),
+          content = content,
+          sourceFiles = sources.mapToSet { it.absoluteFile },
+        )
+          .also { file = it }
       }
     }
-    .toList()
+  }
 
-  private fun sourceFile(name: String): RelativeFile =
-    AbsoluteFile(workingDir.resolve("src/$name"))
-      .also { it.file.createSafely("content for $name") }
-      .relativeTo(projectDir)
-
-  private fun generatedFile(
-    path: String,
-    content: String = "content for $path",
-  ): GeneratedFileWithSources = GeneratedFileWithSources(
-    file = generatedDir.resolve(path).createSafely(content = content),
-    content = content,
-    sourceFiles = emptySet(),
-  )
-
-  fun RelativeFile.writeText(content: String) {
-    absoluteFile.createSafely(content = content)
+  fun AbsoluteFile.writeText(content: String) {
+    file.createSafely(content = content)
   }
 
   fun GeneratedFileCache.addAll(vararg generated: GeneratedFileWithSources) {
@@ -103,15 +114,12 @@ internal class CacheTestEnvironment(
     }
   }
 
-  fun GeneratedFileWithSources.toSourceFile(): RelativeFile {
-    return AbsoluteFile(file).relativeTo(projectDir)
-  }
+  @Deprecated("no", ReplaceWith("absolute"))
+  fun GeneratedFileWithSources.toSourceFile(): AbsoluteFile = absolute
 
-  fun <T> GeneratedFileWithSources.withSources(vararg sources: T): GeneratedFileWithSources
-    // NB: `T` can only be a `RelativeFile`,
-    // but the compiler doesn't support vararg with an explicit JvmInline value class,
-    // due to the inline mangling.
-    where T : FileType {
+  fun GeneratedFileWithSources.withSources(
+    vararg sources: Comparable<AbsoluteFile>,
+  ): GeneratedFileWithSources {
     return GeneratedFileWithSources(
       file = file,
       content = content,
@@ -119,19 +127,27 @@ internal class CacheTestEnvironment(
     )
   }
 
-  fun FileCacheOperations.addToCache(vararg gens: GeneratedFileWithSources) {
-    addToCache(emptyList(), gens.toList())
+  // NB: This `Comparable<AbsoluteFile>` can only be an `AbsoluteFile`,
+  // but the compiler doesn't support vararg with an explicit JvmInline value class,
+  // due to the inline mangling. So we use this instead.
+  val Comparable<AbsoluteFile>.absoluteFile: File
+    get() = (this as AbsoluteFile).file
+
+  fun FileCacheOperations.addToCache(vararg gens: Any) {
+    check(gens.all { it is AbsoluteFile || it is GeneratedFileWithSources }) {
+      "Only AbsoluteFile and GeneratedFileWithSources are supported."
+    }
+    addToCache(
+      sourceFiles = gens.filterIsInstance<AbsoluteFile>(),
+      filesWithSources = gens.filterIsInstance<GeneratedFileWithSources>(),
+    )
   }
 
-  fun FileCacheOperations.restoreFromCache(vararg sources: FileType) {
+  fun FileCacheOperations.restoreFromCache(vararg sources: Comparable<AbsoluteFile>) {
+    @Suppress("UNCHECKED_CAST")
     restoreFromCache(
       generatedDir = generatedDir,
-      inputKtFiles = sources.mapToSet { fileType ->
-        when (fileType) {
-          is AbsoluteFile -> fileType.relativeTo(projectDir)
-          is RelativeFile -> fileType
-        }
-      },
+      inputKtFiles = sources.toSet() as Set<AbsoluteFile>,
     )
   }
 
@@ -139,12 +155,24 @@ internal class CacheTestEnvironment(
     return GeneratedFileCache.fromFile(
       binaryFile = binaryFile,
       projectDir = projectDir,
+      buildDir = buildDir,
     )
   }
 
   infix fun File.shouldExistWithText(expectedText: String) {
     shouldExist()
-    readText() shouldBe expectedText
+    readText() kotestShouldBe expectedText
+  }
+
+  infix fun Collection<AbsoluteFile>.shouldBe(expected: Iterable<Any>) {
+    val expectedAbsolute = expected.map {
+      when (it) {
+        is AbsoluteFile -> it
+        is FileWithContent -> AbsoluteFile(it.file)
+        else -> error("Unsupported type: $it")
+      }
+    }
+    sorted() kotestShouldBe expectedAbsolute.sorted()
   }
 
   class Factory : NoParamTestEnvironmentFactory<CacheTestEnvironment> {

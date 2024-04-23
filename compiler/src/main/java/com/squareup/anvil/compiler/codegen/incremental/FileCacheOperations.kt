@@ -9,7 +9,6 @@ import java.io.Serializable
 
 internal class FileCacheOperations(
   internal val cache: GeneratedFileCache,
-  private val projectDir: ProjectDir,
 ) : Serializable {
 
   fun addToCache(
@@ -25,7 +24,7 @@ internal class FileCacheOperations(
       // and we need to know for sure whether a file has changed,
       // even if it wasn't previously used as a source file for a generated file.
       for (sourceFile in sourceFiles) {
-        cache.addSourceFile(sourceFile.relativeTo(projectDir))
+        cache.addSourceFile(sourceFile)
       }
 
       for (generatedFile in filesWithSources) {
@@ -58,7 +57,7 @@ internal class FileCacheOperations(
    * that means the compiler expects it and any generated files to be up-to-date --
    * so that's what we need to restore.
    */
-  fun restoreFromCache(generatedDir: File, inputKtFiles: Set<RelativeFile>): RestoreCacheResult {
+  fun restoreFromCache(generatedDir: File, inputKtFiles: Set<AbsoluteFile>): RestoreCacheResult {
 
     // Files that weren't generated.
     val rootSourceFiles = cache.rootSourceFiles
@@ -78,19 +77,19 @@ internal class FileCacheOperations(
 
     val restoredFiles = unchangedSourceFiles
       .flatMapTo(mutableSetOf()) { cache.getGeneratedFilesRecursive(it) }
-      .map { relative ->
-        val absolute = projectDir.resolve(relative).file
+      .map { absolute ->
+        val file = absolute.file
 
-        if (!absolute.isFile) {
-          absolute.parentFile.mkdirs()
-          absolute.createNewFile()
+        if (!file.isFile) {
+          file.parentFile.mkdirs()
+          file.createNewFile()
         }
 
-        val cachedContent = cache.getContent(relative)
-        absolute.writeText(cachedContent)
+        val cachedContent = cache.getContent(absolute)
+        file.writeText(cachedContent)
 
         GeneratedFileWithSources(
-          file = absolute,
+          file = file,
           content = cachedContent,
           sourceFiles = emptySet(),
         )
@@ -125,16 +124,16 @@ internal class FileCacheOperations(
       .filter { it.isFile }
       .filter { it !in validFilesAsFiles }
       .onEach { it.requireDelete() }
-      .mapTo(mutableListOf()) { AbsoluteFile(it) }
+      .mapTo(mutableListOf(), ::AbsoluteFile)
   }
 
   private fun deleteInvalidFiles(
-    rootSourceFiles: Iterable<RelativeFile>,
-    changedSourceFiles: List<RelativeFile>,
+    rootSourceFiles: Iterable<AbsoluteFile>,
+    changedSourceFiles: List<AbsoluteFile>,
   ): List<AbsoluteFile> {
     // Root source files aren't generated,
     // so if they don't exist, that means they were deleted intentionally.
-    val deletedSources = rootSourceFiles.filter { !it.exists(projectDir) }
+    val deletedSources = rootSourceFiles.filter { !it.exists() }
 
     val deletedOrChanged = deletedSources + changedSourceFiles
 
@@ -142,8 +141,8 @@ internal class FileCacheOperations(
     // For example, if `Source.kt` triggered the generation of `GenA.kt`
     // and `GenA.kt` triggered the generation of `GenB.kt`, then removing `Source.kt` should
     // invalidate `GenA.kt` and `GenB.kt`.
-    // Add the `ANY` token here so that anything using it as a source file is invalidated.
-    val invalidSource = deletedOrChanged + RelativeFile.ANY
+    // Add the `ANY_ABSOLUTE` token here so that anything using it as a source file is invalidated.
+    val invalidSource = deletedOrChanged + AbsoluteFile.ANY_ABSOLUTE
 
     return invalidSource
       .plus(invalidSource.flatMap { cache.getGeneratedFilesRecursive(it) })
@@ -155,10 +154,9 @@ internal class FileCacheOperations(
 
         if (isSourceFile) return@mapNotNull null
 
-        if (!invalid.exists(projectDir)) return@mapNotNull null
-
         // If the file is generated and it exists on the disk, delete it.
-        invalid.absolute(projectDir).also { it.file.requireDelete() }
+        invalid.takeIf { it.exists() }
+          ?.also { it.file.requireDelete() }
       }
   }
 

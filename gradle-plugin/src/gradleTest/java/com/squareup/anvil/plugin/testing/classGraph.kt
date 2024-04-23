@@ -169,7 +169,7 @@ fun BindsMethodInfo.boundTypes(): Pair<ParameterTypeName, ReturnTypeName> {
 
 fun Collection<HasName>.names(): List<String> = map { it.name }
 
-fun GradleProjectBuilder.requireJarArtifact(): File {
+fun GradleProjectBuilder.requireJarArtifact(buildDir: File = path.resolve("build")): File {
 
   fun Sequence<File>.requireSingle(libs: File): File {
     val size = count()
@@ -184,7 +184,7 @@ fun GradleProjectBuilder.requireJarArtifact(): File {
   }
 
   // Android libs
-  val intermediates = path.resolve("build/intermediates/aar_main_jar/debug")
+  val intermediates = buildDir.resolve("intermediates/aar_main_jar/debug")
   val classesJar = intermediates
     .walkBottomUp()
     .filter { it.isFile && it.extension == "jar" }
@@ -194,7 +194,7 @@ fun GradleProjectBuilder.requireJarArtifact(): File {
   }
 
   // Java/Kotlin libs
-  val libs = path.resolve("build/libs")
+  val libs = buildDir.resolve("libs")
   return libs.walkBottomUp()
     .filter { file ->
       when {
@@ -239,9 +239,10 @@ fun GradleProjectBuilder.requireJarArtifact(): File {
  */
 fun GradleProjectBuilder.classGraphResult(
   vararg dependencyProjects: GradleProjectBuilder,
+  buildDir: File = path.resolve("build"),
 ): ScanResult {
   val jars = buildList {
-    add(requireJarArtifact())
+    add(requireJarArtifact(buildDir = buildDir))
     addAll(dependencyProjects.map { it.requireJarArtifact() })
   }
   return ClassGraph().enableAllInfo()

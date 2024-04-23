@@ -21,6 +21,10 @@ internal const val gradleProjectDirName = "gradle-project-dir"
 internal val gradleProjectDirKey =
   CompilerConfigurationKey.create<File>("anvil $gradleProjectDirName")
 
+internal const val gradleBuildDirName = "gradle-build-dir"
+internal val gradleBuildDirKey =
+  CompilerConfigurationKey.create<File>("anvil $gradleBuildDirName")
+
 internal const val generateDaggerFactoriesName = "generate-dagger-factories"
 internal val generateDaggerFactoriesKey =
   CompilerConfigurationKey.create<Boolean>("anvil $generateDaggerFactoriesName")
@@ -61,6 +65,13 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       optionName = gradleProjectDirName,
       valueDescription = "<file-path>",
       description = "The root directory of the consuming project",
+      required = false,
+      allowMultipleOccurrences = false,
+    ),
+    CliOption(
+      optionName = gradleBuildDirName,
+      valueDescription = "<file-path>",
+      description = "The build directory of the consuming project",
       required = false,
       allowMultipleOccurrences = false,
     ),
@@ -143,6 +154,7 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
     when (option.optionName) {
 
       gradleProjectDirName -> configuration.put(gradleProjectDirKey, File(value))
+      gradleBuildDirName -> configuration.put(gradleBuildDirKey, File(value))
       srcGenDirName -> configuration.put(srcGenDirKey, File(value))
       anvilCacheDirName -> configuration.put(anvilCacheDirKey, File(value))
       generateDaggerFactoriesName ->
