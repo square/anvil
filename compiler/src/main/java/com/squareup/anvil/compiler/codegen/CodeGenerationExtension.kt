@@ -29,7 +29,7 @@ import java.io.File
 import kotlin.LazyThreadSafetyMode.NONE
 
 internal class CodeGenerationExtension(
-  codeGenerators: List<CodeGenerator>,
+  private val codeGenerators: List<CodeGenerator>,
   private val commandLineOptions: CommandLineOptions,
   private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
   private val projectDir: BaseDir.ProjectDir,
@@ -55,18 +55,6 @@ internal class CodeGenerationExtension(
 
   private var didRecompile = false
   private var didSyncGeneratedDir = false
-
-  private val codeGenerators = codeGenerators
-    .onEach {
-      check(it !is FlushingCodeGenerator || it !is PrivateCodeGenerator) {
-        "A code generator can't be a private code generator and flushing code generator at the " +
-          "same time. Private code generators don't impact other code generators, therefore " +
-          "they shouldn't need to flush files after other code generators generated code."
-      }
-    }
-    // Use a stable sort in case code generators depend on the order.
-    // At least don't make it random.
-    .sortedWith(compareBy({ it is PrivateCodeGenerator }, { it::class.qualifiedName }))
 
   override fun doAnalysis(
     project: Project,
@@ -196,11 +184,6 @@ internal class CodeGenerationExtension(
 
     val generatedFiles = mutableMapOf<String, FileWithContent>()
 
-    val (privateCodeGenerators, nonPrivateCodeGenerators) =
-      codeGenerators
-        .filter { it.isApplicable(anvilContext) }
-        .partition { it is PrivateCodeGenerator }
-
     fun onGenerated(
       generatedFile: FileWithContent,
       codeGenerator: CodeGenerator,
@@ -237,43 +220,23 @@ internal class CodeGenerationExtension(
           .toKtFiles(psiManager, anvilModule)
       }
 
-    fun Collection<FlushingCodeGenerator>.flush(): List<KtFile> =
-      flatMap { codeGenerator ->
-        codeGenerator.flush(generatedDir, anvilModule)
-          .onEach {
-            onGenerated(
-              generatedFile = it,
-              codeGenerator = codeGenerator,
-              // flushing code generators write the files but no content during normal rounds.
-              allowOverwrites = true,
-            )
-          }
-          .toKtFiles(psiManager, anvilModule)
+    // Group the code generators by their group number,
+    // then sort them by their class name to keep the order stable.
+    // All generators in a group will be looped together until none of them generate new files.
+    codeGenerators
+      .filter { it.isApplicable(anvilContext) }
+      .groupBy { it.group }
+      .entries
+      .sortedBy { it.key }
+      .map { (_, generators) -> generators.sortedBy { it::class.qualifiedName } }
+      .forEach { generators ->
+        var newFiles = generators.generateAndCache(anvilModule.allFiles.toList())
+        while (newFiles.isNotEmpty()) {
+          // Parse the KtFile for each generated file. Then feed the code generators with the new
+          // parsed files until no new files are generated.
+          newFiles = generators.generateAndCache(newFiles)
+        }
       }
-
-    fun List<CodeGenerator>.loopGeneration() {
-      var newFiles = generateAndCache(anvilModule.allFiles.toList())
-      while (newFiles.isNotEmpty()) {
-        // Parse the KtFile for each generated file. Then feed the code generators with the new
-        // parsed files until no new files are generated.
-        newFiles = generateAndCache(newFiles)
-      }
-    }
-
-    // All non-private code generators are batched together.
-    // They will execute against the initial set of files,
-    // then loop until no generator produces any new files.
-    nonPrivateCodeGenerators.loopGeneration()
-
-    // Flushing generators are next.
-    // They have already seen all generated code.
-    // Their output may be consumed by a private generator.
-    codeGenerators.filterIsInstance<FlushingCodeGenerator>().flush()
-
-    // Private generators do not affect each other, so they're invoked last.
-    // They may require multiple iterations of their own logic, though,
-    // so we loop them individually until there are no more changes.
-    privateCodeGenerators.forEach { listOf(it).loopGeneration() }
 
     return generatedFiles.values
   }

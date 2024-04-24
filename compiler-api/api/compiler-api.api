@@ -48,8 +48,19 @@ public abstract interface class com/squareup/anvil/compiler/api/AnvilContext {
 }
 
 public abstract interface class com/squareup/anvil/compiler/api/CodeGenerator : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
+	public static final field Companion Lcom/squareup/anvil/compiler/api/CodeGenerator$Companion;
+	public static final field GROUP_DEFAULT I
 	public abstract fun generateCode (Ljava/io/File;Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;Ljava/util/Collection;)Ljava/util/Collection;
+	public abstract fun getGroup ()I
 	public abstract fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z
+}
+
+public final class com/squareup/anvil/compiler/api/CodeGenerator$Companion {
+	public static final field GROUP_DEFAULT I
+}
+
+public final class com/squareup/anvil/compiler/api/CodeGenerator$DefaultImpls {
+	public static fun getGroup (Lcom/squareup/anvil/compiler/api/CodeGenerator;)I
 }
 
 public final class com/squareup/anvil/compiler/api/CodeGeneratorKt {

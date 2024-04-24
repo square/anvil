@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
 import com.squareup.anvil.compiler.api.AnvilContext
+import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesSubcomponentFactoryFqName
@@ -62,7 +63,9 @@ import java.io.File
  */
 internal class ContributesSubcomponentHandlerGenerator(
   private val classScanner: ClassScanner,
-) : PrivateCodeGenerator() {
+) : CodeGenerator {
+
+  override val group: Int get() = 8
 
   private val triggers = mutableListOf<Trigger>()
   private val contributions = mutableSetOf<Contribution>()
@@ -73,7 +76,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   override fun isApplicable(context: AnvilContext): Boolean = !context.generateFactoriesOnly
 
-  override fun generateCodePrivate(
+  override fun generateCode(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,

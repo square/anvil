@@ -4,6 +4,8 @@
 
 ### Added
 
+- Added `CodeGenerator.group` for scheduling of code generators.  All code generators with the same group will be executed in a loop together until no new code is generated.
+
 ### Changed
 
 ### Deprecated
