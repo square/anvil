@@ -4,6 +4,8 @@
 
 ### Added
 
+- Added `CodeGenerator.group` for scheduling of code generators.  All code generators with the same group will be executed in a loop together until no new code is generated.
+
 ### Changed
 
 - Anvil's generated hints are now all generated to the same `anvil.hint` package, which simplifies hint lookups and better future-proofs future KSP work. Note that this is a user-invisible change, but it will require a one-time recompilation of any Anvil-generated hints.
@@ -22,23 +24,9 @@
 
 ## [2.5.0-beta07] - 2024-04-16
 
-### Added
-
-### Changed
-
-### Deprecated
-
-### Removed
-
 ### Fixed
 
 * Another mangled name workaround in KSP ([#966](https://github.com/square/anvil/pull/966))
-
-### Security
-
-### Custom Code Generator
-
-### Other Notes & Contributions
 
 ## [2.5.0-beta06] - 2024-04-16
 
