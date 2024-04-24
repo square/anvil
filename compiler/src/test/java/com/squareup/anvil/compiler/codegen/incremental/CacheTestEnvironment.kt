@@ -114,9 +114,6 @@ internal class CacheTestEnvironment(
     }
   }
 
-  @Deprecated("no", ReplaceWith("absolute"))
-  fun GeneratedFileWithSources.toSourceFile(): AbsoluteFile = absolute
-
   fun GeneratedFileWithSources.withSources(
     vararg sources: Comparable<AbsoluteFile>,
   ): GeneratedFileWithSources {
