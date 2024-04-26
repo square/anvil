@@ -7,8 +7,6 @@ import com.squareup.anvil.compiler.MULTIBINDING_MODULE_SUFFIX
 import com.squareup.anvil.compiler.codegen.dagger.ProvidesMethodFactoryCodeGen
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.createAnvilSpec
-import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.reference.generateClassNameString
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -24,6 +22,7 @@ import dagger.Module
 import dagger.Provides
 import dagger.multibindings.IntoMap
 import dagger.multibindings.IntoSet
+import java.security.MessageDigest
 
 internal sealed class Contribution {
   abstract val origin: ClassName
@@ -34,15 +33,16 @@ internal sealed class Contribution {
   abstract val qualifier: QualifierData?
   abstract val bindingModuleNameSuffix: String
 
+  /**
+   * ex: `MyClassImpl_MyClass_AppScope_BindingModule_a1b2c3d4e5f6g7h8`
+   */
   val contributionName: String by lazy(LazyThreadSafetyMode.NONE) {
-    // Combination name of origin, scope, and boundType
-    val suffix = "As" +
-      boundType.generateClassNameString().capitalize() +
-      "To" +
-      scope.generateClassNameString().capitalize() +
-      bindingModuleNameSuffix
-
-    origin.generateClassName(suffix = suffix).simpleName
+    uniqueTypeName(
+      originType = origin,
+      boundType = boundType,
+      scopeType = scope,
+      suffix = bindingModuleNameSuffix,
+    )
   }
 
   val functionName: String by lazy(LazyThreadSafetyMode.NONE) {
@@ -197,6 +197,40 @@ internal sealed class Contribution {
       .thenComparing(compareBy { it.boundType.canonicalName })
       .thenComparing(compareBy { if (it is Binding) it.rank else 0 })
       .thenComparing(compareBy { it.replaces.joinToString(transform = ClassName::canonicalName) })
+
+    internal fun uniqueTypeName(
+      originType: ClassName,
+      boundType: ClassName,
+      scopeType: ClassName,
+      suffix: String,
+    ): String {
+
+      val md5Hash = MessageDigest.getInstance("MD5")
+        .apply {
+          update(originType.canonicalName.toByteArray())
+          update(boundType.canonicalName.toByteArray())
+          update(scopeType.canonicalName.toByteArray())
+          update(suffix.toByteArray())
+        }
+        .digest()
+        .take(8)
+        .joinToString("") { "%02X".format(it) }
+
+      // ex: "MyClassImpl_MyClass_AppScope_BindingModule"
+      val simpleNames =
+        "${originType.simpleName}_${boundType.simpleName}_${scopeType.simpleName}_$suffix"
+          // Ensure that the name is not too long for a generated .class file.
+          //   255  // Max file name length on most file systems
+          // -   6  // ".class"
+          // -   2  // "Kt" suffix for top-level facade classes
+          // -  16  // truncated MD5 hash
+          // -   1  // "_" separator before the MD5 hash
+          // -   1  // "_" separator *after* the package name
+          // = 229
+          .take(229 - originType.packageName.length)
+
+      return "${simpleNames}_$md5Hash"
+    }
   }
 
   data class QualifierData(
