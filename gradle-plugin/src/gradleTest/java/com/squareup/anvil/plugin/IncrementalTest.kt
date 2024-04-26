@@ -411,10 +411,10 @@ class IncrementalTest : BaseGradleTest() {
       .resolve("com/squareup/test/OtherClass_Factory.kt")
     val otherClassAHint = rootAnvilMainGenerated
       .anvilHint
-      .resolve("com_squareup_test_OtherClassAsComSquareupTestTypeAToKotlinAnyBindingModule.kt")
+      .resolve("com_squareup_test_OtherClass_TypeA_Any_BindingModule_F424EF987D4445CD.kt")
     val otherClassBHint = rootAnvilMainGenerated
       .anvilHint
-      .resolve("com_squareup_test_OtherClassAsComSquareupTestTypeBToKotlinAnyBindingModule.kt")
+      .resolve("com_squareup_test_OtherClass_TypeB_Any_BindingModule_AB3CD045287F4012.kt")
 
     rootAnvilMainGenerated.injectClassFactory.shouldExist()
     otherClassFactory.shouldExist()

@@ -14,11 +14,11 @@ import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.contributingObject
 import com.squareup.anvil.compiler.generatedBindingModule
 import com.squareup.anvil.compiler.generatedBindingModules
-import com.squareup.anvil.compiler.generatedFileOrNull
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.parentInterface
+import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.testing.AnvilCompilationModeTest
 import com.squareup.anvil.compiler.testing.AnvilCompilationModeTestEnvironment
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
@@ -53,7 +53,7 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
 
         assertFileGenerated(
           mode,
-          "ContributingInterfaceAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
+          "ContributingInterface_ParentInterface_Any_BindingModule_AAD13F756F3194ED.kt",
         )
       }
     }
@@ -282,7 +282,40 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
 
         assertFileGenerated(
           mode,
-          "Abc_ContributingClassAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
+          "ContributingClass_ParentInterface_Any_BindingModule_CC341270ADD6DD9A.kt",
+        )
+      }
+    }
+
+  @TestFactory fun `there is a binding module for a contributed binding for very long class names`() =
+    testFactory {
+
+      val longClassName = "A".repeat(240)
+
+      compile(
+        """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesBinding
+  
+        interface ParentInterface
+        
+        @ContributesBinding(Any::class, ParentInterface::class)
+        class $longClassName : ParentInterface
+        """,
+      ) {
+        val contributingClass =
+          classLoader.loadClass("com.squareup.test.$longClassName")
+        assertThat(contributingClass.bindingOriginKClass?.java).isEqualTo(contributingClass)
+        assertThat(contributingClass.bindingModuleScope).isEqualTo(Any::class)
+
+        val hash = "B3206C193B810105"
+        val truncatedLength = 229 - "com.squareup.test".length
+        val truncatedName = "${longClassName.take(truncatedLength)}_$hash"
+
+        assertFileGenerated(
+          mode,
+          "$truncatedName.kt",
         )
       }
     }
@@ -493,39 +526,38 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
       @ContributesBinding(Any::class)
       @ContributesBinding(Unit::class)
       class ContributingInterface : ParentInterface
-      """,
-    ) {
-      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.bindingModuleScopes).containsExactly(Any::class, Unit::class)
-    }
-  }
-
-  @TestFactory fun `the scopes for multiple contributions have a stable sort`() = testFactory {
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesBinding
-
-      interface ParentInterface
-
-      @ContributesBinding(Any::class)
-      @ContributesBinding(Unit::class)
-      class ContributingInterface : ParentInterface
       
       @ContributesBinding(Unit::class)
       @ContributesBinding(Any::class)
       class SecondContributingInterface : ParentInterface
       """,
     ) {
-      generatedFileOrNull(
+      assertThat(contributingInterface.bindingOriginKClass?.java).isEqualTo(contributingInterface)
+      assertThat(contributingInterface.bindingModuleScopes).containsExactly(Any::class, Unit::class)
+
+      assertFileGenerated(
         mode,
-        "ContributingInterfaceAsComSquareupTestParentInterfaceToKotlinAnyBindingModule.kt",
-      )!!
-      generatedFileOrNull(
+        "ContributingInterface_ParentInterface_Any_BindingModule_AAD13F756F3194ED.kt",
+      )
+      assertFileGenerated(
         mode,
-        "SecondContributingInterfaceAsComSquareupTestParentInterfaceToKotlinUnitBindingModule.kt",
-      )!!
+        "ContributingInterface_ParentInterface_Unit_BindingModule_A37B53C915FE144C.kt",
+      )
+
+      assertThat(
+        secondContributingInterface.bindingOriginKClass?.java,
+      ).isEqualTo(secondContributingInterface)
+      assertThat(
+        secondContributingInterface.bindingModuleScopes,
+      ).containsExactly(Any::class, Unit::class)
+      assertFileGenerated(
+        mode,
+        "SecondContributingInterface_ParentInterface_Any_BindingModule_16C2F3923A9E50AA.kt",
+      )
+      assertFileGenerated(
+        mode,
+        "SecondContributingInterface_ParentInterface_Unit_BindingModule_C39676205EC114D1.kt",
+      )
     }
   }
 
@@ -629,27 +661,28 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
           clazz.simpleName to bindingMarker.rank
         }
       assertThat(
-        bindingModules["ContributingInterfaceAsComSquareupTestParentInterface1ToKotlinAnyBindingModule"],
+        bindingModules["ContributingInterface_ParentInterface1_Any_BindingModule_75EEDC2261B68DFC"],
       ).isEqualTo(ContributesBinding.RANK_NORMAL)
       assertThat(
-        bindingModules["ContributingInterfaceAsComSquareupTestParentInterface2ToKotlinAnyBindingModule"],
+        bindingModules["ContributingInterface_ParentInterface2_Any_BindingModule_C0AED10799C69207"],
       ).isEqualTo(ContributesBinding.RANK_NORMAL)
       assertThat(
-        bindingModules["ContributingInterfaceAsComSquareupTestParentInterface1ToKotlinUnitBindingModule"],
+        bindingModules["ContributingInterface_ParentInterface1_Unit_BindingModule_BED8933E27435945"],
       ).isEqualTo(ContributesBinding.RANK_HIGH)
       assertThat(
-        bindingModules["ContributingInterfaceAsComSquareupTestParentInterface2ToKotlinUnitBindingModule"],
+        bindingModules["ContributingInterface_ParentInterface2_Unit_BindingModule_D711EB1E73AECBA9"],
       ).isEqualTo(ContributesBinding.RANK_HIGHEST)
     }
   }
 
   @TestFactory
-  fun `a provider factory is still generated IFF no normal Dagger factory generation is enabled`() = params.withFactorySource { _, source ->
+  fun `a provider factory is still generated IFF no normal Dagger factory generation is enabled`() =
+    params.withFactorySource { _, source ->
 
-    // https://github.com/square/anvil/issues/948
+      // https://github.com/square/anvil/issues/948
 
-    compile(
-      """
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesBinding
@@ -662,17 +695,17 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
       @ContributesBinding(Unit::class)
       object ContributingObject : ParentInterface
       """,
-      enableDaggerAnnotationProcessor = source == DaggerFactorySource.DAGGER,
-      generateDaggerFactories = source == DaggerFactorySource.ANVIL,
-    ) {
-      assertCompilationSucceeded()
+        enableDaggerAnnotationProcessor = source == DaggerFactorySource.DAGGER,
+        generateDaggerFactories = source == DaggerFactorySource.ANVIL,
+      ) {
+        assertCompilationSucceeded()
 
-      contributingObject.generatedBindingModule
-        .moduleFactoryClass()
-        .getDeclaredMethod("get")
-        .returnType shouldBe parentInterface
+        contributingObject.generatedBindingModule
+          .moduleFactoryClass()
+          .getDeclaredMethod("get")
+          .returnType shouldBe parentInterface
+      }
     }
-  }
 
   enum class DaggerFactorySource {
     DAGGER,

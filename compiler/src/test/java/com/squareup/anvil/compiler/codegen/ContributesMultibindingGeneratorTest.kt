@@ -57,7 +57,7 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
 
         assertFileGenerated(
           mode,
-          "ContributingInterfaceAsComSquareupTestParentInterfaceToKotlinAnyMultiBindingModule.kt",
+          "ContributingInterface_ParentInterface_Any_MultiBindingModule_096BCB91FC7B58CA.kt",
         )
       }
     }
@@ -174,7 +174,7 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
 
         assertFileGenerated(
           mode,
-          "Abc_ContributingClassAsComSquareupTestParentInterfaceToKotlinAnyMultiBindingModule.kt",
+          "ContributingClass_ParentInterface_Any_MultiBindingModule_4CC098B9630045CD.kt",
         )
       }
     }

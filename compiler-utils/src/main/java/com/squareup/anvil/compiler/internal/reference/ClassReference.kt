@@ -399,9 +399,10 @@ public fun ClassName.generateClassName(
 public fun ClassName.generateClassNameString(
   separator: String = "",
   suffix: String = "",
+  capitalizePackage: Boolean = true,
 ): String {
   return packageName.split('.').plus(simpleNames).joinToString(separator = separator) {
-    it.capitalize()
+    if (capitalizePackage) it.capitalize() else it
   } + suffix
 }
 

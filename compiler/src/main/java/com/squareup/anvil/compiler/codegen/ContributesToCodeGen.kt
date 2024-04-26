@@ -31,7 +31,7 @@ import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionC
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.generateClassName
+import com.squareup.anvil.compiler.internal.reference.generateClassNameString
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -60,9 +60,8 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
     className: ClassName,
     scopes: List<ClassName>,
   ): FileSpec {
-    val fileName = className.generateClassName().run {
-      packageName.replace('.', '_') + '_' + simpleNames.joinToString("_")
-    }
+    val fileName = className.generateClassNameString(separator = "_", capitalizePackage = false)
+
     val classFqName = className.canonicalName
     val propertyName = classFqName.replace('.', '_')
 

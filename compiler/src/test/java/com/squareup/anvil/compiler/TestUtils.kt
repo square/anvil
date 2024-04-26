@@ -12,13 +12,12 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.codegen.Contribution
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.reference.generateClassNameString
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
-import com.squareup.anvil.compiler.internal.testing.generatedClassesString
 import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.kotlinpoet.asClassName
@@ -173,7 +172,8 @@ private fun Class<*>.generatedBindingModules(
 ): List<Class<*>> {
   return getAnnotationsByType(annotationClass.java)
     .map { bindingAnnotation ->
-      val scope = bindingAnnotation.scope.asClassName().generateClassNameString().capitalize()
+      val scope = bindingAnnotation.scope.asClassName()
+
       val boundType = bindingAnnotation.boundType
         .let {
           if (it == Unit::class) {
@@ -182,14 +182,22 @@ private fun Class<*>.generatedBindingModules(
             it
           }
         }
-        .asClassName().generateClassNameString().capitalize()
+        .asClassName()
+
       val suffix = when (annotationClass) {
         ContributesBinding::class -> BINDING_MODULE_SUFFIX
         ContributesMultibinding::class -> MULTIBINDING_MODULE_SUFFIX
         else -> error("Unknown annotation class: $annotationClass")
       }
-      val className = "${generatedClassesString()}As${boundType}To${scope}$suffix"
-      classLoader.loadClass(className)
+
+      val simpleName = Contribution.uniqueTypeName(
+        originType = kotlin.asClassName(),
+        boundType = boundType,
+        scopeType = scope,
+        suffix = suffix,
+      )
+
+      classLoader.loadClass("${`package`.name}.$simpleName")
     }
 }
 
@@ -291,11 +299,16 @@ private fun Class<*>.contributedProperties(): List<KClass<*>>? {
     .joinToString(separator = "_") { it.simpleName }
     .capitalize() + "Kt"
 
-  val packagePrefix = packageName().split(".")
-    .joinToString("_")
-    .capitalize()
+  val className = if (getAnnotation(InternalBindingMarker::class.java) != null) {
+    classNameSuffix
+  } else {
 
-  val className = packagePrefix + classNameSuffix
+    val packagePrefix = packageName().split(".")
+      .joinToString("_")
+      .capitalize()
+
+    packagePrefix + classNameSuffix
+  }
 
   val clazz = try {
     classLoader.loadClass("$HINT_PACKAGE.$className")
