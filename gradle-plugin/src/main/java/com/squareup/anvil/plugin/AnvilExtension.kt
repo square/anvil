@@ -207,7 +207,14 @@ public abstract class AnvilExtension @Inject constructor(
         .filter { it.isSupportedType() }
         .any { target ->
           target.compilations.any { c ->
-            c.kspConfigOrNull(project)?.hasDaggerCompilerDependency() == true
+            val targetConfig = if (componentMerging) {
+              // Look for dagger-compiiler in the ksp config
+              c.kspConfigOrNull(project)
+            } else {
+              // Assume they're using kapt for dagger-compiler in this case
+              c.kaptConfigOrNull(project)
+            }
+            targetConfig?.hasDaggerCompilerDependency() == true
           }
         }
     }
