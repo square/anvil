@@ -15,6 +15,7 @@ import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
+import com.squareup.anvil.compiler.qualifierKey
 import org.jetbrains.kotlin.name.FqName
 
 internal fun AnnotationReference.parentScope(): ClassReference {
@@ -135,7 +136,14 @@ internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScopeAndBoundType
   if (size < 2) return
   if (size == 2 && this[0].scope() != this[1].scope()) return
 
-  val duplicateScopes = groupBy { it.scope() }
+  val clazz = this[0].declaringClass()
+  val qualifierKey = clazz.qualifierAnnotation()?.qualifierKey()
+
+  val duplicateScopes = groupBy { annotation ->
+    // If there's a qualifier and this annotation isn't using `ignoreQualifier`,
+    // we need to include that qualifier in the duplicate check.
+    annotation.scope() to qualifierKey?.takeIf { !annotation.ignoreQualifier() }
+  }
     .filterValues { it.size > 1 }
     .ifEmpty { return }
 
@@ -145,7 +153,6 @@ internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScopeAndBoundType
       .ifEmpty { return }
       .keys
 
-    val clazz = this[0].declaringClass()
     throw AnvilCompilationExceptionClassReference(
       classReference = clazz,
       message = "${clazz.fqName} contributes multiple times to the same scope using the same " +
