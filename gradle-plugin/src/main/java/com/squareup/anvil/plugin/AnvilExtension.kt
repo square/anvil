@@ -207,7 +207,9 @@ public abstract class AnvilExtension @Inject constructor(
         .filter { it.isSupportedType() }
         .any { target ->
           target.compilations.any { c ->
-            c.kspConfigOrNull(project)?.hasDaggerCompilerDependency() == true
+            // If using Anvil with KSP, Dagger factory generation can come from either KSP or KAPT.
+            c.kspConfigOrNull(project)?.hasDaggerCompilerDependency() == true ||
+              c.kaptConfigOrNull(project)?.hasDaggerCompilerDependency() == true
           }
         }
     }
