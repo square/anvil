@@ -6,8 +6,6 @@
 
 ### Changed
 
-- Anvil's generated hints are now all generated to the same `anvil.hint` package, which simplifies hint lookups and better future-proofs future KSP work. Note that this is a user-invisible change, but it will require a one-time recompilation of any Anvil-generated hints.
-
 ### Deprecated
 
 ### Removed
@@ -20,25 +18,23 @@
 
 ### Other Notes & Contributions
 
-## [2.5.0-beta07] - 2024-04-16
 
-### Added
+## [2.5.0-beta08] - 2024-05-01
 
 ### Changed
 
-### Deprecated
-
-### Removed
+- Anvil's generated hints are now all generated to the same `anvil.hint` package, which simplifies hint lookups and better future-proofs future KSP work. Note that this is a user-invisible change, but it will require a one-time recompilation of any Anvil-generated hints. ([#975](https://github.com/square/anvil/pull/975))
 
 ### Fixed
 
-* Another mangled name workaround in KSP ([#966](https://github.com/square/anvil/pull/966))
+- cache generated file paths relative to the build directory (changed from project directory) ([#979](https://github.com/square/anvil/pull/979))
+- check both kapt and ksp for dagger-compiler when using KSP ([#989](https://github.com/square/anvil/pull/989))
 
-### Security
+## [2.5.0-beta07] - 2024-04-16
 
-### Custom Code Generator
+### Fixed
 
-### Other Notes & Contributions
+- Another mangled name workaround in KSP ([#966](https://github.com/square/anvil/pull/966))
 
 ## [2.5.0-beta06] - 2024-04-16
 
@@ -48,8 +44,6 @@
 
 > [!IMPORTANT]
 > IDE auto-replace can auto-replace the enum entry with the corresponding integer, but not the named argument. Automatically-migrated code may wind up with something like `priority = RANK_NORMAL`. This is an IntelliJ limitation.
-
-### Removed
 
 ### Fixed
 
@@ -745,7 +739,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta07...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta08...HEAD
+[2.5.0-beta08]: https://github.com/square/anvil/releases/tag/v2.5.0-beta08
 [2.5.0-beta07]: https://github.com/square/anvil/releases/tag/v2.5.0-beta07
 [2.5.0-beta06]: https://github.com/square/anvil/releases/tag/v2.5.0-beta06
 [2.5.0-beta05]: https://github.com/square/anvil/releases/tag/v2.5.0-beta05
