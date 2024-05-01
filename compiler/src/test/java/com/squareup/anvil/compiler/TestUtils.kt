@@ -34,6 +34,9 @@ import org.intellij.lang.annotations.Language
 import org.junit.Assume.assumeTrue
 import java.io.File
 import kotlin.reflect.KClass
+import kotlin.reflect.full.declaredMemberProperties
+import kotlin.reflect.full.hasAnnotation
+import kotlin.reflect.full.memberProperties
 import kotlin.test.fail
 
 internal fun compile(
@@ -194,11 +197,45 @@ private fun Class<*>.generatedBindingModules(
         originType = kotlin.asClassName(),
         boundType = boundType,
         scopeType = scope,
+        qualifierKeyOrNull = qualifierKey(bindingAnnotation),
         suffix = suffix,
       )
 
       classLoader.loadClass(typeName.toString())
     }
+}
+
+private fun Class<*>.qualifierKey(bindingAnnotation: Annotation): String? {
+
+  val ignoreQualifier = bindingAnnotation::class.memberProperties
+    .firstOrNull { it.name == "ignoreQualifier" }
+    ?.call(bindingAnnotation)
+
+  if (ignoreQualifier == true) return null
+
+  // For each annotation on the receiver class, check its class declaration
+  // to see if it has the `@Qualifier` annotation.
+  val qualifierAnnotation = annotations
+    .firstOrNull { it.annotationClass.hasAnnotation<javax.inject.Qualifier>() }
+    // If there is no qualifier annotation, there's no key
+    ?: return null
+
+  val qualifierFqName = qualifierAnnotation.annotationClass.qualifiedName!!
+
+  val joinedArgs = qualifierAnnotation.annotationClass
+    .declaredMemberProperties
+    .joinToString("") { property ->
+
+      val valueString = when (val argument = property.call(qualifierAnnotation)) {
+        is Enum<*> -> "${argument::class.qualifiedName}.${argument.name}"
+        is Class<*> -> argument.kotlin.qualifiedName
+        is KClass<*> -> argument.qualifiedName
+        else -> argument.toString()
+      }
+      property.name + valueString
+    }
+
+  return qualifierFqName + joinedArgs
 }
 
 internal val Class<*>.bindingOriginKClass: KClass<*>?

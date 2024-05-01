@@ -14,6 +14,7 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.kotlinpoet.ksp.toTypeName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 
@@ -223,7 +224,7 @@ internal fun KSClassDeclaration.checkNotGeneric(
 }
 
 internal fun KSAnnotation.qualifierKey(): String {
-  return shortName.asString() +
+  return annotationType.resolve().toTypeName().toString() +
     arguments.joinToString(separator = "") { argument ->
       val valueString = when (val value = argument.value) {
         is KSType -> value.resolveKSClassDeclaration()!!.qualifiedName!!.asString()

@@ -12,6 +12,7 @@ import com.google.devtools.ksp.symbol.KSValueArgument
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.internal.mapKeyFqName
 import com.squareup.anvil.compiler.qualifierFqName
+import com.squareup.anvil.compiler.qualifierKey
 import com.squareup.kotlinpoet.ksp.toClassName
 import org.jetbrains.kotlin.name.FqName
 
@@ -53,7 +54,13 @@ internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScopeAndBoundType(
   if (size < 2) return
   if (size == 2 && this[0].scope() != this[1].scope()) return
 
-  val duplicateScopes = groupBy { it.scope() }
+  val qualifierKey = annotatedType.qualifierAnnotation()?.qualifierKey()
+
+  val duplicateScopes = groupBy { annotation ->
+    // If there's a qualifier and this annotation isn't using `ignoreQualifier`,
+    // we need to include that qualifier in the duplicate check.
+    annotation.scope() to qualifierKey?.takeIf { !annotation.ignoreQualifier() }
+  }
     .filterValues { it.size > 1 }
     .ifEmpty { return }
 

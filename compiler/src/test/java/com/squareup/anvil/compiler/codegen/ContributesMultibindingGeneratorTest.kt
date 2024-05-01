@@ -442,6 +442,43 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
       }
     }
 
+  @TestFactory fun `duplicate binding checks consider ignoreQualifier`() = testFactory {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesMultibinding
+      import com.squareup.anvil.annotations.MergeComponent
+      import javax.inject.Inject
+      import javax.inject.Named
+
+      interface ParentInterface
+
+      @Named("test")
+      @ContributesMultibinding(Int::class, ParentInterface::class)
+      @ContributesMultibinding(Int::class, ParentInterface::class, ignoreQualifier = true)
+      class ContributingInterface @Inject constructor() : ParentInterface
+
+      @MergeComponent(Int::class)
+      interface ComponentInterface {
+        fun injectClass(): InjectClass
+      }
+
+      class InjectClass @Inject constructor(
+        @Named("test") val qualified : Set<@JvmSuppressWildcards ParentInterface>,
+        val unqualified : Set<@JvmSuppressWildcards ParentInterface>
+      )
+      """,
+      mode = mode,
+    ) {
+      assertThat(contributingInterface.multibindingOriginClass?.java)
+        .isEqualTo(contributingInterface)
+
+      assertThat(contributingInterface.multibindingModuleScopes)
+        .containsExactly(Int::class, Int::class)
+    }
+  }
+
   @TestFactory fun `the bound type is not implied when explicitly defined`() = testFactory {
     compile(
       """

@@ -41,6 +41,7 @@ internal sealed class Contribution {
       originType = origin,
       boundType = boundType,
       scopeType = scope,
+      qualifierKeyOrNull = qualifier?.key,
       suffix = bindingModuleNameSuffix,
     )
   }
@@ -204,15 +205,23 @@ internal sealed class Contribution {
       originType: ClassName,
       boundType: ClassName,
       scopeType: ClassName,
+      qualifierKeyOrNull: String?,
       suffix: String,
     ): ClassName {
       val types = listOf(originType, boundType, scopeType)
+
       return ClassName(
         packageName = originType.packageName,
         simpleNames = types.map { it.simpleName } + suffix,
       )
         .joinSimpleNamesAndTruncate(
-          hashParams = types + suffix,
+          hashParams = listOfNotNull(
+            originType,
+            boundType,
+            scopeType,
+            qualifierKeyOrNull,
+            suffix,
+          ),
           separator = "_",
         )
     }
