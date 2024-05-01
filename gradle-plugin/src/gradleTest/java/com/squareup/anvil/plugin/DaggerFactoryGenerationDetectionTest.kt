@@ -180,7 +180,10 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
       generateDaggerFactories.set(factoryGen.genFactories)
 
       if (factoryGen.addKsp) {
-        useKsp(contributesAndFactoryGeneration = true)
+        useKsp(
+          contributesAndFactoryGeneration = true,
+          componentMerging = false,
+        )
       }
     }
   }
@@ -191,10 +194,16 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
       compileOnly(libs.inject)
 
       if (factoryGen.daggerCompiler) {
-        if (factoryGen.addKsp) {
-          ksp(libs.dagger2.compiler)
-        } else {
-          kapt(libs.dagger2.compiler)
+        when {
+          factoryGen.addKapt -> {
+            kapt(libs.dagger2.compiler)
+          }
+          factoryGen.addKsp -> {
+            ksp(libs.dagger2.compiler)
+          }
+          else -> {
+            error("No compiler plugin added")
+          }
         }
       }
     }
@@ -207,10 +216,14 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
     val daggerCompiler: Boolean,
   ) {
     override fun toString(): String = buildString {
-      when {
-        addKsp -> append("KSP plugin ")
-        addKapt -> append("KAPT plugin ")
-        else -> append("Anvil only ")
+      if (addKsp) {
+        append("KSP plugin | ")
+      }
+      if (addKapt) {
+        append("KAPT plugin | ")
+      }
+      if (!addKsp && !addKapt) {
+        append("Anvil only ")
       }
       if (daggerCompiler) {
         append("with Dagger compiler | ")
@@ -243,8 +256,6 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
       }
       .filter {
         when {
-          // Pick one!
-          it.addKsp && it.addKapt -> false
           // We can't add a Dagger compiler dependency without a plugin to add it to
           it.daggerCompiler -> (it.addKsp || it.addKapt) && !it.genFactories
           else -> true
