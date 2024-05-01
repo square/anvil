@@ -169,6 +169,7 @@ private val Annotation.boundType: KClass<*>
 
 private fun Class<*>.generatedBindingModules(
   annotationClass: KClass<out Annotation>,
+  qualifierKey: String? = null,
 ): List<Class<*>> {
   return getAnnotationsByType(annotationClass.java)
     .map { bindingAnnotation ->
@@ -194,6 +195,7 @@ private fun Class<*>.generatedBindingModules(
         originType = kotlin.asClassName(),
         boundType = boundType,
         scopeType = scope,
+        qualifierKeyOrNull = qualifierKey,
         suffix = suffix,
       )
 
