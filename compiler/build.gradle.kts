@@ -33,6 +33,12 @@ publish {
   )
 }
 
+tasks.test {
+  // KSP2 needs more memory to run
+  minHeapSize = "1g"
+  maxHeapSize = "4g"
+}
+
 dependencies {
   implementation(project(":annotations"))
   implementation(project(":compiler-api"))

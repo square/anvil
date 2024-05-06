@@ -13,9 +13,10 @@ import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.addPreviousResultToClasspath
-import com.tschuchort.compiletesting.kspArgs
+import com.tschuchort.compiletesting.configureKsp
+import com.tschuchort.compiletesting.kspProcessorOptions
 import com.tschuchort.compiletesting.kspWithCompilation
-import com.tschuchort.compiletesting.symbolProcessorProviders
+import com.tschuchort.compiletesting.useKsp2
 import dagger.internal.codegen.ComponentProcessor
 import dagger.internal.codegen.KspComponentProcessor
 import org.intellij.lang.annotations.Language
@@ -83,6 +84,9 @@ public class AnvilCompilation internal constructor(
 
       when (mode) {
         is Embedded -> {
+          println("Lowering language version to 1.9 to support embedded mode")
+          languageVersion = "1.9"
+          apiVersion = "1.9"
           anvilComponentRegistrar.addCodeGenerators(mode.codeGenerators)
           val buildDir = workingDir.resolve("build")
           pluginOptions +=
@@ -131,25 +135,30 @@ public class AnvilCompilation internal constructor(
         }
 
         is Ksp -> {
-          symbolProcessorProviders += buildList {
-            addAll(
-              ServiceLoader.load(
-                SymbolProcessorProvider::class.java,
-                SymbolProcessorProvider::class.java.classLoader,
+          configureKsp(mode.useKSP2) {
+            symbolProcessorProviders += buildList {
+              addAll(
+                ServiceLoader.load(
+                  SymbolProcessorProvider::class.java,
+                  SymbolProcessorProvider::class.java.classLoader,
+                )
+                  // TODO for now, we don't want to run the dagger KSP processor while we're testing
+                  //  KSP. This will change when we start supporting dagger-KSP, at which point we can
+                  //  change this filter to be based on https://github.com/square/anvil/pull/713
+                  .filterNot { it is KspComponentProcessor.Provider },
               )
-                // TODO for now, we don't want to run the dagger KSP processor while we're testing
-                //  KSP. This will change when we start supporting dagger-KSP, at which point we can
-                //  change this filter to be based on https://github.com/square/anvil/pull/713
-                .filterNot { it is KspComponentProcessor.Provider },
-            )
-            addAll(mode.symbolProcessorProviders)
+              addAll(mode.symbolProcessorProviders)
+            }
+            if (!mode.useKSP2) {
+              // Run KSP embedded directly within this kotlinc invocation
+              // This doesn't exist in KSP2
+              kspWithCompilation = true
+            }
+            kspProcessorOptions["will-have-dagger-factories"] = generateDaggerFactories.toString()
+            kspProcessorOptions["generate-dagger-factories"] = generateDaggerFactories.toString()
+            kspProcessorOptions["generate-dagger-factories-only"] = generateDaggerFactoriesOnly.toString()
+            kspProcessorOptions["disable-component-merging"] = disableComponentMerging.toString()
           }
-          // Run KSP embedded directly within this kotlinc invocation
-          kspWithCompilation = true
-          kspArgs["will-have-dagger-factories"] = generateDaggerFactories.toString()
-          kspArgs["generate-dagger-factories"] = generateDaggerFactories.toString()
-          kspArgs["generate-dagger-factories-only"] = generateDaggerFactoriesOnly.toString()
-          kspArgs["disable-component-merging"] = disableComponentMerging.toString()
         }
       }
 
@@ -316,6 +325,9 @@ public fun compileAnvil(
         if (moduleName != null) {
           this.moduleName = moduleName
         }
+
+        // TODO temporary until RC2 https://youtrack.jetbrains.com/issue/KT-66513
+        kotlincArguments += "-Xdont-warn-on-error-suppression"
       }
 
       if (jvmTarget != null) {

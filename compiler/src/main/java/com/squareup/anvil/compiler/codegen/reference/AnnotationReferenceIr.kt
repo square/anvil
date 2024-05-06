@@ -4,11 +4,13 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.name.FqName
 import kotlin.LazyThreadSafetyMode.NONE
 
+@UnsafeDuringIrConstructionAPI
 internal class AnnotationReferenceIr(
   val annotation: IrConstructorCall,
   val classReference: ClassReferenceIr,
@@ -83,6 +85,7 @@ internal class AnnotationReferenceIr(
   }
 }
 
+@UnsafeDuringIrConstructionAPI
 internal fun IrConstructorCall.toAnnotationReference(
   context: IrPluginContext,
   declaringClass: ClassReferenceIr?,
@@ -93,6 +96,7 @@ internal fun IrConstructorCall.toAnnotationReference(
     declaringClass = declaringClass,
   )
 
+@UnsafeDuringIrConstructionAPI
 @Suppress("FunctionName")
 internal fun AnvilCompilationExceptionAnnotationReferenceIr(
   annotationReference: AnnotationReferenceIr,

@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.resolve.source.KotlinSourceElement
@@ -109,6 +110,7 @@ public class AnvilCompilationException(
       }
     }
 
+    @OptIn(UnsafeDuringIrConstructionAPI::class)
     public operator fun invoke(
       element: IrSymbol? = null,
       message: String,

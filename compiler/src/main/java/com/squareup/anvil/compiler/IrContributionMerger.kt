@@ -13,6 +13,7 @@ import com.squareup.anvil.compiler.codegen.reference.toClassReference
 import com.squareup.anvil.compiler.internal.classIdBestGuess
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import dagger.Module
+import org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.createIrBuilder
@@ -25,6 +26,7 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.types.classOrFail
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.starProjectedType
@@ -46,10 +48,12 @@ import org.jetbrains.kotlin.name.Name
  * as super types to Dagger components annotated with `@MergeComponent` or `@MergeSubcomponent`.
  * This also supports arbitrary interface merging on interfaces annotated with `@MergeInterfaces`.
  */
+@OptIn(UnsafeDuringIrConstructionAPI::class)
 internal class IrContributionMerger(
   private val classScanner: ClassScanner,
   private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
 ) : IrGenerationExtension {
+  @FirIncompatiblePluginAPI
   // https://youtrack.jetbrains.com/issue/KT-56635
   override val shouldAlsoBeAppliedInKaptStubGenerationMode: Boolean get() = true
 
