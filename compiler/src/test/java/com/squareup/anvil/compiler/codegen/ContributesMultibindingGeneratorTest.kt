@@ -57,7 +57,7 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
 
         assertFileGenerated(
           mode,
-          "ContributingInterface_ParentInterface_Any_MultiBindingModule_096BCB91FC7B58CA.kt",
+          "ContributingInterface_ParentInterface_Any_MultiBindingModule_612ae703.kt",
         )
       }
     }
@@ -174,7 +174,7 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
 
         assertFileGenerated(
           mode,
-          "ContributingClass_ParentInterface_Any_MultiBindingModule_4CC098B9630045CD.kt",
+          "ContributingClass_ParentInterface_Any_MultiBindingModule_16a2d7f6.kt",
         )
       }
     }

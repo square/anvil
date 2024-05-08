@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler
 
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesTo
-import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponent
+import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponentClassId
 import com.squareup.anvil.compiler.codegen.reference.AnnotationReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.AnvilCompilationExceptionClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.ClassReferenceIr
@@ -412,7 +412,7 @@ internal class IrContributionMerger(
       }
       .mapNotNull { contributedSubcomponent ->
         contributedSubcomponent.classId
-          .generatedAnvilSubcomponent(declaration.classId)
+          .generatedAnvilSubcomponentClassId(declaration.classId)
           .createNestedClassId(Name.identifier(SUBCOMPONENT_MODULE))
           .referenceClassOrNull(pluginContext)
       }
@@ -589,7 +589,7 @@ internal class IrContributionMerger(
       }
       .mapNotNull { contributedSubcomponent ->
         contributedSubcomponent.classId
-          .generatedAnvilSubcomponent(clazz.classId)
+          .generatedAnvilSubcomponentClassId(clazz.classId)
           .createNestedClassId(Name.identifier(PARENT_COMPONENT))
           .referenceClassOrNull(pluginContext)
       }

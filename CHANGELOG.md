@@ -15,6 +15,8 @@
 
 ### Fixed
 
+- Anvil will now attempt to shorten the names of hint files, generated "merged" subcomponents, and contributed binding modules so that all file names derived from them will have 255 characters or fewer. 
+
 ### Security
 
 ### Custom Code Generator

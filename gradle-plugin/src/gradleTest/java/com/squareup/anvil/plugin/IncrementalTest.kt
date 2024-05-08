@@ -411,10 +411,10 @@ class IncrementalTest : BaseGradleTest() {
       .resolve("com/squareup/test/OtherClass_Factory.kt")
     val otherClassAHint = rootAnvilMainGenerated
       .anvilHint
-      .resolve("com_squareup_test_OtherClass_TypeA_Any_BindingModule_F424EF987D4445CD.kt")
+      .resolve("com_squareup_test_OtherClass_TypeA_Any_BindingModule_9faa8fec_fd2f0594.kt")
     val otherClassBHint = rootAnvilMainGenerated
       .anvilHint
-      .resolve("com_squareup_test_OtherClass_TypeB_Any_BindingModule_AB3CD045287F4012.kt")
+      .resolve("com_squareup_test_OtherClass_TypeB_Any_BindingModule_4e4aa26e_ac9ddbab.kt")
 
     rootAnvilMainGenerated.injectClassFactory.shouldExist()
     otherClassFactory.shouldExist()
@@ -692,7 +692,7 @@ class IncrementalTest : BaseGradleTest() {
 
           allMergedModulesForComponent("com.squareup.test.app.AppComponent")
             .names() shouldBe listOf(
-            "anvil.hint.com_squareup_test_app_appcomponent_LibSubcomponentA\$SubcomponentModule",
+            "anvil.component.com.squareup.test.app.appcomponent.LibSubcomponent_84607c40\$SubcomponentModule",
           )
         }
       }
