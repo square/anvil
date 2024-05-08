@@ -3,6 +3,10 @@ package com.squareup.anvil.compiler.internal
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.kotlinpoet.ClassName
 
+private const val MAX_FILE_NAME_LENGTH = 255
+  .minus(14) // ".kapt_metadata" is the longest extension
+  .minus(8) // "Provider" is the longest suffix that Dagger might add
+
 /**
  * Joins the simple names of a class with the given [separator] and [suffix].
  *
@@ -29,13 +33,31 @@ private fun ClassName.joinSimpleNamesPrivate(
   simpleNames.joinToString(separator = separator, postfix = suffix),
 )
 
-private const val MAX_FILE_NAME_LENGTH = 255
-  .minus(14) // ".kapt_metadata" is the longest extension
-  .minus(8) // "Provider" is the longest suffix that Dagger might add
-
 private fun ClassName.checkFileLength(): ClassName = apply {
   val len = simpleNames.sumOf { it.length + 1 }.minus(1)
   require(len <= MAX_FILE_NAME_LENGTH) {
     "Class name is too long: $len  --  ${toString()}"
   }
 }
+
+/**
+ * Generates a unique hint file name by adding the package name as the first simple name,
+ * then joining all simple names with the [separator] and [suffix].
+ *
+ * @see ClassName.joinSimpleNames for the joining logic
+ */
+@ExperimentalAnvilApi
+public fun ClassName.generateHintFileName(
+  separator: String = "",
+  suffix: String = "",
+  capitalizePackage: Boolean = true,
+): String = ClassName(
+  packageName,
+  listOf(
+    packageName.replace('.', '_')
+      .let { if (capitalizePackage) it.capitalize() else it },
+    *simpleNames.toTypedArray(),
+  ),
+)
+  .joinSimpleNames(separator = separator, suffix = suffix)
+  .simpleName
