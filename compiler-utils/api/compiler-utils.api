@@ -1,4 +1,6 @@
 public final class com/squareup/anvil/compiler/internal/ClassNameUtilsKt {
+	public static final fun generateHintFileName (Lcom/squareup/kotlinpoet/ClassName;Ljava/lang/String;Ljava/lang/String;Z)Ljava/lang/String;
+	public static synthetic fun generateHintFileName$default (Lcom/squareup/kotlinpoet/ClassName;Ljava/lang/String;Ljava/lang/String;ZILjava/lang/Object;)Ljava/lang/String;
 	public static final fun joinSimpleNames (Lcom/squareup/kotlinpoet/ClassName;Ljava/lang/String;Ljava/lang/String;)Lcom/squareup/kotlinpoet/ClassName;
 	public static synthetic fun joinSimpleNames$default (Lcom/squareup/kotlinpoet/ClassName;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lcom/squareup/kotlinpoet/ClassName;
 }
