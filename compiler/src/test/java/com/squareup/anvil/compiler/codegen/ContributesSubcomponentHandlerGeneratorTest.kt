@@ -1,9 +1,8 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
+import com.rickbusarow.kase.asClueCatching
 import com.squareup.anvil.annotations.MergeSubcomponent
-import com.squareup.anvil.compiler.ANVIL_SUBCOMPONENT_SUFFIX
-import com.squareup.anvil.compiler.HINT_PACKAGE
 import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
@@ -13,7 +12,7 @@ import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.internal.testing.extends
-import com.squareup.anvil.compiler.internal.testing.packageName
+import com.squareup.anvil.compiler.internal.testing.shouldNotExtend
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.mergeComponentFqName
@@ -23,7 +22,10 @@ import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Component
-import org.junit.Test
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.string.shouldEndWith
+import org.jetbrains.kotlin.descriptors.runtime.structure.classId
+import org.junit.jupiter.api.Test
 import javax.inject.Singleton
 import kotlin.test.assertFailsWith
 
@@ -50,6 +52,81 @@ class ContributesSubcomponentHandlerGeneratorTest {
       val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
       assertThat(annotation).isNotNull()
       assertThat(annotation.scope).isEqualTo(Any::class)
+    }
+  }
+
+  @Test fun `generation works for a nested contributed subcomponent with a very long name`() {
+
+    // These name lengths are arbitrary. They're long enough to be somewhat realistic,
+    // but short enough that most file names won't become obnoxiously long for no reason.
+    val a = "A".repeat(24)
+    val b = "B".repeat(37)
+    val c = "C".repeat(33)
+
+    // The maximum file name length is 255 characters, including a dot and extension.
+    // The maximum canonical class name length is 249 characters, since ".class" uses the last 6.
+    // Canonical names concatenate parent names with a '$' separator, like:
+    //   com.example.Outer$Middle$Inner
+    //
+    // So, a class's simple name's length cannot exceed:
+    //   `249 - parents.sumOf { it.simpleName.length + 1 }`
+    // where the + 1 is for the '$' separator.
+    //
+    val d = "D".repeat(249 - a.length - b.length - c.length - 3) // 152
+
+    compile(
+      """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.MergeComponent
+
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+
+        @ContributesSubcomponent(Any::class, Unit::class)
+        interface $a {
+          @ContributesSubcomponent(Int::class, Any::class)
+          interface $b {
+            @ContributesSubcomponent(String::class, Int::class)
+            interface $c {
+              @ContributesSubcomponent(Number::class, String::class)
+              interface $d
+            }
+          }
+        }
+        
+      """.trimIndent(),
+      enableDaggerAnnotationProcessor = true,
+    ) {
+
+      val subA = classLoader.loadClass("com.squareup.test.$a")
+      val subB = classLoader.loadClass("com.squareup.test.$a\$$b")
+      val subC = classLoader.loadClass("com.squareup.test.$a\$$b\$$c")
+      val subD = classLoader.loadClass("com.squareup.test.$a\$$b\$$c\$$d")
+
+      val anvilSubA = subA.anvilComponent(componentInterface)
+      val anvilSubB = subB.anvilComponent(anvilSubA)
+      val anvilSubC = subC.anvilComponent(anvilSubB)
+      val anvilSubD = subD.anvilComponent(anvilSubC)
+
+      // The 'D' name is truncated in the generated Anvil subcomponent, to leave space for:
+      // - the `ParentComponent` inner type
+      // - the additional component outer class (ComponentInterface in this test)
+      // - the `.kapt_metadata` extension (the longest extension we contend with)
+      "The generated subcomponent class name is shortened for the file system".asClueCatching {
+        anvilSubD.simpleName.length shouldBe 217
+      }
+
+      "The unique hash is not truncated".asClueCatching {
+        anvilSubD.simpleName shouldEndWith "c7aeb310"
+      }
+
+      "The `ParentComponent` inner type is present, meaning its file name is short enough".asClueCatching {
+
+        anvilSubD.parentComponentInterface
+          .declaredMethods[0].returnType shouldBe anvilSubD
+      }
     }
   }
 
@@ -708,27 +785,28 @@ class ContributesSubcomponentHandlerGeneratorTest {
       // Keep Dagger enabled, because it complained initially.
       enableDaggerAnnotationProcessor = true,
     ) {
-      assertThat(componentInterface1 extends subcomponentInterface1.anyParentComponentInterface)
-      assertThat(
-        componentInterface1 extends
-          subcomponentInterface1.anvilComponent(componentInterface1).parentComponentInterface,
-      )
 
-      assertThat(componentInterface2 extends subcomponentInterface2.anyParentComponentInterface)
-      assertThat(
-        componentInterface2 extends
-          subcomponentInterface2.anvilComponent(componentInterface2).parentComponentInterface,
-      )
+      val anvilComponent1 = subcomponentInterface1.anvilComponent(componentInterface1)
+
+      assertThat(componentInterface1)
+        .isAssignableTo(subcomponentInterface1.anyParentComponentInterface)
+      assertThat(componentInterface1)
+        .isAssignableTo(anvilComponent1.parentComponentInterface)
+
+      val anvilComponent2 = subcomponentInterface2.anvilComponent(componentInterface2)
+
+      assertThat(componentInterface2)
+        .isAssignableTo(subcomponentInterface2.anyParentComponentInterface)
+      assertThat(componentInterface2)
+        .isAssignableTo(anvilComponent2.parentComponentInterface)
 
       // Note that NOT subcomponentInterface2 extends these parent component interface, but its
       // generated @MergeSubcomponent extends them.
-      assertThat(subcomponentInterface2 extends subcomponentInterface1.anyParentComponentInterface)
-      assertThat(
-        subcomponentInterface2.anvilComponent(componentInterface2) extends
-          subcomponentInterface1.anvilComponent(
-            subcomponentInterface2.anvilComponent(componentInterface2),
-          ).parentComponentInterface,
-      )
+      subcomponentInterface2 shouldNotExtend subcomponentInterface1.anyParentComponentInterface
+      assertThat(anvilComponent2)
+        .isAssignableTo(
+          subcomponentInterface1.anvilComponent(anvilComponent2).parentComponentInterface,
+        )
     }
   }
 
@@ -1374,7 +1452,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
       assertThat(factory1::class.java.name)
         .isEqualTo(
-          "com.squareup.test.DaggerComponentInterface1\$com_squareup_test_componentinterface1_SubcomponentInterfaceAFactory",
+          "com.squareup.test.DaggerComponentInterface1\$SubcomponentInterface_30237c4fFactory",
         )
 
       val daggerComponent2 = componentInterface2.daggerComponent.declaredMethods
@@ -1391,7 +1469,7 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
       assertThat(factory2::class.java.name)
         .isEqualTo(
-          "com.squareup.test.DaggerComponentInterface2\$com_squareup_test_componentinterface2_SubcomponentInterfaceAFactory",
+          "com.squareup.test.DaggerComponentInterface2\$SubcomponentInterface_42b84d1bFactory",
         )
     }
   }
@@ -1947,25 +2025,9 @@ class ContributesSubcomponentHandlerGeneratorTest {
 
   // E.g. anvil.component.com.squareup.test.componentinterface.SubcomponentInterfaceA
   private fun Class<*>.anvilComponent(parent: Class<*>): Class<*> {
-    val packageName = parent.packageName()
-      .removePrefix("$HINT_PACKAGE.")
-
-    val packageSuffix = generateSequence(parent) { it.enclosingClass }
-      .toList()
-      .reversed()
-      .joinToString(separator = "_") { it.simpleName }
-      .lowercase()
-
-    val className = generateSequence(this) { it.enclosingClass }
-      .toList()
-      .reversed()
-      .joinToString(separator = "_") { it.simpleName }
-
     return classLoader.loadClass(
-      "$HINT_PACKAGE.${packageName.replace(
-        '.',
-        '_',
-      )}${packageSuffix}_$className$ANVIL_SUBCOMPONENT_SUFFIX",
+      classId.generatedAnvilSubcomponentClassId(parent.classId)
+        .asFqNameString(),
     )
   }
 

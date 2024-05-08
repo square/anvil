@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.MULTIBINDING_MODULE_SUFFIX
 import com.squareup.anvil.compiler.codegen.dagger.ProvidesMethodFactoryCodeGen
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.createAnvilSpec
+import com.squareup.anvil.compiler.internal.joinSimpleNamesAndTruncate
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -22,7 +23,6 @@ import dagger.Module
 import dagger.Provides
 import dagger.multibindings.IntoMap
 import dagger.multibindings.IntoSet
-import java.security.MessageDigest
 
 internal sealed class Contribution {
   abstract val origin: ClassName
@@ -36,7 +36,7 @@ internal sealed class Contribution {
   /**
    * ex: `MyClassImpl_MyClass_AppScope_BindingModule_a1b2c3d4e5f6g7h8`
    */
-  val contributionName: String by lazy(LazyThreadSafetyMode.NONE) {
+  val className by lazy(LazyThreadSafetyMode.NONE) {
     uniqueTypeName(
       originType = origin,
       boundType = boundType,
@@ -44,6 +44,8 @@ internal sealed class Contribution {
       suffix = bindingModuleNameSuffix,
     )
   }
+
+  val simpleName: String by lazy(LazyThreadSafetyMode.NONE) { className.simpleName }
 
   val functionName: String by lazy(LazyThreadSafetyMode.NONE) {
     val functionNameSuffix = boundType.simpleName.capitalize()
@@ -59,9 +61,9 @@ internal sealed class Contribution {
     val contribution = this
 
     val builder = if (contribution.isObject) {
-      TypeSpec.objectBuilder(contributionName)
+      TypeSpec.objectBuilder(simpleName)
     } else {
-      TypeSpec.interfaceBuilder(contributionName)
+      TypeSpec.interfaceBuilder(simpleName)
     }
     return builder.apply {
       addAnnotation(Module::class)
@@ -185,7 +187,7 @@ internal sealed class Contribution {
         isMangled = false,
         // In this case, the suffix doesn't matter since the provider will never be mangled.
         mangledNameSuffix = "",
-        moduleClass = ClassName(generatedPackage, contribution.contributionName),
+        moduleClass = ClassName(generatedPackage, contribution.simpleName),
         isInObject = true,
         declaration = declaration,
       )
@@ -203,33 +205,16 @@ internal sealed class Contribution {
       boundType: ClassName,
       scopeType: ClassName,
       suffix: String,
-    ): String {
-
-      val md5Hash = MessageDigest.getInstance("MD5")
-        .apply {
-          update(originType.canonicalName.toByteArray())
-          update(boundType.canonicalName.toByteArray())
-          update(scopeType.canonicalName.toByteArray())
-          update(suffix.toByteArray())
-        }
-        .digest()
-        .take(8)
-        .joinToString("") { "%02X".format(it) }
-
-      // ex: "MyClassImpl_MyClass_AppScope_BindingModule"
-      val simpleNames =
-        "${originType.simpleName}_${boundType.simpleName}_${scopeType.simpleName}_$suffix"
-          // Ensure that the name is not too long for a generated .class file.
-          //   255  // Max file name length on most file systems
-          // -   6  // ".class"
-          // -   2  // "Kt" suffix for top-level facade classes
-          // -  16  // truncated MD5 hash
-          // -   1  // "_" separator before the MD5 hash
-          // -   1  // "_" separator *after* the package name
-          // = 229
-          .take(229 - originType.packageName.length)
-
-      return "${simpleNames}_$md5Hash"
+    ): ClassName {
+      val types = listOf(originType, boundType, scopeType)
+      return ClassName(
+        packageName = originType.packageName,
+        simpleNames = types.map { it.simpleName } + suffix,
+      )
+        .joinSimpleNamesAndTruncate(
+          hashParams = types + suffix,
+          separator = "_",
+        )
     }
   }
 

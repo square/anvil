@@ -14,11 +14,11 @@ import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.Contribution
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.generateHintFileName
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
-import com.squareup.anvil.compiler.internal.testing.packageName
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.kotlinpoet.asClassName
 import com.tschuchort.compiletesting.CompilationResult
@@ -190,14 +190,14 @@ private fun Class<*>.generatedBindingModules(
         else -> error("Unknown annotation class: $annotationClass")
       }
 
-      val simpleName = Contribution.uniqueTypeName(
+      val typeName = Contribution.uniqueTypeName(
         originType = kotlin.asClassName(),
         boundType = boundType,
         scopeType = scope,
         suffix = suffix,
       )
 
-      classLoader.loadClass("${`package`.name}.$simpleName")
+      classLoader.loadClass(typeName.toString())
     }
 }
 
@@ -290,24 +290,22 @@ private fun Class<*>.getHintScopes(): List<KClass<*>> =
     ?.filter { it.java != this }
     ?: emptyList()
 
-private fun Class<*>.contributedProperties(): List<KClass<*>>? {
+fun Class<*>.contributedProperties(): List<KClass<*>>? {
   // The capitalize() comes from kotlinc's implicit handling of file names -> class names. It will
   // always, unless otherwise instructed via `@file:JvmName`, capitalize its facade class.
-  val classNameSuffix = generateSequence(this) { it.enclosingClass }
-    .toList()
-    .reversed()
-    .joinToString(separator = "_") { it.simpleName }
-    .capitalize() + "Kt"
 
   val className = if (getAnnotation(InternalBindingMarker::class.java) != null) {
-    classNameSuffix
+    generateSequence(this) { it.enclosingClass }
+      .toList()
+      .reversed()
+      .joinToString(separator = "_") { it.simpleName }
+      .capitalize()
+      .plus("Kt")
   } else {
 
-    val packagePrefix = packageName().split(".")
-      .joinToString("_")
-      .capitalize()
-
-    packagePrefix + classNameSuffix
+    kotlin.asClassName()
+      .generateHintFileName(separator = "_", suffix = "", capitalizePackage = true)
+      .plus("Kt")
   }
 
   val clazz = try {

@@ -45,7 +45,8 @@ class ContributesSubcomponentGeneratorTest(
 
       val generatedFile = walkGeneratedFiles(mode).single()
 
-      assertThat(generatedFile.name).isEqualTo("com_squareup_test_SubcomponentInterface.kt")
+      assertThat(generatedFile.name)
+        .isEqualTo("Com_squareup_test_SubcomponentInterface_7280b174.kt")
     }
   }
 
@@ -104,7 +105,8 @@ class ContributesSubcomponentGeneratorTest(
 
       val generatedFile = walkGeneratedFiles(mode).single()
 
-      assertThat(generatedFile.name).isEqualTo("com_squareup_test_Outer_SubcomponentInterface.kt")
+      assertThat(generatedFile.name)
+        .isEqualTo("Com_squareup_test_Outer_SubcomponentInterface_c4e6e962.kt")
     }
   }
 
@@ -131,7 +133,8 @@ class ContributesSubcomponentGeneratorTest(
 
       val generatedFile = walkGeneratedFiles(mode).single()
 
-      assertThat(generatedFile.name).isEqualTo("com_squareup_test_SubcomponentInterface.kt")
+      assertThat(generatedFile.name)
+        .isEqualTo("Com_squareup_test_SubcomponentInterface_7280b174.kt")
     }
   }
 
@@ -158,7 +161,8 @@ class ContributesSubcomponentGeneratorTest(
 
       val generatedFile = walkGeneratedFiles(mode).single()
 
-      assertThat(generatedFile.name).isEqualTo("com_squareup_test_SubcomponentInterface.kt")
+      assertThat(generatedFile.name)
+        .isEqualTo("Com_squareup_test_SubcomponentInterface_7280b174.kt")
     }
   }
 

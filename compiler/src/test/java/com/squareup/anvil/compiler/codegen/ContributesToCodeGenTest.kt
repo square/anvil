@@ -70,7 +70,7 @@ class ContributesToCodeGenTest : AnvilCompilationModeTest(
 
       val generatedFile = walkGeneratedFiles(mode).single()
 
-      assertThat(generatedFile.name).isEqualTo("com_squareup_test_DaggerModule1.kt")
+      assertThat(generatedFile.name).isEqualTo("com_squareup_test_DaggerModule1_52b5c4c4.kt")
     }
   }
 
@@ -263,9 +263,8 @@ class ContributesToCodeGenTest : AnvilCompilationModeTest(
 
       val generatedFile = walkGeneratedFiles(mode).single()
 
-      assertThat(
-        generatedFile.name,
-      ).isEqualTo("com_squareup_test_ComponentInterface_InnerModule.kt")
+      assertThat(generatedFile.name)
+        .isEqualTo("com_squareup_test_ComponentInterface_InnerModule_29ca774b.kt")
     }
   }
 

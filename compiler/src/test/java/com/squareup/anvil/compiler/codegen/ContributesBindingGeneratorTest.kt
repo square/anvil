@@ -53,7 +53,7 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
 
         assertFileGenerated(
           mode,
-          "ContributingInterface_ParentInterface_Any_BindingModule_AAD13F756F3194ED.kt",
+          "ContributingInterface_ParentInterface_Any_BindingModule_68088f18.kt",
         )
       }
     }
@@ -282,7 +282,7 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
 
         assertFileGenerated(
           mode,
-          "ContributingClass_ParentInterface_Any_BindingModule_CC341270ADD6DD9A.kt",
+          "ContributingClass_ParentInterface_Any_BindingModule_91037c91.kt",
         )
       }
     }
@@ -309,8 +309,8 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
         assertThat(contributingClass.bindingOriginKClass?.java).isEqualTo(contributingClass)
         assertThat(contributingClass.bindingModuleScope).isEqualTo(Any::class)
 
-        val hash = "B3206C193B810105"
-        val truncatedLength = 229 - "com.squareup.test".length
+        val hash = "66db371b"
+        val truncatedLength = 240 - "com.squareup.test".length
         val truncatedName = "${longClassName.take(truncatedLength)}_$hash"
 
         assertFileGenerated(
@@ -537,11 +537,11 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
 
       assertFileGenerated(
         mode,
-        "ContributingInterface_ParentInterface_Any_BindingModule_AAD13F756F3194ED.kt",
+        "ContributingInterface_ParentInterface_Any_BindingModule_68088f18.kt",
       )
       assertFileGenerated(
         mode,
-        "ContributingInterface_ParentInterface_Unit_BindingModule_A37B53C915FE144C.kt",
+        "ContributingInterface_ParentInterface_Unit_BindingModule_0c1e79f9.kt",
       )
 
       assertThat(
@@ -552,11 +552,11 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
       ).containsExactly(Any::class, Unit::class)
       assertFileGenerated(
         mode,
-        "SecondContributingInterface_ParentInterface_Any_BindingModule_16C2F3923A9E50AA.kt",
+        "SecondContributingInterface_ParentInterface_Any_BindingModule_bbbec9d2.kt",
       )
       assertFileGenerated(
         mode,
-        "SecondContributingInterface_ParentInterface_Unit_BindingModule_C39676205EC114D1.kt",
+        "SecondContributingInterface_ParentInterface_Unit_BindingModule_75c5914b.kt",
       )
     }
   }
@@ -661,16 +661,16 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
           clazz.simpleName to bindingMarker.rank
         }
       assertThat(
-        bindingModules["ContributingInterface_ParentInterface1_Any_BindingModule_75EEDC2261B68DFC"],
+        bindingModules["ContributingInterface_ParentInterface1_Any_BindingModule_141ba678"],
       ).isEqualTo(ContributesBinding.RANK_NORMAL)
       assertThat(
-        bindingModules["ContributingInterface_ParentInterface2_Any_BindingModule_C0AED10799C69207"],
+        bindingModules["ContributingInterface_ParentInterface2_Any_BindingModule_384535e9"],
       ).isEqualTo(ContributesBinding.RANK_NORMAL)
       assertThat(
-        bindingModules["ContributingInterface_ParentInterface1_Unit_BindingModule_BED8933E27435945"],
+        bindingModules["ContributingInterface_ParentInterface1_Unit_BindingModule_0474bc27"],
       ).isEqualTo(ContributesBinding.RANK_HIGH)
       assertThat(
-        bindingModules["ContributingInterface_ParentInterface2_Unit_BindingModule_D711EB1E73AECBA9"],
+        bindingModules["ContributingInterface_ParentInterface2_Unit_BindingModule_0abbde43"],
       ).isEqualTo(ContributesBinding.RANK_HIGHEST)
     }
   }

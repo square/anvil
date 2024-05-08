@@ -69,11 +69,10 @@ internal const val HINT_PACKAGE = "anvil.hint"
 internal const val BINDING_MODULE_SUFFIX = "BindingModule"
 internal const val MULTIBINDING_MODULE_SUFFIX = "MultiBindingModule"
 
-// The suffix is a letter by design. Class names for subcomponents must be kept short.
-internal const val ANVIL_SUBCOMPONENT_SUFFIX = "A"
 internal const val PARENT_COMPONENT = "ParentComponent"
 internal const val SUBCOMPONENT_FACTORY = "SubcomponentFactory"
 internal const val SUBCOMPONENT_MODULE = "SubcomponentModule"
+internal const val COMPONENT_PACKAGE_PREFIX = "anvil.component"
 
 internal const val REFERENCE_SUFFIX = "_reference"
 internal const val SCOPE_SUFFIX = "_scope"
