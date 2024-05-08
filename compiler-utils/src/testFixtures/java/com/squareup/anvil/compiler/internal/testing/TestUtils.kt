@@ -110,6 +110,13 @@ public val Class<*>.daggerModule: Module
 public infix fun Class<*>.extends(other: Class<*>): Boolean = other.isAssignableFrom(this)
 
 @ExperimentalAnvilApi
+public infix fun Class<*>.shouldNotExtend(other: Class<*>) {
+  assertWithMessage("Expected $this to not extend $other")
+    .that(other.isAssignableFrom(this))
+    .isFalse()
+}
+
+@ExperimentalAnvilApi
 public infix fun KClass<*>.extends(other: KClass<*>): Boolean =
   other.java.isAssignableFrom(this.java)
 

@@ -40,7 +40,7 @@ class GeneratedCodeTest {
       Class.forName("generated.test.com.squareup.anvil.test.ContributedModule").kotlin
     val contributedBindingModule =
       Class.forName(
-        "generated.test.com.squareup.anvil.test.ContributedBinding_Binding_Unit_BindingModule_E1F362063E11A552",
+        "generated.test.com.squareup.anvil.test.ContributedBinding_Binding_Unit_BindingModule_4e0aa394",
       ).kotlin
 
     val annotation = AppComponent::class.java.getAnnotation(Component::class.java)!!

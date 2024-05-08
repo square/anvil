@@ -34,7 +34,7 @@ import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerSubcomponentBuilderFqName
 import com.squareup.anvil.compiler.daggerSubcomponentFactoryFqName
 import com.squareup.anvil.compiler.internal.createAnvilSpec
-import com.squareup.anvil.compiler.internal.joinSimpleNames
+import com.squareup.anvil.compiler.internal.generateHintFileName
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
@@ -424,7 +424,7 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
     className: ClassName,
     parentScope: ClassName,
   ): FileSpec {
-    val fileName = className.joinSimpleNames().canonicalName.replace('.', '_')
+    val fileName = className.generateHintFileName("_", capitalizePackage = true)
     val classFqName = className.canonicalName
     val propertyName = classFqName.replace('.', '_')
 
