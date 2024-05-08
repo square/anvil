@@ -8,6 +8,8 @@
 
 ### Deprecated
 
+- `ClassName.generateClassName()` and `ClassReference.generateClassName()` have been renamed to `__.joinSimpleNames()` for the sake of clarity.  The `ClassName` version has also moved packages, so its new fully qualified name is `com.squareup.anvil.compiler.internal.joinSimpleNames`. 
+
 ### Removed
 
 ### Fixed

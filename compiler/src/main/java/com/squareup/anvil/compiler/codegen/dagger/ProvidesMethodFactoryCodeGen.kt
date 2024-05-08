@@ -36,6 +36,7 @@ import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.containingFileAsJavaFile
 import com.squareup.anvil.compiler.internal.createAnvilSpec
+import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
@@ -43,7 +44,6 @@ import com.squareup.anvil.compiler.internal.reference.MemberPropertyReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.isWordPrefixRegex
@@ -400,7 +400,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
 
     val packageName = moduleClass.packageName.safePackageString()
     val className = buildString {
-      append(moduleClass.generateClassName().simpleNames.joinToString("_"))
+      append(moduleClass.joinSimpleNames().simpleNames.joinToString("_"))
       append('_')
       if (isCompanionObject) {
         append("Companion_")

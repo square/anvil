@@ -21,12 +21,12 @@ import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.injectConstructors
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.internal.createAnvilSpec
+import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -168,7 +168,7 @@ internal object AssistedInjectCodeGen : AnvilApplicabilityChecker {
     onError: (String) -> Nothing,
   ): FileSpec {
     val packageName = clazz.packageName
-    val factoryClass = clazz.generateClassName(suffix = "_Factory")
+    val factoryClass = clazz.joinSimpleNames(suffix = "_Factory")
 
     val parameters = constructorParameters + memberInjectParameters
     val parametersAssisted = parameters.filter { it.isAssisted }
