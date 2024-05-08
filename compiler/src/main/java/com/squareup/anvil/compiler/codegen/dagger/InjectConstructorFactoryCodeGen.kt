@@ -21,11 +21,11 @@ import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.containingFileAsJavaFile
 import com.squareup.anvil.compiler.internal.createAnvilSpec
+import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -149,7 +149,7 @@ internal object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
     constructorParameters: List<ConstructorParameter>,
     memberInjectParameters: List<MemberInjectParameter>,
   ): FileSpec {
-    val generatedClassName = injectedClassName.generateClassName(suffix = "_Factory")
+    val generatedClassName = injectedClassName.joinSimpleNames(suffix = "_Factory")
 
     val packageName = injectedClassName.packageName
 

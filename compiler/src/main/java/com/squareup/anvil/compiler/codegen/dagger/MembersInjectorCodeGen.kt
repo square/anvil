@@ -22,11 +22,11 @@ import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.createAnvilSpec
+import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -179,7 +179,7 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
     typeParameters: List<TypeVariableName>,
     parameters: List<MemberInjectParameter>,
   ): FileSpec {
-    val memberInjectorClass = origin.generateClassName(suffix = "_MembersInjector")
+    val memberInjectorClass = origin.joinSimpleNames(suffix = "_MembersInjector")
     val packageName = memberInjectorClass.packageName.safePackageString()
     val fileName = memberInjectorClass.simpleName
 

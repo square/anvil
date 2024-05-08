@@ -25,6 +25,7 @@ import com.squareup.anvil.compiler.daggerLazyClassName
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionPropertyReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -37,7 +38,7 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.internal.reference.asClassName
-import com.squareup.anvil.compiler.internal.reference.generateClassName
+import com.squareup.anvil.compiler.internal.reference.joinSimpleNames
 import com.squareup.anvil.compiler.internal.requireRawType
 import com.squareup.anvil.compiler.internal.unwrappedTypes
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
@@ -392,7 +393,7 @@ private fun MemberPropertyReference.toMemberInjectParameter(
     ?: ""
 
   val memberInjectorClassName = declaringClass
-    .generateClassName(separator = "_", suffix = "_MembersInjector")
+    .joinSimpleNames(separator = "_", suffix = "_MembersInjector")
     .relativeClassName
     .asString()
 
@@ -496,7 +497,7 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
   val implementingClassName = declaringClass
     .toClassName()
   val memberInjectorClassName = implementingClassName
-    .generateClassName(separator = "_", suffix = "_MembersInjector")
+    .joinSimpleNames(separator = "_", suffix = "_MembersInjector")
     .simpleNames
     .joinToString(".")
 

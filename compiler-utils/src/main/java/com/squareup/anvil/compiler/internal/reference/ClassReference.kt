@@ -5,6 +5,7 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.containingFileAsJavaFile
+import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
@@ -378,22 +379,47 @@ public fun FqName.toClassReference(module: ModuleDescriptor): ClassReference {
     ?: throw AnvilCompilationException("Couldn't resolve ClassReference for $this.")
 }
 
+@Deprecated(
+  message = "Renamed to joinSimpleNames",
+  replaceWith = ReplaceWith("joinSimpleNames(separator, suffix)"),
+)
 @ExperimentalAnvilApi
 public fun ClassReference.generateClassName(
   separator: String = "_",
   suffix: String = "",
-): ClassId {
-  return asClassName().generateClassName(separator, suffix).asClassId()
-}
+): ClassId = joinSimpleNames(separator = separator, suffix = suffix)
 
+/**
+ * Joins the simple names of a class with the given [separator] and [suffix].
+ *
+ * ```
+ * val normalName = ClassName("com.example", "Outer", "Middle", "Inner")
+ * val joinedName = normalName.joinSimpleNames(separator = "_", suffix = "Factory")
+ *
+ * println(joinedName) // com.example.Outer_Middle_InnerFactory
+ * ```
+ * @throws IllegalArgumentException if the resulting class name is too long to be a valid file name.
+ */
+@ExperimentalAnvilApi
+public fun ClassReference.joinSimpleNames(
+  separator: String = "_",
+  suffix: String = "",
+): ClassId = asClassName()
+  .joinSimpleNames(separator = separator, suffix = suffix)
+  .asClassId()
+
+@Deprecated(
+  message = "Renamed to joinSimpleNames",
+  replaceWith = ReplaceWith(
+    "joinSimpleNames(separator, suffix)",
+    "com.squareup.anvil.compiler.internal.joinSimpleNames",
+  ),
+)
 @ExperimentalAnvilApi
 public fun ClassName.generateClassName(
   separator: String = "_",
   suffix: String = "",
-): ClassName {
-  val className = simpleNames.joinToString(separator = separator)
-  return ClassName(packageName, className + suffix)
-}
+): ClassName = joinSimpleNames(separator = separator, suffix = suffix)
 
 @ExperimentalAnvilApi
 public fun ClassName.generateClassNameString(
