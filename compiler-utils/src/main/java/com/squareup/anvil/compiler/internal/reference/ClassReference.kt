@@ -3,8 +3,8 @@ package com.squareup.anvil.compiler.internal.reference
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.asClassName
-import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.containingFileAsJavaFile
+import com.squareup.anvil.compiler.internal.generateHintFileName
 import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
@@ -421,16 +421,19 @@ public fun ClassName.generateClassName(
   suffix: String = "",
 ): ClassName = joinSimpleNames(separator = separator, suffix = suffix)
 
+@Deprecated(
+  "renamed to generateHintFileName()",
+  replaceWith = ReplaceWith(
+    "generateHintFileName(separator, suffix, capitalizePackage)",
+    "com.squareup.anvil.compiler.internal.generateHintFileName",
+  ),
+)
 @ExperimentalAnvilApi
 public fun ClassName.generateClassNameString(
   separator: String = "",
   suffix: String = "",
   capitalizePackage: Boolean = true,
-): String {
-  return packageName.split('.').plus(simpleNames).joinToString(separator = separator) {
-    if (capitalizePackage) it.capitalize() else it
-  } + suffix
-}
+): String = generateHintFileName(separator, suffix, capitalizePackage)
 
 @ExperimentalAnvilApi
 public fun ClassName.asClassId(local: Boolean = false): ClassId = ClassId(
