@@ -38,6 +38,7 @@ import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.internal.createAnvilSpec
+import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -48,7 +49,6 @@ import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReference
 import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
@@ -503,12 +503,12 @@ internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
     functionParameterPairs: List<Pair<String, TypeName>>,
     functionParameterKeys: List<AssistedParameterKey>,
   ): FileSpec {
-    val generatedFactoryTypeName = targetType.generateClassName(suffix = "_Factory")
+    val generatedFactoryTypeName = targetType.joinSimpleNames(suffix = "_Factory")
       .optionallyParameterizedByNames(typeParameters)
 
     val baseFactoryTypeName = originClassNAme.optionallyParameterizedByNames(typeParameters)
     val returnTypeName = targetType.optionallyParameterizedByNames(typeParameters)
-    val implClassName = originClassNAme.generateClassName(suffix = "_Impl")
+    val implClassName = originClassNAme.joinSimpleNames(suffix = "_Impl")
     val implParameterizedTypeName = implClassName.optionallyParameterizedByNames(typeParameters)
 
     return FileSpec.createAnvilSpec(implClassName.packageName, implClassName.simpleName) {
