@@ -15,6 +15,7 @@ import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
+import com.squareup.anvil.compiler.qualifierKey
 import org.jetbrains.kotlin.name.FqName
 
 internal fun AnnotationReference.parentScope(): ClassReference {
@@ -135,7 +136,7 @@ internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScopeAndBoundType
   if (size < 2) return
   if (size == 2 && this[0].scope() != this[1].scope()) return
 
-  val duplicateScopes = groupBy { it.scope() }
+  val duplicateScopes = groupBy { it.scope() to it.qualifierKey() }
     .filterValues { it.size > 1 }
     .ifEmpty { return }
 

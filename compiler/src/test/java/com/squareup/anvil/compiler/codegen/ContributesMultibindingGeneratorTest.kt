@@ -472,10 +472,11 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
       mode = mode,
       enableDaggerAnnotationProcessor = true,
     ) {
-      assertThat(
-        contributingInterface.multibindingOriginClass?.java,
-      ).isEqualTo(contributingInterface)
-      assertThat(contributingInterface.multibindingModuleScope).isEqualTo(Int::class)
+      assertThat(contributingInterface.multibindingOriginClass?.java)
+        .isEqualTo(contributingInterface)
+
+      assertThat(contributingInterface.multibindingModuleScopes)
+        .containsExactly(Int::class, Int::class)
     }
   }
 
