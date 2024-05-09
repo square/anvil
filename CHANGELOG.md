@@ -8,14 +8,9 @@
 
 ### Deprecated
 
-- `ClassName.generateClassName()` and `ClassReference.generateClassName()` have been renamed to `__.joinSimpleNames()` for the sake of clarity.  The `ClassName` version has also moved packages, so its new fully qualified name is `com.squareup.anvil.compiler.internal.joinSimpleNames`.
-- `ClassName.generateClassNameString()` has been renamed/moved to `com.squareup.anvil.compiler.internal.generateHintFileName()`.
-
 ### Removed
 
 ### Fixed
-
-- Anvil will now attempt to shorten the names of hint files, generated "merged" subcomponents, and contributed binding modules so that all file names derived from them will have 255 characters or fewer. 
 
 ### Security
 
@@ -23,6 +18,16 @@
 
 ### Other Notes & Contributions
 
+## [2.5.0-beta09] - 2024-05-09
+
+### Deprecated
+
+- `ClassName.generateClassName()` and `ClassReference.generateClassName()` have been renamed to `__.joinSimpleNames()` for the sake of clarity.  The `ClassName` version has also moved packages, so its new fully qualified name is `com.squareup.anvil.compiler.internal.joinSimpleNames`.
+- `ClassName.generateClassNameString()` has been renamed/moved to `com.squareup.anvil.compiler.internal.generateHintFileName()`.
+
+### Fixed
+
+- Anvil will now attempt to shorten the names of hint files, generated "merged" subcomponents, and contributed binding modules so that all file names derived from them will have 255 characters or fewer. 
 
 ## [2.5.0-beta08] - 2024-05-01
 
@@ -744,7 +749,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta08...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta09...HEAD
+[2.5.0-beta09]: https://github.com/square/anvil/releases/tag/v2.5.0-beta09
 [2.5.0-beta08]: https://github.com/square/anvil/releases/tag/v2.5.0-beta08
 [2.5.0-beta07]: https://github.com/square/anvil/releases/tag/v2.5.0-beta07
 [2.5.0-beta06]: https://github.com/square/anvil/releases/tag/v2.5.0-beta06
