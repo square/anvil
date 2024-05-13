@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
+import com.google.devtools.ksp.symbol.KSTypeReference
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
@@ -21,9 +22,9 @@ private typealias Scope = ClassReferenceIr
 private typealias BindingModule = ClassReferenceIr
 private typealias OriginClass = ClassReferenceIr
 
-internal data class BindingKey(
+internal data class BindingKey<T>(
   val scope: Scope,
-  val boundType: ClassReferenceIr,
+  val boundType: T,
   val qualifierKey: String,
 )
 
@@ -77,11 +78,11 @@ internal data class BindingKey(
  * ```
  */
 internal data class ContributedBindings(
-  val bindings: Map<Scope, Map<BindingKey, List<ContributedBinding>>>,
+  val bindings: Map<Scope, Map<BindingKey<*>, List<ContributedBinding<*>>>>,
 ) {
   companion object {
     fun from(
-      bindings: List<ContributedBinding>,
+      bindings: List<ContributedBinding<*>>,
     ): ContributedBindings {
       val groupedByScope = bindings.groupBy { it.scope }
       val groupedByScopeAndKey = groupedByScope.mapValues { (_, bindings) ->
@@ -100,12 +101,12 @@ internal data class ContributedBindings(
   }
 }
 
-internal data class ContributedBinding(
+internal data class ContributedBinding<T>(
   val scope: Scope,
   val isMultibinding: Boolean,
   val bindingModule: BindingModule,
   val originClass: OriginClass,
-  val boundType: ClassReferenceIr,
+  val boundType: T,
   val qualifierKey: String,
   val rank: Int,
 ) {
@@ -114,7 +115,7 @@ internal data class ContributedBinding(
     .replacedClasses
 }
 
-internal fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBinding {
+internal fun List<ContributedBinding<*>>.findHighestPriorityBinding(): ContributedBinding<*> {
   if (size == 1) return this[0]
 
   val bindings = groupBy { it.rank }
@@ -124,16 +125,31 @@ internal fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedB
 
   if (bindings.size > 1) {
     val rankName = bindings[0].rank.toString()
-    throw AnvilCompilationExceptionClassReferenceIr(
-      bindings[0].boundType,
-      "There are multiple contributed bindings with the same bound type and rank. The bound type is " +
-        "${bindings[0].boundType.fqName.asString()}. The rank is $rankName. " +
-        "The contributed binding classes are: " +
+    val boundType = bindings[0].boundType
+    fun message(boundTypeName: String?): String {
+      return "There are multiple contributed bindings with the same bound type and rank. The bound type is " +
+        "${boundTypeName}. The rank is $rankName. The contributed binding classes are: " +
         bindings.joinToString(
           prefix = "[",
           postfix = "]",
-        ) { it.originClass.fqName.asString() },
-    )
+        ) { it.originClass.fqName.asString() }
+    }
+
+    when (boundType) {
+      is ClassReferenceIr -> {
+        throw AnvilCompilationExceptionClassReferenceIr(
+          boundType,
+          message(boundType.fqName.asString()),
+        )
+      }
+      is KSTypeReference -> {
+        throw KspAnvilException(
+          node = boundType,
+          message = message(boundType.resolve().resolveKSClassDeclaration()?.qualifiedName?.asString()),
+        )
+      }
+      else -> error("Not possible")
+    }
   }
 
   return bindings[0]
