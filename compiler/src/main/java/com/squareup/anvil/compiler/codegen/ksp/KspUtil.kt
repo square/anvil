@@ -17,6 +17,7 @@ import com.google.devtools.ksp.symbol.Modifier
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import dagger.assisted.AssistedInject
+import org.jetbrains.kotlin.name.FqName
 import javax.inject.Inject
 import kotlin.reflect.KClass
 
@@ -180,3 +181,13 @@ internal fun KSFunctionDeclaration.returnTypeOrNull(): KSType? =
   returnType?.resolve()?.takeIf {
     it.declaration.qualifiedName?.asString() != "kotlin.Unit"
   }
+
+internal fun Resolver.getSymbolsWithAnnotations(
+  vararg annotations: FqName,
+): Sequence<KSAnnotated> = annotations.asSequence().flatMap { getSymbolsWithAnnotation(it.asString()) }
+
+internal fun KSAnnotated.findAll(vararg annotations: FqName): List<KSAnnotation> {
+  return annotations.flatMap { annotation ->
+    getKSAnnotationsByQualifiedName(annotation.asString()).toList()
+  }
+}
