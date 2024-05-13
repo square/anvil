@@ -5,6 +5,7 @@ import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.isAnnotationPresent
 import com.google.devtools.ksp.isConstructor
 import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.processing.impl.KSNameImpl
 import com.google.devtools.ksp.symbol.ClassKind.ANNOTATION_CLASS
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
@@ -17,6 +18,7 @@ import com.google.devtools.ksp.symbol.Modifier
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import dagger.assisted.AssistedInject
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import javax.inject.Inject
 import kotlin.reflect.KClass
@@ -186,8 +188,37 @@ internal fun Resolver.getSymbolsWithAnnotations(
   vararg annotations: FqName,
 ): Sequence<KSAnnotated> = annotations.asSequence().flatMap { getSymbolsWithAnnotation(it.asString()) }
 
-internal fun KSAnnotated.findAll(vararg annotations: FqName): List<KSAnnotation> {
+internal fun KSAnnotated.findAll(vararg annotations: String): List<KSAnnotation> {
   return annotations.flatMap { annotation ->
-    getKSAnnotationsByQualifiedName(annotation.asString()).toList()
+    getKSAnnotationsByQualifiedName(annotation)
   }
 }
+
+internal val KSAnnotation.declaringClass: KSClassDeclaration get() = parent as KSClassDeclaration
+
+internal fun KSAnnotated.find(
+  annotationName: String,
+  scopeName: KSType? = null,
+): List<KSAnnotation> {
+  return findAll(annotationName)
+    .filter {
+      scopeName == null || it.scopeOrNull() == scopeName
+  }
+}
+
+
+internal fun KSClassDeclaration.atLeastOneAnnotation(
+  annotationName: String,
+  scopeName: KSType? = null,
+): List<KSAnnotation> {
+  return find(annotationName = annotationName, scopeName = scopeName)
+    .ifEmpty {
+      throw KspAnvilException(
+        node = this,
+        message = "Class ${qualifiedName?.asString()} is not annotated with $annotationName" +
+          "${if (scopeName == null) "" else " with scope $scopeName"}.",
+      )
+    }
+}
+
+internal fun ClassId.toKSName() = KSNameImpl.getCached(asSingleFqName().toString())
