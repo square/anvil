@@ -4,9 +4,11 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.assistedService
 import com.squareup.anvil.compiler.assistedServiceFactory
 import com.squareup.anvil.compiler.compilationErrorLine
+import com.squareup.anvil.compiler.componentProcessingAndKspParams
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.ComponentProcessingMode
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
@@ -14,7 +16,6 @@ import com.squareup.anvil.compiler.internal.testing.implClass
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.internal.testing.use
-import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -27,14 +28,14 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class AssistedFactoryGeneratorTest(
-  private val useDagger: Boolean,
+  private val componentProcessingMode: ComponentProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}, mode: {1}")
+    @Parameters(name = "Component Processing Mode: {0}, mode: {1}")
     @JvmStatic
-    fun params() = useDaggerAndKspParams()
+    fun params() = componentProcessingAndKspParams()
   }
 
   @Test fun `an implementation for a factory class is generated`() {
@@ -1837,8 +1838,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
 
     AnvilCompilation()
       .configureAnvil(
-        enableDaggerAnnotationProcessor = useDagger,
-        generateDaggerFactories = !useDagger,
+        componentProcessingMode = componentProcessingMode,
+        generateDaggerFactories = componentProcessingMode != ComponentProcessingMode.NONE,
         mode = mode,
       )
       .apply {
@@ -2194,8 +2195,8 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       *sources,
       previousCompilationResult = previousCompilationResult,
       expectExitCode = expectExitCode,
-      enableDaggerAnnotationProcessor = useDagger,
-      generateDaggerFactories = !useDagger,
+      componentProcessingMode = componentProcessingMode,
+      generateDaggerFactories = componentProcessingMode != ComponentProcessingMode.NONE,
       mode = mode,
       block = block,
     )

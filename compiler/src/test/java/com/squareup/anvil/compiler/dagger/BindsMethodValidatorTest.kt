@@ -1,9 +1,10 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.componentProcessingAndKspParams
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.ComponentProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
-import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -15,14 +16,14 @@ import org.junit.runners.Parameterized.Parameters
 
 @RunWith(Parameterized::class)
 class BindsMethodValidatorTest(
-  private val useDagger: Boolean,
+  private val componentProcessingMode: ComponentProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}, mode: {1}")
+    @Parameters(name = "Component Processing Mode: {0}, mode: {1}")
     @JvmStatic
-    fun params() = useDaggerAndKspParams()
+    fun params() = componentProcessingAndKspParams()
   }
 
   @Test
@@ -51,7 +52,7 @@ class BindsMethodValidatorTest(
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type",
       )
-      if (!useDagger) {
+      if (componentProcessingMode != ComponentProcessingMode.NONE) {
         assertThat(messages).contains(
           "Expected binding of type com.squareup.test.Bar but impl parameter of type com.squareup.test.Foo only has the following " +
             "supertypes: [com.squareup.test.Ipsum, com.squareup.test.Lorem]",
@@ -84,7 +85,7 @@ class BindsMethodValidatorTest(
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type",
       )
-      if (!useDagger) {
+      if (componentProcessingMode != ComponentProcessingMode.NONE) {
         assertThat(messages).contains(
           "Expected binding of type com.squareup.test.Bar but impl parameter of type com.squareup.test.Foo has no supertypes.",
         )
@@ -269,7 +270,7 @@ class BindsMethodValidatorTest(
       """,
       previousCompilationResult = moduleResult,
       forceEmbeddedMode = true,
-      enableDagger = true,
+      componentProcessingMode = ComponentProcessingMode.KAPT,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -340,7 +341,7 @@ class BindsMethodValidatorTest(
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
-    enableDagger: Boolean = useDagger,
+    componentProcessingMode: ComponentProcessingMode = this.componentProcessingMode,
     // Used to enable the dagger compiler even in KSP mode, which is necessary for some multi-round tests
     forceEmbeddedMode: Boolean = false,
     expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
@@ -349,8 +350,8 @@ class BindsMethodValidatorTest(
     sources = sources,
     previousCompilationResult = previousCompilationResult,
     expectExitCode = expectExitCode,
-    enableDaggerAnnotationProcessor = enableDagger,
-    generateDaggerFactories = !enableDagger,
+    componentProcessingMode = componentProcessingMode,
+    generateDaggerFactories = componentProcessingMode != ComponentProcessingMode.NONE,
     mode = if (forceEmbeddedMode) AnvilCompilationMode.Embedded(emptyList()) else mode,
     block = block,
   )
