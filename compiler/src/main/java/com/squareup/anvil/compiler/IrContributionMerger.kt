@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import com.squareup.anvil.compiler.codegen.reference.find
 import com.squareup.anvil.compiler.codegen.reference.findAll
 import com.squareup.anvil.compiler.codegen.reference.toClassReference
+import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.classIdBestGuess
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import dagger.Module
@@ -270,13 +271,16 @@ internal class IrContributionMerger(
           ?: ContributesBinding.RANK_NORMAL
         val scope = contributedAnnotation.scope
         ContributedBinding(
-          scope = scope,
+          scope = scope.classId.asClassName(),
           isMultibinding = isMultibinding,
-          bindingModule = moduleClass,
-          originClass = originClass,
+          bindingModule = moduleClass.classId.asClassName(),
+          originClass = originClass.classId.asClassName(),
           boundType = boundType,
           qualifierKey = qualifierKey,
           rank = rank,
+          replaces = moduleClass.annotations.find(contributesToFqName).single()
+            .replacedClasses
+            .map { it.classId.asClassName() }
         )
       }
       .let { ContributedBindings.from(it) }
@@ -303,7 +307,7 @@ internal class IrContributionMerger(
     val contributedModules = contributesAnnotations
       .asSequence()
       .map { it.declaringClass }
-      .plus(bindings.bindings.values.flatMap { it.values }.flatten().map { it.bindingModule })
+      .plus(bindings.bindings.values.flatMap { it.values }.flatten().map { it.bindingModule }.map { pluginContext.requireReferenceClass(it.fqName).toClassReference(pluginContext) })
       .minus(replacedModules)
       .minus(excludedModules)
       .plus(predefinedModules)

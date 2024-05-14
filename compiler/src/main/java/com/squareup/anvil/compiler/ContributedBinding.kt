@@ -15,12 +15,13 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 
-private typealias Scope = ClassReferenceIr
-private typealias BindingModule = ClassReferenceIr
-private typealias OriginClass = ClassReferenceIr
+private typealias Scope = ClassName
+private typealias BindingModule = ClassName
+private typealias OriginClass = ClassName
 
 internal data class BindingKey<T>(
   val scope: Scope,
@@ -109,10 +110,9 @@ internal data class ContributedBinding<T>(
   val boundType: T,
   val qualifierKey: String,
   val rank: Int,
+  val replaces: List<ClassName>
 ) {
   val bindingKey = BindingKey(scope, boundType, qualifierKey)
-  val replaces = bindingModule.annotations.find(contributesToFqName).single()
-    .replacedClasses
 }
 
 internal fun List<ContributedBinding<*>>.findHighestPriorityBinding(): ContributedBinding<*> {
@@ -132,7 +132,7 @@ internal fun List<ContributedBinding<*>>.findHighestPriorityBinding(): Contribut
         bindings.joinToString(
           prefix = "[",
           postfix = "]",
-        ) { it.originClass.fqName.asString() }
+        ) { it.originClass.canonicalName }
     }
 
     when (boundType) {

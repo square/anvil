@@ -120,6 +120,12 @@ internal fun KSAnnotation.exclude(): List<KSClassDeclaration> =
     it.resolveKSClassDeclaration() ?: throw KspAnvilException("Could not resolve exclude $it", this)
   }
 
+@Suppress("UNCHECKED_CAST")
+internal fun KSAnnotation.modules(): List<KSClassDeclaration> =
+  (argumentAt("modules")?.value as? List<KSType>).orEmpty().map {
+    it.resolveKSClassDeclaration() ?: throw KspAnvilException("Could not resolve modules $it", this)
+  }
+
 internal fun KSAnnotation.parentScope(): KSClassDeclaration {
   return (
     argumentAt("parentScope")

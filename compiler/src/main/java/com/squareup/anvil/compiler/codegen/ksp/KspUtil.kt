@@ -15,8 +15,10 @@ import com.google.devtools.ksp.symbol.KSModifierListOwner
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.Modifier
+import com.squareup.anvil.compiler.internal.reference.asClassId
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
+import com.squareup.kotlinpoet.ksp.toClassName
 import dagger.assisted.AssistedInject
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
@@ -222,3 +224,5 @@ internal fun KSClassDeclaration.atLeastOneAnnotation(
 }
 
 internal fun ClassId.toKSName() = KSNameImpl.getCached(asSingleFqName().toString())
+
+internal val KSClassDeclaration.classId: ClassId get() = toClassName().asClassId()
