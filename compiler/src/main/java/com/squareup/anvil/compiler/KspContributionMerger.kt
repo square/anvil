@@ -23,9 +23,11 @@ import com.squareup.anvil.compiler.codegen.ksp.atLeastOneAnnotation
 import com.squareup.anvil.compiler.codegen.ksp.classId
 import com.squareup.anvil.compiler.codegen.ksp.declaringClass
 import com.squareup.anvil.compiler.codegen.ksp.exclude
+import com.squareup.anvil.compiler.codegen.ksp.extend
 import com.squareup.anvil.compiler.codegen.ksp.find
 import com.squareup.anvil.compiler.codegen.ksp.findAll
 import com.squareup.anvil.compiler.codegen.ksp.getSymbolsWithAnnotations
+import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.modules
 import com.squareup.anvil.compiler.codegen.ksp.parentScope
@@ -34,11 +36,18 @@ import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.codegen.ksp.superTypesExcludingAny
+import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.joinToCode
 import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.writeTo
+import dagger.Component
 import dagger.Module
 import org.jetbrains.kotlin.name.Name
 
@@ -138,7 +147,6 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
         mergeAnnotatedClass = mergeAnnotatedClass,
         daggerAnnotation = daggerAnnotation,
         contributedInterfaces = contributedInterfaces,
-        resolver = resolver,
       )
     }
     return null
@@ -549,9 +557,62 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
     mergeAnnotatedClass: KSClassDeclaration,
     daggerAnnotation: AnnotationSpec?,
     contributedInterfaces: List<KSType>?,
-    resolver: Resolver,
   ) {
-    TODO()
+    // TODO this doesn't work yet for interface merging or module merging
+    // TODO what's the generated merged module or merged interface called?
+
+    val generatedComponentName = "Anvil${mergeAnnotatedClass.simpleName.asString().capitalize()}"
+    val generatedComponentClassName = ClassName(mergeAnnotatedClass.packageName.asString(), generatedComponentName)
+    var factoryOrBuilderFunSpec: FunSpec? = null
+    val generatedComponent = TypeSpec.interfaceBuilder("Anvil${mergeAnnotatedClass.simpleName.asString().capitalize()}")
+      .apply {
+        daggerAnnotation?.let { addAnnotation(it) }
+
+        contributedInterfaces?.forEach { contributedInterface ->
+          addSuperinterface(contributedInterface.toClassName())
+        }
+
+        val componentOrFactory = mergeAnnotatedClass.declarations
+          .filterIsInstance<KSClassDeclaration>()
+          .single {
+            if (it.isAnnotationPresent<Component.Factory>()) {
+              factoryOrBuilderFunSpec = FunSpec.builder("factory")
+                .returns(generatedComponentClassName.nestedClass(it.simpleName.asString()))
+                .addStatement(
+                  "return Dagger${mergeAnnotatedClass.simpleName.asString().capitalize()}.factory()",
+                )
+                .build()
+              return@single true
+            }
+            if (it.isAnnotationPresent<Component.Builder>()) {
+              factoryOrBuilderFunSpec = FunSpec.builder("builder")
+                .returns(generatedComponentClassName.nestedClass(it.simpleName.asString()))
+                .addStatement(
+                  "return Dagger${mergeAnnotatedClass.simpleName.asString().capitalize()}.builder()",
+                )
+                .build()
+              return@single true
+            }
+            false
+          }
+
+        val factoryOrBuilder = componentOrFactory.extend()
+        addType(factoryOrBuilder)
+      }
+      .build()
+
+    val spec = FileSpec.createAnvilSpec(generatedComponentClassName.packageName, generatedComponent.name!!) {
+      addType(generatedComponent)
+      // Generate a shim of what the normal dagger entry point would be
+      factoryOrBuilderFunSpec?.let {
+        addType(TypeSpec.objectBuilder("Dagger${mergeAnnotatedClass.simpleName.asString().capitalize()}")
+          .addFunction(it)
+          .build())
+      }
+    }
+
+    // Aggregating because we read symbols from the classpath
+    spec.writeTo(env.codeGenerator, aggregating = true, originatingKSFiles = listOf(mergeAnnotatedClass.containingFile!!))
   }
 
   private inline fun Sequence<KSAnnotated>.validate(
