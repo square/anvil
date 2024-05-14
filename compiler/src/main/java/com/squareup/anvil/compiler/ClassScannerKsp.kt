@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.ClassScannerKsp.GeneratedProperty.ScopeProper
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.scope
+import com.squareup.kotlinpoet.ksp.toClassName
 import org.jetbrains.kotlin.name.FqName
 
 internal class ClassScannerKsp {
@@ -67,7 +68,7 @@ internal class ClassScannerKsp {
         // Check that the annotation really is present. It should always be the case, but it's
         // a safetynet in case the generated properties are out of sync.
         clazz.annotations.any {
-          it.annotationType.resolve() == annotation && (scope == null || it.scope() == scope)
+          it.annotationType.resolve().toClassName().fqName == annotation && (scope == null || it.scope() == scope)
         }
       }
   }
