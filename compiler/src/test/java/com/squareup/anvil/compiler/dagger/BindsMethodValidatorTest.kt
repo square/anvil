@@ -52,7 +52,7 @@ class BindsMethodValidatorTest(
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type",
       )
-      if (componentProcessingMode != ComponentProcessingMode.NONE) {
+      if (componentProcessingMode == ComponentProcessingMode.NONE) {
         assertThat(messages).contains(
           "Expected binding of type com.squareup.test.Bar but impl parameter of type com.squareup.test.Foo only has the following " +
             "supertypes: [com.squareup.test.Ipsum, com.squareup.test.Lorem]",
@@ -85,7 +85,7 @@ class BindsMethodValidatorTest(
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type",
       )
-      if (componentProcessingMode != ComponentProcessingMode.NONE) {
+      if (componentProcessingMode == ComponentProcessingMode.NONE) {
         assertThat(messages).contains(
           "Expected binding of type com.squareup.test.Bar but impl parameter of type com.squareup.test.Foo has no supertypes.",
         )
