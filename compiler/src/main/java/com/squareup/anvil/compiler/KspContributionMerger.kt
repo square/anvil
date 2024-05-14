@@ -586,7 +586,7 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
 
         val componentOrFactory = mergeAnnotatedClass.declarations
           .filterIsInstance<KSClassDeclaration>()
-          .single {
+          .singleOrNull {
             // TODO does dagger also use these names? Or are they lowercase versions of the simple class name?
             if (it.isAnnotationPresent<Component.Factory>()) {
               factoryOrBuilderFunSpec = FunSpec.builder("factory")
@@ -595,7 +595,7 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
                   "return Dagger${mergeAnnotatedClass.simpleName.asString().capitalize()}.factory()",
                 )
                 .build()
-              return@single true
+              return@singleOrNull true
             }
             if (it.isAnnotationPresent<Component.Builder>()) {
               factoryOrBuilderFunSpec = FunSpec.builder("builder")
@@ -604,16 +604,18 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
                   "return Dagger${mergeAnnotatedClass.simpleName.asString().capitalize()}.builder()",
                 )
                 .build()
-              return@single true
+              return@singleOrNull true
             }
             false
           }
 
-        val factoryOrBuilder = componentOrFactory.extendFactoryOrBuilder(
-          mergeAnnotatedClass.toClassName(),
-          generatedComponentClassName,
-        )
-        addType(factoryOrBuilder)
+        componentOrFactory?.let {
+          val factoryOrBuilder = it.extendFactoryOrBuilder(
+            mergeAnnotatedClass.toClassName(),
+            generatedComponentClassName,
+          )
+          addType(factoryOrBuilder)
+        }
       }
       .build()
 
