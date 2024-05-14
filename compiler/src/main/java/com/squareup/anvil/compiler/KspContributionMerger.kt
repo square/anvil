@@ -583,6 +583,7 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
         val componentOrFactory = mergeAnnotatedClass.declarations
           .filterIsInstance<KSClassDeclaration>()
           .single {
+            // TODO does dagger also use these names? Or are they lowercase versions of the simple class name?
             if (it.isAnnotationPresent<Component.Factory>()) {
               factoryOrBuilderFunSpec = FunSpec.builder("factory")
                 .returns(generatedComponentClassName.nestedClass(it.simpleName.asString()))
