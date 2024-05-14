@@ -99,7 +99,7 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
   }
 
   /**
-   * Returns non-null if the given [annotated] could not be processed.
+   * Returns non-null if the given [mergeAnnotatedClass] could not be processed.
    */
   private fun processClass(
     resolver: Resolver,
