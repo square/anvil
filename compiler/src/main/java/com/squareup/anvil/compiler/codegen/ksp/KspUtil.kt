@@ -197,7 +197,9 @@ internal fun KSFunctionDeclaration.returnTypeOrNull(): KSType? =
 
 internal fun Resolver.getSymbolsWithAnnotations(
   vararg annotations: FqName,
-): Sequence<KSAnnotated> = annotations.asSequence().flatMap { getSymbolsWithAnnotation(it.asString()) }
+): Sequence<KSAnnotated> = annotations.asSequence().flatMap {
+  getSymbolsWithAnnotation(it.asString())
+}
 
 internal fun KSAnnotated.findAll(vararg annotations: String): List<KSAnnotation> {
   return annotations.flatMap { annotation ->
@@ -214,9 +216,8 @@ internal fun KSAnnotated.find(
   return findAll(annotationName)
     .filter {
       scopeName == null || it.scopeOrNull() == scopeName
-  }
+    }
 }
-
 
 internal fun KSClassDeclaration.atLeastOneAnnotation(
   annotationName: String,
@@ -245,9 +246,10 @@ internal fun KSClassDeclaration.extend(name: String = simpleName.asString()): Ty
     ClassKind.ENUM_CLASS,
     ClassKind.ENUM_ENTRY,
     ClassKind.OBJECT,
-    ClassKind.ANNOTATION_CLASS -> throw KspAnvilException(
+    ClassKind.ANNOTATION_CLASS,
+    -> throw KspAnvilException(
       node = this,
-      message = "Unsupported class kind: $classKind"
+      message = "Unsupported class kind: $classKind",
     )
   }
   return builder

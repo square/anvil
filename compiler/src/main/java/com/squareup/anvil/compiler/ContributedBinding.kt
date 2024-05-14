@@ -9,7 +9,6 @@ import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.reference.AnvilCompilationExceptionClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.ClassReferenceIr
-import com.squareup.anvil.compiler.codegen.reference.find
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
@@ -110,7 +109,7 @@ internal data class ContributedBinding<T>(
   val boundType: T,
   val qualifierKey: String,
   val rank: Int,
-  val replaces: List<ClassName>
+  val replaces: List<ClassName>,
 ) {
   val bindingKey = BindingKey(scope, boundType, qualifierKey)
 }
@@ -128,7 +127,7 @@ internal fun List<ContributedBinding<*>>.findHighestPriorityBinding(): Contribut
     val boundType = bindings[0].boundType
     fun message(boundTypeName: String?): String {
       return "There are multiple contributed bindings with the same bound type and rank. The bound type is " +
-        "${boundTypeName}. The rank is $rankName. The contributed binding classes are: " +
+        "$boundTypeName. The rank is $rankName. The contributed binding classes are: " +
         bindings.joinToString(
           prefix = "[",
           postfix = "]",
@@ -145,7 +144,9 @@ internal fun List<ContributedBinding<*>>.findHighestPriorityBinding(): Contribut
       is KSTypeReference -> {
         throw KspAnvilException(
           node = boundType,
-          message = message(boundType.resolve().resolveKSClassDeclaration()?.qualifiedName?.asString()),
+          message = message(
+            boundType.resolve().resolveKSClassDeclaration()?.qualifiedName?.asString(),
+          ),
         )
       }
       else -> error("Not possible")

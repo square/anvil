@@ -280,7 +280,7 @@ internal class IrContributionMerger(
           rank = rank,
           replaces = moduleClass.annotations.find(contributesToFqName).single()
             .replacedClasses
-            .map { it.classId.asClassName() }
+            .map { it.classId.asClassName() },
         )
       }
       .let { ContributedBindings.from(it) }
@@ -307,7 +307,13 @@ internal class IrContributionMerger(
     val contributedModules = contributesAnnotations
       .asSequence()
       .map { it.declaringClass }
-      .plus(bindings.bindings.values.flatMap { it.values }.flatten().map { it.bindingModule }.map { pluginContext.requireReferenceClass(it.fqName).toClassReference(pluginContext) })
+      .plus(
+        bindings.bindings.values.flatMap {
+          it.values
+        }.flatten().map {
+          it.bindingModule
+        }.map { pluginContext.requireReferenceClass(it.fqName).toClassReference(pluginContext) },
+      )
       .minus(replacedModules)
       .minus(excludedModules)
       .plus(predefinedModules)

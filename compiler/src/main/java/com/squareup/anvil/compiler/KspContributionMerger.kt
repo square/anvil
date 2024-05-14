@@ -75,7 +75,7 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
   private val classScanner = ClassScannerKsp()
 
   override fun processChecked(
-    resolver: Resolver
+    resolver: Resolver,
   ): List<KSAnnotated> {
     // TODO how do we ensure this runs last?
     //  - run all other processors first?
@@ -99,7 +99,7 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
    */
   private fun processClass(
     resolver: Resolver,
-    mergeAnnotatedClass: KSClassDeclaration
+    mergeAnnotatedClass: KSClassDeclaration,
   ): KSAnnotated? {
     val mergeComponentAnnotations = mergeAnnotatedClass
       .findAll(mergeComponentFqName.asString(), mergeSubcomponentFqName.asString())
@@ -222,9 +222,9 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
         // Verify that the replaced classes use the same scope.
         val contributesToOurScope = excludedClass
           .findAll(
-                  contributesToFqName.asString(),
-                  contributesBindingFqName.asString(),
-                  contributesMultibindingFqName.asString(),
+            contributesToFqName.asString(),
+            contributesBindingFqName.asString(),
+            contributesMultibindingFqName.asString(),
           )
           .map { it.scope() }
           .plus(
@@ -240,8 +240,8 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
             message = "${origin.qualifiedName?.asString()} with scopes " +
               "${
                 scopes.joinToString(
-                        prefix = "[",
-                        postfix = "]",
+                  prefix = "[",
+                  postfix = "]",
                 ) { it.resolveKSClassDeclaration()?.qualifiedName?.asString()!! }
               } " +
               "wants to exclude ${excludedClass.qualifiedName?.asString()}, but the excluded class isn't " +
@@ -303,21 +303,23 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
           internalBindingMarker.argumentAt("isMultibinding")?.value == true
         val qualifierKey =
           (internalBindingMarker.argumentAt("qualifierKey")?.value as? String?).orEmpty()
-        val rank = (internalBindingMarker.argumentAt("rank")
-          ?.value as? Int?)
+        val rank = (
+          internalBindingMarker.argumentAt("rank")
+            ?.value as? Int?
+          )
           ?: ContributesBinding.RANK_NORMAL
         val scope = contributedAnnotation.scope()
         ContributedBinding(
-                scope = scope.toClassName(),
-                isMultibinding = isMultibinding,
-                bindingModule = moduleClass.toClassName(),
-                originClass = originClass.toClassName(),
-                boundType = boundType,
-                qualifierKey = qualifierKey,
-                rank = rank,
-                replaces = moduleClass.find(contributesToFqName.asString()).single()
-                        .replaces()
-                        .map { it.toClassName() },
+          scope = scope.toClassName(),
+          isMultibinding = isMultibinding,
+          bindingModule = moduleClass.toClassName(),
+          originClass = originClass.toClassName(),
+          boundType = boundType,
+          qualifierKey = qualifierKey,
+          rank = rank,
+          replaces = moduleClass.find(contributesToFqName.asString()).single()
+            .replaces()
+            .map { it.toClassName() },
         )
       }
       .let { ContributedBindings.from(it) }
@@ -344,10 +346,14 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
       .asSequence()
       .map { it.declaringClass }
       .plus(
-              bindings.bindings.values.flatMap { it.values }
-                      .flatten()
-                      .map { it.bindingModule }
-                      .map { resolver.getClassDeclarationByName(resolver.getKSNameFromString(it.canonicalName))!! },
+        bindings.bindings.values.flatMap { it.values }
+          .flatten()
+          .map { it.bindingModule }
+          .map {
+            resolver.getClassDeclarationByName(
+              resolver.getKSNameFromString(it.canonicalName),
+            )!!
+          },
       )
       .minus(replacedModules)
       .minus(excludedModules)
@@ -562,9 +568,12 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
     // TODO what's the generated merged module or merged interface called?
 
     val generatedComponentName = "Anvil${mergeAnnotatedClass.simpleName.asString().capitalize()}"
-    val generatedComponentClassName = ClassName(mergeAnnotatedClass.packageName.asString(), generatedComponentName)
+    val generatedComponentClassName =
+      ClassName(mergeAnnotatedClass.packageName.asString(), generatedComponentName)
     var factoryOrBuilderFunSpec: FunSpec? = null
-    val generatedComponent = TypeSpec.interfaceBuilder("Anvil${mergeAnnotatedClass.simpleName.asString().capitalize()}")
+    val generatedComponent = TypeSpec.interfaceBuilder(
+      "Anvil${mergeAnnotatedClass.simpleName.asString().capitalize()}",
+    )
       .apply {
         daggerAnnotation?.let { addAnnotation(it) }
 
@@ -601,22 +610,31 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
       }
       .build()
 
-    val spec = FileSpec.createAnvilSpec(generatedComponentClassName.packageName, generatedComponent.name!!) {
+    val spec = FileSpec.createAnvilSpec(
+      generatedComponentClassName.packageName,
+      generatedComponent.name!!,
+    ) {
       addType(generatedComponent)
       // Generate a shim of what the normal dagger entry point would be
       factoryOrBuilderFunSpec?.let {
-        addType(TypeSpec.objectBuilder("Dagger${mergeAnnotatedClass.simpleName.asString().capitalize()}")
-          .addFunction(it)
-          .build())
+        addType(
+          TypeSpec.objectBuilder("Dagger${mergeAnnotatedClass.simpleName.asString().capitalize()}")
+            .addFunction(it)
+            .build(),
+        )
       }
     }
 
     // Aggregating because we read symbols from the classpath
-    spec.writeTo(env.codeGenerator, aggregating = true, originatingKSFiles = listOf(mergeAnnotatedClass.containingFile!!))
+    spec.writeTo(
+      env.codeGenerator,
+      aggregating = true,
+      originatingKSFiles = listOf(mergeAnnotatedClass.containingFile!!),
+    )
   }
 
   private inline fun Sequence<KSAnnotated>.validate(
-    escape: (List<KSAnnotated>) -> Nothing
+    escape: (List<KSAnnotated>) -> Nothing,
   ): List<KSClassDeclaration> {
     val (valid, deferred) = filterIsInstance<KSClassDeclaration>().partition { annotated ->
       // TODO check error types in annotations props
@@ -697,9 +715,9 @@ private fun checkSameScope(
 ) {
   val contributesToOurScope = classToReplace
     .findAll(
-            contributesToFqName.asString(),
-            contributesBindingFqName.asString(),
-            contributesMultibindingFqName.asString(),
+      contributesToFqName.asString(),
+      contributesBindingFqName.asString(),
+      contributesMultibindingFqName.asString(),
     )
     .map { it.scope() }
     .any { scope -> scope in scopes }
@@ -711,8 +729,8 @@ private fun checkSameScope(
       message = "${origin.qualifiedName?.asString()} with scopes " +
         "${
           scopes.joinToString(
-                  prefix = "[",
-                  postfix = "]",
+            prefix = "[",
+            postfix = "]",
           ) { it.resolveKSClassDeclaration()?.qualifiedName?.asString()!! }
         } " +
         "wants to replace ${classToReplace.qualifiedName?.asString()}, but the replaced class isn't " +

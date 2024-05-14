@@ -10,8 +10,6 @@ import com.squareup.anvil.compiler.ClassScannerKsp.GeneratedProperty.ScopeProper
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.scope
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.ksp.toClassName
 import org.jetbrains.kotlin.name.FqName
 
 internal class ClassScannerKsp {
@@ -118,4 +116,3 @@ internal class ClassScannerKsp {
     val resolverHash: Int,
   )
 }
-
