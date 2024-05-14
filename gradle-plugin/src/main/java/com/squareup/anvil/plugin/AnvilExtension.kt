@@ -223,6 +223,10 @@ public abstract class AnvilExtension @Inject constructor(
           "generate-dagger-factories-only" to generateDaggerFactoriesOnly,
           "disable-component-merging" to disableComponentMerging,
           "will-have-dagger-factories" to willHaveDaggerFactories,
+          "merging-backend" to useKspComponentMergingBackend
+            .map { enabled ->
+              if (enabled) "ksp" else "none"
+            },
         ),
       )
     }
@@ -279,7 +283,7 @@ public abstract class AnvilExtension @Inject constructor(
  * because of its `Project` property.
  */
 private fun commandLineArgumentProvider(
-  vararg args: Pair<String, Provider<Boolean>>,
+  vararg args: Pair<String, Provider<*>>,
 ): CommandLineArgumentProvider {
   return CommandLineArgumentProvider {
     args.map { (arg, provider) -> "$arg=${provider.get()}" }

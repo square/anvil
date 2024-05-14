@@ -36,10 +36,7 @@ public class CommandLineOptions private constructor(
 
     private fun CompilerConfiguration.parseComponentMergingBackend(): ComponentMergingBackend {
       val config = get(mergingBackendKey, ComponentMergingBackend.IR.name)
-      return config
-        .uppercase(Locale.US)
-        .let { value -> ComponentMergingBackend.entries.find { it.name == value } }
-        ?: error("Unknown backend option: '$config'")
+      return ComponentMergingBackend.fromString(config) ?: error("Unknown backend option: '$config'")
     }
   }
 }

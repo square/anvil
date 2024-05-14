@@ -39,6 +39,7 @@ public final class com/squareup/anvil/compiler/api/AnvilCompilationException$Com
 }
 
 public abstract interface class com/squareup/anvil/compiler/api/AnvilContext {
+	public abstract fun getComponentMergingBackend ()Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
 	public abstract fun getDisableComponentMerging ()Z
 	public abstract fun getGenerateFactories ()Z
 	public abstract fun getGenerateFactoriesOnly ()Z
@@ -59,11 +60,16 @@ public final class com/squareup/anvil/compiler/api/CodeGeneratorKt {
 }
 
 public final class com/squareup/anvil/compiler/api/ComponentMergingBackend : java/lang/Enum {
+	public static final field Companion Lcom/squareup/anvil/compiler/api/ComponentMergingBackend$Companion;
 	public static final field IR Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
 	public static final field KSP Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
 	public static fun values ()[Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
+}
+
+public final class com/squareup/anvil/compiler/api/ComponentMergingBackend$Companion {
+	public final fun fromString (Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
 }
 
 public abstract interface class com/squareup/anvil/compiler/api/FileWithContent : java/lang/Comparable {

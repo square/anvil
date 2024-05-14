@@ -16,6 +16,7 @@ import com.google.devtools.ksp.symbol.Visibility
 import com.google.devtools.ksp.symbol.impl.hasAnnotation
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesTo
+import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponentClassId
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
@@ -72,7 +73,9 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
 
   @AutoService(SymbolProcessorProvider::class)
   class Provider : AnvilSymbolProcessorProvider(
-    { context -> !context.disableComponentMerging && !context.generateFactories },
+    { context ->
+      !context.disableComponentMerging && !context.generateFactories && !context.generateFactoriesOnly && context.componentMergingBackend == ComponentMergingBackend.KSP
+    },
     ::KspContributionMerger,
   )
 
