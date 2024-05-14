@@ -5,8 +5,6 @@ import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.isAnnotationPresent
 import com.google.devtools.ksp.isConstructor
 import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.processing.impl.KSNameImpl
-import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.ClassKind.ANNOTATION_CLASS
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
@@ -17,12 +15,10 @@ import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Modifier
-import com.google.devtools.ksp.symbol.impl.synthetic.KSErrorTypeClassDeclaration.simpleName
 import com.squareup.anvil.compiler.internal.reference.asClassId
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.TypeName
-import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
@@ -233,38 +229,10 @@ internal fun KSClassDeclaration.atLeastOneAnnotation(
     }
 }
 
-internal fun ClassId.toKSName() = KSNameImpl.getCached(asSingleFqName().toString())
-
 internal val KSClassDeclaration.classId: ClassId get() = toClassName().asClassId()
-
-internal fun KSClassDeclaration.extend(name: String = simpleName.asString()): TypeSpec {
-  val builder = when (classKind) {
-    ClassKind.INTERFACE -> TypeSpec.interfaceBuilder(name)
-      .superclass(toClassName())
-    ClassKind.CLASS -> TypeSpec.classBuilder(name)
-      .addSuperinterface(toClassName())
-    ClassKind.ENUM_CLASS,
-    ClassKind.ENUM_ENTRY,
-    ClassKind.OBJECT,
-    ClassKind.ANNOTATION_CLASS,
-    -> throw KspAnvilException(
-      node = this,
-      message = "Unsupported class kind: $classKind",
-    )
-  }
-  return builder
-    .addAnnotations(annotations.map { it.toAnnotationSpec() }.asIterable())
-    .apply {
-      for (function in getDeclaredFunctions()) {
-        addFunction(function.toFunSpec())
-      }
-    }
-    .build()
-}
 
 internal fun KSFunctionDeclaration.toFunSpec(): FunSpec {
   val builder = FunSpec.builder(simpleName.getShortName())
-    // TODO in interfaces, will they be "ABSTRACT" here still?
     .addModifiers(modifiers.mapNotNull { it.toKModifier() })
     .addAnnotations(annotations.map { it.toAnnotationSpec() }.asIterable())
 

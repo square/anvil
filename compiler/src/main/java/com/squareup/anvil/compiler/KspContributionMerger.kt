@@ -2,10 +2,12 @@ package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
 import com.google.devtools.ksp.getAllSuperTypes
+import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
+import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
@@ -23,7 +25,6 @@ import com.squareup.anvil.compiler.codegen.ksp.atLeastOneAnnotation
 import com.squareup.anvil.compiler.codegen.ksp.classId
 import com.squareup.anvil.compiler.codegen.ksp.declaringClass
 import com.squareup.anvil.compiler.codegen.ksp.exclude
-import com.squareup.anvil.compiler.codegen.ksp.extend
 import com.squareup.anvil.compiler.codegen.ksp.find
 import com.squareup.anvil.compiler.codegen.ksp.findAll
 import com.squareup.anvil.compiler.codegen.ksp.getSymbolsWithAnnotations
@@ -36,6 +37,7 @@ import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.codegen.ksp.superTypesExcludingAny
+import com.squareup.anvil.compiler.codegen.ksp.toFunSpec
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.kotlinpoet.AnnotationSpec
@@ -43,8 +45,10 @@ import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.KModifier
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.joinToCode
+import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.Component
@@ -584,7 +588,6 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
           .filterIsInstance<KSClassDeclaration>()
           .single {
             // TODO does dagger also use these names? Or are they lowercase versions of the simple class name?
-            // TODO remap create() and build() return types to the generated component? Not sure what Dagger checks here.
             if (it.isAnnotationPresent<Component.Factory>()) {
               factoryOrBuilderFunSpec = FunSpec.builder("factory")
                 .returns(generatedComponentClassName.nestedClass(it.simpleName.asString()))
@@ -606,7 +609,10 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
             false
           }
 
-        val factoryOrBuilder = componentOrFactory.extend()
+        val factoryOrBuilder = componentOrFactory.extendFactoryOrBuilder(
+          mergeAnnotatedClass.toClassName(),
+          generatedComponentClassName,
+        )
         addType(factoryOrBuilder)
       }
       .build()
@@ -765,3 +771,55 @@ private val KSAnnotation.daggerAnnotationClassName: ClassName
     mergeModulesClassName -> daggerModuleClassName
     else -> throw NotImplementedError("Don't know how to handle $this.")
   }
+
+private fun KSClassDeclaration.extendFactoryOrBuilder(
+  originalComponentClassName: ClassName,
+  generatedComponentClassName: ClassName,
+): TypeSpec {
+  val name = simpleName.asString()
+  val newClassName = generatedComponentClassName.nestedClass(name)
+  val thisType = asType(emptyList())
+  val builder = when (classKind) {
+    ClassKind.INTERFACE -> TypeSpec.interfaceBuilder(name)
+      .superclass(toClassName())
+    ClassKind.CLASS -> TypeSpec.classBuilder(name)
+      .addSuperinterface(toClassName())
+    ClassKind.ENUM_CLASS,
+    ClassKind.ENUM_ENTRY,
+    ClassKind.OBJECT,
+    ClassKind.ANNOTATION_CLASS,
+    -> throw KspAnvilException(
+      node = this,
+      message = "Unsupported class kind: $classKind",
+    )
+  }
+  return builder
+    .addAnnotations(annotations.map { it.toAnnotationSpec() }.asIterable())
+    .apply {
+      for (function in getDeclaredFunctions()) {
+        // Only add the function we need to override and update the type
+        if (function.isAbstract) {
+          val returnType = function.returnTypeOrNull()
+          if (returnType == thisType) {
+            // Handles fluent builder functions
+            addFunction(
+              function.toFunSpec().toBuilder()
+                .addModifiers(KModifier.OVERRIDE)
+                .returns(newClassName)
+                .build(),
+            )
+          } else if (returnType?.toClassName() == originalComponentClassName) {
+            // Handles functions that return the Component class, such as
+            // factory create() or builder build()
+            addFunction(
+              function.toFunSpec().toBuilder()
+                .addModifiers(KModifier.OVERRIDE)
+                .returns(generatedComponentClassName)
+                .build(),
+            )
+          }
+        }
+      }
+    }
+    .build()
+}
