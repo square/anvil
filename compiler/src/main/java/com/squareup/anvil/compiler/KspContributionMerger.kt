@@ -142,13 +142,11 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
       null
     }
 
-    if (contributedInterfaces != null || daggerAnnotation != null) {
-      generateMergedComponent(
-        mergeAnnotatedClass = mergeAnnotatedClass,
-        daggerAnnotation = daggerAnnotation,
-        contributedInterfaces = contributedInterfaces,
-      )
-    }
+    generateMergedComponent(
+      mergeAnnotatedClass = mergeAnnotatedClass,
+      daggerAnnotation = daggerAnnotation,
+      contributedInterfaces = contributedInterfaces,
+    )
     return null
   }
 
@@ -575,6 +573,7 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
       "Anvil${mergeAnnotatedClass.simpleName.asString().capitalize()}",
     )
       .apply {
+        addSuperinterface(mergeAnnotatedClass.toClassName())
         daggerAnnotation?.let { addAnnotation(it) }
 
         contributedInterfaces?.forEach { contributedInterface ->
