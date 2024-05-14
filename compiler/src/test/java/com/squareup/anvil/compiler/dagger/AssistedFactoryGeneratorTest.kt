@@ -1839,7 +1839,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     AnvilCompilation()
       .configureAnvil(
         componentProcessingMode = componentProcessingMode,
-        generateDaggerFactories = componentProcessingMode != ComponentProcessingMode.NONE,
+        generateDaggerFactories = componentProcessingMode == ComponentProcessingMode.NONE,
         mode = mode,
       )
       .apply {
@@ -2196,7 +2196,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       previousCompilationResult = previousCompilationResult,
       expectExitCode = expectExitCode,
       componentProcessingMode = componentProcessingMode,
-      generateDaggerFactories = componentProcessingMode != ComponentProcessingMode.NONE,
+      generateDaggerFactories = componentProcessingMode == ComponentProcessingMode.NONE,
       mode = mode,
       block = block,
     )

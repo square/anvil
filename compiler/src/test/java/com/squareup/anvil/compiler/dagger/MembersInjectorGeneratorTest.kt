@@ -2561,7 +2561,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     componentProcessingMode = componentProcessingMode,
-    generateDaggerFactories = componentProcessingMode != ComponentProcessingMode.NONE,
+    generateDaggerFactories = componentProcessingMode == ComponentProcessingMode.NONE,
     previousCompilationResult = previousCompilationResult,
     expectExitCode = expectExitCode,
     mode = mode,

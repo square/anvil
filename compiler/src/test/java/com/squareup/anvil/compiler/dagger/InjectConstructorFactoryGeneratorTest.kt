@@ -2743,7 +2743,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     componentProcessingMode = componentProcessingMode,
-    generateDaggerFactories = componentProcessingMode != ComponentProcessingMode.NONE,
+    generateDaggerFactories = componentProcessingMode == ComponentProcessingMode.NONE,
     expectExitCode = expectExitCode,
     // Many constructor parameters are unused.
     allWarningsAsErrors = false,

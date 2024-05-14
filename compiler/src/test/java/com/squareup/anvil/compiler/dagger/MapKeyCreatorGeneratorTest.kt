@@ -249,7 +249,7 @@ class MapKeyCreatorGeneratorTest(
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     componentProcessingMode = componentProcessingMode,
-    generateDaggerFactories = componentProcessingMode != ComponentProcessingMode.NONE,
+    generateDaggerFactories = componentProcessingMode == ComponentProcessingMode.NONE,
     mode = mode,
     block = block,
   )

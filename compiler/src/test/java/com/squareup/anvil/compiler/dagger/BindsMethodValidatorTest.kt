@@ -351,7 +351,7 @@ class BindsMethodValidatorTest(
     previousCompilationResult = previousCompilationResult,
     expectExitCode = expectExitCode,
     componentProcessingMode = componentProcessingMode,
-    generateDaggerFactories = componentProcessingMode != ComponentProcessingMode.NONE,
+    generateDaggerFactories = componentProcessingMode == ComponentProcessingMode.NONE,
     mode = if (forceEmbeddedMode) AnvilCompilationMode.Embedded(emptyList()) else mode,
     block = block,
   )

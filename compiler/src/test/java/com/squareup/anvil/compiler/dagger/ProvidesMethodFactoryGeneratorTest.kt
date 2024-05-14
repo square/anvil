@@ -3553,7 +3553,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     componentProcessingMode = componentProcessingMode,
-    generateDaggerFactories = componentProcessingMode != ComponentProcessingMode.NONE,
+    generateDaggerFactories = componentProcessingMode == ComponentProcessingMode.NONE,
     block = block,
     mode = mode,
     previousCompilationResult = previousCompilationResult,
