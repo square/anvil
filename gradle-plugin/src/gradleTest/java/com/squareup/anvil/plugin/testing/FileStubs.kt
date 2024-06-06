@@ -6,15 +6,18 @@ import java.io.File
 
 interface FileStubs {
 
-  fun DirectoryBuilder.injectClass(packageName: String = "com.squareup.test"): File {
+  fun DirectoryBuilder.injectClass(
+    packageName: String = "com.squareup.test",
+    simpleName: String = "InjectClass",
+  ): File {
     return kotlinFile(
-      packageName.replace(".", "/") / "InjectClass.kt",
+      packageName.replace(".", "/") / "$simpleName.kt",
       """
         package $packageName
         
         import javax.inject.Inject
         
-        class InjectClass @Inject constructor()
+        class $simpleName @Inject constructor()
       """.trimIndent(),
     )
   }
@@ -23,9 +26,10 @@ interface FileStubs {
     boundTypeFqName: String,
     scopeFqName: String = "kotlin.Any",
     packageName: String = "com.squareup.test",
+    simpleName: String = "BoundClass",
   ): File {
     return kotlinFile(
-      path = packageName.replace(".", "/") / "BoundClass.kt",
+      path = packageName.replace(".", "/") / "$simpleName.kt",
       content = """
         package $packageName
 
@@ -33,7 +37,44 @@ interface FileStubs {
         import javax.inject.Inject
   
         @ContributesBinding($scopeFqName::class)
-        class BoundClass @Inject constructor() : $boundTypeFqName
+        class $simpleName @Inject constructor() : $boundTypeFqName
+      """.trimIndent(),
+    )
+  }
+
+  fun DirectoryBuilder.multiboundClass(
+    fqName: String,
+    boundTypeFqName: String,
+    scopeFqName: String = "kotlin.Any",
+  ): File {
+    val (packageName, simpleName) = """(.+)\.(.+)""".toRegex().find(fqName)
+      ?.destructured
+      ?: error("Invalid fqName: $fqName")
+
+    return multiboundClass(
+      packageName = packageName,
+      simpleName = simpleName,
+      boundTypeFqName = boundTypeFqName,
+      scopeFqName = scopeFqName,
+    )
+  }
+
+  fun DirectoryBuilder.multiboundClass(
+    packageName: String,
+    simpleName: String,
+    boundTypeFqName: String,
+    scopeFqName: String = "kotlin.Any",
+  ): File {
+    return kotlinFile(
+      path = packageName.replace(".", "/") / "$simpleName.kt",
+      content = """
+        package $packageName
+
+        import com.squareup.anvil.annotations.ContributesMultibinding
+        import javax.inject.Inject
+  
+        @ContributesMultibinding($scopeFqName::class)
+        class $simpleName @Inject constructor() : $boundTypeFqName
       """.trimIndent(),
     )
   }

@@ -12,6 +12,8 @@
 
 ### Fixed
 
+- incremental compilation is automatically disabled for source sets that perform interface or module merging ([#1024](https://github.com/square/anvil/pull/1024))
+
 ### Security
 
 ### Custom Code Generator

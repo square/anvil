@@ -68,6 +68,9 @@ public class AnvilCompilation internal constructor(
       val anvilCommandLineProcessor = AnvilCommandLineProcessor()
       commandLineProcessors = listOf(anvilCommandLineProcessor)
 
+      val buildDir = workingDir.resolve("build")
+      val anvilCacheDir = buildDir.resolve("anvil-cache")
+
       pluginOptions = mutableListOf(
         PluginOption(
           pluginId = anvilCommandLineProcessor.pluginId,
@@ -79,12 +82,21 @@ public class AnvilCompilation internal constructor(
           optionName = "analysis-backend",
           optionValue = mode.analysisBackend.name.lowercase(Locale.US),
         ),
+        PluginOption(
+          pluginId = anvilCommandLineProcessor.pluginId,
+          optionName = "ir-merges-file",
+          optionValue = anvilCacheDir.resolve("merges/ir-merges.txt").absolutePath,
+        ),
+        PluginOption(
+          pluginId = anvilCommandLineProcessor.pluginId,
+          optionName = "track-source-files",
+          optionValue = (trackSourceFiles && mode is Embedded).toString(),
+        ),
       )
 
       when (mode) {
         is Embedded -> {
           anvilComponentRegistrar.addCodeGenerators(mode.codeGenerators)
-          val buildDir = workingDir.resolve("build")
           pluginOptions +=
             listOf(
               PluginOption(
@@ -105,7 +117,7 @@ public class AnvilCompilation internal constructor(
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "anvil-cache-dir",
-                optionValue = buildDir.resolve("anvil-cache").absolutePath,
+                optionValue = anvilCacheDir.absolutePath,
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
@@ -121,11 +133,6 @@ public class AnvilCompilation internal constructor(
                 pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "will-have-dagger-factories",
                 optionValue = (generateDaggerFactories || enableDaggerAnnotationProcessor).toString(),
-              ),
-              PluginOption(
-                pluginId = anvilCommandLineProcessor.pluginId,
-                optionName = "track-source-files",
-                optionValue = trackSourceFiles.toString(),
               ),
             )
         }

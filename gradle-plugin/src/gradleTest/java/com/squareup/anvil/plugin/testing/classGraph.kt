@@ -98,6 +98,50 @@ fun ScanResult.allMergedModulesForComponent(componentInterfaceName: String): Lis
 }
 
 /**
+ * Returns all interfaces that are direct supertypes to [className].
+ *
+ * ```
+ * @TestFactory
+ * fun `my test`() = testFactory {
+ *   rootProject {
+ *     dir("src/main/java") {
+ *       kotlinFile(
+ *         path = "com/squareup/test/AppComponent.kt",
+ *         content = """
+ *           package com.squareup.test
+ *
+ *           interface Base
+ *
+ *           @ContributesTo(Any::class)
+ *           interface A : Base
+ *           @ContributesTo(Any::class)
+ *           interface B : Base
+ *
+ *           @MergeComponent(Any::class)
+ *           interface AppComponent
+ *         """.trimIndent()
+ *       )
+ *     }
+ *   }
+ *
+ *   shouldSucceed("jar") // note the "jar" task
+ *
+ *   rootProject.classGraphResult()
+ *     .allMergedModulesForComponent("com.squareup.test.AppComponent")
+ *     .names() shouldBe listOf(
+ *       "com.squareup.test.A",
+ *       "com.squareup.test.B",
+ *     )
+ * }
+ * ```
+ */
+fun ScanResult.allDirectInterfaces(className: String): List<ClassInfo> {
+  return loadClass(className, false)
+    .interfaces
+    .map { getClassInfo(it.name) as ClassInfo }
+}
+
+/**
  * Returns all methods inside `@Module` types that are annotated with `@Binds` in this scan result.
  * The methods are sorted by their name.
  *
