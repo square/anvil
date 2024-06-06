@@ -32,7 +32,10 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+import java.io.File
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("DEPRECATION")
@@ -139,8 +142,6 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     project.configurations.getByName(variant.compilerPluginClasspathName)
       .extendsFrom(getConfiguration(project, variant.name))
 
-    disableIncrementalKotlinCompilation(variant)
-
     if (!variant.variantFilter.generateDaggerFactoriesOnly) {
       disableCorrectErrorTypes(variant)
 
@@ -157,13 +158,21 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     // Notice that we use the name of the variant as a directory name. Generated code
     // for this specific compile task will be included in the task output. The output of different
     // compile tasks shouldn't be mixed.
-    val srcGenDir = project.layout.buildDirectory.map {
-      it.asFile.resolve("anvil/${variant.name}/generated")
-    }
+    val variantDir = project.layout.buildDirectory
+      .dir("anvil/${variant.name}")
 
-    val anvilCacheDir = project.layout.buildDirectory.map {
-      it.asFile.resolve("anvil/${variant.name}/caches")
-    }
+    val srcGenDir = variantDir.map { it.dir("generated") }
+
+    val anvilCacheDir = variantDir.map { it.dir("caches") }
+
+    val irMergesFile = anvilCacheDir
+      .map { it.asFile.resolve("ir-merges.txt") }
+
+    disableIncrementalKotlinCompilation(
+      variant = variant,
+      compileTaskProvider = kotlinCompilation.compileTaskProvider,
+      irMergesFile = irMergesFile,
+    )
 
     kotlinCompilation.compileTaskProvider.configure { task ->
 
@@ -218,11 +227,15 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         ),
         FilesSubpluginOption(
           key = "src-gen-dir",
-          files = listOf(srcGenDir.get()),
+          files = listOf(srcGenDir.get().asFile),
         ),
         FilesSubpluginOption(
           key = "anvil-cache-dir",
-          files = listOf(anvilCacheDir.get()),
+          files = listOf(anvilCacheDir.get().asFile),
+        ),
+        FilesSubpluginOption(
+          key = "ir-merges-file",
+          listOf(irMergesFile.get()),
         ),
         SubpluginOption(
           key = "generate-dagger-factories",
@@ -279,14 +292,42 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     }
   }
 
-  private fun disableIncrementalKotlinCompilation(variant: Variant) {
+  private fun disableIncrementalKotlinCompilation(
+    variant: Variant,
+    compileTaskProvider: TaskProvider<out KotlinCompilationTask<*>>,
+    irMergesFile: Provider<File>,
+  ) {
+
+    fun mergingIsDisabled(): Boolean {
+      return variant.variantFilter.generateDaggerFactoriesOnly ||
+        variant.variantFilter.disableComponentMerging
+    }
+
+    compileTaskProvider.configure { task ->
+
+      if (variant.variantFilter.trackSourceFiles && !mergingIsDisabled()) {
+        if (task is AbstractKotlinCompile<*>) {
+          // The `ir-merges.txt` file indicates that the last compilation resulted in adding module
+          // arguments to an annotation or adding interface supertypes.  Those changes do not affect
+          // the output .class files, which means that Kotlin's incremental logic doesn't properly
+          // track the changes.  So, we disable incremental compilation whenever this file exists.
+          //
+          // Note that this is being done at configuration time,
+          // and not inside a `doFirst { }` block.  This is because the `doFirst { }` block would
+          // execute after build cache restoration has taken place.  We only need to disable
+          // incremental logic if the previous compilation happened on this machine and the
+          // resultant ModuleDescriptors are already in memory.  If the files need to be restored
+          // from cache, then the incremental logic we're avoiding won't happen anyway.
+          task.incremental = task.incremental && !irMergesFile.get().exists()
+        }
+      }
+    }
+
     variant.project.pluginManager.withPlugin(KAPT_PLUGIN_ID) {
       variant.project
         .namedLazy<KaptGenerateStubsTask>(variant.stubsTaskName) { stubsTaskProvider ->
-          if (!variant.variantFilter.generateDaggerFactoriesOnly &&
-            !variant.variantFilter.disableComponentMerging
-          ) {
-            stubsTaskProvider.configure { stubsTask ->
+          stubsTaskProvider.configure { stubsTask ->
+            if (!mergingIsDisabled()) {
               // Disable incremental compilation for the stub generating task. Trigger the compiler
               // plugin if any dependencies in the compile classpath have changed. This will make sure
               // that we pick up any change from a dependency when merging all the classes. Without

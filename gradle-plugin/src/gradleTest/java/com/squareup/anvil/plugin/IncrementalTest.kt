@@ -13,6 +13,7 @@ import com.rickbusarow.kase.wrap
 import com.squareup.anvil.plugin.testing.AnvilGradleTestEnvironment
 import com.squareup.anvil.plugin.testing.BaseGradleTest
 import com.squareup.anvil.plugin.testing.allBoundTypes
+import com.squareup.anvil.plugin.testing.allDirectInterfaces
 import com.squareup.anvil.plugin.testing.allMergedModulesForComponent
 import com.squareup.anvil.plugin.testing.anvil
 import com.squareup.anvil.plugin.testing.classGraphResult
@@ -57,8 +58,7 @@ class IncrementalTest : BaseGradleTest() {
     val injectClassFactory = rootAnvilMainGenerated.injectClassFactory
 
     injectClassFactory.shouldExist()
-    injectClassFactory.delete()
-    injectClassFactory.shouldNotExist()
+    injectClassFactory.deleteOrFail()
 
     shouldSucceed("compileJava") {
       task(":compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
@@ -206,6 +206,492 @@ class IncrementalTest : BaseGradleTest() {
 
       rootAnvilMainGenerated.injectClassFactory.shouldNotExist()
     }
+
+  @TestFactory
+  fun `a generated binding contribution is deleted if the annotation is removed`() = testFactory {
+
+    rootProject {
+      gradlePropertiesFile(
+        """
+          com.squareup.anvil.trackSourceFiles=true
+        """.trimIndent(),
+      )
+    }
+
+    rootProject.project("lib1") {
+
+      buildFile {
+        plugins {
+          kotlin("jvm")
+          id("com.squareup.anvil")
+        }
+        anvil {
+          generateDaggerFactories.set(true)
+        }
+        dependencies {
+          implementation(libs.dagger2.annotations)
+        }
+      }
+
+      dir("src/main/java") {
+
+        simpleInterface(
+          packageName = "com.squareup.test.lib1",
+          simpleName = "ServiceInterface",
+        )
+
+        multiboundClass(
+          packageName = "com.squareup.test.lib1",
+          simpleName = "Service1",
+          boundTypeFqName = "com.squareup.test.lib1.ServiceInterface",
+          scopeFqName = "kotlin.Any",
+        )
+
+        multiboundClass(
+          packageName = "com.squareup.test.lib1",
+          simpleName = "Service2",
+          boundTypeFqName = "com.squareup.test.lib1.ServiceInterface",
+          scopeFqName = "kotlin.Any",
+        )
+      }
+    }
+
+    rootProject.project("lib2") {
+      buildFile {
+        plugins {
+          kotlin("jvm")
+          id("com.squareup.anvil")
+        }
+        dependencies {
+          implementation(libs.dagger2.annotations)
+          api(project(":lib1"))
+        }
+      }
+      dir("src/main/java") {
+
+        kotlinFile(
+          path = "com/squareup/test/lib2/Merging.kt",
+          content = """
+            package com.squareup.test.lib2
+    
+            import com.squareup.anvil.annotations.MergeComponent
+            import com.squareup.anvil.annotations.compat.MergeModules
+      
+            @MergeComponent(Any::class)
+            interface AnyComponent
+      
+            @MergeModules(Any::class)
+            abstract class AnyModule
+          """.trimIndent(),
+        )
+      }
+    }
+
+    rootProject.settingsFileAsFile.appendText(
+      """
+
+        include(":lib1")
+        include(":lib2")
+      """.trimIndent(),
+    )
+
+    val lib1 by rootProject.subprojects
+    val lib2 by rootProject.subprojects
+
+    shouldSucceed(":lib2:jar") {
+      task(":lib1:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+    }
+
+    lib1.dir("src/main/java") {
+      // Replace the @ContributesMultibinding class declaration with one that isn't bound.
+      injectClass(packageName = "com.squareup.test.lib1", simpleName = "Service1")
+    }
+
+    shouldSucceed(":lib2:jar") {
+
+      task(":lib1:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+    }
+
+    val includes = lib2.classGraphResult(lib1)
+      .allMergedModulesForComponent("com.squareup.test.lib2.AnyComponent")
+      .names()
+
+    includes shouldBe listOf(
+      "com.squareup.test.lib1.Service2_ServiceInterface_Any_MultiBindingModule_4e7cdd78",
+    )
+  }
+
+  @TestFactory
+  fun `a generated multibinding is updated if contributions are removed and added in the same compilation`() =
+    testFactory {
+
+      rootProject {
+        gradlePropertiesFile(
+          """
+          com.squareup.anvil.trackSourceFiles=true
+          """.trimIndent(),
+        )
+      }
+
+      rootProject.project("lib1") {
+
+        buildFile {
+          plugins {
+            kotlin("jvm")
+            id("com.squareup.anvil")
+          }
+          anvil {
+            generateDaggerFactories.set(true)
+          }
+          dependencies {
+            implementation(libs.dagger2.annotations)
+          }
+        }
+
+        dir("src/main/java") {
+
+          simpleInterface(
+            packageName = "com.squareup.test.lib1",
+            simpleName = "ServiceInterface",
+          )
+
+          multiboundClass(
+            packageName = "com.squareup.test.lib1",
+            simpleName = "Service1",
+            boundTypeFqName = "com.squareup.test.lib1.ServiceInterface",
+            scopeFqName = "kotlin.Any",
+          )
+
+          multiboundClass(
+            packageName = "com.squareup.test.lib1",
+            simpleName = "Service2",
+            boundTypeFqName = "com.squareup.test.lib1.ServiceInterface",
+            scopeFqName = "kotlin.Any",
+          )
+        }
+      }
+
+      rootProject.project("lib2") {
+        buildFile {
+          plugins {
+            kotlin("jvm")
+            id("com.squareup.anvil")
+          }
+          dependencies {
+            implementation(libs.dagger2.annotations)
+            api(project(":lib1"))
+          }
+        }
+        dir("src/main/java") {
+
+          kotlinFile(
+            path = "com/squareup/test/lib2/Merging.kt",
+            content = """
+            package com.squareup.test.lib2
+    
+            import com.squareup.anvil.annotations.MergeComponent
+            import com.squareup.anvil.annotations.compat.MergeModules
+      
+            @MergeComponent(Any::class)
+            interface AnyComponent
+      
+            @MergeModules(Any::class)
+            abstract class AnyModule
+            """.trimIndent(),
+          )
+        }
+      }
+
+      rootProject.settingsFileAsFile.appendText(
+        """
+
+        include(":lib1")
+        include(":lib2")
+        """.trimIndent(),
+      )
+
+      val lib1 by rootProject.subprojects
+      val lib2 by rootProject.subprojects
+
+      shouldSucceed(":lib2:jar") {
+        task(":lib1:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+        task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      }
+
+      lib1.dir("src/main/java") {
+        // Replace the @ContributesMultibinding class declaration with one that isn't bound.
+        injectClass(packageName = "com.squareup.test.lib1", simpleName = "Service1")
+
+        multiboundClass(
+          packageName = "com.squareup.test.lib1",
+          simpleName = "Service3",
+          boundTypeFqName = "com.squareup.test.lib1.ServiceInterface",
+          scopeFqName = "kotlin.Any",
+        )
+      }
+
+      shouldSucceed(":lib2:jar") {
+
+        task(":lib1:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+        task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      }
+
+      val includes = lib2.classGraphResult(lib1)
+        .allMergedModulesForComponent("com.squareup.test.lib2.AnyComponent")
+        .names()
+
+      includes shouldBe listOf(
+        "com.squareup.test.lib1.Service2_ServiceInterface_Any_MultiBindingModule_4e7cdd78",
+        "com.squareup.test.lib1.Service3_ServiceInterface_Any_MultiBindingModule_a6a5fcfa",
+      )
+    }
+
+  @TestFactory
+  fun `a generated binding contribution is added if an annotation and merge target are added in the same compilation`() =
+    testFactory {
+
+      rootProject {
+        gradlePropertiesFile(
+          """
+          com.squareup.anvil.trackSourceFiles=true
+          """.trimIndent(),
+        )
+      }
+
+      rootProject.project("lib1") {
+
+        buildFile {
+          plugins {
+            kotlin("jvm")
+            id("com.squareup.anvil")
+          }
+          anvil {
+            generateDaggerFactories.set(true)
+          }
+          dependencies {
+            implementation(libs.dagger2.annotations)
+          }
+        }
+
+        dir("src/main/java") {
+
+          simpleInterface(
+            packageName = "com.squareup.test.lib1",
+            simpleName = "ServiceInterface",
+          )
+
+          multiboundClass(
+            packageName = "com.squareup.test.lib1",
+            simpleName = "Service1",
+            boundTypeFqName = "com.squareup.test.lib1.ServiceInterface",
+            scopeFqName = "kotlin.Any",
+          )
+        }
+      }
+
+      rootProject.project("lib2") {
+        buildFile {
+          plugins {
+            kotlin("jvm")
+            id("com.squareup.anvil")
+          }
+          dependencies {
+            implementation(libs.dagger2.annotations)
+            api(project(":lib1"))
+          }
+        }
+        dir("src/main/java") {
+          kotlinFile(
+            path = "com/squareup/test/lib2/Merging.kt",
+            content = """
+              package com.squareup.test.lib2
+      
+              interface AnyComponent
+            """.trimIndent(),
+          )
+        }
+      }
+
+      rootProject.settingsFileAsFile.appendText(
+        """
+
+          include(":lib1")
+          include(":lib2")
+        """.trimIndent(),
+      )
+
+      val lib1 by rootProject.subprojects
+      val lib2 by rootProject.subprojects
+
+      shouldSucceed(":lib2:jar") {
+        task(":lib1:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+        task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      }
+
+      lib1.dir("src/main/java") {
+
+        multiboundClass(
+          packageName = "com.squareup.test.lib1",
+          simpleName = "Service2",
+          boundTypeFqName = "com.squareup.test.lib1.ServiceInterface",
+          scopeFqName = "kotlin.Any",
+        )
+      }
+
+      lib2.dir("src/main/java") {
+        kotlinFile(
+          path = "com/squareup/test/lib2/Merging.kt",
+          content = """
+            package com.squareup.test.lib2
+    
+            import com.squareup.anvil.annotations.MergeComponent
+            import com.squareup.anvil.annotations.compat.MergeModules
+      
+            @MergeComponent(Any::class)
+            interface AnyComponent
+      
+            @MergeModules(Any::class)
+            abstract class AnyModule
+          """.trimIndent(),
+        )
+      }
+
+      shouldSucceed(":lib2:jar") {
+
+        task(":lib1:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+        task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      }
+
+      val includes = lib2.classGraphResult(lib1)
+        .allMergedModulesForComponent("com.squareup.test.lib2.AnyComponent")
+        .names()
+
+      includes shouldBe listOf(
+        "com.squareup.test.lib1.Service1_ServiceInterface_Any_MultiBindingModule_a39836ad",
+        "com.squareup.test.lib1.Service2_ServiceInterface_Any_MultiBindingModule_4e7cdd78",
+      )
+    }
+
+  @TestFactory
+  fun `a contributed supertype can be added as part of an incremental compilation`() = testFactory {
+
+    rootProject {
+      gradlePropertiesFile(
+        """
+          com.squareup.anvil.trackSourceFiles=true
+        """.trimIndent(),
+      )
+    }
+
+    rootProject.project("lib1") {
+
+      buildFile {
+        plugins {
+          kotlin("jvm")
+          id("com.squareup.anvil")
+        }
+        anvil {
+          generateDaggerFactories.set(true)
+        }
+        dependencies {
+          implementation(libs.dagger2.annotations)
+        }
+      }
+
+      dir("src/main/java") {
+
+        kotlinFile(
+          path = "com/squareup/test/lib1/Contributed1.kt",
+          content = """
+            package com.squareup.test.lib1
+
+            import com.squareup.anvil.annotations.ContributesTo
+            
+            @ContributesTo(Any::class)
+            interface Contributed1
+          """.trimIndent(),
+        )
+      }
+    }
+
+    rootProject.project("lib2") {
+      buildFile {
+        plugins {
+          kotlin("jvm")
+          id("com.squareup.anvil")
+        }
+        dependencies {
+          implementation(libs.dagger2.annotations)
+          api(project(":lib1"))
+        }
+      }
+      dir("src/main/java") {
+        kotlinFile(
+          path = "com/squareup/test/lib2/AnyComponent.kt",
+          content = """
+            package com.squareup.test.lib2
+
+            import com.squareup.anvil.annotations.compat.MergeInterfaces
+      
+            @MergeInterfaces(Any::class)
+            interface AnyComponent
+          """.trimIndent(),
+        )
+      }
+    }
+
+    rootProject.settingsFileAsFile.appendText(
+      """
+
+        include(":lib1")
+        include(":lib2")
+      """.trimIndent(),
+    )
+
+    val lib1 by rootProject.subprojects
+    val lib2 by rootProject.subprojects
+
+    shouldSucceed(":lib2:jar") {
+      task(":lib1:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+    }
+
+    lib1.dir("src/main/java") {
+
+      simpleInterface(
+        packageName = "com.squareup.test.lib1",
+        simpleName = "Contributed1",
+      )
+
+      kotlinFile(
+        path = "com/squareup/test/lib1/Contributed2.kt",
+        content = """
+          package com.squareup.test.lib1
+   
+          import com.squareup.anvil.annotations.ContributesTo
+   
+          @ContributesTo(Any::class)
+          interface Contributed2
+        """.trimIndent(),
+      )
+    }
+
+    workingDir.resolve("build/reports").deleteRecursivelyOrFail()
+
+    shouldSucceed(":lib2:jar") {
+
+      task(":lib1:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+    }
+
+    val superTypes = lib2.classGraphResult(lib1)
+      .allDirectInterfaces("com.squareup.test.lib2.AnyComponent")
+      .names()
+
+    superTypes shouldBe listOf("com.squareup.test.lib1.Contributed2")
+  }
 
   @TestFactory
   fun `a generated factory is updated if the source class constructor is changed`() =
