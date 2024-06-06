@@ -15,6 +15,8 @@ import java.io.ObjectOutputStream
 import java.io.Serializable
 import java.security.MessageDigest
 import kotlin.LazyThreadSafetyMode.NONE
+import kotlin.io.path.createParentDirectories
+import kotlin.io.path.writeText
 import kotlin.random.Random
 
 internal typealias MD5String = String
@@ -191,7 +193,95 @@ internal class GeneratedFileCache private constructor(
     writeToBinaryFile()
   }
 
+  private val FileId.file: RelativeFile
+    get() = tables.fileIds.inverse.getValue(this)
+
   private fun writeToBinaryFile() {
+
+    val yaml = buildString {
+
+      val filesToBaseDir = tables.relativeToBaseDir
+        .asSequence()
+        .map { (id, baseDirType) -> id.file to baseDirType }
+        .groupBy { it.second }
+        .toList()
+        .sortedBy { it.first }
+        .joinToString("\n  ", "  ") { (type, pairs) ->
+          val files = pairs.map { it.first.file }
+            .sorted()
+            .joinToString("\n    ", "    ") { "- $it" }
+          """
+          |$type:
+          |    $files
+        """.trimMargin()
+        }
+      appendLine("filesToBaseDir:")
+      appendLine(filesToBaseDir)
+
+      val sourcesToGenerated = tables.sourcesToGenerated.keys
+        .sorted()
+        .joinToString("\n  ") { id ->
+          val source = id.file
+          val generated = tables.getGeneratedFiles(source)
+            .sorted()
+            .joinToString("\n    ", "    ") { "- ${it.file}" }
+          """
+          |${source.file}:
+          |    $generated
+        """.trimMargin()
+        }
+      appendLine("sourcesToGenerated:")
+      appendLine(sourcesToGenerated)
+
+      val generatedToSources = tables.generatedToSources.keys
+        .sorted()
+        .joinToString("\n  ") { id ->
+          val generated = id.file
+          val sources = tables.getSourceFiles(generated).sorted()
+            .joinToString("\n    ", "    ") { "- ${it.file}" }
+          """
+          |${generated.file}:
+          |    $sources
+        """.trimMargin()
+        }
+      appendLine("generatedToSources:")
+      appendLine(generatedToSources)
+
+      val filesToMd5 = tables.filesToMd5
+        .map { (id, md5) -> id.file to md5 }
+        .joinToString("\n  ", "  ") { "${it.first.file} : ${it.second}" }
+
+      appendLine("filesToMd5:")
+      appendLine(filesToMd5)
+
+    }
+
+    binaryFile.resolveSibling("generated-file-cache.yml")
+      .toPath()
+      .createParentDirectories()
+      .writeText(yaml)
+
+    val mmd = buildString {
+      appendLine("graph LR")
+      tables.generatedToSources.keys
+        .map { it.file }
+        .filter { !it.file.path.contains("/hint/") }
+        .sorted()
+        .flatMap { generated ->
+          tables.getSourceFiles(generated).sorted()
+            .filter { !it.file.path.contains("/hint/") }
+            .sorted()
+            .map { source -> generated.file.name to source.file.name }
+        }
+        .forEach { (g, s) ->
+          appendLine("  ${g} --> ${s}")
+        }
+    }
+
+    binaryFile.resolveSibling("generated-to-sources.mmd")
+      .toPath()
+      .createParentDirectories()
+      .writeText(mmd)
 
     binaryFile.delete()
     binaryFile.parentFile.mkdirs()
