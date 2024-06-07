@@ -18,6 +18,84 @@
 
 ### Other Notes & Contributions
 
+## [2.5.0-beta09] - 2024-05-09
+
+### Deprecated
+
+- `ClassName.generateClassName()` and `ClassReference.generateClassName()` have been renamed to `__.joinSimpleNames()` for the sake of clarity.  The `ClassName` version has also moved packages, so its new fully qualified name is `com.squareup.anvil.compiler.internal.joinSimpleNames`.
+- `ClassName.generateClassNameString()` has been renamed/moved to `com.squareup.anvil.compiler.internal.generateHintFileName()`.
+
+### Fixed
+
+- Anvil will now attempt to shorten the names of hint files, generated "merged" subcomponents, and contributed binding modules so that all file names derived from them will have 255 characters or fewer. 
+
+## [2.5.0-beta08] - 2024-05-01
+
+### Changed
+
+- Anvil's generated hints are now all generated to the same `anvil.hint` package, which simplifies hint lookups and better future-proofs future KSP work. Note that this is a user-invisible change, but it will require a one-time recompilation of any Anvil-generated hints. ([#975](https://github.com/square/anvil/pull/975))
+
+### Fixed
+
+- cache generated file paths relative to the build directory (changed from project directory) ([#979](https://github.com/square/anvil/pull/979))
+- check both kapt and ksp for dagger-compiler when using KSP ([#989](https://github.com/square/anvil/pull/989))
+
+## [2.5.0-beta07] - 2024-04-16
+
+### Fixed
+
+- Another mangled name workaround in KSP ([#966](https://github.com/square/anvil/pull/966))
+
+## [2.5.0-beta06] - 2024-04-16
+
+### Deprecated
+
+- `ContributesBinding.priority` has been deprecated in favor of the int-value-based `ContributesBinding.rank`. This allows for more granular prioritization, rather than just the three enum entries that `ContributesBinding.Priority` offered.
+
+> [!IMPORTANT]
+> IDE auto-replace can auto-replace the enum entry with the corresponding integer, but not the named argument. Automatically-migrated code may wind up with something like `priority = RANK_NORMAL`. This is an IntelliJ limitation.
+
+### Fixed
+
+* pass files with only top-level function/property declarations to `CodeGenerator` implementations ([#956](https://github.com/square/anvil/pull/956))
+* rename the new int-based priority to `rank`, restore the enum to `priority` ([#957](https://github.com/square/anvil/pull/957))
+* Fix private targets API use ([#961](https://github.com/square/anvil/pull/961))
+* Fix KSP2 fallback in mangle name checks ([#962](https://github.com/square/anvil/pull/962))
+* Simplify redundant logic ([#963](https://github.com/square/anvil/pull/963))
+
+## [2.5.0-beta05] - 2024-04-09
+
+### Added
+
+* Support KSP in BindsMethodValidator by @IlyaGulya ([#831](https://github.com/square/anvil/pull/831))
+
+### Fixed
+
+* fix interface based @ContributesSubcomponent.Factory in KSP by @gabrielittner ([#931](https://github.com/square/anvil/pull/931))
+* Fix KSP resolution of Priority ([#933](https://github.com/square/anvil/pull/933))
+* Gracefully handle module name resolution in KSP ([#947](https://github.com/square/anvil/pull/947))
+* Always generate provider factories for binding modules ([#951](https://github.com/square/anvil/pull/951))
+* use the resolved value of `const` arguments in propagated annotation arguments ([#940](https://github.com/square/anvil/pull/940))
+* re-run analysis between an incremental sync and code generation ([#943](https://github.com/square/anvil/pull/943))
+* delay `@ContributesSubcomponent` generation until the last analysis rounds ([#946](https://github.com/square/anvil/pull/946))
+
+### Dependencies
+* Update dependency gradle to v8.7 ([#937](https://github.com/square/anvil/pull/937))
+* Update dagger to v2.51.1 ([#944](https://github.com/square/anvil/pull/944))
+
+## [2.5.0-beta04] - 2024-03-14
+
+### Changed
+
+- Interface merging is now done in the IR backend, improving performance and future compatibility with K2.
+- Update Dagger to `2.51`.
+- `@ContributesBinding` and `@ContributesMultibinding` have been completely reworked to a new implementation that generates one binding dagger module for each contributed binding. While not an ABI-breaking change, this _does_ change the generated code and requires users to re-run Anvil's code gen over any projects contributing bindings in order to be merged with the new implementation.
+
+### Fixed
+
+- Code generated because of a `@Contributes___` annotation in a dependency module is now correctly deleted when there is a relevant change in the dependency module.
+- Nested interfaces and modules can now be contributed to enclosing classes.
+
 ## [2.5.0-beta03] - 2024-02-26
 
 ### Fixed
@@ -190,7 +268,7 @@
 
 ### Changed
 
-- **Attention:** This version supports Kotlin `1.7.0` only. For Kotlin `1.6.*` support please use version `2.4.1-1-6` instead. Future Anvil versions will remove support for Kotlin 1.6.  
+- **Attention:** This version supports Kotlin `1.7.0` only. For Kotlin `1.6.*` support please use version `2.4.1-1-6` instead. Future Anvil versions will remove support for Kotlin 1.6.
 
 ### Fixed
 
@@ -199,7 +277,7 @@
 - Correctly merge bindings from all scopes, if multiple `@Merge*` annotations are used, see #596.
 
 ### Custom Code Generator
- 
+
 - Change the method to get all super classes for `ClassReference` to return `TypeReference` instead.
 - Avoid a stackoverflow when querying all super types, see #587.
 - Create `PropertyReference.Psi` from primary constructor properties to have the same behavior as the descriptor implementation, see #609.
@@ -219,7 +297,7 @@
 - Many of the internals of Anvil were rewritten and the non-stable APIs of the `compiler-utils` artifact have changed. Some highlights:
   - Instead of working with PSI or Descriptor APIs directly, you should work with the common `ClassReference` API.
   - `ClassReference` is a sealed class and either implemented with PSI or Descriptors, so it's easy to fallback to a specific API and add your own extensions.
-  - The entry point to iterate through all classes used be `classesAndInnerClass(module)`, use `classAndInnerClassReferences()` instead. 
+  - The entry point to iterate through all classes used be `classesAndInnerClass(module)`, use `classAndInnerClassReferences()` instead.
 
 ### Removed
 
@@ -671,9 +749,13 @@
 
 - Initial release.
 
-
-
-[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta02...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta09...HEAD
+[2.5.0-beta09]: https://github.com/square/anvil/releases/tag/v2.5.0-beta09
+[2.5.0-beta08]: https://github.com/square/anvil/releases/tag/v2.5.0-beta08
+[2.5.0-beta07]: https://github.com/square/anvil/releases/tag/v2.5.0-beta07
+[2.5.0-beta06]: https://github.com/square/anvil/releases/tag/v2.5.0-beta06
+[2.5.0-beta05]: https://github.com/square/anvil/releases/tag/v2.5.0-beta05
+[2.5.0-beta04]: https://github.com/square/anvil/releases/tag/v2.5.0-beta04
 [2.5.0-beta03]: https://github.com/square/anvil/releases/tag/v2.5.0-beta03
 [2.5.0-beta02]: https://github.com/square/anvil/releases/tag/v2.5.0-beta02
 [2.5.0-beta01]: https://github.com/square/anvil/releases/tag/v2.5.0-beta01

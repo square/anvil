@@ -2,7 +2,7 @@ package com.squareup.anvil.test
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.compat.MergeModules
-import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
+import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
 import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
@@ -14,7 +14,7 @@ internal class MergeModulesTest {
 
   @Test fun `contributed modules are merged app scope`() {
     val annotation = CompositeAppModule::class.java.getAnnotation(Module::class.java)!!
-    assertThat(annotation.includes.withoutAnvilModule())
+    assertThat(annotation.includes.withoutAnvilModules())
       .containsExactly(AppModule1::class, AppModule2::class)
     assertThat(annotation.includes.toList()).doesNotContain(SubModule1::class)
     assertThat(annotation.includes.toList()).doesNotContain(SubModule2::class)
@@ -22,7 +22,7 @@ internal class MergeModulesTest {
 
   @Test fun `contributed modules are merge sub scope`() {
     val annotation = CompositeSubModule::class.java.getAnnotation(Module::class.java)!!
-    assertThat(annotation.includes.withoutAnvilModule())
+    assertThat(annotation.includes.withoutAnvilModules())
       .containsExactly(SubModule1::class, SubModule2::class)
     assertThat(annotation.includes.toList()).doesNotContain(AppModule1::class)
     assertThat(annotation.includes.toList()).doesNotContain(AppModule2::class)

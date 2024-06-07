@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.daggerModule1
@@ -12,27 +11,18 @@ import com.squareup.anvil.compiler.hintContributesScopes
 import com.squareup.anvil.compiler.innerInterface
 import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
-import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.testing.AnvilCompilationModeTest
 import com.squareup.anvil.compiler.walkGeneratedFiles
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
+import org.junit.jupiter.api.TestFactory
 
-@Suppress("RemoveRedundantQualifierName")
-@RunWith(Parameterized::class)
-class ContributesToCodeGenTest(
-  private val mode: AnvilCompilationMode,
+class ContributesToCodeGenTest : AnvilCompilationModeTest(
+  AnvilCompilationMode.Embedded(),
+  AnvilCompilationMode.Ksp(),
 ) {
 
-  companion object {
-    @Parameterized.Parameters(name = "{0}")
-    @JvmStatic
-    fun modes(): Collection<Any> {
-      return listOf(AnvilCompilationMode.Embedded(), AnvilCompilationMode.Ksp())
-    }
-  }
-
-  @Test fun `there is no hint for merge annotations`() {
+  @TestFactory
+  fun `there is no hint for merge annotations`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -42,7 +32,6 @@ class ContributesToCodeGenTest(
       @MergeComponent(Any::class)
       interface ComponentInterface
       """,
-      mode = mode,
     ) {
       assertThat(componentInterface.hintContributes).isNull()
       assertThat(componentInterface.hintContributesScope).isNull()
@@ -57,14 +46,14 @@ class ContributesToCodeGenTest(
       @MergeSubcomponent(Any::class)
       interface ComponentInterface
       """,
-      mode = mode,
     ) {
       assertThat(componentInterface.hintContributes).isNull()
       assertThat(componentInterface.hintContributesScope).isNull()
     }
   }
 
-  @Test fun `there is a hint for contributed Dagger modules`() {
+  @TestFactory
+  fun `there is a hint for contributed Dagger modules`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -75,18 +64,18 @@ class ContributesToCodeGenTest(
       @dagger.Module
       abstract class DaggerModule1
       """,
-      mode = mode,
     ) {
       assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
       assertThat(daggerModule1.hintContributesScope).isEqualTo(Any::class)
 
       val generatedFile = walkGeneratedFiles(mode).single()
 
-      assertThat(generatedFile.name).isEqualTo("DaggerModule1.kt")
+      assertThat(generatedFile.name).isEqualTo("com_squareup_test_DaggerModule1_52b5c4c4.kt")
     }
   }
 
-  @Test fun `there are multiple hints for contributed Dagger modules`() {
+  @TestFactory
+  fun `there are multiple hints for contributed Dagger modules`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -99,14 +88,14 @@ class ContributesToCodeGenTest(
       @Module
       abstract class DaggerModule1
       """,
-      mode = mode,
     ) {
       assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
       assertThat(daggerModule1.hintContributesScopes).containsExactly(Any::class, Unit::class)
     }
   }
 
-  @Test fun `the scopes for multiple contributions have a stable sort`() {
+  @TestFactory
+  fun `the scopes for multiple contributions have a stable sort`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -124,7 +113,6 @@ class ContributesToCodeGenTest(
       @Module
       abstract class DaggerModule2
       """,
-      mode = mode,
     ) {
       assertThat(daggerModule1.hintContributesScopes)
         .containsExactly(Any::class, Unit::class)
@@ -135,9 +123,11 @@ class ContributesToCodeGenTest(
     }
   }
 
-  @Test fun `there are multiple hints for contributed Dagger modules with fully qualified names`() {
-    compile(
-      """
+  @TestFactory
+  fun `there are multiple hints for contributed Dagger modules with fully qualified names`() =
+    testFactory {
+      compile(
+        """
       package com.squareup.test
 
       import com.squareup.anvil.annotations.ContributesTo
@@ -147,14 +137,14 @@ class ContributesToCodeGenTest(
       @dagger.Module
       abstract class DaggerModule1
       """,
-      mode = mode,
-    ) {
-      assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
-      assertThat(daggerModule1.hintContributesScopes).containsExactly(Any::class, Unit::class)
+      ) {
+        assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
+        assertThat(daggerModule1.hintContributesScopes).containsExactly(Any::class, Unit::class)
+      }
     }
-  }
 
-  @Test fun `there are multiple hints for contributed Dagger modules with star imports`() {
+  @TestFactory
+  fun `there are multiple hints for contributed Dagger modules with star imports`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -166,14 +156,14 @@ class ContributesToCodeGenTest(
       @dagger.Module
       abstract class DaggerModule1
       """,
-      mode = mode,
     ) {
       assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
       assertThat(daggerModule1.hintContributesScopes).containsExactly(Any::class, Unit::class)
     }
   }
 
-  @Test fun `multiple annotations with the same scope aren't allowed`() {
+  @TestFactory
+  fun `multiple annotations with the same scope aren't allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -187,9 +177,8 @@ class ContributesToCodeGenTest(
       @dagger.Module
       abstract class DaggerModule1
       """,
-      mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule1 contributes multiple times to the same scope: " +
           "[Any, Unit]. Contributing multiple times to the same scope is forbidden and all " +
@@ -198,7 +187,8 @@ class ContributesToCodeGenTest(
     }
   }
 
-  @Test fun `a file can contain an internal class`() {
+  @TestFactory
+  fun `a file can contain an internal class`() = testFactory {
     // There was a bug that triggered a failure. Make sure that it doesn't happen again.
     // https://github.com/square/anvil/issues/232
     compile(
@@ -214,14 +204,14 @@ class ContributesToCodeGenTest(
       @PublishedApi
       internal class FailAnvil
       """,
-      mode = mode,
     ) {
       assertThat(daggerModule1.hintContributes?.java).isEqualTo(daggerModule1)
       assertThat(daggerModule1.hintContributesScope).isEqualTo(Any::class)
     }
   }
 
-  @Test fun `there is a hint for contributed interfaces`() {
+  @TestFactory
+  fun `there is a hint for contributed interfaces`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -231,14 +221,14 @@ class ContributesToCodeGenTest(
       @ContributesTo(Any::class)
       interface ContributingInterface
       """,
-      mode = mode,
     ) {
       assertThat(contributingInterface.hintContributes?.java).isEqualTo(contributingInterface)
       assertThat(contributingInterface.hintContributesScope).isEqualTo(Any::class)
     }
   }
 
-  @Test fun `the order of the scope can be changed with named parameters`() {
+  @TestFactory
+  fun `the order of the scope can be changed with named parameters`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -248,13 +238,13 @@ class ContributesToCodeGenTest(
       @ContributesTo(replaces = [Unit::class], scope = Int::class)
       interface ContributingInterface
       """,
-      mode = mode,
     ) {
       assertThat(contributingInterface.hintContributesScope).isEqualTo(Int::class)
     }
   }
 
-  @Test fun `there is a hint for contributed inner Dagger modules`() {
+  @TestFactory
+  fun `there is a hint for contributed inner Dagger modules`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -267,18 +257,19 @@ class ContributesToCodeGenTest(
         abstract class InnerModule
       }
       """,
-      mode = mode,
     ) {
       assertThat(innerModule.hintContributes?.java).isEqualTo(innerModule)
       assertThat(innerModule.hintContributesScope).isEqualTo(Any::class)
 
       val generatedFile = walkGeneratedFiles(mode).single()
 
-      assertThat(generatedFile.name).isEqualTo("ComponentInterface_InnerModule.kt")
+      assertThat(generatedFile.name)
+        .isEqualTo("com_squareup_test_ComponentInterface_InnerModule_29ca774b.kt")
     }
   }
 
-  @Test fun `there is a hint for contributed inner interfaces`() {
+  @TestFactory
+  fun `there is a hint for contributed inner interfaces`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -290,14 +281,14 @@ class ContributesToCodeGenTest(
         interface InnerInterface
       }
       """,
-      mode = mode,
     ) {
       assertThat(innerInterface.hintContributes?.java).isEqualTo(innerInterface)
       assertThat(innerInterface.hintContributesScope).isEqualTo(Any::class)
     }
   }
 
-  @Test fun `contributing module must be a Dagger Module`() {
+  @TestFactory
+  fun `contributing module must be a Dagger Module`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -307,9 +298,8 @@ class ContributesToCodeGenTest(
       @ContributesTo(Any::class)
       abstract class DaggerModule1
       """,
-      mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:6")
       assertThat(messages).contains(
@@ -319,7 +309,8 @@ class ContributesToCodeGenTest(
     }
   }
 
-  @Test fun `contributed modules must be public`() {
+  @TestFactory
+  fun `contributed modules must be public`() = testFactory {
     val visibilities = setOf(
       "internal",
       "private",
@@ -337,9 +328,8 @@ class ContributesToCodeGenTest(
         @dagger.Module
         $visibility abstract class DaggerModule1
         """,
-        mode = mode,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:7")
         assertThat(messages).contains(
@@ -350,7 +340,8 @@ class ContributesToCodeGenTest(
     }
   }
 
-  @Test fun `contributed interfaces must be public`() {
+  @TestFactory
+  fun `contributed interfaces must be public`() = testFactory {
     val visibilities = setOf(
       "internal",
       "private",
@@ -367,9 +358,8 @@ class ContributesToCodeGenTest(
         @ContributesTo(Any::class)
         $visibility interface ContributingInterface
         """,
-        mode = mode,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:6")
         assertThat(messages).contains(

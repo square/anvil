@@ -6,6 +6,7 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.extends
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -147,8 +148,8 @@ class InterfaceMergerTest(
       $annotation(Any::class)
       abstract class MergingClass
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:6:16")
     }
@@ -200,8 +201,8 @@ class InterfaceMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class. Unfortunately, a different error is reported that the class is
       // missing an @Module annotation.
       assertThat(messages).contains("Source0.kt:7:7")
@@ -229,8 +230,8 @@ class InterfaceMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class. Unfortunately, a different error is reported that the class is
       // missing an @Module annotation.
       assertThat(messages).contains("Source0.kt:14:11")
@@ -318,8 +319,8 @@ class InterfaceMergerTest(
       )
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:18:11")
       assertThat(messages).contains(
@@ -355,8 +356,8 @@ class InterfaceMergerTest(
       )
       interface ComponentInterface : ContributingInterface, OtherInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains(
         "ComponentInterface excludes types that it implements or extends. These types cannot " +
@@ -449,8 +450,8 @@ class InterfaceMergerTest(
         $annotation(Any::class)
         interface ComponentInterface
         """,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:7")
       }
@@ -475,56 +476,6 @@ class InterfaceMergerTest(
       """,
     ) {
       assertThat(componentInterface extends innerInterface).isTrue()
-    }
-  }
-
-  @Test fun `inner interfaces in merged component fail`() {
-    // They could cause errors while compiling code when adding our contributed super classes.
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesTo
-      $import
-      
-      $annotation(Any::class)
-      interface ComponentInterface {
-        @ContributesTo(Any::class)
-        interface InnerInterface
-      }
-      """,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "Couldn't find the classId for <root>. Are we stuck in a loop while resolving super " +
-          "types? Note that it's not supported to contribute an inner class to a scope that " +
-          "is merged in an outer class.",
-      )
-    }
-  }
-
-  @Test fun `inner modules in merged component fail`() {
-    // They could cause errors while compiling code when adding our contributed super classes.
-    compile(
-      """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesTo
-      $import
-      
-      $annotation(Any::class, modules = [ComponentInterface.InnerModule::class])
-      interface ComponentInterface {
-        
-        @dagger.Module
-        abstract class InnerModule
-      }
-      """,
-    ) {
-      assertThat(exitCode).isError()
-      assertThat(messages).contains(
-        "It seems like you tried to contribute an inner class to its outer class. This is " +
-          "not supported and results in a compiler error.",
-      )
     }
   }
 
@@ -771,8 +722,8 @@ class InterfaceMergerTest(
       $annotation(Int::class)
       interface SubcomponentInterface2
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.SecondContributingInterface with scopes [kotlin.Int] wants to " +
           "replace com.squareup.test.ContributingInterface, but the replaced class isn't " +
@@ -824,7 +775,7 @@ class InterfaceMergerTest(
         interface ContributingInterface  
         """,
         """
-        package anvil.hint.merge.com.squareup.test
+        package anvil.hint
 
         import com.squareup.test.ContributingInterface
         import kotlin.reflect.KClass

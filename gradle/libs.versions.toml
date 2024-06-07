@@ -16,9 +16,10 @@ androidx-test-rules = "1.5.0"
 androidx-test-runner = "1.5.2"
 androidx-test-ext = "1.1.5"
 autoService = "1.1.1"
-autoValue = "1.10.4"
+autoValue = "1.11.0"
 buildconfig = "5.3.5"
-dagger = "2.50"
+classgraph = "4.8.172"
+dagger = "2.51.1"
 dropbox-dependencyGuard = "0.5.0"
 dokka = "1.9.20"
 espresso = "3.5.1"
@@ -27,18 +28,18 @@ jUnit5 = "5.10.2"
 jvm-toolchain = "17"
 jvm-target-library = "8"
 jvm-target-minimal = "11"
-kase = "0.11.0"
+kase = "0.11.1"
 kct = "0.4.0"
 kgx = "0.1.12"
-kotest = "5.8.0"
+kotest = "5.9.1"
 kotlin = "1.9.24"
 kotlinx-binaryCompatibility = "0.14.0"
 kotlinpoet = "1.16.0"
 # If updating KSP version, we currently have ksp override logic in settings.gradle that needs to be updated too
 ksp = "1.9.24-1.0.20"
 ktlint = "1.0.1"
-ktlintPlugin = "12.1.0"
-mavenPublish = "0.27.0"
+ktlintPlugin = "12.1.1"
+mavenPublish = "0.28.0"
 
 #
 # Configs that we can override in CI. Not exactly "versions" but useful to repurpose it here.
@@ -88,6 +89,8 @@ auto-service-processor = { module = "com.google.auto.service:auto-service", vers
 auto-value-annotations = { module = "com.google.auto.value:auto-value-annotations", version.ref = "autoValue" }
 auto-value-processor = { module = "com.google.auto.value:auto-value", version.ref = "autoValue" }
 
+classgraph = { module = "io.github.classgraph:classgraph", version.ref = "classgraph" }
+
 dagger2 = { module = "com.google.dagger:dagger", version.ref = "dagger" }
 dagger2-compiler = { module = "com.google.dagger:dagger-compiler", version.ref = "dagger" }
 
@@ -95,7 +98,7 @@ dropbox-dependencyGuard = { module = "com.dropbox.dependency-guard:dependency-gu
 
 gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", version.ref = "gradlePublish" }
 
-guava = "com.google.guava:guava:33.0.0-jre"
+guava = "com.google.guava:guava:33.2.0-jre"
 
 inject = "javax.inject:javax.inject:1"
 jsr250 = "javax.annotation:jsr250-api:1.0"

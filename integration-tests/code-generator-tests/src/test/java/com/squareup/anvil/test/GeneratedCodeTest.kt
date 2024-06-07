@@ -3,7 +3,6 @@ package com.squareup.anvil.test
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.internal.testing.extends
-import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
 import dagger.Component
 import org.junit.Test
 import javax.inject.Inject
@@ -39,10 +38,14 @@ class GeneratedCodeTest {
   @Test fun `the generated module is contributed to the scope`() {
     val contributedModule =
       Class.forName("generated.test.com.squareup.anvil.test.ContributedModule").kotlin
+    val contributedBindingModule =
+      Class.forName(
+        "generated.test.com.squareup.anvil.test.ContributedBinding_Binding_Unit_BindingModule_4e0aa394",
+      ).kotlin
 
     val annotation = AppComponent::class.java.getAnnotation(Component::class.java)!!
-    assertThat(annotation.modules.withoutAnvilModule())
-      .containsExactly(contributedModule)
+    assertThat(annotation.modules.toList())
+      .containsExactly(contributedModule, contributedBindingModule)
   }
 
   @Test fun `the generated contributed binding can be injected`() {

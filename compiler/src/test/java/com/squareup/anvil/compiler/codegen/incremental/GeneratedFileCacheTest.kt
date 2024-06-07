@@ -1,10 +1,13 @@
 package com.squareup.anvil.compiler.codegen.incremental
 
 import com.rickbusarow.kase.stdlib.createSafely
+import com.rickbusarow.kase.stdlib.div
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import io.kotest.assertions.throwables.shouldThrow
+import io.kotest.matchers.equality.shouldBeEqualUsingFields
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldContain
+import io.kotest.matchers.types.shouldNotBeSameInstanceAs
 import org.junit.Test
 
 internal class GeneratedFileCacheTest : CacheTests {
@@ -14,7 +17,7 @@ internal class GeneratedFileCacheTest : CacheTests {
 
     cache.addGeneratedFile(gen1.withSources(source1))
 
-    cache.getGeneratedFiles(source1) shouldBe setOf(gen1.relativeFile)
+    cache.getGeneratedFiles(source1) shouldBe setOf(gen1.absolute)
   }
 
   @Test
@@ -35,7 +38,7 @@ internal class GeneratedFileCacheTest : CacheTests {
       gen2.withSources(source1),
     )
 
-    cache.getGeneratedFiles(source1) shouldBe setOf(gen1.relativeFile, gen2.relativeFile)
+    cache.getGeneratedFiles(source1) shouldBe setOf(gen1.absolute, gen2.absolute)
   }
 
   @Test
@@ -64,11 +67,11 @@ internal class GeneratedFileCacheTest : CacheTests {
 
     cache.addAll(
       gen1.withSources(source1),
-      gen2.withSources(gen1.toSourceFile()),
+      gen2.withSources(gen1.absolute),
     )
 
-    cache.getGeneratedFiles(source1) shouldBe setOf(gen1.relativeFile)
-    cache.getGeneratedFiles(gen1.toSourceFile()) shouldBe setOf(gen2.relativeFile)
+    cache.getGeneratedFiles(source1) shouldBe setOf(gen1)
+    cache.getGeneratedFiles(gen1.absolute) shouldBe setOf(gen2)
   }
 
   @Test
@@ -76,12 +79,12 @@ internal class GeneratedFileCacheTest : CacheTests {
 
     cache.addAll(
       gen1.withSources(source1, source2),
-      gen2.withSources(gen1.toSourceFile()),
+      gen2.withSources(gen1.absolute),
     )
 
-    cache.getGeneratedFiles(source1) shouldBe setOf(gen1.relativeFile)
-    cache.getGeneratedFiles(source2) shouldBe setOf(gen1.relativeFile)
-    cache.getGeneratedFiles(gen1.toSourceFile()) shouldBe setOf(gen2.relativeFile)
+    cache.getGeneratedFiles(source1) shouldBe setOf(gen1)
+    cache.getGeneratedFiles(source2) shouldBe setOf(gen1)
+    cache.getGeneratedFiles(gen1.absolute) shouldBe setOf(gen2)
   }
 
   @Test
@@ -89,13 +92,13 @@ internal class GeneratedFileCacheTest : CacheTests {
 
     cache.addAll(
       gen1.withSources(source1),
-      gen2.withSources(gen1.toSourceFile()),
+      gen2.withSources(gen1.absolute),
     )
 
     cache.removeSource(source1)
 
     cache.getGeneratedFiles(source1) shouldBe emptySet()
-    cache.getGeneratedFiles(gen1.toSourceFile()) shouldBe emptySet()
+    cache.getGeneratedFiles(gen1.absolute) shouldBe emptySet()
   }
 
   @Test
@@ -121,7 +124,7 @@ internal class GeneratedFileCacheTest : CacheTests {
 
     cache.removeSource(source2)
 
-    cache.getGeneratedFiles(source1) shouldBe setOf(gen1.relativeFile)
+    cache.getGeneratedFiles(source1) shouldBe setOf(gen1)
 
     cache.getGeneratedFiles(source2) shouldBe emptySet()
   }
@@ -129,10 +132,10 @@ internal class GeneratedFileCacheTest : CacheTests {
   @Test
   fun `adding a dependency cycle throws an exception`() = test {
 
-    cache.addGeneratedFile(gen2.withSources(gen1.toSourceFile()))
+    cache.addGeneratedFile(gen2.withSources(gen1.absolute))
 
     val exception = shouldThrow<AnvilCompilationException> {
-      cache.addGeneratedFile(gen1.withSources(gen2.toSourceFile()))
+      cache.addGeneratedFile(gen1.withSources(gen2.absolute))
     }
 
     exception.message shouldContain """
@@ -145,11 +148,11 @@ internal class GeneratedFileCacheTest : CacheTests {
   @Test
   fun `adding a transitive dependency cycle throws an exception`() = test {
 
-    cache.addGeneratedFile(gen2.withSources(gen1.toSourceFile()))
-    cache.addGeneratedFile(gen3.withSources(gen2.toSourceFile()))
+    cache.addGeneratedFile(gen2.withSources(gen1.absolute))
+    cache.addGeneratedFile(gen3.withSources(gen2.absolute))
 
     val exception = shouldThrow<AnvilCompilationException> {
-      cache.addGeneratedFile(gen1.withSources(gen3.toSourceFile()))
+      cache.addGeneratedFile(gen1.withSources(gen3.absolute))
     }
 
     exception.message shouldContain """
@@ -166,41 +169,48 @@ internal class GeneratedFileCacheTest : CacheTests {
       gen1.withSources(source1),
       gen3.withSources(source1),
       gen2.withSources(source2),
-      gen3.withSources(gen1.toSourceFile()),
-      gen4.withSources(gen3.toSourceFile()),
-      gen5.withSources(gen4.toSourceFile()),
-      gen6.withSources(gen5.toSourceFile()),
-      gen7.withSources(gen6.toSourceFile()),
-      gen9.withSources(gen7.toSourceFile()),
+      gen3.withSources(gen1.absolute),
+      gen4.withSources(gen3.absolute),
+      gen5.withSources(gen4.absolute),
+      gen6.withSources(gen5.absolute),
+      gen7.withSources(gen6.absolute),
+      gen9.withSources(gen7.absolute),
     )
 
     cache.getGeneratedFilesRecursive(source1) shouldBe setOf(
-      gen1.relativeFile,
-      gen3.relativeFile,
-      gen4.relativeFile,
-      gen5.relativeFile,
-      gen6.relativeFile,
-      gen7.relativeFile,
-      gen9.relativeFile,
+      gen1,
+      gen3,
+      gen4,
+      gen5,
+      gen6,
+      gen7,
+      gen9,
     )
   }
 
   @Test
   fun `serialization and deserialization work`() = test {
 
+    // use `use { }` to ensure the file is closed and the cache is written to disk
     cache.use {
       it.addAll(
         gen1.withSources(source1),
         gen2.withSources(source1, source2),
         gen3.withSources(source2),
-        gen4.withSources(gen3.toSourceFile()),
-        gen5.withSources(gen4.toSourceFile(), source3),
+        gen4.withSources(gen3.absolute),
+        gen5.withSources(gen4.absolute, source3),
       )
     }
 
-    val deserializedCache = GeneratedFileCache.fromFile(binaryFile, projectDir)
+    val deserializedCache = GeneratedFileCache.fromFile(
+      binaryFile = binaryFile,
+      projectDir = projectDir,
+      buildDir = buildDir,
+    )
 
     deserializedCache shouldBe cache
+    deserializedCache shouldBeEqualUsingFields cache
+    deserializedCache shouldNotBeSameInstanceAs cache
   }
 
   @Test
@@ -236,17 +246,29 @@ internal class GeneratedFileCacheTest : CacheTests {
   @Test
   fun `hasChanged is false for identical files with different parent directories`() = test {
 
-    val projectA = ProjectDir(workingDir.resolve("projectA"))
-    val fileA = projectA.file.resolve("common.kt").createSafely("content")
+    val projectA = BaseDir.ProjectDir(workingDir / "projectA")
+    val buildA = BaseDir.BuildDir(projectA.file / "build")
 
-    GeneratedFileCache.fromFile(binaryFile, projectA).use { cacheA ->
-      cacheA.hasChanged(AbsoluteFile(fileA)) shouldBe true
-    }
+    val fileA = (projectA.file / "common.kt").createSafely("content")
 
-    val projectB = ProjectDir(workingDir.resolve("projectB"))
-    val fileB = projectB.file.resolve("common.kt").createSafely("content")
+    GeneratedFileCache.fromFile(
+      binaryFile = binaryFile,
+      projectDir = projectA,
+      buildDir = buildA,
+    )
+      .use { cacheA ->
+        cacheA.hasChanged(AbsoluteFile(fileA)) shouldBe true
+      }
 
-    GeneratedFileCache.fromFile(binaryFile, projectB).use { cacheB ->
+    val projectB = BaseDir.ProjectDir(workingDir / "projectB")
+    val buildB = BaseDir.BuildDir(projectB.file / "build")
+    val fileB = (projectB.file / "common.kt").createSafely("content")
+
+    GeneratedFileCache.fromFile(
+      binaryFile = binaryFile,
+      projectDir = projectB,
+      buildDir = buildB,
+    ).use { cacheB ->
       cacheB.hasChanged(AbsoluteFile(fileB)) shouldBe false
     }
   }

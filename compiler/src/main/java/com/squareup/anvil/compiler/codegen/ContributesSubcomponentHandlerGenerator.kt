@@ -1,14 +1,12 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.annotations.MergeSubcomponent
-import com.squareup.anvil.compiler.ANVIL_SUBCOMPONENT_SUFFIX
 import com.squareup.anvil.compiler.COMPONENT_PACKAGE_PREFIX
 import com.squareup.anvil.compiler.ClassScanner
 import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
 import com.squareup.anvil.compiler.api.AnvilContext
-import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.contributesSubcomponentFactoryFqName
@@ -16,11 +14,13 @@ import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.buildFile
+import com.squareup.anvil.compiler.internal.joinSimpleNamesAndTruncate
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
+import com.squareup.anvil.compiler.internal.reference.asClassId
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.internal.safePackageString
@@ -39,7 +39,6 @@ import dagger.Module
 import dagger.Subcomponent
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.name.ClassId
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -63,7 +62,7 @@ import java.io.File
  */
 internal class ContributesSubcomponentHandlerGenerator(
   private val classScanner: ClassScanner,
-) : CodeGenerator {
+) : PrivateCodeGenerator() {
 
   private val triggers = mutableListOf<Trigger>()
   private val contributions = mutableSetOf<Contribution>()
@@ -74,7 +73,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   override fun isApplicable(context: AnvilContext): Boolean = !context.generateFactoriesOnly
 
-  override fun generateCode(
+  override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
@@ -98,22 +97,17 @@ internal class ContributesSubcomponentHandlerGenerator(
       .flatMap { it.annotations }
       .filter { it.fqName == contributesSubcomponentFqName }
       .map { Contribution(it) }
-      .toList()
-      .also { contributions ->
-        // Find all replaced subcomponents and remember them.
-        replacedReferences += contributions.flatMap { contribution ->
-          contribution.annotation
-            .replaces()
-            .also {
-              checkReplacedSubcomponentWasNotAlreadyGenerated(contribution.clazz, it)
-            }
-        }
-      }
 
-    // Remove any contribution, if it was replaced by another contribution.
-    contributions.removeAll { contribution ->
-      contribution.clazz in replacedReferences
+    // Find all replaced subcomponents and remember them.
+    replacedReferences += contributions
+      .flatMap { contribution -> contribution.annotation.replaces() }
+
+    for (contribution in contributions) {
+      checkReplacedSubcomponentWasNotAlreadyGenerated(contribution.clazz, replacedReferences)
     }
+
+    // Remove any contribution that was replaced by another contribution.
+    contributions.removeAll { it.clazz in replacedReferences }
 
     return contributions
       .flatMap { contribution ->
@@ -127,9 +121,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       }
       // Don't generate code for the same event twice.
       .minus(processedEvents)
-      .also {
-        processedEvents += it
-      }
+      .also { processedEvents += it }
       .map { generateCodeEvent ->
         val contribution = generateCodeEvent.contribution
         val generatedAnvilSubcomponent = generateCodeEvent.generatedAnvilSubcomponent
@@ -157,7 +149,7 @@ internal class ContributesSubcomponentHandlerGenerator(
                       val template = classes
                         .joinToString(prefix = "[", postfix = "]") { "%T::class" }
 
-                      addMember("$name = $template", *classes.toTypedArray())
+                      addMember("$name = $template", *classes.toTypedArray<ClassName>())
                     }
                   }
 
@@ -378,7 +370,7 @@ internal class ContributesSubcomponentHandlerGenerator(
 
   private fun checkReplacedSubcomponentWasNotAlreadyGenerated(
     contributedReference: ClassReference,
-    replacedReferences: List<ClassReference>,
+    replacedReferences: Collection<ClassReference>,
   ) {
     replacedReferences.forEach { replacedReference ->
       if (processedEvents.any { it.contribution.clazz == replacedReference }) {
@@ -430,15 +422,21 @@ internal class ContributesSubcomponentHandlerGenerator(
   }
 
   private class Trigger(
-    annotation: AnnotationReference,
+    val clazz: ClassReference,
+    val scope: ClassReference,
+    val exclusions: List<ClassReference>,
   ) {
-    val clazz = annotation.declaringClass()
-    val scope = annotation.scope()
-    val exclusions = annotation.exclude()
+
+    constructor(annotation: AnnotationReference) : this(
+      clazz = annotation.declaringClass(),
+      scope = annotation.scope(),
+      exclusions = annotation.exclude(),
+    )
+
     val clazzFqName = clazz.fqName
 
     override fun toString(): String {
-      return "Trigger(clazz=$clazzFqName, scope=$scope)"
+      return "Trigger(clazz=$clazzFqName, scope=${scope.fqName})"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -460,9 +458,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     }
   }
 
-  private class Contribution(
-    val annotation: AnnotationReference,
-  ) {
+  private class Contribution(val annotation: AnnotationReference) {
     val clazz = annotation.declaringClass()
     val scope = annotation.scope()
     val parentScope = annotation.parentScope()
@@ -497,7 +493,7 @@ internal class ContributesSubcomponentHandlerGenerator(
     val contribution: Contribution,
   ) {
     val generatedAnvilSubcomponent = contribution.clazz.classId
-      .generatedAnvilSubcomponent(trigger.clazz.classId)
+      .generatedAnvilSubcomponentClassId(trigger.clazz.classId)
   }
 
   private class ParentComponentInterfaceHolder(
@@ -518,7 +514,7 @@ internal class ContributesSubcomponentHandlerGenerator(
  * Returns the Anvil subcomponent that will be generated for a class annotated with
  * `ContributesSubcomponent`.
  */
-internal fun ClassId.generatedAnvilSubcomponent(parentClass: ClassId): ClassId {
+internal fun ClassId.generatedAnvilSubcomponentClassId(parentClass: ClassId): ClassId {
   // Encode the parent class name in the package rather than the class name itself. This avoids
   // issues with too long class names. Dagger will generate subcomponents as inner classes and
   // deep hierarchies will be a problem. See https://github.com/google/dagger/issues/421
@@ -543,8 +539,15 @@ internal fun ClassId.generatedAnvilSubcomponent(parentClass: ClassId): ClassId {
     "$COMPONENT_PACKAGE_PREFIX.$parentPackageName"
   }
 
-  val relativeClassName = relativeClassName.pathSegments()
-    .joinToString(separator = "_", postfix = ANVIL_SUBCOMPONENT_SUFFIX)
-
-  return ClassId(FqName(packageFqName), FqName(relativeClassName), false)
+  val segments = relativeClassName.pathSegments()
+  return ClassName(
+    packageName = packageFqName,
+    simpleNames = segments.map { it.asString() },
+  )
+    .joinSimpleNamesAndTruncate(
+      hashParams = listOf(parentClass),
+      separator = "_",
+      innerClassLength = PARENT_COMPONENT.length,
+    )
+    .asClassId(local = false)
 }

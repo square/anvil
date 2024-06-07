@@ -19,8 +19,8 @@ jobs:
         kotlin-version: [ 1.9.24 ]
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -39,8 +39,8 @@ jobs:
         kotlin-version: [ 1.9.24 ]
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -50,7 +50,7 @@ jobs:
         run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }}
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         if: ${{ failure() }}
         with:
           name: test-results-${{ matrix.kotlin-version }}
@@ -61,8 +61,8 @@ jobs:
     timeout-minutes: 25
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -78,7 +78,7 @@ jobs:
         run: ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace -Doverride_config-fullTestRun=false -Doverride_config-includeKspTests=false
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         if: ${{ failure() }}
         with:
           name: test-results-windows
@@ -89,8 +89,8 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -104,8 +104,8 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -119,8 +119,8 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -130,7 +130,7 @@ jobs:
         run: ./gradlew -p build-logic/delegate lint --no-build-cache --no-daemon --stacktrace
 
       - name: Upload Lint Results
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         if: ${{ failure() }}
         with:
           name: lint-results
@@ -141,8 +141,8 @@ jobs:
     timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -166,8 +166,8 @@ jobs:
         agp-version: [ 7.1.1, 7.2.0, 7.3.1 ]
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -177,7 +177,7 @@ jobs:
         run: ./gradlew :gradle-plugin:assemble :gradle-plugin:test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_agp=${{ matrix.agp-version }}
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         if: ${{ failure() }}
         with:
           # Use the Kotlin version to prevent overrides.
@@ -197,8 +197,8 @@ jobs:
         kotlin-version: [ 1.9.24 ]
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -211,7 +211,7 @@ jobs:
         run: ./gradlew :delegate:sample:app:assembleDebug --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         if: ${{ failure() }}
         with:
           # Use the Kotlin version to prevent overrides.
@@ -220,7 +220,7 @@ jobs:
 
   instrumentation-tests:
     name: Instrumentation tests
-    runs-on: macos-latest
+    runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
       # Allow tests to continue on other devices if they fail on one device.
@@ -231,35 +231,69 @@ jobs:
           #- 24
           - 29
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'
           check-latest: true
 
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: AVD cache
+        uses: actions/cache/save@0c45773b623bea8c8e75f6c82b208c3cf94ea4f9 # v4
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{ matrix.api-level }}
+
+      - name: create AVD and generate snapshot for caching
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        uses: reactivecircus/android-emulator-runner@6b0df4b0efb23bb0ec63d881db79aefbc976e4b2 # v2
+        with:
+          api-level: ${{ matrix.api-level }}
+          arch: x86_64
+          disable-animations: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          force-avd-creation: false
+          profile : Galaxy Nexus
+          ram-size : 4096M
+          target: default
+          script: echo "Generated AVD snapshot for caching."
+
       - name: Instrumentation Tests
         uses: reactivecircus/android-emulator-runner@6b0df4b0efb23bb0ec63d881db79aefbc976e4b2 # v2
         with:
           api-level: ${{ matrix.api-level }}
-          target: default
           arch: x86_64
+          disable-animations: true
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          force-avd-creation: false
+          profile : Galaxy Nexus
+          ram-size : 4096M
+          target: default
           script: ./gradlew connectedCheck --no-build-cache --no-daemon --stacktrace
 
       - name: Upload results
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         with:
-          name: insrumentation-test-results
+          name: instrumentation-test-results
           path: ./**/build/reports/androidTests/connected/**
 
   gradle-integration-tests:
     name: Gradle integration tests
     runs-on: macos-latest
-    timeout-minutes: 20
+    timeout-minutes: 25
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -269,7 +303,7 @@ jobs:
         run: ./gradlew gradleTest --stacktrace
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4
+        uses: actions/upload-artifact@65462800fd760344b1a7b4382951275a0abb4808 # v4
         if: ${{ failure() }}
         with:
           name: test-results-gradle-integration
@@ -280,16 +314,16 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: gradle/wrapper-validation-action@699bb18358f12c5b78b37bb0111d3a0e2276e0e2 # v2
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: gradle/actions/wrapper-validation@db19848a5fa7950289d3668fb053140cf3028d43 # v3
 
   build-benchmark-project:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'

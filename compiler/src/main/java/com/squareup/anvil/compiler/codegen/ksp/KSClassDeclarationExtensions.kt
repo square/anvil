@@ -92,7 +92,7 @@ internal fun KSClassDeclaration.checkClassExtendsBoundType(
   // stop here.
   if (boundType == resolver.builtIns.anyType) return
 
-  if (superTypesExcludingAny(resolver).none { it.resolve() == boundType }) {
+  if (!boundType.isAssignableFrom(asType(emptyList()))) {
     throw KspAnvilException(
       message = "${this.qualifiedName?.asString()} contributes a binding " +
         "for ${boundType.declaration.qualifiedName?.asString()}, but doesn't " +

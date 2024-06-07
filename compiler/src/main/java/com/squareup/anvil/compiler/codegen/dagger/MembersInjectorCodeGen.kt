@@ -7,7 +7,10 @@ import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
+import com.google.devtools.ksp.symbol.KSPropertySetter
+import com.google.devtools.ksp.symbol.Modifier
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
@@ -19,11 +22,11 @@ import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.createAnvilSpec
+import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -57,8 +60,14 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
       resolver.getSymbolsWithAnnotation(injectFqName.asString())
-        .filterIsInstance<KSPropertyDeclaration>()
-        .filterNot { it.isPrivate() }
+        .mapNotNull {
+          when (it) {
+            is KSPropertySetter -> SettableProperty.Setter(it)
+            is KSPropertyDeclaration -> SettableProperty.Declaration(it)
+            else -> null
+          }
+        }
+        .filterNot { it.isPrivate }
         .filter { it.parentDeclaration is KSClassDeclaration }
         .groupBy { it.parentDeclaration as KSClassDeclaration }
         .forEach { (clazz, _) ->
@@ -76,6 +85,35 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
         }
 
       return emptyList()
+    }
+
+    /**
+     * When searching for settable properties, they may come down as a [KSPropertyDeclaration]
+     * or [KSPropertySetter], so we hide them behind a simple abstraction.
+     */
+    private sealed interface SettableProperty {
+      val parentDeclaration: KSDeclaration?
+      val isPrivate: Boolean
+
+      @JvmInline
+      value class Declaration(
+        val node: KSPropertyDeclaration,
+      ) : SettableProperty {
+        override val parentDeclaration: KSDeclaration?
+          get() = node.parentDeclaration
+        override val isPrivate: Boolean
+          get() = node.isPrivate()
+      }
+
+      @JvmInline
+      value class Setter(
+        val node: KSPropertySetter,
+      ) : SettableProperty {
+        override val parentDeclaration: KSDeclaration?
+          get() = node.receiver.parentDeclaration
+        override val isPrivate: Boolean
+          get() = Modifier.PRIVATE in node.modifiers || node.receiver.isPrivate()
+      }
     }
   }
 
@@ -141,7 +179,7 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
     typeParameters: List<TypeVariableName>,
     parameters: List<MemberInjectParameter>,
   ): FileSpec {
-    val memberInjectorClass = origin.generateClassName(suffix = "_MembersInjector")
+    val memberInjectorClass = origin.joinSimpleNames(suffix = "_MembersInjector")
     val packageName = memberInjectorClass.packageName.safePackageString()
     val fileName = memberInjectorClass.simpleName
 

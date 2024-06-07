@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.internal.testing
 
 import com.google.auto.value.processor.AutoAnnotationProcessor
+import com.google.common.truth.Truth.assertWithMessage
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
@@ -75,14 +76,15 @@ public class AnvilCompilation internal constructor(
         ),
         PluginOption(
           pluginId = anvilCommandLineProcessor.pluginId,
-          optionName = "backend",
-          optionValue = mode.backend.name.lowercase(Locale.US),
+          optionName = "analysis-backend",
+          optionValue = mode.analysisBackend.name.lowercase(Locale.US),
         ),
       )
 
       when (mode) {
         is Embedded -> {
           anvilComponentRegistrar.addCodeGenerators(mode.codeGenerators)
+          val buildDir = workingDir.resolve("build")
           pluginOptions +=
             listOf(
               PluginOption(
@@ -92,13 +94,18 @@ public class AnvilCompilation internal constructor(
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "gradle-build-dir",
+                optionValue = buildDir.absolutePath,
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "src-gen-dir",
-                optionValue = File(workingDir, "build/anvil").absolutePath,
+                optionValue = buildDir.resolve("anvil").absolutePath,
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "anvil-cache-dir",
-                optionValue = File(workingDir, "build/anvil-cache").absolutePath,
+                optionValue = buildDir.resolve("anvil-cache").absolutePath,
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
@@ -109,6 +116,11 @@ public class AnvilCompilation internal constructor(
                 pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "generate-dagger-factories-only",
                 optionValue = generateDaggerFactoriesOnly.toString(),
+              ),
+              PluginOption(
+                pluginId = anvilCommandLineProcessor.pluginId,
+                optionName = "will-have-dagger-factories",
+                optionValue = (generateDaggerFactories || enableDaggerAnnotationProcessor).toString(),
               ),
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
@@ -134,6 +146,7 @@ public class AnvilCompilation internal constructor(
           }
           // Run KSP embedded directly within this kotlinc invocation
           kspWithCompilation = true
+          kspArgs["will-have-dagger-factories"] = generateDaggerFactories.toString()
           kspArgs["generate-dagger-factories"] = generateDaggerFactories.toString()
           kspArgs["generate-dagger-factories-only"] = generateDaggerFactoriesOnly.toString()
           kspArgs["disable-component-merging"] = disableComponentMerging.toString()
@@ -213,6 +226,7 @@ public class AnvilCompilation internal constructor(
    */
   public fun compile(
     @Language("kotlin") vararg sources: String,
+    expectExitCode: KotlinCompilation.ExitCode? = null,
     block: JvmCompilationResult.() -> Unit = {},
   ): JvmCompilationResult {
     checkNotCompiled()
@@ -223,7 +237,32 @@ public class AnvilCompilation internal constructor(
     addSources(*sources)
     isCompiled = true
 
-    return kotlinCompilation.compile().apply(block)
+    return kotlinCompilation.compile().apply {
+
+      if (exitCode != expectExitCode) {
+        when {
+          expectExitCode == null -> {
+            // No expected code, so no assertion to be made
+          }
+          expectExitCode == KotlinCompilation.ExitCode.OK -> {
+            assertWithMessage("Compilation failed unexpectedly\n\n$messages")
+              .that(exitCode)
+              .isEqualTo(KotlinCompilation.ExitCode.OK)
+          }
+          exitCode == KotlinCompilation.ExitCode.OK -> {
+            assertWithMessage("Compilation succeeded unexpectedly\n\n$messages")
+              .that(exitCode)
+              .isEqualTo(expectExitCode)
+          }
+          else -> {
+            assertWithMessage("Error code mismatch\n\n$messages")
+              .that(exitCode)
+              .isEqualTo(expectExitCode)
+          }
+        }
+      }
+      block()
+    }
   }
 
   public companion object {
@@ -263,6 +302,7 @@ public fun compileAnvil(
   mode: AnvilCompilationMode = Embedded(emptyList()),
   moduleName: String? = null,
   jvmTarget: JvmTarget? = null,
+  expectExitCode: KotlinCompilation.ExitCode? = null,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult {
   return AnvilCompilation()
@@ -295,6 +335,9 @@ public fun compileAnvil(
       trackSourceFiles = trackSourceFiles,
       mode = mode,
     )
-    .compile(*sources)
+    .compile(
+      *sources,
+      expectExitCode = expectExitCode,
+    )
     .also(block)
 }

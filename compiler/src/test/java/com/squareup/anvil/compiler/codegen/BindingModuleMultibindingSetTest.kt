@@ -4,21 +4,24 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
-import com.squareup.anvil.compiler.anvilModule
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
+import com.squareup.anvil.compiler.flatMapArray
+import com.squareup.anvil.compiler.generatedMultiBindingModule
 import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.isAbstract
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.mergedModules
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.parentInterface1
 import com.squareup.anvil.compiler.parentInterface2
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
+import com.tschuchort.compiletesting.KotlinCompilation
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import dagger.Binds
 import dagger.Provides
 import dagger.multibindings.IntoSet
@@ -30,7 +33,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class BindingModuleMultibindingSetTest(
-  private val annotationClass: KClass<*>,
+  private val annotationClass: KClass<out Annotation>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -107,12 +110,8 @@ class BindingModuleMultibindingSetTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
+      val modules = componentInterface.mergedModules(annotationClass).toList()
+      assertThat(modules).containsExactly(contributingInterface.generatedMultiBindingModule.kotlin)
 
       val methods = modules.single().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -193,12 +192,10 @@ class BindingModuleMultibindingSetTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
+      val modules = componentInterface.mergedModules(annotationClass).toList()
+      assertThat(
+        modules,
+      ).containsExactly(secondContributingInterface.generatedMultiBindingModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -236,12 +233,10 @@ class BindingModuleMultibindingSetTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
+      val modules = componentInterface.mergedModules(annotationClass).toList()
+      assertThat(
+        modules,
+      ).containsExactly(secondContributingInterface.generatedMultiBindingModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -275,8 +270,8 @@ class BindingModuleMultibindingSetTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
 
       assertThat(messages).contains("Source0.kt:6:11")
       assertThat(messages).contains(
@@ -306,14 +301,10 @@ class BindingModuleMultibindingSetTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
+      val methods = componentInterface.mergedModules(annotationClass)
+        .flatMap { it.java.declaredMethods.toList() }
 
-      val methods = modules.single().java.declaredMethods
-      assertThat(methods).hasLength(2)
+      assertThat(methods).hasSize(2)
     }
   }
 
@@ -342,12 +333,8 @@ class BindingModuleMultibindingSetTest(
       interface ComponentInterface
       """,
     ) {
-      val modules = if (annotationClass == MergeModules::class) {
-        componentInterface.daggerModule.includes.toList()
-      } else {
-        componentInterface.anyDaggerComponent.modules
-      }
-      assertThat(modules).containsExactly(componentInterface.anvilModule.kotlin)
+      val modules = componentInterface.mergedModules(annotationClass).toList()
+      assertThat(modules).containsExactly(contributingInterface.generatedMultiBindingModule.kotlin)
 
       val methods = modules.first().java.declaredMethods
       assertThat(methods).hasLength(1)
@@ -385,7 +372,9 @@ class BindingModuleMultibindingSetTest(
       interface SubcomponentInterface
       """,
     ) {
-      with(componentInterface.anvilModule.declaredMethods.single()) {
+      with(
+        componentInterface.mergedModules(annotationClass).single().java.declaredMethods.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -393,7 +382,9 @@ class BindingModuleMultibindingSetTest(
         assertThat(isAnnotationPresent(IntoSet::class.java)).isTrue()
       }
 
-      with(subcomponentInterface.anvilModule.declaredMethods.single()) {
+      with(
+        subcomponentInterface.mergedModules(annotationClass).single().java.declaredMethods.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -425,7 +416,9 @@ class BindingModuleMultibindingSetTest(
       interface SubcomponentInterface
       """,
     ) {
-      with(componentInterface.anvilModule.declaredMethods.single()) {
+      with(
+        componentInterface.mergedModules(annotationClass).single().java.declaredMethods.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface1)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -433,7 +426,9 @@ class BindingModuleMultibindingSetTest(
         assertThat(isAnnotationPresent(IntoSet::class.java)).isTrue()
       }
 
-      with(subcomponentInterface.anvilModule.declaredMethods.single()) {
+      with(
+        subcomponentInterface.mergedModules(annotationClass).single().java.declaredMethods.single(),
+      ) {
         assertThat(returnType).isEqualTo(parentInterface2)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -462,16 +457,21 @@ class BindingModuleMultibindingSetTest(
       interface ComponentInterface
       """,
     ) {
-      val methods = componentInterface.anvilModule.declaredMethods.sortedBy { it.name }
+      val methods = componentInterface.mergedModules(annotationClass)
+        .flatMapArray { moduleClass -> moduleClass.java.declaredMethods }
       assertThat(methods).hasSize(2)
 
-      with(methods[0]) {
+      // Sorting changes across unix and windows, so we just do a manual grab
+      val method1 = methods.single { it.returnType == parentInterface1 }
+      val method2 = methods.single { it.returnType == parentInterface2 }
+
+      with(method1) {
         assertThat(returnType).isEqualTo(parentInterface1)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
         assertThat(isAnnotationPresent(Binds::class.java)).isTrue()
       }
-      with(methods[1]) {
+      with(method2) {
         assertThat(returnType).isEqualTo(parentInterface2)
         assertThat(parameterTypes.toList()).containsExactly(contributingInterface)
         assertThat(isAbstract).isTrue()
@@ -504,7 +504,11 @@ class BindingModuleMultibindingSetTest(
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMap {
+          it.java.declaredMethods.toList()
+        },
+      ).isEmpty()
     }
   }
 

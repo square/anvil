@@ -10,7 +10,6 @@ buildConfig {
   packageName("com.squareup.anvil.compiler")
   useKotlinOutput { topLevelConstants = true }
 
-  buildConfigField("boolean", "WARNINGS_AS_ERRORS", libs.versions.config.warningsAsErrors.get())
   buildConfigField("boolean", "FULL_TEST_RUN", libs.versions.config.fullTestRun.get())
   buildConfigField("boolean", "INCLUDE_KSP_TESTS", libs.versions.config.includeKspTests.get())
 }
@@ -62,6 +61,11 @@ dependencies {
   testImplementation(libs.kotlin.compileTesting.ksp)
   testImplementation(libs.kotlin.compiler)
   testImplementation(libs.kotlin.test)
+  testImplementation(libs.kotlin.reflect)
   testImplementation(libs.ksp.compilerPlugin)
   testImplementation(libs.truth)
+
+  testRuntimeOnly(libs.kotest.assertions.core.jvm)
+  testRuntimeOnly(libs.junit.vintage.engine)
+  testRuntimeOnly(libs.junit.jupiter.engine)
 }

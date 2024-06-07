@@ -6,19 +6,18 @@ package com.squareup.anvil.compiler
 import com.google.auto.service.AutoService
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.CommandLineOptions.Companion.commandLineOptions
-import com.squareup.anvil.compiler.api.AnvilBackend
+import com.squareup.anvil.compiler.api.AnalysisBackend
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.codegen.BindingModuleGenerator
+import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
-import com.squareup.anvil.compiler.codegen.incremental.ProjectDir
+import com.squareup.anvil.compiler.codegen.incremental.BaseDir
 import com.squareup.anvil.compiler.codegen.reference.RealAnvilModuleDescriptor
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.util.ServiceLoader
 import kotlin.LazyThreadSafetyMode.NONE
@@ -29,6 +28,8 @@ import kotlin.LazyThreadSafetyMode.NONE
  */
 @AutoService(ComponentRegistrar::class)
 public class AnvilComponentRegistrar : ComponentRegistrar {
+
+  override val supportsK2: Boolean = true
 
   private val manuallyAddedCodeGenerators = mutableListOf<CodeGenerator>()
 
@@ -44,33 +45,34 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
       RealAnvilModuleDescriptor.Factory()
     }
 
-    if (!commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging) {
-      SyntheticResolveExtension.registerExtension(
-        project,
-        InterfaceMerger(scanner, moduleDescriptorFactory),
-      )
-
-      IrGenerationExtension.registerExtension(
-        project,
-        ModuleMergerIr(scanner, moduleDescriptorFactory),
-      )
+    val mergingEnabled =
+      !commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging
+    if (mergingEnabled) {
+      if (commandLineOptions.componentMergingBackend == ComponentMergingBackend.IR) {
+        IrGenerationExtension.registerExtension(
+          project,
+          IrContributionMerger(scanner, moduleDescriptorFactory),
+        )
+      } else {
+        // TODO in dagger-ksp support
+      }
     }
 
     // Everything below this point is only when running in embedded compilation mode. If running in
     // KSP, there's nothing else to do.
-    if (commandLineOptions.backend != AnvilBackend.EMBEDDED) {
+    if (commandLineOptions.backend != AnalysisBackend.EMBEDDED) {
       return
     }
 
     val sourceGenFolder = configuration.getNotNull(srcGenDirKey)
     val cacheDir = configuration.getNotNull(anvilCacheDirKey)
-    val projectDir = ProjectDir(configuration.getNotNull(gradleProjectDirKey))
+    val projectDir = BaseDir.ProjectDir(configuration.getNotNull(gradleProjectDirKey))
+    val buildDir = BaseDir.BuildDir(configuration.getNotNull(gradleBuildDirKey))
     val trackSourceFiles = configuration.getNotNull(trackSourceFilesKey)
 
     val codeGenerators = loadCodeGenerators() +
       manuallyAddedCodeGenerators +
       // We special case these due to the ClassScanner requirement.
-      BindingModuleGenerator(scanner) +
       ContributesSubcomponentHandlerGenerator(scanner)
 
     // It's important to register our extension at the first position. The compiler calls each
@@ -88,6 +90,7 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
         commandLineOptions = commandLineOptions,
         moduleDescriptorFactory = moduleDescriptorFactory,
         projectDir = projectDir,
+        buildDir = buildDir,
         generatedDir = sourceGenFolder,
         cacheDir = cacheDir,
         trackSourceFiles = trackSourceFiles,

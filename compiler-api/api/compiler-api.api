@@ -1,3 +1,11 @@
+public final class com/squareup/anvil/compiler/api/AnalysisBackend : java/lang/Enum {
+	public static final field EMBEDDED Lcom/squareup/anvil/compiler/api/AnalysisBackend;
+	public static final field KSP Lcom/squareup/anvil/compiler/api/AnalysisBackend;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/AnalysisBackend;
+	public static fun values ()[Lcom/squareup/anvil/compiler/api/AnalysisBackend;
+}
+
 public abstract interface class com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
 	public static final field Companion Lcom/squareup/anvil/compiler/api/AnvilApplicabilityChecker$Companion;
 	public abstract fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z
@@ -5,14 +13,6 @@ public abstract interface class com/squareup/anvil/compiler/api/AnvilApplicabili
 
 public final class com/squareup/anvil/compiler/api/AnvilApplicabilityChecker$Companion {
 	public final fun always ()Lcom/squareup/anvil/compiler/api/AnvilApplicabilityChecker;
-}
-
-public final class com/squareup/anvil/compiler/api/AnvilBackend : java/lang/Enum {
-	public static final field EMBEDDED Lcom/squareup/anvil/compiler/api/AnvilBackend;
-	public static final field KSP Lcom/squareup/anvil/compiler/api/AnvilBackend;
-	public static fun getEntries ()Lkotlin/enums/EnumEntries;
-	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/AnvilBackend;
-	public static fun values ()[Lcom/squareup/anvil/compiler/api/AnvilBackend;
 }
 
 public final class com/squareup/anvil/compiler/api/AnvilCompilationException : org/jetbrains/kotlin/codegen/CompilationException {
@@ -44,6 +44,7 @@ public abstract interface class com/squareup/anvil/compiler/api/AnvilContext {
 	public abstract fun getGenerateFactoriesOnly ()Z
 	public abstract fun getModule ()Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;
 	public abstract fun getTrackSourceFiles ()Z
+	public abstract fun getWillHaveDaggerFactories ()Z
 }
 
 public abstract interface class com/squareup/anvil/compiler/api/CodeGenerator : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
@@ -55,6 +56,14 @@ public final class com/squareup/anvil/compiler/api/CodeGeneratorKt {
 	public static final fun createGeneratedFile (Lcom/squareup/anvil/compiler/api/CodeGenerator;Ljava/io/File;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/GeneratedFile;
 	public static final fun createGeneratedFile (Lcom/squareup/anvil/compiler/api/CodeGenerator;Ljava/io/File;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/io/File;[Ljava/io/File;)Lcom/squareup/anvil/compiler/api/GeneratedFileWithSources;
 	public static final fun createGeneratedFile (Lcom/squareup/anvil/compiler/api/CodeGenerator;Ljava/io/File;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;Ljava/util/Set;)Lcom/squareup/anvil/compiler/api/GeneratedFileWithSources;
+}
+
+public final class com/squareup/anvil/compiler/api/ComponentMergingBackend : java/lang/Enum {
+	public static final field IR Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
+	public static final field KSP Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
+	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
+	public static fun values ()[Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
 }
 
 public abstract interface class com/squareup/anvil/compiler/api/FileWithContent : java/lang/Comparable {

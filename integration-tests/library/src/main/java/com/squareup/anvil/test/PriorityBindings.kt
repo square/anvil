@@ -1,15 +1,15 @@
 package com.squareup.anvil.test
 
 import com.squareup.anvil.annotations.ContributesBinding
-import com.squareup.anvil.annotations.ContributesBinding.Priority.HIGH
+import com.squareup.anvil.annotations.ContributesBinding.Companion.RANK_HIGH
 
-public interface PriorityBinding
+public interface RankBinding
 
 @ContributesBinding(
   scope = AppScope::class,
-  priority = HIGH,
+  rank = RANK_HIGH,
 )
-public object PriorityBindingHigh : PriorityBinding
+public object RankBindingHigh : RankBinding
 
 @ContributesBinding(AppScope::class)
-public object PriorityBindingNormal : PriorityBinding
+public object RankBindingNormal : RankBinding

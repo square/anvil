@@ -1,12 +1,11 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
-import com.squareup.anvil.compiler.isError
-import com.squareup.anvil.compiler.isFullTestRun
+import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
+import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
 import org.junit.Test
@@ -17,14 +16,13 @@ import org.junit.runners.Parameterized.Parameters
 @RunWith(Parameterized::class)
 class BindsMethodValidatorTest(
   private val useDagger: Boolean,
+  private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}")
+    @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun useDagger(): Collection<Any> {
-      return listOf(isFullTestRun(), false).distinct()
-    }
+    fun params() = useDaggerAndKspParams()
   }
 
   @Test
@@ -48,15 +46,15 @@ class BindsMethodValidatorTest(
         abstract fun bindsBar(impl: Foo): Bar
       }
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type",
       )
       if (!useDagger) {
         assertThat(messages).contains(
-          "Expected binding of type Bar but impl parameter of type Foo only has the following " +
-            "supertypes: [Ipsum, Lorem]",
+          "Expected binding of type com.squareup.test.Bar but impl parameter of type com.squareup.test.Foo only has the following " +
+            "supertypes: [com.squareup.test.Ipsum, com.squareup.test.Lorem]",
         )
       }
     }
@@ -81,14 +79,14 @@ class BindsMethodValidatorTest(
         abstract fun bindsBar(impl: Foo): Bar
       }
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type",
       )
       if (!useDagger) {
         assertThat(messages).contains(
-          "Expected binding of type Bar but impl parameter of type Foo has no supertypes.",
+          "Expected binding of type com.squareup.test.Bar but impl parameter of type com.squareup.test.Foo has no supertypes.",
         )
       }
     }
@@ -115,8 +113,8 @@ class BindsMethodValidatorTest(
         }
       }
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("@Binds methods must be abstract")
     }
   }
@@ -140,8 +138,8 @@ class BindsMethodValidatorTest(
         abstract fun bindsBar(): Bar
       }
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@Binds methods must have exactly one parameter, " +
           "whose type is assignable to the return type",
@@ -169,8 +167,8 @@ class BindsMethodValidatorTest(
         abstract fun bindsBar(impl1: Foo, impl2: Hammer): Bar
       }
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@Binds methods must have exactly one parameter, " +
           "whose type is assignable to the return type",
@@ -197,8 +195,8 @@ class BindsMethodValidatorTest(
         abstract fun bindsBar(impl1: Foo)
       }
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "@Binds methods must return a value (not void)",
       )
@@ -224,8 +222,8 @@ class BindsMethodValidatorTest(
         abstract fun Foo.bindsBar(): Bar
       }
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       assertThat(messages).contains("@Binds methods can not be an extension function")
     }
   }
@@ -270,6 +268,7 @@ class BindsMethodValidatorTest(
       }
       """,
       previousCompilationResult = moduleResult,
+      forceEmbeddedMode = true,
       enableDagger = true,
     ) {
       assertThat(exitCode).isEqualTo(OK)
@@ -308,9 +307,33 @@ class BindsMethodValidatorTest(
         }
       }
       """,
+      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isEqualTo(COMPILATION_ERROR)
       assertThat(messages).contains("@Binds methods can not be an extension function")
+    }
+  }
+
+  @Test
+  fun `binding inside interface is valid`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import dagger.Binds
+      import dagger.Module
+      import javax.inject.Inject
+
+      interface Foo : Bar
+      interface Bar
+
+      @Module
+      interface BarModule {
+        @Binds
+        fun bindsBar(foo: Foo): Bar
+      }
+      """,
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
     }
   }
 
@@ -318,13 +341,17 @@ class BindsMethodValidatorTest(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
     enableDagger: Boolean = useDagger,
+    // Used to enable the dagger compiler even in KSP mode, which is necessary for some multi-round tests
+    forceEmbeddedMode: Boolean = false,
+    expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
+    previousCompilationResult = previousCompilationResult,
+    expectExitCode = expectExitCode,
     enableDaggerAnnotationProcessor = enableDagger,
     generateDaggerFactories = !enableDagger,
-    allWarningsAsErrors = WARNINGS_AS_ERRORS,
-    previousCompilationResult = previousCompilationResult,
+    mode = if (forceEmbeddedMode) AnvilCompilationMode.Embedded(emptyList()) else mode,
     block = block,
   )
 }

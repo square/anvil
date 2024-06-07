@@ -6,10 +6,10 @@ import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.hintSubcomponent
 import com.squareup.anvil.compiler.hintSubcomponentParentScope
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
-import com.squareup.anvil.compiler.isError
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.squareup.anvil.compiler.walkGeneratedFiles
 import com.tschuchort.compiletesting.JvmCompilationResult
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -45,7 +45,8 @@ class ContributesSubcomponentGeneratorTest(
 
       val generatedFile = walkGeneratedFiles(mode).single()
 
-      assertThat(generatedFile.name).isEqualTo("SubcomponentInterface.kt")
+      assertThat(generatedFile.name)
+        .isEqualTo("Com_squareup_test_SubcomponentInterface_7280b174.kt")
     }
   }
 
@@ -104,7 +105,64 @@ class ContributesSubcomponentGeneratorTest(
 
       val generatedFile = walkGeneratedFiles(mode).single()
 
-      assertThat(generatedFile.name).isEqualTo("Outer_SubcomponentInterface.kt")
+      assertThat(generatedFile.name)
+        .isEqualTo("Com_squareup_test_Outer_SubcomponentInterface_c4e6e962.kt")
+    }
+  }
+
+  @Test fun `there is a hint for contributed subcomponents with an interace factory`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesSubcomponent
+      import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+
+      @ContributesSubcomponent(Any::class, Unit::class)
+      interface SubcomponentInterface {
+        @Factory
+        interface SubcomponentFactory {
+          fun create(): SubcomponentInterface
+        }
+      }
+      """,
+      mode = mode,
+    ) {
+      assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
+      assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
+
+      val generatedFile = walkGeneratedFiles(mode).single()
+
+      assertThat(generatedFile.name)
+        .isEqualTo("Com_squareup_test_SubcomponentInterface_7280b174.kt")
+    }
+  }
+
+  @Test fun `there is a hint for contributed subcomponents with an abstract class factory`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import com.squareup.anvil.annotations.ContributesSubcomponent
+      import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+
+      @ContributesSubcomponent(Any::class, Unit::class)
+      interface SubcomponentInterface {
+        @Factory
+        abstract class SubcomponentFactory {
+          abstract fun create(): SubcomponentInterface
+        }
+      }
+      """,
+      mode = mode,
+    ) {
+      assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
+      assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
+
+      val generatedFile = walkGeneratedFiles(mode).single()
+
+      assertThat(generatedFile.name)
+        .isEqualTo("Com_squareup_test_SubcomponentInterface_7280b174.kt")
     }
   }
 
@@ -119,8 +177,8 @@ class ContributesSubcomponentGeneratorTest(
       class SubcomponentInterface
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:6:")
       assertThat(messages).contains(
@@ -139,8 +197,8 @@ class ContributesSubcomponentGeneratorTest(
       object SubcomponentInterface
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:6:")
       assertThat(messages).contains(
@@ -168,8 +226,8 @@ class ContributesSubcomponentGeneratorTest(
         $visibility interface SubcomponentInterface
         """,
         mode = mode,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:6:")
         assertThat(messages).contains(
@@ -229,8 +287,8 @@ class ContributesSubcomponentGeneratorTest(
         }
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:7:")
       assertThat(messages).contains(
         "Expected zero or one parent component interface within " +
@@ -258,8 +316,8 @@ class ContributesSubcomponentGeneratorTest(
         }
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:9:")
       assertThat(messages).contains(
         "Expected zero or one function returning the subcomponent " +
@@ -291,8 +349,8 @@ class ContributesSubcomponentGeneratorTest(
         }
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:8:")
       assertThat(messages).contains(
         "Expected zero or one factory within com.squareup.test.SubcomponentInterface.",
@@ -319,8 +377,8 @@ class ContributesSubcomponentGeneratorTest(
         }
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:10:")
       assertThat(messages).contains("A factory must be an interface or an abstract class.")
     }
@@ -342,8 +400,8 @@ class ContributesSubcomponentGeneratorTest(
         }
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:10:")
       assertThat(messages).contains("A factory must be an interface or an abstract class.")
     }
@@ -366,8 +424,8 @@ class ContributesSubcomponentGeneratorTest(
         }
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:10:")
       assertThat(messages).contains(
         "A factory must have exactly one abstract function returning the subcomponent " +
@@ -396,8 +454,8 @@ class ContributesSubcomponentGeneratorTest(
         }
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:10:")
       assertThat(messages).contains(
         "A factory must have exactly one abstract function returning the subcomponent " +
@@ -425,8 +483,8 @@ class ContributesSubcomponentGeneratorTest(
         }
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:10:")
       assertThat(messages).contains(
         "A factory must have exactly one abstract function returning the subcomponent " +
@@ -453,8 +511,8 @@ class ContributesSubcomponentGeneratorTest(
         }
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:9:")
       assertThat(messages).contains(
         "Within a class using @ContributesSubcomponent you must use " +
@@ -482,8 +540,8 @@ class ContributesSubcomponentGeneratorTest(
         }
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:9:")
       assertThat(messages).contains(
         "Within a class using @ContributesSubcomponent you must use " +
@@ -544,8 +602,8 @@ class ContributesSubcomponentGeneratorTest(
       interface SubcomponentInterface2
       """,
       mode = mode,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:16:")
       assertThat(messages).contains(
         "com.squareup.test.SubcomponentInterface2 with scope kotlin.Any wants to replace " +

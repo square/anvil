@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.internal.testing.extends
-import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
+import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
 import dagger.Component
 import dagger.Subcomponent
 import org.junit.Test
@@ -15,7 +15,7 @@ internal class MergeComponentTest {
 
   @Test fun `component merges modules and interfaces`() {
     val annotation = AppComponent::class.java.getAnnotation(Component::class.java)!!
-    assertThat(annotation.modules.withoutAnvilModule())
+    assertThat(annotation.modules.withoutAnvilModules())
       .containsExactly(AppModule1::class, AppModule2::class)
 
     assertThat(AppComponent::class extends AppComponentInterface::class).isTrue()
@@ -25,7 +25,7 @@ internal class MergeComponentTest {
 
   @Test fun `subcomponent merges modules and interfaces`() {
     val annotation = SubComponent::class.java.getAnnotation(Subcomponent::class.java)!!
-    assertThat(annotation.modules.withoutAnvilModule())
+    assertThat(annotation.modules.withoutAnvilModules())
       .containsExactly(SubModule1::class, SubModule2::class)
 
     assertThat(SubComponent::class extends SubComponentInterface::class).isTrue()
@@ -69,9 +69,9 @@ internal class MergeComponentTest {
     )
   }
 
-  @Test fun `the binding with the highest priority is bound`() {
+  @Test fun `the binding with the highest rank is bound`() {
     val appComponent = DaggerMergeComponentTest_AppComponent.create()
-    assertThat(appComponent.priorityBinding()).isEqualTo(PriorityBindingHigh)
+    assertThat(appComponent.priorityBinding()).isEqualTo(RankBindingHigh)
   }
 
   @MergeComponent(AppScope::class)
@@ -91,7 +91,7 @@ internal class MergeComponentTest {
 
     @Named("def")
     fun mapBindingsWrappedNamed(): Map<WrappedBindingKey, ParentType>
-    fun priorityBinding(): PriorityBinding
+    fun priorityBinding(): RankBinding
   }
 
   @MergeSubcomponent(SubScope::class)

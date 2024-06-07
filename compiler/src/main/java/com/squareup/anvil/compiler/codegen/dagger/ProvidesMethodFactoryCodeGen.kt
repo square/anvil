@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
 import com.google.devtools.ksp.closestClassDeclaration
-import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.getDeclaredProperties
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.Resolver
@@ -14,6 +13,7 @@ import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
+import com.google.devtools.ksp.symbol.KSNode
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
@@ -25,15 +25,18 @@ import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.getAnnotatedFunctions
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
+import com.squareup.anvil.compiler.codegen.ksp.withCompanion
 import com.squareup.anvil.compiler.codegen.ksp.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.containingFileAsJavaFile
 import com.squareup.anvil.compiler.internal.createAnvilSpec
+import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionFunctionReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberFunctionReference
@@ -41,7 +44,6 @@ import com.squareup.anvil.compiler.internal.reference.MemberPropertyReference
 import com.squareup.anvil.compiler.internal.reference.Visibility.INTERNAL
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.generateClassName
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.isWordPrefixRegex
@@ -82,29 +84,30 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       resolver.getSymbolsWithAnnotation(daggerModuleFqName.asString())
         .filterIsInstance<KSClassDeclaration>()
         .forEach { clazz ->
-          val classAndCompanion = sequenceOf(clazz)
-            .plus(
-              clazz.declarations.filterIsInstance<KSClassDeclaration>()
-                .filter { it.isCompanionObject },
-            )
-
-          val functions = classAndCompanion.flatMap { it.getDeclaredFunctions() }
-            .filter { it.isAnnotationPresent<Provides>() }
-            .onEach { function ->
-              checkFunctionIsNotAbstract(clazz, function)
-            }
-            .also { functions ->
-              assertNoDuplicateFunctions(clazz, functions)
-            }
-            .map { function ->
-              CallableReference.from(function)
-            }
+          val classAndCompanion = clazz.withCompanion()
+          val functions =
+            classAndCompanion
+              .flatMap {
+                it.getAnnotatedFunctions<Provides>()
+              }
+              .onEach { function ->
+                checkFunctionIsNotAbstract(clazz, function)
+              }
+              .also { functions ->
+                assertNoDuplicateFunctions(clazz, functions)
+              }
+              .map { function ->
+                CallableReference.from(function)
+              }
 
           val properties = classAndCompanion.flatMap { it.getDeclaredProperties() }
             .filter { it.isAnnotationPresent<Provides>() || it.getter?.isAnnotationPresent<Provides>() == true }
             .filter { property ->
               // Must be '@get:Provides'.
-              (property.getKSAnnotationsByType(Provides::class).singleOrNull()?.useSiteTarget == GET) ||
+              (
+                property.getKSAnnotationsByType(Provides::class)
+                  .singleOrNull()?.useSiteTarget == GET
+                ) ||
                 property.getter?.isAnnotationPresent<Provides>() == true
             }
             .map { property ->
@@ -115,16 +118,36 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
           val containingFile = clazz.containingFile!!
           // TODO we need a public API for this in KSP
           //  https://github.com/google/ksp/issues/1621
-          val mangledNameSuffix = (resolver as ResolverImpl).module
-            .mangledNameSuffix()
+          var supportsMangledNames = false
+          var mangledNameSuffix = ""
+          try {
+            (resolver as? ResolverImpl)?.let {
+              mangledNameSuffix = it.module
+                .mangledNameSuffix()
+              supportsMangledNames = true
+            }
+          } catch (_: NoClassDefFoundError) {
+            // TODO in KSP2 this isn't supported at the moment. See above issue.
+          } catch (_: ClassCastException) {
+            // TODO in KSP2 this isn't supported at the moment. See above issue.
+          }
           (functions + properties)
             .forEach { declaration ->
-              generateFactoryClass(
-                mangledNameSuffix,
-                className,
-                clazz.classKind == ClassKind.OBJECT,
-                declaration,
-              ).writeTo(env.codeGenerator, aggregating = false, listOf(containingFile))
+              if (declaration.isMangled && !supportsMangledNames) {
+                env.logger.error(
+                  "Could not determine mangled name suffix. This will be fixed in a future " +
+                    "release, but a temporary workaround is to make this declaration public.",
+                  declaration.reportableNode as? KSNode,
+                )
+              } else {
+                generateFactoryClass(
+                  declaration.isMangled,
+                  mangledNameSuffix,
+                  className,
+                  clazz.classKind == ClassKind.OBJECT,
+                  declaration,
+                ).writeTo(env.codeGenerator, aggregating = false, listOf(containingFile))
+              }
             }
         }
       return emptyList()
@@ -153,7 +176,9 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       fail()
     }
 
-    private fun CallableReference.Companion.from(function: KSFunctionDeclaration): CallableReference {
+    private fun CallableReference.Companion.from(
+      function: KSFunctionDeclaration,
+    ): CallableReference {
       if (function.extensionReceiver != null) {
         throw KspAnvilException(
           message = "@Provides methods cannot be extension functions",
@@ -176,10 +201,13 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         type = typeName,
         isNullable = type.isMarkedNullable,
         isPublishedApi = function.isAnnotationPresent<PublishedApi>(),
+        reportableNode = function,
       )
     }
 
-    private fun CallableReference.Companion.from(property: KSPropertyDeclaration): CallableReference {
+    private fun CallableReference.Companion.from(
+      property: KSPropertyDeclaration,
+    ): CallableReference {
       val type = property.type.resolve()
       val typeName = type.toTypeName().withJvmSuppressWildcardsIfNeeded(property, type)
       return CallableReference(
@@ -191,6 +219,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         type = typeName,
         isNullable = type.isMarkedNullable,
         isPublishedApi = property.isAnnotationPresent<PublishedApi>(),
+        reportableNode = property,
       )
     }
   }
@@ -257,6 +286,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       declaration: CallableReference,
     ): GeneratedFileWithSources {
       val spec = generateFactoryClass(
+        declaration.isMangled,
         module.mangledNameSuffix(),
         clazz.asClassName(),
         clazz.isObject(),
@@ -295,7 +325,9 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       fail()
     }
 
-    private fun CallableReference.Companion.from(function: MemberFunctionReference.Psi): CallableReference {
+    private fun CallableReference.Companion.from(
+      function: MemberFunctionReference.Psi,
+    ): CallableReference {
       if (function.function.isExtensionDeclaration()) {
         throw AnvilCompilationExceptionFunctionReference(
           message = "@Provides methods can not be an extension function",
@@ -317,10 +349,13 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         type = typeName,
         isNullable = type.isNullable(),
         isPublishedApi = function.isAnnotatedWith(publishedApiFqName),
+        reportableNode = function,
       )
     }
 
-    private fun CallableReference.Companion.from(property: MemberPropertyReference.Psi): CallableReference {
+    private fun CallableReference.Companion.from(
+      property: MemberPropertyReference.Psi,
+    ): CallableReference {
       val type = property.type()
       val typeName = type.asTypeName().withJvmSuppressWildcardsIfNeeded(property, type)
       return CallableReference(
@@ -332,6 +367,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         type = typeName,
         isNullable = type.isNullable(),
         isPublishedApi = property.isAnnotatedWith(publishedApiFqName),
+        reportableNode = property,
       )
     }
   }
@@ -346,7 +382,8 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     }
   }
 
-  private fun generateFactoryClass(
+  internal fun generateFactoryClass(
+    isMangled: Boolean,
     mangledNameSuffix: String,
     moduleClass: ClassName,
     isInObject: Boolean,
@@ -361,13 +398,9 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     // but not for names which just start with those letters, like `issues`.
     val useGetPrefix = isProperty && !isWordPrefixRegex.matches(declarationName)
 
-    val isMangled = !isProperty &&
-      declaration.isInternal &&
-      !declaration.isPublishedApi
-
     val packageName = moduleClass.packageName.safePackageString()
     val className = buildString {
-      append(moduleClass.generateClassName().simpleNames.joinToString("_"))
+      append(moduleClass.joinSimpleNames().simpleNames.joinToString("_"))
       append('_')
       if (isCompanionObject) {
         append("Companion_")
@@ -520,7 +553,8 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
                       addStatement(
                         "return module.$callableName$argumentsWithoutModule",
                       )
-                    !isObject && !returnTypeIsNullable ->
+                    // !isObject && !returnTypeIsNullable
+                    else ->
                       addStatement(
                         "return %T.checkNotNull(module.$callableName" +
                           "$argumentsWithoutModule, %S)",
@@ -546,7 +580,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     return spec
   }
 
-  private class CallableReference(
+  internal class CallableReference(
     val isInternal: Boolean,
     val isCompanionObject: Boolean,
     val name: String,
@@ -555,7 +589,13 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     val type: TypeName,
     val isNullable: Boolean,
     val isPublishedApi: Boolean,
+    val reportableNode: Any,
   ) {
+    val isMangled: Boolean
+      get() = !isProperty &&
+        isInternal &&
+        !isPublishedApi
+
     companion object // For extension
   }
 }

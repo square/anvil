@@ -12,9 +12,9 @@ jobs:
     timeout-minutes: 25
 
     steps:
-      - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
-      - uses: gradle/wrapper-validation-action@699bb18358f12c5b78b37bb0111d3a0e2276e0e2 # v2
-      - uses: actions/setup-java@9704b39bf258b59bc04b50fa2dd55e9ed76b47a8 # v4
+      - uses: actions/checkout@a5ac7e51b41094c92402da3b24376905380afc29 # v4
+      - uses: gradle/actions/wrapper-validation@db19848a5fa7950289d3668fb053140cf3028d43 # v3
+      - uses: actions/setup-java@99b8673ff64fbf99d8d325f52d9a5bdedb8483e9 # v4
         with:
           distribution: 'zulu'
           java-version: '17'
@@ -30,11 +30,22 @@ jobs:
 
       - name: Extract release notes
         id: release_notes
-        uses: ffurrer2/extract-release-notes@4a5a562549e21065f6791b32ec5415bd33045cd2 # v2
+        uses: ffurrer2/extract-release-notes@9989ccec43d726ef05aa1cd7b2854fb96b6df6ab # v2
+
+      - name: Check if prerelease
+        id: prerelease
+        run: |
+          version=$(grep VERSION_NAME gradle.properties | cut -d'=' -f2)
+          if [[ $version == *"-beta"* ]]; then
+            echo "isPrerelease=true" >> $GITHUB_OUTPUT
+          else
+            echo "isPrerelease=false" >> $GITHUB_OUTPUT
+          fi
 
       - name: Create release
-        uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
+        uses: softprops/action-gh-release@69320dbe05506a9a39fc8ae11030b214ec2d1f87 # v2
         with:
           body: ${{ steps.release_notes.outputs.release_notes }}
+          prerelease: ${{ steps.prerelease.outputs.isPrerelease }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

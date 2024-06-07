@@ -1,8 +1,10 @@
 package com.squareup.anvil.compiler
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.internal.testing.daggerModule
-import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
+import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import org.junit.Test
 
 class MergeModulesTest {
@@ -18,7 +20,7 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule()).isEmpty()
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules()).isEmpty()
       assertThat(daggerModule1.daggerModule.subcomponents).isEmpty()
     }
   }
@@ -40,7 +42,7 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(Boolean::class, Int::class)
     }
   }
@@ -67,7 +69,7 @@ class MergeModulesTest {
       """,
     ) {
       val module = daggerModule1.daggerModule
-      assertThat(module.includes.withoutAnvilModule()).containsExactly(Boolean::class, Int::class)
+      assertThat(module.includes.withoutAnvilModules()).containsExactly(Boolean::class, Int::class)
       assertThat(module.subcomponents.toList()).containsExactly(Boolean::class, Int::class)
     }
   }
@@ -83,8 +85,8 @@ class MergeModulesTest {
       @dagger.Module
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:7:7")
     }
@@ -106,7 +108,7 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
     }
   }
@@ -133,7 +135,7 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin, Int::class, Boolean::class)
     }
   }
@@ -152,8 +154,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:7:16")
     }
@@ -182,7 +184,7 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule3.kotlin)
     }
   }
@@ -212,10 +214,14 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
 
-      assertThat(daggerModule1.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        daggerModule1.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -244,10 +250,14 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
 
-      assertThat(daggerModule1.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        daggerModule1.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -275,8 +285,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:17:16")
       assertThat(messages).contains(
@@ -311,8 +321,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:17:16")
       assertThat(messages).contains(
@@ -348,8 +358,12 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule()).isEmpty()
-      assertThat(daggerModule1.anvilModule.declaredMethods).hasLength(1)
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules()).isEmpty()
+      assertThat(
+        daggerModule1.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).hasSize(1)
     }
   }
 
@@ -378,8 +392,12 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule()).isEmpty()
-      assertThat(daggerModule1.anvilModule.declaredMethods).hasLength(1)
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules()).isEmpty()
+      assertThat(
+        daggerModule1.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).hasSize(1)
     }
   }
 
@@ -407,8 +425,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
@@ -443,8 +461,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
@@ -475,8 +493,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:13:16")
     }
@@ -504,8 +522,8 @@ class MergeModulesTest {
       @MergeModules(Any::class)
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:15:16")
       assertThat(messages).contains(
@@ -544,7 +562,7 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin, daggerModule3.kotlin)
     }
   }
@@ -574,7 +592,7 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule3.kotlin)
     }
   }
@@ -599,8 +617,8 @@ class MergeModulesTest {
       )
       class DaggerModule1
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:16:7")
       assertThat(messages).contains(
@@ -633,7 +651,11 @@ class MergeModulesTest {
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -659,7 +681,11 @@ class MergeModulesTest {
       interface ComponentInterface
       """,
     ) {
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -684,8 +710,8 @@ class MergeModulesTest {
       )
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
@@ -717,8 +743,8 @@ class MergeModulesTest {
       )
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       // Position to the class.
       assertThat(messages).contains("Source0.kt:17:11")
       assertThat(messages).contains(
@@ -752,9 +778,9 @@ class MergeModulesTest {
       class DaggerModule2
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule3.kotlin)
-      assertThat(daggerModule2.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule2.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule4.kotlin)
     }
   }
@@ -781,8 +807,8 @@ class MergeModulesTest {
         @MergeModules(Any::class)
         class DaggerModule1
         """,
+        expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
-        assertThat(exitCode).isError()
         // Position to the class.
         assertThat(messages).contains("Source0.kt:8:")
       }
@@ -807,7 +833,7 @@ class MergeModulesTest {
     ) {
       val innerModule = classLoader.loadClass("com.squareup.test.DaggerModule1\$InnerModule")
 
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(innerModule.kotlin)
     }
   }
@@ -826,7 +852,7 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(classLoader.loadClass("DaggerModule1").daggerModule.includes.withoutAnvilModule())
+      assertThat(classLoader.loadClass("DaggerModule1").daggerModule.includes.withoutAnvilModules())
         .containsExactly(classLoader.loadClass("DaggerModule2").kotlin)
     }
   }
@@ -851,7 +877,11 @@ class MergeModulesTest {
       class DaggerModule1
       """,
     ) {
-      assertThat(daggerModule1.anvilModule.declaredMethods).hasLength(1)
+      assertThat(
+        daggerModule1.mergedModules(MergeModules::class).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).hasSize(1)
     }
   }
 
@@ -878,8 +908,8 @@ class MergeModulesTest {
       )
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains("Source0.kt:19:11")
     }
   }
@@ -905,10 +935,10 @@ class MergeModulesTest {
       class DaggerModule3
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
 
-      assertThat(daggerModule3.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule3.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
     }
   }
@@ -937,10 +967,10 @@ class MergeModulesTest {
       class DaggerModule2
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule3.kotlin, daggerModule4.kotlin)
 
-      assertThat(daggerModule2.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule2.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule3.kotlin)
     }
   }
@@ -969,10 +999,10 @@ class MergeModulesTest {
       class DaggerModule2
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule4.kotlin)
 
-      assertThat(daggerModule2.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule2.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule3.kotlin)
     }
   }
@@ -1001,10 +1031,10 @@ class MergeModulesTest {
       class DaggerModule2
       """,
     ) {
-      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule4.kotlin)
 
-      assertThat(daggerModule2.daggerModule.includes.withoutAnvilModule())
+      assertThat(daggerModule2.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule3.kotlin)
     }
   }

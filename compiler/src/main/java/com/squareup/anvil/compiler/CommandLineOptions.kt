@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler
 
-import com.squareup.anvil.compiler.api.AnvilBackend
+import com.squareup.anvil.compiler.api.AnalysisBackend
+import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import java.util.Locale
 
@@ -9,7 +10,9 @@ public class CommandLineOptions private constructor(
   public val generateFactoriesOnly: Boolean,
   public val disableComponentMerging: Boolean,
   public val trackSourceFiles: Boolean,
-  public val backend: AnvilBackend,
+  public val willHaveDaggerFactories: Boolean,
+  public val backend: AnalysisBackend,
+  public val componentMergingBackend: ComponentMergingBackend,
 ) {
   public companion object {
     public val CompilerConfiguration.commandLineOptions: CommandLineOptions
@@ -18,14 +21,24 @@ public class CommandLineOptions private constructor(
         generateFactoriesOnly = get(generateDaggerFactoriesOnlyKey, false),
         disableComponentMerging = get(disableComponentMergingKey, false),
         trackSourceFiles = get(trackSourceFilesKey, false),
+        willHaveDaggerFactories = get(willHaveDaggerFactoriesKey, false),
         backend = parseBackend(),
+        componentMergingBackend = parseComponentMergingBackend(),
       )
 
-    private fun CompilerConfiguration.parseBackend(): AnvilBackend {
-      val config = get(backendKey, AnvilBackend.EMBEDDED.name)
+    private fun CompilerConfiguration.parseBackend(): AnalysisBackend {
+      val config = get(analysisBackendKey, AnalysisBackend.EMBEDDED.name)
       return config
         .uppercase(Locale.US)
-        .let { value -> AnvilBackend.entries.find { it.name == value } }
+        .let { value -> AnalysisBackend.entries.find { it.name == value } }
+        ?: error("Unknown backend option: '$config'")
+    }
+
+    private fun CompilerConfiguration.parseComponentMergingBackend(): ComponentMergingBackend {
+      val config = get(mergingBackendKey, ComponentMergingBackend.IR.name)
+      return config
+        .uppercase(Locale.US)
+        .let { value -> ComponentMergingBackend.entries.find { it.name == value } }
         ?: error("Unknown backend option: '$config'")
     }
   }

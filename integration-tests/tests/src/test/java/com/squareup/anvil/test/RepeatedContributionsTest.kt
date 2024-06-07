@@ -5,7 +5,7 @@ import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.compiler.internal.testing.extends
-import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
+import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
 import dagger.Component
 import dagger.Module
 import dagger.Provides
@@ -17,7 +17,7 @@ class RepeatedContributionsTest {
   @Test fun `repeated contributions are merged properly`() {
     val componentAnnotation = RepeatedComponent1::class.java
       .getAnnotation(Component::class.java)!!
-    assertThat(componentAnnotation.modules.withoutAnvilModule())
+    assertThat(componentAnnotation.modules.withoutAnvilModules())
       .containsExactly(RepeatedModule::class, RepeatedModuleInt::class)
 
     assertThat(RepeatedComponent1::class extends RepeatedInterface::class).isTrue()
@@ -29,7 +29,7 @@ class RepeatedContributionsTest {
 
     val subcomponentAnnotation = RepeatedComponent2::class.java
       .getAnnotation(Subcomponent::class.java)!!
-    assertThat(subcomponentAnnotation.modules.withoutAnvilModule())
+    assertThat(subcomponentAnnotation.modules.withoutAnvilModules())
       .containsExactly(RepeatedModule::class, RepeatedModuleInt::class)
 
     assertThat(RepeatedComponent2::class extends RepeatedInterface::class).isTrue()
@@ -43,7 +43,7 @@ class RepeatedContributionsTest {
   @Test fun `repeated merge annotation work`() {
     val componentAnnotation = RepeatedComponent3::class.java
       .getAnnotation(Component::class.java)!!
-    assertThat(componentAnnotation.modules.withoutAnvilModule())
+    assertThat(componentAnnotation.modules.withoutAnvilModules())
       .containsExactly(RepeatedModule::class, RepeatedModuleInt::class)
 
     assertThat(RepeatedComponent3::class extends RepeatedInterface::class).isTrue()

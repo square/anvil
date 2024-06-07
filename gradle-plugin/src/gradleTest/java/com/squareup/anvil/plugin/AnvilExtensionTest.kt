@@ -8,8 +8,8 @@ import com.rickbusarow.kase.gradle.HasGradleDependencyVersion
 import com.rickbusarow.kase.gradle.HasKotlinDependencyVersion
 import com.rickbusarow.kase.gradle.KotlinDependencyVersion
 import com.rickbusarow.kase.kase
-import com.rickbusarow.kase.times
-import io.kotest.matchers.string.shouldContain
+import com.squareup.anvil.plugin.testing.AnvilGradleTestEnvironment
+import com.squareup.anvil.plugin.testing.BaseGradleTest
 import org.junit.jupiter.api.DynamicNode
 import org.junit.jupiter.api.Nested
 import org.junit.jupiter.api.TestFactory
@@ -169,8 +169,14 @@ class AnvilExtensionTest : BaseGradleTest() {
         Boolean,
       ) -> Unit,
     ): Stream<out DynamicNode> = params.asContainers { versions ->
-      properties.times(listOf(versions), instanceFactory = ::PropertyKase)
-        .asTests { kase -> action(versions, kase.propertyName, kase.default) }
+      properties.map { (propertyName, default) ->
+        PropertyKase(
+          propertyName = propertyName,
+          default = default,
+          gradle = versions.gradle,
+          kotlin = versions.kotlin,
+        )
+      }.asTests { kase -> action(versions, kase.propertyName, kase.default) }
     }
   }
 }

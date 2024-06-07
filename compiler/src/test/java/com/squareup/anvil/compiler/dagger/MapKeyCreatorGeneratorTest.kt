@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.WARNINGS_AS_ERRORS
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.isStatic
@@ -250,7 +249,6 @@ class MapKeyCreatorGeneratorTest(
     sources = sources,
     enableDaggerAnnotationProcessor = useDagger,
     generateDaggerFactories = !useDagger,
-    allWarningsAsErrors = WARNINGS_AS_ERRORS,
     mode = mode,
     block = block,
   )

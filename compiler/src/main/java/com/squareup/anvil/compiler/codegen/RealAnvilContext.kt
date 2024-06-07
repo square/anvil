@@ -6,7 +6,7 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.disableComponentMergingName
 import com.squareup.anvil.compiler.generateDaggerFactoriesName
 import com.squareup.anvil.compiler.generateDaggerFactoriesOnlyName
-import com.squareup.anvil.compiler.trackSourceFilesName
+import com.squareup.anvil.compiler.willHaveDaggerFactoriesName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 
 internal data class RealAnvilContext(
@@ -14,6 +14,7 @@ internal data class RealAnvilContext(
   override val generateFactoriesOnly: Boolean,
   override val disableComponentMerging: Boolean,
   override val trackSourceFiles: Boolean,
+  override val willHaveDaggerFactories: Boolean,
   val nullableModule: ModuleDescriptor?,
 ) : AnvilContext {
   override val module: ModuleDescriptor
@@ -27,6 +28,7 @@ internal fun CommandLineOptions.toAnvilContext(
   generateFactoriesOnly = generateFactoriesOnly,
   disableComponentMerging = disableComponentMerging,
   trackSourceFiles = trackSourceFiles,
+  willHaveDaggerFactories = willHaveDaggerFactories,
   nullableModule = module,
 )
 
@@ -34,7 +36,8 @@ internal fun SymbolProcessorEnvironment.toAnvilContext(): AnvilContext = RealAnv
   generateFactories = options.booleanOption(generateDaggerFactoriesName),
   generateFactoriesOnly = options.booleanOption(generateDaggerFactoriesOnlyName),
   disableComponentMerging = options.booleanOption(disableComponentMergingName),
-  trackSourceFiles = options.booleanOption(trackSourceFilesName),
+  trackSourceFiles = false,
+  willHaveDaggerFactories = options.booleanOption(willHaveDaggerFactoriesName),
   nullableModule = null,
 )
 

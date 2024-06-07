@@ -8,6 +8,8 @@ public final class com/squareup/anvil/plugin/AndroidVariantFilter : com/squareup
 	public fun getName ()Ljava/lang/String;
 	public fun getSyncGeneratedSources ()Z
 	public fun getTrackSourceFiles ()Z
+	public fun getUseKspBackend ()Z
+	public fun getUseKspComponentMergingBackend ()Z
 	public fun setAddOptionalAnnotations (Z)V
 	public fun setDisableComponentMerging (Z)V
 	public fun setGenerateDaggerFactories (Z)V
@@ -15,16 +17,23 @@ public final class com/squareup/anvil/plugin/AndroidVariantFilter : com/squareup
 	public fun setIgnore (Z)V
 	public fun setSyncGeneratedSources (Z)V
 	public fun setTrackSourceFiles (Z)V
+	public fun setUseKspBackend (Z)V
+	public fun setUseKspComponentMergingBackend (Z)V
 }
 
 public abstract class com/squareup/anvil/plugin/AnvilExtension {
-	public fun <init> (Lorg/gradle/api/model/ObjectFactory;Lorg/gradle/api/provider/ProviderFactory;)V
+	public fun <init> (Lorg/gradle/api/Project;Lorg/gradle/api/model/ObjectFactory;Lorg/gradle/api/provider/ProviderFactory;)V
 	public final fun getAddOptionalAnnotations ()Lorg/gradle/api/provider/Property;
 	public final fun getDisableComponentMerging ()Lorg/gradle/api/provider/Property;
 	public final fun getGenerateDaggerFactories ()Lorg/gradle/api/provider/Property;
 	public final fun getGenerateDaggerFactoriesOnly ()Lorg/gradle/api/provider/Property;
 	public final fun getSyncGeneratedSources ()Lorg/gradle/api/provider/Property;
 	public final fun getTrackSourceFiles ()Lorg/gradle/api/provider/Property;
+	public final fun getUseKspBackend ()Lorg/gradle/api/provider/Property;
+	public final fun getUseKspComponentMergingBackend ()Lorg/gradle/api/provider/Property;
+	public final fun useKsp (Z)V
+	public final fun useKsp (ZZ)V
+	public static synthetic fun useKsp$default (Lcom/squareup/anvil/plugin/AnvilExtension;ZZILjava/lang/Object;)V
 	public final fun variantFilter (Lorg/gradle/api/Action;)V
 }
 
@@ -37,6 +46,8 @@ public final class com/squareup/anvil/plugin/JvmVariantFilter : com/squareup/anv
 	public fun getName ()Ljava/lang/String;
 	public fun getSyncGeneratedSources ()Z
 	public fun getTrackSourceFiles ()Z
+	public fun getUseKspBackend ()Z
+	public fun getUseKspComponentMergingBackend ()Z
 	public fun setAddOptionalAnnotations (Z)V
 	public fun setDisableComponentMerging (Z)V
 	public fun setGenerateDaggerFactories (Z)V
@@ -44,6 +55,8 @@ public final class com/squareup/anvil/plugin/JvmVariantFilter : com/squareup/anv
 	public fun setIgnore (Z)V
 	public fun setSyncGeneratedSources (Z)V
 	public fun setTrackSourceFiles (Z)V
+	public fun setUseKspBackend (Z)V
+	public fun setUseKspComponentMergingBackend (Z)V
 }
 
 public abstract interface class com/squareup/anvil/plugin/VariantFilter : org/gradle/api/Named {
@@ -54,6 +67,8 @@ public abstract interface class com/squareup/anvil/plugin/VariantFilter : org/gr
 	public abstract fun getIgnore ()Z
 	public abstract fun getSyncGeneratedSources ()Z
 	public abstract fun getTrackSourceFiles ()Z
+	public abstract fun getUseKspBackend ()Z
+	public abstract fun getUseKspComponentMergingBackend ()Z
 	public abstract fun setAddOptionalAnnotations (Z)V
 	public abstract fun setDisableComponentMerging (Z)V
 	public abstract fun setGenerateDaggerFactories (Z)V
@@ -61,5 +76,7 @@ public abstract interface class com/squareup/anvil/plugin/VariantFilter : org/gr
 	public abstract fun setIgnore (Z)V
 	public abstract fun setSyncGeneratedSources (Z)V
 	public abstract fun setTrackSourceFiles (Z)V
+	public abstract fun setUseKspBackend (Z)V
+	public abstract fun setUseKspComponentMergingBackend (Z)V
 }
 

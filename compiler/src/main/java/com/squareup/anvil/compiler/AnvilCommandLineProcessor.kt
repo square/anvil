@@ -1,7 +1,8 @@
 package com.squareup.anvil.compiler
 
 import com.google.auto.service.AutoService
-import com.squareup.anvil.compiler.api.AnvilBackend
+import com.squareup.anvil.compiler.api.AnalysisBackend
+import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import org.jetbrains.kotlin.compiler.plugin.AbstractCliOption
 import org.jetbrains.kotlin.compiler.plugin.CliOption
 import org.jetbrains.kotlin.compiler.plugin.CommandLineProcessor
@@ -20,6 +21,10 @@ internal const val gradleProjectDirName = "gradle-project-dir"
 internal val gradleProjectDirKey =
   CompilerConfigurationKey.create<File>("anvil $gradleProjectDirName")
 
+internal const val gradleBuildDirName = "gradle-build-dir"
+internal val gradleBuildDirKey =
+  CompilerConfigurationKey.create<File>("anvil $gradleBuildDirName")
+
 internal const val generateDaggerFactoriesName = "generate-dagger-factories"
 internal val generateDaggerFactoriesKey =
   CompilerConfigurationKey.create<Boolean>("anvil $generateDaggerFactoriesName")
@@ -36,9 +41,17 @@ internal const val trackSourceFilesName = "track-source-files"
 internal val trackSourceFilesKey =
   CompilerConfigurationKey.create<Boolean>("anvil $trackSourceFilesName")
 
-internal const val backendName = "backend"
-internal val backendKey =
-  CompilerConfigurationKey.create<String>("anvil $backendName")
+internal const val willHaveDaggerFactoriesName = "will-have-dagger-factories"
+internal val willHaveDaggerFactoriesKey =
+  CompilerConfigurationKey.create<Boolean>("anvil $willHaveDaggerFactoriesName")
+
+internal const val analysisBackendName = "analysis-backend"
+internal val analysisBackendKey =
+  CompilerConfigurationKey.create<String>("anvil $analysisBackendName")
+
+internal const val mergingBackendName = "merging-backend"
+internal val mergingBackendKey =
+  CompilerConfigurationKey.create<String>("anvil $mergingBackendName")
 
 /**
  * Parses arguments from the Gradle plugin for the compiler plugin.
@@ -52,6 +65,13 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       optionName = gradleProjectDirName,
       valueDescription = "<file-path>",
       description = "The root directory of the consuming project",
+      required = false,
+      allowMultipleOccurrences = false,
+    ),
+    CliOption(
+      optionName = gradleBuildDirName,
+      valueDescription = "<file-path>",
+      description = "The build directory of the consuming project",
       required = false,
       allowMultipleOccurrences = false,
     ),
@@ -103,9 +123,24 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       allowMultipleOccurrences = false,
     ),
     CliOption(
-      optionName = backendName,
-      valueDescription = AnvilBackend.entries.joinToString("|", "<", ">"),
-      description = "Controls whether Anvil is running as an embedded plugin or as KSP.",
+      optionName = willHaveDaggerFactoriesName,
+      valueDescription = "<true|false>",
+      description = "Whether Anvil should expect that Dagger's Factory models will be generated " +
+        "by the end of compilation, from Anvil itself or from Dagger's generators.",
+      required = false,
+      allowMultipleOccurrences = false,
+    ),
+    CliOption(
+      optionName = analysisBackendName,
+      valueDescription = AnalysisBackend.entries.joinToString("|", "<", ">"),
+      description = "Controls whether Anvil analysis is running as an embedded plugin or as KSP.",
+      required = false,
+      allowMultipleOccurrences = false,
+    ),
+    CliOption(
+      optionName = mergingBackendName,
+      valueDescription = ComponentMergingBackend.entries.joinToString("|", "<", ">"),
+      description = "Controls whether module merging is running as an IR plugin or as KSP.",
       required = false,
       allowMultipleOccurrences = false,
     ),
@@ -119,6 +154,7 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
     when (option.optionName) {
 
       gradleProjectDirName -> configuration.put(gradleProjectDirKey, File(value))
+      gradleBuildDirName -> configuration.put(gradleBuildDirKey, File(value))
       srcGenDirName -> configuration.put(srcGenDirKey, File(value))
       anvilCacheDirName -> configuration.put(anvilCacheDirKey, File(value))
       generateDaggerFactoriesName ->
@@ -130,10 +166,13 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       disableComponentMergingName ->
         configuration.put(disableComponentMergingKey, value.toBoolean())
 
+      willHaveDaggerFactoriesName ->
+        configuration.put(willHaveDaggerFactoriesKey, value.toBoolean())
+
       trackSourceFilesName ->
         configuration.put(trackSourceFilesKey, value.toBoolean())
 
-      backendName -> configuration.put(backendKey, value)
+      analysisBackendName -> configuration.put(analysisBackendKey, value)
     }
   }
 }

@@ -1,46 +1,24 @@
-package com.squareup.anvil.plugin
+package com.squareup.anvil.plugin.testing
 
-import com.rickbusarow.kase.KaseMatrix
 import com.rickbusarow.kase.files.HasWorkingDir
 import com.rickbusarow.kase.files.JavaFileFileInjection
 import com.rickbusarow.kase.files.LanguageInjection
 import com.rickbusarow.kase.files.TestLocation
 import com.rickbusarow.kase.gradle.DefaultGradleTestEnvironment
 import com.rickbusarow.kase.gradle.DslLanguage
-import com.rickbusarow.kase.gradle.DslLanguage.KotlinDsl
 import com.rickbusarow.kase.gradle.GradleDependencyVersion
 import com.rickbusarow.kase.gradle.GradleKotlinTestVersions
 import com.rickbusarow.kase.gradle.GradleProjectBuilder
 import com.rickbusarow.kase.gradle.GradleRootProjectBuilder
 import com.rickbusarow.kase.gradle.GradleTestEnvironment
 import com.rickbusarow.kase.gradle.GradleTestEnvironmentFactory
-import com.rickbusarow.kase.gradle.KaseGradleTest
+import com.rickbusarow.kase.gradle.HasAgpDependencyVersion
 import com.rickbusarow.kase.gradle.dsl.BuildFileSpec
+import com.rickbusarow.kase.gradle.dsl.SettingsFileSpec
 import com.rickbusarow.kase.gradle.rootProject
-import com.rickbusarow.kase.gradle.versions
-import com.rickbusarow.kase.stdlib.letIf
 import com.squareup.anvil.plugin.buildProperties.anvilVersion
-import com.squareup.anvil.plugin.buildProperties.fullTestRun
 import com.squareup.anvil.plugin.buildProperties.localBuildM2Dir
 import java.io.File
-
-abstract class BaseGradleTest(
-  override val kaseMatrix: KaseMatrix = AnvilVersionMatrix(),
-) : KaseGradleTest<GradleKotlinTestVersions, AnvilGradleTestEnvironment, AnvilGradleTestEnvironment.Factory>,
-  FileStubs,
-  MoreAsserts {
-
-  override val testEnvironmentFactory = AnvilGradleTestEnvironment.Factory()
-
-  override val params: List<GradleKotlinTestVersions>
-    get() = kaseMatrix.versions(GradleKotlinTestVersions)
-      .letIf(!fullTestRun) { it.takeLast(1) }
-
-  /** Forced overload so that tests don't reference the generated BuildProperties file directly */
-  @Suppress("UnusedReceiverParameter")
-  val GradleTestEnvironment.anvilVersion: String
-    get() = com.squareup.anvil.plugin.buildProperties.anvilVersion
-}
 
 class AnvilGradleTestEnvironment(
   gradleVersion: GradleDependencyVersion,
@@ -57,16 +35,51 @@ class AnvilGradleTestEnvironment(
   LanguageInjection<File> by LanguageInjection(JavaFileFileInjection()),
   AnvilFilePathExtensions {
 
-  /** `workingDir.resolve("build/anvil/main/generated")` */
+  /** `rootProject.path.resolve("build/anvil/main/generated")` */
   val GradleTestEnvironment.rootAnvilMainGenerated: File
-    get() = workingDir.anvilMainGenerated
+    get() = rootProject.generatedDir(useKsp = false)
+
+  /** `rootProject.path.resolve("build/generated/ksp/main/kotlin")` */
+  val GradleTestEnvironment.rootGeneratedKspMainKotlin: File
+    get() = rootProject.generatedDir(useKsp = true)
 
   val GradleProjectBuilder.buildFileAsFile: File
     get() = path.resolve(dslLanguage.buildFileName)
   val GradleProjectBuilder.settingsFileAsFile: File
     get() = path.resolve(dslLanguage.settingsFileName)
 
-  class Factory : GradleTestEnvironmentFactory<GradleKotlinTestVersions, AnvilGradleTestEnvironment> {
+  /** Resolves the main sourceset generated directory for Anvil or KSP. */
+  fun GradleTestEnvironment.rootGeneratedDir(useKsp: Boolean): File {
+    return rootProject.generatedDir(useKsp)
+  }
+
+  /** Resolves the main sourceset generated directory for Anvil or KSP. */
+  fun GradleProjectBuilder.generatedDir(useKsp: Boolean): File {
+    return if (useKsp) {
+      path.buildGeneratedKspMainKotlin
+    } else {
+      path.buildAnvilMainGenerated
+    }
+  }
+
+  /**
+   * ```
+   * rootAnvilMainGenerated.listRelativeFilePaths() shouldBe listOf(
+   *     "com/squareup/test/InjectClass_Factory.kt",
+   *     "com/squareup/test/OtherClass_Factory.kt",
+   *   )
+   * ```
+   */
+  fun File.listRelativeFilePaths(parentDir: File = this): List<String> = walkBottomUp()
+    .filter { it.isFile }
+    .map { it.toRelativeString(parentDir) }
+    .sorted()
+    .toList()
+
+  override fun toString(): String = ""
+
+  class Factory :
+    GradleTestEnvironmentFactory<GradleKotlinTestVersions, AnvilGradleTestEnvironment> {
 
     override val localM2Path: File
       get() = localBuildM2Dir
@@ -87,6 +100,40 @@ class AnvilGradleTestEnvironment(
         }
       }
 
+    override fun settingsFileDefault(versions: GradleKotlinTestVersions): SettingsFileSpec {
+      return SettingsFileSpec {
+        rootProjectName.setEquals("root")
+
+        pluginManagement {
+          repositories {
+            maven(localM2Path)
+            gradlePluginPortal()
+            mavenCentral()
+            google()
+          }
+          plugins {
+            kotlin("android", version = versions.kotlinVersion, apply = false)
+            kotlin("jvm", version = versions.kotlinVersion, apply = false)
+            kotlin("kapt", version = versions.kotlinVersion, apply = false)
+            id("com.squareup.anvil", version = anvilVersion, apply = false)
+            id("com.google.devtools.ksp", version = versions.kspVersion.value, apply = false)
+            if (versions is HasAgpDependencyVersion) {
+              id("com.android.application", versions.agpVersion, apply = false)
+              id("com.android.library", versions.agpVersion, apply = false)
+            }
+          }
+        }
+        dependencyResolutionManagement {
+          repositories {
+            maven(localM2Path)
+            gradlePluginPortal()
+            mavenCentral()
+            google()
+          }
+        }
+      }
+    }
+
     override fun create(
       params: GradleKotlinTestVersions,
       names: List<String>,
@@ -95,7 +142,7 @@ class AnvilGradleTestEnvironment(
       val hasWorkingDir = HasWorkingDir(names, location)
       return AnvilGradleTestEnvironment(
         gradleVersion = params.gradle,
-        dslLanguage = KotlinDsl(useInfix = true, useLabels = false),
+        dslLanguage = DslLanguage.KotlinDsl(useInfix = true, useLabels = false),
         hasWorkingDir = hasWorkingDir,
         rootProject = rootProject(
           path = hasWorkingDir.workingDir,

@@ -6,7 +6,8 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerComponent
-import com.squareup.anvil.compiler.internal.testing.withoutAnvilModule
+import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
+import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -15,7 +16,7 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class ModuleMergerRepeatableTest(
-  private val annotationClass: KClass<*>,
+  private val annotationClass: KClass<out Annotation>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
@@ -46,8 +47,8 @@ class ModuleMergerRepeatableTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface merges multiple times to the same scope: [Any]. " +
           "Merging multiple times to the same scope is forbidden and all scopes must be distinct.",
@@ -69,8 +70,8 @@ class ModuleMergerRepeatableTest(
       @MergeSubcomponent(Unit::class)
       interface ComponentInterface
       """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(exitCode).isError()
       assertThat(messages).contains(
         "It's only allowed to have one single type of @Merge* annotation, however multiple " +
           "instances of the same annotation are allowed. You mix " +
@@ -102,7 +103,7 @@ class ModuleMergerRepeatableTest(
         """,
     ) {
       val component = componentInterface.anyDaggerComponent(annotationClass)
-      assertThat(component.modules.withoutAnvilModule())
+      assertThat(component.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin, daggerModule2.kotlin)
     }
   }
@@ -132,7 +133,7 @@ class ModuleMergerRepeatableTest(
         """,
     ) {
       val component = componentInterface.anyDaggerComponent(annotationClass)
-      assertThat(component.modules.withoutAnvilModule())
+      assertThat(component.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin, daggerModule2.kotlin)
     }
   }
@@ -164,7 +165,7 @@ class ModuleMergerRepeatableTest(
         """,
     ) {
       val component = componentInterface.anyDaggerComponent(annotationClass)
-      assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule2.kotlin)
+      assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule2.kotlin)
     }
   }
 
@@ -196,10 +197,14 @@ class ModuleMergerRepeatableTest(
         """,
     ) {
       assertThat(
-        componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModule(),
+        componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModules(),
       ).containsExactly(daggerModule1.kotlin)
 
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -232,9 +237,13 @@ class ModuleMergerRepeatableTest(
         """,
     ) {
       assertThat(
-        componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModule(),
+        componentInterface.anyDaggerComponent(annotationClass).modules.withoutAnvilModules(),
       ).isEmpty()
-      assertThat(componentInterface.anvilModule.declaredMethods).hasLength(1)
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).hasSize(1)
     }
   }
 
@@ -266,7 +275,7 @@ class ModuleMergerRepeatableTest(
         """,
     ) {
       val component = componentInterface.anyDaggerComponent(annotationClass)
-      assertThat(component.modules.withoutAnvilModule()).containsExactly(daggerModule2.kotlin)
+      assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule2.kotlin)
     }
   }
 
@@ -294,7 +303,11 @@ class ModuleMergerRepeatableTest(
         interface ComponentInterface
         """,
     ) {
-      assertThat(componentInterface.anvilModule.declaredMethods).isEmpty()
+      assertThat(
+        componentInterface.mergedModules(annotationClass).flatMapArray {
+          it.java.declaredMethods
+        },
+      ).isEmpty()
     }
   }
 
@@ -322,7 +335,9 @@ class ModuleMergerRepeatableTest(
       """,
     ) {
       val component = componentInterface.daggerComponent
-      assertThat(component.modules.withoutAnvilModule()).containsExactly(Boolean::class, Int::class)
+      assertThat(
+        component.modules.withoutAnvilModules(),
+      ).containsExactly(Boolean::class, Int::class)
       assertThat(component.dependencies.toList()).containsExactly(Boolean::class, Int::class)
     }
   }

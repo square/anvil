@@ -13,7 +13,6 @@ import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
-import com.squareup.anvil.compiler.codegen.ksp.argumentAt
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
@@ -26,6 +25,7 @@ import com.squareup.anvil.compiler.daggerLazyClassName
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.capitalize
+import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionPropertyReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -38,7 +38,7 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PRIVATE
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.internal.reference.asClassName
-import com.squareup.anvil.compiler.internal.reference.generateClassName
+import com.squareup.anvil.compiler.internal.reference.joinSimpleNames
 import com.squareup.anvil.compiler.internal.requireRawType
 import com.squareup.anvil.compiler.internal.unwrappedTypes
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
@@ -119,7 +119,11 @@ internal fun List<KSValueParameter>.mapToConstructorParameters(
   typeParameterResolver: TypeParameterResolver,
 ): List<ConstructorParameter> {
   return fold(listOf()) { acc, callableReference ->
-    acc + callableReference.toConstructorParameter(callableReference.name!!.asString().uniqueParameterName(acc), typeParameterResolver)
+    acc + callableReference.toConstructorParameter(
+      callableReference.name!!.asString()
+        .uniqueParameterName(acc),
+      typeParameterResolver,
+    )
   }
 }
 
@@ -389,7 +393,7 @@ private fun MemberPropertyReference.toMemberInjectParameter(
     ?: ""
 
   val memberInjectorClassName = declaringClass
-    .generateClassName(separator = "_", suffix = "_MembersInjector")
+    .joinSimpleNames(separator = "_", suffix = "_MembersInjector")
     .relativeClassName
     .asString()
 
@@ -474,15 +478,14 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
 
   val typeName = unwrappedType.withJvmSuppressWildcardsIfNeeded(this, resolvedType)
 
-  val resolvedTypeName = if ((resolvedType.declaration as? KSClassDeclaration)?.typeParameters.orEmpty().isNotEmpty()) {
-    unwrappedType.requireRawType()
-      .optionallyParameterizedByNames(
-        unwrappedType.unwrappedTypes,
-      )
-      .withJvmSuppressWildcardsIfNeeded(this, resolvedType)
-  } else {
-    null
-  }
+  val resolvedTypeName =
+    if ((resolvedType.declaration as? KSClassDeclaration)?.typeParameters.orEmpty().isNotEmpty()) {
+      unwrappedType.requireRawType()
+        .optionallyParameterizedByNames(unwrappedType.unwrappedTypes)
+        .withJvmSuppressWildcardsIfNeeded(this, resolvedType)
+    } else {
+      null
+    }
 
   val assistedAnnotation = getAnnotationsByType(Assisted::class)
     .singleOrNull()
@@ -494,7 +497,7 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
   val implementingClassName = declaringClass
     .toClassName()
   val memberInjectorClassName = implementingClassName
-    .generateClassName(separator = "_", suffix = "_MembersInjector")
+    .joinSimpleNames(separator = "_", suffix = "_MembersInjector")
     .simpleNames
     .joinToString(".")
 

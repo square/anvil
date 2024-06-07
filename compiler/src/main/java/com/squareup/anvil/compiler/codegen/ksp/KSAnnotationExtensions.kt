@@ -3,14 +3,14 @@
 package com.squareup.anvil.compiler.codegen.ksp
 
 import com.google.devtools.ksp.isDefault
+import com.google.devtools.ksp.processing.Resolver
+import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueArgument
-import com.squareup.anvil.compiler.internal.daggerScopeFqName
+import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.internal.mapKeyFqName
-import com.squareup.anvil.compiler.internal.reference.argumentAt
-import com.squareup.anvil.compiler.isAnvilModule
 import com.squareup.anvil.compiler.qualifierFqName
 import com.squareup.kotlinpoet.ksp.toClassName
 import org.jetbrains.kotlin.name.FqName
@@ -22,9 +22,6 @@ internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScope(
   // Exit early to avoid allocating additional collections.
   if (size < 2) return
   if (size == 2 && this[0].scope() != this[1].scope()) return
-
-  // Ignore generated Anvil modules. We'll throw a better error later for @Merge* annotations.
-  if (annotatedType.qualifiedName?.asString().orEmpty().isAnvilModule()) return
 
   // Check for duplicate scopes. Multiple contributions to the same scope are forbidden.
   val duplicates = groupBy { it.scope() }.filterValues { it.size > 1 }
@@ -94,10 +91,27 @@ internal fun KSAnnotation.scopeOrNull(): KSType? {
 
 internal fun KSAnnotation.boundTypeOrNull(): KSType? = argumentAt("boundType")?.value as? KSType?
 
+internal fun KSAnnotation.resolveBoundType(
+  resolver: Resolver,
+  declaringClass: KSClassDeclaration,
+): KSClassDeclaration {
+  val declaredBoundType = boundTypeOrNull()?.resolveKSClassDeclaration()
+  if (declaredBoundType != null) return declaredBoundType
+  // Resolve from the first and only supertype
+  return declaringClass.superTypesExcludingAny(resolver)
+    .single()
+    .resolve()
+    .resolveKSClassDeclaration() ?: throw KspAnvilException(
+    message = "Couldn't resolve bound type for ${declaringClass.qualifiedName}",
+    node = declaringClass,
+  )
+}
+
 @Suppress("UNCHECKED_CAST")
 internal fun KSAnnotation.replaces(): List<KSClassDeclaration> =
   (argumentAt("replaces")?.value as? List<KSType>).orEmpty().map {
-    it.resolveKSClassDeclaration() ?: throw KspAnvilException("Could not resolve replaces type $it}", this)
+    it.resolveKSClassDeclaration()
+      ?: throw KspAnvilException("Could not resolve replaces type $it}", this)
   }
 
 @Suppress("UNCHECKED_CAST")
@@ -133,4 +147,23 @@ private fun KSAnnotation.isTypeAnnotatedWith(
 
 internal fun KSAnnotation.isQualifier(): Boolean = isTypeAnnotatedWith(qualifierFqName)
 internal fun KSAnnotation.isMapKey(): Boolean = isTypeAnnotatedWith(mapKeyFqName)
-internal fun KSAnnotation.isDaggerScope(): Boolean = isTypeAnnotatedWith(daggerScopeFqName)
+
+internal fun KSAnnotated.qualifierAnnotation(): KSAnnotation? =
+  annotations.singleOrNull { it.isQualifier() }
+
+internal fun KSAnnotation.ignoreQualifier(): Boolean =
+  argumentAt("ignoreQualifier")?.value as? Boolean? == true
+
+internal fun KSAnnotation.rank(): Int {
+  return argumentAt("rank")?.value as Int?
+    ?: priorityLegacy()
+    ?: ContributesBinding.RANK_NORMAL
+}
+
+@Suppress("DEPRECATION")
+internal fun KSAnnotation.priorityLegacy(): Int? {
+  val priorityEntry = argumentAt("priority")?.value as KSType? ?: return null
+  val name = priorityEntry.resolveKSClassDeclaration()?.simpleName?.asString() ?: return null
+  val priority = ContributesBinding.Priority.valueOf(name)
+  return priority.value
+}

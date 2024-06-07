@@ -4,17 +4,19 @@ import com.google.auto.service.AutoService
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
+import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesBinding
-import com.squareup.anvil.compiler.HINT_BINDING_PACKAGE_PREFIX
-import com.squareup.anvil.compiler.REFERENCE_SUFFIX
-import com.squareup.anvil.compiler.SCOPE_SUFFIX
+import com.squareup.anvil.annotations.ContributesTo
+import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
+import com.squareup.anvil.compiler.checkNotGeneric
+import com.squareup.anvil.compiler.codegen.Contribution.Companion.generateFileSpecs
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.checkClassExtendsBoundType
@@ -23,68 +25,42 @@ import com.squareup.anvil.compiler.codegen.ksp.checkNoDuplicateScopeAndBoundType
 import com.squareup.anvil.compiler.codegen.ksp.checkNotMoreThanOneQualifier
 import com.squareup.anvil.compiler.codegen.ksp.checkSingleSuperType
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
+import com.squareup.anvil.compiler.codegen.ksp.ignoreQualifier
+import com.squareup.anvil.compiler.codegen.ksp.qualifierAnnotation
+import com.squareup.anvil.compiler.codegen.ksp.rank
+import com.squareup.anvil.compiler.codegen.ksp.replaces
+import com.squareup.anvil.compiler.codegen.ksp.resolveBoundType
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesBindingFqName
-import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.anvil.compiler.internal.reference.generateClassName
-import com.squareup.anvil.compiler.internal.safePackageString
-import com.squareup.kotlinpoet.ClassName
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.KModifier.PUBLIC
-import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
-import com.squareup.kotlinpoet.PropertySpec
-import com.squareup.kotlinpoet.asClassName
+import com.squareup.anvil.compiler.qualifierKey
+import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
-import kotlin.reflect.KClass
+import kotlin.properties.Delegates
 
 /**
- * Generates a hint for each contributed class in the `anvil.hint.bindings` package. This allows
- * the compiler plugin to find all contributed bindings a lot faster when merging modules and
- * component interfaces.
+ * Generates binding modules for every [ContributesBinding]-annotated class. If a class has repeated
+ * annotations, a binding module will be generated for each contribution. Each generated module is
+ * annotated with [ContributesTo] for merging.
+ *
+ * [ContributesBinding.rank] is conveyed in the generated module via [InternalBindingMarker]
+ * annotation generated onto the binding module.
  */
 internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
 
-  override fun isApplicable(context: AnvilContext) = !context.generateFactoriesOnly
+  // Used to determine if this generator needs to take responsibility
+  // for generating a factory for `@Provides` functions.
+  // https://github.com/square/anvil/issues/948
+  private var willHaveDaggerFactories: Boolean by Delegates.notNull()
 
-  fun generate(
-    originClass: ClassName,
-    scopes: Iterable<ClassName>,
-  ): FileSpec {
-    val fileName = originClass.generateClassName().simpleName
-    val generatedPackage = HINT_BINDING_PACKAGE_PREFIX +
-      originClass.packageName.safePackageString(dotPrefix = true)
-    val propertyName = originClass.canonicalName.replace('.', '_')
-    return FileSpec.createAnvilSpec(generatedPackage, fileName) {
-      addProperty(
-        PropertySpec
-          .builder(
-            name = propertyName + REFERENCE_SUFFIX,
-            type = KClass::class.asClassName().parameterizedBy(originClass),
-          )
-          .initializer("%T::class", originClass)
-          .addModifiers(PUBLIC)
-          .build(),
-      )
-
-      scopes.forEachIndexed { index, scope ->
-        addProperty(
-          PropertySpec
-            .builder(
-              name = propertyName + SCOPE_SUFFIX + index,
-              type = KClass::class.asClassName().parameterizedBy(scope),
-            )
-            .initializer("%T::class", scope)
-            .addModifiers(PUBLIC)
-            .build(),
-        )
-      }
-    }
+  override fun isApplicable(context: AnvilContext): Boolean {
+    willHaveDaggerFactories = context.willHaveDaggerFactories
+    return !context.generateFactoriesOnly
   }
 
   internal class KspGenerator(
@@ -103,6 +79,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
               )
               return@mapNotNull null
             }
+
             else -> annotated
           }
         }
@@ -116,23 +93,45 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
           it.checkClassExtendsBoundType(contributesBindingFqName, resolver)
         }
         .forEach { clazz ->
-          val className = clazz.toClassName()
-
-          val scopes = clazz.getKSAnnotationsByType(ContributesBinding::class)
+          val contributions = clazz.getKSAnnotationsByType(ContributesBinding::class)
             .toList()
             .also { it.checkNoDuplicateScopeAndBoundType(clazz) }
-            .map { it.scope().toClassName() }
-            .distinct()
-            // Give it a stable sort.
-            .sortedBy { it.canonicalName }
+            .map {
+              val scope = it.scope().toClassName()
+              val boundTypeDeclaration = it.resolveBoundType(resolver, clazz)
+              boundTypeDeclaration.checkNotGeneric(clazz)
+              val boundType = boundTypeDeclaration.toClassName()
+              val rank = it.rank()
+              val replaces = it.replaces().map { it.toClassName() }
+              val qualifierData = if (it.ignoreQualifier()) {
+                null
+              } else {
+                clazz.qualifierAnnotation()?.let { qualifierAnnotation ->
+                  val annotationSpec = qualifierAnnotation.toAnnotationSpec()
+                  val key = qualifierAnnotation.qualifierKey()
+                  Contribution.QualifierData(annotationSpec, key)
+                }
+              }
+              Contribution.Binding(
+                clazz.toClassName(),
+                scope,
+                clazz.classKind == ClassKind.OBJECT,
+                boundType,
+                rank,
+                replaces,
+                qualifierData,
+              )
+            }
 
-          val spec = generate(className, scopes)
-
-          spec.writeTo(
-            env.codeGenerator,
-            aggregating = false,
-            originatingKSFiles = listOf(clazz.containingFile!!),
-          )
+          contributions
+            .generateFileSpecs(generateProviderFactories = !willHaveDaggerFactories)
+            .forEach { spec ->
+              spec.writeTo(
+                env.codeGenerator,
+                aggregating = false,
+                originatingKSFiles = listOf(clazz.containingFile!!),
+              )
+            }
         }
 
       return emptyList()
@@ -165,26 +164,49 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
           clazz.checkSingleSuperType(contributesBindingFqName)
           clazz.checkClassExtendsBoundType(contributesBindingFqName)
         }
-        .map { clazz ->
-          val className = clazz.asClassName()
-
-          val scopes = clazz.annotations
+        .flatMap { clazz ->
+          val contributions = clazz.annotations
             .find(contributesBindingFqName)
             .also { it.checkNoDuplicateScopeAndBoundType() }
-            .distinctBy { it.scope() }
-            // Give it a stable sort.
-            .sortedBy { it.scope() }
-            .map { it.scope().asClassName() }
+            .map {
+              val scope = it.scope().asClassName()
+              // TODO if we support generic bound types in the future, we would change the below
+              //  to use asTypeName() + remove the checkNotGeneric call.
+              val boundTypeReference = it.resolveBoundType()
+              boundTypeReference.checkNotGeneric(clazz)
+              val boundType = boundTypeReference.asClassName()
+              val rank = it.rank()
+              val replaces = it.replaces().map { it.asClassName() }
+              val qualifierData = if (it.ignoreQualifier()) {
+                null
+              } else {
+                clazz.qualifierAnnotation()?.let { qualifierAnnotation ->
+                  val annotationSpec = qualifierAnnotation.toAnnotationSpec()
+                  val key = qualifierAnnotation.qualifierKey()
+                  Contribution.QualifierData(annotationSpec, key)
+                }
+              }
+              Contribution.Binding(
+                origin = clazz.asClassName(),
+                scope = scope,
+                isObject = clazz.isObject(),
+                boundType = boundType,
+                rank = rank,
+                replaces = replaces,
+                qualifier = qualifierData,
+              )
+            }
 
-          val spec = generate(className, scopes)
-
-          createGeneratedFile(
-            codeGenDir = codeGenDir,
-            packageName = spec.packageName,
-            fileName = spec.name,
-            content = spec.toString(),
-            sourceFile = clazz.containingFileAsJavaFile,
-          )
+          contributions.generateFileSpecs(generateProviderFactories = !willHaveDaggerFactories)
+            .map { spec ->
+              createGeneratedFile(
+                codeGenDir = codeGenDir,
+                packageName = spec.packageName,
+                fileName = spec.name,
+                content = spec.toString(),
+                sourceFile = clazz.containingFileAsJavaFile,
+              )
+            }
         }
         .toList()
     }

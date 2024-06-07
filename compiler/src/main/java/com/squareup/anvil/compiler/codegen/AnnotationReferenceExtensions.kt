@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
-import com.squareup.anvil.annotations.ContributesBinding.Priority
-import com.squareup.anvil.annotations.ContributesBinding.Priority.NORMAL
+import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
@@ -13,7 +12,6 @@ import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionA
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.argumentAt
-import com.squareup.anvil.compiler.isAnvilModule
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
@@ -37,15 +35,24 @@ internal fun AnnotationReference.ignoreQualifier(): Boolean {
       else -> return false
     },
   )
-    ?.value()
-    ?: false
+    ?.value<Boolean>() == true
 }
 
-internal fun AnnotationReference.priority(): Priority {
+internal fun ClassReference.qualifierAnnotation(): AnnotationReference? {
+  return annotations.find { it.isQualifier() }
+}
+
+internal fun AnnotationReference.rank(): Int {
+  return argumentAt("rank", index = 6)?.value()
+    ?: priorityLegacy()
+    ?: ContributesBinding.RANK_NORMAL
+}
+
+@Suppress("DEPRECATION")
+internal fun AnnotationReference.priorityLegacy(): Int? {
   return argumentAt("priority", index = 4)
     ?.value<FqName>()
-    ?.let { Priority.valueOf(it.shortName().asString()) }
-    ?: NORMAL
+    ?.let { ContributesBinding.Priority.valueOf(it.shortName().asString()) }?.value
 }
 
 internal fun AnnotationReference.modules(
@@ -100,9 +107,6 @@ internal fun <T : AnnotationReference> List<T>.checkNoDuplicateScope(
   // Exit early to avoid allocating additional collections.
   if (size < 2) return
   if (size == 2 && this[0].scope() != this[1].scope()) return
-
-  // Ignore generated Anvil modules. We'll throw a better error later for @Merge* annotations.
-  if (this[0].declaringClass().fqName.isAnvilModule()) return
 
   // Check for duplicate scopes. Multiple contributions to the same scope are forbidden.
   val duplicates = groupBy { it.scope() }.filterValues { it.size > 1 }
