@@ -26,19 +26,6 @@ open class KtlintConventionPlugin : Plugin<Project> {
         }
       }
       ktlint.verbose.set(true)
-
-      val pathsToExclude = listOf(
-        "build/generated",
-        "root-build/generated",
-        "included-build/generated",
-      )
-      ktlint.filter {
-        it.exclude {
-          pathsToExclude.any { excludePath ->
-            it.file.path.contains(excludePath)
-          }
-        }
-      }
     }
   }
 }
