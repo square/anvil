@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler
 import com.squareup.anvil.compiler.GeneratedProperty.ReferenceProperty
 import com.squareup.anvil.compiler.GeneratedProperty.ScopeProperty
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.codegen.log
 import com.squareup.anvil.compiler.internal.argumentType
 import com.squareup.anvil.compiler.internal.classDescriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -13,10 +14,15 @@ import org.jetbrains.kotlin.descriptors.PropertyDescriptor
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.resolve.scopes.DescriptorKindFilter
+import java.io.File
 
-internal class ClassScanner {
+internal class ClassScanner constructor(val scannerLog: File) {
 
   private val cache = mutableMapOf<CacheKey, Collection<List<GeneratedProperty>>>()
+
+  fun log(msg: String) {
+    log(scannerLog, msg)
+  }
 
   /**
    * Returns a sequence of contributed classes from the dependency graph. Note that the result
@@ -27,14 +33,37 @@ internal class ClassScanner {
     annotation: FqName,
     scope: FqName?,
   ): Sequence<ClassReference.Descriptor> {
-    val propertyGroups = cache.getOrPut(CacheKey(annotation, module.hashCode())) {
-      module.getPackage(
-        FqName(HINT_PACKAGE),
-      ).memberScope.getContributedDescriptors(DescriptorKindFilter.VALUES)
+    val key = CacheKey(annotation, module.hashCode())
+    val propertyGroups = cache.getOrPut(key) {
+
+      module
+        .getPackage(FqName(HINT_PACKAGE))
+        .memberScope
+        .getContributedDescriptors(DescriptorKindFilter.VALUES)
         .filterIsInstance<PropertyDescriptor>()
         .mapNotNull { GeneratedProperty.fromDescriptor(it) }
         .groupBy { property -> property.baseName }
         .values
+        .also { propertyGroups ->
+
+          val groups = propertyGroups.joinToString("\n--------\n") { file ->
+            file.joinToString("\n") { props ->
+              props.descriptor.fqNameSafe.asString().substringBefore("_ServiceInterface")
+            }
+          }
+
+          log(
+            """
+            |################################################## property groups
+            |scope: $scope
+            |  key: $key
+            |
+            |$groups
+            |##################################################
+            |
+            """.trimMargin(),
+          )
+        }
     }
 
     return propertyGroups

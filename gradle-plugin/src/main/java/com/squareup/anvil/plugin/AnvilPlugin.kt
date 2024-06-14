@@ -167,6 +167,93 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
     kotlinCompilation.compileTaskProvider.configure { task ->
 
+      if (project.name == "lib2") {
+        task.inputs.files(project.project(":lib1").tasks.named("jar"))
+      }
+
+      task.doFirst {
+
+        val i1 = task.inputs.files
+          .map { it.toString() }
+          .sorted()
+
+        val i2 = task.inputs.files.files
+          .map { it.toString() }
+          .sorted()
+
+        check(i1.containsAll(i2) && i1.size == i2.size) {
+          val e1 = i1 - i2
+          val e2 = i2 - i1
+          """
+            |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            |The input files lists didn't match.
+            |
+            | -- extras from `task.input.files`
+            |${e1.joinToString("\n")}
+            |
+            | -- extras from `task.input.files.files`
+            |${e2.joinToString("\n")}
+            |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+          """.trimMargin()
+        }
+
+        val ignored = setOf(
+          "dagger" to "2.51.1",
+          "javax_inject" to "1",
+          "annotations" to "13.0",
+          "kotlin-stdlib" to "1.9.22",
+          "annotations" to "2.5.0-beta10-SNAPSHOT",
+          "compiler-api" to "2.5.0-beta10-SNAPSHOT",
+          "compiler" to "2.5.0-beta10-SNAPSHOT",
+          "compiler-utils" to "2.5.0-beta10-SNAPSHOT",
+        )
+          .flatMap { (name, version) ->
+            listOf(
+              "/$name/$version",
+              "/$name-${version.replace('.', '_')}",
+            )
+          }
+          .plus(
+            listOf(
+              "javax",
+              "org.jetbrains.kotlin",
+              "org.jetbrains.intellij",
+              "kotlinpoet",
+            ),
+          )
+
+        val inputsBlob = i1
+          .filter { path -> ignored.none { path.contains(it) } }
+          .joinToString("\n") { path ->
+            path
+              .removePrefix("${project.projectDir.path}/")
+              .substringAfterLast(".gradle-test-kit/")
+          }
+
+        val deps = task.taskDependencies.getDependencies(task)
+          .map { it.toString() }
+          .sorted()
+
+        val outputsBlob = task.outputs.files
+          .map { it.path.removePrefix(project.projectDir.path) }
+          .joinToString("\n")
+
+        println(
+          """
+            |############################################# inputs for ${task.path}
+            | -- input files
+            |$inputsBlob
+            |
+            | -- taskDependencies
+            |${deps.joinToString("\n")}
+            |
+            | -- output files
+            |$outputsBlob
+            |#############################################
+          """.trimMargin(),
+        )
+      }
+
       if (variant.variantFilter.trackSourceFiles) {
         // Add the generated files directory as output
         // so that Gradle will watch them and invoke the compile task if they've changed.

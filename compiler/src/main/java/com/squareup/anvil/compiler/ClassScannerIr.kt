@@ -24,4 +24,5 @@ internal fun ClassScanner.findContributedClasses(
     .map {
       pluginContext.requireReferenceClass(it.fqName).toClassReference(pluginContext)
     }
+
 }

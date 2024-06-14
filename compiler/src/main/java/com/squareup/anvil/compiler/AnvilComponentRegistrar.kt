@@ -38,12 +38,12 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
     configuration: CompilerConfiguration,
   ) {
     val commandLineOptions = configuration.commandLineOptions
-    val scanner by lazy(NONE) {
-      ClassScanner()
-    }
     val moduleDescriptorFactory by lazy(NONE) {
       RealAnvilModuleDescriptor.Factory()
     }
+    val cacheDir = configuration.getNotNull(anvilCacheDirKey)
+    val projectDir = BaseDir.ProjectDir(configuration.getNotNull(gradleProjectDirKey))
+    val scanner = ClassScanner(cacheDir.resolve("scanner-log.txt"))
 
     val mergingEnabled =
       !commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging
@@ -51,7 +51,11 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
       if (commandLineOptions.componentMergingBackend == ComponentMergingBackend.IR) {
         IrGenerationExtension.registerExtension(
           project,
-          IrContributionMerger(scanner, moduleDescriptorFactory),
+          IrContributionMerger(
+            classScanner = scanner,
+            moduleDescriptorFactory = moduleDescriptorFactory,
+            cacheDir = cacheDir,
+          ),
         )
       } else {
         // TODO in dagger-ksp support
@@ -65,8 +69,8 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
     }
 
     val sourceGenFolder = configuration.getNotNull(srcGenDirKey)
-    val cacheDir = configuration.getNotNull(anvilCacheDirKey)
-    val projectDir = BaseDir.ProjectDir(configuration.getNotNull(gradleProjectDirKey))
+    // val cacheDir = configuration.getNotNull(anvilCacheDirKey)
+    // val projectDir = BaseDir.ProjectDir(configuration.getNotNull(gradleProjectDirKey))
     val buildDir = BaseDir.BuildDir(configuration.getNotNull(gradleBuildDirKey))
     val trackSourceFiles = configuration.getNotNull(trackSourceFilesKey)
 

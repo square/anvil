@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.CommandLineOptions
+import com.squareup.anvil.compiler.HINT_PACKAGE
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.FileWithContent
@@ -22,6 +23,7 @@ import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.idea.KotlinFileType
+import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
@@ -68,6 +70,10 @@ internal class CodeGenerationExtension(
     // At least don't make it random.
     .sortedWith(compareBy({ it is PrivateCodeGenerator }, { it::class.qualifiedName }))
 
+  fun log(msg: String) {
+    log(cacheDir.resolve("code-gen-extension.txt"), msg)
+  }
+
   override fun doAnalysis(
     project: Project,
     module: ModuleDescriptor,
@@ -110,6 +116,29 @@ internal class CodeGenerationExtension(
 
     if (didRecompile) return null
     didRecompile = true
+
+    val hintPackageNames = module.getPackage(FqName(HINT_PACKAGE))
+      .memberScope
+      .getVariableNames()
+      .sorted()
+
+    val classNames = module.getPackage(FqName("com.squareup.test.lib1"))
+      .memberScope
+      .getClassifierNames()
+      .orEmpty()
+      .sorted()
+
+    log(
+      """
+        |=============================================================
+        | -- hint package names
+        |${hintPackageNames.joinToString("\n")}
+        |
+        | -- lib1 class names
+        |${classNames.joinToString("\n")}
+        |============================================================= 
+      """.trimMargin(),
+    )
 
     // The files in `files` can include generated files.
     // Those files must exist when they're passed in to `anvilModule.addFiles(...)` to avoid:

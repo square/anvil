@@ -5,7 +5,7 @@ import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import java.util.Locale
 
-public class CommandLineOptions private constructor(
+public data class CommandLineOptions private constructor(
   public val generateFactories: Boolean,
   public val generateFactoriesOnly: Boolean,
   public val disableComponentMerging: Boolean,

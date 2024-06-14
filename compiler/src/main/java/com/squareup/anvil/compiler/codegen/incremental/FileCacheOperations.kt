@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.codegen.incremental
 
 import com.squareup.anvil.compiler.api.FileWithContent
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
+import com.squareup.anvil.compiler.codegen.log
 import com.squareup.anvil.compiler.mapToSet
 import com.squareup.anvil.compiler.requireDelete
 import java.io.File
@@ -33,6 +34,10 @@ internal class FileCacheOperations(
     }
   }
 
+  fun log(msg: String) {
+    log(cache.binaryFile.resolveSibling("file-cache-operations.txt"), msg)
+  }
+
   /**
    * For any non-generated file in the cache that no longer exists on disk,
    * we delete any downstream generated files from the disk.
@@ -59,6 +64,14 @@ internal class FileCacheOperations(
    */
   fun restoreFromCache(generatedDir: File, inputKtFiles: Set<AbsoluteFile>): RestoreCacheResult {
 
+    log(
+      """
+        |==================================
+        |starting restore
+        |==================================
+      """.trimMargin(),
+    )
+
     // Files that weren't generated.
     val rootSourceFiles = cache.rootSourceFiles
 
@@ -73,6 +86,14 @@ internal class FileCacheOperations(
     val deletedInvalid = deleteInvalidFiles(
       rootSourceFiles = rootSourceFiles,
       changedSourceFiles = changedSourceFiles,
+    )
+
+    log(
+      """
+        |
+        | -- deleted invalid files --
+        |${deletedInvalid.joinToString("\n") { it.toString() }}
+      """.trimMargin(),
     )
 
     val restoredFiles = unchangedSourceFiles
@@ -95,9 +116,25 @@ internal class FileCacheOperations(
         )
       }
 
+    log(
+      """
+        |
+        | -- restored files --
+        |${restoredFiles.joinToString("\n") { it.file.toString() }}
+      """.trimMargin(),
+    )
+
     val deletedUntracked = deleteUntrackedFiles(
       generatedDir = generatedDir,
       validGeneratedFiles = restoredFiles,
+    )
+
+    log(
+      """
+        |
+        | -- deleted untracked files --
+        |${deletedUntracked.joinToString("\n") { it.toString() }}
+      """.trimMargin(),
     )
 
     return RestoreCacheResult(

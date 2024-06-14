@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponentClassId
+import com.squareup.anvil.compiler.codegen.log
 import com.squareup.anvil.compiler.codegen.reference.AnnotationReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.AnvilCompilationExceptionClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.ClassReferenceIr
@@ -35,6 +36,7 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import java.io.File
 
 /**
  * An [IrGenerationExtension] that performs the two types of merging Anvil supports.
@@ -49,18 +51,55 @@ import org.jetbrains.kotlin.name.Name
 internal class IrContributionMerger(
   private val classScanner: ClassScanner,
   private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
+  private val cacheDir: File,
 ) : IrGenerationExtension {
   // https://youtrack.jetbrains.com/issue/KT-56635
   override val shouldAlsoBeAppliedInKaptStubGenerationMode: Boolean get() = true
+
+  fun log(msg: String) {
+    log(cacheDir.resolve("merger.txt"), msg)
+  }
 
   override fun generate(
     moduleFragment: IrModuleFragment,
     pluginContext: IrPluginContext,
   ) {
+
+    val hintPackageNames = moduleFragment.descriptor.getPackage(FqName(HINT_PACKAGE))
+      .memberScope
+      .getVariableNames()
+      .sorted()
+
+    val classNames = moduleFragment.descriptor.getPackage(FqName("com.squareup.test.lib1"))
+      .memberScope
+      .getClassifierNames()
+      .orEmpty()
+      .sorted()
+
+    log(
+      """
+        |=============================================================
+        | -- hint package names
+        |${hintPackageNames.joinToString("\n")}
+        |
+        | -- lib1 class names
+        |${classNames.joinToString("\n")}
+        |============================================================= 
+      """.trimMargin(),
+    )
+
+    val visited = mutableListOf<String>()
+
     moduleFragment.transform(
       object : IrElementTransformerVoid() {
         override fun visitClass(declaration: IrClass): IrStatement {
-          if (declaration.shouldIgnore()) return super.visitClass(declaration)
+
+          if (declaration.shouldIgnore()) {
+            log("~~~~~~~~~~~~~~~ bailing out early ~~~~~~~~~~~~~~~")
+            return super.visitClass(declaration)
+          }
+
+          visited.add(declaration.fqName.asString())
 
           val mergeAnnotatedClass = declaration.symbol.toClassReference(pluginContext)
 
@@ -109,6 +148,18 @@ internal class IrContributionMerger(
       },
       null,
     )
+
+    if (visited.none()) {
+      log("empty")
+    }
+
+    log(
+      """
+      |---------------------------------------------------------------- visited
+      |${visited.sorted().joinToString("\n")}
+      |----------------------------------------------------------------
+      """.trimMargin(),
+    )
   }
 
   private fun IrBuilderWithScope.generateDaggerAnnotation(
@@ -118,6 +169,15 @@ internal class IrContributionMerger(
     declaration: ClassReferenceIr,
   ) {
     val daggerAnnotationFqName = annotations[0].daggerAnnotationFqName
+
+    log(
+      """
+        |**************************************************************************
+        | -- annotations
+        |${annotations.joinToString("\n") { it.fqName.asString() }}
+        |**************************************************************************
+      """.trimMargin(),
+    )
 
     val scopes = annotations.map { it.scope }
     val predefinedModules = annotations.flatMap {
@@ -360,6 +420,22 @@ internal class IrContributionMerger(
     // Since we are modifying the state of the code here, this does not need to be reflected in
     // the associated [ClassReferenceIr] which is more of an initial snapshot.
     declaration.clazz.owner.annotations += annotationConstructorCall
+
+    val names = contributedModules
+      .map { it.fqName.asString().substringBefore('_') }
+      .sorted()
+
+    val blob = buildString {
+      appendLine("----------------------------------------------------------------")
+      appendLine(declaration.clazz.toString())
+      appendLine("----------------------------------------------------------------")
+      appendLine(" -- contributedModules")
+      appendLine(names.sorted().joinToString("\n"))
+    }
+
+    log(blob)
+
+    declaration.clazz.toString()
   }
 
   private fun checkSameScope(
