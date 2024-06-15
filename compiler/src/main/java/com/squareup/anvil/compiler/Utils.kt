@@ -11,6 +11,7 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.fqName
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
 import dagger.Binds
 import dagger.Component
@@ -23,15 +24,20 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.internal.DoubleCheck
+import org.jetbrains.kotlin.name.FqName
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Qualifier
 
 internal val mergeComponentFqName = MergeComponent::class.fqName
+internal val mergeComponentClassName = MergeComponent::class.asClassName()
 internal val mergeSubcomponentFqName = MergeSubcomponent::class.fqName
+internal val mergeSubcomponentClassName = MergeSubcomponent::class.asClassName()
 internal val mergeInterfacesFqName = MergeInterfaces::class.fqName
+internal val mergeInterfacesClassName = MergeInterfaces::class.asClassName()
 internal val mergeModulesFqName = MergeModules::class.fqName
+internal val mergeModulesClassName = MergeModules::class.asClassName()
 internal val contributesToFqName = ContributesTo::class.fqName
 internal val contributesBindingFqName = ContributesBinding::class.fqName
 internal val contributesMultibindingFqName = ContributesMultibinding::class.fqName
@@ -39,10 +45,13 @@ internal val contributesSubcomponentFqName = ContributesSubcomponent::class.fqNa
 internal val contributesSubcomponentFactoryFqName = ContributesSubcomponent.Factory::class.fqName
 internal val internalBindingMarkerFqName = InternalBindingMarker::class.fqName
 internal val daggerComponentFqName = Component::class.fqName
+internal val daggerComponentClassName = Component::class.asClassName()
 internal val daggerSubcomponentFqName = Subcomponent::class.fqName
+internal val daggerSubcomponentClassName = Subcomponent::class.asClassName()
 internal val daggerSubcomponentFactoryFqName = Subcomponent.Factory::class.fqName
 internal val daggerSubcomponentBuilderFqName = Subcomponent.Builder::class.fqName
 internal val daggerModuleFqName = Module::class.fqName
+internal val daggerModuleClassName = Module::class.asClassName()
 internal val daggerBindsFqName = Binds::class.fqName
 internal val daggerProvidesFqName = Provides::class.fqName
 internal val daggerLazyFqName = Lazy::class.fqName
@@ -155,4 +164,8 @@ internal inline fun <T, R> Array<T>.mapToSet(
   transform: (T) -> R,
 ): Set<R> {
   return mapTo(destination, transform)
+}
+
+internal val ClassName.fqName: FqName get() {
+  return FqName(canonicalName)
 }
