@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler.dagger
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.componentInterface
+import com.squareup.anvil.compiler.componentProcessingAndKspParams
 import com.squareup.anvil.compiler.dagger.UppercasePackage.OuterClass.InnerClass
 import com.squareup.anvil.compiler.dagger.UppercasePackage.TestClassInUppercasePackage
 import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUppercasePackage
@@ -10,12 +11,12 @@ import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
+import com.squareup.anvil.compiler.internal.testing.ComponentProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.mergedModules
-import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import dagger.Lazy
@@ -33,14 +34,14 @@ import javax.inject.Provider
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)
 class ProvidesMethodFactoryGeneratorTest(
-  private val useDagger: Boolean,
+  private val componentProcessingMode: ComponentProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}, mode: {1}")
+    @Parameters(name = "Component Processing Mode: {0}, mode: {1}")
     @JvmStatic
-    fun params() = useDaggerAndKspParams()
+    fun params() = componentProcessingAndKspParams()
   }
 
   @Test fun `a factory class is generated for a provider method`() {
@@ -1777,7 +1778,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
       }
       """,
     ) {
-      if (useDagger) {
+      if (componentProcessingMode != ComponentProcessingMode.NONE) {
         assertThat(sourcesGeneratedByAnnotationProcessor).isEmpty()
       }
     }
@@ -2024,7 +2025,7 @@ public final class ComponentInterface_InnerModule_Companion_ProvideStringFactory
       }
       """,
     ) {
-      if (useDagger) {
+      if (componentProcessingMode != ComponentProcessingMode.NONE) {
         assertThat(sourcesGeneratedByAnnotationProcessor).isEmpty()
       }
     }
@@ -2550,7 +2551,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
   }
 
   @Test fun `a return type for a provider method is required`() {
-    assumeFalse(useDagger)
+    assumeFalse(componentProcessingMode != ComponentProcessingMode.NONE)
     compile(
       """
       package com.squareup.test
@@ -3269,7 +3270,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
         fun providesSomething(): Preference<Map<String, Boolean>>
       }
       """,
-      enableDagger = true,
+      componentProcessingMode = ComponentProcessingMode.KAPT,
       previousCompilationResult = otherModuleResult,
     ) {
       // We are not able to directly assert that @JvmSuppressWildcards was added because it is
@@ -3355,7 +3356,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
         fun providesSomething(): Set<String>
       }
       """,
-      enableDagger = true,
+      componentProcessingMode = ComponentProcessingMode.KAPT,
       previousCompilationResult = otherModuleResult,
     ) {
       // We are not able to directly assert that @JvmSuppressWildcards was added because it is
@@ -3544,15 +3545,15 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    enableDagger: Boolean = useDagger,
+    componentProcessingMode: ComponentProcessingMode = this.componentProcessingMode,
     previousCompilationResult: JvmCompilationResult? = null,
     expectExitCode: ExitCode = ExitCode.OK,
     moduleName: String? = null,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
-    enableDaggerAnnotationProcessor = enableDagger,
-    generateDaggerFactories = !enableDagger,
+    componentProcessingMode = componentProcessingMode,
+    generateDaggerFactories = componentProcessingMode == ComponentProcessingMode.NONE,
     block = block,
     mode = mode,
     previousCompilationResult = previousCompilationResult,

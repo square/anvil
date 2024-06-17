@@ -8,6 +8,7 @@ import com.rickbusarow.kase.TestEnvironment
 import com.rickbusarow.kase.files.HasWorkingDir
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.ComponentProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
@@ -28,7 +29,7 @@ interface CompilationEnvironment : HasWorkingDir {
   fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
-    enableDaggerAnnotationProcessor: Boolean = false,
+    componentProcessingMode: ComponentProcessingMode = ComponentProcessingMode.NONE,
     trackSourceFiles: Boolean = true,
     generateDaggerFactories: Boolean = false,
     disableComponentMerging: Boolean = false,
@@ -42,7 +43,7 @@ interface CompilationEnvironment : HasWorkingDir {
     sources = sources,
     allWarningsAsErrors = allWarningsAsErrors,
     previousCompilationResult = previousCompilationResult,
-    enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+    componentProcessingMode = componentProcessingMode,
     generateDaggerFactories = generateDaggerFactories,
     disableComponentMerging = disableComponentMerging,
     trackSourceFiles = trackSourceFiles,
