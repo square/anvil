@@ -210,18 +210,26 @@ class IncrementalTest : BaseGradleTest() {
 
   @TestFactory
   fun `a generated binding contribution is deleted if the annotation is removed`() =
-    // This should work with or without the `trackSourceFiles` feature toggle.
-    // testFactoryWithTrackSourceFiles { (trackSourceFiles) ->
     testFactory {
 
-      val trackSourceFiles = true
+      val tkd = File(
+        "/Users/rbusarow/Development/anvil/gradle-plugin/build/included-build/tmp/gradleTest/work/.gradle-test-kit",
+      )
+
+      val transforms = tkd.resolve("caches/8.8/transforms")
+
+      transforms.walkTopDown()
+        .filter { it.name == "lib1_jar-snapshot.bin" }
+        .forEach { it.deleteOrFail() }
 
       rootProject {
         gradlePropertiesFile(
           """
-            com.squareup.anvil.trackSourceFiles=$trackSourceFiles
-            kotlin.incremental.useClasspathSnapshot=false
-            org.gradle.caching=false
+            com.squareup.anvil.trackSourceFiles=true
+
+            kotlin.incremental.useClasspathSnapshot=true
+            
+            kotlin.build.report.output=file
           """.trimIndent(),
         )
       }
@@ -354,25 +362,191 @@ class IncrementalTest : BaseGradleTest() {
         )
       }
 
-      println()
-      println()
-      repeat(5) {
-        println("#####################################################################")
-      }
-      println()
-      println()
 
-      // shouldSucceed(":lib2:jar") {
-      // shouldSucceed(":lib2:jar", ":lib2:taskTree", "--repeat") {
-      shouldSucceed(
-        ":lib2:jar",
-        // ":lib2:taskTree",
-        // "--with-inputs",
-        // "--with-outputs",
-        // "--repeat",
-        // "--info",
-      ) {
-        // shouldSucceed(":lib2:jar", "--rerun-tasks") {
+
+      workingDir.resolve("build/reports").deleteRecursivelyOrFail()
+
+      shouldSucceed(":lib2:jar") {
+
+        task(":lib1:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+        task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      }
+
+      val includes = lib2.classGraphResult()
+        .getClassInfo("com.squareup.test.lib2.AnyModule")
+        .annotationInfo["dagger.Module"]
+        .parameterValues["includes"]
+        .let { it.value as Array<*> }
+        .filterIsInstance<AnnotationClassRef>()
+        .map { it.name }
+
+      includes shouldBe listOf(
+        "com.squareup.test.lib1.Service2_ServiceInterface_Any_MultiBindingModule_4e7cdd78",
+        "com.squareup.test.lib1.Service3_ServiceInterface_Any_MultiBindingModule_a6a5fcfa",
+      )
+
+      rootAnvilMainGenerated.injectClassFactory.shouldNotExist()
+    }
+
+  @TestFactory
+  fun `a generated binding contribution is added if an annotation and merge target are added in the same compilation`() =
+    testFactory {
+
+      rootProject {
+        gradlePropertiesFile(
+          """
+            com.squareup.anvil.trackSourceFiles=true
+
+            kotlin.incremental.useClasspathSnapshot=true
+            
+            kotlin.build.report.output=file
+          """.trimIndent(),
+        )
+      }
+
+      rootProject.project("lib1") {
+
+        buildFile {
+          plugins {
+            kotlin("jvm")
+            id("com.squareup.anvil")
+          }
+          anvil {
+            generateDaggerFactories.set(true)
+          }
+          dependencies {
+            implementation(libs.dagger2.annotations)
+          }
+        }
+
+        dir("src/main/java") {
+
+          simpleInterface(
+            packageName = "com.squareup.test.lib1",
+            simpleName = "ServiceInterface",
+          )
+
+          kotlinFile(
+            path = "com/squareup/test/lib1/Service1.kt",
+            content = """
+              package com.squareup.test.lib1
+      
+              import com.squareup.anvil.annotations.ContributesMultibinding
+              import com.squareup.test.lib1.ServiceInterface
+              import javax.inject.Inject
+        
+              @ContributesMultibinding(Any::class)
+              class Service1 @Inject constructor() : ServiceInterface
+            """.trimIndent(),
+          )
+
+          kotlinFile(
+            path = "com/squareup/test/lib1/Service2.kt",
+            content = """
+              package com.squareup.test.lib1
+      
+              import com.squareup.anvil.annotations.ContributesMultibinding
+              import com.squareup.test.lib1.ServiceInterface
+              import javax.inject.Inject
+        
+              @ContributesMultibinding(Any::class)
+              class Service2 @Inject constructor() : ServiceInterface
+            """.trimIndent(),
+          )
+        }
+      }
+
+      rootProject.project("lib2") {
+        buildFile {
+          plugins {
+            kotlin("jvm")
+            id("com.squareup.anvil")
+            id("com.dorongold.task-tree", version = "4.0.0")
+          }
+          dependencies {
+            implementation(libs.dagger2.annotations)
+            api(project(":lib1"))
+          }
+        }
+        dir("src/main/java") {
+          kotlinFile(
+            path = "com/squareup/test/lib2/Merging.kt",
+            content = """
+              package com.squareup.test.lib2
+      
+              interface AnyComponent
+            """.trimIndent(),
+          )
+
+        }
+      }
+
+      rootProject.settingsFileAsFile.appendText(
+        """
+
+          include(":lib1")
+          include(":lib2")
+        """.trimIndent(),
+      )
+
+      val lib1 by rootProject.subprojects
+      val lib2 by rootProject.subprojects
+
+      shouldSucceed(":lib2:jar") {
+        task(":lib1:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+        task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
+      }
+
+      lib1.dir("src/main/java") {
+        kotlinFile(
+          path = "com/squareup/test/lib1/Service1.kt",
+          content = """
+            package com.squareup.test.lib1
+      
+            import com.squareup.test.lib1.ServiceInterface
+            import javax.inject.Inject
+        
+            class Service1 @Inject constructor() : ServiceInterface
+          """.trimIndent(),
+        )
+
+        kotlinFile(
+          path = "com/squareup/test/lib1/Service3.kt",
+          content = """
+            package com.squareup.test.lib1
+    
+            import com.squareup.anvil.annotations.ContributesMultibinding
+            import com.squareup.test.lib1.ServiceInterface
+            import javax.inject.Inject
+      
+            @ContributesMultibinding(Any::class)
+            class Service3 @Inject constructor() : ServiceInterface
+          """.trimIndent(),
+        )
+      }
+
+      lib2.dir("src/main/java") {
+        kotlinFile(
+          path = "com/squareup/test/lib2/Merging.kt",
+          content = """
+              package com.squareup.test.lib2
+      
+              import com.squareup.anvil.annotations.compat.MergeInterfaces
+              import com.squareup.anvil.annotations.compat.MergeModules
+        
+              @MergeInterfaces(Any::class)
+              interface AnyComponent
+        
+              @MergeModules(Any::class)
+              abstract class AnyModule
+            """.trimIndent(),
+        )
+      }
+
+      workingDir.resolve("build/reports").deleteRecursivelyOrFail()
+
+      shouldSucceed(":lib2:jar") {
+
         task(":lib1:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
         task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }

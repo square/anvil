@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.squareup.anvil.compiler.CommandLineOptions
-import com.squareup.anvil.compiler.HINT_PACKAGE
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.FileWithContent
@@ -19,11 +18,11 @@ import org.jetbrains.kotlin.analyzer.AnalysisResult.RetryWithAdditionalRoots
 import org.jetbrains.kotlin.com.intellij.openapi.project.Project
 import org.jetbrains.kotlin.com.intellij.psi.PsiManager
 import org.jetbrains.kotlin.com.intellij.testFramework.LightVirtualFile
+import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.container.ComponentProvider
 import org.jetbrains.kotlin.context.ProjectContext
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.idea.KotlinFileType
-import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtFile
 import org.jetbrains.kotlin.resolve.BindingTrace
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
@@ -39,6 +38,7 @@ internal class CodeGenerationExtension(
   private val generatedDir: File,
   private val cacheDir: File,
   private val trackSourceFiles: Boolean,
+  private val compilerConfiguration: CompilerConfiguration,
 ) : AnalysisHandlerExtension {
 
   private val generatedFileCache by lazy(NONE) {
@@ -99,6 +99,65 @@ internal class CodeGenerationExtension(
     val syncCreatedChanges = syncGeneratedDir(files)
     didSyncGeneratedDir = true
 
+    // val hintPackageNames = module.getPackage(FqName(HINT_PACKAGE))
+    //   .memberScope
+    //   .getVariableNames()
+    //   .sorted()
+    //
+    //
+    // val lib1Package = FqName("com.squareup.test.lib1")
+    // val ps = module.getPackage(lib1Package).memberScope
+    //
+    // val classNames = ps
+    //   .getClassifierNames()
+    //   .orEmpty()
+    //   .sorted()
+    //   .map { name ->
+    //
+    //     val clazz = ps.getContributedClassifier(name, NoLookupLocation.FROM_BACKEND)
+    //
+    //     // val source = (clazz?.source as? KotlinJvmBinarySourceElement)?.binaryClass?.location
+    //     //   ?.let(::File)
+    //     //
+    //     // """
+    //     //   |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ $name
+    //     //   | class: $clazz
+    //     //   |source: $source
+    //     //   |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    //     // """.trimMargin()
+    //
+    //     clazz?.fqNameSafe
+    //   }
+    //
+    // // val ref = module.resolveClassByFqName(
+    // //   fqName = FqName("com.squareup.test.lib2.Foo"),
+    // //   lookupLocation = NoLookupLocation.FROM_BACKEND,
+    // // )
+    // //   ?.unsubstitutedMemberScope
+    // //   ?.getContributedVariables(Name.identifier("s3"), NoLookupLocation.FROM_BACKEND)
+    // //   .orEmpty()
+    // //   .map { it.type }
+    //
+    // val ref = "poo"
+    //
+    // val blob =
+    //   """
+    //     |=============================================================
+    //     | -- hint package names
+    //     |${hintPackageNames.joinToString("\n")}
+    //     |
+    //     | -- lib1 class names
+    //     |${classNames.joinToString("\n")}
+    //     |
+    //     | -- ref
+    //     |$ref
+    //     |=============================================================
+    //   """.trimMargin()
+    //
+    // // if (didRecompile) {
+    // log(blob)
+    // // }
+
     if (syncCreatedChanges) {
       // Tell the compiler to analyze the generated files *before* calling `analysisCompleted()`.
       // This ensures that the compiler will update/delete any references to stale code in the
@@ -117,28 +176,69 @@ internal class CodeGenerationExtension(
     if (didRecompile) return null
     didRecompile = true
 
-    val hintPackageNames = module.getPackage(FqName(HINT_PACKAGE))
-      .memberScope
-      .getVariableNames()
-      .sorted()
-
-    val classNames = module.getPackage(FqName("com.squareup.test.lib1"))
-      .memberScope
-      .getClassifierNames()
-      .orEmpty()
-      .sorted()
-
     log(
       """
-        |=============================================================
-        | -- hint package names
-        |${hintPackageNames.joinToString("\n")}
-        |
-        | -- lib1 class names
-        |${classNames.joinToString("\n")}
-        |============================================================= 
+        |+++++++++++++++++++++++++++++++++++++ input files
+        |${files.joinToString("\n") { it.virtualFilePath }}
+        |+++++++++++++++++++++++++++++++++++++
       """.trimMargin(),
     )
+
+    // val builderFactory = OriginCollectingClassBuilderFactory(ClassBuilderMode.FULL)
+    //
+    // val configuration = compilerConfiguration.copy()
+    //
+    // val targetId = TargetId(
+    //   name = configuration[CommonConfigurationKeys.MODULE_NAME] ?: module.name.asString(),
+    //   type = "java-production",
+    // )
+    //
+    // val state = GenerationState.Builder(
+    //   project = project,
+    //   builderFactory = builderFactory,
+    //   module = module,
+    //   bindingContext = bindingTrace.bindingContext,
+    //   configuration = configuration,
+    // )
+    //   .targetId(targetId)
+    //   .build()
+    //
+    // val f = object : CodegenFactory {
+    //
+    //   override fun convertToIr(
+    //     input: CodegenFactory.IrConversionInput,
+    //   ): CodegenFactory.BackendInput {
+    //     TODO("Not yet implemented")
+    //   }
+    //
+    //   override fun getModuleChunkBackendInput(
+    //     wholeBackendInput: CodegenFactory.BackendInput,
+    //     sourceFiles: Collection<KtFile>,
+    //   ): CodegenFactory.BackendInput {
+    //     TODO("Not yet implemented")
+    //   }
+    //
+    //   override fun invokeCodegen(input: CodegenFactory.CodegenInput) {
+    //     TODO("Not yet implemented")
+    //   }
+    //
+    //   override fun invokeLowerings(
+    //     state: GenerationState,
+    //     input: CodegenFactory.BackendInput,
+    //   ): CodegenFactory.CodegenInput {
+    //     TODO("Not yet implemented")
+    //   }
+    // }
+    //
+    // val irFactory = JvmIrCodegenFactory(
+    //   configuration = configuration,
+    //   phaseConfig = configuration[CLIConfigurationKeys.PHASE_CONFIG],
+    // )
+    //
+    // KotlinCodegenFacade.compileCorrectFiles(files, state, irFactory)
+    //
+    // val compiledClasses = builderFactory.compiledClasses
+    // val origins = builderFactory.origins
 
     // The files in `files` can include generated files.
     // Those files must exist when they're passed in to `anvilModule.addFiles(...)` to avoid:

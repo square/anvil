@@ -25,6 +25,10 @@ internal const val gradleBuildDirName = "gradle-build-dir"
 internal val gradleBuildDirKey =
   CompilerConfigurationKey.create<File>("anvil $gradleBuildDirName")
 
+internal const val irMergesFileName = "ir-merges-file"
+internal val irMergesFileKey =
+  CompilerConfigurationKey.create<File>("anvil $irMergesFileName")
+
 internal const val generateDaggerFactoriesName = "generate-dagger-factories"
 internal val generateDaggerFactoriesKey =
   CompilerConfigurationKey.create<Boolean>("anvil $generateDaggerFactoriesName")
@@ -86,6 +90,13 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       optionName = anvilCacheDirName,
       valueDescription = "<file-path>",
       description = "Path to directory where Anvil stores its incremental compilation state",
+      required = false,
+      allowMultipleOccurrences = false,
+    ),
+    CliOption(
+      optionName = irMergesFileName,
+      valueDescription = "<file-path>",
+      description = "Path of the file where Anvil records its merged module annotations and component/module interfaces",
       required = false,
       allowMultipleOccurrences = false,
     ),
@@ -157,6 +168,7 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       gradleBuildDirName -> configuration.put(gradleBuildDirKey, File(value))
       srcGenDirName -> configuration.put(srcGenDirKey, File(value))
       anvilCacheDirName -> configuration.put(anvilCacheDirKey, File(value))
+      irMergesFileName -> configuration.put(irMergesFileKey, File(value))
       generateDaggerFactoriesName ->
         configuration.put(generateDaggerFactoriesKey, value.toBoolean())
 

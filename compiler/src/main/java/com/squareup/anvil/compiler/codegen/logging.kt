@@ -8,7 +8,6 @@ import kotlin.io.path.createParentDirectories
 import kotlin.io.path.exists
 
 internal fun log(file: File, msg: String) {
-  // val stamp = "${LocalTime.now().truncatedTo(ChronoUnit.MILLIS)}  "
   val stamp = "${System.currentTimeMillis()}  "
 
   val indented = msg.prependIndent(" ".repeat(stamp.length)).trimStart()
@@ -24,4 +23,22 @@ internal fun log(file: File, msg: String) {
       }
     }
     .appendText(text)
+
+  // val lib = file.path.split('/')
+  //   .single { it.matches("""lib\d""".toRegex()) }
+  //
+  // generateSequence(file) { it.parentFile }
+  //   .first { it.name == "kase" }
+  //   .resolveSibling("reports/anvil/$stamp/$lib")
+  //   .toPath()
+  //   .createDirectories()
+  //   .resolve(file.name)
+  //   .let {
+  //     if (it.exists()) {
+  //       it
+  //     } else {
+  //       it.createFile()
+  //     }
+  //   }
+  //   .appendText(text)
 }

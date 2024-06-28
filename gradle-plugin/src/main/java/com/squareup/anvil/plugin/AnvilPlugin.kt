@@ -32,6 +32,7 @@ import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmAndroidCompilation
 import org.jetbrains.kotlin.gradle.plugin.mpp.KotlinJvmCompilation
+import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.util.concurrent.ConcurrentHashMap
 
@@ -88,6 +89,13 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         }
       }
     }
+
+    // (target.kotlinExtension as KotlinJvmProjectExtension)
+    //   .target
+    //   .compilations
+    //   .configureEach { c->
+    //
+    //   }
 
     jvmPlugins.forEach { javaPlugin ->
       target.pluginManager.withPlugin(javaPlugin) {
@@ -165,95 +173,9 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       it.asFile.resolve("anvil/${variant.name}/caches")
     }
 
+    val irMergesFile = anvilCacheDir.map { it.resolve("ir-merged.txt") }
+
     kotlinCompilation.compileTaskProvider.configure { task ->
-
-      if (project.name == "lib2") {
-        task.inputs.files(project.project(":lib1").tasks.named("jar"))
-      }
-
-      task.doFirst {
-
-        val i1 = task.inputs.files
-          .map { it.toString() }
-          .sorted()
-
-        val i2 = task.inputs.files.files
-          .map { it.toString() }
-          .sorted()
-
-        check(i1.containsAll(i2) && i1.size == i2.size) {
-          val e1 = i1 - i2
-          val e2 = i2 - i1
-          """
-            |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-            |The input files lists didn't match.
-            |
-            | -- extras from `task.input.files`
-            |${e1.joinToString("\n")}
-            |
-            | -- extras from `task.input.files.files`
-            |${e2.joinToString("\n")}
-            |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-          """.trimMargin()
-        }
-
-        val ignored = setOf(
-          "dagger" to "2.51.1",
-          "javax_inject" to "1",
-          "annotations" to "13.0",
-          "kotlin-stdlib" to "1.9.22",
-          "annotations" to "2.5.0-beta10-SNAPSHOT",
-          "compiler-api" to "2.5.0-beta10-SNAPSHOT",
-          "compiler" to "2.5.0-beta10-SNAPSHOT",
-          "compiler-utils" to "2.5.0-beta10-SNAPSHOT",
-        )
-          .flatMap { (name, version) ->
-            listOf(
-              "/$name/$version",
-              "/$name-${version.replace('.', '_')}",
-            )
-          }
-          .plus(
-            listOf(
-              "javax",
-              "org.jetbrains.kotlin",
-              "org.jetbrains.intellij",
-              "kotlinpoet",
-            ),
-          )
-
-        val inputsBlob = i1
-          .filter { path -> ignored.none { path.contains(it) } }
-          .joinToString("\n") { path ->
-            path
-              .removePrefix("${project.projectDir.path}/")
-              .substringAfterLast(".gradle-test-kit/")
-          }
-
-        val deps = task.taskDependencies.getDependencies(task)
-          .map { it.toString() }
-          .sorted()
-
-        val outputsBlob = task.outputs.files
-          .map { it.path.removePrefix(project.projectDir.path) }
-          .joinToString("\n")
-
-        println(
-          """
-            |############################################# inputs for ${task.path}
-            | -- input files
-            |$inputsBlob
-            |
-            | -- taskDependencies
-            |${deps.joinToString("\n")}
-            |
-            | -- output files
-            |$outputsBlob
-            |#############################################
-          """.trimMargin(),
-        )
-      }
-
       if (variant.variantFilter.trackSourceFiles) {
         // Add the generated files directory as output
         // so that Gradle will watch them and invoke the compile task if they've changed.
@@ -264,6 +186,18 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         // so that Gradle handles its restoration.
         // The contents of this cache are used to restore any missing generated output.
         task.outputs.dir(anvilCacheDir)
+      }
+
+      if (task is AbstractKotlinCompile<*>) {
+        task.incremental = task.incremental && irMergesFile.get()
+          .takeIf { it.exists() }
+          ?.readText()
+          ?.isEmpty()
+          ?: true
+
+        task.doLast {
+          println("~~~~~~~~~~~~~ incremental -- ${task.incremental}")
+        }
       }
     }
 
@@ -310,6 +244,10 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         FilesSubpluginOption(
           key = "anvil-cache-dir",
           files = listOf(anvilCacheDir.get()),
+        ),
+        FilesSubpluginOption(
+          key = "ir-merges-file",
+          listOf(irMergesFile.get()),
         ),
         SubpluginOption(
           key = "generate-dagger-factories",

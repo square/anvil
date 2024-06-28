@@ -42,6 +42,7 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
       RealAnvilModuleDescriptor.Factory()
     }
     val cacheDir = configuration.getNotNull(anvilCacheDirKey)
+    val irMergesFile = configuration.getNotNull(irMergesFileKey)
     val projectDir = BaseDir.ProjectDir(configuration.getNotNull(gradleProjectDirKey))
     val scanner = ClassScanner(cacheDir.resolve("scanner-log.txt"))
 
@@ -54,7 +55,7 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
           IrContributionMerger(
             classScanner = scanner,
             moduleDescriptorFactory = moduleDescriptorFactory,
-            cacheDir = cacheDir,
+            irMergesFile = irMergesFile,
           ),
         )
       } else {
@@ -98,6 +99,7 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
         generatedDir = sourceGenFolder,
         cacheDir = cacheDir,
         trackSourceFiles = trackSourceFiles,
+        compilerConfiguration = configuration,
       ),
     )
   }

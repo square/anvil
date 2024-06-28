@@ -3,7 +3,6 @@ package com.squareup.anvil.compiler
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponentClassId
-import com.squareup.anvil.compiler.codegen.log
 import com.squareup.anvil.compiler.codegen.reference.AnnotationReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.AnvilCompilationExceptionClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.ClassReferenceIr
@@ -26,6 +25,8 @@ import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.types.IrSimpleType
+import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.types.classOrFail
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.starProjectedType
@@ -33,7 +34,7 @@ import org.jetbrains.kotlin.ir.types.superTypes
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
-import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
+import org.jetbrains.kotlin.ir.visitors.IrElementTransformer
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import java.io.File
@@ -51,55 +52,24 @@ import java.io.File
 internal class IrContributionMerger(
   private val classScanner: ClassScanner,
   private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
-  private val cacheDir: File,
+  private val irMergesFile: File
 ) : IrGenerationExtension {
   // https://youtrack.jetbrains.com/issue/KT-56635
   override val shouldAlsoBeAppliedInKaptStubGenerationMode: Boolean get() = true
-
-  fun log(msg: String) {
-    log(cacheDir.resolve("merger.txt"), msg)
-  }
 
   override fun generate(
     moduleFragment: IrModuleFragment,
     pluginContext: IrPluginContext,
   ) {
 
-    val hintPackageNames = moduleFragment.descriptor.getPackage(FqName(HINT_PACKAGE))
-      .memberScope
-      .getVariableNames()
-      .sorted()
-
-    val classNames = moduleFragment.descriptor.getPackage(FqName("com.squareup.test.lib1"))
-      .memberScope
-      .getClassifierNames()
-      .orEmpty()
-      .sorted()
-
-    log(
-      """
-        |=============================================================
-        | -- hint package names
-        |${hintPackageNames.joinToString("\n")}
-        |
-        | -- lib1 class names
-        |${classNames.joinToString("\n")}
-        |============================================================= 
-      """.trimMargin(),
-    )
-
-    val visited = mutableListOf<String>()
+    val mergedModules = mutableMapOf<FqName, List<FqName>>()
+    val mergedInterfaces = mutableMapOf<FqName, List<FqName>>()
 
     moduleFragment.transform(
-      object : IrElementTransformerVoid() {
-        override fun visitClass(declaration: IrClass): IrStatement {
+      object : IrElementTransformer<IrClass?> {
 
-          if (declaration.shouldIgnore()) {
-            log("~~~~~~~~~~~~~~~ bailing out early ~~~~~~~~~~~~~~~")
-            return super.visitClass(declaration)
-          }
-
-          visited.add(declaration.fqName.asString())
+        override fun visitClass(declaration: IrClass, data: IrClass?): IrStatement {
+          if (declaration.shouldIgnore()) return super.visitClass(declaration, data)
 
           val mergeAnnotatedClass = declaration.symbol.toClassReference(pluginContext)
 
@@ -112,13 +82,22 @@ internal class IrContributionMerger(
           val moduleMergerAnnotations = mergeComponentAnnotations + mergeModulesAnnotations
 
           if (moduleMergerAnnotations.isNotEmpty()) {
-            pluginContext.irBuiltIns.createIrBuilder(declaration.symbol)
+            val addedModules = pluginContext.irBuiltIns.createIrBuilder(declaration.symbol)
               .generateDaggerAnnotation(
                 annotations = moduleMergerAnnotations,
                 moduleFragment = moduleFragment,
                 pluginContext = pluginContext,
                 declaration = mergeAnnotatedClass,
               )
+
+            val existing = mergedModules.put(mergeAnnotatedClass.fqName, addedModules.toList())
+            if (existing != null) {
+              throw AnvilCompilationExceptionClassReferenceIr(
+                classReference = mergeAnnotatedClass,
+                message = "Duplicate module merge for ${mergeAnnotatedClass.fqName}. " +
+                  "Existing: $existing, new: $addedModules",
+              )
+            }
           }
 
           val mergeInterfacesAnnotations = mergeAnnotatedClass.annotations
@@ -135,30 +114,33 @@ internal class IrContributionMerger(
               )
             }
 
-            addContributedInterfaces(
+            val supertypesToAdd = mergeAnnotatedClass.getContributedInterfaces(
               mergeAnnotations = interfaceMergerAnnotations,
               moduleFragment = moduleFragment,
               pluginContext = pluginContext,
-              mergeAnnotatedClass = mergeAnnotatedClass,
             )
+
+            mergedInterfaces[mergeAnnotatedClass.fqName] = supertypesToAdd
+              .map { it.classFqName!! }
+              .sortedBy { it.asString() }
+
+            // Since we are modifying the state of the code here, this does not need to be reflected in
+            // the associated [ClassReferenceIr] which is more of an initial snapshot.
+            mergeAnnotatedClass.clazz.owner.superTypes += supertypesToAdd
           }
 
-          return super.visitClass(declaration)
+          return super.visitClass(declaration, data)
         }
       },
       null,
     )
 
-    if (visited.none()) {
-      log("empty")
-    }
+    irMergesFile.parentFile?.mkdirs()
 
-    log(
-      """
-      |---------------------------------------------------------------- visited
-      |${visited.sorted().joinToString("\n")}
-      |----------------------------------------------------------------
-      """.trimMargin(),
+    irMergesFile.writeText(
+      mergedInterfaces.keys.plus(mergedModules.keys)
+        .sortedBy { it.asString() }
+        .joinToString("\n"),
     )
   }
 
@@ -167,17 +149,8 @@ internal class IrContributionMerger(
     moduleFragment: IrModuleFragment,
     pluginContext: IrPluginContext,
     declaration: ClassReferenceIr,
-  ) {
+  ): Sequence<FqName> {
     val daggerAnnotationFqName = annotations[0].daggerAnnotationFqName
-
-    log(
-      """
-        |**************************************************************************
-        | -- annotations
-        |${annotations.joinToString("\n") { it.fqName.asString() }}
-        |**************************************************************************
-      """.trimMargin(),
-    )
 
     val scopes = annotations.map { it.scope }
     val predefinedModules = annotations.flatMap {
@@ -421,21 +394,7 @@ internal class IrContributionMerger(
     // the associated [ClassReferenceIr] which is more of an initial snapshot.
     declaration.clazz.owner.annotations += annotationConstructorCall
 
-    val names = contributedModules
-      .map { it.fqName.asString().substringBefore('_') }
-      .sorted()
-
-    val blob = buildString {
-      appendLine("----------------------------------------------------------------")
-      appendLine(declaration.clazz.toString())
-      appendLine("----------------------------------------------------------------")
-      appendLine(" -- contributedModules")
-      appendLine(names.sorted().joinToString("\n"))
-    }
-
-    log(blob)
-
-    declaration.clazz.toString()
+    return contributedModules.map { it.fqName }
   }
 
   private fun checkSameScope(
@@ -494,12 +453,11 @@ internal class IrContributionMerger(
       }
   }
 
-  private fun addContributedInterfaces(
+  private fun ClassReferenceIr.getContributedInterfaces(
     mergeAnnotations: List<AnnotationReferenceIr>,
     moduleFragment: IrModuleFragment,
     pluginContext: IrPluginContext,
-    mergeAnnotatedClass: ClassReferenceIr,
-  ) {
+  ): List<IrSimpleType> {
     val scopes = mergeAnnotations.map { it.scope }
     val contributesAnnotations = mergeAnnotations
       .flatMap { annotation ->
@@ -592,17 +550,17 @@ internal class IrContributionMerger(
 
         if (!contributesToOurScope) {
           throw AnvilCompilationExceptionClassReferenceIr(
-            message = "${mergeAnnotatedClass.fqName} with scopes " +
+            message = "$fqName with scopes " +
               "${scopes.joinToString(prefix = "[", postfix = "]") { it.fqName.asString() }} " +
               "wants to exclude ${excludedClass.fqName}, but the excluded class isn't " +
               "contributed to the same scope.",
-            classReference = mergeAnnotatedClass,
+            classReference = this,
           )
         }
       }
       .toList()
 
-    val supertypes = mergeAnnotatedClass.clazz.superTypes()
+    val supertypes = clazz.superTypes()
     if (excludedClasses.isNotEmpty()) {
       val intersect = supertypes
         .map { it.classOrFail.toClassReference(pluginContext) }
@@ -613,8 +571,8 @@ internal class IrContributionMerger(
 
       if (intersect.isNotEmpty()) {
         throw AnvilCompilationExceptionClassReferenceIr(
-          classReference = mergeAnnotatedClass,
-          message = "${mergeAnnotatedClass.fqName} excludes types that it implements or " +
+          classReference = this,
+          message = "$fqName excludes types that it implements or " +
             "extends. These types cannot be excluded. Look at all the super types to find these " +
             "classes: ${intersect.joinToString { it.fqName.asString() }}.",
         )
@@ -629,7 +587,7 @@ internal class IrContributionMerger(
       }
       .plus(
         findContributedSubcomponentParentInterfaces(
-          clazz = mergeAnnotatedClass,
+          clazz = this,
           scopes = scopes,
           pluginContext = pluginContext,
           moduleFragment = moduleFragment,
@@ -640,9 +598,7 @@ internal class IrContributionMerger(
       .map { it.clazz.typeWith() }
       .toList()
 
-    // Since we are modifying the state of the code here, this does not need to be reflected in
-    // the associated [ClassReferenceIr] which is more of an initial snapshot.
-    mergeAnnotatedClass.clazz.owner.superTypes += supertypesToAdd
+    return supertypesToAdd
   }
 
   private fun findContributedSubcomponentParentInterfaces(
