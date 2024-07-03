@@ -18,6 +18,7 @@ import com.squareup.anvil.compiler.internal.generateHintFileName
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
+import com.squareup.anvil.compiler.internal.testing.ComponentProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.kotlinpoet.asClassName
@@ -42,7 +43,7 @@ internal fun compile(
   generateDaggerFactories: Boolean = false,
   generateDaggerFactoriesOnly: Boolean = false,
   disableComponentMerging: Boolean = false,
-  enableDaggerAnnotationProcessor: Boolean = false,
+  componentProcessingMode: ComponentProcessingMode = ComponentProcessingMode.NONE,
   trackSourceFiles: Boolean = true,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = true,
@@ -57,7 +58,7 @@ internal fun compile(
   disableComponentMerging = disableComponentMerging,
   allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
-  enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+  componentProcessingMode = componentProcessingMode,
   trackSourceFiles = trackSourceFiles,
   mode = mode,
   workingDir = workingDir,
@@ -383,25 +384,30 @@ internal fun JvmCompilationResult.generatedFileOrNull(
 /**
  * Parameters for configuring [AnvilCompilationMode] and whether to run a full test run or not.
  */
-internal fun useDaggerAndKspParams(
+internal fun componentProcessingAndKspParams(
   embeddedCreator: () -> Embedded? = { Embedded() },
   kspCreator: () -> Ksp? = { Ksp() },
 ): Collection<Any> {
   return cartesianProduct(
     listOf(
-      isFullTestRun(),
-      false,
+      if (isFullTestRun()) ComponentProcessingMode.KAPT else ComponentProcessingMode.NONE,
+      if (isFullTestRun()) ComponentProcessingMode.KSP else ComponentProcessingMode.NONE,
+      ComponentProcessingMode.NONE,
     ),
     listOfNotNull(
       embeddedCreator(),
       kspCreator(),
     ),
-  ).mapNotNull { (useDagger, mode) ->
-    if (useDagger == true && mode is Ksp) {
+  ).mapNotNull { (componentProcessingMode, mode) ->
+    if (componentProcessingMode == ComponentProcessingMode.KSP) {
+      // TODO KSP component processing is not supported with KSP in Anvil's tests yet
+      return@mapNotNull null
+    }
+    if (componentProcessingMode != ComponentProcessingMode.NONE && mode is Ksp) {
       // TODO Dagger is not supported with KSP in Anvil's tests yet
       null
     } else {
-      arrayOf(useDagger, mode)
+      arrayOf(componentProcessingMode, mode)
     }
   }.distinct()
 }

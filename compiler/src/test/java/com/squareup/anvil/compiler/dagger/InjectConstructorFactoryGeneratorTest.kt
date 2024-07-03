@@ -2,14 +2,15 @@ package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.compilationErrorLine
+import com.squareup.anvil.compiler.componentProcessingAndKspParams
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.ComponentProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
-import com.squareup.anvil.compiler.useDaggerAndKspParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -26,14 +27,14 @@ import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class InjectConstructorFactoryGeneratorTest(
-  private val useDagger: Boolean,
+  private val componentProcessingMode: ComponentProcessingMode,
   private val mode: AnvilCompilationMode,
 ) {
 
   companion object {
-    @Parameters(name = "Use Dagger: {0}, mode: {1}")
+    @Parameters(name = "Component Processing Mode: {0}, mode: {1}")
     @JvmStatic
-    fun params() = useDaggerAndKspParams()
+    fun params() = componentProcessingAndKspParams()
   }
 
   @Test fun `a factory class is generated for an inject constructor without arguments`() {
@@ -2741,8 +2742,8 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
-    enableDaggerAnnotationProcessor = useDagger,
-    generateDaggerFactories = !useDagger,
+    componentProcessingMode = componentProcessingMode,
+    generateDaggerFactories = componentProcessingMode == ComponentProcessingMode.NONE,
     expectExitCode = expectExitCode,
     // Many constructor parameters are unused.
     allWarningsAsErrors = false,
