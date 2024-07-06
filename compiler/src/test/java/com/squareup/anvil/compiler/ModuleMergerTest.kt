@@ -15,7 +15,6 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Component
 import dagger.Subcomponent
-import org.junit.Assume.assumeTrue
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -118,9 +117,6 @@ class ModuleMergerTest(
 
   @Test
   fun `it's not allowed to have @Component and @MergeComponent annotation at the same time`() {
-    // TODO enable KSP for this once there's a KSP impl of MergeAnnotationsCheckGenerator
-    assumeTrue(backend == ComponentMergingBackend.IR)
-
     val daggerComponentClass = when (annotationClass) {
       MergeComponent::class -> Component::class
       MergeSubcomponent::class -> Subcomponent::class

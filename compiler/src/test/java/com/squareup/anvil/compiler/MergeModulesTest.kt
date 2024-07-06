@@ -7,7 +7,6 @@ import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.resolveIfMerged
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -97,9 +96,6 @@ class MergeModulesTest(
   }
 
   @Test fun `it's not allowed to have @Module and @MergeModules annotation at the same time`() {
-    // TODO enable KSP for this once there's a KSP impl of MergeAnnotationsCheckGenerator
-    assumeTrue(backend == ComponentMergingBackend.IR)
-
     compile(
       """
       package com.squareup.test
@@ -942,9 +938,6 @@ class MergeModulesTest(
   }
 
   @Test fun `a module is not allowed to be included and excluded`() {
-    // TODO enable KSP for this once there's a KSP impl of MergeAnnotationsCheckGenerator
-    assumeTrue(backend == ComponentMergingBackend.IR)
-
     compile(
       """
       package com.squareup.test

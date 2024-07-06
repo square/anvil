@@ -9,7 +9,6 @@ import com.squareup.anvil.compiler.internal.testing.extends
 import com.squareup.anvil.compiler.internal.testing.resolveIfMerged
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -217,8 +216,6 @@ class InterfaceMergerTest(
   }
 
   @Test fun `replaced interfaces must use the same scope`() {
-    // TODO enable KSP for this once there's a KSP impl of MergeAnnotationsCheckGenerator
-    assumeTrue(backend == ComponentMergingBackend.IR)
     compile(
       """
       package com.squareup.test
@@ -731,8 +728,6 @@ class InterfaceMergerTest(
 
   @Test
   fun `replaced interfaces contributed to multiple scopes must use the same scope`() {
-    // TODO enable KSP for this once there's a KSP impl of MergeAnnotationsCheckGenerator
-    assumeTrue(backend == ComponentMergingBackend.IR)
     compile(
       """
       package com.squareup.test

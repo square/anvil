@@ -8,7 +8,6 @@ import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerComponent
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
-import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -35,8 +34,6 @@ class ModuleMergerRepeatableTest(
   }
 
   @Test fun `duplicate scopes are an error`() {
-    // TODO enable KSP for this once there's a KSP impl of MergeAnnotationsCheckGenerator
-    assumeTrue(backend == ComponentMergingBackend.IR)
     compile(
       """
       package com.squareup.test
@@ -58,8 +55,6 @@ class ModuleMergerRepeatableTest(
   }
 
   @Test fun `different kind of merge annotations are forbidden`() {
-    // TODO enable KSP for this once there's a KSP impl of MergeAnnotationsCheckGenerator
-    assumeTrue(backend == ComponentMergingBackend.IR)
     assumeMergeComponent(annotationClass)
 
     compile(

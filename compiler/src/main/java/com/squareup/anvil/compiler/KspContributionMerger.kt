@@ -26,6 +26,7 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.api.ComponentMergingBackend
+import com.squareup.anvil.compiler.codegen.KspMergeAnnotationsCheckSymbolProcessor
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponentClassId
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
@@ -42,6 +43,7 @@ import com.squareup.anvil.compiler.codegen.ksp.getSymbolsWithAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.includes
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
+import com.squareup.anvil.compiler.codegen.ksp.mergeAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.modules
 import com.squareup.anvil.compiler.codegen.ksp.parentScope
 import com.squareup.anvil.compiler.codegen.ksp.replaces
@@ -146,7 +148,8 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
       mergeSubcomponentFqName,
       mergeModulesFqName,
       mergeInterfacesFqName,
-    ).validate { deferred -> return deferred }
+    ).filterIsInstance<KSClassDeclaration>()
+      .validate { deferred -> return deferred }
       .also { mergeAnnotatedTypes ->
         if (shouldDefer) {
           return mergeAnnotatedTypes
@@ -787,18 +790,15 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
     )
   }
 
-  private inline fun Sequence<KSAnnotated>.validate(
-    escape: (List<KSAnnotated>) -> Nothing,
+  private inline fun Sequence<KSClassDeclaration>.validate(
+    escape: (List<KSClassDeclaration>) -> Nothing,
   ): List<KSClassDeclaration> {
-    val (valid, deferred) = filterIsInstance<KSClassDeclaration>().partition { annotated ->
+    val (valid, deferred) = partition { annotated ->
       val superTypesHaveError = annotated.superTypes.any { it.resolve().isError }
       if (superTypesHaveError) return@partition false
-      !annotated.findAll(
-        mergeComponentFqName.asString(),
-        mergeSubcomponentFqName.asString(),
-        mergeModulesFqName.asString(),
-        mergeInterfacesFqName.asString(),
-      ).any { annotation ->
+
+      val mergeAnnotations = annotated.mergeAnnotations()
+      !mergeAnnotations.any { annotation ->
         // If any of the parameters are unresolved, we need to defer this class
         arrayOf("modules", "dependencies", "exclude", "includes").forEach { parameter ->
           @Suppress("UNCHECKED_CAST")
@@ -808,6 +808,11 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
         }
         false
       }
+
+      // Last step - run the validator manually here. It won't run on its own if component
+      // processing is enabled.
+      KspMergeAnnotationsCheckSymbolProcessor.validate(annotated, mergeAnnotations)
+      true
     }
     return if (deferred.isNotEmpty()) {
       escape(deferred)

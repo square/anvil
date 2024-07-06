@@ -16,6 +16,10 @@ import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Modifier
 import com.squareup.anvil.compiler.internal.reference.asClassId
+import com.squareup.anvil.compiler.mergeComponentFqName
+import com.squareup.anvil.compiler.mergeInterfacesFqName
+import com.squareup.anvil.compiler.mergeModulesFqName
+import com.squareup.anvil.compiler.mergeSubcomponentFqName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.TypeName
@@ -193,9 +197,11 @@ internal fun KSFunctionDeclaration.returnTypeOrNull(): KSType? =
 
 internal fun Resolver.getSymbolsWithAnnotations(
   vararg annotations: FqName,
-): Sequence<KSAnnotated> = annotations.asSequence().flatMap {
-  getSymbolsWithAnnotation(it.asString())
-}
+): Sequence<KSAnnotated> = annotations.asSequence()
+  .flatMap {
+    getSymbolsWithAnnotation(it.asString())
+  }
+  .distinct()
 
 internal fun KSAnnotated.findAll(vararg annotations: String): List<KSAnnotation> {
   return annotations.flatMap { annotation ->
@@ -249,4 +255,13 @@ internal fun KSValueParameter.toParameterSpec(): ParameterSpec {
   return ParameterSpec.builder(name!!.asString(), type.resolve().toTypeName())
     .addAnnotations(annotations.map { it.toAnnotationSpec() }.asIterable())
     .build()
+}
+
+internal fun KSAnnotated.mergeAnnotations(): List<KSAnnotation> {
+  return findAll(
+    mergeComponentFqName.asString(),
+    mergeSubcomponentFqName.asString(),
+    mergeModulesFqName.asString(),
+    mergeInterfacesFqName.asString(),
+  )
 }
