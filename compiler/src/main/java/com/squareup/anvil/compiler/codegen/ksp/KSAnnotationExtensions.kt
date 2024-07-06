@@ -81,7 +81,7 @@ internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScopeAndBoundType(
 internal fun KSAnnotation.scope(): KSType =
   scopeOrNull()
     ?: throw KspAnvilException(
-      message = "Couldn't find scope for ${annotationType.resolve().declaration.qualifiedName}.",
+      message = "Couldn't find scope for ${annotationType.resolve().declaration.qualifiedName?.asString()}.",
       this,
     )
 
@@ -100,24 +100,28 @@ internal fun KSAnnotation.resolveBoundType(
   // Resolve from the first and only supertype
   return declaringClass.superTypesExcludingAny(resolver)
     .single()
-    .resolve()
     .resolveKSClassDeclaration() ?: throw KspAnvilException(
     message = "Couldn't resolve bound type for ${declaringClass.qualifiedName}",
     node = declaringClass,
   )
 }
 
-@Suppress("UNCHECKED_CAST")
-internal fun KSAnnotation.replaces(): List<KSClassDeclaration> =
-  (argumentAt("replaces")?.value as? List<KSType>).orEmpty().map {
-    it.resolveKSClassDeclaration()
-      ?: throw KspAnvilException("Could not resolve replaces type $it}", this)
-  }
+internal fun KSAnnotation.replaces(): List<KSClassDeclaration> = classArrayArgument("replaces")
+
+internal fun KSAnnotation.subcomponents(): List<KSClassDeclaration> = classArrayArgument(
+  "subcomponents",
+)
+
+internal fun KSAnnotation.exclude(): List<KSClassDeclaration> = classArrayArgument("exclude")
+
+internal fun KSAnnotation.modules(): List<KSClassDeclaration> = classArrayArgument("modules")
+
+internal fun KSAnnotation.includes(): List<KSClassDeclaration> = classArrayArgument("includes")
 
 @Suppress("UNCHECKED_CAST")
-internal fun KSAnnotation.exclude(): List<KSClassDeclaration> =
-  (argumentAt("exclude")?.value as? List<KSType>).orEmpty().map {
-    it.resolveKSClassDeclaration() ?: throw KspAnvilException("Could not resolve exclude $it", this)
+private fun KSAnnotation.classArrayArgument(name: String): List<KSClassDeclaration> =
+  (argumentAt(name)?.value as? List<KSType>).orEmpty().map {
+    it.resolveKSClassDeclaration() ?: throw KspAnvilException("Could not resolve $name $it", this)
   }
 
 internal fun KSAnnotation.parentScope(): KSClassDeclaration {

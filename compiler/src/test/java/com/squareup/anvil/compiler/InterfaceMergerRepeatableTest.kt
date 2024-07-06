@@ -1,11 +1,12 @@
 package com.squareup.anvil.compiler
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
+import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.internal.testing.extends
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -14,27 +15,27 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class InterfaceMergerRepeatableTest(
-  private val annotationClass: KClass<*>,
+  private val backend: ComponentMergingBackend,
+  private val annotationClass: KClass<out Annotation>,
 ) {
 
   private val annotation = "@${annotationClass.simpleName}"
   private val import = "import ${annotationClass.java.canonicalName}"
 
   companion object {
-    @Parameters(name = "{0}")
+    @Parameters(name = "{0} - {1}")
     @JvmStatic
     fun annotationClasses(): Collection<Any> {
-      return buildList {
-        add(MergeComponent::class)
-        if (isFullTestRun()) {
-          add(MergeSubcomponent::class)
-          add(MergeInterfaces::class)
-        }
-      }
+      return componentMergingAndMergeAnnotationParams(
+        fullTestRunAnnotations = listOf(MergeSubcomponent::class, MergeInterfaces::class),
+      )
     }
   }
 
   @Test fun `duplicate scopes are an error`() {
+    // TODO enable KSP for this once there's a KSP impl of MergeAnnotationsCheckGenerator
+    assumeTrue(backend == ComponentMergingBackend.IR)
+
     compile(
       """
       package com.squareup.test
@@ -45,6 +46,7 @@ class InterfaceMergerRepeatableTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains(
@@ -55,6 +57,8 @@ class InterfaceMergerRepeatableTest(
   }
 
   @Test fun `different kind of merge annotations are forbidden`() {
+    // TODO enable KSP for this once there's a KSP impl of MergeAnnotationsCheckGenerator
+    assumeTrue(backend == ComponentMergingBackend.IR)
     assumeMergeComponent(annotationClass)
 
     compile(
@@ -68,6 +72,7 @@ class InterfaceMergerRepeatableTest(
       @MergeSubcomponent(Unit::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains(
@@ -96,6 +101,7 @@ class InterfaceMergerRepeatableTest(
       $annotation(Unit::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -122,6 +128,7 @@ class InterfaceMergerRepeatableTest(
       $annotation(Unit::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface extends contributingInterface).isTrue()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -150,6 +157,7 @@ class InterfaceMergerRepeatableTest(
       $annotation(Unit::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
       assertThat(componentInterface extends secondContributingInterface).isTrue()
@@ -172,6 +180,7 @@ class InterfaceMergerRepeatableTest(
       $annotation(Unit::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface extends contributingInterface).isFalse()
     }

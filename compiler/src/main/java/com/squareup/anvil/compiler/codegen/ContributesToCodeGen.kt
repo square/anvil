@@ -7,6 +7,10 @@ import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesTo
+import com.squareup.anvil.annotations.MergeComponent
+import com.squareup.anvil.annotations.MergeSubcomponent
+import com.squareup.anvil.annotations.compat.MergeInterfaces
+import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.HINT_PACKAGE
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
 import com.squareup.anvil.compiler.SCOPE_SUFFIX
@@ -106,6 +110,7 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
             )
             return@forEach
           }
+
           if (!clazz.isInterface() &&
             !clazz.isAnnotationPresent(daggerModuleFqName.toString()) &&
             !clazz.isAnnotationPresent(mergeModulesFqName.toString())
@@ -117,6 +122,16 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
               node = clazz,
             )
           }
+
+          val isMergedType = clazz.isAnnotationPresent<MergeModules>() ||
+            clazz.isAnnotationPresent<MergeComponent>() ||
+            clazz.isAnnotationPresent<MergeSubcomponent>() ||
+            clazz.isAnnotationPresent<MergeInterfaces>()
+          if (isMergedType) {
+            // Skip this, it will be propagated on the generated merged type instead
+            return@forEach
+          }
+
           clazz.checkClassIsPublic {
             "${clazz.qualifiedName!!.asString()} is contributed to the Dagger graph, but the " +
               "module is not public. Only public modules are supported."
@@ -130,12 +145,18 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
             // Give it a stable sort.
             .sortedBy { it.canonicalName }
 
-          generate(clazz.toClassName(), scopes)
-            .writeTo(
-              codeGenerator = env.codeGenerator,
-              aggregating = false,
-              originatingKSFiles = listOf(clazz.containingFile!!),
-            )
+          try {
+            generate(clazz.toClassName(), scopes)
+              .writeTo(
+                codeGenerator = env.codeGenerator,
+                aggregating = false,
+                originatingKSFiles = listOf(clazz.containingFile!!),
+              )
+          } catch (e: FileAlreadyExistsException) {
+            // Should never happen, but here to simplify error messaging if it does. This would mean
+            // something went wrong during contribution merging.
+            env.logger.error(e.message!!, clazz)
+          }
         }
 
       return emptyList()

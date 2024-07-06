@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.tschuchort.compiletesting.JvmCompilationResult
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.descriptors.runtime.components.tryLoadClass
+import org.junit.Assume.assumeTrue
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -28,6 +29,9 @@ class MapKeyCreatorGeneratorTest(
   }
 
   @Test fun `a creator class is generated`() {
+    // TODO remove when Dagger implements map key creators for KSP
+    //  https://github.com/google/dagger/issues/3993
+    assumeTrue(componentProcessingMode == ComponentProcessingMode.KAPT)
     compile(
       """
       package com.squareup.test
@@ -140,6 +144,9 @@ class MapKeyCreatorGeneratorTest(
   }
 
   @Test fun `a recursive annotation still works`() {
+    // TODO remove when Dagger implements map key creators for KSP
+    //  https://github.com/google/dagger/issues/3993
+    assumeTrue(componentProcessingMode == ComponentProcessingMode.KAPT)
     compile(
       """
       package com.squareup.test

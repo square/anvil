@@ -23,6 +23,7 @@ import dagger.Lazy
 import dagger.internal.Factory
 import org.intellij.lang.annotations.Language
 import org.junit.Assume.assumeFalse
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -3149,6 +3150,9 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
   }
 
   @Test fun `an interface is not allowed to contain a provider method`() {
+    // TODO remove when Dagger checks this in KSP too
+    //  https://github.com/google/dagger/issues/4346
+    assumeTrue(componentProcessingMode == ComponentProcessingMode.KAPT)
     compile(
       """
       package com.squareup.test
@@ -3534,12 +3538,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
       """,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      // Amusingly, these error messages are ever-so-slightly different across KSP and Kapt.
-      if (mode is Ksp) {
-        assertThat(messages).contains("@Provides methods cannot be extension functions")
-      } else {
-        assertThat(messages).contains("@Provides methods can not be an extension function")
-      }
+      assertThat(messages).contains("@Provides methods can not be an extension function")
     }
   }
 

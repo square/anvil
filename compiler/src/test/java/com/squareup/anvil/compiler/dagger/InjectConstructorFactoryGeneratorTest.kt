@@ -17,6 +17,7 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
 import dagger.internal.Factory
 import org.intellij.lang.annotations.Language
+import org.junit.Assume.assumeTrue
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -2356,7 +2357,11 @@ public class InjectClass_Factory<T, R : Set<String>>(
           "T",
           listOf("java.lang.Appendable", "java.lang.CharSequence"),
           "R",
-          listOf("java.util.Set<? extends java.lang.String>"),
+          if (componentProcessingMode == ComponentProcessingMode.KSP) {
+            listOf("java.util.Set<java.lang.String>")
+          } else {
+            listOf("java.util.Set<? extends java.lang.String>")
+          },
         )
 
       val constructor = factoryClass.declaredConstructors.single()
@@ -2409,6 +2414,9 @@ public class InjectClass_Factory<T>(
   }
 }
      */
+
+    // TODO remove when Dagger fixes https://github.com/google/dagger/issues/4345
+    assumeTrue(componentProcessingMode == ComponentProcessingMode.KAPT)
 
     // KotlinPoet will automatically add a bound of `Any?` if creating a `TypeVariableName` with an
     // empty list.  So, improperly handling `TypeVariableName` can result in a constraint like:
@@ -2492,7 +2500,14 @@ public class InjectClass_Factory<T : List<String>>(
         }
 
       assertThat(typeParams)
-        .containsExactly("T", listOf("java.util.List<? extends java.lang.String>"))
+        .containsExactly(
+          "T",
+          if (componentProcessingMode == ComponentProcessingMode.KSP) {
+            listOf("java.util.List<java.lang.String>")
+          } else {
+            listOf("java.util.List<? extends java.lang.String>")
+          },
+        )
 
       val constructor = factoryClass.declaredConstructors.single()
       assertThat(constructor.parameterTypes.toList())

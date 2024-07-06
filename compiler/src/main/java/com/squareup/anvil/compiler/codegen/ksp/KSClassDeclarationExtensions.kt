@@ -1,10 +1,11 @@
 package com.squareup.anvil.compiler.codegen.ksp
 
+import com.google.devtools.ksp.getAllSuperTypes
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSTypeReference
+import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.Visibility.PUBLIC
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import org.jetbrains.kotlin.name.FqName
@@ -82,7 +83,7 @@ internal fun KSClassDeclaration.checkClassExtendsBoundType(
   val boundType = getKSAnnotationsByQualifiedName(annotationFqName.asString())
     .firstOrNull()
     ?.boundTypeOrNull()
-    ?: superTypesExcludingAny(resolver).singleOrNull()?.resolve()
+    ?: superTypesExcludingAny(resolver).singleOrNull()
     ?: throw KspAnvilException(
       message = "Couldn't find the bound type.",
       node = this,
@@ -104,8 +105,8 @@ internal fun KSClassDeclaration.checkClassExtendsBoundType(
 
 internal fun KSClassDeclaration.superTypesExcludingAny(
   resolver: Resolver,
-): Sequence<KSTypeReference> = superTypes
-  .filterNot { it.resolve() == resolver.builtIns.anyType }
+): Sequence<KSType> = getAllSuperTypes()
+  .filterNot { it == resolver.builtIns.anyType }
 
 internal fun KSClassDeclaration.isInterface(): Boolean {
   return classKind == ClassKind.INTERFACE

@@ -65,6 +65,12 @@ public interface AnvilContext {
   public val willHaveDaggerFactories: Boolean
 
   /**
+   * The backend that should be used for component merging. This is only relevant if component
+   * merging is not disabled (i.e. [disableComponentMerging] is false).
+   */
+  public val componentMergingBackend: ComponentMergingBackend
+
+  /**
    * The module of the current compilation.
    */
   public val module: ModuleDescriptor

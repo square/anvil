@@ -173,6 +173,8 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
         configuration.put(trackSourceFilesKey, value.toBoolean())
 
       analysisBackendName -> configuration.put(analysisBackendKey, value)
+
+      mergingBackendName -> configuration.put(mergingBackendKey, value)
     }
   }
 }

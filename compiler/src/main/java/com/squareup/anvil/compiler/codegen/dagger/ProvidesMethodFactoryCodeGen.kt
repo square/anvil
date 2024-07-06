@@ -181,7 +181,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     ): CallableReference {
       if (function.extensionReceiver != null) {
         throw KspAnvilException(
-          message = "@Provides methods cannot be extension functions",
+          message = "@Provides methods can not be an extension function",
           node = function,
         )
       }

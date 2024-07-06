@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
+import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.AnyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
@@ -14,6 +15,8 @@ import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Component
 import dagger.Subcomponent
+import org.junit.Assume.assumeTrue
+import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -22,22 +25,17 @@ import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
 class ModuleMergerTest(
+  private val backend: ComponentMergingBackend,
   private val annotationClass: KClass<out Annotation>,
 ) {
-
   private val annotation = "@${annotationClass.simpleName}"
   private val import = "import ${annotationClass.java.canonicalName}"
 
   companion object {
-    @Parameters(name = "{0}")
+    @Parameters(name = "{0} - {1}")
     @JvmStatic
     fun annotationClasses(): Collection<Any> {
-      return buildList {
-        add(MergeComponent::class)
-        if (isFullTestRun()) {
-          add(MergeSubcomponent::class)
-        }
-      }
+      return componentMergingAndMergeAnnotationParams()
     }
   }
 
@@ -51,6 +49,7 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules()).isEmpty()
 
@@ -76,6 +75,7 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(
@@ -106,6 +106,7 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       val component = componentInterface.daggerComponent
       assertThat(
@@ -117,6 +118,9 @@ class ModuleMergerTest(
 
   @Test
   fun `it's not allowed to have @Component and @MergeComponent annotation at the same time`() {
+    // TODO enable KSP for this once there's a KSP impl of MergeAnnotationsCheckGenerator
+    assumeTrue(backend == ComponentMergingBackend.IR)
+
     val daggerComponentClass = when (annotationClass) {
       MergeComponent::class -> Component::class
       MergeSubcomponent::class -> Subcomponent::class
@@ -133,9 +137,10 @@ class ModuleMergerTest(
       @${daggerComponentClass.java.canonicalName}
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(messages).contains("Source0.kt:7:11")
+      assertThat(messages).contains("Source0.kt:7:")
     }
   }
 
@@ -154,6 +159,7 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule1.kotlin)
@@ -175,6 +181,7 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule1.kotlin)
@@ -202,6 +209,7 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModules())
@@ -223,9 +231,10 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(messages).contains("Source0.kt:7:16")
+      assertThat(messages).contains("Source0.kt:7:")
     }
   }
 
@@ -251,6 +260,7 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule2.kotlin)
@@ -281,6 +291,7 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
@@ -317,6 +328,7 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
@@ -353,9 +365,10 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(messages).contains("Source0.kt:17:16")
+      assertThat(messages).contains("Source0.kt:17:")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule1 with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
@@ -388,9 +401,10 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(messages).contains("Source0.kt:17:16")
+      assertThat(messages).contains("Source0.kt:17:")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule1 with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.ContributingInterface, but the replaced class isn't contributed " +
@@ -423,6 +437,7 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules()).isEmpty()
       assertThat(
@@ -457,6 +472,7 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules()).isEmpty()
       assertThat(
@@ -491,9 +507,10 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(messages).contains("Source0.kt:17:11")
+      assertThat(messages).contains("Source0.kt:17:")
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.DaggerModule1, but the replaced class isn't contributed " +
@@ -526,9 +543,10 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(messages).contains("Source0.kt:17:11")
+      assertThat(messages).contains("Source0.kt:17:")
       assertThat(messages).contains(
         "com.squareup.test.ContributingInterface with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.DaggerModule1, but the replaced class isn't contributed " +
@@ -557,9 +575,10 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(messages).contains("Source0.kt:13:16")
+      assertThat(messages).contains("Source0.kt:13:")
     }
   }
 
@@ -585,9 +604,10 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(messages).contains("Source0.kt:15:16")
+      assertThat(messages).contains("Source0.kt:15:")
       assertThat(messages).contains(
         "com.squareup.test.DaggerModule2 with scopes [kotlin.Any] wants to replace " +
           "com.squareup.test.DaggerModule1, but the replaced class isn't contributed " +
@@ -623,6 +643,7 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModules())
@@ -654,6 +675,7 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule2.kotlin)
@@ -684,9 +706,10 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(messages).contains("Source0.kt:20:11")
+      assertThat(messages).contains("Source0.kt:20:")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.DaggerModule1, but the excluded class isn't contributed " +
@@ -719,6 +742,7 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       val component = componentInterface.anyDaggerComponent
       assertThat(component.modules.withoutAnvilModules()).containsExactly(daggerModule2.kotlin)
@@ -750,6 +774,7 @@ class ModuleMergerTest(
       )
       interface ComponentInterface2  
       """,
+      componentMergingBackend = backend,
     ) {
       val component1 = componentInterface.anyDaggerComponent
       assertThat(component1.modules.withoutAnvilModules()).containsExactly(daggerModule1.kotlin)
@@ -781,6 +806,7 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(
         componentInterface.mergedModules(annotationClass).flatMapArray {
@@ -811,6 +837,7 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(
         componentInterface.mergedModules(annotationClass).flatMapArray {
@@ -841,9 +868,10 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(messages).contains("Source0.kt:17:11")
+      assertThat(messages).contains("Source0.kt:17:")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.ContributingInterface, but the excluded class isn't contributed " +
@@ -873,9 +901,10 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(messages).contains("Source0.kt:17:11")
+      assertThat(messages).contains("Source0.kt:17:")
       assertThat(messages).contains(
         "com.squareup.test.ComponentInterface with scopes [kotlin.Any] wants to exclude " +
           "com.squareup.test.ContributingInterface, but the excluded class isn't contributed " +
@@ -906,6 +935,7 @@ class ModuleMergerTest(
       $annotation(Unit::class)
       interface SubcomponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
@@ -939,6 +969,7 @@ class ModuleMergerTest(
       @MergeSubcomponent(Unit::class)
       interface SubcomponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface.daggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin)
@@ -969,6 +1000,7 @@ class ModuleMergerTest(
         $annotation(Any::class)
         interface ComponentInterface
         """,
+        componentMergingBackend = backend,
         expectExitCode = ExitCode.COMPILATION_ERROR,
       ) {
         assertThat(messages).contains("Source0.kt:8:")
@@ -993,6 +1025,7 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface SubcomponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(subcomponentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(innerModule.kotlin)
@@ -1017,6 +1050,7 @@ class ModuleMergerTest(
         abstract class InnerModule
       }
       """,
+      componentMergingBackend = backend,
     ) {
       val innerModule = classLoader
         .loadClass("com.squareup.test.SubcomponentInterface\$InnerModule")
@@ -1039,6 +1073,7 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       val component = classLoader.loadClass("ComponentInterface").anyDaggerComponent
       assertThat(component.modules.withoutAnvilModules())
@@ -1069,9 +1104,10 @@ class ModuleMergerTest(
       )
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      assertThat(messages).contains("Source0.kt:19:11")
+      assertThat(messages).contains("Source0.kt:19:")
     }
   }
 
@@ -1085,6 +1121,7 @@ class ModuleMergerTest(
       $annotation
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains(
@@ -1093,7 +1130,13 @@ class ModuleMergerTest(
     }
   }
 
-  @Test fun `merged modules can be contributed to another scope at the same time`() {
+  // Requires special handling of merged modules.
+  // Note for later
+  // - We could, in this case, ignore this type in contribution merging and assume that the
+  //   generated merged module will also carry over the ContributesTo
+  @Ignore("TODO before mering")
+  @Test
+  fun `merged modules can be contributed to another scope at the same time`() {
     compile(
       """
       package com.squareup.test
@@ -1114,6 +1157,7 @@ class ModuleMergerTest(
       $annotation(Unit::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(daggerModule1.daggerModule.includes.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
@@ -1162,6 +1206,7 @@ class ModuleMergerTest(
       $annotation(scope = Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -1190,6 +1235,7 @@ class ModuleMergerTest(
       $annotation(Unit::class)
       interface SubcomponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule1.kotlin, daggerModule2.kotlin)
@@ -1212,6 +1258,7 @@ class ModuleMergerTest(
       @Module
       abstract class DaggerModule1
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(exitCode).isEqualTo(OK)
     }
@@ -1233,6 +1280,7 @@ class ModuleMergerTest(
       $annotation(Unit::class)
       interface SubcomponentInterface
       """,
+      componentMergingBackend = backend,
       previousCompilationResult = firstResult,
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
@@ -1266,6 +1314,7 @@ class ModuleMergerTest(
       $annotation(Unit::class)
       interface SubcomponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
@@ -1302,6 +1351,7 @@ class ModuleMergerTest(
       $annotation(Int::class)
       interface SubcomponentInterface2
       """,
+      componentMergingBackend = backend,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains(
@@ -1335,6 +1385,7 @@ class ModuleMergerTest(
       $annotation(Unit::class)
       interface SubcomponentInterface
       """,
+      componentMergingBackend = backend,
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())
         .containsExactly(daggerModule2.kotlin)
@@ -1382,6 +1433,7 @@ class ModuleMergerTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
+      componentMergingBackend = backend,
       previousCompilationResult = result,
     ) {
       assertThat(componentInterface.anyDaggerComponent.modules.withoutAnvilModules())

@@ -12,6 +12,7 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.codegen.Contribution
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.generateHintFileName
@@ -20,11 +21,12 @@ import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedde
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.squareup.anvil.compiler.internal.testing.ComponentProcessingMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.generatedMergedComponentOrNull
+import com.squareup.anvil.compiler.internal.testing.resolveIfMerged
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.kotlinpoet.asClassName
 import com.tschuchort.compiletesting.CompilationResult
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
@@ -44,12 +46,19 @@ internal fun compile(
   generateDaggerFactoriesOnly: Boolean = false,
   disableComponentMerging: Boolean = false,
   componentProcessingMode: ComponentProcessingMode = ComponentProcessingMode.NONE,
+  componentMergingBackend: ComponentMergingBackend = ComponentMergingBackend.IR,
   trackSourceFiles: Boolean = true,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = true,
-  mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
+  mode: AnvilCompilationMode = if (componentProcessingMode == ComponentProcessingMode.KSP || componentMergingBackend == ComponentMergingBackend.KSP) {
+    Ksp()
+  } else {
+    Embedded(
+      codeGenerators,
+    )
+  },
   workingDir: File? = null,
-  expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
+  expectExitCode: ExitCode = ExitCode.OK,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult = compileAnvil(
   sources = sources,
@@ -59,6 +68,7 @@ internal fun compile(
   allWarningsAsErrors = allWarningsAsErrors,
   previousCompilationResult = previousCompilationResult,
   componentProcessingMode = componentProcessingMode,
+  componentMergingBackend = componentMergingBackend,
   trackSourceFiles = trackSourceFiles,
   mode = mode,
   workingDir = workingDir,
@@ -74,6 +84,7 @@ internal val JvmCompilationResult.contributingInterface: Class<*>
 
 internal val JvmCompilationResult.secondContributingInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.SecondContributingInterface")
+    .resolveIfMerged()
 
 internal val JvmCompilationResult.innerInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.SomeClass\$InnerInterface")
@@ -89,12 +100,15 @@ internal val JvmCompilationResult.parentInterface2: Class<*>
 
 internal val JvmCompilationResult.componentInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ComponentInterface")
+    .resolveIfMerged()
 
 internal val JvmCompilationResult.subcomponentInterface: Class<*>
   get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface")
+    .resolveIfMerged()
 
 internal val JvmCompilationResult.daggerModule1: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule1")
+    .resolveIfMerged()
 
 internal val JvmCompilationResult.assistedService: Class<*>
   get() = classLoader.loadClass("com.squareup.test.AssistedService")
@@ -104,12 +118,15 @@ internal val JvmCompilationResult.assistedServiceFactory: Class<*>
 
 internal val JvmCompilationResult.daggerModule2: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule2")
+    .resolveIfMerged()
 
 internal val JvmCompilationResult.daggerModule3: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule3")
+    .resolveIfMerged()
 
 internal val JvmCompilationResult.daggerModule4: Class<*>
   get() = classLoader.loadClass("com.squareup.test.DaggerModule4")
+    .resolveIfMerged()
 
 internal val JvmCompilationResult.innerModule: Class<*>
   get() = classLoader.loadClass("com.squareup.test.ComponentInterface\$InnerModule")
@@ -263,7 +280,9 @@ internal fun Class<*>.mergedModules(mergeAnnotation: KClass<out Annotation>): Ar
     MergeModules::class -> Module::class
     else -> error("Unknown merge annotation class: $mergeAnnotation")
   }
-  return when (val annotation = getAnnotation(mergedAnnotation.java)) {
+
+  val mergedComponent = generatedMergedComponentOrNull() ?: this
+  return when (val annotation = mergedComponent.getAnnotation(mergedAnnotation.java)) {
     is Component -> annotation.modules
     is Subcomponent -> annotation.modules
     is Module -> annotation.includes
@@ -382,7 +401,12 @@ internal fun JvmCompilationResult.generatedFileOrNull(
   .singleOrNull { it.name == fileName && "anvil${File.separatorChar}hint" !in it.absolutePath }
 
 /**
- * Parameters for configuring [AnvilCompilationMode] and whether to run a full test run or not.
+ * Parameters for configuring [AnvilCompilationMode], [ComponentProcessingMode], and whether to
+ * run a full test run or not.
+ *
+ * Assumes parameters are in the order of
+ * 1. [ComponentProcessingMode]
+ * 2. [AnvilCompilationMode]
  */
 internal fun componentProcessingAndKspParams(
   embeddedCreator: () -> Embedded? = { Embedded() },
@@ -399,17 +423,47 @@ internal fun componentProcessingAndKspParams(
       kspCreator(),
     ),
   ).mapNotNull { (componentProcessingMode, mode) ->
-    if (componentProcessingMode == ComponentProcessingMode.KSP) {
-      // TODO KSP component processing is not supported with KSP in Anvil's tests yet
+    if (componentProcessingMode == ComponentProcessingMode.KSP && mode !is Ksp) {
+      // KSP component processing requires KSP all the way down
+      return@mapNotNull null
+    } else if (componentProcessingMode == ComponentProcessingMode.KAPT && mode is Ksp) {
+      // In K1, kapt is always run before KSP so we can't run KSP contribution here in time
+      // TODO in K2, KCT can run KSP2 before kapt
       return@mapNotNull null
     }
-    if (componentProcessingMode != ComponentProcessingMode.NONE && mode is Ksp) {
-      // TODO Dagger is not supported with KSP in Anvil's tests yet
-      null
-    } else {
-      arrayOf(componentProcessingMode, mode)
-    }
+    arrayOf(componentProcessingMode, mode)
   }.distinct()
+}
+
+/**
+ * Parameters for configuring merge annotations, [ComponentMergingBackend], and whether to
+ * run a full test run or not.
+ *
+ * Assumes parameters are in the order of
+ * 1. [ComponentMergingBackend]
+ * 2. Merge annotation (as a [KClass<out Annotation>][KClass]).
+ */
+internal fun componentMergingAndMergeAnnotationParams(
+  defaultAnnotation: KClass<out Annotation> = MergeComponent::class,
+  fullTestRunAnnotations: List<KClass<out Annotation>> = listOf(MergeSubcomponent::class),
+): Collection<Any> {
+  return cartesianProduct(
+    listOf(
+      ComponentMergingBackend.IR,
+      ComponentMergingBackend.KSP,
+    ),
+    buildList<KClass<out Annotation>> {
+      add(defaultAnnotation)
+      if (isFullTestRun()) {
+        addAll(fullTestRunAnnotations)
+      }
+    },
+  ).mapNotNull { (backend, annotation) ->
+    // See config-includeKspTests in libs.versions.toml for more detail
+    if (backend == ComponentMergingBackend.KSP && !includeKspTests()) return@mapNotNull null
+    arrayOf(backend, annotation)
+  }
+    .distinct()
 }
 
 /** In any failing compilation in KSP, it always prints this error line first. */

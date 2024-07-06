@@ -166,8 +166,7 @@ public abstract class AnvilExtension @Inject constructor(
    * @param contributesAndFactoryGeneration This is an experimental feature that
    *   replaces the previous `AnalysisHandlerExtension`-based backend, which is removed in Kotlin
    *   2.0 and struggled with incremental compilation.
-   * @param componentMerging This is an experimental feature that currently does nothing. It's a
-   *   placeholder for future work. Requires [disableComponentMerging] to be `false`.
+   * @param componentMerging Enables KSP-powered component merging. Requires [disableComponentMerging] to be `false`.
    */
   @JvmOverloads
   public fun useKsp(
@@ -223,6 +222,10 @@ public abstract class AnvilExtension @Inject constructor(
           "generate-dagger-factories-only" to generateDaggerFactoriesOnly,
           "disable-component-merging" to disableComponentMerging,
           "will-have-dagger-factories" to willHaveDaggerFactories,
+          "merging-backend" to useKspComponentMergingBackend
+            .map { enabled ->
+              if (enabled) "ksp" else "none"
+            },
         ),
       )
     }
@@ -279,7 +282,7 @@ public abstract class AnvilExtension @Inject constructor(
  * because of its `Project` property.
  */
 private fun commandLineArgumentProvider(
-  vararg args: Pair<String, Provider<Boolean>>,
+  vararg args: Pair<String, Provider<*>>,
 ): CommandLineArgumentProvider {
   return CommandLineArgumentProvider {
     args.map { (arg, provider) -> "$arg=${provider.get()}" }

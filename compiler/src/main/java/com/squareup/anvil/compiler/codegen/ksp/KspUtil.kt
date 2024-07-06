@@ -13,10 +13,20 @@ import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSModifierListOwner
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
+import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Modifier
+import com.squareup.anvil.compiler.internal.reference.asClassId
+import com.squareup.kotlinpoet.FunSpec
+import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
+import com.squareup.kotlinpoet.ksp.toAnnotationSpec
+import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.toKModifier
+import com.squareup.kotlinpoet.ksp.toTypeName
 import dagger.assisted.AssistedInject
+import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.FqName
 import javax.inject.Inject
 import kotlin.reflect.KClass
 
@@ -180,3 +190,63 @@ internal fun KSFunctionDeclaration.returnTypeOrNull(): KSType? =
   returnType?.resolve()?.takeIf {
     it.declaration.qualifiedName?.asString() != "kotlin.Unit"
   }
+
+internal fun Resolver.getSymbolsWithAnnotations(
+  vararg annotations: FqName,
+): Sequence<KSAnnotated> = annotations.asSequence().flatMap {
+  getSymbolsWithAnnotation(it.asString())
+}
+
+internal fun KSAnnotated.findAll(vararg annotations: String): List<KSAnnotation> {
+  return annotations.flatMap { annotation ->
+    getKSAnnotationsByQualifiedName(annotation)
+  }
+}
+
+internal val KSAnnotation.declaringClass: KSClassDeclaration get() = parent as KSClassDeclaration
+
+internal fun KSAnnotated.find(
+  annotationName: String,
+  scopeName: KSType? = null,
+): List<KSAnnotation> {
+  return findAll(annotationName)
+    .filter {
+      scopeName == null || it.scopeOrNull() == scopeName
+    }
+}
+
+internal fun KSClassDeclaration.atLeastOneAnnotation(
+  annotationName: String,
+  scopeName: KSType? = null,
+): List<KSAnnotation> {
+  return find(annotationName = annotationName, scopeName = scopeName)
+    .ifEmpty {
+      throw KspAnvilException(
+        node = this,
+        message = "Class ${qualifiedName?.asString()} is not annotated with $annotationName" +
+          "${if (scopeName == null) "" else " with scope $scopeName"}.",
+      )
+    }
+}
+
+internal val KSClassDeclaration.classId: ClassId get() = toClassName().asClassId()
+
+internal fun KSFunctionDeclaration.toFunSpec(): FunSpec {
+  val builder = FunSpec.builder(simpleName.getShortName())
+    .addModifiers(modifiers.mapNotNull { it.toKModifier() })
+    .addAnnotations(annotations.map { it.toAnnotationSpec() }.asIterable())
+
+  returnType?.resolve()?.toTypeName()?.let { builder.returns(it) }
+
+  for (parameter in parameters) {
+    builder.addParameter(parameter.toParameterSpec())
+  }
+
+  return builder.build()
+}
+
+internal fun KSValueParameter.toParameterSpec(): ParameterSpec {
+  return ParameterSpec.builder(name!!.asString(), type.resolve().toTypeName())
+    .addAnnotations(annotations.map { it.toAnnotationSpec() }.asIterable())
+    .build()
+}

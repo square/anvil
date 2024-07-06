@@ -162,3 +162,15 @@ public fun ClassName.generateHintFileName(
   .joinSimpleNamesPrivate(separator = separator, suffix = suffix)
   .truncate(hashParams = listOf(canonicalName), innerClassLength = 0)
   .simpleName
+
+/**
+ * For merge-annotated classes, returns the expected [ClassName] of the generated merged class.
+ */
+// TODO eventually also need to account for scope
+@ExperimentalAnvilApi
+public fun ClassName.mergedClassName(): ClassName {
+  return ClassName(
+    packageName,
+    "Merged" + simpleNames.joinToString("_").capitalize(),
+  )
+}

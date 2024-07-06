@@ -152,9 +152,7 @@ internal object BindsMethodValidator : AnvilApplicabilityChecker {
 
       private fun KSTypeReference.resolveSuperTypesExcludingAny(): Sequence<KSType> {
         val clazz = resolve().resolveKSClassDeclaration() ?: return emptySequence()
-        return clazz
-          .superTypesExcludingAny(resolver)
-          .map { it.resolve() }
+        return clazz.superTypesExcludingAny(resolver)
       }
 
       private fun KSFunctionDeclaration.singleParameterOrNull(): KSTypeReference? =
