@@ -52,4 +52,22 @@ public annotation class MergeComponent(
    * same scope, but should be excluded from the component.
    */
   val exclude: Array<KClass<*>> = [],
-)
+) {
+  /**
+   * Mirrors `dagger.Component.Factory` and just conveys that this annotated factory should be
+   * mirrored in the merged component class.
+   */
+  @Target(CLASS)
+  @Retention(RUNTIME)
+  @Repeatable
+  public annotation class Factory
+
+  /**
+   * Mirrors `dagger.Component.Builder` and just conveys that this annotated builder should be
+   * mirrored in the merged component class.
+   */
+  @Target(CLASS)
+  @Retention(RUNTIME)
+  @Repeatable
+  public annotation class Builder
+}

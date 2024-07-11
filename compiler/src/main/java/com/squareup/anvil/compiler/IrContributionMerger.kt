@@ -65,6 +65,23 @@ internal class IrContributionMerger(
 
           val mergeAnnotatedClass = declaration.symbol.toClassReference(pluginContext)
 
+          // For @Merge*.Factory/Builder annotations, generate the "real" one onto the class
+          // This is for backward compatibility with K1 support
+          for (creatorAnnotation in mergeAnnotatedClass.annotations.findAll(
+            CREATOR_ANNOTATIONS.keys,
+          )) {
+            val daggerAnnotation = CREATOR_ANNOTATIONS.getValue(creatorAnnotation.fqName)
+            pluginContext.irBuiltIns.createIrBuilder(declaration.symbol)
+              .generateCreatorAnnotation(
+                daggerAnnotationFqName = daggerAnnotation,
+                pluginContext = pluginContext,
+                declaration = mergeAnnotatedClass,
+              )
+
+            // Nothing else to do on this class
+            return super.visitClass(declaration)
+          }
+
           val mergeComponentAnnotations = mergeAnnotatedClass.annotations
             .findAll(mergeComponentFqName, mergeSubcomponentFqName)
 
@@ -372,6 +389,23 @@ internal class IrContributionMerger(
     declaration.clazz.owner.annotations += annotationConstructorCall
   }
 
+  private fun IrBuilderWithScope.generateCreatorAnnotation(
+    daggerAnnotationFqName: FqName,
+    pluginContext: IrPluginContext,
+    declaration: ClassReferenceIr,
+  ) {
+    val annotationConstructorCall = irCallConstructor(
+      callee = pluginContext
+        .referenceConstructors(daggerAnnotationFqName.classIdBestGuess())
+        .single { it.owner.isPrimary },
+      typeArguments = emptyList(),
+    )
+
+    // Since we are modifying the state of the code here, this does not need to be reflected in
+    // the associated [ClassReferenceIr] which is more of an initial snapshot.
+    declaration.clazz.owner.annotations += annotationConstructorCall
+  }
+
   private fun checkSameScope(
     contributedClass: ClassReferenceIr,
     classToReplace: ClassReferenceIr,
@@ -651,3 +685,10 @@ private fun ClassReferenceIr.atLeastOneAnnotation(
       )
     }
 }
+
+private val CREATOR_ANNOTATIONS = mapOf(
+  mergeComponentFactoryFqName to daggerComponentFactoryFqName,
+  mergeComponentBuilderFqName to daggerComponentBuilderFqName,
+  mergeSubcomponentFactoryFqName to daggerSubcomponentFactoryFqName,
+  mergeSubcomponentBuilderFqName to daggerSubcomponentBuilderFqName,
+)

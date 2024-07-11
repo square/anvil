@@ -31,8 +31,12 @@ import javax.inject.Provider
 import javax.inject.Qualifier
 
 internal val mergeComponentFqName = MergeComponent::class.fqName
+internal val mergeComponentFactoryFqName = MergeComponent.Factory::class.fqName
+internal val mergeComponentBuilderFqName = MergeComponent.Builder::class.fqName
 internal val mergeComponentClassName = MergeComponent::class.asClassName()
 internal val mergeSubcomponentFqName = MergeSubcomponent::class.fqName
+internal val mergeSubcomponentFactoryFqName = MergeSubcomponent.Factory::class.fqName
+internal val mergeSubcomponentBuilderFqName = MergeSubcomponent.Builder::class.fqName
 internal val mergeSubcomponentClassName = MergeSubcomponent::class.asClassName()
 internal val mergeInterfacesFqName = MergeInterfaces::class.fqName
 internal val mergeInterfacesClassName = MergeInterfaces::class.asClassName()
@@ -45,6 +49,8 @@ internal val contributesSubcomponentFqName = ContributesSubcomponent::class.fqNa
 internal val contributesSubcomponentFactoryFqName = ContributesSubcomponent.Factory::class.fqName
 internal val internalBindingMarkerFqName = InternalBindingMarker::class.fqName
 internal val daggerComponentFqName = Component::class.fqName
+internal val daggerComponentFactoryFqName = Component.Factory::class.fqName
+internal val daggerComponentBuilderFqName = Component.Builder::class.fqName
 internal val daggerComponentClassName = Component::class.asClassName()
 internal val daggerSubcomponentFqName = Subcomponent::class.fqName
 internal val daggerSubcomponentClassName = Subcomponent::class.asClassName()

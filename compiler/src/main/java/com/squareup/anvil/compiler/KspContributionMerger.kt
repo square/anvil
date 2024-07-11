@@ -66,7 +66,6 @@ import com.squareup.kotlinpoet.joinToCode
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.writeTo
-import dagger.Component
 import dagger.Module
 import org.jetbrains.kotlin.name.Name
 
@@ -726,11 +725,14 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
           addSuperinterface(contributedInterface)
         }
 
+        // TODO actually generate the creators too
+        //  - Extend the original
+        //  - Annotate with the real dagger annotation
+        //  - Add a binding module binding the extension as the root
         val componentOrFactory = mergeAnnotatedClass.declarations
           .filterIsInstance<KSClassDeclaration>()
           .singleOrNull {
-            // TODO does dagger also use these names? Or are they lowercase versions of the simple class name?
-            if (it.isAnnotationPresent<Component.Factory>()) {
+            if (it.isAnnotationPresent<MergeComponent.Factory>() || it.isAnnotationPresent<MergeSubcomponent.Factory>()) {
               factoryOrBuilderFunSpec = FunSpec.builder("factory")
                 .returns(generatedComponentClassName.nestedClass(it.simpleName.asString()))
                 .addStatement(
@@ -742,7 +744,7 @@ internal class KspContributionMerger(override val env: SymbolProcessorEnvironmen
                 .build()
               return@singleOrNull true
             }
-            if (it.isAnnotationPresent<Component.Builder>()) {
+            if (it.isAnnotationPresent<MergeComponent.Builder>() || it.isAnnotationPresent<MergeSubcomponent.Builder>()) {
               factoryOrBuilderFunSpec = FunSpec.builder("builder")
                 .returns(generatedComponentClassName.nestedClass(it.simpleName.asString()))
                 .addStatement(

@@ -72,8 +72,22 @@ public abstract interface annotation class com/squareup/anvil/annotations/MergeC
 	public abstract fun scope ()Ljava/lang/Class;
 }
 
+public abstract interface annotation class com/squareup/anvil/annotations/MergeComponent$Builder : java/lang/annotation/Annotation {
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/MergeComponent$Builder$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/MergeComponent$Builder;
+}
+
 public abstract interface annotation class com/squareup/anvil/annotations/MergeComponent$Container : java/lang/annotation/Annotation {
 	public abstract fun value ()[Lcom/squareup/anvil/annotations/MergeComponent;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/MergeComponent$Factory : java/lang/annotation/Annotation {
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/MergeComponent$Factory$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/MergeComponent$Factory;
 }
 
 public abstract interface annotation class com/squareup/anvil/annotations/MergeSubcomponent : java/lang/annotation/Annotation {
@@ -82,8 +96,22 @@ public abstract interface annotation class com/squareup/anvil/annotations/MergeS
 	public abstract fun scope ()Ljava/lang/Class;
 }
 
+public abstract interface annotation class com/squareup/anvil/annotations/MergeSubcomponent$Builder : java/lang/annotation/Annotation {
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/MergeSubcomponent$Builder$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/MergeSubcomponent$Builder;
+}
+
 public abstract interface annotation class com/squareup/anvil/annotations/MergeSubcomponent$Container : java/lang/annotation/Annotation {
 	public abstract fun value ()[Lcom/squareup/anvil/annotations/MergeSubcomponent;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/MergeSubcomponent$Factory : java/lang/annotation/Annotation {
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/MergeSubcomponent$Factory$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/MergeSubcomponent$Factory;
 }
 
 public abstract interface annotation class com/squareup/anvil/annotations/compat/MergeInterfaces : java/lang/annotation/Annotation {
