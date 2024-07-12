@@ -1,16 +1,21 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.isError
+import com.squareup.anvil.compiler.testing.AnvilCompilationModeTest
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
-import org.junit.Test
+import org.junit.jupiter.api.TestFactory
 
-class AnvilAnnotationDetectorCheckTest {
+class AnvilAnnotationDetectorCheckTest : AnvilCompilationModeTest(
+  AnvilCompilationMode.Embedded(),
+  AnvilCompilationMode.Ksp(),
+) {
 
-  @Test fun `a Dagger subcomponent is allowed`() {
+  @TestFactory fun `a Dagger subcomponent is allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -23,7 +28,7 @@ class AnvilAnnotationDetectorCheckTest {
     }
   }
 
-  @Test fun `@ContributesTo is not allowed`() {
+  @TestFactory fun `@ContributesTo is not allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -38,7 +43,7 @@ class AnvilAnnotationDetectorCheckTest {
     }
   }
 
-  @Test fun `@ContributesBinding is not allowed`() {
+  @TestFactory fun `@ContributesBinding is not allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -53,7 +58,7 @@ class AnvilAnnotationDetectorCheckTest {
     }
   }
 
-  @Test fun `@ContributeSubcomponent is not allowed`() {
+  @TestFactory fun `@ContributeSubcomponent is not allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -68,7 +73,7 @@ class AnvilAnnotationDetectorCheckTest {
     }
   }
 
-  @Test fun `@MergeComponent is not allowed`() {
+  @TestFactory fun `@MergeComponent is not allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -83,7 +88,7 @@ class AnvilAnnotationDetectorCheckTest {
     }
   }
 
-  @Test fun `@MergeSubcomponent is not allowed`() {
+  @TestFactory fun `@MergeSubcomponent is not allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -98,7 +103,7 @@ class AnvilAnnotationDetectorCheckTest {
     }
   }
 
-  @Test fun `@MergeModules is not allowed`() {
+  @TestFactory fun `@MergeModules is not allowed`() = testFactory {
     compile(
       """
       package com.squareup.test
@@ -113,7 +118,7 @@ class AnvilAnnotationDetectorCheckTest {
     }
   }
 
-  @Test fun `@MergeInterfaces is not allowed`() {
+  @TestFactory fun `@MergeInterfaces is not allowed`() = testFactory {
     compile(
       """
       package com.squareup.test

@@ -84,6 +84,12 @@ dependencies {
   compileOnly(libs.kotlin.gradlePluginApi)
   compileOnly(libs.agp)
 
+  // TODO (rbusarow) delete me
+  run {
+    check(System.getenv("CI") == null) { "delete me" }
+    implementation(libs.agp)
+  }
+
   testImplementation(libs.junit)
   testImplementation(libs.truth)
 

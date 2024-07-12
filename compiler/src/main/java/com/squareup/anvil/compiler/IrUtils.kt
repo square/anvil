@@ -39,7 +39,7 @@ internal fun IrClass.requireClassId(): ClassId {
   )
 }
 
-@OptIn(UnsafeDuringIrConstructionAPI::class)
+@UnsafeDuringIrConstructionAPI
 internal fun IrClassSymbol.requireClassId(): ClassId = owner.requireClassId()
 
 internal val IrExpression.kclassUnwrapped: IrClassifierSymbol
@@ -55,7 +55,7 @@ internal val IrDeclarationWithName.fqName: FqName
     element = this,
   )
 
-@OptIn(UnsafeDuringIrConstructionAPI::class)
+@UnsafeDuringIrConstructionAPI
 internal val IrClassSymbol.fqName: FqName get() = owner.fqName
 
 // If we're evaluating an anonymous inner class, it cannot merge anything and will cause

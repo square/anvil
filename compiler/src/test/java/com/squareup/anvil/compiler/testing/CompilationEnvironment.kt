@@ -34,6 +34,7 @@ interface CompilationEnvironment : HasWorkingDir {
     disableComponentMerging: Boolean = false,
     codeGenerators: List<CodeGenerator> = emptyList(),
     allWarningsAsErrors: Boolean = true,
+    useK2: Boolean = true,
     mode: AnvilCompilationMode = modeDefault(codeGenerators),
     workingDir: File? = this@CompilationEnvironment.workingDir,
     expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
@@ -41,6 +42,7 @@ interface CompilationEnvironment : HasWorkingDir {
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
     allWarningsAsErrors = allWarningsAsErrors,
+    useK2 = useK2,
     previousCompilationResult = previousCompilationResult,
     enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
     generateDaggerFactories = generateDaggerFactories,

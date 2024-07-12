@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.resolve.descriptorUtil.fqNameSafe
 import org.jetbrains.kotlin.types.KotlinType
 
@@ -105,6 +106,8 @@ internal data class ContributedBinding(
   val rank: Int,
 ) {
   val bindingKey = BindingKey(scope, boundType, qualifierKey)
+
+  @OptIn(UnsafeDuringIrConstructionAPI::class)
   val replaces = bindingModule.annotations.find(contributesToFqName).single()
     .replacedClasses
 }
@@ -119,6 +122,7 @@ internal fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedB
 
   if (bindings.size > 1) {
     val rankName = bindings[0].rank.toString()
+    @OptIn(UnsafeDuringIrConstructionAPI::class)
     throw AnvilCompilationExceptionClassReferenceIr(
       bindings[0].boundType,
       "There are multiple contributed bindings with the same bound type and rank. The bound type is " +
@@ -168,6 +172,7 @@ internal fun ClassReference.checkNotGeneric(
         )
       }
     }
+
     is Psi -> {
       if (clazz.typeParameters.isNotEmpty()) {
         val typeString = clazz.typeParameters
