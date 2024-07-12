@@ -303,6 +303,17 @@ class IncrementalTest : BaseGradleTest() {
       task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
     }
 
+    fun includedModules(): List<String> {
+      return lib2.classGraphResult(lib1)
+        .allMergedModulesForComponent("com.squareup.test.lib2.AnyComponent")
+        .names()
+    }
+
+    includedModules() shouldBe listOf(
+      "com.squareup.test.lib1.Service1_ServiceInterface_Any_MultiBindingModule_a39836ad",
+      "com.squareup.test.lib1.Service2_ServiceInterface_Any_MultiBindingModule_4e7cdd78",
+    )
+
     lib1.dir("src/main/java") {
       // Replace the @ContributesMultibinding class declaration with one that isn't bound.
       injectClass(packageName = "com.squareup.test.lib1", simpleName = "Service1")
@@ -314,11 +325,7 @@ class IncrementalTest : BaseGradleTest() {
       task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
     }
 
-    val includes = lib2.classGraphResult(lib1)
-      .allMergedModulesForComponent("com.squareup.test.lib2.AnyComponent")
-      .names()
-
-    includes shouldBe listOf(
+    includedModules() shouldBe listOf(
       "com.squareup.test.lib1.Service2_ServiceInterface_Any_MultiBindingModule_4e7cdd78",
     )
   }
@@ -420,6 +427,17 @@ class IncrementalTest : BaseGradleTest() {
         task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }
 
+      fun includedModules(): List<String> {
+        return lib2.classGraphResult(lib1)
+          .allMergedModulesForComponent("com.squareup.test.lib2.AnyComponent")
+          .names()
+      }
+
+      includedModules() shouldBe listOf(
+        "com.squareup.test.lib1.Service1_ServiceInterface_Any_MultiBindingModule_a39836ad",
+        "com.squareup.test.lib1.Service2_ServiceInterface_Any_MultiBindingModule_4e7cdd78",
+      )
+
       lib1.dir("src/main/java") {
         // Replace the @ContributesMultibinding class declaration with one that isn't bound.
         injectClass(packageName = "com.squareup.test.lib1", simpleName = "Service1")
@@ -438,11 +456,7 @@ class IncrementalTest : BaseGradleTest() {
         task(":lib2:compileKotlin")?.outcome shouldBe TaskOutcome.SUCCESS
       }
 
-      val includes = lib2.classGraphResult(lib1)
-        .allMergedModulesForComponent("com.squareup.test.lib2.AnyComponent")
-        .names()
-
-      includes shouldBe listOf(
+      includedModules() shouldBe listOf(
         "com.squareup.test.lib1.Service2_ServiceInterface_Any_MultiBindingModule_4e7cdd78",
         "com.squareup.test.lib1.Service3_ServiceInterface_Any_MultiBindingModule_a6a5fcfa",
       )
