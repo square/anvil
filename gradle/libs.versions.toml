@@ -11,10 +11,10 @@
 agp = "7.3.1"
 androidx-appcompat = "1.6.1"
 androidx-core = "1.3.0"
-androidx-test-core = "1.5.0"
-androidx-test-rules = "1.5.0"
-androidx-test-runner = "1.5.2"
-androidx-test-ext = "1.1.5"
+androidx-test-core = "1.6.1"
+androidx-test-rules = "1.6.1"
+androidx-test-runner = "1.6.1"
+androidx-test-ext = "1.2.1"
 autoService = "1.1.1"
 autoValue = "1.11.0"
 buildconfig = "5.3.5"
@@ -143,4 +143,4 @@ ktlintRaw = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "kt
 
 mavenPublishRaw = { module = "com.vanniktech:gradle-maven-publish-plugin", version.ref = "mavenPublish" }
 
-truth = "com.google.truth:truth:1.4.2"
+truth = "com.google.truth:truth:1.4.4"
