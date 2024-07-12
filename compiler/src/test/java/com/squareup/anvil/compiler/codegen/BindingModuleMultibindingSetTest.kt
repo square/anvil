@@ -20,7 +20,6 @@ import com.squareup.anvil.compiler.parentInterface1
 import com.squareup.anvil.compiler.parentInterface2
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
-import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import dagger.Binds
 import dagger.Provides
@@ -270,7 +269,7 @@ class BindingModuleMultibindingSetTest(
       $annotation(Any::class)
       interface ComponentInterface
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
 
       assertThat(messages).contains("Source0.kt:6:11")

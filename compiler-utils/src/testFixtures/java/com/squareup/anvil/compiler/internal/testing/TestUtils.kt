@@ -147,9 +147,10 @@ public fun Array<KClass<*>>.withoutAnvilModules(): List<KClass<*>> = toList().wi
 @ExperimentalAnvilApi
 public fun Collection<KClass<*>>.withoutAnvilModules(): List<KClass<*>> =
   filterNot {
-    it.qualifiedName!!.startsWith("anvil.module") || it.java.isAnnotationPresent(
-      InternalBindingMarker::class.java,
-    )
+    it.qualifiedName!!.startsWith("anvil.module") ||
+      it.java.isAnnotationPresent(
+        InternalBindingMarker::class.java,
+      )
   }
 
 @ExperimentalAnvilApi

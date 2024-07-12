@@ -110,6 +110,7 @@ public class AnvilCompilationException(
       }
     }
 
+    @UnsafeDuringIrConstructionAPI
     public operator fun invoke(
       element: IrSymbol? = null,
       message: String,

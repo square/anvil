@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler
 
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import java.util.Locale
 
 public class CommandLineOptions private constructor(
   public val generateFactories: Boolean,
