@@ -22,7 +22,6 @@ import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.kotlinpoet.asClassName
 import com.tschuchort.compiletesting.CompilationResult
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
@@ -48,9 +47,9 @@ internal fun compile(
   trackSourceFiles: Boolean = true,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = true,
-  mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
+  mode: AnvilCompilationMode = Embedded(codeGenerators),
   workingDir: File? = null,
-  expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
+  expectExitCode: ExitCode = ExitCode.OK,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult = compileAnvil(
   sources = sources,

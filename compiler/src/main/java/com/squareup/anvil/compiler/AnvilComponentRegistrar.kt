@@ -7,6 +7,7 @@ import com.google.auto.service.AutoService
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.CommandLineOptions.Companion.commandLineOptions
 import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
 import com.squareup.anvil.compiler.codegen.incremental.BaseDir
@@ -16,6 +17,8 @@ import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.LanguageVersion
+import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.util.ServiceLoader
 import kotlin.LazyThreadSafetyMode.NONE
@@ -24,9 +27,10 @@ import kotlin.LazyThreadSafetyMode.NONE
  * Entry point for the Anvil Kotlin compiler plugin. It registers several callbacks for the
  * various compilation phases.
  */
-@AutoService(ComponentRegistrar::class)
+// @AutoService(ComponentRegistrar::class)
 public class AnvilComponentRegistrar : ComponentRegistrar {
 
+  // We don't do anything for K2, but we need to return true here or the compilation fails.
   override val supportsK2: Boolean = true
 
   private val manuallyAddedCodeGenerators = mutableListOf<CodeGenerator>()
@@ -35,6 +39,10 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
     project: MockProject,
     configuration: CompilerConfiguration,
   ) {
+    if (configuration.languageVersionSettings.languageVersion >= LanguageVersion.KOTLIN_2_0) {
+      return
+    }
+
     val commandLineOptions = configuration.commandLineOptions
     val scanner by lazy(NONE) {
       ClassScanner()
@@ -58,6 +66,10 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
         ),
       )
     }
+
+    // project.extensionArea
+    //   .getExtensionPoint(FirSupertypeGenerationExtension.NAME)
+    //   .registerExtensionPoint(FirContributionMerger(TODO()))
 
     val sourceGenFolder = configuration.getNotNull(srcGenDirKey)
     val cacheDir = configuration.getNotNull(anvilCacheDirKey)

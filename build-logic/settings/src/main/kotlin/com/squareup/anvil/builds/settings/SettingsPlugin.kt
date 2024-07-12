@@ -41,6 +41,15 @@ abstract class SettingsPlugin @Inject constructor(
       repos.gradlePluginPortal()
       repos.google()
 
+      repos.maven {
+        it.url = URI("https://www.jetbrains.com/intellij-repository/releases")
+        it.name = "Intellij-releases"
+      }
+      repos.maven {
+        it.url = URI("https://cache-redirector.jetbrains.com/intellij-dependencies")
+        it.name = "Intellij-dependencies"
+      }
+
       if (target.providers.gradleProperty("anvil.allowSnapshots").orNull?.toBoolean() == true) {
         repos.maven { it.url = URI("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev") }
         repos.maven { it.url = URI("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/bootstrap") }

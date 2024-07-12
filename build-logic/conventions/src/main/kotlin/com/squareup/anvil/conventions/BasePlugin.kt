@@ -44,6 +44,17 @@ abstract class BasePlugin : Plugin<Project> {
 
     configureTests(target)
 
+    target.configurations.configureEach { config ->
+      config.resolutionStrategy {
+        it.force(target.libs.kotlin.metadata.jvm)
+        it.eachDependency { details ->
+          if (details.requested.group == "org.jetbrains.kotlin") {
+            details.useVersion(target.libs.versions.kotlin.get())
+          }
+        }
+      }
+    }
+
     afterApply(target)
   }
 

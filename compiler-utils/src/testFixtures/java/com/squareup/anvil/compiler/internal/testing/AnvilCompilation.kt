@@ -4,7 +4,6 @@ import com.google.auto.value.processor.AutoAnnotationProcessor
 import com.google.common.truth.Truth.assertWithMessage
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
-import com.squareup.anvil.compiler.AnvilComponentRegistrar
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
@@ -14,10 +13,13 @@ import com.tschuchort.compiletesting.addPreviousResultToClasspath
 import dagger.internal.codegen.ComponentProcessor
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.config.JvmTarget
+import org.jetbrains.kotlin.kapt3.Kapt3CommandLineProcessor
 import org.jetbrains.kotlin.config.LanguageVersion
 import java.io.File
 import java.io.OutputStream
 import java.nio.file.Files
+import java.util.Locale
+import java.util.ServiceLoader
 
 /**
  * A simple API over a [KotlinCompilation] with extra configuration support for Anvil.
@@ -50,79 +52,76 @@ public class AnvilCompilation internal constructor(
     if (!enableAnvil) return@apply
 
     kotlinCompilation.apply {
-      val anvilComponentRegistrar = AnvilComponentRegistrar()
-      // Deprecation tracked in https://github.com/square/anvil/issues/672
-      @Suppress("DEPRECATION")
-      componentRegistrars = listOf(anvilComponentRegistrar)
-      if (enableDaggerAnnotationProcessor) {
-        annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
-      }
+
+      supportsK2 = true
+      annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
+      useKapt4 = true
 
       val anvilCommandLineProcessor = AnvilCommandLineProcessor()
-      commandLineProcessors = listOf(anvilCommandLineProcessor)
+      commandLineProcessors = listOf(anvilCommandLineProcessor, Kapt3CommandLineProcessor())
 
       val buildDir = workingDir.resolve("build")
       val anvilCacheDir = buildDir.resolve("anvil-cache")
 
-      pluginOptions = mutableListOf(
-        PluginOption(
-          pluginId = anvilCommandLineProcessor.pluginId,
-          optionName = "disable-component-merging",
-          optionValue = disableComponentMerging.toString(),
-        ),
-        PluginOption(
-          pluginId = anvilCommandLineProcessor.pluginId,
-          optionName = "ir-merges-file",
-          optionValue = anvilCacheDir.resolve("merges/ir-merges.txt").absolutePath,
-        ),
-        PluginOption(
-          pluginId = anvilCommandLineProcessor.pluginId,
-          optionName = "track-source-files",
-          optionValue = (trackSourceFiles && mode is Embedded).toString(),
-        ),
-      )
+      // pluginOptions = mutableListOf(
+      //   PluginOption(
+      //     pluginId = anvilCommandLineProcessor.pluginId,
+      //     optionName = "disable-component-merging",
+      //     optionValue = disableComponentMerging.toString(),
+      //   ),
+      //   PluginOption(
+      //     pluginId = anvilCommandLineProcessor.pluginId,
+      //     optionName = "ir-merges-file",
+      //     optionValue = anvilCacheDir.resolve("merges/ir-merges.txt").absolutePath,
+      //   ),
+      //   PluginOption(
+      //     pluginId = anvilCommandLineProcessor.pluginId,
+      //     optionName = "track-source-files",
+      //     optionValue = (trackSourceFiles && mode is Embedded).toString(),
+      //   ),
+      // )
 
       when (mode) {
         is Embedded -> {
-          anvilComponentRegistrar.addCodeGenerators(mode.codeGenerators)
-          pluginOptions +=
-            listOf(
-              PluginOption(
-                pluginId = anvilCommandLineProcessor.pluginId,
-                optionName = "gradle-project-dir",
-                optionValue = workingDir.absolutePath,
-              ),
-              PluginOption(
-                pluginId = anvilCommandLineProcessor.pluginId,
-                optionName = "gradle-build-dir",
-                optionValue = buildDir.absolutePath,
-              ),
-              PluginOption(
-                pluginId = anvilCommandLineProcessor.pluginId,
-                optionName = "src-gen-dir",
-                optionValue = buildDir.resolve("anvil").absolutePath,
-              ),
-              PluginOption(
-                pluginId = anvilCommandLineProcessor.pluginId,
-                optionName = "anvil-cache-dir",
-                optionValue = anvilCacheDir.absolutePath,
-              ),
-              PluginOption(
-                pluginId = anvilCommandLineProcessor.pluginId,
-                optionName = "generate-dagger-factories",
-                optionValue = generateDaggerFactories.toString(),
-              ),
-              PluginOption(
-                pluginId = anvilCommandLineProcessor.pluginId,
-                optionName = "generate-dagger-factories-only",
-                optionValue = generateDaggerFactoriesOnly.toString(),
-              ),
-              PluginOption(
-                pluginId = anvilCommandLineProcessor.pluginId,
-                optionName = "will-have-dagger-factories",
-                optionValue = (generateDaggerFactories || enableDaggerAnnotationProcessor).toString(),
-              ),
-            )
+          // anvilComponentRegistrar.addCodeGenerators(mode.codeGenerators)
+          // pluginOptions +=
+          //   listOf(
+          //     PluginOption(
+          //       pluginId = anvilCommandLineProcessor.pluginId,
+          //       optionName = "gradle-project-dir",
+          //       optionValue = workingDir.absolutePath,
+          //     ),
+          //     PluginOption(
+          //       pluginId = anvilCommandLineProcessor.pluginId,
+          //       optionName = "gradle-build-dir",
+          //       optionValue = buildDir.absolutePath,
+          //     ),
+          //     PluginOption(
+          //       pluginId = anvilCommandLineProcessor.pluginId,
+          //       optionName = "src-gen-dir",
+          //       optionValue = buildDir.resolve("anvil").absolutePath,
+          //     ),
+          //     PluginOption(
+          //       pluginId = anvilCommandLineProcessor.pluginId,
+          //       optionName = "anvil-cache-dir",
+          //       optionValue = anvilCacheDir.absolutePath,
+          //     ),
+          //     PluginOption(
+          //       pluginId = anvilCommandLineProcessor.pluginId,
+          //       optionName = "generate-dagger-factories",
+          //       optionValue = generateDaggerFactories.toString(),
+          //     ),
+          //     PluginOption(
+          //       pluginId = anvilCommandLineProcessor.pluginId,
+          //       optionName = "generate-dagger-factories-only",
+          //       optionValue = generateDaggerFactoriesOnly.toString(),
+          //     ),
+          //     PluginOption(
+          //       pluginId = anvilCommandLineProcessor.pluginId,
+          //       optionName = "will-have-dagger-factories",
+          //       optionValue = (generateDaggerFactories || enableDaggerAnnotationProcessor).toString(),
+          //     ),
+          //   )
         }
       }
 
@@ -267,6 +266,7 @@ public fun compileAnvil(
   generateDaggerFactoriesOnly: Boolean = false,
   disableComponentMerging: Boolean = false,
   allWarningsAsErrors: Boolean = true,
+  useK2: Boolean = true,
   messageOutputStream: OutputStream = System.out,
   workingDir: File? = null,
   enableExperimentalAnvilApis: Boolean = true,
@@ -279,19 +279,23 @@ public fun compileAnvil(
   expectExitCode: KotlinCompilation.ExitCode? = null,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult {
-  return AnvilCompilation()
+  val c = AnvilCompilation()
     .apply {
-      kotlinCompilation.apply {
-        languageVersion = kotlinLanguageVersion
-        apiVersion = kotlinLanguageVersion
-        this.allWarningsAsErrors = allWarningsAsErrors
-        this.messageOutputStream = messageOutputStream
+      kotlinCompilation.also {
+        it.allWarningsAsErrors = allWarningsAsErrors
+        it.messageOutputStream = messageOutputStream
         if (workingDir != null) {
-          this.workingDir = workingDir
+          it.workingDir = workingDir
         }
         if (moduleName != null) {
-          this.moduleName = moduleName
+          it.moduleName = moduleName
         }
+        it.apiVersion = "2.0"
+        it.languageVersion = "2.0"
+        it.supportsK2 = true
+        it.useKapt4 = true
+
+        it.verbose = false
       }
 
       if (jvmTarget != null) {
@@ -311,9 +315,10 @@ public fun compileAnvil(
       trackSourceFiles = trackSourceFiles,
       mode = mode,
     )
-    .compile(
-      *sources,
-      expectExitCode = expectExitCode,
-    )
+
+  return c.compile(
+    *sources,
+    expectExitCode = expectExitCode,
+  )
     .also(block)
 }

@@ -8,7 +8,7 @@ object Factory
 
 object Date
 
-abstract class OuterClass constructor(
+abstract class OuterClass(
   @Suppress("UNUSED_PARAMETER") innerClass: InnerClass,
 ) {
   class InnerClass

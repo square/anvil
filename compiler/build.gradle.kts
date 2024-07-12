@@ -5,12 +5,15 @@ plugins {
   alias(libs.plugins.buildconfig)
 }
 
+val VERSION_NAME: String by project
+
 buildConfig {
   className("BuildProperties")
   packageName("com.squareup.anvil.compiler")
   useKotlinOutput { topLevelConstants = true }
 
   buildConfigField("boolean", "FULL_TEST_RUN", libs.versions.config.fullTestRun.get())
+  buildConfigField("anvilVersion", VERSION_NAME)
 }
 
 conventions {
@@ -33,6 +36,8 @@ publish {
 }
 
 dependencies {
+  implementation(libs.auto.service.annotations)
+  implementation(libs.classgraph)
   implementation(project(":annotations"))
   implementation(project(":compiler-api"))
   implementation(project(":compiler-utils"))
@@ -40,9 +45,10 @@ dependencies {
   implementation(libs.dagger2)
   implementation(libs.jsr250)
   implementation(libs.kotlinpoet)
+  implementation(libs.kotlinpoet.ksp)
 
   compileOnly(libs.auto.service.annotations)
-  compileOnly(libs.kotlin.compiler)
+  compileOnly(libs.kotlin.compiler.embeddable)
 
   kapt(libs.auto.service.processor)
 
@@ -52,9 +58,10 @@ dependencies {
   testImplementation(libs.guava)
   testImplementation(libs.kase)
   testImplementation(libs.kotest.assertions.core.jvm)
-  testImplementation(libs.kotlin.annotationProcessingEmbeddable)
+  testImplementation(libs.kotlin.annotation.processing.embeddable)
   testImplementation(libs.kotlin.compileTesting)
-  testImplementation(libs.kotlin.compiler)
+  testImplementation(libs.kotlin.compileTesting.ksp)
+  testImplementation(libs.kotlin.compiler.embeddable)
   testImplementation(libs.kotlin.test)
   testImplementation(libs.kotlin.reflect)
   testImplementation(libs.truth)
