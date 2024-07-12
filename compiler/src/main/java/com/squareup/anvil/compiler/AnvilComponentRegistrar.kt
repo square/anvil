@@ -3,12 +3,10 @@
 
 package com.squareup.anvil.compiler
 
-import com.google.auto.service.AutoService
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.CommandLineOptions.Companion.commandLineOptions
 import com.squareup.anvil.compiler.api.AnalysisBackend
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
 import com.squareup.anvil.compiler.codegen.incremental.BaseDir
@@ -18,6 +16,7 @@ import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.util.ServiceLoader
 import kotlin.LazyThreadSafetyMode.NONE
@@ -26,7 +25,7 @@ import kotlin.LazyThreadSafetyMode.NONE
  * Entry point for the Anvil Kotlin compiler plugin. It registers several callbacks for the
  * various compilation phases.
  */
-@AutoService(ComponentRegistrar::class)
+// @AutoService(ComponentRegistrar::class)
 public class AnvilComponentRegistrar : ComponentRegistrar {
 
   override val supportsK2: Boolean = true
@@ -47,22 +46,20 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
     val irMergesFile by lazy(NONE) { configuration.getNotNull(irMergesFileKey) }
     val trackSourceFiles = configuration.getNotNull(trackSourceFilesKey)
 
+    val usesK2 = configuration.languageVersionSettings.languageVersion.usesK2
+
     val mergingEnabled =
       !commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging
-    if (mergingEnabled) {
-      if (commandLineOptions.componentMergingBackend == ComponentMergingBackend.IR) {
-        IrGenerationExtension.registerExtension(
-          project,
-          IrContributionMerger(
-            classScanner = scanner,
-            moduleDescriptorFactory = moduleDescriptorFactory,
-            trackSourceFiles = trackSourceFiles,
-            irMergesFile = irMergesFile,
-          ),
-        )
-      } else {
-        // TODO in dagger-ksp support
-      }
+    if (mergingEnabled && !usesK2) {
+      IrGenerationExtension.registerExtension(
+        project,
+        IrContributionMerger(
+          classScanner = scanner,
+          moduleDescriptorFactory = moduleDescriptorFactory,
+          trackSourceFiles = trackSourceFiles,
+          irMergesFile = irMergesFile,
+        ),
+      )
     }
 
     // Everything below this point is only when running in embedded compilation mode. If running in
@@ -70,6 +67,10 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
     if (commandLineOptions.backend != AnalysisBackend.EMBEDDED) {
       return
     }
+
+    // project.extensionArea
+    //   .getExtensionPoint(FirSupertypeGenerationExtension.NAME)
+    //   .registerExtensionPoint(FirContributionMerger(TODO()))
 
     val sourceGenFolder = configuration.getNotNull(srcGenDirKey)
     val cacheDir = configuration.getNotNull(anvilCacheDirKey)

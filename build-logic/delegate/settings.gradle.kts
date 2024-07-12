@@ -108,3 +108,17 @@ listOf(
 if (gradle.parent == null) {
   includeBuild("../..")
 }
+
+val blob2 = startParameter.taskRequests.joinToString("\n") { it.args.joinToString("\n") }
+val blob3 = startParameter.taskRequests.joinToString("\n") { it.projectPath ?: "null project path" }
+println(
+  """
+  |############################################# integration tests/samples build
+  |-- task names
+  |$blob2
+  |
+  |-- project paths
+  |$blob3
+  |#############################################
+  """.trimMargin(),
+)

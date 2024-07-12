@@ -15,7 +15,8 @@ publish {
   configurePom(
     artifactId = "compiler-utils",
     pomName = "Anvil Compiler Utils",
-    pomDescription = "Optional utility and extension functions for working with PSI and descriptors, " +
+    pomDescription =
+    "Optional utility and extension functions for working with PSI and descriptors, " +
       "designed to simplify code generation tasks in Anvil",
   )
 }
@@ -23,13 +24,15 @@ publish {
 dependencies {
   api(project(":annotations"))
   api(project(":compiler-api"))
-  api(libs.kotlin.compiler)
+  api(libs.kotlin.compiler.embeddable)
   api(libs.kotlinpoet)
 
   implementation(platform(libs.kotlin.bom))
   implementation(libs.dagger2)
   implementation(libs.inject)
 
+  testFixturesApi(libs.classgraph)
+  testFixturesApi(libs.kase)
   testFixturesApi(libs.kotlin.compileTesting)
   testFixturesApi(libs.kotlin.compileTesting.ksp)
   testFixturesImplementation(project(":compiler"))

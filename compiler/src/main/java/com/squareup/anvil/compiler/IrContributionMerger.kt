@@ -13,6 +13,7 @@ import com.squareup.anvil.compiler.codegen.reference.toClassReference
 import com.squareup.anvil.compiler.internal.classIdBestGuess
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import dagger.Module
+import org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.createIrBuilder
@@ -26,6 +27,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.types.classOrFail
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -49,6 +51,7 @@ import java.io.File
  * as super types to Dagger components annotated with `@MergeComponent` or `@MergeSubcomponent`.
  * This also supports arbitrary interface merging on interfaces annotated with `@MergeInterfaces`.
  */
+@OptIn(UnsafeDuringIrConstructionAPI::class, FirIncompatiblePluginAPI::class)
 internal class IrContributionMerger(
   private val classScanner: ClassScanner,
   private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
@@ -693,6 +696,7 @@ private fun ClassReferenceIr.allSuperTypeClassReferences(
     .distinct()
 }
 
+@UnsafeDuringIrConstructionAPI
 private fun ClassReferenceIr.atLeastOneAnnotation(
   annotationName: FqName,
   scopeName: FqName? = null,

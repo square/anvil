@@ -9,22 +9,27 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PROTECTED
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.requireClassId
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
-import org.jetbrains.kotlin.backend.common.lower.parents
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.util.isInterface
 import org.jetbrains.kotlin.ir.util.packageFqName
+import org.jetbrains.kotlin.ir.util.parents
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import kotlin.LazyThreadSafetyMode.NONE
 
+@OptIn(UnsafeDuringIrConstructionAPI::class)
 internal class ClassReferenceIr(
   val clazz: IrClassSymbol,
   val context: IrPluginContext,
 ) : AnnotatedReferenceIr {
+
   val fqName: FqName = clazz.fqName
+
   val packageFqName: FqName? = clazz.owner.packageFqName
+
   val classId: ClassId = clazz.requireClassId()
 
   val shortName: String
@@ -81,6 +86,7 @@ internal class ClassReferenceIr(
 internal fun IrClassSymbol.toClassReference(context: IrPluginContext) =
   ClassReferenceIr(this, context)
 
+@UnsafeDuringIrConstructionAPI
 @Suppress("FunctionName")
 internal fun AnvilCompilationExceptionClassReferenceIr(
   classReference: ClassReferenceIr,

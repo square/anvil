@@ -17,8 +17,6 @@ import org.gradle.api.artifacts.Configuration
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskContainer
 import org.gradle.api.tasks.TaskProvider
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_1_9
-import org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0
 import org.jetbrains.kotlin.gradle.internal.KaptGenerateStubsTask
 import org.jetbrains.kotlin.gradle.plugin.FilesSubpluginOption
 import org.jetbrains.kotlin.gradle.plugin.KaptExtension
@@ -113,29 +111,9 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   override fun applyToCompilation(
     kotlinCompilation: KotlinCompilation<*>,
   ): Provider<List<SubpluginOption>> {
-    kotlinCompilation.compilerOptions.options.let {
-      @Suppress("DEPRECATION")
-      val useK2 = it.useK2.get()
-      if (useK2 || it.languageVersion.getOrElse(KOTLIN_1_9) >= KOTLIN_2_0) {
-        kotlinCompilation.project.logger
-          .error(
-            "NOTE: Anvil is currently incompatible with the K2 compiler. Related GH issue:" +
-              "https://github.com/square/anvil/issues/733",
-          )
-      }
-    }
 
     val variant = getVariant(kotlinCompilation)
     val project = variant.project
-
-    if (!variant.variantFilter.generateDaggerFactories &&
-      variant.variantFilter.generateDaggerFactoriesOnly
-    ) {
-      throw GradleException(
-        "You cannot set generateDaggerFactories to false and generateDaggerFactoriesOnly " +
-          "to true at the same time for variant ${variant.name}.",
-      )
-    }
 
     // Make the kotlin compiler classpath extend our configurations to pick up our extra
     // generators.
@@ -189,25 +167,25 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       }
     }
 
-    if (variant.variantFilter.syncGeneratedSources) {
-      val isIdeSyncProvider = project.providers
-        .systemProperty("idea.sync.active")
-
-      if (isIdeSyncProvider.getOrElse("false").toBoolean()) {
-        // Only add source sets during the IDE sync. Don't add them for compilation, otherwise
-        // we'll see weird compile errors especially with incremental compilation. For a longer
-        // explanation why this is a bad idea, see here:
-        // https://github.com/square/anvil/pull/207#issuecomment-850768750
-        kotlinCompilation.defaultSourceSet {
-          kotlin.srcDir(srcGenDir)
-        }
-
-        // For Android and AGP the above code doesn't work for some reason. This is the workaround.
-        variant.androidSourceSets?.forEach { sourceSet ->
-          sourceSet.java.srcDir(srcGenDir)
-        }
-      }
-    }
+    // if (variant.variantFilter.syncGeneratedSources) {
+    //   val isIdeSyncProvider = project.providers
+    //     .systemProperty("idea.sync.active")
+    //
+    //   if (isIdeSyncProvider.getOrElse("false").toBoolean()) {
+    //     // Only add source sets during the IDE sync. Don't add them for compilation, otherwise
+    //     // we'll see weird compile errors especially with incremental compilation. For a longer
+    //     // explanation why this is a bad idea, see here:
+    //     // https://github.com/square/anvil/pull/207#issuecomment-850768750
+    //     kotlinCompilation.defaultSourceSet {
+    //       kotlin.srcDir(srcGenDir)
+    //     }
+    //
+    //     // For Android and AGP the above code doesn't work for some reason. This is the workaround.
+    //     variant.androidSourceSets?.forEach { sourceSet ->
+    //       sourceSet.java.srcDir(srcGenDir)
+    //     }
+    //   }
+    // }
 
     fun Variant.willHaveDaggerFactories(): Boolean {
       if (variantFilter.generateDaggerFactories) return true

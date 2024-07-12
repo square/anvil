@@ -23,16 +23,18 @@ private const val MAX_FILE_NAME_LENGTH = 255
 @ExperimentalAnvilApi
 public fun ClassName.joinSimpleNames(
   separator: String = "_",
+  prefix: String = "",
   suffix: String = "",
-): ClassName = joinSimpleNamesPrivate(separator = separator, suffix = suffix)
+): ClassName = joinSimpleNamesPrivate(separator = separator, prefix = prefix, suffix = suffix)
   .checkFileLength()
 
 private fun ClassName.joinSimpleNamesPrivate(
   separator: String = "_",
+  prefix: String = "",
   suffix: String = "",
 ): ClassName = ClassName(
   packageName = packageName,
-  simpleNames.joinToString(separator = separator, postfix = suffix),
+  simpleNames.joinToString(separator = separator, prefix = prefix, postfix = suffix),
 )
 
 private fun ClassName.checkFileLength(): ClassName = apply {

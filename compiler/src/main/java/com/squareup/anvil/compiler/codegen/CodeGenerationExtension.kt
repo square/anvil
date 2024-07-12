@@ -251,12 +251,45 @@ internal class CodeGenerationExtension(
           .toKtFiles(psiManager, anvilModule)
       }
 
+    println(
+      """
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% anvilModule allFiles
+        ${anvilModule.allFiles.sortedBy { it.virtualFilePath }.joinToString("\n") { it.name }}
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+      """.trimIndent(),
+    )
+
     fun List<CodeGenerator>.loopGeneration() {
       var newFiles = generateAndCache(anvilModule.allFiles.toList())
       while (newFiles.isNotEmpty()) {
         // Parse the KtFile for each generated file. Then feed the code generators with the new
         // parsed files until no new files are generated.
         newFiles = generateAndCache(newFiles)
+
+        println(
+          """
+      |               |\|\,'\,'\ ,.
+      |               )        ;' |,'
+      |              /              |,'|,.
+      |             /                  ` /__
+      |            ,'                    ,-'
+      |           ,'                    :
+      |          (_                     '
+      |        ,'                      ;
+      |        |---._ ,'     .        '
+      |        :   o Y---.__  ;      ;
+      |        /`,""-|     o`.|     /
+      |       ,  `._  `.    ,'     ;
+      |       ;         `""'      ;
+      |      /                   -'.
+      |      \                   G  )           newFiles size: ${newFiles.size}
+      |       `-.__________,   `._,'
+      |               (`   `     |)\
+      |              / `.       ,'  \
+      |             /    `-----'     \
+      |            /
+          """.trimMargin(),
+        )
       }
     }
 

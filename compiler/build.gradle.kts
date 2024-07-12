@@ -5,6 +5,8 @@ plugins {
   alias(libs.plugins.buildconfig)
 }
 
+val VERSION_NAME: String by project
+
 buildConfig {
   className("BuildProperties")
   packageName("com.squareup.anvil.compiler")
@@ -12,6 +14,7 @@ buildConfig {
 
   buildConfigField("boolean", "FULL_TEST_RUN", libs.versions.config.fullTestRun.get())
   buildConfigField("boolean", "INCLUDE_KSP_TESTS", libs.versions.config.includeKspTests.get())
+  buildConfigField("anvilVersion", VERSION_NAME)
 }
 
 conventions {
@@ -34,38 +37,45 @@ publish {
 }
 
 dependencies {
-  implementation(project(":annotations"))
-  implementation(project(":compiler-api"))
-  implementation(project(":compiler-utils"))
-  implementation(platform(libs.kotlin.bom))
+
+  api(libs.dagger2.compiler)
+  // api(libs.intellij.core)
+  // api(libs.intellij.util)
+  api(libs.kotlin.annotation.processing.embeddable)
+  api(libs.kotlin.compiler.embeddable)
+  api(libs.kotlin.metadata.jvm)
+  api(libs.kotlin.scripting.compiler.embeddable)
+
+  compileOnly(libs.ksp.api)
+  compileOnly(libs.ksp.compilerPlugin)
+
+  implementation(libs.auto.service.annotations)
+  implementation(libs.classgraph)
   implementation(libs.dagger2)
+  implementation(libs.jakarta.inject)
   implementation(libs.jsr250)
   implementation(libs.kotlinpoet)
   implementation(libs.kotlinpoet.ksp)
-
-  compileOnly(libs.auto.service.annotations)
-  compileOnly(libs.kotlin.compiler)
-  compileOnly(libs.ksp.compilerPlugin)
-  compileOnly(libs.ksp.api)
+  implementation(platform(libs.kotlin.bom))
+  implementation(project(":annotations"))
+  implementation(project(":compiler-api"))
+  implementation(project(":compiler-utils"))
 
   kapt(libs.auto.service.processor)
 
-  testImplementation(testFixtures(project(":compiler-utils")))
   testImplementation(libs.dagger2.compiler)
-  // Force later guava version for Dagger's needs
-  testImplementation(libs.guava)
+  testImplementation(libs.guava) { because("for Dagger") }
   testImplementation(libs.kase)
   testImplementation(libs.kotest.assertions.core.jvm)
-  testImplementation(libs.kotlin.annotationProcessingEmbeddable)
   testImplementation(libs.kotlin.compileTesting)
   testImplementation(libs.kotlin.compileTesting.ksp)
-  testImplementation(libs.kotlin.compiler)
-  testImplementation(libs.kotlin.test)
   testImplementation(libs.kotlin.reflect)
+  testImplementation(libs.kotlin.test)
   testImplementation(libs.ksp.compilerPlugin)
   testImplementation(libs.truth)
+  testImplementation(testFixtures(project(":compiler-utils")))
 
-  testRuntimeOnly(libs.kotest.assertions.core.jvm)
-  testRuntimeOnly(libs.junit.vintage.engine)
   testRuntimeOnly(libs.junit.jupiter.engine)
+  testRuntimeOnly(libs.junit.vintage.engine)
+  testRuntimeOnly(libs.kotest.assertions.core.jvm)
 }
