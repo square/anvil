@@ -854,29 +854,31 @@ internal class KspContributionMerger(
           allBindingSpecs += bindingSpecs
           addType(creatorSpec)
 
-          // Generate a binding module for the component factory
-          //
-          // @Module
-          // interface SubcomponentModule {
-          //   @Binds
-          //   fun bindComponentFactory(impl: ComponentFactory): UserComponent.ComponentFactory
-          // }
-          //
-          addType(
-            generateDaggerBindingModuleForFactory(
-              parent = creator.declaration,
-              impl = generatedComponentClassName.nestedClass(creatorSpec.name!!),
-            ),
-          )
-
-          //
-          // Generate a ParentComponent for the factory type if this is a subcomponent.
-          //
-          // interface ParentComponent {
-          //   fun createComponentFactory(): ComponentFactory
-          // }
-          //
+          // Subcomponents need a couple extra interfaces
           if (mergeAnnotatedClass.isAnnotationPresent<MergeSubcomponent>()) {
+            //
+            // Generate a binding module for the component factory
+            //
+            // @Module
+            // interface SubcomponentModule {
+            //   @Binds
+            //   fun bindComponentFactory(impl: ComponentFactory): UserComponent.ComponentFactory
+            // }
+            //
+            addType(
+              generateDaggerBindingModuleForFactory(
+                parent = creator.declaration,
+                impl = generatedComponentClassName.nestedClass(creatorSpec.name!!),
+              ),
+            )
+
+            //
+            // Generate a ParentComponent for the factory type if this is a subcomponent.
+            //
+            // interface ParentComponent {
+            //   fun createComponentFactory(): ComponentFactory
+            // }
+            //
             addType(
               generateParentComponentForFactory(
                 factoryClassName = generatedComponentClassName.nestedClass(creatorSpec.name!!),
