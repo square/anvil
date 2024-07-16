@@ -14,6 +14,8 @@ import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.checkNoDuplicateScope
 import com.squareup.anvil.compiler.codegen.ksp.declaringClass
+import com.squareup.anvil.compiler.codegen.ksp.fqName
+import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.getSymbolsWithAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.mergeAnnotations
@@ -29,6 +31,8 @@ import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentClassName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
 import com.squareup.kotlinpoet.ksp.toClassName
+import dagger.Component
+import dagger.Subcomponent
 import org.jetbrains.kotlin.name.FqName
 
 internal class KspMergeAnnotationsCheckSymbolProcessor(
@@ -59,7 +63,7 @@ internal class KspMergeAnnotationsCheckSymbolProcessor(
       clazz: KSClassDeclaration,
       mergeAnnotations: List<KSAnnotation> = clazz.mergeAnnotations(),
     ) {
-      mergeAnnotations.checkSingleAnnotation()
+      val mergeAnnotation = mergeAnnotations.checkSingleAnnotation()
       mergeAnnotations.checkNoDuplicateScope(
         annotatedType = clazz,
         isContributeAnnotation = false,
@@ -74,9 +78,19 @@ internal class KspMergeAnnotationsCheckSymbolProcessor(
           it.annotationType.resolve().declaration.qualifiedName?.asString() != mergeInterfacesFqName.asString()
         }
         ?.checkNotAnnotatedWithDaggerAnnotation()
+
+      // Validate there is no dagger creator annotation on any nested classes
+      val mergeAnnotationFqName = mergeAnnotation.fqName
+      if (mergeAnnotationFqName == mergeComponentFqName || mergeAnnotationFqName == mergeSubcomponentFqName) {
+        clazz.declarations
+          .filterIsInstance<KSClassDeclaration>()
+          .forEach {
+            it.checkNotAnnotatedWithDaggerCreatorAnnotation(mergeAnnotation)
+          }
+      }
     }
 
-    private fun List<KSAnnotation>.checkSingleAnnotation() {
+    private fun List<KSAnnotation>.checkSingleAnnotation(): KSAnnotation {
       val distinctAnnotations = distinctBy { it.annotationType.resolve().declaration.qualifiedName }
       if (distinctAnnotations.size > 1) {
         throw KspAnvilException(
@@ -89,6 +103,7 @@ internal class KspMergeAnnotationsCheckSymbolProcessor(
             " and this is forbidden.",
         )
       }
+      return distinctAnnotations.single()
     }
 
     private fun KSAnnotation.checkNotAnnotatedWithDaggerAnnotation() {
@@ -98,6 +113,26 @@ internal class KspMergeAnnotationsCheckSymbolProcessor(
           message = "When using @${shortName.asString()} it's not allowed to " +
             "annotate the same class with @${daggerAnnotationFqName.shortName().asString()}. " +
             "The Dagger annotation will be generated.",
+        )
+      }
+    }
+
+    private fun KSAnnotated.checkNotAnnotatedWithDaggerCreatorAnnotation(
+      mergeAnnotation: KSAnnotation,
+    ) {
+      val isAnnotatedWithDaggerCreator: KSAnnotation? = getKSAnnotationsByType(Component.Factory::class).singleOrNull()
+        ?: getKSAnnotationsByType(Component.Builder::class).singleOrNull()
+        ?: getKSAnnotationsByType(Subcomponent.Factory::class).singleOrNull()
+        ?: getKSAnnotationsByType(Subcomponent.Builder::class).singleOrNull()
+      if (isAnnotatedWithDaggerCreator != null) {
+        val daggerCreatorFqName = isAnnotatedWithDaggerCreator.fqName
+        val creatorType = daggerCreatorFqName.shortName().asString()
+        throw KspAnvilException(
+          node = isAnnotatedWithDaggerCreator,
+          message = "When using @${mergeAnnotation.shortName.asString()}, you must use " +
+            "@${mergeAnnotation.shortName.asString()}.$creatorType instead of Dagger's own " +
+            "'${daggerCreatorFqName.asString()}' annotation. The Dagger annotation will be " +
+            "generated in the final merged component.",
         )
       }
     }
