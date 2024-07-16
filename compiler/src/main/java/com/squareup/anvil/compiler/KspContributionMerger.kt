@@ -16,13 +16,14 @@ import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.KSValueArgument
 import com.google.devtools.ksp.symbol.KSVisitor
 import com.google.devtools.ksp.symbol.Visibility
-import com.google.devtools.ksp.symbol.impl.hasAnnotation
 import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.annotations.internal.InternalContributedSubcomponentMarker
 import com.squareup.anvil.annotations.internal.InternalMergedTypeMarker
 import com.squareup.anvil.compiler.codegen.KspContributesSubcomponentHandlerSymbolProcessor
@@ -222,7 +223,7 @@ internal class KspContributionMerger(
           originatingDeclarations += creatorDecl
           resolvedCreator = Creator.fromDeclaration(
             declaration = creatorDecl,
-            mergeAnnotatedClass = mergeAnnotatedClass,
+            mergeAnnotatedClassName = mergeAnnotatedClass.toClassName(),
             generatedComponentClassName = generatedComponentClassName,
           )
         }
@@ -230,7 +231,11 @@ internal class KspContributionMerger(
       resolvedCreator ?: mergeAnnotatedClass.declarations
         .filterIsInstance<KSClassDeclaration>()
         .firstNotNullOfOrNull { nestedClass ->
-          Creator.fromDeclaration(nestedClass, mergeAnnotatedClass, generatedComponentClassName)
+          Creator.fromDeclaration(
+            nestedClass,
+            mergeAnnotatedClass.toClassName(),
+            generatedComponentClassName,
+          )
         }
     } else {
       null
@@ -388,7 +393,7 @@ internal class KspContributionMerger(
       .toList()
 
     val (bindingModuleContributesAnnotations, contributesAnnotations) = allContributesAnnotations.partition {
-      it.declaringClass.hasAnnotation(internalBindingMarkerFqName.asString())
+      it.declaringClass.isAnnotationPresent<InternalBindingMarker>()
     }
 
     val excludedModules = annotations
@@ -443,9 +448,9 @@ internal class KspContributionMerger(
           .onEach { classToReplace ->
             // Verify has @Module annotation. It doesn't make sense for a Dagger module to
             // replace a non-Dagger module.
-            if (!classToReplace.hasAnnotation(daggerModuleFqName.asString()) &&
-              !classToReplace.hasAnnotation(contributesBindingFqName.asString()) &&
-              !classToReplace.hasAnnotation(contributesMultibindingFqName.asString())
+            if (!classToReplace.isAnnotationPresent<Module>() &&
+              !classToReplace.isAnnotationPresent<ContributesBinding>() &&
+              !classToReplace.isAnnotationPresent<ContributesMultibinding>()
             ) {
               val origin = contributedClass.originClass()
               throw KspAnvilException(
@@ -805,6 +810,20 @@ internal class KspContributionMerger(
       generatedComponentClassName.simpleName,
     )
       .apply {
+        // Copy over original annotations
+        addAnnotations(
+          mergeAnnotatedClass.annotations
+            .map(KSAnnotation::toAnnotationSpec)
+            .filterNot {
+              it.typeName == mergeComponentClassName ||
+                it.typeName == mergeSubcomponentClassName ||
+                it.typeName == mergeModulesClassName ||
+                it.typeName == mergeInterfacesClassName
+            }
+            .asIterable(),
+        )
+
+        // Add our InternalMergedTypeMarker annotation for reference
         addAnnotation(
           AnnotationSpec.builder(InternalMergedTypeMarker::class)
             .addMember("originClass = %T::class", mergeAnnotatedClassName)
@@ -850,17 +869,20 @@ internal class KspContributionMerger(
             ),
           )
 
-          // Generate a ParentComponent for the factory type
+          //
+          // Generate a ParentComponent for the factory type if this is a subcomponent.
           //
           // interface ParentComponent {
           //   fun createComponentFactory(): ComponentFactory
           // }
           //
-          addType(
-            generateParentComponentForFactory(
-              factoryClassName = generatedComponentClassName.nestedClass(creatorSpec.name!!),
-            ),
-          )
+          if (mergeAnnotatedClass.isAnnotationPresent<MergeSubcomponent>()) {
+            addType(
+              generateParentComponentForFactory(
+                factoryClassName = generatedComponentClassName.nestedClass(creatorSpec.name!!),
+              ),
+            )
+          }
         }
 
         // Add the binding module
@@ -1199,7 +1221,14 @@ private fun Creator.extend(
   val creatorSpec = builder
     .addAnnotations(
       declaration.annotations.map(KSAnnotation::toAnnotationSpec)
-        .filterNot { it.typeName == contributesSubcomponentFactoryClassName }
+        .filterNot {
+          // Don't copy over our custom creator annotations
+          it.typeName == contributesSubcomponentFactoryClassName ||
+            it.typeName == mergeComponentFactoryClassName ||
+            it.typeName == mergeComponentBuilderClassName ||
+            it.typeName == mergeSubcomponentFactoryClassName ||
+            it.typeName == mergeSubcomponentBuilderClassName
+        }
         .asIterable(),
     )
     .apply {
@@ -1211,7 +1240,7 @@ private fun Creator.extend(
             // Handles fluent builder functions
             addFunction(
               function.toFunSpec().toBuilder()
-                .addModifiers(OVERRIDE)
+                .addModifiers(OVERRIDE, ABSTRACT)
                 .returns(newClassName)
                 .build(),
             )
@@ -1223,7 +1252,7 @@ private fun Creator.extend(
                 .apply {
                   annotations.removeIf { it.typeName.findRawType()?.fqName == contributesSubcomponentFactoryFqName }
                 }
-                .addModifiers(OVERRIDE)
+                .addModifiers(OVERRIDE, ABSTRACT)
                 .returns(generatedComponentClassName)
                 .build(),
             )
@@ -1243,10 +1272,10 @@ private fun Sequence<KSClassDeclaration>.resolveMergedTypes(
 }
 
 private fun KSClassDeclaration.resolveMergedType(resolver: Resolver): KSClassDeclaration {
-  val isMergedType = hasAnnotation(mergeModulesFqName.asString()) ||
-    hasAnnotation(mergeInterfacesFqName.asString()) ||
-    hasAnnotation(mergeComponentFqName.asString()) ||
-    hasAnnotation(mergeSubcomponentFqName.asString())
+  val isMergedType = isAnnotationPresent<MergeModules>() ||
+    isAnnotationPresent<MergeInterfaces>() ||
+    isAnnotationPresent<MergeComponent>() ||
+    isAnnotationPresent<MergeSubcomponent>()
   return if (isMergedType) {
     resolver.getClassDeclarationByName(
       toClassName().mergedClassName().canonicalName,
@@ -1371,7 +1400,7 @@ internal sealed interface Creator {
   companion object {
     fun fromDeclaration(
       declaration: KSClassDeclaration,
-      mergeAnnotatedClass: KSClassDeclaration,
+      mergeAnnotatedClassName: ClassName,
       generatedComponentClassName: ClassName,
     ): Creator? {
       var foundCreator = false
@@ -1411,17 +1440,14 @@ internal sealed interface Creator {
       }
       if (!foundCreator) return null
 
-      val isAContributedSubcomponentFactory =
-        declaration.isAnnotationPresent<InternalContributedSubcomponentMarker>()
-
       return if (isFactory) {
-        val daggerFunSpec = if (!isAContributedSubcomponentFactory) {
+        val daggerFunSpec = if (daggerAnnotation == Component.Factory::class) {
           FunSpec.builder("factory")
             .addAnnotation(JvmStatic::class)
-            .returns(generatedComponentClassName.nestedClass(declaration.simpleName.asString()))
+            .returns(mergeAnnotatedClassName.nestedClass(declaration.simpleName.asString()))
             .addStatement(
               "return Dagger${
-                mergeAnnotatedClass.simpleName.asString()
+                generatedComponentClassName.simpleName
                   .capitalize()
               }.factory()",
             )
@@ -1437,13 +1463,13 @@ internal sealed interface Creator {
         )
       } else {
         // Must be a builder
-        val daggerFunSpec = if (!isAContributedSubcomponentFactory) {
+        val daggerFunSpec = if (daggerAnnotation == Component.Builder::class) {
           FunSpec.builder("builder")
             .addAnnotation(JvmStatic::class)
-            .returns(generatedComponentClassName.nestedClass(declaration.simpleName.asString()))
+            .returns(mergeAnnotatedClassName.nestedClass(declaration.simpleName.asString()))
             .addStatement(
               "return Dagger${
-                mergeAnnotatedClass.simpleName.asString()
+                generatedComponentClassName.simpleName
                   .capitalize()
               }.builder()",
             )

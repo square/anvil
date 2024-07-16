@@ -95,8 +95,8 @@ internal class KspMergeAnnotationsCheckSymbolProcessor(
       if (declaringClass.isAnnotationPresent(daggerAnnotationFqName.asString())) {
         throw KspAnvilException(
           node = declaringClass,
-          message = "When using @$shortName it's not allowed to " +
-            "annotate the same class with @${daggerAnnotationFqName.shortName()}. " +
+          message = "When using @${shortName.asString()} it's not allowed to " +
+            "annotate the same class with @${daggerAnnotationFqName.shortName().asString()}. " +
             "The Dagger annotation will be generated.",
         )
       }

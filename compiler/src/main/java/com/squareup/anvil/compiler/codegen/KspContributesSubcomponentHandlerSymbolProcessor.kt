@@ -10,7 +10,6 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.Visibility
-import com.google.devtools.ksp.symbol.impl.hasAnnotation
 import com.squareup.anvil.annotations.ContributesSubcomponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.internal.InternalContributedSubcomponentMarker
@@ -28,6 +27,7 @@ import com.squareup.anvil.compiler.codegen.ksp.exclude
 import com.squareup.anvil.compiler.codegen.ksp.find
 import com.squareup.anvil.compiler.codegen.ksp.fqName
 import com.squareup.anvil.compiler.codegen.ksp.getSymbolsWithAnnotations
+import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isDaggerScope
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.modules
@@ -36,7 +36,6 @@ import com.squareup.anvil.compiler.codegen.ksp.replaces
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
 import com.squareup.anvil.compiler.codegen.ksp.scope
-import com.squareup.anvil.compiler.contributesSubcomponentFactoryFqName
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerBindingModuleSpec
@@ -370,7 +369,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
       .declarations
       .filterIsInstance<KSClassDeclaration>()
       .filter { nestedClass ->
-        nestedClass.hasAnnotation(contributesSubcomponentFactoryFqName.asString())
+        nestedClass.isAnnotationPresent<ContributesSubcomponent.Factory>()
       }
       .onEach { factory ->
         if (!factory.isInterface() && !factory.isAbstract()) {

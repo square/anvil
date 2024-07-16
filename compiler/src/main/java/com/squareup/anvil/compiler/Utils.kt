@@ -32,11 +32,15 @@ import javax.inject.Qualifier
 
 internal val mergeComponentFqName = MergeComponent::class.fqName
 internal val mergeComponentFactoryFqName = MergeComponent.Factory::class.fqName
+internal val mergeComponentFactoryClassName = MergeComponent.Factory::class.asClassName()
 internal val mergeComponentBuilderFqName = MergeComponent.Builder::class.fqName
+internal val mergeComponentBuilderClassName = MergeComponent.Builder::class.asClassName()
 internal val mergeComponentClassName = MergeComponent::class.asClassName()
 internal val mergeSubcomponentFqName = MergeSubcomponent::class.fqName
 internal val mergeSubcomponentFactoryFqName = MergeSubcomponent.Factory::class.fqName
+internal val mergeSubcomponentFactoryClassName = MergeSubcomponent.Factory::class.asClassName()
 internal val mergeSubcomponentBuilderFqName = MergeSubcomponent.Builder::class.fqName
+internal val mergeSubcomponentBuilderClassName = MergeSubcomponent.Builder::class.asClassName()
 internal val mergeSubcomponentClassName = MergeSubcomponent::class.asClassName()
 internal val mergeInterfacesFqName = MergeInterfaces::class.fqName
 internal val mergeInterfacesClassName = MergeInterfaces::class.asClassName()
