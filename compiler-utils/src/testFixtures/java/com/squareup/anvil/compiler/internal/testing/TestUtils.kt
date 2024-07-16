@@ -6,6 +6,7 @@ import com.google.common.truth.Truth.assertThat
 import com.google.common.truth.Truth.assertWithMessage
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
+import com.squareup.anvil.annotations.internal.InternalMergedTypeMarker
 import com.squareup.anvil.compiler.internal.capitalize
 import dagger.Component
 import dagger.Module
@@ -147,10 +148,28 @@ public fun Array<KClass<*>>.withoutAnvilModules(): List<KClass<*>> = toList().wi
 @ExperimentalAnvilApi
 public fun Collection<KClass<*>>.withoutAnvilModules(): List<KClass<*>> =
   filterNot {
-    it.qualifiedName!!.startsWith("anvil.module") || it.java.isAnnotationPresent(
-      InternalBindingMarker::class.java,
-    )
+    it.qualifiedName!!.startsWith("anvil.module") ||
+      it.java.isAnnotationPresent(InternalBindingMarker::class.java)
   }
+    .withoutMergedBindingModules()
+
+@ExperimentalAnvilApi
+public fun Collection<KClass<*>>.withoutMergedBindingModules(): List<KClass<*>> =
+  filterNot {
+    it.java.isMergedBindingModule()
+  }
+
+@ExperimentalAnvilApi
+public fun Array<KClass<*>>.withoutMergedBindingModules(): Array<KClass<*>> =
+  filterNot {
+    it.java.isMergedBindingModule()
+  }.toTypedArray()
+
+/**
+ * Returns true if this is a Merged* class's associated binding module.
+ */
+@ExperimentalAnvilApi
+public fun Class<*>.isMergedBindingModule(): Boolean = isAnnotationPresent(Module::class.java) && simpleName == "BindingModule" && enclosingClass?.isAnnotationPresent(InternalMergedTypeMarker::class.java) == true
 
 @ExperimentalAnvilApi
 public fun Any.invokeGet(vararg args: Any?): Any {

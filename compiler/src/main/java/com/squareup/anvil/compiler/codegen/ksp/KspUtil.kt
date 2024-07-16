@@ -9,12 +9,14 @@ import com.google.devtools.ksp.symbol.ClassKind.ANNOTATION_CLASS
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSFunction
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSModifierListOwner
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Modifier
+import com.squareup.anvil.compiler.fqName
 import com.squareup.anvil.compiler.internal.reference.asClassId
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeInterfacesFqName
@@ -195,6 +197,11 @@ internal fun KSFunctionDeclaration.returnTypeOrNull(): KSType? =
     it.declaration.qualifiedName?.asString() != "kotlin.Unit"
   }
 
+internal fun KSFunction.returnTypeOrNull(): KSType? =
+  returnType?.takeIf {
+    it.declaration.qualifiedName?.asString() != "kotlin.Unit"
+  }
+
 internal fun Resolver.getSymbolsWithAnnotations(
   vararg annotations: FqName,
 ): Sequence<KSAnnotated> = annotations.asSequence()
@@ -265,3 +272,7 @@ internal fun KSAnnotated.mergeAnnotations(): List<KSAnnotation> {
     mergeInterfacesFqName.asString(),
   )
 }
+
+internal val KSAnnotation.fqName: FqName get() = (annotationType.resolve().declaration as KSClassDeclaration).fqName
+internal val KSType.fqName: FqName get() = resolveKSClassDeclaration()!!.fqName
+internal val KSClassDeclaration.fqName: FqName get() = toClassName().fqName

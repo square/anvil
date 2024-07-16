@@ -6,9 +6,11 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeReference
+import com.google.devtools.ksp.symbol.Origin
 import com.squareup.anvil.compiler.ClassScannerKsp.GeneratedProperty.ReferenceProperty
 import com.squareup.anvil.compiler.ClassScannerKsp.GeneratedProperty.ScopeProperty
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.codegen.ksp.fqName
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.kotlinpoet.ksp.toClassName
@@ -17,6 +19,16 @@ import org.jetbrains.kotlin.name.FqName
 internal class ClassScannerKsp {
 
   private val cache = mutableMapOf<CacheKey, Collection<List<GeneratedProperty>>>()
+
+  /**
+   * Externally-contributed contributions, which are important to track so that we don't try to
+   * add originating files for them when generating code.
+   */
+  private val externalContributions = mutableSetOf<FqName>()
+
+  fun isExternallyContributed(declaration: KSClassDeclaration): Boolean {
+    return declaration.fqName in externalContributions
+  }
 
   private fun KSTypeReference.resolveKClassType(): KSType {
     return resolve()
@@ -78,6 +90,11 @@ internal class ClassScannerKsp {
         // a safetynet in case the generated properties are out of sync.
         clazz.annotations.any {
           it.annotationType.resolve().toClassName().fqName == annotation && (scope == null || it.scope() == scope)
+        }
+      }
+      .onEach { clazz ->
+        if (clazz.origin == Origin.KOTLIN_LIB || clazz.origin == Origin.JAVA_LIB) {
+          externalContributions.add(clazz.fqName)
         }
       }
   }

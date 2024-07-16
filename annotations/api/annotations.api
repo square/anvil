@@ -145,3 +145,14 @@ public abstract interface annotation class com/squareup/anvil/annotations/intern
 	public abstract fun value ()[Lcom/squareup/anvil/annotations/internal/InternalBindingMarker;
 }
 
+public abstract interface annotation class com/squareup/anvil/annotations/internal/InternalContributedSubcomponentMarker : java/lang/annotation/Annotation {
+	public abstract fun componentFactory ()Ljava/lang/Class;
+	public abstract fun contributor ()Ljava/lang/Class;
+	public abstract fun originClass ()Ljava/lang/Class;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/internal/InternalMergedTypeMarker : java/lang/annotation/Annotation {
+	public abstract fun originClass ()Ljava/lang/Class;
+	public abstract fun scope ()Ljava/lang/Class;
+}
+

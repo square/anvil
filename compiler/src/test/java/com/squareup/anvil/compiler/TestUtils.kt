@@ -24,6 +24,7 @@ import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.generatedMergedComponentOrNull
 import com.squareup.anvil.compiler.internal.testing.resolveIfMerged
 import com.squareup.anvil.compiler.internal.testing.use
+import com.squareup.anvil.compiler.internal.testing.withoutMergedBindingModules
 import com.squareup.kotlinpoet.asClassName
 import com.tschuchort.compiletesting.CompilationResult
 import com.tschuchort.compiletesting.JvmCompilationResult
@@ -46,7 +47,11 @@ internal fun compile(
   generateDaggerFactoriesOnly: Boolean = false,
   disableComponentMerging: Boolean = false,
   componentProcessingMode: ComponentProcessingMode = ComponentProcessingMode.NONE,
-  componentMergingBackend: ComponentMergingBackend = ComponentMergingBackend.IR,
+  componentMergingBackend: ComponentMergingBackend = if (componentProcessingMode == ComponentProcessingMode.KSP) {
+    ComponentMergingBackend.KSP
+  } else {
+    ComponentMergingBackend.IR
+  },
   trackSourceFiles: Boolean = true,
   codeGenerators: List<CodeGenerator> = emptyList(),
   allWarningsAsErrors: Boolean = true,
@@ -287,7 +292,7 @@ internal fun Class<*>.mergedModules(mergeAnnotation: KClass<out Annotation>): Ar
     is Subcomponent -> annotation.modules
     is Module -> annotation.includes
     else -> error("Unknown merge annotation class: $mergeAnnotation")
-  }
+  }.withoutMergedBindingModules()
 }
 
 internal val Class<*>.hintSubcomponent: KClass<*>?

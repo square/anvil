@@ -10,6 +10,7 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueArgument
 import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.compiler.internal.daggerScopeFqName
 import com.squareup.anvil.compiler.internal.mapKeyFqName
 import com.squareup.anvil.compiler.qualifierFqName
 import com.squareup.kotlinpoet.ksp.toClassName
@@ -151,6 +152,7 @@ private fun KSAnnotation.isTypeAnnotatedWith(
 
 internal fun KSAnnotation.isQualifier(): Boolean = isTypeAnnotatedWith(qualifierFqName)
 internal fun KSAnnotation.isMapKey(): Boolean = isTypeAnnotatedWith(mapKeyFqName)
+internal fun KSAnnotation.isDaggerScope(): Boolean = isTypeAnnotatedWith(daggerScopeFqName)
 
 internal fun KSAnnotated.qualifierAnnotation(): KSAnnotation? =
   annotations.singleOrNull { it.isQualifier() }

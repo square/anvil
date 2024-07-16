@@ -4,6 +4,7 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.annotations.internal.InternalMergedTypeMarker
 import com.squareup.anvil.compiler.internal.mergedClassName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.DelicateKotlinPoetApi
@@ -62,4 +63,20 @@ public fun Class<*>.generatedMergedComponentOrNull(): Class<*>? {
   } catch (e: ClassNotFoundException) {
     null
   }
+}
+
+/**
+ * The inverse of [resolveIfMerged], returning the original root type if this class is a merged
+ * component.
+ */
+@ExperimentalAnvilApi
+public fun Class<*>.originIfMerged(): Class<*> = originOfMergedComponentOrNull() ?: this
+
+/**
+ * The inverse of [generatedMergedComponentOrNull], returning the original root type if this class
+ * is a merged component.
+ */
+@ExperimentalAnvilApi
+public fun Class<*>.originOfMergedComponentOrNull(): Class<*>? {
+  return getDeclaredAnnotation(InternalMergedTypeMarker::class.java)?.originClass?.java
 }

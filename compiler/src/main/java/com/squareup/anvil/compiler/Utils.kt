@@ -47,6 +47,7 @@ internal val contributesBindingFqName = ContributesBinding::class.fqName
 internal val contributesMultibindingFqName = ContributesMultibinding::class.fqName
 internal val contributesSubcomponentFqName = ContributesSubcomponent::class.fqName
 internal val contributesSubcomponentFactoryFqName = ContributesSubcomponent.Factory::class.fqName
+internal val contributesSubcomponentFactoryClassName = ContributesSubcomponent.Factory::class.asClassName()
 internal val internalBindingMarkerFqName = InternalBindingMarker::class.fqName
 internal val daggerComponentFqName = Component::class.fqName
 internal val daggerComponentFactoryFqName = Component.Factory::class.fqName

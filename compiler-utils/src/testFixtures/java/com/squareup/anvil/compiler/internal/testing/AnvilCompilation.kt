@@ -42,7 +42,11 @@ public class AnvilCompilation internal constructor(
   @ExperimentalAnvilApi
   public fun configureAnvil(
     componentProcessingMode: ComponentProcessingMode = ComponentProcessingMode.NONE,
-    componentMergingBackend: ComponentMergingBackend = ComponentMergingBackend.IR,
+    componentMergingBackend: ComponentMergingBackend = if (componentProcessingMode == ComponentProcessingMode.KSP) {
+      ComponentMergingBackend.KSP
+    } else {
+      ComponentMergingBackend.IR
+    },
     generateDaggerFactories: Boolean = false,
     generateDaggerFactoriesOnly: Boolean = false,
     disableComponentMerging: Boolean = false,
@@ -323,7 +327,11 @@ public enum class ComponentProcessingMode {
 public fun compileAnvil(
   @Language("kotlin") vararg sources: String,
   componentProcessingMode: ComponentProcessingMode = ComponentProcessingMode.NONE,
-  componentMergingBackend: ComponentMergingBackend = ComponentMergingBackend.IR,
+  componentMergingBackend: ComponentMergingBackend = if (componentProcessingMode == ComponentProcessingMode.KSP) {
+    ComponentMergingBackend.KSP
+  } else {
+    ComponentMergingBackend.IR
+  },
   generateDaggerFactories: Boolean = false,
   generateDaggerFactoriesOnly: Boolean = false,
   disableComponentMerging: Boolean = false,
