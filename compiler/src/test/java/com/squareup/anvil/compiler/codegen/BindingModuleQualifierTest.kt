@@ -4,6 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
+import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.anyQualifier
 import com.squareup.anvil.compiler.componentInterface
 import com.squareup.anvil.compiler.contributingInterface
@@ -23,7 +24,7 @@ import javax.inject.Named
 class BindingModuleQualifierTest : AnvilAnnotationsTest(
   MergeComponent::class,
   MergeSubcomponent::class,
-  MergeInterfaces::class,
+  MergeModules::class,
 ) {
 
   @TestFactory fun `the Dagger binding method has a qualifier without parameter`() = testFactory {

@@ -10,8 +10,37 @@ import com.rickbusarow.kase.kases
 import com.squareup.anvil.compiler.isFullTestRun
 import kotlin.reflect.KClass
 
+/**
+ * Creates test factories to run the same test against multiple annotations.
+ *
+ * example:
+ * ```
+ * class MyTestClass : AnvilAnnotationsTest(
+ *   MergeComponent::class,
+ *   MergeSubcomponent::class,
+ *   MergeModules::class) {
+ *
+ *   @TestFactory fun `test something`() = testFactory {
+ *     compile(
+ *       """
+ *       package com.squareup.test
+ *
+ *       $import
+ *
+ *       @annotation(Any::class)
+ *       interface SomeInterface
+ *       """
+ *     ) {
+ *       // ...
+ *     }
+ *   }
+ * }
+ * ```
+ * @param requiredAnnotation A test case is always created for this annotation.
+ * @param fullTestRunAnnotations Test cases are only created in a full test run.
+ */
 abstract class AnvilAnnotationsTest(
-  firstAnnotation: KClass<out Annotation>,
+  requiredAnnotation: KClass<out Annotation>,
   vararg fullTestRunAnnotations: KClass<out Annotation>,
 ) : KaseTestFactory<
   Kase1<KClass<out Annotation>>,
@@ -21,7 +50,7 @@ abstract class AnvilAnnotationsTest(
 
   override val params: List<Kase1<KClass<out Annotation>>> = kases(
     buildList {
-      add(firstAnnotation)
+      add(requiredAnnotation)
       if (isFullTestRun()) {
         addAll(fullTestRunAnnotations)
       }
@@ -40,7 +69,14 @@ class AnnotationTestEnvironment(
 ) : DefaultTestEnvironment(hasWorkingDir),
   CompilationEnvironment {
 
+  /**
+   * Always an unqualified string, e.g. "@MergeComponent".
+   */
   val annotation = "@${annotationClass.simpleName}"
+
+  /**
+   * ex: `import com.squareup.anvil.annotations.MergeComponent`
+   */
   val import = "import ${annotationClass.java.canonicalName}"
 
   companion object : ParamTestEnvironmentFactory<Kase1<KClass<out Annotation>>, AnnotationTestEnvironment> {
