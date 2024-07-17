@@ -98,6 +98,14 @@ internal const val REFERENCE_SUFFIX = "_reference"
 internal const val SCOPE_SUFFIX = "_scope"
 
 /**
+ * KSP option to control whether or not to generate Dagger* shim classes during component merging.
+ *
+ * This behavior is enabled by default and mostly just here to allow for disabling it for testing
+ * where component processing isn't running.
+ */
+public const val OPTION_GENERATE_SHIMS: String = "anvil.ksp.generateShims"
+
+/**
  * Returns the single element matching the given [predicate], or `null` if element was not found.
  * Unlike [singleOrNull] this method throws an exception if more than one element is found.
  */

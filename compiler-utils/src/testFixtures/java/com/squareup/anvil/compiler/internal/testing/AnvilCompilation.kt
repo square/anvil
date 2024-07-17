@@ -6,6 +6,7 @@ import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
+import com.squareup.anvil.compiler.OPTION_GENERATE_SHIMS
 import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
@@ -85,7 +86,8 @@ public class AnvilCompilation internal constructor(
           symbolProcessorProviders += KspComponentProcessor.Provider()
         }
         ComponentProcessingMode.NONE -> {
-          // Do nothing
+          // Do nothing, but disable shim generation to avoid unresolved references in compilations
+          kspArgs[OPTION_GENERATE_SHIMS] = "false"
         }
       }
 
