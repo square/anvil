@@ -61,7 +61,7 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
           ),
         )
       } else {
-        // TODO in dagger-ksp support
+        // KSP support is all wired up at the Gradle level, nothing to do here
       }
     }
 
