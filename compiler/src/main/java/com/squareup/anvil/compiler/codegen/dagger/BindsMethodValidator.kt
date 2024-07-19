@@ -178,7 +178,7 @@ internal object BindsMethodValidator : AnvilApplicabilityChecker {
         .forEach { clazz ->
           (clazz.companionObjects() + clazz)
             .asSequence()
-            .flatMap { it.functions }
+            .flatMap { it.declaredMemberFunctions }
             .filter { it.isAnnotatedWith(daggerBindsFqName) }
             .also { functions ->
               assertNoDuplicateFunctions(clazz, functions)

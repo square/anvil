@@ -133,7 +133,7 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
         // Only generate a MembersInjector if the target class declares its own member-injected
         // properties. If it does, then any properties from superclasses must be added as well
         // (clazz.memberInjectParameters() will do this).
-        clazz.properties
+        clazz.declaredMemberProperties
           .filter { it.visibility() != Visibility.PRIVATE }
           .any { it.isAnnotatedWith(injectFqName) }
       }

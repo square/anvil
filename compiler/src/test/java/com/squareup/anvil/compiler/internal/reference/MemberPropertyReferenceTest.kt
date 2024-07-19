@@ -6,6 +6,7 @@ import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.junit.Test
 
+@Suppress("RemoveRedundantQualifierName")
 class MemberPropertyReferenceTest {
 
   @Test fun `primary constructor val properties are properties`() {
@@ -191,7 +192,7 @@ class MemberPropertyReferenceTest {
 
           listOf(psiRef, descriptorRef).forEach { ref ->
 
-            assertThat(ref.properties.single().type().asTypeName().toString())
+            assertThat(ref.declaredMemberProperties.single().type().asTypeName().toString())
               .isEqualTo("kotlin.String")
           }
 
@@ -223,7 +224,7 @@ class MemberPropertyReferenceTest {
 
           listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val propertyType = ref.properties.single().type()
+            val propertyType = ref.declaredMemberProperties.single().type()
 
             assertThat(propertyType.asTypeName().toString())
               .isEqualTo("com.squareup.test.Subject.`Nested\$Fancy`")
@@ -260,7 +261,7 @@ class MemberPropertyReferenceTest {
 
           listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val propertyType = ref.properties.single().type()
+            val propertyType = ref.declaredMemberProperties.single().type()
 
             assertThat(propertyType.asTypeName().toString())
               .isEqualTo("com.squareup.test.Subject.`Nested\$Fancy`")
@@ -297,7 +298,7 @@ class MemberPropertyReferenceTest {
 
           listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val propertyType = ref.properties.single().type()
+            val propertyType = ref.declaredMemberProperties.single().type()
 
             assertThat(propertyType.asTypeName().toString())
               .isEqualTo("com.squareup.test.Subject.`Nested\$Fancy`")
@@ -435,13 +436,13 @@ class MemberPropertyReferenceTest {
 
           listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val nameAnnotations = ref.properties.named("name")
+            val nameAnnotations = ref.declaredMemberProperties.named("name")
               .annotations
               .map { it.fqName.asString() }
 
             assertThat(nameAnnotations).containsExactly("javax.inject.Inject")
 
-            val ageAnnotations = ref.properties.named("age")
+            val ageAnnotations = ref.declaredMemberProperties.named("age")
               .annotations
               .map { it.fqName.asString() }
 
@@ -475,7 +476,7 @@ class MemberPropertyReferenceTest {
 
           listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val nameGetterAnnotations = ref.properties.named("name")
+            val nameGetterAnnotations = ref.declaredMemberProperties.named("name")
               .getterAnnotations
               .map { it.fqName.asString() }
 
@@ -509,13 +510,13 @@ class MemberPropertyReferenceTest {
 
           listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val nameGetterAnnotations = ref.properties.named("name")
+            val nameGetterAnnotations = ref.declaredMemberProperties.named("name")
               .getterAnnotations
               .map { it.fqName.asString() }
 
             assertThat(nameGetterAnnotations).containsExactly("javax.inject.Inject")
 
-            val nameAnnotations = ref.properties.named("name")
+            val nameAnnotations = ref.declaredMemberProperties.named("name")
               .annotations
               .map { it.fqName.asString() }
 
@@ -549,7 +550,7 @@ class MemberPropertyReferenceTest {
 
           listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val nameSetterAnnotations = ref.properties.named("name")
+            val nameSetterAnnotations = ref.declaredMemberProperties.named("name")
               .setterAnnotations
               .map { it.fqName.asString() }
 
@@ -583,13 +584,13 @@ class MemberPropertyReferenceTest {
 
           listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val nameSetterAnnotations = ref.properties.named("name")
+            val nameSetterAnnotations = ref.declaredMemberProperties.named("name")
               .setterAnnotations
               .map { it.fqName.asString() }
 
             assertThat(nameSetterAnnotations).containsExactly("javax.inject.Inject")
 
-            val nameAnnotations = ref.properties.named("name")
+            val nameAnnotations = ref.declaredMemberProperties.named("name")
               .annotations
               .map { it.fqName.asString() }
 
@@ -623,7 +624,7 @@ class MemberPropertyReferenceTest {
 
           listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val nameProperty = ref.properties.named("name")
+            val nameProperty = ref.declaredMemberProperties.named("name")
 
             assertThat(nameProperty.getterAnnotations).isEmpty()
             assertThat(nameProperty.setterAnnotations).isEmpty()
@@ -657,13 +658,13 @@ class MemberPropertyReferenceTest {
 
           listOf(psiRef, descriptorRef).forEach { ref ->
 
-            val nameAnnotations = ref.properties.named("name")
+            val nameAnnotations = ref.declaredMemberProperties.named("name")
               .annotations
               .map { it.fqName.asString() }
 
             assertThat(nameAnnotations).containsExactly("javax.inject.Inject")
 
-            val ageAnnotations = ref.properties.named("age")
+            val ageAnnotations = ref.declaredMemberProperties.named("age")
               .annotations
               .map { it.fqName.asString() }
 
@@ -751,7 +752,7 @@ class MemberPropertyReferenceTest {
     }
   }
 
-  private fun ClassReference.propertyTypeNames() = properties
+  private fun ClassReference.propertyTypeNames() = declaredMemberProperties
     .map { "${it.name}: ${it.type().asTypeName()}" }
 
   private fun List<MemberPropertyReference>.named(name: String) = single { it.name == name }

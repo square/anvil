@@ -231,7 +231,7 @@ internal object MapKeyCreatorCodeGen : AnvilApplicabilityChecker {
         if (clazz.isAnnotationClass()) {
           val added = creatorsToGenerate.add(clazz)
           if (added) {
-            for (property in clazz.properties) {
+            for (property in clazz.declaredMemberProperties) {
               val type = property.type().asClassReferenceOrNull()
               if (type?.isAnnotationClass() == true) {
                 visitAnnotations(type)
@@ -254,7 +254,7 @@ internal object MapKeyCreatorCodeGen : AnvilApplicabilityChecker {
         }
         .toSortedMap()
         .map { (className, clazz) ->
-          val properties = clazz.properties
+          val properties = clazz.declaredMemberProperties
             .map { AnnotationProperty(it) }
             .associateBy { it.name }
           generateCreatorFunction(className, properties)
@@ -276,7 +276,7 @@ internal object MapKeyCreatorCodeGen : AnvilApplicabilityChecker {
       className: ClassName,
       annotationClass: ClassReference,
     ): FunSpec {
-      val properties = annotationClass.properties
+      val properties = annotationClass.declaredMemberProperties
         .map { AnnotationProperty(it) }
         .associateBy { it.name }
       return generateCreatorFunction(className, properties)
