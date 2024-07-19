@@ -9,8 +9,11 @@ import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSDeclaration
+import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSName
 import com.google.devtools.ksp.symbol.KSNode
+import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.KSValueArgument
@@ -53,6 +56,7 @@ import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.codegen.ksp.superTypesExcludingAny
 import com.squareup.anvil.compiler.codegen.ksp.toFunSpec
+import com.squareup.anvil.compiler.codegen.ksp.toPropertySpec
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.createAnvilSpec
@@ -71,6 +75,7 @@ import com.squareup.kotlinpoet.joinToCode
 import com.squareup.kotlinpoet.ksp.addOriginatingKSFile
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.Binds
 import dagger.Component
@@ -264,6 +269,8 @@ internal class KspContributionMerger(
 
     val interfaceMergerAnnotations = mergeComponentAnnotations + mergeInterfacesAnnotations
 
+    var directMergeSubcomponents: List<DirectMergedSubcomponent>? = null
+
     val contributedInterfaces = if (interfaceMergerAnnotations.isNotEmpty()) {
       if (!mergeAnnotatedClass.isInterface()) {
         throw KspAnvilException(
@@ -273,12 +280,15 @@ internal class KspContributionMerger(
         )
       }
 
+      directMergeSubcomponents = findMergedSubcomponentInterfaces(mergeAnnotatedClass)
+
       contributedInterfaces(
         mergeAnnotations = interfaceMergerAnnotations,
         originatingDeclarations = originatingDeclarations,
         resolver = resolver,
         mergeAnnotatedClass = mergeAnnotatedClass,
         contributedInterfacesInRound = contributedInterfacesInRound,
+        directMergeSubcomponents = directMergeSubcomponents,
       )
     } else {
       null
@@ -295,6 +305,7 @@ internal class KspContributionMerger(
       daggerAnnotation = daggerAnnotation,
       creator = creator,
       contributedInterfaces = contributedInterfaces,
+      directMergeSubcomponents = directMergeSubcomponents,
       isModule = isModule,
     )
     return null
@@ -608,6 +619,7 @@ internal class KspContributionMerger(
     resolver: Resolver,
     mergeAnnotatedClass: KSClassDeclaration,
     contributedInterfacesInRound: Map<KSType, List<KSClassDeclaration>>,
+    directMergeSubcomponents: List<DirectMergedSubcomponent>,
   ): List<ClassName> {
     val scopes: Set<KSType> = mergeAnnotations.mapTo(mutableSetOf(), KSAnnotation::scope)
     val contributesAnnotations = mergeAnnotations
@@ -789,6 +801,13 @@ internal class KspContributionMerger(
           }
         },
       )
+      .plus(
+        directMergeSubcomponents.map {
+          it.mergedSubcomponentClassName.nestedClass(
+            PARENT_COMPONENT,
+          )
+        },
+      )
       // Avoids an error for repeated interfaces.
       .distinct()
       .toList()
@@ -806,6 +825,7 @@ internal class KspContributionMerger(
     creator: Creator?,
     daggerAnnotation: AnnotationSpec?,
     contributedInterfaces: List<ClassName>?,
+    directMergeSubcomponents: List<DirectMergedSubcomponent>?,
     isModule: Boolean,
   ) {
     val mergeAnnotatedClassName = mergeAnnotatedClass.toClassName()
@@ -840,6 +860,63 @@ internal class KspContributionMerger(
 
         contributedInterfaces?.forEach(::addSuperinterface)
 
+        directMergeSubcomponents?.forEach { (declaration, returnType, mergedClassName) ->
+          // ParentComponent function name will either be whatever is found from an original
+          // in-source contributor (same name is used) or computed name.
+          // We have to do this wonky name resolution because the parent component of the target
+          // merged subcomponent may not be generated yet.
+          val mergedParentComponentFunctionName = contributedSubcomponentData?.originClass?.let { originClassName ->
+            // If we have a contributed subcomponent for this type, we can use its known
+            // subcomponent data
+            val originalDeclaration = resolver.getClassDeclarationByName(originClassName.canonicalName)
+            if (originalDeclaration != null) {
+              classScanner.findParentComponentInterface(originalDeclaration, null, null)
+                ?.let {
+                  classScanner.overridableParentComponentFunctions(it, returnType.fqName, null)
+                }
+                ?.singleOrNull()
+                ?.simpleName
+                ?.asString()
+            } else {
+              null
+            }
+          } ?: run {
+            // The name will be the simple parent component we generate
+            defaultParentComponentFunctionName(mergedClassName)
+          }
+
+          // Manually override and implement these original declaration to point at their
+          // contributed parent components instead
+          val body = CodeBlock.of("$mergedParentComponentFunctionName()")
+          when (declaration) {
+            is KSFunctionDeclaration -> {
+              addFunction(
+                declaration.toFunSpec()
+                  .toBuilder()
+                  .addModifiers(OVERRIDE)
+                  .addStatement("return %L", body)
+                  .build(),
+              )
+            }
+            is KSPropertyDeclaration -> {
+              addProperty(
+                declaration.toPropertySpec()
+                  .toBuilder()
+                  .addModifiers(OVERRIDE)
+                  .initializer(body)
+                  .build(),
+              )
+            }
+            else -> {
+              // Should never happen
+              throw KspAnvilException(
+                node = declaration,
+                message = "Unsupported declaration type for direct subcomponent merging.",
+              )
+            }
+          }
+        }
+
         val allBindingSpecs = mutableListOf<BindingSpec>()
 
         // Always generate a binding for the merged type -> root
@@ -849,6 +926,7 @@ internal class KspContributionMerger(
         )
 
         // Generate the creator subtype if it exists
+        var mergedFactoryClassName: ClassName? = null
         creator?.let { creator ->
           val (creatorSpec, bindingSpecs) = creator.extend(
             mergeAnnotatedClass.toClassName(),
@@ -871,20 +949,8 @@ internal class KspContributionMerger(
             addType(
               generateDaggerBindingModuleForFactory(
                 parent = creator.declaration,
-                impl = generatedComponentClassName.nestedClass(creatorSpec.name!!),
-              ),
-            )
-
-            //
-            // Generate a ParentComponent for the factory type if this is a subcomponent.
-            //
-            // interface ParentComponent {
-            //   fun createComponentFactory(): ComponentFactory
-            // }
-            //
-            addType(
-              generateParentComponentForFactory(
-                factoryClassName = generatedComponentClassName.nestedClass(creatorSpec.name!!),
+                impl = generatedComponentClassName.nestedClass(creatorSpec.name!!)
+                  .also { mergedFactoryClassName = it },
               ),
             )
           }
@@ -900,18 +966,41 @@ internal class KspContributionMerger(
 
         // If this is a subcomponent with a contributed interface, generate its parent component
         // here
+        var generatedParentComponent = false
         if (contributedSubcomponentData != null) {
           val contributor = contributedSubcomponentData.contributor
           if (contributor != null) {
             val parentClass = resolver.getClassDeclarationByName(contributor.canonicalName)!!
             originatingDeclarations += parentClass
+            var returnType = generatedComponentClassName
+            if (contributedSubcomponentData.componentFactory != null && mergedFactoryClassName != null) {
+              returnType = mergedFactoryClassName!!
+            }
+            generatedParentComponent = true
             addType(
-              generateParentComponentForContributor(
-                parent = parentClass,
-                mergedSubcomponent = generatedComponentClassName,
+              generateParentComponent(
+                classScanner = classScanner,
+                origin = mergeAnnotatedClass,
+                parentParentComponent = parentClass,
+                componentInterface = contributedSubcomponentData.originClass.fqName,
+                factoryClass = contributedSubcomponentData.componentFactory?.fqName,
+                returnType = returnType,
               ),
             )
           }
+        }
+
+        if (!generatedParentComponent && mergeAnnotatedClass.isAnnotationPresent<MergeSubcomponent>()) {
+          addType(
+            generateParentComponent(
+              classScanner = classScanner,
+              origin = mergeAnnotatedClass,
+              parentParentComponent = null,
+              componentInterface = mergeAnnotatedClass.fqName,
+              factoryClass = mergedFactoryClassName?.fqName,
+              returnType = generatedComponentClassName,
+            ),
+          )
         }
       }
       .addOriginatingKSFile(mergeAnnotatedClass.containingFile!!)
@@ -1049,6 +1138,56 @@ internal class KspContributionMerger(
         }
       }
   }
+
+  /**
+   * In KSP we always generated mirror component classes due to not being able to modify existing
+   * sources. This leaves us a particular edge case where you could have a component like so:
+   *
+   * ```kotlin
+   * @MergeComponent(AppScope::class)
+   * interface AppComponent {
+   *   fun loggedInComponent(): LoggedInComponent
+   * }
+   *
+   * @MergeSubcomponent
+   * interface LoggedInComponent
+   * ```
+   *
+   * In K1 Anvil, this "worked" for dagger because the LoggedInComponent signature was modified in
+   * place and recognized as if it was `@Subcomponent`-annotated. Now however, we must check these
+   * and implicitly include their `Merged*` generated classes' parent component and manually
+   * implement their methods in the merged interface to point at the contributed one.
+   */
+  private fun findMergedSubcomponentInterfaces(
+    mergeAnnotatedComponent: KSClassDeclaration,
+  ): List<DirectMergedSubcomponent> {
+    return mergeAnnotatedComponent.getAllFunctions()
+      .mapNotNull { function -> function.returnTypeOrNull()?.let { function to it } }
+      .plus(mergeAnnotatedComponent.getAllProperties().map { it to it.type.resolve() })
+      .distinct()
+      .mapNotNull { (memberDeclaration, type) ->
+        val returnTypeDeclaration = type.resolveKSClassDeclaration() ?: return@mapNotNull null
+        val isMergeSubcomponent = returnTypeDeclaration.isAnnotationPresent<MergeSubcomponent>()
+        if (isMergeSubcomponent) {
+          val returnTypeClassName = returnTypeDeclaration.toClassName()
+          DirectMergedSubcomponent(
+            memberDeclaration,
+            returnTypeClassName,
+            returnTypeClassName.mergedClassName(),
+          )
+        } else {
+          null
+        }
+      }
+      .toList()
+  }
+
+  data class DirectMergedSubcomponent(
+    // either a KSFunctionDeclaration or KSPropertyDeclaration
+    val memberDeclaration: KSDeclaration,
+    val targetType: ClassName,
+    val mergedSubcomponentClassName: ClassName,
+  )
 
   private fun findContributedSubcomponentParentInterfaces(
     clazz: KSClassDeclaration,
@@ -1528,37 +1667,62 @@ private fun generateDaggerBindingModuleForFactory(
     .build()
 }
 
-// TODO consolidate with contributessubcomponent handling?
-private fun generateParentComponentForContributor(
-  parent: KSClassDeclaration,
-  mergedSubcomponent: ClassName,
-): TypeSpec {
-  val functionToOverride = parent.getDeclaredFunctions().single()
-    .toFunSpec()
-  return TypeSpec
-    .interfaceBuilder(PARENT_COMPONENT)
-    .addSuperinterface(parent.toClassName())
-    .addFunction(
-      functionToOverride.toBuilder()
-        .addModifiers(ABSTRACT, OVERRIDE)
-        .returns(mergedSubcomponent)
-        .build(),
-    )
-    .build()
-}
+private fun defaultParentComponentFunctionName(returnType: ClassName): String =
+  "create${returnType.simpleName}"
 
-private fun generateParentComponentForFactory(
-  factoryClassName: ClassName,
+// TODO consolidate with contributessubcomponent handling?
+private fun generateParentComponent(
+  classScanner: ClassScannerKsp,
+  origin: KSClassDeclaration,
+  parentParentComponent: KSClassDeclaration?,
+  factoryClass: FqName?,
+  componentInterface: FqName,
+  // Either the component factory or the merged component
+  returnType: ClassName,
 ): TypeSpec {
+  val funSpec = if (parentParentComponent != null) {
+    val functionToOverride = classScanner.overridableParentComponentFunctions(
+      parentParentComponent,
+      targetReturnType = componentInterface,
+      factoryClass = factoryClass,
+    )
+      .singleOrNull()
+      ?.toFunSpec()
+      ?: throw KspAnvilException(
+        message = """
+          Parent component ${parentParentComponent.qualifiedName?.asString()} does not have 
+          a single parent component function to override with
+          - Component interface: $componentInterface
+          - Factory interface: ${factoryClass?.asString() ?: "<none>"}
+          Available functions found are:
+        """.trimIndent() +
+          parentParentComponent.getAllFunctions().mapNotNull { function ->
+            function.qualifiedName?.let {
+              "${it.asString()}(): ${function.returnTypeOrNull()?.toTypeName()}"
+            }
+          }.joinToString("\n", prefix = "\n"),
+        node = origin,
+      )
+
+    functionToOverride.toBuilder()
+      .addModifiers(ABSTRACT, OVERRIDE)
+      .returns(returnType)
+      .build()
+  } else {
+    // If there's no parent component, we need to generate a new function
+    FunSpec.builder(defaultParentComponentFunctionName(returnType))
+      .addModifiers(ABSTRACT)
+      .returns(returnType)
+      .build()
+  }
   return TypeSpec
     .interfaceBuilder(PARENT_COMPONENT)
-    .addFunction(
-      FunSpec
-        .builder("createComponentFactory")
-        .addModifiers(ABSTRACT)
-        .returns(factoryClassName)
-        .build(),
-    )
+    .apply {
+      parentParentComponent?.let {
+        addSuperinterface(it.toClassName())
+      }
+    }
+    .addFunction(funSpec)
     .build()
 }
 
@@ -1569,7 +1733,7 @@ private data class ContributedSubcomponentData(
 ) {
 
   fun resolveCreatorDeclaration(resolver: Resolver): KSClassDeclaration? {
-    val creator = contributor ?: componentFactory ?: return null
+    val creator = componentFactory ?: return null
     return resolver.getClassDeclarationByName(creator.canonicalName)
   }
 

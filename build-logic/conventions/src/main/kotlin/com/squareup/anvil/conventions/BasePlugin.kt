@@ -119,6 +119,8 @@ abstract class BasePlugin : Plugin<Project> {
         }
 
         jvmTarget.set(JvmTarget.fromInt(target.jvmTargetInt()))
+
+        freeCompilerArgs.add("-Xjvm-default=all-compatibility")
       }
     }
   }

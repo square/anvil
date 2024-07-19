@@ -12,6 +12,7 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSFunction
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSModifierListOwner
+import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.KSValueParameter
@@ -24,6 +25,7 @@ import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
+import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
@@ -256,6 +258,13 @@ internal fun KSFunctionDeclaration.toFunSpec(): FunSpec {
   }
 
   return builder.build()
+}
+
+internal fun KSPropertyDeclaration.toPropertySpec(): PropertySpec {
+  return PropertySpec.builder(simpleName.getShortName(), type.resolve().toTypeName())
+    .addModifiers(modifiers.mapNotNull { it.toKModifier() })
+    .addAnnotations(annotations.map { it.toAnnotationSpec() }.asIterable())
+    .build()
 }
 
 internal fun KSValueParameter.toParameterSpec(): ParameterSpec {

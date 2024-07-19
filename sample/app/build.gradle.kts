@@ -3,9 +3,16 @@ import com.android.builder.core.BuilderConstants
 plugins {
   alias(libs.plugins.agp.application)
   alias(libs.plugins.kotlin.android)
-  alias(libs.plugins.kotlin.kapt)
+  alias(libs.plugins.ksp)
   id("com.squareup.anvil")
   id("conventions.minimal")
+}
+
+anvil {
+  useKsp(
+    contributesAndFactoryGeneration = true,
+    componentMerging = true,
+  )
 }
 
 android {
@@ -48,7 +55,7 @@ dependencies {
   implementation(libs.androidx.material)
   implementation(libs.dagger2)
 
-  kapt(libs.dagger2.compiler)
+  ksp(libs.dagger2.compiler)
 
   testImplementation(libs.junit)
   testImplementation(libs.truth)
@@ -61,13 +68,5 @@ dependencies {
   androidTestImplementation(libs.junit)
   androidTestImplementation(libs.truth)
 
-  kaptAndroidTest(libs.dagger2.compiler)
-}
-
-// Keep that here for testing purposes. The Anvil Gradle plugin will set this flag to false again,
-// otherwise Android projects will fail to build. This serves kinda as an integration test.
-pluginManager.withPlugin("kotlin-kapt") {
-  kapt {
-    correctErrorTypes = true
-  }
+  kspAndroidTest(libs.dagger2.compiler)
 }

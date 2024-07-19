@@ -38,6 +38,11 @@ repositories {
 
 ## Migration
 
+### 0. Prerequisites
+
+- You must be using Kotlin 1.9.24+ or 2.0.0+.
+- You must use `-Xjvm-default=all` or `-Xjvm-default=all-compatibility` if you are not already.
+
 ### 1. KSP Contributions
 
 It _should_ be possible to migrate to this fork with minimal source changes.
@@ -123,6 +128,25 @@ This fork should be backward-compatible with code generated from Anvil 2.5.0-bet
 not well-tested and encouraged to recompile all Anvil-processed code after migrating to this fork.
 Especially if you use `@ContributesSubcomponent` or `@MergeComponent`, as the generated code for
 these scenarios has changed the most in the move to KSP.
+
+## Areas to Pay Attention To
+
+The following cases are the most complex and feedback on any issues or friction around them are
+appreciated!
+
+- `@ContributesSubcomponent`.
+- `@MergeSubcomponent`
+- `@MergeComponent`-annotated components that expose `@MergeSubcomponent`-annotated subcomponents
+  directly. I.e. the below case, no creators.
+  ```kotlin
+  @MergeComponent(AppScope::class)
+  interface AppComponent {
+    fun loggedInComponent(): LoggedInComponent
+  }
+  
+  @MergeSubcomponent(LoggedInScope::class)
+  interface LoggedInComponent
+  ```
 
 ## Future
 
