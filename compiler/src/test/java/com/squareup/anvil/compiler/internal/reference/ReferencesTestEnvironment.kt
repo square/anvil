@@ -40,11 +40,6 @@ class ReferencesTestEnvironment(
 ) : DefaultTestEnvironment(hasWorkingDir = hasWorkingDir),
   LanguageInjection<File> by LanguageInjection(JavaFileFileInjection()) {
 
-  operator fun <E : FunctionReference> List<E>.getValue(
-    thisRef: Any?,
-    property: KProperty<*>,
-  ): E = single { it.name == property.name }
-
   operator fun <E> Map<String, E>.getValue(
     thisRef: Any?,
     property: KProperty<*>,
@@ -79,13 +74,13 @@ class ReferencesTestEnvironment(
           ?.let { refsContainer ->
 
             val refsFun = when (referenceType) {
-              ReferenceType.Psi -> refsContainer.functions
-              ReferenceType.Descriptor -> refsContainer.toDescriptorReference().functions
+              ReferenceType.Psi -> refsContainer.declaredMemberFunctions
+              ReferenceType.Descriptor -> refsContainer.toDescriptorReference().declaredMemberFunctions
             }
               .singleOrNull { it.name == "refs" }
               ?: error {
                 "RefsContainer.refs not found.  " +
-                  "Existing functions: ${refsContainer.functions.map { it.name }}"
+                  "Existing functions: ${refsContainer.declaredMemberFunctions.map { it.name }}"
               }
 
             when (referenceType) {

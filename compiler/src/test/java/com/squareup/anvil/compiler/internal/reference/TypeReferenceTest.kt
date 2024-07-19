@@ -227,19 +227,19 @@ class TypeReferenceTest {
             "SomeClass" -> {
               listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
                 assertThat(
-                  ref.properties.single { it.name == "map1" }.type().unwrappedTypes
+                  ref.declaredMemberProperties.single { it.name == "map1" }.type().unwrappedTypes
                     .map { it.asClassReference().shortName },
                 ).containsExactly("Any", "Any").inOrder()
                 assertThat(
-                  ref.properties.single { it.name == "map2" }.type().unwrappedTypes
+                  ref.declaredMemberProperties.single { it.name == "map2" }.type().unwrappedTypes
                     .map { it.asClassReference().shortName },
                 ).containsExactly("Int", "Any").inOrder()
                 assertThat(
-                  ref.properties.single { it.name == "map3" }.type().unwrappedTypes
+                  ref.declaredMemberProperties.single { it.name == "map3" }.type().unwrappedTypes
                     .map { it.asClassReference().shortName },
                 ).containsExactly("Any", "String").inOrder()
                 assertThat(
-                  ref.properties.single { it.name == "map4" }.type().unwrappedTypes
+                  ref.declaredMemberProperties.single { it.name == "map4" }.type().unwrappedTypes
                     .map { it.asClassReference().shortName },
                 ).containsExactly("Int", "String").inOrder()
               }
@@ -279,15 +279,15 @@ class TypeReferenceTest {
             "SomeClass" -> {
               listOf(psiRef, psiRef.toDescriptorReference()).forEach { ref ->
                 assertThat(
-                  ref.properties.single { it.name == "map" }.type().unwrappedTypes
+                  ref.declaredMemberProperties.single { it.name == "map" }.type().unwrappedTypes
                     .map { it.asClassReference().shortName },
                 ).containsExactly("String", "Int").inOrder()
                 assertThat(
-                  ref.properties.single { it.name == "single1" }.type().unwrappedTypes
+                  ref.declaredMemberProperties.single { it.name == "single1" }.type().unwrappedTypes
                     .map { it.asClassReference().shortName },
                 ).containsExactly("Int", "String", "Long").inOrder()
                 assertThat(
-                  ref.properties.single { it.name == "single2" }.type().unwrappedTypes
+                  ref.declaredMemberProperties.single { it.name == "single2" }.type().unwrappedTypes
                     .map { it.asClassReference().shortName },
                 ).containsExactly("Int", "Int", "Int").inOrder()
               }

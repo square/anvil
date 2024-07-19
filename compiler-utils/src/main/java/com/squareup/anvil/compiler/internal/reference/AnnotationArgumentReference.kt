@@ -144,7 +144,7 @@ public sealed class AnnotationArgumentReference {
           }
           is KtObjectDeclaration -> {
             toClassReference(module)
-              .properties
+              .declaredMemberProperties
               .mapNotNull { it.property as? KtProperty }
               .findConstPropertyWithName(name)
               ?.initializer

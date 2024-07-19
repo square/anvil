@@ -205,6 +205,8 @@ public fun PropertyDescriptor.toPropertyReference(
 internal fun MemberPropertyReference.toDescriptorOrNull(): Descriptor? {
   return when (this) {
     is Descriptor -> this
-    is Psi -> declaringClass.toDescriptorReferenceOrNull()?.properties?.find { it.name == name }
+    is Psi -> declaringClass.toDescriptorReferenceOrNull()
+      ?.declaredMemberProperties
+      ?.find { it.name == name }
   }
 }

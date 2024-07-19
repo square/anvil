@@ -222,7 +222,7 @@ private fun ClassReference.declaredMemberInjectParameters(
   superParameters: List<Parameter>,
   implementingClass: ClassReference,
 ): List<MemberInjectParameter> {
-  return properties
+  return declaredMemberProperties
     .filter { it.isAnnotatedWith(injectFqName) }
     .filter { it.visibility() != PRIVATE }
     .fold(listOf()) { acc, property ->

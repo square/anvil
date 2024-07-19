@@ -137,7 +137,7 @@ public class RealAnvilModuleDescriptor private constructor(
     }
 
     return classAndCompanions.firstNotNullOfOrNull { clazz ->
-      clazz.properties.firstOrNull { it.name == shortName }
+      clazz.declaredMemberProperties.firstOrNull { it.name == shortName }
     }
   }
 

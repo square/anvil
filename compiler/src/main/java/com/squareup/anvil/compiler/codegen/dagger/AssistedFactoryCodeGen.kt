@@ -432,7 +432,7 @@ internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
       val assistedFunctions = allSuperTypeClassReferences(includeSelf = true)
         .distinctBy { it.fqName }
         .flatMap { clazz ->
-          clazz.functions
+          clazz.declaredMemberFunctions
             .filter {
               it.isAbstract() &&
                 (it.visibility() == Visibility.PUBLIC || it.visibility() == Visibility.PROTECTED)
