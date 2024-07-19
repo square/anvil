@@ -298,7 +298,7 @@ internal class ContributesSubcomponentHandlerGenerator(
       )
     }
 
-    val functions = componentInterface.functions
+    val functions = componentInterface.memberFunctions
       .filter { it.isAbstract() && it.visibility() == PUBLIC }
       .filter {
         val returnType = it.returnType().asClassReference()
@@ -337,7 +337,7 @@ internal class ContributesSubcomponentHandlerGenerator(
           )
         }
 
-        val createComponentFunctions = factory.functions
+        val createComponentFunctions = factory.memberFunctions
           .filter { it.isAbstract() }
           .filter { it.returnType().asClassReference().fqName == contributionFqName }
 

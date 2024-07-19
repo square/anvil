@@ -493,6 +493,44 @@ class ContributesSubcomponentGeneratorTest(
     }
   }
 
+  @Test fun `a factory function may be defined in a super interface`() {
+    compile(
+      """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+        
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @ContributesTo(Unit::class)
+          interface AnyParentComponent {
+            fun createFactory(): ComponentFactory
+          }
+      
+          interface Creator {
+            fun createComponent(): SubcomponentInterface
+          }
+      
+          @Factory
+          interface ComponentFactory : Creator
+        }
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """,
+      mode = mode,
+    ) {
+      assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
+      assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
+
+      assertThat(subcomponentInterface.componentFactoryInterface.methods.map { it.name })
+        .containsExactly("createComponent")
+    }
+  }
+
   @Test
   fun `using Dagger's @Subcomponent_Factory is an error`() {
     compile(
@@ -615,6 +653,9 @@ class ContributesSubcomponentGeneratorTest(
 
   private val Class<*>.parentComponentInterface: Class<*>
     get() = classLoader.loadClass("$canonicalName\$AnyParentComponent")
+
+  private val Class<*>.componentFactoryInterface: Class<*>
+    get() = classLoader.loadClass("$canonicalName\$ComponentFactory")
 
   private val JvmCompilationResult.subcomponentInterface1: Class<*>
     get() = classLoader.loadClass("com.squareup.test.SubcomponentInterface1")
