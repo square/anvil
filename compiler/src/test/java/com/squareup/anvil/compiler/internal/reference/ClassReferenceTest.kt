@@ -6,12 +6,15 @@ import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
+import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.resolve.source.getPsi
-import org.junit.Test
+import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 
-class ClassReferenceTest {
+@Suppress("LocalVariableName")
+class ClassReferenceTest : ReferenceTests {
 
   @Test fun `inner classes are parsed`() {
     compile(
@@ -201,9 +204,11 @@ class ClassReferenceTest {
               assertThat(psiRef.isGenericClass()).isFalse()
               assertThat(descriptorRef.isGenericClass()).isFalse()
 
-              assertThat(psiRef.functions.single().returnType().isGenericType()).isFalse()
               assertThat(
-                descriptorRef.functions.single { it.name == "string" }
+                psiRef.declaredMemberFunctions.single().returnType().isGenericType(),
+              ).isFalse()
+              assertThat(
+                descriptorRef.declaredMemberFunctions.single { it.name == "string" }
                   .returnType()
                   .isGenericType(),
               ).isFalse()
@@ -223,17 +228,21 @@ class ClassReferenceTest {
               ).isTrue()
             }
             "SomeClass3" -> {
-              assertThat(psiRef.functions.single().returnType().isGenericType()).isTrue()
               assertThat(
-                descriptorRef.functions.single { it.name == "list" }
+                psiRef.declaredMemberFunctions.single().returnType().isGenericType(),
+              ).isTrue()
+              assertThat(
+                descriptorRef.declaredMemberFunctions.single { it.name == "list" }
                   .returnType()
                   .isGenericType(),
               ).isTrue()
             }
             "SomeClass4" -> {
-              assertThat(psiRef.functions.single().returnType().isGenericType()).isTrue()
               assertThat(
-                descriptorRef.functions.single { it.name == "list" }
+                psiRef.declaredMemberFunctions.single().returnType().isGenericType(),
+              ).isTrue()
+              assertThat(
+                descriptorRef.declaredMemberFunctions.single { it.name == "list" }
                   .returnType()
                   .isGenericType(),
               ).isTrue()
@@ -547,6 +556,228 @@ class ClassReferenceTest {
       ),
     ) {
       assertThat(exitCode).isEqualTo(OK)
+    }
+  }
+
+  @TestFactory
+  fun `declaredMemberFunctions does not include invisible inherited functions`() = testFactory {
+
+    compile(
+      """
+      package com.squareup.test
+
+      interface Parent {
+        fun parentFunction1()
+
+        fun parentFunction2() { }
+      }
+
+      interface Child : Parent
+      """.trimIndent(),
+    ) {
+      val Child by classReferences
+
+      Child.declaredMemberFunctions.map { it.fqName.asString() } shouldBe listOf()
+    }
+  }
+
+  @TestFactory
+  fun `memberFunctions includes invisible inherited functions`() = testFactory {
+
+    compile(
+      """
+      package com.squareup.test
+
+      interface Parent {
+        fun parentFunction1()
+
+        fun parentFunction2() { }
+      }
+
+      interface Child : Parent
+      """.trimIndent(),
+    ) {
+      val Child by classReferences
+
+      Child.memberFunctions.map { it.fqName.asString() } shouldBe listOf(
+        "com.squareup.test.Parent.parentFunction1",
+        "com.squareup.test.Parent.parentFunction2",
+      )
+    }
+  }
+
+  @TestFactory
+  fun `memberFunctions does not duplicate inherited functions`() = testFactory {
+
+    compile(
+      """
+      package com.squareup.test
+
+      interface Parent {
+        fun parentFunction1()
+
+        fun parentFunction2() { }
+      }
+
+      interface Child : Parent {
+        override fun parentFunction1() { }
+      }
+      """.trimIndent(),
+    ) {
+      val Child by classReferences
+
+      Child.memberFunctions.map { it.fqName.asString() } shouldBe listOf(
+        "com.squareup.test.Child.parentFunction1",
+        "com.squareup.test.Parent.parentFunction1",
+        "com.squareup.test.Parent.parentFunction2",
+      )
+    }
+  }
+
+  @TestFactory
+  fun `declaredMemberFunctions includes overridden inherited functions`() = testFactory {
+
+    compile(
+      """
+        package com.squareup.test
+
+        interface Parent {
+          fun parentFunction1()
+
+          fun parentFunction2() { }
+        }
+
+        interface Child : Parent {
+          override fun parentFunction1() { }
+        }
+        
+        class ChildClass : Parent {
+          override fun parentFunction1() { }
+          override fun toString() = ""
+        }
+
+      """.trimIndent(),
+    ) {
+      val Child by classReferences
+      val ChildClass by classReferences
+
+      Child.declaredMemberFunctions.map { it.fqName.asString() } shouldBe listOf(
+        "com.squareup.test.Child.parentFunction1",
+      )
+      ChildClass.declaredMemberFunctions.map { it.fqName.asString() } shouldBe listOf(
+        "com.squareup.test.ChildClass.parentFunction1",
+        "com.squareup.test.ChildClass.toString",
+      )
+    }
+  }
+
+  @TestFactory
+  fun `declaredMemberProperties does not include invisible inherited properties`() = testFactory {
+
+    compile(
+      """
+      package com.squareup.test
+
+      interface Parent {
+        val parentProperty1: CharSequence
+
+        val parentProperty2: String
+      }
+
+      interface Child : Parent
+      """.trimIndent(),
+    ) {
+      val Child by classReferences
+
+      Child.declaredMemberProperties.map { it.fqName.asString() } shouldBe listOf()
+    }
+  }
+
+  @TestFactory
+  fun `memberProperties includes invisible inherited properties`() = testFactory {
+
+    compile(
+      """
+      package com.squareup.test
+
+      interface Parent {
+        val parentProperty1: CharSequence
+
+        val parentProperty2: String
+      }
+
+      interface Child : Parent
+      """.trimIndent(),
+    ) {
+      val Child by classReferences
+
+      Child.memberProperties.map { it.fqName.asString() } shouldBe listOf(
+        "com.squareup.test.Parent.parentProperty1",
+        "com.squareup.test.Parent.parentProperty2",
+      )
+    }
+  }
+
+  @TestFactory
+  fun `memberProperties does not duplicate inherited properties`() = testFactory {
+
+    compile(
+      """
+      package com.squareup.test
+
+      interface Parent {
+        val parentProperty1: CharSequence
+
+        val parentProperty2: String
+      }
+
+      interface Child : Parent {
+        override val parentProperty1: String
+      }
+      """.trimIndent(),
+    ) {
+      val Child by classReferences
+
+      Child.memberProperties.map { it.fqName.asString() } shouldBe listOf(
+        "com.squareup.test.Child.parentProperty1",
+        "com.squareup.test.Parent.parentProperty1",
+        "com.squareup.test.Parent.parentProperty2",
+      )
+    }
+  }
+
+  @TestFactory
+  fun `declaredMemberProperties includes overridden inherited properties`() = testFactory {
+
+    compile(
+      """
+        package com.squareup.test
+
+        interface Parent {
+          val parentProperty1: CharSequence
+
+          val parentProperty2: String
+        }
+
+        interface Child : Parent {
+          override val parentProperty1: String
+        }
+        
+        abstract class ChildClass : Parent {
+          abstract override val parentProperty1: String
+        }
+
+      """.trimIndent(),
+    ) {
+      val Child by classReferences
+      val ChildClass by classReferences
+
+      Child.declaredMemberProperties.map { it.fqName.asString() } shouldBe listOf(
+        "com.squareup.test.Child.parentProperty1",
+      )
+      ChildClass.declaredMemberProperties.map { it.fqName.asString() } shouldBe listOf(
+        "com.squareup.test.ChildClass.parentProperty1",
+      )
     }
   }
 }
