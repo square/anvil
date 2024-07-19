@@ -192,9 +192,13 @@ public abstract class com/squareup/anvil/compiler/internal/reference/ClassRefere
 	public abstract fun getClassId ()Lorg/jetbrains/kotlin/name/ClassId;
 	public abstract fun getConstructors ()Ljava/util/List;
 	public abstract fun getContainingFileAsJavaFile ()Ljava/io/File;
+	public abstract fun getDeclaredMemberFunctions ()Ljava/util/List;
+	public abstract fun getDeclaredMemberProperties ()Ljava/util/List;
 	public abstract fun getFqName ()Lorg/jetbrains/kotlin/name/FqName;
 	public abstract fun getFunctions ()Ljava/util/List;
 	protected abstract fun getInnerClassesAndObjects ()Ljava/util/List;
+	public final fun getMemberFunctions ()Ljava/util/List;
+	public final fun getMemberProperties ()Ljava/util/List;
 	public abstract fun getModule ()Lcom/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor;
 	public final fun getPackageFqName ()Lorg/jetbrains/kotlin/name/FqName;
 	public abstract fun getProperties ()Ljava/util/List;
@@ -223,6 +227,8 @@ public final class com/squareup/anvil/compiler/internal/reference/ClassReference
 	public final fun getClazz ()Lorg/jetbrains/kotlin/descriptors/ClassDescriptor;
 	public fun getConstructors ()Ljava/util/List;
 	public fun getContainingFileAsJavaFile ()Ljava/io/File;
+	public fun getDeclaredMemberFunctions ()Ljava/util/List;
+	public fun getDeclaredMemberProperties ()Ljava/util/List;
 	public fun getFqName ()Lorg/jetbrains/kotlin/name/FqName;
 	public fun getFunctions ()Ljava/util/List;
 	public fun getModule ()Lcom/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor;
@@ -248,6 +254,8 @@ public final class com/squareup/anvil/compiler/internal/reference/ClassReference
 	public final fun getClazz ()Lorg/jetbrains/kotlin/psi/KtClassOrObject;
 	public fun getConstructors ()Ljava/util/List;
 	public fun getContainingFileAsJavaFile ()Ljava/io/File;
+	public fun getDeclaredMemberFunctions ()Ljava/util/List;
+	public fun getDeclaredMemberProperties ()Ljava/util/List;
 	public fun getFqName ()Lorg/jetbrains/kotlin/name/FqName;
 	public fun getFunctions ()Ljava/util/List;
 	public fun getModule ()Lcom/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor;

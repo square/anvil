@@ -7,6 +7,8 @@
 ### Changed
 
 ### Deprecated
+- `ClassReference.functions` has been deprecated in favor of `ClassReference.memberFunctions` and `ClassReference.declaredMemberFunctions`
+- `ClassReference.properties` has been deprecated in favor of `ClassReference.memberProperties` and `ClassReference.declaredMemberProperties`
 
 ### Removed
 
