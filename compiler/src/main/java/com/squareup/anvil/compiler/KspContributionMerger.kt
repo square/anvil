@@ -750,7 +750,7 @@ internal class KspContributionMerger(
 
     if (excludedClasses.isNotEmpty()) {
       val intersect: Set<ClassName> = mergeAnnotatedClass
-        .superTypesExcludingAny(resolver)
+        .superTypesExcludingAny(resolver, shallow = false)
         .mapNotNull { it.resolveKSClassDeclaration()?.toClassName() }
         .toSet()
         // Need to intersect with both merged and origin types to be sure

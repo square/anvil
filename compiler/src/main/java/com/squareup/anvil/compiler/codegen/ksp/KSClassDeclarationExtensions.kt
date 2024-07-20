@@ -65,7 +65,7 @@ internal fun KSClassDeclaration.checkSingleSuperType(
     ?.boundTypeOrNull() != null
   if (hasExplicitBoundType) return
 
-  if (superTypesExcludingAny(resolver).count() != 1) {
+  if (superTypesExcludingAny(resolver, shallow = true).count() != 1) {
     throw KspAnvilException(
       message = "${qualifiedName?.asString()} contributes a binding, but does not " +
         "specify the bound type. This is only allowed with exactly one direct super type. " +
@@ -83,7 +83,7 @@ internal fun KSClassDeclaration.checkClassExtendsBoundType(
   val boundType = getKSAnnotationsByQualifiedName(annotationFqName.asString())
     .firstOrNull()
     ?.boundTypeOrNull()
-    ?: superTypesExcludingAny(resolver).singleOrNull()
+    ?: superTypesExcludingAny(resolver, shallow = true).singleOrNull()
     ?: throw KspAnvilException(
       message = "Couldn't find the bound type.",
       node = this,
@@ -105,8 +105,16 @@ internal fun KSClassDeclaration.checkClassExtendsBoundType(
 
 internal fun KSClassDeclaration.superTypesExcludingAny(
   resolver: Resolver,
-): Sequence<KSType> = getAllSuperTypes()
-  .filterNot { it == resolver.builtIns.anyType }
+  shallow: Boolean,
+): Sequence<KSType> {
+  val supertypeSequence = if (shallow) {
+    superTypes.map { it.resolve() }
+  } else {
+    getAllSuperTypes()
+  }
+  return supertypeSequence
+    .filterNot { it == resolver.builtIns.anyType }
+}
 
 internal fun KSClassDeclaration.isInterface(): Boolean {
   return classKind == ClassKind.INTERFACE

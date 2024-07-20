@@ -382,6 +382,24 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
       }
     }
 
+  @TestFactory fun `multiple interfaces in hierarchy for bound types is ok`() =
+    testFactory {
+      compile(
+        """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+
+      interface ParentParentInterface
+      interface ParentInterface : ParentParentInterface
+      
+      @ContributesBinding(Any::class)
+      interface ContributingInterface : ParentInterface
+      """,
+        expectExitCode = OK,
+      )
+    }
+
   @TestFactory fun `the bound type can only be implied with one super type - 2 interfaces`() =
     testFactory {
       compile(

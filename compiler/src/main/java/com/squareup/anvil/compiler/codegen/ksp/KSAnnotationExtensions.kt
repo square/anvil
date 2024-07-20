@@ -99,7 +99,7 @@ internal fun KSAnnotation.resolveBoundType(
   val declaredBoundType = boundTypeOrNull()?.resolveKSClassDeclaration()
   if (declaredBoundType != null) return declaredBoundType
   // Resolve from the first and only supertype
-  return declaringClass.superTypesExcludingAny(resolver)
+  return declaringClass.superTypesExcludingAny(resolver, shallow = true)
     .single()
     .resolveKSClassDeclaration() ?: throw KspAnvilException(
     message = "Couldn't resolve bound type for ${declaringClass.qualifiedName}",
