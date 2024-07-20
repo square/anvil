@@ -33,7 +33,7 @@ kct = "0.4.0"
 kgx = "0.1.12"
 kotest = "5.9.1"
 kotlin = "1.9.24"
-kotlinx-binaryCompatibility = "0.15.1"
+kotlinx-binaryCompatibility = "0.16.2"
 kotlinpoet = "1.16.0"
 # If updating KSP version, we currently have ksp override logic in settings.gradle that needs to be updated too
 ksp = "1.9.24-1.0.20"
