@@ -7,20 +7,29 @@
 ### Changed
 
 ### Deprecated
-- `ClassReference.functions` has been deprecated in favor of `ClassReference.memberFunctions` and `ClassReference.declaredMemberFunctions`
-- `ClassReference.properties` has been deprecated in favor of `ClassReference.memberProperties` and `ClassReference.declaredMemberProperties`
 
 ### Removed
 
 ### Fixed
-
-- incremental compilation is automatically disabled for source sets that perform interface or module merging ([#1024](https://github.com/square/anvil/pull/1024))
 
 ### Security
 
 ### Custom Code Generator
 
 ### Other Notes & Contributions
+
+## [2.5.0-beta10] - 2024-07-22
+
+### Deprecated
+
+- `ClassReference.functions` has been deprecated in favor of `ClassReference.memberFunctions` and `ClassReference.declaredMemberFunctions`
+- `ClassReference.properties` has been deprecated in favor of `ClassReference.memberProperties` and `ClassReference.declaredMemberProperties`
+
+### Fixed
+
+- consider `ignoreQualifier` arguments when checking for duplicate bindings ([#1033](https://github.com/square/anvil/pull/1033))
+- incremental compilation is automatically disabled for source sets that perform interface or module merging ([#1024](https://github.com/square/anvil/pull/1024))
+- include inherited functions in Subcomponent Factory checks by @RBusarow in ([#1038](https://github.com/square/anvil/pull/1038))
 
 ## [2.5.0-beta09] - 2024-05-09
 
@@ -753,7 +762,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta09...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta10...HEAD
+[2.5.0-beta10]: https://github.com/square/anvil/releases/tag/v2.5.0-beta10
 [2.5.0-beta09]: https://github.com/square/anvil/releases/tag/v2.5.0-beta09
 [2.5.0-beta08]: https://github.com/square/anvil/releases/tag/v2.5.0-beta08
 [2.5.0-beta07]: https://github.com/square/anvil/releases/tag/v2.5.0-beta07
