@@ -75,6 +75,7 @@ import com.squareup.kotlinpoet.joinToCode
 import com.squareup.kotlinpoet.ksp.addOriginatingKSFile
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ksp.toKModifier
 import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.Binds
@@ -835,10 +836,14 @@ internal class KspContributionMerger(
     isModule: Boolean,
   ) {
     val mergeAnnotatedClassName = mergeAnnotatedClass.toClassName()
+    val visibility = mergeAnnotatedClass.getVisibility().toKModifier()
     val generatedComponent = TypeSpec.interfaceBuilder(
       generatedComponentClassName.simpleName,
     )
       .apply {
+        visibility?.let {
+          addModifiers(visibility)
+        }
         // Copy over original annotations
         addAnnotations(
           mergeAnnotatedClass.annotations
@@ -1043,6 +1048,11 @@ internal class KspContributionMerger(
         addType(
           TypeSpec.objectBuilder("Dagger${mergeAnnotatedClass.simpleName.asString().capitalize()}")
             .addFunction(creatorFunction)
+            .apply {
+              visibility?.let {
+                addModifiers(visibility)
+              }
+            }
             .build(),
         )
       }
