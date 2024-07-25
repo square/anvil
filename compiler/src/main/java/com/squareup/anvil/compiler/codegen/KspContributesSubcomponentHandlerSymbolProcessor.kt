@@ -31,6 +31,7 @@ import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.modules
 import com.squareup.anvil.compiler.codegen.ksp.parentScope
 import com.squareup.anvil.compiler.codegen.ksp.replaces
+import com.squareup.anvil.compiler.codegen.ksp.resolvableAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
 import com.squareup.anvil.compiler.codegen.ksp.scope
@@ -147,7 +148,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
                 .build(),
             )
             .addAnnotations(
-              contribution.clazz.annotations
+              contribution.clazz.resolvableAnnotations
                 .filter(KSAnnotation::isDaggerScope)
                 .map(KSAnnotation::toAnnotationSpec)
                 .asIterable(),
@@ -400,7 +401,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
       )
       .map { clazz ->
         Contribution(
-          annotation = clazz.annotations.single { it.fqName == contributesSubcomponentFqName },
+          annotation = clazz.resolvableAnnotations.single { it.fqName == contributesSubcomponentFqName },
         )
       }
 
@@ -408,7 +409,8 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
     replacedReferences += contributions
       .flatMap { contribution ->
         contribution.clazz
-          .annotations.single { it.fqName == contributesSubcomponentFqName }
+          .resolvableAnnotations
+          .single { it.fqName == contributesSubcomponentFqName }
           .replaces()
       }
   }

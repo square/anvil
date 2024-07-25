@@ -29,6 +29,7 @@ import com.squareup.anvil.compiler.codegen.ksp.ignoreQualifier
 import com.squareup.anvil.compiler.codegen.ksp.isMapKey
 import com.squareup.anvil.compiler.codegen.ksp.qualifierAnnotation
 import com.squareup.anvil.compiler.codegen.ksp.replaces
+import com.squareup.anvil.compiler.codegen.ksp.resolvableAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.resolveBoundType
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesMultibindingFqName
@@ -103,7 +104,7 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
                   Contribution.QualifierData(annotationSpec, key)
                 }
               }
-              val mapKey = clazz.annotations
+              val mapKey = clazz.resolvableAnnotations
                 .filter { it.isMapKey() }
                 .singleOrNull()
                 ?.toAnnotationSpec()

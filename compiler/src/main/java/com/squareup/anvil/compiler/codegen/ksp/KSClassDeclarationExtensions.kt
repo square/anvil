@@ -13,12 +13,12 @@ import org.jetbrains.kotlin.name.FqName
 internal fun KSClassDeclaration.checkNotMoreThanOneQualifier(
   annotationFqName: FqName,
 ) {
-  val annotationsList = annotations.toList()
+  val annotationsList = resolvableAnnotations.toList()
   // The class is annotated with @ContributesBinding, @ContributesMultibinding, or another Anvil annotation.
   // If there is less than 2 further annotations, then there can't be more than two qualifiers.
   if (annotationsList.size <= 2) return
 
-  val qualifierCount = annotations.count { it.isQualifier() }
+  val qualifierCount = annotationsList.count { it.isQualifier() }
   if (qualifierCount > 1) {
     throw KspAnvilException(
       message = "Classes annotated with @${annotationFqName.shortName()} may not use more " +
@@ -40,7 +40,7 @@ internal inline fun KSClassDeclaration.checkClassIsPublic(message: () -> String)
 internal fun KSClassDeclaration.checkNotMoreThanOneMapKey() {
   // The class is annotated with @ContributesMultibinding. If there is less than 2 further
   // annotations, then there can't be more than two map keys.
-  val annotationsList = annotations.toList()
+  val annotationsList = resolvableAnnotations.toList()
   if (annotationsList.size <= 2) return
 
   val mapKeysCount = annotationsList.count { it.isMapKey() }

@@ -18,6 +18,7 @@ import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.isLateInit
 import com.squareup.anvil.compiler.codegen.ksp.isQualifier
+import com.squareup.anvil.compiler.codegen.ksp.resolvableAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
@@ -515,7 +516,7 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
     originalName
   }
 
-  val qualifierAnnotations = annotations
+  val qualifierAnnotations = resolvableAnnotations
     .filter { it.isQualifier() }
     .map { it.toAnnotationSpec() }
     .toList()

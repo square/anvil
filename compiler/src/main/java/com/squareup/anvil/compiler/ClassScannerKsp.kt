@@ -16,6 +16,7 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.fqName
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
+import com.squareup.anvil.compiler.codegen.ksp.resolvableAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
 import com.squareup.anvil.compiler.codegen.ksp.scope
@@ -96,8 +97,8 @@ internal class ClassScannerKsp {
       }
       .filter { clazz ->
         // Check that the annotation really is present. It should always be the case, but it's
-        // a safetynet in case the generated properties are out of sync.
-        clazz.annotations.any {
+        // a safety net in case the generated properties are out of sync.
+        clazz.resolvableAnnotations.any {
           it.annotationType.resolve()
             .toClassName().fqName == annotation && (scope == null || it.scope() == scope)
         }
@@ -173,7 +174,7 @@ internal class ClassScannerKsp {
       .filterIsInstance<KSClassDeclaration>()
       .filter(KSClassDeclaration::isInterface)
       .filter { nestedClass ->
-        nestedClass.annotations
+        nestedClass.resolvableAnnotations
           .any {
             it.fqName == contributesToFqName && (if (parentScopeType != null) it.scope() == parentScopeType else true)
           }

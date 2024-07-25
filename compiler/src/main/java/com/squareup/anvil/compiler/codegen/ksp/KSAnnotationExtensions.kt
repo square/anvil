@@ -155,7 +155,7 @@ internal fun KSAnnotation.isMapKey(): Boolean = isTypeAnnotatedWith(mapKeyFqName
 internal fun KSAnnotation.isDaggerScope(): Boolean = isTypeAnnotatedWith(daggerScopeFqName)
 
 internal fun KSAnnotated.qualifierAnnotation(): KSAnnotation? =
-  annotations.singleOrNull { it.isQualifier() }
+  resolvableAnnotations.singleOrNull { it.isQualifier() }
 
 internal fun KSAnnotation.ignoreQualifier(): Boolean =
   argumentAt("ignoreQualifier")?.value as? Boolean? == true
