@@ -531,6 +531,46 @@ class ContributesSubcomponentGeneratorTest(
     }
   }
 
+  @Test fun `a factory function may be defined in a generic super interface`() {
+    compile(
+      """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @ContributesTo(Unit::class)
+          interface AnyParentComponent : AnyFactoryFactory<ComponentFactory>
+
+          interface AnyFactoryFactory<T> {
+            fun createFactory(): T
+          }
+
+          interface Creator {
+            fun createComponent(): SubcomponentInterface
+          }
+
+          @Factory
+          interface ComponentFactory : Creator
+        }
+
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """,
+      mode = mode,
+    ) {
+      assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
+      assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
+
+      assertThat(subcomponentInterface.componentFactoryInterface.methods.map { it.name })
+        .containsExactly("createComponent")
+    }
+  }
+
   @Test
   fun `using Dagger's @Subcomponent_Factory is an error`() {
     compile(
@@ -648,6 +688,102 @@ class ContributesSubcomponentGeneratorTest(
           "com.squareup.test.SubcomponentInterface1 with scope kotlin.Long. The replacement " +
           "must use the same scope.",
       )
+    }
+  }
+
+  @Test
+  fun `a factory supertype may be an interface with a generic function`() {
+    compile(
+      """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @ContributesSubcomponent.Factory
+          interface ComponentFactory : GenericFactory<SubcomponentInterface>
+        }
+
+        interface GenericFactory<T> {
+          fun create(): T
+        }
+      """,
+      mode = mode,
+      expectExitCode = ExitCode.OK,
+    ) {
+      assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
+    }
+  }
+
+  @Test
+  fun `a factory supertype may be an interface with a generic function from a dependency compilation`() {
+
+    val dep = compile(
+      """
+        package com.squareup.test.dep
+
+        interface GenericFactory<T> {
+          fun create(): T
+        }
+      """,
+    )
+
+    compile(
+      """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.test.dep.GenericFactory
+
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @ContributesSubcomponent.Factory
+          interface ComponentFactory : GenericFactory<SubcomponentInterface>
+        }
+      """,
+      mode = mode,
+      previousCompilationResult = dep,
+      expectExitCode = ExitCode.OK,
+    ) {
+      assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
+    }
+  }
+
+  @Test
+  fun `a factory supertype may be an interface with a generic function from a dependency compilation and overridden function`() {
+
+    val dep = compile(
+      """
+        package com.squareup.test.dep
+
+        interface GenericFactory<T> {
+          fun create(): T
+        }
+      """,
+    )
+
+    compile(
+      """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.test.dep.GenericFactory
+
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface {
+          @ContributesTo(Unit::class)
+          interface ParentInterface : GenericFactory<SubcomponentInterface> {
+            override fun create(): SubcomponentInterface
+          }
+        }
+      """,
+      mode = mode,
+      previousCompilationResult = dep,
+      expectExitCode = ExitCode.OK,
+    ) {
+      assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
     }
   }
 

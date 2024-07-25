@@ -14,6 +14,8 @@ import com.squareup.anvil.compiler.internal.reference.ReferencesTestEnvironment.
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
+import com.tschuchort.compiletesting.JvmCompilationResult
+import com.tschuchort.compiletesting.KotlinCompilation
 import io.kotest.assertions.ErrorCollectionMode
 import io.kotest.assertions.ErrorCollector
 import io.kotest.assertions.collectiveError
@@ -45,6 +47,18 @@ class ReferencesTestEnvironment(
     property: KProperty<*>,
   ): E = getValue(property.name)
 
+  operator fun <E : PropertyReference> Iterable<E>.getValue(
+    thisRef: Any?,
+    property: KProperty<*>,
+  ): E = singleOrNull { it.name == property.name }
+    ?: error("PropertyReference not found: ${property.name}")
+
+  operator fun <E : FunctionReference> Iterable<E>.getValue(
+    thisRef: Any?,
+    property: KProperty<*>,
+  ): E = singleOrNull { it.name == property.name }
+    ?: error("FunctionReference not found: ${property.name}")
+
   class ReferencesTestCodeGenerationResult(
     val typeReferences: Map<String, TypeReference>,
     val classReferences: Map<String, ClassReference>,
@@ -56,7 +70,9 @@ class ReferencesTestEnvironment(
     @Language("kotlin") content: String,
     @Language("kotlin") vararg additionalContent: String,
     allWarningsAsErrors: Boolean = false,
+    previousCompilationResult: JvmCompilationResult? = null,
     codeGenerators: List<CodeGenerator> = emptyList(),
+    expectExitCode: KotlinCompilation.ExitCode? = null,
     testAction: ReferencesTestCodeGenerationResult.() -> Unit,
   ) {
 
@@ -109,7 +125,9 @@ class ReferencesTestEnvironment(
       *additionalContent,
       allWarningsAsErrors = allWarningsAsErrors,
       workingDir = workingDir,
+      previousCompilationResult = previousCompilationResult,
       mode = AnvilCompilationMode.Embedded(codeGenerators + referenceGenerator),
+      expectExitCode = expectExitCode,
     ) {
       errorCollector.throwCollectedErrors()
 
@@ -174,3 +192,9 @@ inline fun ErrorCollector.collectErrors(assertions: () -> Unit) {
     errorCollector.setCollectionMode(ErrorCollectionMode.Hard)
   }
 }
+
+val MemberFunctionReference.text: String
+  get() = when (this) {
+    is MemberFunctionReference.Descriptor -> function.toString()
+    is MemberFunctionReference.Psi -> function.text
+  }

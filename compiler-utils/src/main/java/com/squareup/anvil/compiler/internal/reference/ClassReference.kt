@@ -84,8 +84,20 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
    * All functions declared in this class or any of its super-types.
    */
   public val memberFunctions: List<MemberFunctionReference> by lazy(NONE) {
-    declaredMemberFunctions + directSuperTypeReferences()
-      .flatMap { it.asClassReference().memberFunctions }
+    declaredMemberFunctions
+      .plus(directSuperTypeReferences().flatMap { it.asClassReference().memberFunctions })
+      // Don't include any functions that have been overridden.
+      // That's determined by their name and ordered parameter types.
+      // Parameter names are allowed to change and the return type will change, so they're ignored.
+      .distinctBy { function ->
+        if (function.visibility().isProtectedOrPublic()) {
+          function.parameters.map { param ->
+            param.type().resolveGenericTypeOrSelf(this).asTypeName()
+          } + function.name
+        } else {
+          function
+        }
+      }
   }
 
   @Deprecated(
@@ -105,8 +117,16 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
    * All properties declared in this class or any of its super-types.
    */
   public val memberProperties: List<MemberPropertyReference> by lazy(NONE) {
-    declaredMemberProperties + directSuperTypeReferences()
-      .flatMap { it.asClassReference().memberProperties }
+    declaredMemberProperties
+      .plus(directSuperTypeReferences().flatMap { it.asClassReference().memberProperties })
+      // Don't include overridden properties.
+      .distinctBy {
+        if (it.visibility().isProtectedOrPublic()) {
+          it.name
+        } else {
+          it
+        }
+      }
   }
 
   public abstract val typeParameters: List<TypeParameterReference>

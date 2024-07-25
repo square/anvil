@@ -152,6 +152,24 @@ public sealed class MemberFunctionReference : AnnotatedReference, FunctionRefere
 }
 
 @ExperimentalAnvilApi
+public fun FunctionReference.returnTypeWithGenericSubstitution(
+  implementingClass: ClassReference,
+): TypeReference {
+  return returnTypeWithGenericSubstitutionOrNull(implementingClass)
+    ?: throw AnvilCompilationExceptionFunctionReference(
+      functionReference = this,
+      message = "Unable to get the return type for function $fqName.",
+    )
+}
+
+@ExperimentalAnvilApi
+public fun FunctionReference.returnTypeWithGenericSubstitutionOrNull(
+  implementingClass: ClassReference,
+): TypeReference? {
+  return returnTypeOrNull()?.resolveGenericTypeOrSelf(implementingClass)
+}
+
+@ExperimentalAnvilApi
 public fun KtFunction.toFunctionReference(
   declaringClass: ClassReference.Psi,
 ): Psi {

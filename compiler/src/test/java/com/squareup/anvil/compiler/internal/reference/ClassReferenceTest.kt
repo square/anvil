@@ -613,23 +613,63 @@ class ClassReferenceTest : ReferenceTests {
       """
       package com.squareup.test
 
-      interface Parent {
-        fun parentFunction1()
-
-        fun parentFunction2() { }
+      interface Parent<T> {
+        fun function1()
+        fun function2()
+        fun function3(name: String)
+        fun function3(age: Int)
+        fun function4(t: T)
+        fun function5(t: T)
       }
 
-      interface Child : Parent {
-        override fun parentFunction1() { }
+      interface Child : Parent<String> {
+        override fun function1()
+        override fun function3(age: Int)
+        override fun function5(t: String)
       }
       """.trimIndent(),
     ) {
       val Child by classReferences
 
+      Child.memberFunctions.map { it.text } shouldBe listOf(
+        "override fun function1()",
+        "override fun function3(age: Int)",
+        "override fun function5(t: String)",
+        "fun function2()",
+        "fun function3(name: String)",
+        "fun function4(t: T)",
+      )
+    }
+  }
+
+  @TestFactory
+  fun `function lists do not include functions from a nested class`() = testFactory {
+
+    compile(
+      """
+        package com.squareup.test
+
+        interface Parent {
+          fun parentFunction1(): CharSequence
+        }
+
+        interface Child : Parent {
+          fun function1(): String
+          
+          interface Nested {
+            fun nestedFunction(): String
+          }
+        }
+      """.trimIndent(),
+    ) {
+      val Child by classReferences
+
+      Child.declaredMemberFunctions.map { it.fqName.asString() } shouldBe listOf(
+        "com.squareup.test.Child.function1",
+      )
       Child.memberFunctions.map { it.fqName.asString() } shouldBe listOf(
-        "com.squareup.test.Child.parentFunction1",
+        "com.squareup.test.Child.function1",
         "com.squareup.test.Parent.parentFunction1",
-        "com.squareup.test.Parent.parentFunction2",
       )
     }
   }
@@ -740,7 +780,6 @@ class ClassReferenceTest : ReferenceTests {
 
       Child.memberProperties.map { it.fqName.asString() } shouldBe listOf(
         "com.squareup.test.Child.parentProperty1",
-        "com.squareup.test.Parent.parentProperty1",
         "com.squareup.test.Parent.parentProperty2",
       )
     }
@@ -777,6 +816,38 @@ class ClassReferenceTest : ReferenceTests {
       )
       ChildClass.declaredMemberProperties.map { it.fqName.asString() } shouldBe listOf(
         "com.squareup.test.ChildClass.parentProperty1",
+      )
+    }
+  }
+
+  @TestFactory
+  fun `property lists do not include properties from a nested class`() = testFactory {
+
+    compile(
+      """
+        package com.squareup.test
+
+        interface Parent {
+          val parentProperty1: CharSequence
+        }
+
+        interface Child : Parent {
+          val property1: String
+          
+          interface Nested {
+            val nestedProperty: String
+          }
+        }
+      """.trimIndent(),
+    ) {
+      val Child by classReferences
+
+      Child.declaredMemberProperties.map { it.fqName.asString() } shouldBe listOf(
+        "com.squareup.test.Child.property1",
+      )
+      Child.memberProperties.map { it.fqName.asString() } shouldBe listOf(
+        "com.squareup.test.Child.property1",
+        "com.squareup.test.Parent.parentProperty1",
       )
     }
   }
