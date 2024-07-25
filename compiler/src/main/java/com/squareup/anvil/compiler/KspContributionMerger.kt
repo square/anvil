@@ -346,9 +346,15 @@ internal class KspContributionMerger(
           it
         }
       }
-      // Every generated merged component will have a binding module to map it back to the
-      // root type
-      .plus(generatedComponentClassName.nestedClass(BINDING_MODULE_SUFFIX))
+      .let {
+        // Every generated merged component will have a binding module to map it back to the
+        // root type
+        if (!isModule) {
+          it.plus(generatedComponentClassName.nestedClass(BINDING_MODULE_SUFFIX))
+        } else {
+          it
+        }
+      }
 
     val allContributesAnnotations: List<KSAnnotation> = annotations
       .asSequence()
@@ -956,13 +962,15 @@ internal class KspContributionMerger(
           }
         }
 
-        // Add the binding module
-        addType(
-          daggerBindingModuleSpec(
-            BINDING_MODULE_SUFFIX,
-            allBindingSpecs,
-          ),
-        )
+        // Add the binding module if this is not a module itself
+        if (!isModule) {
+          addType(
+            daggerBindingModuleSpec(
+              BINDING_MODULE_SUFFIX,
+              allBindingSpecs,
+            ),
+          )
+        }
 
         // If this is a subcomponent with a contributed interface, generate its parent component
         // here
