@@ -40,6 +40,8 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.returnTypeWithGenericSubstitution
+import com.squareup.anvil.compiler.internal.reference.returnTypeWithGenericSubstitutionOrNull
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
@@ -325,7 +327,13 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
       }
 
       val functions = componentInterface.memberFunctions
-        .filter { it.returnType().asClassReference() == this }
+        .filter { function ->
+
+          val returnType = function
+            .returnTypeWithGenericSubstitution(componentInterface)
+            .asClassReference()
+          returnType == this
+        }
 
       if (functions.size >= 2) {
         throw AnvilCompilationExceptionClassReference(
@@ -377,16 +385,14 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
         )
       }
 
-      val functions = factory.memberFunctions
-        .let { functions ->
-          if (factory.isInterface()) {
-            functions
-          } else {
-            functions.filter { it.isAbstract() }
-          }
-        }
+      val returnType = factory.memberFunctions
+        // filter by `isAbstract` even for interfaces,
+        // otherwise we get `toString()`, `equals()`, and `hashCode()`.
+        .singleOrNull { it.isAbstract() }
+        ?.returnTypeWithGenericSubstitutionOrNull(factory)
+        ?.asClassReference()
 
-      if (functions.size != 1 || functions[0].returnType().asClassReference() != this) {
+      if (returnType != this) {
         throw AnvilCompilationExceptionClassReference(
           classReference = factory,
           message = "A factory must have exactly one abstract function returning the " +

@@ -8,4 +8,7 @@ public enum class Visibility {
   INTERNAL,
   PROTECTED,
   PRIVATE,
+  ;
+
+  public fun isProtectedOrPublic(): Boolean = this == PROTECTED || this == PUBLIC
 }

@@ -92,9 +92,16 @@ public sealed class TypeReference {
       return asTypeName()
     }
 
-    return resolveGenericTypeOrNull(implementingClass)
-      ?.asTypeNameOrNull()
-      ?: asTypeNameOrNull()
+    return resolveGenericTypeOrSelf(implementingClass).asTypeNameOrNull()
+  }
+
+  /**
+   * If this type is generic, returns the resolved type in [implementingClass]. If the type is not
+   * generic or the generic type can't be resolved, the current type is returned.
+   */
+  public fun resolveGenericTypeOrSelf(implementingClass: ClassReference): TypeReference {
+    if (!isGenericType()) return this
+    return resolveGenericTypeOrNull(implementingClass) ?: this
   }
 
   public fun isGenericType(): Boolean = asClassReferenceOrNull()?.isGenericClass() ?: true

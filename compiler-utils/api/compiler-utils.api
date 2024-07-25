@@ -376,6 +376,8 @@ public final class com/squareup/anvil/compiler/internal/reference/MemberFunction
 }
 
 public final class com/squareup/anvil/compiler/internal/reference/MemberFunctionReferenceKt {
+	public static final fun returnTypeWithGenericSubstitution (Lcom/squareup/anvil/compiler/internal/reference/FunctionReference;Lcom/squareup/anvil/compiler/internal/reference/ClassReference;)Lcom/squareup/anvil/compiler/internal/reference/TypeReference;
+	public static final fun returnTypeWithGenericSubstitutionOrNull (Lcom/squareup/anvil/compiler/internal/reference/FunctionReference;Lcom/squareup/anvil/compiler/internal/reference/ClassReference;)Lcom/squareup/anvil/compiler/internal/reference/TypeReference;
 	public static final fun toFunctionReference (Lorg/jetbrains/kotlin/descriptors/FunctionDescriptor;Lcom/squareup/anvil/compiler/internal/reference/ClassReference$Descriptor;)Lcom/squareup/anvil/compiler/internal/reference/MemberFunctionReference$Descriptor;
 	public static final fun toFunctionReference (Lorg/jetbrains/kotlin/psi/KtFunction;Lcom/squareup/anvil/compiler/internal/reference/ClassReference$Psi;)Lcom/squareup/anvil/compiler/internal/reference/MemberFunctionReference$Psi;
 }
@@ -630,6 +632,7 @@ public abstract class com/squareup/anvil/compiler/internal/reference/TypeReferen
 	public abstract fun isNullable ()Z
 	public final fun resolveGenericTypeNameOrNull (Lcom/squareup/anvil/compiler/internal/reference/ClassReference;)Lcom/squareup/kotlinpoet/TypeName;
 	public abstract fun resolveGenericTypeOrNull (Lcom/squareup/anvil/compiler/internal/reference/ClassReference;)Lcom/squareup/anvil/compiler/internal/reference/TypeReference;
+	public final fun resolveGenericTypeOrSelf (Lcom/squareup/anvil/compiler/internal/reference/ClassReference;)Lcom/squareup/anvil/compiler/internal/reference/TypeReference;
 	public fun toString ()Ljava/lang/String;
 }
 
@@ -667,6 +670,7 @@ public final class com/squareup/anvil/compiler/internal/reference/Visibility : j
 	public static final field PROTECTED Lcom/squareup/anvil/compiler/internal/reference/Visibility;
 	public static final field PUBLIC Lcom/squareup/anvil/compiler/internal/reference/Visibility;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
+	public final fun isProtectedOrPublic ()Z
 	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/anvil/compiler/internal/reference/Visibility;
 	public static fun values ()[Lcom/squareup/anvil/compiler/internal/reference/Visibility;
 }

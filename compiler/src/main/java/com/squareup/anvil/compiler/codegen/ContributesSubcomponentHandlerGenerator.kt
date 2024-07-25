@@ -23,6 +23,8 @@ import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import com.squareup.anvil.compiler.internal.reference.asClassId
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internal.reference.returnTypeWithGenericSubstitution
+import com.squareup.anvil.compiler.internal.reference.returnTypeWithGenericSubstitutionOrNull
 import com.squareup.anvil.compiler.internal.safePackageString
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeInterfacesFqName
@@ -301,7 +303,8 @@ internal class ContributesSubcomponentHandlerGenerator(
     val functions = componentInterface.memberFunctions
       .filter { it.isAbstract() && it.visibility() == PUBLIC }
       .filter {
-        val returnType = it.returnType().asClassReference()
+        val returnType = it.returnTypeWithGenericSubstitution(componentInterface)
+          .asClassReference()
         returnType == contribution.clazz || (factoryClass != null && returnType == factoryClass)
       }
 
@@ -338,8 +341,16 @@ internal class ContributesSubcomponentHandlerGenerator(
         }
 
         val createComponentFunctions = factory.memberFunctions
+          // filter by `isAbstract` even for interfaces,
+          // otherwise we get `toString()`, `equals()`, and `hashCode()`.
           .filter { it.isAbstract() }
-          .filter { it.returnType().asClassReference().fqName == contributionFqName }
+          .filter { function ->
+            val returnType = function.returnTypeWithGenericSubstitutionOrNull(factory)
+              ?.asClassReference()
+              ?: return@filter false
+
+            returnType.fqName == contributionFqName
+          }
 
         if (createComponentFunctions.size != 1) {
           throw AnvilCompilationExceptionClassReference(
