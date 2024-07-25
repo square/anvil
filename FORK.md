@@ -103,8 +103,14 @@ Replace any creator annotations with anvil equivalents.
 | `@Subcomponent.Factory` | `@MergeSubcomponent.Factory` |
 | `@Subcomponent.Builder` | `@MergeSubcomponent.Builder` |
 
-This is the only source change you should need to make! Anvil will generate source-compatible shims
+This is hopefully the only source change you should need to make! Anvil will generate
+source-compatible shims
 where necessary for everything else.
+
+The only other source change you may need to make is if you include `@MergeInterfaces` or
+`@MergeModules` in non-Anvil-processed components or modules, in which case you will need to
+manually
+use the generated `Merged*` classes. See the Technical Design section for more details.
 
 You _should_ be able to build now.
 
@@ -167,19 +173,17 @@ issues:
    in IR were not annotated as obsolete. This means that the original Anvil implementation is not
    compatible with K2.
 
-  - Annotation generation in kapt stub generation still sort of works but is not recommended nor is
-    it
-    compatible with IC. The Kotlin compiler team advised migrating to a supported API in FIR
-    instead.
-  - Interface merging completely breaks in K2, as new interfaces added are quietly ignored. The
-    Kotlin
-    compiler team also declined to support such a case in the future.
+   - Annotation generation in kapt stub generation still sort of works but is not recommended nor is
+     it compatible with IC. The Kotlin compiler team advised migrating to a supported API in FIR
+     instead.
+   - Interface merging completely breaks in K2, as new interfaces added are quietly ignored. The
+     Kotlin compiler team also declined to support such a case in the future.
 
 2. This was not compatible with dagger-KSP, for various reasons.
 
-  - In K1/KSP1, KSP never runs the IR backend, so Anvil never has a chance to perform merging.
-  - In K2/KSP2, KSP never even runs a compiler plugin, so Anvil never has a chance to perform
-    merging.
+   - In K1/KSP1, KSP never runs the IR backend, so Anvil never has a chance to perform merging.
+   - In K2/KSP2, KSP never even runs a compiler plugin, so Anvil never has a chance to perform
+     merging.
 
 Rewriting the merging logic to run in KSP solves both of these issues, but required rethinking the
 structure of generated code to work in a world where we cannot modify sources.
