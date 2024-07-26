@@ -359,7 +359,7 @@ private fun MemberPropertyReference.toMemberInjectParameter(
   }
 
   val originalName = name
-  val type = type()
+  val type = type().resolveGenericTypeOrSelf(implementingClass)
 
   val isWrappedInProvider = type.asClassReferenceOrNull()?.fqName == providerFqName
   val isWrappedInLazy = type.asClassReferenceOrNull()?.fqName == daggerLazyFqName
