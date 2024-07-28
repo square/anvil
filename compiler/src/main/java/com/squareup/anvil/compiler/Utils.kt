@@ -51,7 +51,8 @@ internal val contributesBindingFqName = ContributesBinding::class.fqName
 internal val contributesMultibindingFqName = ContributesMultibinding::class.fqName
 internal val contributesSubcomponentFqName = ContributesSubcomponent::class.fqName
 internal val contributesSubcomponentFactoryFqName = ContributesSubcomponent.Factory::class.fqName
-internal val contributesSubcomponentFactoryClassName = ContributesSubcomponent.Factory::class.asClassName()
+internal val contributesSubcomponentFactoryClassName =
+  ContributesSubcomponent.Factory::class.asClassName()
 internal val internalBindingMarkerFqName = InternalBindingMarker::class.fqName
 internal val daggerComponentFqName = Component::class.fqName
 internal val daggerComponentFactoryFqName = Component.Factory::class.fqName
@@ -185,6 +186,10 @@ internal inline fun <T, R> Array<T>.mapToSet(
   return mapTo(destination, transform)
 }
 
-internal val ClassName.fqName: FqName get() {
-  return FqName(canonicalName)
-}
+internal val ClassName.fqName: FqName
+  get() {
+    return FqName(canonicalName)
+  }
+
+internal inline fun <T, C : Collection<T>, O> C.ifNotEmpty(body: (C) -> O?): O? =
+  if (isNotEmpty()) body(this) else null

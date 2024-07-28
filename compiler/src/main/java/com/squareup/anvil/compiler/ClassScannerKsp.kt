@@ -4,7 +4,6 @@ import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeReference
@@ -13,13 +12,16 @@ import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.anvil.compiler.ClassScannerKsp.GeneratedProperty.ReferenceProperty
 import com.squareup.anvil.compiler.ClassScannerKsp.GeneratedProperty.ScopeProperty
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.codegen.ksp.KSCallable
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.fqName
+import com.squareup.anvil.compiler.codegen.ksp.getAllCallables
+import com.squareup.anvil.compiler.codegen.ksp.isAbstract
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.resolvableAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
-import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
 import com.squareup.anvil.compiler.codegen.ksp.scope
+import com.squareup.anvil.compiler.codegen.ksp.type
 import com.squareup.kotlinpoet.ksp.toClassName
 import org.jetbrains.kotlin.name.FqName
 
@@ -27,8 +29,8 @@ internal class ClassScannerKsp {
 
   private val generatedPropertyCache = mutableMapOf<CacheKey, Collection<List<GeneratedProperty>>>()
   private val parentComponentCache = mutableMapOf<FqName, KSClassDeclaration?>()
-  private val overridableParentComponentFunctionCache =
-    mutableMapOf<FqName, List<KSFunctionDeclaration>>()
+  private val overridableParentComponentCallableCache =
+    mutableMapOf<FqName, List<KSCallable>>()
 
   /**
    * Externally-contributed contributions, which are important to track so that we don't try to
@@ -159,7 +161,7 @@ internal class ClassScannerKsp {
    */
   fun findParentComponentInterface(
     componentClass: KSClassDeclaration,
-    factoryClass: KSClassDeclaration?,
+    creatorClass: KSClassDeclaration?,
     parentScopeType: KSType?,
   ): KSClassDeclaration? {
     val fqName = componentClass.fqName
@@ -182,7 +184,7 @@ internal class ClassScannerKsp {
       .toList()
 
     val componentInterface = when (contributedInnerComponentInterfaces.size) {
-      0 -> return null
+      0 -> return null // TODO cache
       1 -> contributedInnerComponentInterfaces[0]
       else -> throw KspAnvilException(
         node = componentClass,
@@ -191,14 +193,14 @@ internal class ClassScannerKsp {
       )
     }
 
-    val functions = overridableParentComponentFunctions(
+    val callables = overridableParentComponentCallables(
       componentInterface,
       componentClass.fqName,
-      factoryClass?.fqName,
+      creatorClass?.fqName,
     )
 
-    when (functions.count()) {
-      0 -> return null
+    when (callables.count()) {
+      0 -> return null // TODO cache
       1 -> {
         // This is ok
       }
@@ -214,30 +216,30 @@ internal class ClassScannerKsp {
   }
 
   /**
-   * Returns a list of overridable parent component functions from a given [parentComponent]
-   * for the given [targetReturnType].
+   * Returns a list of overridable parent component callables from a given [parentComponent]
+   * for the given [targetReturnType]. This can include both functions and properties.
    */
-  fun overridableParentComponentFunctions(
+  fun overridableParentComponentCallables(
     parentComponent: KSClassDeclaration,
     targetReturnType: FqName,
-    factoryClass: FqName?,
-  ): List<KSFunctionDeclaration> {
+    creatorClass: FqName?,
+  ): List<KSCallable> {
     val fqName = parentComponent.fqName
 
     // Can't use getOrPut because it doesn't differentiate between absent and null
-    if (fqName in overridableParentComponentFunctionCache) {
-      return overridableParentComponentFunctionCache.getValue(fqName)
+    if (fqName in overridableParentComponentCallableCache) {
+      return overridableParentComponentCallableCache.getValue(fqName)
     }
 
-    return parentComponent.getAllFunctions()
+    return parentComponent.getAllCallables()
       .filter { it.isAbstract && it.getVisibility() == Visibility.PUBLIC }
       .filter {
-        val returnType = it.returnTypeOrNull()?.resolveKSClassDeclaration() ?: return@filter false
-        returnType.fqName == targetReturnType || (factoryClass != null && returnType.fqName == factoryClass)
+        val type = it.type?.resolveKSClassDeclaration()?.fqName ?: return@filter false
+        type == targetReturnType || (creatorClass != null && type == creatorClass)
       }
       .toList()
       .also {
-        overridableParentComponentFunctionCache[fqName] = it
+        overridableParentComponentCallableCache[fqName] = it
       }
   }
 }

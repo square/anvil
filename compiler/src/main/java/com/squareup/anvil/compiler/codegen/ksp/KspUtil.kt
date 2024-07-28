@@ -285,8 +285,10 @@ internal fun KSFunctionDeclaration.toFunSpec(): FunSpec {
   return builder.build()
 }
 
-internal fun KSPropertyDeclaration.toPropertySpec(): PropertySpec {
-  return PropertySpec.builder(simpleName.getShortName(), type.resolve().toTypeName())
+internal fun KSPropertyDeclaration.toPropertySpec(
+  typeOverride: TypeName = type.resolve().toTypeName(),
+): PropertySpec {
+  return PropertySpec.builder(simpleName.getShortName(), typeOverride)
     .addModifiers(modifiers.mapNotNull { it.toKModifier() })
     .addAnnotations(
       resolvableAnnotations.map { it.toAnnotationSpec() }.asIterable(),
