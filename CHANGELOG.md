@@ -18,6 +18,13 @@
 
 ### Other Notes & Contributions
 
+## [2.5.0-beta11] - 2024-07-29
+
+### Fixed
+
+- resolve inherited field-injected generic properties to their substituted type ([#1040](https://github.com/square/anvil/pull/1040))
+- Resolve generic types when checking Subcomponent factory return types ([#1041](https://github.com/square/anvil/pull/1041))
+
 ## [2.5.0-beta10] - 2024-07-22
 
 ### Deprecated
@@ -762,7 +769,8 @@
 
 - Initial release.
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta10...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta11...HEAD
+[2.5.0-beta11]: https://github.com/square/anvil/releases/tag/v2.5.0-beta11
 [2.5.0-beta10]: https://github.com/square/anvil/releases/tag/v2.5.0-beta10
 [2.5.0-beta09]: https://github.com/square/anvil/releases/tag/v2.5.0-beta09
 [2.5.0-beta08]: https://github.com/square/anvil/releases/tag/v2.5.0-beta08
