@@ -16,6 +16,7 @@ import com.squareup.anvil.compiler.generatedBindingModule
 import com.squareup.anvil.compiler.generatedBindingModules
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.ComponentProcessingMode
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.secondContributingInterface
@@ -695,7 +696,7 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
       @ContributesBinding(Unit::class)
       object ContributingObject : ParentInterface
       """,
-        enableDaggerAnnotationProcessor = source == DaggerFactorySource.DAGGER,
+        componentProcessingMode = if (source == DaggerFactorySource.DAGGER) ComponentProcessingMode.KAPT else ComponentProcessingMode.NONE,
         generateDaggerFactories = source == DaggerFactorySource.ANVIL,
       ) {
         assertCompilationSucceeded()

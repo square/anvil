@@ -40,7 +40,7 @@ public class AnvilCompilation internal constructor(
   /** Configures this the Anvil behavior of this compilation. */
   @ExperimentalAnvilApi
   public fun configureAnvil(
-    enableDaggerAnnotationProcessor: Boolean = false,
+    componentProcessingMode: ComponentProcessingMode = ComponentProcessingMode.NONE,
     generateDaggerFactories: Boolean = false,
     generateDaggerFactoriesOnly: Boolean = false,
     disableComponentMerging: Boolean = false,
@@ -61,8 +61,23 @@ public class AnvilCompilation internal constructor(
       // Deprecation tracked in https://github.com/square/anvil/issues/672
       @Suppress("DEPRECATION")
       componentRegistrars = listOf(anvilComponentRegistrar)
-      if (enableDaggerAnnotationProcessor) {
-        annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
+      when (componentProcessingMode) {
+        ComponentProcessingMode.KAPT -> {
+          annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
+        }
+        ComponentProcessingMode.KSP -> {
+          symbolProcessorProviders +=
+            listOf(
+              // TODO add KSP contribution merger here
+              KspComponentProcessor.Provider(),
+            )
+          // Run KSP in a single-pass
+          // https://kotlinlang.slack.com/archives/C013BA8EQSE/p1639462548225400?thread_ts=1639433474.224900&cid=C013BA8EQSE
+          kspWithCompilation = true
+        }
+        ComponentProcessingMode.NONE -> {
+          // Do nothing
+        }
       }
 
       val anvilCommandLineProcessor = AnvilCommandLineProcessor()
@@ -132,7 +147,7 @@ public class AnvilCompilation internal constructor(
               PluginOption(
                 pluginId = anvilCommandLineProcessor.pluginId,
                 optionName = "will-have-dagger-factories",
-                optionValue = (generateDaggerFactories || enableDaggerAnnotationProcessor).toString(),
+                optionValue = (generateDaggerFactories || (componentProcessingMode != ComponentProcessingMode.NONE)).toString(),
               ),
             )
         }
@@ -286,6 +301,13 @@ public class AnvilCompilation internal constructor(
   }
 }
 
+/** Available component processing modes. */
+public enum class ComponentProcessingMode {
+  KAPT,
+  KSP,
+  NONE,
+}
+
 /**
  * Helpful for testing code generators in unit tests end to end.
  *
@@ -296,7 +318,7 @@ public class AnvilCompilation internal constructor(
 @ExperimentalAnvilApi
 public fun compileAnvil(
   @Language("kotlin") vararg sources: String,
-  enableDaggerAnnotationProcessor: Boolean = false,
+  componentProcessingMode: ComponentProcessingMode = ComponentProcessingMode.NONE,
   generateDaggerFactories: Boolean = false,
   generateDaggerFactoriesOnly: Boolean = false,
   disableComponentMerging: Boolean = false,
@@ -334,7 +356,7 @@ public fun compileAnvil(
       }
     }
     .configureAnvil(
-      enableDaggerAnnotationProcessor = enableDaggerAnnotationProcessor,
+      componentProcessingMode = componentProcessingMode,
       generateDaggerFactories = generateDaggerFactories,
       generateDaggerFactoriesOnly = generateDaggerFactoriesOnly,
       disableComponentMerging = disableComponentMerging,

@@ -6,6 +6,8 @@
 
 ### Changed
 
+- In preparation for KSP component merging support, all `enableDaggerAnnotationProcessing` parameters in test APIs have been migrated to a new `ComponentProcessingMode` instead.
+
 ### Deprecated
 
 ### Removed
