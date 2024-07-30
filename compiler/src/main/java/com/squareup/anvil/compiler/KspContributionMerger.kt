@@ -359,15 +359,28 @@ internal class KspContributionMerger(
       annotations.flatMap(KSAnnotation::includes)
     } else {
       annotations.flatMap(KSAnnotation::modules)
-    }.map { includedModules ->
-      if (includedModules.isAnnotationPresent<MergeModules>()) {
-        val expected = includedModules.toClassName().mergedClassName().canonicalName
-        resolver.getClassDeclarationByName(expected)!!.also {
-          originatingDeclarations += it
+    }.map { includedModule ->
+      val moduleClassName = includedModule.toClassName()
+      if (includedModule.isAnnotationPresent<MergeModules>()) {
+        if (includedModule.isAnnotationPresent<Module>()) {
+          // This is a legacy merged module, just include it directly
+          moduleClassName
+        } else {
+          moduleClassName.mergedClassName().also { mergedModuleClass ->
+            if (includedModule.asType(emptyList()) in contributedModulesInRound) {
+              // Module is in this round, so the root module is the one we should add
+              originatingDeclarations += includedModule
+            } else {
+              // Not in this round, try to look up the merged class
+              resolver.getClassDeclarationByName(mergedModuleClass.canonicalName)?.let {
+                originatingDeclarations += it
+              }
+            }
+          }
         }
       } else {
-        includedModules
-      }.toClassName()
+        moduleClassName
+      }
     }
       .let {
         if (contributedSubcomponentData != null) {
