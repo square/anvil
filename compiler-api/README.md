@@ -40,6 +40,10 @@ After that implement the `CodeGenerator` interface:
 ```kotlin
 @AutoService(CodeGenerator::class)
 class SampleCodeGenerator : CodeGenerator {
+  
+  // execute before any of the default Anvil code generators (in group 0)
+  override val group = -1
+  
   override fun isApplicable(context: AnvilContext): Boolean = true
 
   override fun generateCode(
