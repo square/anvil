@@ -9,7 +9,7 @@ on:
 jobs:
   publish-snapshot:
     runs-on: ubuntu-latest
-    if: github.repository == 'square/anvil'
+    if: github.repository == 'zacsweers/anvil'
     timeout-minutes: 25
 
     steps:
@@ -30,5 +30,5 @@ jobs:
       - name: Publish Release 1.9
         run: ./gradlew clean publish --no-build-cache --no-daemon --stacktrace
         env:
-          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_NEXUS_USERNAME }}
-          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SONATYPE_NEXUS_PASSWORD }}
+          ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SonatypeUsername }}
+          ORG_GRADLE_PROJECT_mavenCentralPassword: ${{ secrets.SonatypePassword }}
