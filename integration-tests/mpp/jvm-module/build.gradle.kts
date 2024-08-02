@@ -1,7 +1,7 @@
 plugins {
   alias(libs.plugins.kotlin.multiplatform)
   alias(libs.plugins.kotlin.kapt)
-  id("com.squareup.anvil")
+  id("dev.zacsweers.anvil")
   id("conventions.minimal")
 }
 

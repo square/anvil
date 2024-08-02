@@ -35,7 +35,7 @@ internal class ClasspathTest : BaseGradleTest() {
     """
     plugins {
       kotlin("jvm") version "${versions.kotlinVersion}"
-      id("com.squareup.anvil") version "$anvilVersion"
+      id("dev.zacsweers.anvil") version "$anvilVersion"
     }
     """.trimIndent()
   }
@@ -51,7 +51,7 @@ internal class ClasspathTest : BaseGradleTest() {
     plugins {
       id("com.android.application") version "${versions.agpVersion}"
       kotlin("android") version "${versions.kotlinVersion}"
-      id("com.squareup.anvil") version "$anvilVersion"
+      id("dev.zacsweers.anvil") version "$anvilVersion"
     }
     
     ${androidBlockString()}
@@ -68,7 +68,7 @@ internal class ClasspathTest : BaseGradleTest() {
     plugins {
       id("com.android.library") version "${versions.agpVersion}"
       kotlin("android") version "${versions.kotlinVersion}"
-      id("com.squareup.anvil") version "$anvilVersion"
+      id("dev.zacsweers.anvil") version "$anvilVersion"
     }
     
     ${androidBlockString()}
@@ -136,7 +136,7 @@ internal class ClasspathTest : BaseGradleTest() {
         }
 
         taskOutputs[":printCompileClasspath"] shouldBe """
-          com.squareup.anvil:annotations
+          dev.zacsweers.anvil:annotations
           $stdlib
         """.trimIndent()
 

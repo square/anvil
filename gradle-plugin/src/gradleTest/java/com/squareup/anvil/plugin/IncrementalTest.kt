@@ -495,7 +495,7 @@ class IncrementalTest : BaseGradleTest() {
           buildFile {
             plugins {
               kotlin("jvm")
-              id("com.squareup.anvil")
+              id("dev.zacsweers.anvil")
             }
             anvil {
               generateDaggerFactories.set(true)
@@ -515,7 +515,7 @@ class IncrementalTest : BaseGradleTest() {
             plugins {
               kotlin("jvm")
               kotlin("kapt")
-              id("com.squareup.anvil")
+              id("dev.zacsweers.anvil")
             }
             dependencies {
               compileOnly(libs.dagger2.annotations)
@@ -591,7 +591,7 @@ class IncrementalTest : BaseGradleTest() {
           buildFile {
             plugins {
               kotlin("jvm")
-              id("com.squareup.anvil")
+              id("dev.zacsweers.anvil")
             }
             anvil {
               generateDaggerFactories.set(true)
@@ -627,7 +627,7 @@ class IncrementalTest : BaseGradleTest() {
             plugins {
               kotlin("jvm")
               kotlin("kapt")
-              id("com.squareup.anvil")
+              id("dev.zacsweers.anvil")
             }
             dependencies {
               compileOnly(libs.dagger2.annotations)
@@ -765,7 +765,7 @@ class IncrementalTest : BaseGradleTest() {
           buildFile {
             plugins {
               kotlin("jvm")
-              id("com.squareup.anvil")
+              id("dev.zacsweers.anvil")
             }
             anvil {
               generateDaggerFactories.set(true)
@@ -802,7 +802,7 @@ class IncrementalTest : BaseGradleTest() {
             plugins {
               kotlin("jvm")
               kotlin("kapt")
-              id("com.squareup.anvil")
+              id("dev.zacsweers.anvil")
             }
             dependencies {
               compileOnly(libs.dagger2.annotations)

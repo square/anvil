@@ -11,9 +11,9 @@ class Libs(
   val anvil = Anvil()
 
   inner class Anvil {
-    val compilerApi = "com.squareup.anvil:compiler-api:$anvilVersion"
-    val compilerUtils = "com.squareup.anvil:compiler-utils:$anvilVersion"
-    val compiler = "com.squareup.anvil:compiler:$anvilVersion"
+    val compilerApi = "dev.zacsweers.anvil:compiler-api:$anvilVersion"
+    val compilerUtils = "dev.zacsweers.anvil:compiler-utils:$anvilVersion"
+    val compiler = "dev.zacsweers.anvil:compiler:$anvilVersion"
     val annotations = "com.squareup.anvil.annotations:annotations:$anvilVersion"
   }
 

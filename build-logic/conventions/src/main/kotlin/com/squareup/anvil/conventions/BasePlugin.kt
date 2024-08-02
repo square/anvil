@@ -181,7 +181,7 @@ abstract class BasePlugin : Plugin<Project> {
 
     return configs.any { cfg ->
       cfg.dependencies.any { dep ->
-        dep.group == "com.squareup.anvil" && dep.name in providingProjects
+        dep.group == "dev.zacsweers.anvil" && dep.name in providingProjects
       }
     }
   }

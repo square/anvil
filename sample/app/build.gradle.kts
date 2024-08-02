@@ -4,7 +4,7 @@ plugins {
   alias(libs.plugins.agp.application)
   alias(libs.plugins.kotlin.android)
   alias(libs.plugins.ksp)
-  id("com.squareup.anvil")
+  id("dev.zacsweers.anvil")
   id("conventions.minimal")
 }
 

@@ -67,7 +67,7 @@ gradlePlugin {
 
   plugins {
     register("anvilPlugin") {
-      id = "com.squareup.anvil"
+      id = "dev.zacsweers.anvil"
       displayName = pomName
       implementationClass = "com.squareup.anvil.plugin.AnvilPlugin"
       description = pomDescription

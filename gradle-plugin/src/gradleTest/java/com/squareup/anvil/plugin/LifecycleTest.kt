@@ -170,7 +170,7 @@ class LifecycleTest : BaseGradleTest() {
           buildFile {
             plugins {
               kotlin("jvm", apply = false)
-              id("com.squareup.anvil", apply = false)
+              id("dev.zacsweers.anvil", apply = false)
               id("com.google.devtools.ksp", apply = false)
             }
           }
@@ -304,7 +304,7 @@ class LifecycleTest : BaseGradleTest() {
   private fun BuildFileSpec.pluginsBlock(useKsp: Boolean, addKapt: Boolean = false) {
     plugins {
       kotlin("jvm")
-      id("com.squareup.anvil")
+      id("dev.zacsweers.anvil")
       if (useKsp) {
         id("com.google.devtools.ksp")
       }

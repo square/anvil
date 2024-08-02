@@ -147,11 +147,21 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
       kotlinCompilation.dependencies {
         compileOnly("$GROUP:annotations:$VERSION")
       }
+      kotlinCompilation.substituteDependencies(
+        project,
+        "com.squareup.anvil:annotations",
+        "$GROUP:annotations",
+      )
     }
     if (variant.variantFilter.addOptionalAnnotations) {
       kotlinCompilation.dependencies {
         compileOnly("$GROUP:annotations-optional:$VERSION")
       }
+      kotlinCompilation.substituteDependencies(
+        project,
+        "com.squareup.anvil:annotations-optional",
+        "$GROUP:annotations-optional",
+      )
     }
 
     // Notice that we use the name of the variant as a directory name. Generated code
@@ -326,6 +336,32 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         ?.execute(variant.variantFilter)
 
       variant
+    }
+  }
+}
+
+private fun KotlinCompilation<*>.substituteDependencies(
+  project: Project,
+  oldCoordinates: String,
+  newCoordinates: String,
+) {
+  for (configurationName in listOf(
+    apiConfigurationName,
+    implementationConfigurationName,
+    compileOnlyConfigurationName,
+    runtimeOnlyConfigurationName,
+  )) {
+    project.configurations.findByName(
+      configurationName,
+    )?.resolutionStrategy?.dependencySubstitution {
+      // entry.key is in the form of "group:module" (without a version), and
+      // Gradle accepts that form.
+      it.substitute(it.module(oldCoordinates))
+        .using(
+          it.module("$newCoordinates:$VERSION"),
+        )
+        .withoutArtifactSelectors() // https://github.com/gradle/gradle/issues/5174#issuecomment-828558594
+        .because("Anvil-KSP required using a forked artifact")
     }
   }
 }

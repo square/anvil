@@ -27,7 +27,7 @@ artifact:
 
 ```groovy
 dependencies {
-  api "com.squareup.anvil:compiler-api:${latest_version}"
+  api "dev.zacsweers.anvil:compiler-api:${latest_version}"
 
   // Optional:
   compileOnly "com.google.auto.service:auto-service-annotations:1.0"

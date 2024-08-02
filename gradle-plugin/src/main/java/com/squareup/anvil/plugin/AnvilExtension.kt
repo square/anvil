@@ -234,7 +234,7 @@ public abstract class AnvilExtension @Inject constructor(
   private fun addKspDep(configurationName: String) {
     project.dependencies.add(
       configurationName,
-      "com.squareup.anvil:compiler:$VERSION",
+      "dev.zacsweers.anvil:compiler:$VERSION",
     )
   }
 

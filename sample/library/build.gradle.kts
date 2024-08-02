@@ -1,7 +1,7 @@
 plugins {
   alias(libs.plugins.kotlin.jvm)
   alias(libs.plugins.ksp)
-  id("com.squareup.anvil")
+  id("dev.zacsweers.anvil")
   id("conventions.minimal")
 }
 

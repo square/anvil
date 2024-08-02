@@ -54,7 +54,7 @@ buildscript {
     mavenCentral()
   }
   dependencies {
-    classpath "com.squareup.anvil:gradle-plugin:${latest_version}"
+    classpath "dev.zacsweers.anvil:gradle-plugin:${latest_version}"
   }
 }
 

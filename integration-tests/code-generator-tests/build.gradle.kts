@@ -1,7 +1,7 @@
 plugins {
   alias(libs.plugins.kotlin.jvm)
   alias(libs.plugins.kotlin.kapt)
-  id("com.squareup.anvil")
+  id("dev.zacsweers.anvil")
   id("conventions.minimal")
 }
 
@@ -14,7 +14,7 @@ dependencies {
 
   implementation(libs.dagger2)
 
-  testImplementation(testFixtures("com.squareup.anvil:compiler-utils"))
+  testImplementation(testFixtures("dev.zacsweers.anvil:compiler-utils"))
   testImplementation(libs.junit)
   testImplementation(libs.truth)
 

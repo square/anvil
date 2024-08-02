@@ -48,7 +48,7 @@ class AnvilExtensionTest : BaseGradleTest() {
           """
           plugins {
             kotlin("jvm") version "${versions.kotlinVersion}"
-            id("com.squareup.anvil") version "$anvilVersion"
+            id("dev.zacsweers.anvil") version "$anvilVersion"
           }
           
           tasks.register("printProperty") {
@@ -72,7 +72,7 @@ class AnvilExtensionTest : BaseGradleTest() {
             """
             plugins {
               kotlin("jvm") version "${versions.kotlinVersion}"
-              id("com.squareup.anvil") version "$anvilVersion"
+              id("dev.zacsweers.anvil") version "$anvilVersion"
             }
             
             tasks.register("printProperty") {
@@ -99,7 +99,7 @@ class AnvilExtensionTest : BaseGradleTest() {
             """
             plugins {
               kotlin("jvm") version "${versions.kotlinVersion}"
-              id("com.squareup.anvil") version "$anvilVersion"
+              id("dev.zacsweers.anvil") version "$anvilVersion"
             }
             
             tasks.register("printProperty") {
@@ -141,7 +141,7 @@ class AnvilExtensionTest : BaseGradleTest() {
             """
             plugins {
               kotlin("jvm") version "${versions.kotlinVersion}"
-              id("com.squareup.anvil") version "$anvilVersion"
+              id("dev.zacsweers.anvil") version "$anvilVersion"
             }
             
             tasks.register("printProperty") {

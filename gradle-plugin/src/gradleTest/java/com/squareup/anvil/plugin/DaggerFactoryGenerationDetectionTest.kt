@@ -37,7 +37,7 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
 
           plugins {
             kotlin("jvm")
-            id("com.squareup.anvil")
+            id("dev.zacsweers.anvil")
             pluginsExtras(factoryGen)
           }
 
@@ -101,7 +101,7 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
             plugins {
               id("com.android.library")
               kotlin("android")
-              id("com.squareup.anvil")
+              id("dev.zacsweers.anvil")
               pluginsExtras(factoryGen)
             }
 
