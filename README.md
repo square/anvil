@@ -1,3 +1,7 @@
+# FORK
+
+This fork is a KSP implementation of Anvil. See `FORK.md` for more details.
+
 # Anvil
 
 [![Maven Central](https://img.shields.io/maven-central/v/com.squareup.anvil/gradle-plugin.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.squareup.anvil%22)
@@ -43,7 +47,7 @@ that either contribute classes to the dependency graph or merge them:
 
 ```groovy
 plugins {
-  id 'com.squareup.anvil' version "${latest_version}"
+  id 'dev.zacsweers.anvil' version "${latest_version}"
 }
 ```
 
@@ -58,7 +62,7 @@ buildscript {
   }
 }
 
-apply plugin: 'com.squareup.anvil'
+apply plugin: 'dev.zacsweers.anvil'
 ```
 
 ## Quick Start
