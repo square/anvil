@@ -18,6 +18,7 @@ publish {
 dependencies {
   api(project(":annotations"))
   api(libs.kotlin.compiler)
+  compileOnly(libs.ksp.api)
 
   implementation(platform(libs.kotlin.bom))
 

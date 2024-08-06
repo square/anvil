@@ -7,6 +7,7 @@ import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
+import org.gradle.api.provider.SetProperty
 import org.gradle.process.CommandLineArgumentProvider
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
@@ -154,6 +155,22 @@ public abstract class AnvilExtension @Inject constructor(
   ).convention(false)
 
   /**
+   * Passes these values as `anvil-ksp-extraContributingAnnotations` options to KSP contribution
+   * merging. Values should be the canonical class name of extra contributing annotations.
+   *
+   * Can be set via `com.squareup.anvil.kspContributingAnnotations` gradle property with
+   * comma-separated values.
+   */
+  public val kspContributingAnnotations: SetProperty<String> = objects.setProperty(
+    String::class.java,
+  )
+    .convention(
+      providers.gradleProperty("com.squareup.anvil.kspContributingAnnotations")
+        .map { it.splitToSequence(",").filterNot { it.isBlank() }.toSet() }
+        .orElse(emptySet()),
+    )
+
+  /**
    * Enables the new [KSP](https://github.com/google/ksp) backends for Anvil. Note that this
    * requires the KSP plugin to already be on the buildscript classpath.
    *
@@ -221,6 +238,9 @@ public abstract class AnvilExtension @Inject constructor(
           "generate-dagger-factories" to generateDaggerFactories,
           "generate-dagger-factories-only" to generateDaggerFactoriesOnly,
           "disable-component-merging" to disableComponentMerging,
+          "anvil.ksp.extraContributingAnnotations" to kspContributingAnnotations.map {
+            it.sorted().joinToString(",")
+          },
           "will-have-dagger-factories" to willHaveDaggerFactories,
           "merging-backend" to useKspComponentMergingBackend
             .map { enabled ->
@@ -285,7 +305,12 @@ private fun commandLineArgumentProvider(
   vararg args: Pair<String, Provider<*>>,
 ): CommandLineArgumentProvider {
   return CommandLineArgumentProvider {
-    args.map { (arg, provider) -> "$arg=${provider.get()}" }
+    args.mapNotNull { (arg, provider) ->
+      val value = provider.orNull ?: return@mapNotNull null
+      // kotlinc isn't ok with blank values so catch these and ignore 'em
+      if (value is String && value.isBlank()) return@mapNotNull null
+      "$arg=$value"
+    }
   }
 }
 

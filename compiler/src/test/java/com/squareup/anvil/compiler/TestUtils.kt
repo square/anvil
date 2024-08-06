@@ -16,6 +16,7 @@ import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.codegen.Contribution
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.generateHintFileName
+import com.squareup.anvil.compiler.internal.testing.AnvilCompilation
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
@@ -64,6 +65,7 @@ internal fun compile(
   },
   workingDir: File? = null,
   expectExitCode: ExitCode = ExitCode.OK,
+  onCompilation: AnvilCompilation.() -> Unit = {},
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult = compileAnvil(
   sources = sources,
@@ -78,6 +80,7 @@ internal fun compile(
   mode = mode,
   workingDir = workingDir,
   expectExitCode = expectExitCode,
+  onCompilation = onCompilation,
   block = block,
 )
 

@@ -347,6 +347,7 @@ public fun compileAnvil(
   moduleName: String? = null,
   jvmTarget: JvmTarget? = null,
   expectExitCode: KotlinCompilation.ExitCode? = null,
+  onCompilation: AnvilCompilation.() -> Unit = {},
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult {
   return AnvilCompilation()
@@ -380,6 +381,7 @@ public fun compileAnvil(
       trackSourceFiles = trackSourceFiles,
       mode = mode,
     )
+    .apply(onCompilation)
     .compile(
       *sources,
       expectExitCode = expectExitCode,

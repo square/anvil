@@ -234,6 +234,12 @@ internal fun Resolver.getSymbolsWithAnnotations(
   }
   .distinct()
 
+internal fun Resolver.getSymbolsWithAnnotations(
+  annotations: Set<String>,
+): Sequence<KSAnnotated> = annotations.asSequence()
+  .flatMap(::getSymbolsWithAnnotation)
+  .distinct()
+
 internal fun KSAnnotated.findAll(vararg annotations: String): List<KSAnnotation> {
   return annotations.flatMap { annotation ->
     getKSAnnotationsByQualifiedName(annotation)

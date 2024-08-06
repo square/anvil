@@ -1,10 +1,21 @@
 package com.squareup.anvil.compiler
 
 import com.google.common.truth.Truth.assertThat
+import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.squareup.anvil.annotations.ContributesTo
+import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.api.ComponentMergingBackend
+import com.squareup.anvil.compiler.codegen.ksp.simpleSymbolProcessor
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.ComponentProcessingMode
+import com.squareup.anvil.compiler.internal.testing.extends
+import com.squareup.kotlinpoet.AnnotationSpec
+import com.squareup.kotlinpoet.FileSpec
+import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.ksp.writeTo
 import com.tschuchort.compiletesting.KotlinCompilation
+import com.tschuchort.compiletesting.kspArgs
+import dagger.Module
 import org.junit.Assume.assumeTrue
 import org.junit.Before
 import org.junit.Test
@@ -176,6 +187,103 @@ class KspContributionMergerTest {
       val input = "Hello, world!"
       val output = test.invoke(null, "Hello, world!")
       assertThat(output).isEqualTo(input)
+    }
+  }
+
+  @Test fun `interfaces contributed by custom generators are respected - with options`() {
+    // Run a generator that generates a contributing interface
+    val generator = simpleSymbolProcessor { resolver ->
+      resolver.getSymbolsWithAnnotation("com.squareup.test.GenerateContributor")
+        .filterIsInstance<KSClassDeclaration>()
+        .forEach { clazz ->
+          FileSpec.get(
+            clazz.packageName.asString(),
+            TypeSpec.interfaceBuilder("ContributingInterface")
+              .addAnnotation(
+                AnnotationSpec.builder(ContributesTo::class)
+                  .addMember("%T::class", Any::class)
+                  .build(),
+              )
+              .build(),
+          )
+            .writeTo(env.codeGenerator, aggregating = false)
+        }
+      emptyList()
+    }
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      import com.squareup.anvil.annotations.MergeComponent
+
+      annotation class GenerateContributor
+
+      @GenerateContributor
+      class Trigger
+      
+      @MergeComponent(Any::class)
+      interface ComponentInterface
+      """,
+      componentMergingBackend = ComponentMergingBackend.KSP,
+      mode = AnvilCompilationMode.Ksp(listOf(generator)),
+      onCompilation = {
+        kotlinCompilation.kspArgs[OPTION_EXTRA_CONTRIBUTING_ANNOTATIONS] =
+          "com.squareup.test.GenerateContributor"
+      },
+    ) {
+      assertThat(componentInterface extends contributingInterface).isTrue()
+    }
+  }
+
+  @Test fun `modules contributed by custom generators are respected - with options`() {
+    // Run a generator that generates a contributed module
+    val generator = simpleSymbolProcessor { resolver ->
+      resolver.getSymbolsWithAnnotation("com.squareup.test.GenerateContributor")
+        .filterIsInstance<KSClassDeclaration>()
+        .forEach { clazz ->
+          FileSpec.get(
+            clazz.packageName.asString(),
+            TypeSpec.interfaceBuilder("ContributedModule")
+              .addAnnotation(Module::class)
+              .addAnnotation(
+                AnnotationSpec.builder(ContributesTo::class)
+                  .addMember("%T::class", Any::class)
+                  .build(),
+              )
+              .build(),
+          )
+            .writeTo(env.codeGenerator, aggregating = false)
+        }
+      emptyList()
+    }
+
+    compile(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesTo
+      import com.squareup.anvil.annotations.MergeComponent
+
+      annotation class GenerateContributor
+
+      @GenerateContributor
+      class Trigger
+      
+      @MergeComponent(Any::class)
+      interface ComponentInterface
+      """,
+      componentMergingBackend = ComponentMergingBackend.KSP,
+      mode = AnvilCompilationMode.Ksp(listOf(generator)),
+      onCompilation = {
+        kotlinCompilation.kspArgs[OPTION_EXTRA_CONTRIBUTING_ANNOTATIONS] =
+          "com.squareup.test.GenerateContributor"
+      },
+    ) {
+      assertThat(componentInterface.mergedModules(MergeComponent::class))
+        .asList()
+        .hasSize(1)
     }
   }
 }

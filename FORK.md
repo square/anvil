@@ -135,6 +135,72 @@ not well-tested and encouraged to recompile all Anvil-processed code after migra
 Especially if you use `@ContributesSubcomponent` or `@MergeComponent`, as the generated code for
 these scenarios has changed the most in the move to KSP.
 
+### Custom Code Generators
+
+If you previously implemented any custom `CodeGenerator`s from Anvil, you may need to update these
+too.
+
+1. First, they must be converted to KSP if you haven't already.
+2. If they generate code that is annotated with Anvil contributor annotations (e.g. `@ContributesTo`, `@ContributesBinding`, etc), you may need to indicate them to Anvil KSP via one of two mechanisms.
+
+> [!IMPORTANT]
+> Note that #2 is only necessary if running in the same compilation as contribution merging. This is important so that contribution merging can appropriately defer until a later round if any custom annotations need to be processed first.
+
+> [!WARNING]
+> Currently, it's not possible to generate custom code based on `@Merge*` annotations. This was technically possible in the previous IR implementation since IR merging was guaranteed to always run later. If this is a use case you need, please file an issue!
+
+#### Option 1: KSP options
+
+For simple cases where a custom annotation is processed by a custom generator, you can simply indicate these annotations to Anvil KSP. These can be provided in three different ways, whichever is most convenient.
+
+1. A comma-separated Gradle property whose values are the canonical class names of your custom annotations.
+   ```properties
+   com.squareup.anvil.kspContributingAnnotations=com.example.CustomAnnotation,com.example.InjectWith
+   ```
+2. Setting via the `AnvilExtension` in Gradle. Note this property defaults to the above Gradle property.
+   ```kotlin
+   anvil {
+     kspContributingAnnotations.addAll(
+       "com.example.CustomAnnotation",
+       "com.example.InjectWith"
+     )
+   }
+   ```
+3. Setting via KSP options.
+   ```kotlin
+   ksp {
+     arg(
+       "anvil.ksp.extraContributingAnnotations",
+       "com.example.CustomAnnotation,com.example.InjectWith"
+     )
+   }
+   ```
+
+#### Option 2: `AnvilKspExtension`
+
+For more advanced cases, you can implement a `AnvilKspExtension` to indicate which annotations trigger these and then process them. This acts as a sort of limited `SymbolProcessor`. See the kdoc on `AnvilKspExtension` for more details.
+
+```kotlin
+class InjectWithAnvilKspExtension(private val env: SymbolProcessorEnvironment) : AnvilKspExtension {
+  @AutoService(AnvilKspExtension.Provider::class)
+  fun interface Provider : AnvilKspExtension.Provider {
+    override fun isApplicable(context: AnvilContext): Boolean = ...
+    override fun create(env: SymbolProcessorEnvironment): AnvilKspExtension {
+      return InjectWithAnvilKspExtension(env)
+    }
+  }
+  
+  override val supportedAnnotationTypes = setOf(
+    "com.example.CustomAnnotation",
+    "com.example.InjectWith"
+  )
+  
+  override fun process(resolver: Resolver): List<KSAnnotated> {
+    // ...
+  }
+}
+```
+
 ## Areas to Pay Attention To
 
 The following cases are the most complex and feedback on any issues or friction around them are

@@ -27,6 +27,7 @@ public abstract class com/squareup/anvil/plugin/AnvilExtension {
 	public final fun getDisableComponentMerging ()Lorg/gradle/api/provider/Property;
 	public final fun getGenerateDaggerFactories ()Lorg/gradle/api/provider/Property;
 	public final fun getGenerateDaggerFactoriesOnly ()Lorg/gradle/api/provider/Property;
+	public final fun getKspContributingAnnotations ()Lorg/gradle/api/provider/SetProperty;
 	public final fun getSyncGeneratedSources ()Lorg/gradle/api/provider/Property;
 	public final fun getTrackSourceFiles ()Lorg/gradle/api/provider/Property;
 	public final fun getUseKspBackend ()Lorg/gradle/api/provider/Property;

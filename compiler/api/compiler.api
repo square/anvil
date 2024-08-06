@@ -29,6 +29,7 @@ public final class com/squareup/anvil/compiler/CommandLineOptions$Companion {
 }
 
 public final class com/squareup/anvil/compiler/UtilsKt {
+	public static final field OPTION_EXTRA_CONTRIBUTING_ANNOTATIONS Ljava/lang/String;
 	public static final field OPTION_GENERATE_SHIMS Ljava/lang/String;
 	public static final fun mapNotNullToSet (Ljava/util/Collection;Ljava/util/Set;Lkotlin/jvm/functions/Function1;)Ljava/util/Set;
 	public static synthetic fun mapNotNullToSet$default (Ljava/util/Collection;Ljava/util/Set;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/util/Set;

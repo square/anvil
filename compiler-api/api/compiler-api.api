@@ -48,6 +48,15 @@ public abstract interface class com/squareup/anvil/compiler/api/AnvilContext {
 	public abstract fun getWillHaveDaggerFactories ()Z
 }
 
+public abstract interface class com/squareup/anvil/compiler/api/AnvilKspExtension {
+	public abstract fun getSupportedAnnotationTypes ()Ljava/util/Set;
+	public abstract fun process (Lcom/google/devtools/ksp/processing/Resolver;)Ljava/util/List;
+}
+
+public abstract interface class com/squareup/anvil/compiler/api/AnvilKspExtension$Provider : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
+	public abstract fun create (Lcom/google/devtools/ksp/processing/SymbolProcessorEnvironment;)Lcom/squareup/anvil/compiler/api/AnvilKspExtension;
+}
+
 public abstract interface class com/squareup/anvil/compiler/api/CodeGenerator : com/squareup/anvil/compiler/api/AnvilApplicabilityChecker {
 	public abstract fun generateCode (Ljava/io/File;Lorg/jetbrains/kotlin/descriptors/ModuleDescriptor;Ljava/util/Collection;)Ljava/util/Collection;
 	public abstract fun isApplicable (Lcom/squareup/anvil/compiler/api/AnvilContext;)Z

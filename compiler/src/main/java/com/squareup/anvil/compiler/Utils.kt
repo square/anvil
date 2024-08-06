@@ -107,6 +107,14 @@ internal const val SCOPE_SUFFIX = "_scope"
 public const val OPTION_GENERATE_SHIMS: String = "anvil.ksp.generateShims"
 
 /**
+ * KSP option to specify custom extra contributing annotations. Useful for situations where you
+ * can't or don't want to implement an `AnvilKspExtension` implementation to provide them.
+ *
+ * Value should be a comma-separated list of fully qualified canonical class names.
+ */
+public const val OPTION_EXTRA_CONTRIBUTING_ANNOTATIONS: String = "anvil.ksp.extraContributingAnnotations"
+
+/**
  * Returns the single element matching the given [predicate], or `null` if element was not found.
  * Unlike [singleOrNull] this method throws an exception if more than one element is found.
  */
