@@ -1,31 +1,31 @@
 {
-  "$schema" : "https://docs.renovatebot.com/renovate-schema.json",
-  "extends" : [
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
     "config:best-practices"
   ],
-  "rebaseWhen" : "auto",
-  "rebaseLabel" : "rebase",
-  "packageRules" : [
+  "rebaseWhen": "auto",
+  "rebaseLabel": "rebase",
+  "packageRules": [
     {
-      "groupName" : "Kotlin and compiler plugins",
-      "matchPackagePrefixes" : [
-        "org.jetbrains.kotlin:",
-        "com.google.devtools.ksp:",
-        "com.square.anvil:",
-        "dev.zacsweers.kctfork:"
+      "groupName": "Kotlin and compiler plugins",
+      "matchPackageNames": [
+        "org.jetbrains.kotlin:{/,}**",
+        "com.google.devtools.ksp:{/,}**",
+        "com.square.anvil:{/,}**",
+        "dev.zacsweers.kctfork:{/,}**"
       ]
     },
     {
-      "groupName" : "androidx.test and friends",
-      "matchPackagePrefixes" : [
-        "androidx.test:",
-        "androidx.test.ext:",
-        "com.google.truth:",
-        "junit:junit:"
+      "groupName": "androidx.test and friends",
+      "matchPackageNames": [
+        "androidx.test:{/,}**",
+        "androidx.test.ext:{/,}**",
+        "com.google.truth:{/,}**",
+        "junit:junit:{/,}**"
       ]
     }
   ],
-  "labels" : [
+  "labels": [
     "dependencies"
   ]
 }
