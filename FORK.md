@@ -21,6 +21,7 @@ ID `dev.zacsweers.anvil`. To consume it, replace your existing Anvil dependencie
 | `com.squareup.anvil:annotations-optional` | `dev.zacsweers.anvil:annotations-optional` |
 | `com.squareup.anvil:compiler`             | `dev.zacsweers.anvil:compiler`             |
 | `com.squareup.anvil:compiler-api`         | `dev.zacsweers.anvil:compiler-api`         |
+| `com.squareup.anvil:compiler-utils`       | `dev.zacsweers.anvil:compiler-utils`       |
 | `com.squareup.anvil:gradle-plugin`        | `dev.zacsweers.anvil:gradle-plugin`        |
 | `id(com.squareup.anvil)`                  | `id(dev.zacsweers.anvil)`                  |
 
