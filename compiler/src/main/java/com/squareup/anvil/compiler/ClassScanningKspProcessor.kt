@@ -48,7 +48,6 @@ internal class ClassScanningKspProcessor(
 
       val componentMergingEnabled =
         !context.disableComponentMerging &&
-          !context.generateFactories &&
           context.componentMergingBackend == ComponentMergingBackend.KSP
 
       val delegates = if (componentMergingEnabled) {
