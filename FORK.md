@@ -12,29 +12,22 @@ listed there affect you: https://github.com/ZacSweers/anvil/issues/16.
 
 ## Installation
 
-Right now, the easiest way to use this fork is to clone it and publish it to your local Maven.
+This fork is published on Maven Central under the group ID `dev.zacsweers.anvil` and Gradle Plugin 
+ID `dev.zacsweers.anvil`. To consume it, replace your existing Anvil dependencies with the following:
 
-```shell
-git clone git@github.com:ZacSweers/anvil.git
+| Before                                    | After                                      |
+|-------------------------------------------|--------------------------------------------|
+| `com.squareup.anvil:annotations`          | `dev.zacsweers.anvil:annotations`          |
+| `com.squareup.anvil:annotations-optional` | `dev.zacsweers.anvil:annotations-optional` |
+| `com.squareup.anvil:compiler`             | `dev.zacsweers.anvil:compiler`             |
+| `com.squareup.anvil:compiler-api`         | `dev.zacsweers.anvil:compiler-api`         |
+| `com.squareup.anvil:gradle-plugin`        | `dev.zacsweers.anvil:gradle-plugin`        |
+| `id(com.squareup.anvil)`                  | `id(dev.zacsweers.anvil)`                  |
 
-cd anvil
+In most cases, it should be enough to just replace the Gradle plugin ID and annotations dependencies. 
+The fork's gradle plugin will automatically substitute any annotations dependencies from the upstream artifact to the fork's.
 
-# Change the VERSION_NAME in gradle.properties to a custom version, such as 2.6.0-local01
-
-./gradlew publishToMavenLocal -x dokkaHtml --no-configuration-cache
-```
-
-Then consume this in your project.
-
-```kotlin
-// Change the anvil version in libs.versions.toml to the one you set in VERSION_NAME above
-
-// In build.gradle/settings.gradle. Make sure you set this for both the buildscript and project repositories
-repositories {
-  // ...
-  mavenLocal()
-}
-```
+Latest version can be found here: https://github.com/ZacSweers/anvil/releases
 
 ## Migration
 
@@ -222,10 +215,9 @@ appreciated!
 
 ## Future
 
-In the medium term, I plan to tune the gradle plugin to be able to consume this in existing projects
-easily and have the gradle plugin automatically replace dependencies with the fork's.
-
-Long term, this will ideally move back upstream to Anvil main.
+Eventually this fork will drop support for K1 and the legacy IR merger and code gen APIs, but I 
+plan to continue supporting them until Kotlin 2.1.0. Afterward, this project will move to only 
+supporting K2 and KSP.
 
 ## Technical Design
 

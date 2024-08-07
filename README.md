@@ -1,11 +1,11 @@
 # FORK
 
-This fork is a KSP implementation of Anvil. See `FORK.md` for more details.
+This fork is a KSP implementation of Anvil. See [FORK.md](https://github.com/ZacSweers/anvil/blob/main/FORK.md) for more information and installation instructions.
 
 # Anvil
 
-[![Maven Central](https://img.shields.io/maven-central/v/com.squareup.anvil/gradle-plugin.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22com.squareup.anvil%22)
-[![CI](https://github.com/square/anvil/workflows/CI/badge.svg)](https://github.com/square/anvil/actions?query=branch%3Amain)
+[![Maven Central](https://img.shields.io/maven-central/v/dev.zacsweers.anvil/gradle-plugin.svg?label=Maven%20Central)](https://search.maven.org/search?q=g:%22dev.zacsweers.anvil%22)
+[![CI](https://github.com/erszacswe/anvil/workflows/CI/badge.svg)](https://github.com/zacsweers/anvil/actions?query=branch%3Amain)
 
 > _"When all you have is an anvil, every problem looks like a hammer."_ - [Abraham Maslow](https://en.wikipedia.org/wiki/Law_of_the_instrument)
 
