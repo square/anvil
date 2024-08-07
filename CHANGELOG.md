@@ -3,6 +3,8 @@
 **Unreleased**
 --------------
 
+- **Fix:** Don't cache symbols between processing rounds. This better supports KSP2.
+
 0.2.0
 -----
 

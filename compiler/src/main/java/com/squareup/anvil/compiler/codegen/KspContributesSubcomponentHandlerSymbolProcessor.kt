@@ -7,6 +7,7 @@ import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
+import com.google.devtools.ksp.symbol.KSName
 import com.google.devtools.ksp.symbol.KSType
 import com.squareup.anvil.annotations.ContributesSubcomponent
 import com.squareup.anvil.annotations.MergeSubcomponent
@@ -91,8 +92,12 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
    */
   private val contributions = mutableSetOf<Contribution>()
 
-  private val replacedReferences = mutableSetOf<KSClassDeclaration>()
-  private val processedEvents = mutableSetOf<GenerateCodeEvent>()
+  // Cache of previously looked up contributions, re-looked up each time
+  private val previousRoundContributionClasses = mutableSetOf<KSName>()
+
+  private val replacedReferences = mutableSetOf<ClassName>()
+  private val processedEventHashes = mutableSetOf<Int>()
+  private val processedContributionClasses = mutableSetOf<ClassName>()
 
   private var isFirstRound = true
   private var hasComputedEventsThisRound = false
@@ -108,7 +113,10 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
     }
 
     pendingEvents
-      .also { processedEvents += it }
+      .onEach {
+        processedEventHashes += it.hashCode()
+        processedContributionClasses += it.contribution.classClassName
+      }
       .map { generateCodeEvent ->
         val contribution = generateCodeEvent.contribution
         val generatedAnvilSubcomponent = generateCodeEvent.generatedAnvilSubcomponent
@@ -119,7 +127,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
 
         val factoryClass = findFactoryClass(contribution)
 
-        val contributionClassName = contribution.clazz.toClassName()
+        val contributionClassName = contribution.classClassName
         val spec = FileSpec.createAnvilSpec(generatedPackage, componentClassSimpleName) {
           TypeSpec
             .interfaceBuilder(componentClassSimpleName)
@@ -156,6 +164,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
             .apply {
               val parentComponentInterface =
                 classScanner.findParentComponentInterface(
+                  resolver,
                   contribution.clazz,
                   factoryClass?.originalReference,
                   contribution.parentScopeType,
@@ -215,6 +224,11 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
 
     hasComputedEventsThisRound = false
     pendingEvents.clear()
+    triggers.clear()
+
+    // For contributions we need to cache the ones we've seen so we can pull them back up next round
+    previousRoundContributionClasses += contributions.mapNotNull { it.clazz.qualifiedName }
+    contributions.clear()
 
     return emptyList()
   }
@@ -257,6 +271,10 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
     // Find new contributed subcomponents in this module. If there's a trigger for them, then we
     // also need to generate code for them later.
     contributions += resolver.getSymbolsWithAnnotations(contributesSubcomponentFqName)
+      // Factory in previous rounds' contributions too
+      .plus(previousRoundContributionClasses.map(resolver::getClassDeclarationByName))
+      .filterIsInstance<KSClassDeclaration>()
+      .distinctBy { it.qualifiedName?.asString() }
       .map {
         val annotation = it.find(contributesSubcomponentFqName.asString()).single()
         Contribution(annotation)
@@ -264,14 +282,14 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
 
     // Find all replaced subcomponents and remember them.
     replacedReferences += contributions
-      .flatMap { contribution -> contribution.annotation.replaces() }
+      .flatMap { contribution -> contribution.annotation.replaces().map { it.toClassName() } }
 
     for (contribution in contributions) {
       checkReplacedSubcomponentWasNotAlreadyGenerated(contribution.clazz, replacedReferences)
     }
 
     // Remove any contribution that was replaced by another contribution.
-    contributions.removeAll { it.clazz in replacedReferences }
+    contributions.removeAll { it.clazz.toClassName() in replacedReferences }
 
     pendingEvents += contributions
       .flatMap { contribution ->
@@ -284,7 +302,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
           }
       }
       // Don't generate code for the same event twice.
-      .minus(processedEvents)
+      .filterNot { it.hashCode() in processedEventHashes }
   }
 
   private fun generateParentComponent(
@@ -315,7 +333,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
   private fun findFactoryClass(
     contribution: Contribution,
   ): FactoryClassHolder? {
-    val contributionClassName = contribution.clazz.toClassName()
+    val contributionClassName = contribution.classClassName
 
     val contributedFactories = contribution.clazz
       .declarations
@@ -376,14 +394,14 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
 
   private fun checkReplacedSubcomponentWasNotAlreadyGenerated(
     contributedReference: KSClassDeclaration,
-    replacedReferences: Collection<KSClassDeclaration>,
+    replacedReferences: Collection<ClassName>,
   ) {
     replacedReferences.forEach { replacedReference ->
-      if (processedEvents.any { it.contribution.clazz == replacedReference }) {
+      if (processedContributionClasses.any { it == replacedReference }) {
         throw KspAnvilException(
           node = contributedReference,
           message = "${contributedReference.fqName} tries to replace " +
-            "${replacedReference.fqName}, but the code for ${replacedReference.fqName} was " +
+            "$replacedReference, but the code for $replacedReference was " +
             "already generated. This is not supported.",
         )
       }
@@ -412,6 +430,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
           .resolvableAnnotations
           .single { it.fqName == contributesSubcomponentFqName }
           .replaces()
+          .map { it.toClassName() }
       }
   }
 
@@ -459,11 +478,12 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
 
   private class Contribution(val annotation: KSAnnotation) {
     val clazz = annotation.declaringClass
+    val classClassName = clazz.toClassName()
     val scope = annotation.scope()
     val parentScopeType = annotation.parentScope().asType(emptyList())
 
     override fun toString(): String {
-      return "Contribution(class=$clazz, scope=$scope, parentScope=$parentScopeType)"
+      return "Contribution(class=$classClassName, scope=$scope, parentScope=$parentScopeType)"
     }
 
     override fun equals(other: Any?): Boolean {
@@ -474,7 +494,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
 
       if (scope != other.scope) return false
       if (parentScopeType != other.parentScopeType) return false
-      if (clazz != other.clazz) return false
+      if (classClassName != other.classClassName) return false
 
       return true
     }
@@ -482,7 +502,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
     override fun hashCode(): Int {
       var result = scope.hashCode()
       result = 31 * result + parentScopeType.hashCode()
-      result = 31 * result + clazz.hashCode()
+      result = 31 * result + classClassName.hashCode()
       return result
     }
   }

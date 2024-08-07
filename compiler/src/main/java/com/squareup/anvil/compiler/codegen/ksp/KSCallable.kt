@@ -1,11 +1,14 @@
 package com.squareup.anvil.compiler.codegen.ksp
 
+import com.google.devtools.ksp.getClassDeclarationByName
 import com.google.devtools.ksp.isAbstract
+import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSDeclaration
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
+import org.jetbrains.kotlin.name.FqName
 
 /**
  * Abstraction over [KSFunctionDeclaration] and [KSPropertyDeclaration].
@@ -13,8 +16,37 @@ import com.google.devtools.ksp.symbol.KSType
 internal sealed class KSCallable(
   declaration: KSDeclaration,
 ) : KSDeclaration by declaration {
+  data class CacheEntry(
+    val containingClass: FqName,
+    val declarationName: String,
+    val isFunction: Boolean,
+  ) {
+    fun materialize(resolver: Resolver): KSCallable {
+      val clazz = resolver.getClassDeclarationByName(containingClass.asString())
+        ?: error("Could not materialize class $containingClass")
+      return if (isFunction) {
+        val declaration =
+          clazz.getAllFunctions().find { it.qualifiedName?.asString() == declarationName }
+            ?: error("Could not materialize function $declarationName in class $declarationName")
+        Function(declaration)
+      } else {
+        val declaration =
+          clazz.getAllProperties().find { it.qualifiedName?.asString() == declarationName }
+            ?: error("Could not materialize property $declarationName in class $declarationName")
+        Property(declaration)
+      }
+    }
+  }
 
   val originalDeclaration = declaration
+
+  fun toCacheEntry(): CacheEntry {
+    return CacheEntry(
+      containingClass = (originalDeclaration.parentDeclaration as KSClassDeclaration).fqName,
+      declarationName = originalDeclaration.qualifiedName!!.asString(),
+      isFunction = this is Function,
+    )
+  }
 
   data class Function(val declaration: KSFunctionDeclaration) : KSCallable(declaration)
 

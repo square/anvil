@@ -989,9 +989,9 @@ internal class KspContributionMerger(
           // If we have a contributed subcomponent for this type, we can use its known
           // subcomponent data
           val body: CodeBlock =
-            classScanner.findParentComponentInterface(declarationToSearch, null, null)
+            classScanner.findParentComponentInterface(resolver, declarationToSearch, null, null)
               ?.let {
-                classScanner.overridableParentComponentCallables(it, returnType.fqName, null)
+                classScanner.overridableParentComponentCallables(resolver, it, returnType.fqName, null)
               }
               ?.singleOrNull()
               ?.let { callable ->
@@ -1114,6 +1114,7 @@ internal class KspContributionMerger(
             generatedParentComponent = true
             addType(
               generateParentComponent(
+                resolver = resolver,
                 classScanner = classScanner,
                 origin = mergeAnnotatedClass,
                 parentParentComponent = parentClass,
@@ -1133,9 +1134,11 @@ internal class KspContributionMerger(
           }
           addType(
             generateParentComponent(
+              resolver = resolver,
               classScanner = classScanner,
               origin = mergeAnnotatedClass,
               parentParentComponent = classScanner.findParentComponentInterface(
+                resolver,
                 mergeAnnotatedClass,
                 factoryClass,
                 null,
@@ -1846,6 +1849,7 @@ private fun defaultParentComponentFunctionName(returnType: ClassName): String =
 
 // TODO consolidate with contributessubcomponent handling?
 private fun generateParentComponent(
+  resolver: Resolver,
   classScanner: ClassScannerKsp,
   origin: KSClassDeclaration,
   parentParentComponent: KSClassDeclaration?,
@@ -1856,6 +1860,7 @@ private fun generateParentComponent(
 ): TypeSpec {
   val newSpec = if (parentParentComponent != null) {
     val callableToOverride = classScanner.overridableParentComponentCallables(
+      resolver,
       parentParentComponent,
       targetReturnType = componentInterface,
       creatorClass = factoryClass,

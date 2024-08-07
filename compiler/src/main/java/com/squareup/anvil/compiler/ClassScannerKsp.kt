@@ -1,9 +1,11 @@
 package com.squareup.anvil.compiler
 
 import com.google.devtools.ksp.KspExperimental
+import com.google.devtools.ksp.getClassDeclarationByName
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSClassDeclaration
+import com.google.devtools.ksp.symbol.KSName
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeReference
@@ -27,10 +29,11 @@ import org.jetbrains.kotlin.name.FqName
 
 internal class ClassScannerKsp {
 
-  private val generatedPropertyCache = mutableMapOf<CacheKey, Collection<List<GeneratedProperty>>>()
-  private val parentComponentCache = mutableMapOf<FqName, KSClassDeclaration?>()
+  private val generatedPropertyCache =
+    mutableMapOf<CacheKey, Collection<List<GeneratedProperty.CacheEntry>>>()
+  private val parentComponentCache = mutableMapOf<FqName, FqName?>()
   private val overridableParentComponentCallableCache =
-    mutableMapOf<FqName, List<KSCallable>>()
+    mutableMapOf<FqName, List<KSCallable.CacheEntry>>()
 
   /**
    * Externally-contributed contributions, which are important to track so that we don't try to
@@ -61,10 +64,11 @@ internal class ClassScannerKsp {
       generatedPropertyCache.getOrPut(CacheKey(annotation, resolver.hashCode())) {
         resolver.getDeclarationsFromPackage(HINT_PACKAGE)
           .filterIsInstance<KSPropertyDeclaration>()
-          .mapNotNull { GeneratedProperty.from(it) }
-          .groupBy { property -> property.baseName }
+          .mapNotNull(GeneratedProperty::from)
+          .groupBy(GeneratedProperty::baseName)
           .values
-      }
+          .map { it.map(GeneratedProperty::toCacheEntry) }
+      }.map { it.map { it.materialize(resolver) } }
 
     return propertyGroups
       .asSequence()
@@ -116,6 +120,30 @@ internal class ClassScannerKsp {
     val declaration: KSPropertyDeclaration,
     val baseName: String,
   ) {
+    fun toCacheEntry(): CacheEntry {
+      return CacheEntry(
+        declaration.qualifiedName!!,
+        baseName,
+        isReferenceProperty = this is ReferenceProperty,
+      )
+    }
+
+    data class CacheEntry(
+      val propertyName: KSName,
+      val baseName: String,
+      val isReferenceProperty: Boolean,
+    ) {
+      fun materialize(resolver: Resolver): GeneratedProperty {
+        val property = resolver.getPropertyDeclarationByName(propertyName, includeTopLevel = true)
+          ?: error("Could not materialize property ${propertyName.asString()}")
+        return if (isReferenceProperty) {
+          ReferenceProperty(property, baseName)
+        } else {
+          ScopeProperty(property, baseName)
+        }
+      }
+    }
+
     class ReferenceProperty(
       declaration: KSPropertyDeclaration,
       baseName: String,
@@ -160,6 +188,7 @@ internal class ClassScannerKsp {
    * Finds the applicable parent component interface (if any) contributed to this component.
    */
   fun findParentComponentInterface(
+    resolver: Resolver,
     componentClass: KSClassDeclaration,
     creatorClass: KSClassDeclaration?,
     parentScopeType: KSType?,
@@ -168,7 +197,7 @@ internal class ClassScannerKsp {
 
     // Can't use getOrPut because it doesn't differentiate between absent and null
     if (fqName in parentComponentCache) {
-      return parentComponentCache[fqName]
+      return parentComponentCache[fqName]?.let { resolver.getClassDeclarationByName(it.asString()) }
     }
 
     val contributedInnerComponentInterfaces = componentClass
@@ -194,6 +223,7 @@ internal class ClassScannerKsp {
     }
 
     val callables = overridableParentComponentCallables(
+      resolver,
       componentInterface,
       componentClass.fqName,
       creatorClass?.fqName,
@@ -211,7 +241,7 @@ internal class ClassScannerKsp {
       )
     }
 
-    parentComponentCache[fqName] = componentInterface
+    parentComponentCache[fqName] = componentInterface.fqName
     return componentInterface
   }
 
@@ -220,6 +250,7 @@ internal class ClassScannerKsp {
    * for the given [targetReturnType]. This can include both functions and properties.
    */
   fun overridableParentComponentCallables(
+    resolver: Resolver,
     parentComponent: KSClassDeclaration,
     targetReturnType: FqName,
     creatorClass: FqName?,
@@ -228,7 +259,9 @@ internal class ClassScannerKsp {
 
     // Can't use getOrPut because it doesn't differentiate between absent and null
     if (fqName in overridableParentComponentCallableCache) {
-      return overridableParentComponentCallableCache.getValue(fqName)
+      return overridableParentComponentCallableCache.getValue(
+        fqName,
+      ).map { it.materialize(resolver) }
     }
 
     return parentComponent.getAllCallables()
@@ -239,7 +272,7 @@ internal class ClassScannerKsp {
       }
       .toList()
       .also {
-        overridableParentComponentCallableCache[fqName] = it
+        overridableParentComponentCallableCache[fqName] = it.map(KSCallable::toCacheEntry)
       }
   }
 }
