@@ -332,3 +332,42 @@ interface MergedUserComponent : UserComponent {
   }
 }
 ```
+
+## Fundamental Limitations of FIR/IR
+
+Anvil's existing functionality works within two spaces:
+
+1. PSI/`AnalysisHandlerExtension`. This is the K1 compiler frontend, and is where Anvil's contribution and factory generation happens.
+2. IR. This is the K1/K2 compiler backend, and is where Anvil's contribution merging happens in K1.
+
+In K2, things change.
+
+1. The entire PSI compiler frontend is gone. It is replaced with a new FIR frontend. None of Anvil's existing code gen will run nor are there obvious hooks. They would need to be rewritten on top of FIR, and currently there's no public (let alone stable) API for generating source files from FIR.
+2. IR merging in K2 no longer supports modifying interfaces of types. This means that component merging and interface merging no longer work. This is important as this step ran in the regular `KotlinCompile` task to ensure runtime contributions work.
+3. K2 KAPT will not invoke the IR backend during stub generation, it will only invoke the FIR frontend. This means that the current merging implementation would need to be ported to FIR.
+4. FIR will not support generation of new annotations onto `FirClass` types, which means that there is no solution for generating Dagger annotations onto classes during FIR. This is an important part of how Anvil works.
+
+### Alternative Solutions
+
+🟢 Interface merging _could_ be moved to FIR via use of the new `FirSupertypeGenerationExtension` API. This would work for both component processing in kapt and standard compilation for runtime linking in the standard kotlin compilation.
+
+🔴 Dagger annotation generation (i.e. merging in contributed modules) would need to be solved with completely custom solutions. They cannot rely on IR because IR will not be run in KAPT K2, and they cannot rely on FIR because FIR prohibits adding annotations to classes.
+
+**Options**
+
+1. Petition the Kotlin compiler team to support generating annotations onto classes during FIR. I've already spoken with the compiler team about this option and they've explained that this isn't a possibility for them, so this option is out.
+2. Extract contribution aggregation to a separate code gen Gradle task that kapt and kotlin compilation depend on. 
+   - This is more or less how Dagger/Hilt works, and would require a fundamental rethinking of how Anvil's code gen works. Hilt also requires the addition of an extra javac task at the end of the compilation to support in-source contributions too, making this an expensive potentially-5 compilation chain.
+   - Would still require generation of intermediate merged classes, since the same sources are fed into the later kapt and compilation tasks.
+3. Attempt to move component merging to standard javac and intercept dagger's component processor during apt. Wholly unclear if this is technically possible to do, let alone safely.
+4. Drop support for Dagger all together, at which point this library just becomes a standalone DI library. May be technically possible, but not in the time frame needed to unblock K2.
+
+
+FIR plugins also carry extra considerations:
+
+- They will run in the IDE - should a DI system run on open IDE files?
+- They will not run in KSP (i.e. implications for dagger-ksp).
+
+KSP is not a perfect tool, but it is the best available option.
+
+![ksp](docs/img_venn.png)
