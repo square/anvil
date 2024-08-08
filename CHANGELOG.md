@@ -3,6 +3,8 @@
 **Unreleased**
 --------------
 
+- **Fix:** Correctly track inputs to KSP command line options so they don't result in incorrect task build cache hits.
+
 0.2.1
 -----
 

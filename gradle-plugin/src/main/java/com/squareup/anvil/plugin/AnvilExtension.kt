@@ -4,10 +4,11 @@ import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
+import org.gradle.api.provider.MapProperty
 import org.gradle.api.provider.Property
-import org.gradle.api.provider.Provider
 import org.gradle.api.provider.ProviderFactory
 import org.gradle.api.provider.SetProperty
+import org.gradle.api.tasks.Input
 import org.gradle.process.CommandLineArgumentProvider
 import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
@@ -230,24 +231,28 @@ public abstract class AnvilExtension @Inject constructor(
         }
     }
 
-    project.extensions.configure(KspExtension::class.java) { ksp ->
-      // Do not convert this to a lambda.
-      // It will leak the AnvilExtension instance and break configuration caching.
-      ksp.arg(
-        commandLineArgumentProvider(
-          "generate-dagger-factories" to generateDaggerFactories,
-          "generate-dagger-factories-only" to generateDaggerFactoriesOnly,
-          "disable-component-merging" to disableComponentMerging,
-          "anvil-ksp-extraContributingAnnotations" to kspContributingAnnotations.map {
-            it.sorted().joinToString(":")
-          },
-          "will-have-dagger-factories" to willHaveDaggerFactories,
-          "merging-backend" to useKspComponentMergingBackend
-            .map { enabled ->
-              if (enabled) "ksp" else "none"
-            },
-        ),
+    val argsProvider = project.objects.newInstance(AnvilKspOptionsProvider::class.java)
+    argsProvider.options.apply {
+      put("generate-dagger-factories", generateDaggerFactories)
+      put("generate-dagger-factories-only", generateDaggerFactoriesOnly)
+      put("disable-component-merging", disableComponentMerging)
+      put(
+        "anvil-ksp-extraContributingAnnotations",
+        kspContributingAnnotations.map {
+          it.sorted().joinToString(":")
+        },
       )
+      put("will-have-dagger-factories", willHaveDaggerFactories)
+      put(
+        "merging-backend",
+        useKspComponentMergingBackend
+          .map { enabled ->
+            if (enabled) "ksp" else "none"
+          },
+      )
+    }
+    project.extensions.configure(KspExtension::class.java) { ksp ->
+      ksp.arg(argsProvider)
     }
   }
 
@@ -290,26 +295,17 @@ public abstract class AnvilExtension @Inject constructor(
   }
 }
 
-/**
- * This function is propping up configuration caching in two ways:
- *
- * 1. It creates local references to the providers,
- *    so that we can pass them to the KSP task without a reference to `AnvilExtension`.
- * 2. It creates the `CommandLineArgumentProvider` lambda outside the `AnvilExtension` class,
- *    so that we can't accidentally capture `AnvilExtension` in the lambda.
- *
- * [AnvilExtension] currently isn't serializable for configuration caching
- * because of its `Project` property.
- */
-private fun commandLineArgumentProvider(
-  vararg args: Pair<String, Provider<*>>,
-): CommandLineArgumentProvider {
-  return CommandLineArgumentProvider {
-    args.mapNotNull { (arg, provider) ->
-      val value = provider.orNull ?: return@mapNotNull null
+internal abstract class AnvilKspOptionsProvider : CommandLineArgumentProvider {
+
+  @get:Input
+  abstract val options: MapProperty<String, Any?>
+
+  override fun asArguments(): Iterable<String> {
+    return options.get().entries.mapNotNull { (option, value) ->
       // kotlinc isn't ok with blank values so catch these and ignore 'em
       if (value is String && value.isBlank()) return@mapNotNull null
-      "$arg=$value"
+      if (value is Collection<*> && value.isEmpty()) return@mapNotNull null
+      "$option=$value"
     }
   }
 }
