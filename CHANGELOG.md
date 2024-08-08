@@ -4,6 +4,7 @@
 --------------
 
 - **Fix:** Correctly track inputs to KSP command line options so they don't result in incorrect task build cache hits.
+- **Fix:** Don't set default AnvilExtension property values until after all properties are initialized.
 
 0.2.1
 -----

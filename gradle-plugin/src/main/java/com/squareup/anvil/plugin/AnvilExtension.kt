@@ -25,20 +25,6 @@ public abstract class AnvilExtension @Inject constructor(
   private val providers: ProviderFactory,
 ) {
 
-  init {
-    val useKspBackend = providers.gradleProperty("com.squareup.anvil.useKspBackend")
-      .map { it.toBoolean() }
-      .getOrElse(false)
-    val useKspComponentMergingBackend = providers.gradleProperty(
-      "com.squareup.anvil.useKspComponentMergingBackend",
-    )
-      .map { it.toBoolean() }
-      .getOrElse(false)
-    if (useKspBackend || useKspComponentMergingBackend) {
-      useKsp(useKspBackend, useKspComponentMergingBackend)
-    }
-  }
-
   /**
    * Allows you to use Anvil to generate Factory classes that usually the Dagger annotation
    * processor would generate for `@Provides` methods, `@Inject` constructors and `@Inject` fields.
@@ -170,6 +156,20 @@ public abstract class AnvilExtension @Inject constructor(
         .map { it.splitToSequence(":").filterNot { it.isBlank() }.toSet() }
         .orElse(emptySet()),
     )
+
+  init {
+    val useKspBackend = providers.gradleProperty("com.squareup.anvil.useKspBackend")
+      .map { it.toBoolean() }
+      .getOrElse(false)
+    val useKspComponentMergingBackend = providers.gradleProperty(
+      "com.squareup.anvil.useKspComponentMergingBackend",
+    )
+      .map { it.toBoolean() }
+      .getOrElse(false)
+    if (useKspBackend || useKspComponentMergingBackend) {
+      useKsp(useKspBackend, useKspComponentMergingBackend)
+    }
+  }
 
   /**
    * Enables the new [KSP](https://github.com/google/ksp) backends for Anvil. Note that this
