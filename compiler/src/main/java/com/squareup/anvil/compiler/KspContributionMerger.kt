@@ -131,7 +131,7 @@ internal class KspContributionMerger(
     add(contributesMultibindingFqName.asString())
     env.options[OPTION_EXTRA_CONTRIBUTING_ANNOTATIONS]?.let {
       if (it.isNotBlank()) {
-        addAll(it.splitToSequence(',').filterNot { it.isBlank() })
+        addAll(it.splitToSequence(':').filterNot(String::isBlank))
       }
     }
     // contributesSubcomponentFqName is handled uniquely

@@ -147,9 +147,9 @@ too.
 
 For simple cases where a custom annotation is processed by a custom generator, you can simply indicate these annotations to Anvil KSP. These can be provided in three different ways, whichever is most convenient.
 
-1. A comma-separated Gradle property whose values are the canonical class names of your custom annotations.
+1. A colon-delimited Gradle property whose values are the canonical class names of your custom annotations.
    ```properties
-   com.squareup.anvil.kspContributingAnnotations=com.example.CustomAnnotation,com.example.InjectWith
+   com.squareup.anvil.kspContributingAnnotations=com.example.CustomAnnotation:com.example.InjectWith
    ```
 2. Setting via the `AnvilExtension` in Gradle. Note this property defaults to the above Gradle property.
    ```kotlin
@@ -164,8 +164,8 @@ For simple cases where a custom annotation is processed by a custom generator, y
    ```kotlin
    ksp {
      arg(
-       "anvil.ksp.extraContributingAnnotations",
-       "com.example.CustomAnnotation,com.example.InjectWith"
+       "anvil-ksp-extraContributingAnnotations",
+       "com.example.CustomAnnotation:com.example.InjectWith"
      )
    }
    ```

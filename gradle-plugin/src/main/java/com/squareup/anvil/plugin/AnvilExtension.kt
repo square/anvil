@@ -159,14 +159,14 @@ public abstract class AnvilExtension @Inject constructor(
    * merging. Values should be the canonical class name of extra contributing annotations.
    *
    * Can be set via `com.squareup.anvil.kspContributingAnnotations` gradle property with
-   * comma-separated values.
+   * colon-delimited values.
    */
   public val kspContributingAnnotations: SetProperty<String> = objects.setProperty(
     String::class.java,
   )
     .convention(
       providers.gradleProperty("com.squareup.anvil.kspContributingAnnotations")
-        .map { it.splitToSequence(",").filterNot { it.isBlank() }.toSet() }
+        .map { it.splitToSequence(":").filterNot { it.isBlank() }.toSet() }
         .orElse(emptySet()),
     )
 
@@ -238,8 +238,8 @@ public abstract class AnvilExtension @Inject constructor(
           "generate-dagger-factories" to generateDaggerFactories,
           "generate-dagger-factories-only" to generateDaggerFactoriesOnly,
           "disable-component-merging" to disableComponentMerging,
-          "anvil.ksp.extraContributingAnnotations" to kspContributingAnnotations.map {
-            it.sorted().joinToString(",")
+          "anvil-ksp-extraContributingAnnotations" to kspContributingAnnotations.map {
+            it.sorted().joinToString(":")
           },
           "will-have-dagger-factories" to willHaveDaggerFactories,
           "merging-backend" to useKspComponentMergingBackend

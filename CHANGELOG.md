@@ -4,6 +4,7 @@
 --------------
 
 - **Fix:** Don't cache symbols between processing rounds. This better supports KSP2.
+- **Fix:** Workaround Kotlin plugin option parsing limitations. Contributing annotations should now be colon-delimited, and the underlying KSP argument is changed to a more consistent `anvil-ksp-extraContributingAnnotations`.
 
 0.2.0
 -----
