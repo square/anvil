@@ -3,7 +3,13 @@
 **Unreleased**
 --------------
 
-- Use more unique names for default parent component functions.
+0.2.3
+-----
+
+_2024-08-08_
+
+- **Fix:** Use more unique names for default parent component functions.
+- **Fix:** Strip `ABSTRACT` modifiers if present when overriding component-returning functions.
 
 0.2.2
 -----
