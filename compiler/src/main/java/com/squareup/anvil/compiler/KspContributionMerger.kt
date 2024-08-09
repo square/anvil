@@ -1024,6 +1024,10 @@ internal class KspContributionMerger(
                 decl.toFunSpec()
                   .toBuilder()
                   .addModifiers(OVERRIDE)
+                  .apply {
+                    // We're adding a body so remove ABSTRACT if present
+                    modifiers.remove(ABSTRACT)
+                  }
                   .addStatement("return %L", body)
                   .build(),
               )
@@ -1033,6 +1037,10 @@ internal class KspContributionMerger(
                 decl.toPropertySpec()
                   .toBuilder()
                   .addModifiers(OVERRIDE)
+                  .apply {
+                    // We're adding a body so remove ABSTRACT if present
+                    modifiers.remove(ABSTRACT)
+                  }
                   .getter(
                     FunSpec.getterBuilder()
                       .addStatement("return %L", body)
