@@ -342,10 +342,10 @@ Anvil's existing functionality works within two spaces:
 
 In K2, things change.
 
-1. The entire PSI compiler frontend is gone. It is replaced with a new FIR frontend. None of Anvil's existing code gen will run nor are there obvious hooks. They would need to be rewritten on top of FIR, and currently there's no public (let alone stable) API for generating source files from FIR.
-2. IR merging in K2 no longer supports modifying interfaces of types. This means that component merging and interface merging no longer work. This is important as this step ran in the regular `KotlinCompile` task to ensure runtime contributions work.
-3. K2 KAPT will not invoke the IR backend during stub generation, it will only invoke the FIR frontend. This means that the current merging implementation would need to be ported to FIR.
-4. FIR will not support generation of new annotations onto `FirClass` types, which means that there is no solution for generating Dagger annotations onto classes during FIR. This is an important part of how Anvil works.
+- The entire PSI compiler frontend is gone. It is replaced with a new FIR frontend. None of Anvil's existing code gen will run nor are there obvious hooks. They would need to be rewritten on top of FIR, and currently there's no public (let alone stable) API for generating source files from FIR.
+- IR merging in K2 no longer supports modifying interfaces of types. This means that component merging and interface merging no longer work. This is important as this step ran in the regular `KotlinCompile` task to ensure runtime contributions work.
+- K2 KAPT will not invoke the IR backend during stub generation, it will only invoke the FIR frontend. This means that the current merging implementation would need to be ported to FIR.
+- FIR will not support generation of new annotations onto `FirClass` types, which means that there is no solution for generating Dagger annotations onto classes during FIR. This is an important part of how Anvil works.
 
 ### Alternative Solutions
 
