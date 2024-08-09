@@ -66,6 +66,7 @@ import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.findRawType
+import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.mergedClassName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
@@ -1844,8 +1845,8 @@ private fun generateDaggerBindingModuleForFactory(
     .build()
 }
 
-private fun defaultParentComponentFunctionName(returnType: ClassName): String =
-  "create${returnType.simpleName}"
+internal fun defaultParentComponentFunctionName(returnType: ClassName): String =
+  "create${returnType.joinSimpleNames().simpleName}"
 
 // TODO consolidate with contributessubcomponent handling?
 private fun generateParentComponent(

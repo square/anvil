@@ -3,6 +3,8 @@
 **Unreleased**
 --------------
 
+- Use more unique names for default parent component functions.
+
 0.2.2
 -----
 

@@ -38,6 +38,7 @@ import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.daggerBindingModuleSpec
+import com.squareup.anvil.compiler.defaultParentComponentFunctionName
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.joinSimpleNamesAndTruncate
@@ -315,7 +316,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
         FunSpec
           .builder(
             name = factoryClass?.let { "create${it.originalReference.fqName.shortName()}" }
-              ?: "create${origin.simpleName}",
+              ?: defaultParentComponentFunctionName(origin),
           )
           .addModifiers(ABSTRACT)
           .apply {
