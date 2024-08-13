@@ -31,6 +31,7 @@ import com.squareup.anvil.compiler.codegen.ksp.rank
 import com.squareup.anvil.compiler.codegen.ksp.replaces
 import com.squareup.anvil.compiler.codegen.ksp.resolveBoundType
 import com.squareup.anvil.compiler.codegen.ksp.scope
+import com.squareup.anvil.compiler.codegen.ksp.scopeClassName
 import com.squareup.anvil.compiler.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
@@ -97,7 +98,7 @@ internal object ContributesBindingCodeGen : AnvilApplicabilityChecker {
             .toList()
             .also { it.checkNoDuplicateScopeAndBoundType(clazz) }
             .map {
-              val scope = it.scope().toClassName()
+              val scope = it.scopeClassName()
               val boundTypeDeclaration = it.resolveBoundType(resolver, clazz)
               boundTypeDeclaration.checkNotGeneric(clazz)
               val boundType = boundTypeDeclaration.toClassName()

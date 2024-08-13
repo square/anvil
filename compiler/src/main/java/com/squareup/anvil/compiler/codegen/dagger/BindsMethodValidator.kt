@@ -16,9 +16,11 @@ import com.squareup.anvil.compiler.codegen.CheckOnlyCodeGenerator
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.contextualToTypeName
 import com.squareup.anvil.compiler.codegen.ksp.getAnnotatedFunctions
 import com.squareup.anvil.compiler.codegen.ksp.getAnnotatedSymbols
 import com.squareup.anvil.compiler.codegen.ksp.isExtensionDeclaration
+import com.squareup.anvil.compiler.codegen.ksp.reportableReturnTypeNode
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
 import com.squareup.anvil.compiler.codegen.ksp.superTypesExcludingAny
@@ -31,7 +33,6 @@ import com.squareup.anvil.compiler.internal.reference.TypeReference
 import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReferences
 import com.squareup.anvil.compiler.internal.reference.asTypeName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
-import com.squareup.kotlinpoet.ksp.toTypeName
 import dagger.Binds
 import dagger.Module
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -136,14 +137,16 @@ internal object BindsMethodValidator : AnvilApplicabilityChecker {
           val superTypeNames =
             bindingParameter
               .resolveSuperTypesExcludingAny()
-              .map { it.toTypeName().toString() }
+              .map { it.contextualToTypeName(bindingParameter).toString() }
               .toList()
 
           throw KspAnvilException(
             message = Errors.bindsParameterMustBeAssignable(
               bindingParameterSuperTypeNames = superTypeNames,
-              returnTypeName = returnType.toTypeName().toString(),
-              parameterType = bindingParameter.toTypeName().toString(),
+              returnTypeName = returnType.contextualToTypeName(
+                function.reportableReturnTypeNode,
+              ).toString(),
+              parameterType = bindingParameter.contextualToTypeName().toString(),
             ),
             node = function,
           )

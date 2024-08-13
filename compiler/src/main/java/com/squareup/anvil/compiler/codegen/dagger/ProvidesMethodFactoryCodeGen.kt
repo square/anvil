@@ -25,10 +25,12 @@ import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.contextualToTypeName
 import com.squareup.anvil.compiler.codegen.ksp.getAnnotatedFunctions
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
+import com.squareup.anvil.compiler.codegen.ksp.reportableReturnTypeNode
 import com.squareup.anvil.compiler.codegen.ksp.withCompanion
 import com.squareup.anvil.compiler.codegen.ksp.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.daggerModuleFqName
@@ -60,7 +62,6 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.Provides
@@ -189,7 +190,9 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         message = "Error occurred in type resolution and could not resolve return type.",
         node = function,
       )
-      val typeName = type.toTypeName().withJvmSuppressWildcardsIfNeeded(function, type)
+      val typeName = type.contextualToTypeName(
+        function.reportableReturnTypeNode,
+      ).withJvmSuppressWildcardsIfNeeded(function, type)
       return CallableReference(
         isInternal = function.getVisibility() == Visibility.INTERNAL,
         isCompanionObject = function.closestClassDeclaration()?.isCompanionObject == true,
@@ -209,7 +212,9 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
       property: KSPropertyDeclaration,
     ): CallableReference {
       val type = property.type.resolve()
-      val typeName = type.toTypeName().withJvmSuppressWildcardsIfNeeded(property, type)
+      val typeName = type.contextualToTypeName(
+        property.type,
+      ).withJvmSuppressWildcardsIfNeeded(property, type)
       return CallableReference(
         isInternal = property.getVisibility() == Visibility.INTERNAL,
         isCompanionObject = property.closestClassDeclaration()?.isCompanionObject == true,

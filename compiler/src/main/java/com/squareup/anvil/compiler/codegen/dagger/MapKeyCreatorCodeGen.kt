@@ -19,6 +19,7 @@ import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.contextualToTypeName
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationClass
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
@@ -58,7 +59,6 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
 import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.MapKey
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -351,7 +351,10 @@ private class AnnotationProperty(
 
     operator fun invoke(
       property: KSPropertyDeclaration,
-    ): AnnotationProperty = create(property.simpleName.asString(), property.type.toTypeName())
+    ): AnnotationProperty = create(
+      property.simpleName.asString(),
+      property.type.contextualToTypeName(),
+    )
 
     operator fun invoke(
       property: MemberPropertyReference,

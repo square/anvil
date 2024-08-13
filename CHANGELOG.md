@@ -3,6 +3,8 @@
 **Unreleased**
 --------------
 
+- Significantly improve error messaging when encountering error types. All these cases _should_ now also show the location of the error type in source and ease debugging.
+
 0.2.3
 -----
 

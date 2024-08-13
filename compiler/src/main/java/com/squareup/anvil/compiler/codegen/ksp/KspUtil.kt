@@ -13,10 +13,12 @@ import com.google.devtools.ksp.symbol.KSDeclaration
 import com.google.devtools.ksp.symbol.KSFunction
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSModifierListOwner
+import com.google.devtools.ksp.symbol.KSNode
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeAlias
 import com.google.devtools.ksp.symbol.KSTypeParameter
+import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Modifier
 import com.squareup.anvil.compiler.fqName
@@ -25,11 +27,13 @@ import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.mergeInterfacesFqName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.anvil.compiler.mergeSubcomponentFqName
+import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.jvm.jvmSuppressWildcards
+import com.squareup.kotlinpoet.ksp.TypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toKModifier
@@ -282,7 +286,7 @@ internal fun KSFunctionDeclaration.toFunSpec(): FunSpec {
         .map { it.toAnnotationSpec() }.asIterable(),
     )
 
-  returnType?.resolve()?.toTypeName()?.let { builder.returns(it) }
+  returnType?.contextualToTypeName()?.let { builder.returns(it) }
 
   for (parameter in parameters) {
     builder.addParameter(parameter.toParameterSpec())
@@ -292,7 +296,7 @@ internal fun KSFunctionDeclaration.toFunSpec(): FunSpec {
 }
 
 internal fun KSPropertyDeclaration.toPropertySpec(
-  typeOverride: TypeName = type.resolve().toTypeName(),
+  typeOverride: TypeName = type.contextualToTypeName(),
 ): PropertySpec {
   return PropertySpec.builder(simpleName.getShortName(), typeOverride)
     .addModifiers(modifiers.mapNotNull { it.toKModifier() })
@@ -303,7 +307,7 @@ internal fun KSPropertyDeclaration.toPropertySpec(
 }
 
 internal fun KSValueParameter.toParameterSpec(): ParameterSpec {
-  return ParameterSpec.builder(name!!.asString(), type.resolve().toTypeName())
+  return ParameterSpec.builder(name!!.asString(), type.contextualToTypeName())
     .addAnnotations(
       resolvableAnnotations.map { it.toAnnotationSpec() }.asIterable(),
     )
@@ -334,3 +338,54 @@ internal val KSClassDeclaration.fqName: FqName get() {
     .toClassName()
     .fqName
 }
+
+/**
+ * A contextual alternative to [KSTypeReference.toTypeName] that uses [KSType.contextualToTypeName]
+ * under the hood.
+ */
+internal fun KSTypeReference.contextualToTypeName(
+  typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY,
+): TypeName {
+  return resolve().contextualToTypeName(this, typeParamResolver)
+}
+
+/**
+ * A contextual alternative to [KSType.toTypeName] that requires an [origin] param to better
+ * indicate the origin of the error type.
+ */
+internal fun KSType.contextualToTypeName(
+  origin: KSNode,
+  typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY,
+): TypeName {
+  checkErrorType(origin)
+  return toTypeName(typeParamResolver)
+}
+
+/**
+ * A contextual alternative to `KSTypeReference.resolve().toClassName()` that uses
+ * [KSType.contextualToClassName] under the hood.
+ */
+internal fun KSTypeReference.contextualToClassName(): ClassName {
+  return resolve().contextualToClassName(this)
+}
+
+/**
+ * A contextual alternative to [KSType.toClassName] that requires an [origin] param to better
+ * indicate the origin of the error type.
+ */
+internal fun KSType.contextualToClassName(origin: KSNode): ClassName {
+  checkErrorType(origin)
+  return toClassName()
+}
+
+private fun KSType.checkErrorType(origin: KSNode) {
+  if (isError) {
+    throw KspAnvilException(
+      message = "Error type '$this' is not resolvable in the current round of processing. Check your imports or, if this is a generated type, ensure the tool that generates it has its outputs appropriately sources as inputs to the KSP task.",
+      node = origin,
+    )
+  }
+}
+
+internal val KSFunctionDeclaration.reportableReturnTypeNode: KSNode
+  get() = returnType ?: this

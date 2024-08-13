@@ -13,7 +13,7 @@ import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.internal.daggerScopeFqName
 import com.squareup.anvil.compiler.internal.mapKeyFqName
 import com.squareup.anvil.compiler.qualifierFqName
-import com.squareup.kotlinpoet.ksp.toClassName
+import com.squareup.kotlinpoet.ClassName
 import org.jetbrains.kotlin.name.FqName
 
 internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScope(
@@ -30,7 +30,9 @@ internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScope(
   if (duplicates.isNotEmpty()) {
     val annotatedClass = annotatedType.qualifiedName!!.asString()
     val duplicateScopesMessage =
-      duplicates.keys.joinToString(prefix = "[", postfix = "]") { it.toClassName().simpleName }
+      duplicates.keys.joinToString(prefix = "[", postfix = "]") {
+        it.contextualToClassName(annotatedType).simpleName
+      }
 
     throw KspAnvilException(
       message = if (isContributeAnnotation) {
@@ -79,6 +81,13 @@ internal fun <T : KSAnnotation> List<T>.checkNoDuplicateScopeAndBoundType(
   }
 }
 
+internal fun KSAnnotation.scopeClassName(): ClassName =
+  classNameArgumentAt("scope")
+    ?: throw KspAnvilException(
+      message = "Couldn't find scope for ${annotationType.resolve().declaration.qualifiedName?.asString()}.",
+      this,
+    )
+
 internal fun KSAnnotation.scope(): KSType =
   scopeOrNull()
     ?: throw KspAnvilException(
@@ -87,10 +96,10 @@ internal fun KSAnnotation.scope(): KSType =
     )
 
 internal fun KSAnnotation.scopeOrNull(): KSType? {
-  return argumentAt("scope")?.value as? KSType?
+  return argumentOfTypeAt<KSType>("scope")
 }
 
-internal fun KSAnnotation.boundTypeOrNull(): KSType? = argumentAt("boundType")?.value as? KSType?
+internal fun KSAnnotation.boundTypeOrNull(): KSType? = argumentOfTypeAt<KSType>("boundType")
 
 internal fun KSAnnotation.resolveBoundType(
   resolver: Resolver,
@@ -119,27 +128,70 @@ internal fun KSAnnotation.modules(): List<KSClassDeclaration> = classArrayArgume
 
 internal fun KSAnnotation.includes(): List<KSClassDeclaration> = classArrayArgument("includes")
 
-@Suppress("UNCHECKED_CAST")
 private fun KSAnnotation.classArrayArgument(name: String): List<KSClassDeclaration> =
-  (argumentAt(name)?.value as? List<KSType>).orEmpty().map {
-    it.resolveKSClassDeclaration() ?: throw KspAnvilException("Could not resolve $name $it", this)
-  }
+  argumentOfTypeWithMapperAt<List<KSType>, List<KSClassDeclaration>>(
+    name,
+  ) { arg, value ->
+    value.map {
+      it.resolveKSClassDeclaration()
+        ?: throw KspAnvilException("Could not resolve $name $it", arg)
+    }
+  }.orEmpty()
 
 internal fun KSAnnotation.parentScope(): KSClassDeclaration {
-  return (
-    argumentAt("parentScope")
-      ?.value as? KSType
-    )?.resolveKSClassDeclaration()
+  return argumentOfTypeAt<KSType>("parentScope")
+    ?.resolveKSClassDeclaration()
     ?: throw KspAnvilException(
       message = "Couldn't find parentScope for $shortName.",
       node = this,
     )
 }
 
+internal fun KSAnnotation.classNameArrayArgumentAt(
+  name: String,
+): List<ClassName>? {
+  return argumentOfTypeWithMapperAt<List<KSType>, List<ClassName>>(name) { arg, value ->
+    value.map { it.contextualToClassName(arg) }
+  }
+}
+
+internal fun KSAnnotation.classNameArgumentAt(
+  name: String,
+): ClassName? {
+  return argumentOfTypeWithMapperAt<KSType, ClassName>(name) { arg, value ->
+    value.contextualToClassName(arg)
+  }
+}
+
+internal inline fun <reified T> KSAnnotation.argumentOfTypeAt(
+  name: String,
+): T? {
+  return argumentOfTypeWithMapperAt<T, T>(name) { _, value ->
+    value
+  }
+}
+
+private inline fun <reified T, R> KSAnnotation.argumentOfTypeWithMapperAt(
+  name: String,
+  mapper: (arg: KSValueArgument, value: T) -> R,
+): R? {
+  return argumentAt(name)
+    ?.let { arg ->
+      val value = arg.value
+      if (value !is T) {
+        throw KspAnvilException(
+          message = "Expected argument '$name' of type '${T::class.qualifiedName} but was '${arg.javaClass.name}'.",
+          node = arg,
+        )
+      } else {
+        value?.let { mapper(arg, it) }
+      }
+    }
+}
+
 internal fun KSAnnotation.argumentAt(
   name: String,
 ): KSValueArgument? {
-  arguments
   return arguments.find { it.name?.asString() == name }
     ?.takeUnless { it.isDefault() }
 }
@@ -158,17 +210,17 @@ internal fun KSAnnotated.qualifierAnnotation(): KSAnnotation? =
   resolvableAnnotations.singleOrNull { it.isQualifier() }
 
 internal fun KSAnnotation.ignoreQualifier(): Boolean =
-  argumentAt("ignoreQualifier")?.value as? Boolean? == true
+  argumentOfTypeAt<Boolean>("ignoreQualifier") == true
 
 internal fun KSAnnotation.rank(): Int {
-  return argumentAt("rank")?.value as Int?
+  return argumentOfTypeAt<Int>("rank")
     ?: priorityLegacy()
     ?: ContributesBinding.RANK_NORMAL
 }
 
 @Suppress("DEPRECATION")
 internal fun KSAnnotation.priorityLegacy(): Int? {
-  val priorityEntry = argumentAt("priority")?.value as KSType? ?: return null
+  val priorityEntry = argumentOfTypeAt<KSType>("priority") ?: return null
   val name = priorityEntry.resolveKSClassDeclaration()?.simpleName?.asString() ?: return null
   val priority = ContributesBinding.Priority.valueOf(name)
   return priority.value

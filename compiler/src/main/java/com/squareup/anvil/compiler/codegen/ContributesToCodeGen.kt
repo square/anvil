@@ -28,6 +28,7 @@ import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.scope
+import com.squareup.anvil.compiler.codegen.ksp.scopeClassName
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.internal.createAnvilSpec
@@ -140,7 +141,7 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
           val scopes = clazz.getKSAnnotationsByType(ContributesTo::class)
             .toList()
             .also { it.checkNoDuplicateScope(annotatedType = clazz, isContributeAnnotation = true) }
-            .map { it.scope().toClassName() }
+            .map { it.scopeClassName() }
             .distinct()
             // Give it a stable sort.
             .sortedBy { it.canonicalName }

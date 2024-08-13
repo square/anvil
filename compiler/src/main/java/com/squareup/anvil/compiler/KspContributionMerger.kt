@@ -35,9 +35,13 @@ import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponentClassId
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.KSCallable
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
-import com.squareup.anvil.compiler.codegen.ksp.argumentAt
+import com.squareup.anvil.compiler.codegen.ksp.argumentOfTypeAt
 import com.squareup.anvil.compiler.codegen.ksp.atLeastOneAnnotation
 import com.squareup.anvil.compiler.codegen.ksp.classId
+import com.squareup.anvil.compiler.codegen.ksp.classNameArgumentAt
+import com.squareup.anvil.compiler.codegen.ksp.classNameArrayArgumentAt
+import com.squareup.anvil.compiler.codegen.ksp.contextualToClassName
+import com.squareup.anvil.compiler.codegen.ksp.contextualToTypeName
 import com.squareup.anvil.compiler.codegen.ksp.declaringClass
 import com.squareup.anvil.compiler.codegen.ksp.exclude
 import com.squareup.anvil.compiler.codegen.ksp.find
@@ -54,6 +58,7 @@ import com.squareup.anvil.compiler.codegen.ksp.mergeAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.modules
 import com.squareup.anvil.compiler.codegen.ksp.parentScope
 import com.squareup.anvil.compiler.codegen.ksp.replaces
+import com.squareup.anvil.compiler.codegen.ksp.reportableReturnTypeNode
 import com.squareup.anvil.compiler.codegen.ksp.resolvableAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
@@ -83,7 +88,6 @@ import com.squareup.kotlinpoet.ksp.addOriginatingKSFile
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
 import com.squareup.kotlinpoet.ksp.toKModifier
-import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.Binds
 import dagger.Component
@@ -285,7 +289,8 @@ internal class KspContributionMerger(
       )
     }
 
-    val scope = (daggerMergeAnnotations + interfaceMergerAnnotations).first().scope()
+    val scopeHolder = (daggerMergeAnnotations + interfaceMergerAnnotations).first()
+    val scope = scopeHolder.scope()
 
     val creator = mergeComponentAnnotations.ifNotEmpty {
       findCreator(
@@ -299,7 +304,7 @@ internal class KspContributionMerger(
 
     generateMergedClass(
       resolver = resolver,
-      scope = scope.toClassName(),
+      scope = scope.contextualToClassName(scopeHolder),
       mergeAnnotatedClass = mergeAnnotatedClass,
       originatingDeclarations = originatingDeclarations,
       contributedSubcomponentData = contributedSubcomponentData,
@@ -581,17 +586,13 @@ internal class KspContributionMerger(
 
         val boundType = bindingFunction.returnTypeOrNull()!!.resolveKSClassDeclaration()!!
         val isMultibinding =
-          internalBindingMarker.argumentAt("isMultibinding")?.value == true
+          internalBindingMarker.argumentOfTypeAt<Boolean>("isMultibinding") == true
         val qualifierKey =
-          (internalBindingMarker.argumentAt("qualifierKey")?.value as? String?).orEmpty()
-        val rank = (
-          internalBindingMarker.argumentAt("rank")
-            ?.value as? Int?
-          )
-          ?: ContributesBinding.RANK_NORMAL
+          internalBindingMarker.argumentOfTypeAt<String>("qualifierKey").orEmpty()
+        val rank = internalBindingMarker.argumentOfTypeAt<Int>("rank") ?: ContributesBinding.RANK_NORMAL
         val scope = contributedAnnotation.scope()
         ContributedBinding(
-          scope = scope.toClassName(),
+          scope = scope.contextualToClassName(contributedAnnotation),
           isMultibinding = isMultibinding,
           bindingModule = moduleClass.toClassName(),
           originClass = originClass.toClassName(),
@@ -668,9 +669,7 @@ internal class KspContributionMerger(
         fun copyArrayValue(name: String) {
           val varargArguments = annotations
             .mapNotNull { annotation ->
-              @Suppress("UNCHECKED_CAST")
-              (annotation.argumentAt(name)?.value as? List<KSType>?)
-                ?.map(KSType::toClassName)
+              annotation.classNameArrayArgumentAt(name)
             }
             .flatten()
             .ifEmpty { return }
@@ -1216,8 +1215,7 @@ internal class KspContributionMerger(
       !mergeAnnotations.any { annotation ->
         // If any of the parameters are unresolved, we need to defer this class
         arrayOf("modules", "dependencies", "exclude", "includes").forEach { parameter ->
-          @Suppress("UNCHECKED_CAST")
-          (annotation.argumentAt(parameter)?.value as? List<KSType>?)?.let { values ->
+          annotation.argumentOfTypeAt<List<KSType>>(parameter)?.let { values ->
             if (values.any(KSType::isError)) return@any true
           }
         }
@@ -1484,18 +1482,16 @@ private fun checkSameScope(
 private fun KSClassDeclaration.originClass(): KSClassDeclaration {
   val originClassValue = find(internalBindingMarkerFqName.asString())
     .singleOrNull()
-    ?.argumentAt("originClass")
-    ?.value
+    ?.argumentOfTypeAt<KSType>("originClass")
 
-  val originClass = (originClassValue as? KSType?)?.resolveKSClassDeclaration()
+  val originClass = originClassValue?.resolveKSClassDeclaration()
   return originClass ?: this
 }
 
 private fun KSAnnotation.originClass(): KSClassDeclaration? {
-  val originClassValue = argumentAt("originClass")
-    ?.value
+  val originClassValue = argumentOfTypeAt<KSType>("originClass")
 
-  val originClass = (originClassValue as? KSType?)?.resolveKSClassDeclaration()
+  val originClass = originClassValue?.resolveKSClassDeclaration()
   return originClass
 }
 
@@ -1587,7 +1583,7 @@ private fun Creator.extend(
                 .returns(newClassName)
                 .build(),
             )
-          } else if (returnType?.toClassName() == originalComponentClassName) {
+          } else if (returnType?.contextualToClassName(function.reportableReturnTypeNode) == originalComponentClassName) {
             // Handles functions that return the Component class, such as
             // factory create() or builder build()
             addFunction(
@@ -1885,7 +1881,7 @@ private fun generateParentComponent(
         """.trimIndent() +
           parentParentComponent.getAllFunctions().mapNotNull { function ->
             function.qualifiedName?.let {
-              "${it.asString()}(): ${function.returnTypeOrNull()?.toTypeName()}"
+              "${it.asString()}(): ${function.returnTypeOrNull()?.contextualToTypeName(function.reportableReturnTypeNode)}"
             }
           }.joinToString("\n", prefix = "\n"),
         node = origin,
@@ -1942,12 +1938,15 @@ private data class ContributedSubcomponentData(
 
   companion object {
     fun fromAnnotation(annotation: KSAnnotation): ContributedSubcomponentData {
-      val originClass = (annotation.argumentAt("originClass")?.value as KSType).toClassName()
-      val contributor = (annotation.argumentAt("contributor")?.value as KSType?)?.toClassName()
-        .takeUnless { it == NOTHING }
+      val originClass = annotation.classNameArgumentAt("originClass") ?: throw KspAnvilException(
+        message = "Could not find originClass value",
+        node = annotation,
+      )
+      val contributor = annotation.classNameArgumentAt("contributor")
+        ?.takeUnless { it == NOTHING }
       val componentFactory =
-        (annotation.argumentAt("componentFactory")?.value as KSType?)?.toClassName()
-          .takeUnless { it == NOTHING }
+        annotation.classNameArgumentAt("componentFactory")
+          ?.takeUnless { it == NOTHING }
       return ContributedSubcomponentData(
         originClass = originClass,
         contributor = contributor,

@@ -13,6 +13,7 @@ import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.contextualToTypeName
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
@@ -55,7 +56,6 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.ksp.TypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toAnnotationSpec
 import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import dagger.Lazy
 import dagger.assisted.Assisted
@@ -134,7 +134,7 @@ private fun KSValueParameter.toConstructorParameter(
   typeParameterResolver: TypeParameterResolver,
 ): ConstructorParameter {
   val type = type.resolve()
-  val paramTypeName = type.toTypeName(typeParameterResolver)
+  val paramTypeName = type.contextualToTypeName(this, typeParameterResolver)
   val rawType = paramTypeName.requireRawType()
 
   val isWrappedInProvider = rawType == providerClassName
@@ -463,7 +463,7 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
   val classParams = implementingClass.typeParameters.toTypeParameterResolver()
   val resolvedType = asMemberOf(implementingType)
   // TODO do we want to convert function types to lambdas?
-  val propertyTypeName = resolvedType.toTypeName(classParams)
+  val propertyTypeName = resolvedType.contextualToTypeName(this, classParams)
   val rawType = propertyTypeName.requireRawType()
 
   val isWrappedInProvider = rawType == providerClassName

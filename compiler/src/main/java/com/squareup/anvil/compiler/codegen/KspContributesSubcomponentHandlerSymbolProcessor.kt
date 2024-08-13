@@ -21,6 +21,7 @@ import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.classId
+import com.squareup.anvil.compiler.codegen.ksp.contextualToClassName
 import com.squareup.anvil.compiler.codegen.ksp.declaringClass
 import com.squareup.anvil.compiler.codegen.ksp.exclude
 import com.squareup.anvil.compiler.codegen.ksp.find
@@ -136,7 +137,10 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
             .addAnnotation(
               AnnotationSpec
                 .builder(MergeSubcomponent::class)
-                .addMember("scope = %T::class", contribution.scope.toClassName())
+                .addMember(
+                  "scope = %T::class",
+                  contribution.scope.contextualToClassName(contribution.annotation),
+                )
                 .apply {
                   fun addClassArrayMember(
                     name: String,

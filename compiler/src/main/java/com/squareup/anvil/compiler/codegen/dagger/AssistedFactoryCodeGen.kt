@@ -34,6 +34,7 @@ import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryCodeGen.KspGene
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.contextualToTypeName
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
@@ -63,7 +64,6 @@ import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
 import com.squareup.kotlinpoet.ksp.TypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.toTypeName
 import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import com.squareup.kotlinpoet.ksp.toTypeVariableName
 import com.squareup.kotlinpoet.ksp.writeTo
@@ -142,7 +142,9 @@ internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
       // Compute for each parameter its key.
       val functionParameterKeys = function.parameterKeys
       val assistedParameterKeys = assistedParameters.map {
-        it.toAssistedParameterKey(it.type.resolve().toTypeName(typeParameterResolver))
+        it.toAssistedParameterKey(
+          it.type.resolve().contextualToTypeName(it.type, typeParameterResolver),
+        )
       }
 
       // The factory function may not have two or more parameters with the same key.
@@ -283,11 +285,11 @@ internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
             node = originalDeclaration,
             parameterKeys = originalDeclaration.parameters.mapIndexed { index, param ->
               param.toAssistedParameterKey(
-                parameterTypes[index]!!.toTypeName(typeParameterResolver),
+                parameterTypes[index]!!.contextualToTypeName(param, typeParameterResolver),
               )
             },
             parameterPairs = originalDeclaration.parameters.mapIndexed { index, param ->
-              param to parameterTypes[index]!!.toTypeName(typeParameterResolver)
+              param to parameterTypes[index]!!.contextualToTypeName(param, typeParameterResolver)
             },
           )
         }

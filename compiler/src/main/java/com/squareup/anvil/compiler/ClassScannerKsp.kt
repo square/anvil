@@ -16,6 +16,7 @@ import com.squareup.anvil.compiler.ClassScannerKsp.GeneratedProperty.ScopeProper
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.ksp.KSCallable
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.contextualToClassName
 import com.squareup.anvil.compiler.codegen.ksp.fqName
 import com.squareup.anvil.compiler.codegen.ksp.getAllCallables
 import com.squareup.anvil.compiler.codegen.ksp.isAbstract
@@ -24,7 +25,6 @@ import com.squareup.anvil.compiler.codegen.ksp.resolvableAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.codegen.ksp.type
-import com.squareup.kotlinpoet.ksp.toClassName
 import org.jetbrains.kotlin.name.FqName
 
 internal class ClassScannerKsp {
@@ -105,8 +105,8 @@ internal class ClassScannerKsp {
         // Check that the annotation really is present. It should always be the case, but it's
         // a safety net in case the generated properties are out of sync.
         clazz.resolvableAnnotations.any {
-          it.annotationType.resolve()
-            .toClassName().fqName == annotation && (scope == null || it.scope() == scope)
+          it.annotationType
+            .contextualToClassName().fqName == annotation && (scope == null || it.scope() == scope)
         }
       }
       .onEach { clazz ->
