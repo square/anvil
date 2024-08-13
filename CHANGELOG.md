@@ -3,6 +3,11 @@
 **Unreleased**
 --------------
 
+0.2.5
+-----
+
+_2024-08-13_
+
 - Source `AnvilKspExtension.supportedAnnotationTypes` in contribution merging when deciding when to defer.
 
 0.2.4
