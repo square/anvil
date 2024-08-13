@@ -139,6 +139,7 @@ internal class KspContributionMerger(
         addAll(it.splitToSequence(':').filterNot(String::isBlank))
       }
     }
+    addAll(extensions.flatMap { it.supportedAnnotationTypes })
     // contributesSubcomponentFqName is handled uniquely
   }.filterNotTo(mutableSetOf()) { it in MERGE_ANNOTATION_NAMES }
 
