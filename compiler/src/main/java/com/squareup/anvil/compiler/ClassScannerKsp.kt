@@ -5,7 +5,6 @@ import com.google.devtools.ksp.getClassDeclarationByName
 import com.google.devtools.ksp.getVisibility
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSName
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeReference
@@ -16,6 +15,7 @@ import com.squareup.anvil.compiler.ClassScannerKsp.GeneratedProperty.ScopeProper
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.codegen.ksp.KSCallable
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.KspTracer
 import com.squareup.anvil.compiler.codegen.ksp.contextualToClassName
 import com.squareup.anvil.compiler.codegen.ksp.fqName
 import com.squareup.anvil.compiler.codegen.ksp.getAllCallables
@@ -24,16 +24,20 @@ import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.resolvableAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.scope
+import com.squareup.anvil.compiler.codegen.ksp.trace
 import com.squareup.anvil.compiler.codegen.ksp.type
 import org.jetbrains.kotlin.name.FqName
 
-internal class ClassScannerKsp {
+internal class ClassScannerKsp(
+  tracer: KspTracer,
+) : KspTracer by tracer {
+  private val _hintCache =
+    RecordingCache<FqName, Map<KSType, Set<ContributedType>>>("Generated Property")
 
-  private val generatedPropertyCache =
-    mutableMapOf<CacheKey, Collection<List<GeneratedProperty.CacheEntry>>>()
-  private val parentComponentCache = mutableMapOf<FqName, FqName?>()
+  private val parentComponentCache = RecordingCache<FqName, FqName?>("ParentComponent")
+
   private val overridableParentComponentCallableCache =
-    mutableMapOf<FqName, List<KSCallable.CacheEntry>>()
+    RecordingCache<FqName, List<KSCallable.CacheEntry>>("Overridable ParentComponent Callable")
 
   /**
    * Externally-contributed contributions, which are important to track so that we don't try to
@@ -50,30 +54,35 @@ internal class ClassScannerKsp {
       .arguments.single().type!!.resolve()
   }
 
-  /**
-   * Returns a sequence of contributed classes from the dependency graph. Note that the result
-   * includes inner classes already.
-   */
-  @OptIn(KspExperimental::class)
-  fun findContributedClasses(
-    resolver: Resolver,
-    annotation: FqName,
-    scope: KSType?,
-  ): Sequence<KSClassDeclaration> {
-    val propertyGroups: Collection<List<GeneratedProperty>> =
-      generatedPropertyCache.getOrPut(CacheKey(annotation, resolver.hashCode())) {
-        resolver.getDeclarationsFromPackage(HINT_PACKAGE)
-          .filterIsInstance<KSPropertyDeclaration>()
-          .mapNotNull(GeneratedProperty::from)
-          .groupBy(GeneratedProperty::baseName)
-          .values
-          .map { it.map(GeneratedProperty::toCacheEntry) }
-      }.map { it.map { it.materialize(resolver) } }
+  private var hintCacheWarmer: (() -> Unit)? = null
+  private val hintCache: RecordingCache<FqName, Map<KSType, Set<ContributedType>>>
+    get() {
+      hintCacheWarmer?.invoke()
+      hintCacheWarmer = null
+      return _hintCache
+    }
+  private var roundStarted = false
 
-    return propertyGroups
-      .asSequence()
-      .mapNotNull { properties ->
-        val reference = properties.filterIsInstance<ReferenceProperty>()
+  fun startRound(resolver: Resolver) {
+    if (roundStarted) return
+    roundStarted = true
+    hintCacheWarmer = {
+      _hintCache += trace("Warming hint cache") {
+        generateHintCache(resolver)
+      }
+    }
+  }
+
+  @OptIn(KspExperimental::class)
+  private fun generateHintCache(
+    resolver: Resolver,
+  ): MutableMap<FqName, MutableMap<KSType, MutableSet<ContributedType>>> {
+    val contributedTypes = resolver.getDeclarationsFromPackage(HINT_PACKAGE)
+      .filterIsInstance<KSPropertyDeclaration>()
+      .mapNotNull(GeneratedProperty::from)
+      .groupBy(GeneratedProperty::baseName)
+      .map { (name, properties) ->
+        val refProp = properties.filterIsInstance<ReferenceProperty>()
           // In some rare cases we can see a generated property for the same identifier.
           // Filter them just in case, see https://github.com/square/anvil/issues/460 and
           // https://github.com/square/anvil/issues/565
@@ -89,61 +98,85 @@ internal class ClassScannerKsp {
               message = "Couldn't find any scope for a generated hint: ${properties[0].baseName}.",
             )
           }
-          .map {
+          .mapTo(mutableSetOf()) {
             it.declaration.type.resolveKClassType()
           }
 
-        // Look for the right scope even before resolving the class and resolving all its super
-        // types.
-        if (scope != null && scope !in scopes) return@mapNotNull null
+        ContributedType(
+          baseName = name,
+          reference = refProp.declaration.type
+            .resolveKClassType()
+            .resolveKSClassDeclaration()!!,
+          scopes = scopes,
+        )
+      }
 
-        reference.declaration.type
-          .resolveKClassType()
-          .resolveKSClassDeclaration()
-      }
-      .filter { clazz ->
-        // Check that the annotation really is present. It should always be the case, but it's
-        // a safety net in case the generated properties are out of sync.
-        clazz.resolvableAnnotations.any {
-          it.annotationType
-            .contextualToClassName().fqName == annotation && (scope == null || it.scope() == scope)
+    val contributedTypesByAnnotation =
+      mutableMapOf<FqName, MutableMap<KSType, MutableSet<ContributedType>>>()
+    for (contributed in contributedTypes) {
+      contributed.reference.resolvableAnnotations
+        .forEach { annotation ->
+          val type = annotation.annotationType
+            .contextualToClassName().fqName
+          if (type !in CONTRIBUTION_ANNOTATIONS) return@forEach
+          for (scope in contributed.scopes) {
+            contributedTypesByAnnotation.getOrPut(type, ::mutableMapOf)
+              .getOrPut(scope, ::mutableSetOf)
+              .add(contributed)
+          }
         }
-      }
-      .onEach { clazz ->
-        if (clazz.origin == Origin.KOTLIN_LIB || clazz.origin == Origin.JAVA_LIB) {
-          externalContributions.add(clazz.fqName)
+    }
+    return contributedTypesByAnnotation
+  }
+
+  data class ContributedType(
+    val baseName: String,
+    val reference: KSClassDeclaration,
+    val scopes: Set<KSType>,
+  )
+
+  fun endRound() {
+    hintCacheWarmer = null
+    roundStarted = false
+    log(_hintCache.statsString())
+    _hintCache.clear()
+  }
+
+  /**
+   * Returns a sequence of contributed classes from the dependency graph. Note that the result
+   * includes inner classes already.
+   */
+  fun findContributedClasses(
+    annotation: FqName,
+    scope: KSType?,
+  ): Sequence<KSClassDeclaration> {
+    return trace("Processing contributed classes for ${annotation.shortName().asString()}") {
+      val typesByScope = hintCache[annotation] ?: emptyMap()
+      typesByScope.filterKeys { scope == null || it == scope }
+        .values
+        .asSequence()
+        .flatten()
+        .map { it.reference }
+        .distinctBy { it.qualifiedName?.asString() }
+        .onEach { clazz ->
+          if (clazz.origin == Origin.KOTLIN_LIB || clazz.origin == Origin.JAVA_LIB) {
+            externalContributions.add(clazz.fqName)
+          }
         }
-      }
+    }
+  }
+
+  companion object {
+    private val CONTRIBUTION_ANNOTATIONS = setOf(
+      contributesToFqName,
+      contributesSubcomponentFqName,
+    )
   }
 
   private sealed class GeneratedProperty(
     val declaration: KSPropertyDeclaration,
     val baseName: String,
   ) {
-    fun toCacheEntry(): CacheEntry {
-      return CacheEntry(
-        declaration.qualifiedName!!,
-        baseName,
-        isReferenceProperty = this is ReferenceProperty,
-      )
-    }
-
-    data class CacheEntry(
-      val propertyName: KSName,
-      val baseName: String,
-      val isReferenceProperty: Boolean,
-    ) {
-      fun materialize(resolver: Resolver): GeneratedProperty {
-        val property = resolver.getPropertyDeclarationByName(propertyName, includeTopLevel = true)
-          ?: error("Could not materialize property ${propertyName.asString()}")
-        return if (isReferenceProperty) {
-          ReferenceProperty(property, baseName)
-        } else {
-          ScopeProperty(property, baseName)
-        }
-      }
-    }
-
     class ReferenceProperty(
       declaration: KSPropertyDeclaration,
       baseName: String,
@@ -179,11 +212,6 @@ internal class ClassScannerKsp {
     }
   }
 
-  private data class CacheKey(
-    val fqName: FqName,
-    val resolverHash: Int,
-  )
-
   /**
    * Finds the applicable parent component interface (if any) contributed to this component.
    */
@@ -192,12 +220,17 @@ internal class ClassScannerKsp {
     componentClass: KSClassDeclaration,
     creatorClass: KSClassDeclaration?,
     parentScopeType: KSType?,
-  ): KSClassDeclaration? {
+  ): KSClassDeclaration? = trace(
+    "Finding parent component interface for ${componentClass.simpleName.asString()}",
+  ) {
     val fqName = componentClass.fqName
 
     // Can't use getOrPut because it doesn't differentiate between absent and null
     if (fqName in parentComponentCache) {
+      parentComponentCache.hit()
       return parentComponentCache[fqName]?.let { resolver.getClassDeclarationByName(it.asString()) }
+    } else {
+      parentComponentCache.miss()
     }
 
     val contributedInnerComponentInterfaces = componentClass
@@ -213,7 +246,10 @@ internal class ClassScannerKsp {
       .toList()
 
     val componentInterface = when (contributedInnerComponentInterfaces.size) {
-      0 -> return null // TODO cache
+      0 -> {
+        parentComponentCache[fqName] = null
+        return null
+      }
       1 -> contributedInnerComponentInterfaces[0]
       else -> throw KspAnvilException(
         node = componentClass,
@@ -222,15 +258,20 @@ internal class ClassScannerKsp {
       )
     }
 
-    val callables = overridableParentComponentCallables(
-      resolver,
-      componentInterface,
-      componentClass.fqName,
-      creatorClass?.fqName,
-    )
+    val callables = trace("Finding overridable parent component callables") {
+      overridableParentComponentCallables(
+        resolver,
+        componentInterface,
+        componentClass.fqName,
+        creatorClass?.fqName,
+      )
+    }
 
     when (callables.count()) {
-      0 -> return null // TODO cache
+      0 -> {
+        parentComponentCache[fqName] = null
+        return null
+      }
       1 -> {
         // This is ok
       }
@@ -259,9 +300,12 @@ internal class ClassScannerKsp {
 
     // Can't use getOrPut because it doesn't differentiate between absent and null
     if (fqName in overridableParentComponentCallableCache) {
+      overridableParentComponentCallableCache.hit()
       return overridableParentComponentCallableCache.getValue(
         fqName,
       ).map { it.materialize(resolver) }
+    } else {
+      overridableParentComponentCallableCache.miss()
     }
 
     return parentComponent.getAllCallables()
@@ -274,5 +318,10 @@ internal class ClassScannerKsp {
       .also {
         overridableParentComponentCallableCache[fqName] = it.map(KSCallable::toCacheEntry)
       }
+  }
+
+  fun dumpStats() {
+    log(parentComponentCache.statsString())
+    log(overridableParentComponentCallableCache.statsString())
   }
 }

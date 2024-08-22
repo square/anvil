@@ -26,7 +26,7 @@ import com.squareup.anvil.compiler.codegen.ksp.declaringClass
 import com.squareup.anvil.compiler.codegen.ksp.exclude
 import com.squareup.anvil.compiler.codegen.ksp.find
 import com.squareup.anvil.compiler.codegen.ksp.fqName
-import com.squareup.anvil.compiler.codegen.ksp.getSymbolsWithAnnotations
+import com.squareup.anvil.compiler.codegen.ksp.getClassesWithAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isDaggerScope
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
@@ -37,6 +37,7 @@ import com.squareup.anvil.compiler.codegen.ksp.resolvableAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
 import com.squareup.anvil.compiler.codegen.ksp.scope
+import com.squareup.anvil.compiler.codegen.ksp.trace
 import com.squareup.anvil.compiler.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.daggerBindingModuleSpec
 import com.squareup.anvil.compiler.defaultParentComponentFunctionName
@@ -101,7 +102,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
   private val processedEventHashes = mutableSetOf<Int>()
   private val processedContributionClasses = mutableSetOf<ClassName>()
 
-  private var isFirstRound = true
+  private var hasComputedInitialContributions = false
   private var hasComputedEventsThisRound = false
   private val pendingEvents = mutableListOf<GenerateCodeEvent>()
 
@@ -247,7 +248,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
    * This is exposed internally for access in [KspContributionMerger], which may be running this
    * processor in an encapsulated fashion.
    */
-  fun computePendingEvents(resolver: Resolver) {
+  fun computePendingEvents(resolver: Resolver) = trace("Compute pending events") {
     if (hasComputedEventsThisRound) {
       // Already computed this round
       return
@@ -255,35 +256,42 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
       hasComputedEventsThisRound = true
     }
 
-    if (isFirstRound) {
-      isFirstRound = false
-      populateInitialContributions(resolver)
+    // Find new @MergeComponent (and similar triggers) that would cause generating new code.
+    triggers += trace("Computing triggers") {
+      generationTriggers
+        .flatMap { generationTrigger ->
+          resolver.getSymbolsWithAnnotation(generationTrigger.asString())
+            .filterIsInstance<KSClassDeclaration>()
+            .flatMap { annotatedClass ->
+              annotatedClass.find(generationTrigger.asString())
+                .map { annotation ->
+                  Trigger(annotatedClass, annotation.scope(), annotation.exclude().toSet())
+                }
+            }
+        }
     }
 
-    // Find new @MergeComponent (and similar triggers) that would cause generating new code.
-    triggers += generationTriggers
-      .flatMap { generationTrigger ->
-        resolver.getSymbolsWithAnnotation(generationTrigger.asString())
-          .filterIsInstance<KSClassDeclaration>()
-          .flatMap { annotatedClass ->
-            annotatedClass.find(generationTrigger.asString())
-              .map { annotation ->
-                Trigger(annotatedClass, annotation.scope(), annotation.exclude().toSet())
-              }
-          }
-      }
+    if (triggers.isNotEmpty() && !hasComputedInitialContributions) {
+      hasComputedInitialContributions = true
+      populateInitialContributions()
+    }
 
     // Find new contributed subcomponents in this module. If there's a trigger for them, then we
     // also need to generate code for them later.
-    contributions += resolver.getSymbolsWithAnnotations(contributesSubcomponentFqName)
-      // Factory in previous rounds' contributions too
-      .plus(previousRoundContributionClasses.map(resolver::getClassDeclarationByName))
-      .filterIsInstance<KSClassDeclaration>()
-      .distinctBy { it.qualifiedName?.asString() }
-      .map {
-        val annotation = it.find(contributesSubcomponentFqName.asString()).single()
-        Contribution(annotation)
-      }
+    contributions += trace("Compute contributions") {
+      resolver.getClassesWithAnnotations(contributesSubcomponentFqName)
+        // Factory in previous rounds' contributions too
+        .plus(
+          trace("Loading previous contributions") {
+            previousRoundContributionClasses.mapNotNull(resolver::getClassDeclarationByName)
+          },
+        )
+        .distinctBy { it.qualifiedName?.asString() }
+        .map {
+          val annotation = it.find(contributesSubcomponentFqName.asString()).single()
+          Contribution(annotation)
+        }
+    }
 
     // Find all replaced subcomponents and remember them.
     replacedReferences += contributions
@@ -413,12 +421,11 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
     }
   }
 
-  private fun populateInitialContributions(resolver: Resolver) {
+  private fun populateInitialContributions() = trace("Populate initial contributions") {
     // Find all contributed subcomponents from precompiled dependencies and generate the
     // necessary code eventually if there's a trigger.
     contributions += classScanner
       .findContributedClasses(
-        resolver = resolver,
         annotation = contributesSubcomponentFqName,
         scope = null,
       )

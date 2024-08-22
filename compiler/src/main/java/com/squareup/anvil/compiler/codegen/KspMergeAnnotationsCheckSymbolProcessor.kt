@@ -7,16 +7,14 @@ import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.squareup.anvil.compiler.codegen.KspMergeAnnotationsCheckSymbolProcessor.Companion.checkNotAnnotatedWithDaggerAnnotation
-import com.squareup.anvil.compiler.codegen.KspMergeAnnotationsCheckSymbolProcessor.Companion.checkSingleAnnotation
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.checkNoDuplicateScope
 import com.squareup.anvil.compiler.codegen.ksp.declaringClass
 import com.squareup.anvil.compiler.codegen.ksp.fqName
+import com.squareup.anvil.compiler.codegen.ksp.getClassesWithAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
-import com.squareup.anvil.compiler.codegen.ksp.getSymbolsWithAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.mergeAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
@@ -46,13 +44,12 @@ internal class KspMergeAnnotationsCheckSymbolProcessor(
   )
 
   override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-    resolver.getSymbolsWithAnnotations(
+    resolver.getClassesWithAnnotations(
       mergeComponentFqName,
       mergeSubcomponentFqName,
       mergeModulesFqName,
       mergeInterfacesFqName,
     )
-      .filterIsInstance<KSClassDeclaration>()
       .forEach(::validate)
 
     return emptyList()

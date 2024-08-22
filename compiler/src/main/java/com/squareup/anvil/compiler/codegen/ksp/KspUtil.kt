@@ -230,19 +230,22 @@ internal fun KSFunction.returnTypeOrNull(): KSType? =
     it.declaration.qualifiedName?.asString() != "kotlin.Unit"
   }
 
-internal fun Resolver.getSymbolsWithAnnotations(
+internal fun Resolver.getClassesWithAnnotations(
   vararg annotations: FqName,
-): Sequence<KSAnnotated> = annotations.asSequence()
-  .flatMap {
-    getSymbolsWithAnnotation(it.asString())
-  }
-  .distinct()
+): Sequence<KSClassDeclaration> = getClassesWithAnnotations(annotations.map { it.asString() })
 
-internal fun Resolver.getSymbolsWithAnnotations(
-  annotations: Set<String>,
-): Sequence<KSAnnotated> = annotations.asSequence()
+internal fun Resolver.getClassesWithAnnotations(
+  annotations: Collection<String>,
+): Sequence<KSClassDeclaration> = annotations.asSequence()
   .flatMap(::getSymbolsWithAnnotation)
-  .distinct()
+  .filterIsInstance<KSClassDeclaration>()
+  .distinctBy { it.qualifiedName?.asString() }
+
+internal fun Resolver.anySymbolsWithAnnotations(
+  annotations: Collection<String>,
+): Boolean {
+  return annotations.any { getSymbolsWithAnnotation(it).any() }
+}
 
 internal fun KSAnnotated.findAll(vararg annotations: String): List<KSAnnotation> {
   return annotations.flatMap { annotation ->

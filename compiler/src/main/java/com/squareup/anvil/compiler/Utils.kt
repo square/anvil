@@ -112,7 +112,16 @@ public const val OPTION_GENERATE_SHIMS: String = "anvil.ksp.generateShims"
  *
  * Value should be a colon-delimited list of fully qualified canonical class names.
  */
-public const val OPTION_EXTRA_CONTRIBUTING_ANNOTATIONS: String = "anvil-ksp-extraContributingAnnotations"
+public const val OPTION_EXTRA_CONTRIBUTING_ANNOTATIONS: String =
+  "anvil-ksp-extraContributingAnnotations"
+
+/**
+ * KSP option to print verbose information about Anvil's internal SymbolProcessors. Useful for
+ * debugging.
+ *
+ * Value should be a boolean string.
+ */
+public const val OPTION_VERBOSE: String = "anvil-ksp-verbose"
 
 /**
  * Returns the single element matching the given [predicate], or `null` if element was not found.
