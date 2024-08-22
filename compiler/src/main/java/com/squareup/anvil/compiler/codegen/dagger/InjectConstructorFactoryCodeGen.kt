@@ -79,11 +79,11 @@ internal object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
       constructor: KSFunctionDeclaration,
     ): FileSpec {
       val clazz = constructor.parentDeclaration as KSClassDeclaration
-      val constructorParameters = constructor.parameters.mapToConstructorParameters(
-        clazz.typeParameters.toTypeParameterResolver(),
-      )
+      val typeParameterResolver = clazz.typeParameters.toTypeParameterResolver()
+      val constructorParameters =
+        constructor.parameters.mapToConstructorParameters(typeParameterResolver)
       val memberInjectParameters = clazz.memberInjectParameters()
-      val typeParameters = clazz.typeParameters.map { it.toTypeVariableName() }
+      val typeParameters = clazz.typeParameters.map { it.toTypeVariableName(typeParameterResolver) }
 
       return generateFactoryClass(
         injectedClassName = clazz.toClassName(),

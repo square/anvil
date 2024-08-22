@@ -2750,6 +2750,27 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
+  // Regression test for https://github.com/ZacSweers/anvil/issues/56
+  @Test fun `nested generics are supported`() {
+    compile(
+      """
+      package com.squareup.test
+
+      import javax.inject.Inject
+      
+      interface Base
+      interface Wrapper<T : Base>
+      
+      class InjectClass<B : Base, W : Wrapper<B>> @Inject constructor()
+      """,
+    ) {
+      assertThat(
+        classLoader.loadClass("com.squareup.test.InjectClass")
+          .factoryClass(),
+      ).isNotNull()
+    }
+  }
+
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,

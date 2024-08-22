@@ -6,6 +6,7 @@
 - Significantly improve performance during component merging.
 - Add a new `anvil-ksp-verbose` KSP option to enable verbose logging, such as timing information.
 - **Fix:** Sort contributed interfaces when merging to ensure build cache idempotence. This also adds a few defensive stable sorts for other areas.
+- **Fix:** Fix resolution of nested class generics in constructor injection.
 
 0.2.5
 -----
