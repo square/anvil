@@ -109,6 +109,18 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
   fun hasPendingEvents(): Boolean = pendingEvents.isNotEmpty()
 
   override fun processChecked(resolver: Resolver): List<KSAnnotated> {
+    val deferred = processInternal(resolver)
+
+    // Reset the round
+    hasComputedEventsThisRound = false
+    pendingEvents.clear()
+    triggers.clear()
+    contributions.clear()
+
+    return deferred
+  }
+
+  private fun processInternal(resolver: Resolver): List<KSAnnotated> {
     computePendingEvents(resolver)
 
     if (pendingEvents.isEmpty()) {
@@ -228,13 +240,8 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
         spec.writeTo(env.codeGenerator, aggregating = true)
       }
 
-    hasComputedEventsThisRound = false
-    pendingEvents.clear()
-    triggers.clear()
-
     // For contributions we need to cache the ones we've seen so we can pull them back up next round
     previousRoundContributionClasses += contributions.mapNotNull { it.clazz.qualifiedName }
-    contributions.clear()
 
     return emptyList()
   }

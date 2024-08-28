@@ -3,6 +3,8 @@
 **Unreleased**
 --------------
 
+- **Fix**: Ensure round processing is correctly reset if no `@ContributeSubcomponent` triggers are found in a given round. This was an edge case that affected projects with custom code generators that generated triggers in a later round.
+
 0.2.6
 -----
 
