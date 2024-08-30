@@ -3,6 +3,7 @@
 **Unreleased**
 --------------
 
+- **New**: Add option to disable contributes subcomponent handling. This can be useful if working in a codebase or project that doesn't use `@ContributeSubcomponent` and thus doesn't need to scan the classpath for them while merging. More details can be found in the `## Options` section of `FORK.md`.
 - **Fix**: Ensure round processing is correctly reset if no `@ContributeSubcomponent` triggers are found in a given round. This was an edge case that affected projects with custom code generators that generated triggers in a later round.
 
 0.2.6

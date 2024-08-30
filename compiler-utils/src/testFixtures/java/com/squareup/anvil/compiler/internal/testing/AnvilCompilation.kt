@@ -182,6 +182,11 @@ public class AnvilCompilation internal constructor(
           kspArgs["generate-dagger-factories-only"] = generateDaggerFactoriesOnly.toString()
           kspArgs["disable-component-merging"] = disableComponentMerging.toString()
           kspArgs["merging-backend"] = componentMergingBackend.name.lowercase(Locale.US)
+          if (mode.options.isNotEmpty()) {
+            for ((key, value) in mode.options) {
+              kspArgs[key] = value
+            }
+          }
         }
       }
 

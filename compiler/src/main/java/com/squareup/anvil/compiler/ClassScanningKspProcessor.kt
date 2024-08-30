@@ -10,6 +10,7 @@ import com.squareup.anvil.compiler.ClassScanningKspProcessor.Provider
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.AnvilKspExtension
 import com.squareup.anvil.compiler.api.ComponentMergingBackend
+import com.squareup.anvil.compiler.codegen.KspContributesSubcomponentHandler
 import com.squareup.anvil.compiler.codegen.KspContributesSubcomponentHandlerSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
@@ -44,10 +45,16 @@ internal class ClassScanningKspProcessor(
       // Extensions to run
       val extensions = extensions(env, context)
 
+      val enableContributesSubcomponentHandling = env.options[OPTION_ENABLE_CONTRIBUTES_SUBCOMPONENT_MERGING]
+        ?.toBoolean() ?: true
+
       // ContributesSubcomponent handler, which will always be run but needs to conditionally run
       // within KspContributionMerger if it's going to run.
-      val contributesSubcomponentHandler =
+      val contributesSubcomponentHandler = if (enableContributesSubcomponentHandling) {
         KspContributesSubcomponentHandlerSymbolProcessor(env, classScanner)
+      } else {
+        KspContributesSubcomponentHandler.NoOp
+      }
 
       val componentMergingEnabled =
         !context.disableComponentMerging &&
@@ -57,9 +64,14 @@ internal class ClassScanningKspProcessor(
         // We're running component merging, so we need to run both and let KspContributionMerger
         // handle running the contributesSubcomponentHandler when needed.
         listOf(KspContributionMerger(env, classScanner, contributesSubcomponentHandler, extensions))
-      } else {
+      } else if (enableContributesSubcomponentHandling) {
         // We're only generating factories/contributessubcomponents, so only run it + extensions
-        listOf(contributesSubcomponentHandler, AnvilKspExtensionsRunner(extensions))
+        listOf(
+          contributesSubcomponentHandler as SymbolProcessor,
+          AnvilKspExtensionsRunner(extensions),
+        )
+      } else {
+        listOf(AnvilKspExtensionsRunner(extensions))
       }
       ClassScanningKspProcessor(env, delegates, classScanner)
     },

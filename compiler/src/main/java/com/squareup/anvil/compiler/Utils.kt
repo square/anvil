@@ -124,6 +124,14 @@ public const val OPTION_EXTRA_CONTRIBUTING_ANNOTATIONS: String =
 public const val OPTION_VERBOSE: String = "anvil-ksp-verbose"
 
 /**
+ * KSP option to disable `@ContributesSubcomponent` handling. If you don't use this feature in your
+ * project, you can set this to false. It is enabled by default.
+ *
+ * Value should be a boolean string.
+ */
+public const val OPTION_ENABLE_CONTRIBUTES_SUBCOMPONENT_MERGING: String = "anvil-ksp-enable-contributes-subcomponent-merging"
+
+/**
  * Returns the single element matching the given [predicate], or `null` if element was not found.
  * Unlike [singleOrNull] this method throws an exception if more than one element is found.
  */

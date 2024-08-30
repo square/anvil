@@ -62,6 +62,23 @@ import com.squareup.kotlinpoet.ksp.writeTo
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 
+internal interface KspContributesSubcomponentHandler {
+  fun computePendingEvents(resolver: Resolver)
+  fun hasPendingEvents(): Boolean
+  fun processChecked(resolver: Resolver): List<KSAnnotated>
+
+  companion object {
+    val NoOp = object : KspContributesSubcomponentHandler {
+      override fun computePendingEvents(resolver: Resolver) {
+      }
+
+      override fun hasPendingEvents(): Boolean = false
+
+      override fun processChecked(resolver: Resolver): List<KSAnnotated> = emptyList()
+    }
+  }
+}
+
 /**
  * Looks for `@MergeComponent`, `@MergeSubcomponent` or `@MergeModules` annotations and generates
  * the actual contributed subcomponents that specified these scopes as parent scope, e.g.
@@ -82,7 +99,7 @@ import org.jetbrains.kotlin.name.Name
 internal class KspContributesSubcomponentHandlerSymbolProcessor(
   override val env: SymbolProcessorEnvironment,
   private val classScanner: ClassScannerKsp,
-) : AnvilSymbolProcessor() {
+) : AnvilSymbolProcessor(), KspContributesSubcomponentHandler {
 
   /**
    * Detected triggers that trigger events with [contributions]
@@ -106,7 +123,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
   private var hasComputedEventsThisRound = false
   private val pendingEvents = mutableListOf<GenerateCodeEvent>()
 
-  fun hasPendingEvents(): Boolean = pendingEvents.isNotEmpty()
+  override fun hasPendingEvents(): Boolean = pendingEvents.isNotEmpty()
 
   override fun processChecked(resolver: Resolver): List<KSAnnotated> {
     val deferred = processInternal(resolver)
@@ -255,7 +272,7 @@ internal class KspContributesSubcomponentHandlerSymbolProcessor(
    * This is exposed internally for access in [KspContributionMerger], which may be running this
    * processor in an encapsulated fashion.
    */
-  fun computePendingEvents(resolver: Resolver) = trace("Compute pending events") {
+  override fun computePendingEvents(resolver: Resolver) = trace("Compute pending events") {
     if (hasComputedEventsThisRound) {
       // Already computed this round
       return

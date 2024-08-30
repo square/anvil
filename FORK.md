@@ -108,6 +108,14 @@ use the generated `Merged*` classes. See the Technical Design section for more d
 
 You _should_ be able to build now.
 
+## Options
+
+This fork contains some extra KSP options that can be used for different scenarios.
+
+- `anvil-ksp-verbose`: Enable verbose logging, such as processor timing information.
+- `anvil-ksp-extraContributingAnnotations`: A colon-delimited list of additional contributing annotations to scan for. More on this below.
+- `anvil-ksp-enable-contributes-subcomponent-merging`: Enable/disable scanning the classpath for `@ContributesSubcomponent` triggers. This can be useful if working in a codebase or project that doesn't use `@ContributeSubcomponent` and thus doesn't need to scan the classpath for them while merging. Default is true.
+
 ## Compatibility
 
 ### Using Anvil KSP without dagger-ksp

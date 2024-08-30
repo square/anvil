@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler.codegen
 import com.google.common.truth.Truth.assertThat
 import com.rickbusarow.kase.asClueCatching
 import com.squareup.anvil.annotations.MergeSubcomponent
+import com.squareup.anvil.compiler.OPTION_ENABLE_CONTRIBUTES_SUBCOMPONENT_MERGING
 import com.squareup.anvil.compiler.PARENT_COMPONENT
 import com.squareup.anvil.compiler.SUBCOMPONENT_FACTORY
 import com.squareup.anvil.compiler.SUBCOMPONENT_MODULE
@@ -23,6 +24,7 @@ import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
+import com.squareup.anvil.compiler.walkGeneratedFiles
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -33,6 +35,7 @@ import org.jetbrains.kotlin.descriptors.runtime.structure.classId
 import org.junit.Assume.assumeFalse
 import org.junit.Assume.assumeTrue
 import org.junit.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
@@ -84,6 +87,45 @@ class ContributesSubcomponentHandlerGeneratorTest(
       val annotation = anvilComponent.getAnnotation(MergeSubcomponent::class.java)
       assertThat(annotation).isNotNull()
       assertThat(annotation.scope).isEqualTo(Any::class)
+    }
+  }
+
+  @Test fun `can be disabled in KSP`() {
+    assumeTrue(componentProcessingMode == ComponentProcessingMode.NONE)
+    assumeTrue(mode is AnvilCompilationMode.Ksp)
+
+    val modeWithOption = (mode as AnvilCompilationMode.Ksp).copy(
+      options = mapOf(
+        OPTION_ENABLE_CONTRIBUTES_SUBCOMPONENT_MERGING to "false",
+      ),
+    )
+    compile(
+      """
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.MergeComponent
+  
+        @ContributesSubcomponent(Any::class, Unit::class)
+        interface SubcomponentInterface
+        
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """.trimIndent(),
+      mode = modeWithOption,
+    ) {
+      assertThrows<ClassNotFoundException> {
+        subcomponentInterface.anvilComponent(componentInterface)
+      }
+      // Assert we didn't generate 'anvil/component/com/squareup/test/componentinterface/SubcomponentInterface_....kt'
+      val files = walkGeneratedFiles(modeWithOption).toList()
+      assertThat(files.size).isEqualTo(1)
+      check(
+        files.single().nameWithoutExtension.equals(
+          "Com_squareup_test_SubcomponentInterface_7280b174",
+          ignoreCase = true,
+        ),
+      )
     }
   }
 

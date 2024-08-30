@@ -29,6 +29,7 @@ import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.annotations.internal.InternalContributedSubcomponentMarker
 import com.squareup.anvil.annotations.internal.InternalMergedTypeMarker
 import com.squareup.anvil.compiler.api.AnvilKspExtension
+import com.squareup.anvil.compiler.codegen.KspContributesSubcomponentHandler
 import com.squareup.anvil.compiler.codegen.KspContributesSubcomponentHandlerSymbolProcessor
 import com.squareup.anvil.compiler.codegen.KspMergeAnnotationsCheckSymbolProcessor
 import com.squareup.anvil.compiler.codegen.generatedAnvilSubcomponentClassId
@@ -131,7 +132,7 @@ private val COMMON_MERGE_ANNOTATION_NAMES = setOf(
 internal class KspContributionMerger(
   override val env: SymbolProcessorEnvironment,
   private val classScanner: ClassScannerKsp,
-  private val contributesSubcomponentHandler: KspContributesSubcomponentHandlerSymbolProcessor,
+  private val contributesSubcomponentHandler: KspContributesSubcomponentHandler,
   private val extensions: Set<AnvilKspExtension>,
 ) : AnvilSymbolProcessor() {
 
@@ -239,7 +240,7 @@ internal class KspContributionMerger(
         contributesSubcomponentHandler.computePendingEvents(resolver)
         if (contributesSubcomponentHandler.hasPendingEvents()) {
           shouldDefer = true
-          contributesSubcomponentHandler.process(resolver)
+          contributesSubcomponentHandler.processChecked(resolver)
         }
       }
     }
