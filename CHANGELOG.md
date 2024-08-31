@@ -6,7 +6,7 @@
 0.3.0
 -----
 
-_2024-08-22_
+_2024-08-31_
 
 - **New**: Add option to disable contributes subcomponent handling. This can be useful if working in a codebase or project that doesn't use `@ContributeSubcomponent` and thus doesn't need to scan the classpath for them while merging. More details can be found in the `## Options` section of `FORK.md`.
 - **Enhancement**: Improve hint caching during contribution merging. Hints from the classpath are now only searched for once rather than every round.
