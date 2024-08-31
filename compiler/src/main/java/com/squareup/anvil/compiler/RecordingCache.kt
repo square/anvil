@@ -3,7 +3,7 @@ package com.squareup.anvil.compiler
 import kotlin.math.roundToInt
 
 internal class RecordingCache<K, V>(private val name: String) {
-  val cache: MutableMap<K, V> = mutableMapOf()
+  private val cache: MutableMap<K, V> = mutableMapOf()
   private var hits = 0
   private var misses = 0
 
@@ -52,5 +52,9 @@ internal class RecordingCache<K, V>(private val name: String) {
 
   operator fun plusAssign(values: Map<K, V>) {
     cache += values
+  }
+
+  fun mutate(mutation: (MutableMap<K, V>) -> Unit) {
+    mutation(cache)
   }
 }

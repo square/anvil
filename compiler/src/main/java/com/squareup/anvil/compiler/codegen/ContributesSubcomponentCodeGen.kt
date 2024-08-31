@@ -40,6 +40,7 @@ import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internalAnvilHintMarkerClassName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
 import com.squareup.kotlinpoet.KModifier.PUBLIC
@@ -436,6 +437,7 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
               name = propertyName + REFERENCE_SUFFIX,
               type = KClass::class.asClassName().parameterizedBy(className),
             )
+            .addAnnotation(internalAnvilHintMarkerClassName)
             .initializer("%T::class", className)
             .addModifiers(PUBLIC)
             .build(),
@@ -447,6 +449,7 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
               name = propertyName + SCOPE_SUFFIX,
               type = KClass::class.asClassName().parameterizedBy(parentScope),
             )
+            .addAnnotation(internalAnvilHintMarkerClassName)
             .initializer("%T::class", parentScope)
             .addModifiers(PUBLIC)
             .build(),

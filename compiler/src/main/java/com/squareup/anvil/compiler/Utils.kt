@@ -8,6 +8,7 @@ import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
+import com.squareup.anvil.annotations.internal.InternalAnvilHintMarker
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.fqName
@@ -54,6 +55,8 @@ internal val contributesSubcomponentFactoryFqName = ContributesSubcomponent.Fact
 internal val contributesSubcomponentFactoryClassName =
   ContributesSubcomponent.Factory::class.asClassName()
 internal val internalBindingMarkerFqName = InternalBindingMarker::class.fqName
+internal val internalAnvilHintMarkerFqName = InternalAnvilHintMarker::class.fqName
+internal val internalAnvilHintMarkerClassName = InternalAnvilHintMarker::class.asClassName()
 internal val daggerComponentFqName = Component::class.fqName
 internal val daggerComponentFactoryFqName = Component.Factory::class.fqName
 internal val daggerComponentBuilderFqName = Component.Builder::class.fqName

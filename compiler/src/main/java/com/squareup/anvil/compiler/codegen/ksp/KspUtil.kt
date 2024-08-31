@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen.ksp
 
 import com.google.devtools.ksp.KspExperimental
+import com.google.devtools.ksp.getClassDeclarationByName
 import com.google.devtools.ksp.getDeclaredFunctions
 import com.google.devtools.ksp.isAnnotationPresent
 import com.google.devtools.ksp.isConstructor
@@ -329,18 +330,21 @@ internal fun KSAnnotated.mergeAnnotations(): List<KSAnnotation> {
 /**
  * Returns a sequence of [KSAnnotation] types that are not error types.
  */
-internal val KSAnnotated.resolvableAnnotations: Sequence<KSAnnotation> get() = annotations
-  .filterNot { it.annotationType.resolve().isError }
+internal val KSAnnotated.resolvableAnnotations: Sequence<KSAnnotation>
+  get() = annotations
+    .filterNot { it.annotationType.resolve().isError }
 
-internal val KSAnnotation.fqName: FqName get() =
-  annotationType.resolve().resolveKSClassDeclaration()!!.fqName
+internal val KSAnnotation.fqName: FqName
+  get() =
+    annotationType.resolve().resolveKSClassDeclaration()!!.fqName
 internal val KSType.fqName: FqName get() = resolveKSClassDeclaration()!!.fqName
-internal val KSClassDeclaration.fqName: FqName get() {
-  // Call resolveKSClassDeclaration to ensure we follow typealiases
-  return resolveKSClassDeclaration()!!
-    .toClassName()
-    .fqName
-}
+internal val KSClassDeclaration.fqName: FqName
+  get() {
+    // Call resolveKSClassDeclaration to ensure we follow typealiases
+    return resolveKSClassDeclaration()!!
+      .toClassName()
+      .fqName
+  }
 
 /**
  * A contextual alternative to [KSTypeReference.toTypeName] that uses [KSType.contextualToTypeName]
@@ -392,3 +396,41 @@ private fun KSType.checkErrorType(origin: KSNode) {
 
 internal val KSFunctionDeclaration.reportableReturnTypeNode: KSNode
   get() = returnType ?: this
+
+internal fun Resolver.getClassDeclarationByName(className: ClassName): KSClassDeclaration? {
+  return getClassDeclarationByName(className.canonicalName)
+}
+
+internal fun Resolver.requireClassDeclaration(className: ClassName, node: (() -> KSNode)?): KSClassDeclaration {
+  return getClassDeclarationByName(className)
+    ?: run {
+      val message = "Could not find class '$className'"
+      if (node != null) {
+        throw KspAnvilException(
+          message = message,
+          node = node(),
+        )
+      } else {
+        error(message)
+      }
+    }
+}
+
+internal fun Resolver.getClassDeclarationByName(fqName: FqName): KSClassDeclaration? {
+  return getClassDeclarationByName(fqName.asString())
+}
+
+internal fun Resolver.requireClassDeclaration(fqName: FqName, node: KSNode?): KSClassDeclaration {
+  return getClassDeclarationByName(fqName)
+    ?: run {
+      val message = "Could not find class '${fqName.asString()}'"
+      if (node != null) {
+        throw KspAnvilException(
+          message = message,
+          node = node,
+        )
+      } else {
+        error(message)
+      }
+    }
+}

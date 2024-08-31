@@ -50,6 +50,7 @@ import com.squareup.anvil.compiler.codegen.ksp.find
 import com.squareup.anvil.compiler.codegen.ksp.findAll
 import com.squareup.anvil.compiler.codegen.ksp.fqName
 import com.squareup.anvil.compiler.codegen.ksp.getAllCallables
+import com.squareup.anvil.compiler.codegen.ksp.getClassDeclarationByName
 import com.squareup.anvil.compiler.codegen.ksp.getClassesWithAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.includes
@@ -61,10 +62,12 @@ import com.squareup.anvil.compiler.codegen.ksp.modules
 import com.squareup.anvil.compiler.codegen.ksp.parentScope
 import com.squareup.anvil.compiler.codegen.ksp.replaces
 import com.squareup.anvil.compiler.codegen.ksp.reportableReturnTypeNode
+import com.squareup.anvil.compiler.codegen.ksp.requireClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.resolvableAnnotations
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
 import com.squareup.anvil.compiler.codegen.ksp.scope
+import com.squareup.anvil.compiler.codegen.ksp.scopeClassName
 import com.squareup.anvil.compiler.codegen.ksp.superTypesExcludingAny
 import com.squareup.anvil.compiler.codegen.ksp.toFunSpec
 import com.squareup.anvil.compiler.codegen.ksp.toPropertySpec
@@ -76,6 +79,7 @@ import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.findRawType
 import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.mergedClassName
+import com.squareup.anvil.compiler.internal.reference.asClassId
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.CodeBlock
@@ -181,17 +185,17 @@ internal class KspContributionMerger(
     // we need to process now and just point at what will eventually be generated
 
     // Mapping of scopes to contributing interfaces in this round
-    val contributedInterfacesInRound = mutableMapOf<KSType, MutableList<KSClassDeclaration>>()
+    val contributedInterfacesInRound = mutableMapOf<ClassName, MutableList<KSClassDeclaration>>()
 
     // Mapping of scopes to contributing modules in this round
-    val contributedModulesInRound = mutableMapOf<KSType, MutableList<KSClassDeclaration>>()
+    val contributedModulesInRound = mutableMapOf<ClassName, MutableList<KSClassDeclaration>>()
 
     trace("Finding in-round contributions") {
       resolver.getClassesWithAnnotations(contributesToFqName)
         .forEach { contributedTypeInRound ->
           val contributesToScopes =
             contributedTypeInRound.getKSAnnotationsByType(ContributesTo::class)
-              .map(KSAnnotation::scope)
+              .map(KSAnnotation::scopeClassName)
               .toSet()
           if (contributesToScopes.isNotEmpty()) {
             val isModule = contributedTypeInRound.isAnnotationPresent<Module>() ||
@@ -270,8 +274,8 @@ internal class KspContributionMerger(
   private fun processClass(
     resolver: Resolver,
     mergeAnnotatedClass: KSClassDeclaration,
-    contributedInterfacesInRound: Map<KSType, List<KSClassDeclaration>>,
-    contributedModulesInRound: Map<KSType, List<KSClassDeclaration>>,
+    contributedInterfacesInRound: Map<ClassName, List<KSClassDeclaration>>,
+    contributedModulesInRound: Map<ClassName, List<KSClassDeclaration>>,
   ): KSAnnotated? = trace("Processing ${mergeAnnotatedClass.simpleName.asString()}") {
     val mergeComponentAnnotations = mergeAnnotatedClass
       .findAll(mergeComponentFqName.asString(), mergeSubcomponentFqName.asString())
@@ -370,7 +374,7 @@ internal class KspContributionMerger(
     mergeAnnotatedClass: KSClassDeclaration,
     interfaceMergerAnnotations: List<KSAnnotation>,
     originatingDeclarations: MutableList<KSClassDeclaration>,
-    contributedInterfacesInRound: Map<KSType, List<KSClassDeclaration>>,
+    contributedInterfacesInRound: Map<ClassName, List<KSClassDeclaration>>,
   ): ContributedInterfacesResult {
     if (interfaceMergerAnnotations.isEmpty()) {
       return ContributedInterfacesResult.EMPTY
@@ -428,12 +432,12 @@ internal class KspContributionMerger(
     resolver: Resolver,
     declaration: KSClassDeclaration,
     isModule: Boolean,
-    contributedModulesInRound: Map<KSType, List<KSClassDeclaration>>,
+    contributedModulesInRound: Map<ClassName, List<KSClassDeclaration>>,
     directMergeSubcomponents: List<DirectMergedSubcomponent>,
   ): AnnotationSpec {
     val daggerAnnotationClassName = annotations[0].daggerAnnotationClassName
 
-    val scopes = annotations.map(KSAnnotation::scope)
+    val scopes = annotations.map(KSAnnotation::scopeClassName)
     // Any modules that are @MergeModules, we need to include their generated modules instead
     val predefinedModules = if (isModule) {
       annotations.flatMap(KSAnnotation::includes)
@@ -447,12 +451,12 @@ internal class KspContributionMerger(
           moduleClassName
         } else {
           moduleClassName.mergedClassName().also { mergedModuleClass ->
-            if (includedModule.asType(emptyList()) in contributedModulesInRound) {
+            if (includedModule.toClassName() in contributedModulesInRound) {
               // Module is in this round, so the root module is the one we should add
               originatingDeclarations += includedModule
             } else {
               // Not in this round, try to look up the merged class
-              resolver.getClassDeclarationByName(mergedModuleClass.canonicalName)?.let {
+              resolver.getClassDeclarationByName(mergedModuleClass)?.let {
                 originatingDeclarations += it
               }
             }
@@ -482,12 +486,19 @@ internal class KspContributionMerger(
     val allContributesAnnotations: List<KSAnnotation> = annotations
       .asSequence()
       .flatMap { annotation ->
-        val scope = annotation.scope()
+        val scope = annotation.scopeClassName()
         classScanner
           .findContributedClasses(
             annotation = contributesToFqName,
             scope = scope,
           )
+          .filter {
+            it.contributesToData.isNotEmpty() &&
+              it.scopes.any { it in scopes }
+          }
+          .map {
+            resolver.requireClassDeclaration(it.className, node = null)
+          }
           .plus(
             contributorsInRound(resolver, contributedModulesInRound, scope, isModule = true),
           )
@@ -495,7 +506,7 @@ internal class KspContributionMerger(
       .flatMap { contributedClass ->
         contributedClass
           .find(annotationName = contributesToFqName.asString())
-          .filter { it.scope() in scopes }
+          .filter { it.scopeClassName() in scopes }
       }
       .filter { contributesAnnotation ->
         val contributedClass = contributesAnnotation.declaringClass
@@ -551,11 +562,11 @@ internal class KspContributionMerger(
               contributesBindingFqName.asString(),
               contributesMultibindingFqName.asString(),
             )
-            .map(KSAnnotation::scope)
+            .map(KSAnnotation::scopeClassName)
             .plus(
               excludedClass
                 .find(contributesSubcomponentFqName.asString())
-                .map(KSAnnotation::parentScope),
+                .map { it.parentScope().toClassName() },
             )
             .any { scope -> scope in scopes }
 
@@ -567,7 +578,7 @@ internal class KspContributionMerger(
                   scopes.joinToString(
                     prefix = "[",
                     postfix = "]",
-                  ) { it.resolveKSClassDeclaration()?.qualifiedName?.asString()!! }
+                  ) { it.toString() }
                 } " +
                 "wants to exclude ${excludedClass.qualifiedName?.asString()}, but the excluded class isn't " +
                 "contributed to the same scope.",
@@ -700,7 +711,7 @@ internal class KspContributionMerger(
             .flatten()
             .map(ContributedBinding<*>::bindingModule)
             .map { bindingModule ->
-              resolver.getClassDeclarationByName(bindingModule.canonicalName)!!
+              resolver.requireClassDeclaration(bindingModule, node = null)
                 .also {
                   originatingDeclarations += it
                 }
@@ -765,31 +776,44 @@ internal class KspContributionMerger(
     originatingDeclarations: MutableList<KSClassDeclaration>,
     resolver: Resolver,
     mergeAnnotatedClass: KSClassDeclaration,
-    contributedInterfacesInRound: Map<KSType, List<KSClassDeclaration>>,
+    contributedInterfacesInRound: Map<ClassName, List<KSClassDeclaration>>,
   ): List<ClassName> {
-    val scopes: Set<KSType> = mergeAnnotations.mapTo(mutableSetOf(), KSAnnotation::scope)
+    val scopes: Set<ClassName> = mergeAnnotations.mapToSet(transform = KSAnnotation::scopeClassName)
     val contributesAnnotations = trace("Finding contributed interfaces from ClassScanner") {
       mergeAnnotations
         .flatMap { annotation ->
-          val scope = annotation.scope()
+          val scope = annotation.scopeClassName()
           classScanner
             .findContributedClasses(
               annotation = contributesToFqName,
               scope = scope,
             )
+            .filter { contribution ->
+              contribution.isInterface && !contribution.isDaggerModule
+            }
+            .filter { it.scopes.any { it in scopes } }
+            .filter { it.contributesToData.isNotEmpty() }
+            .flatMap {
+              val declaration = resolver.requireClassDeclaration(
+                it.className,
+                node = { annotation },
+              )
+              declaration.findAll(contributesToFqName.asString())
+            }
             .plus(
-              contributorsInRound(resolver, contributedInterfacesInRound, scope, isModule = false),
+              contributorsInRound(resolver, contributedInterfacesInRound, scope, isModule = false)
+                .filter { clazz ->
+                  clazz.isInterface() && clazz.findAll(daggerModuleFqName.asString())
+                    .singleOrNull() == null
+                }
+                .flatMap { clazz ->
+                  clazz
+                    .findAll(contributesToFqName.asString())
+                    .filter { it.scopeClassName() in scopes }
+                },
             )
         }
         .asSequence()
-        .filter { clazz ->
-          clazz.isInterface() && clazz.findAll(daggerModuleFqName.asString()).singleOrNull() == null
-        }
-        .flatMap { clazz ->
-          clazz
-            .findAll(contributesToFqName.asString())
-            .filter { it.scope() in scopes }
-        }
         .onEach { contributeAnnotation ->
           val contributedClass = contributeAnnotation.declaringClass
           if (contributedClass.getVisibility() != Visibility.PUBLIC) {
@@ -837,7 +861,7 @@ internal class KspContributionMerger(
                   contributesBindingFqName.asString(),
                   contributesMultibindingFqName.asString(),
                 )
-                .map(KSAnnotation::scope)
+                .map(KSAnnotation::scopeClassName)
                 .any { scope -> scope in scopes }
 
               if (!contributesToOurScope) {
@@ -848,7 +872,7 @@ internal class KspContributionMerger(
                       scopes.joinToString(
                         prefix = "[",
                         postfix = "]",
-                      ) { it.resolveKSClassDeclaration()?.qualifiedName?.asString()!! }
+                      ) { it.toString() }
                     } " +
                     "wants to replace ${classToReplace.qualifiedName?.asString()}, but the replaced class isn't " +
                     "contributed to the same scope.",
@@ -873,10 +897,10 @@ internal class KspContributionMerger(
               contributesBindingFqName.asString(),
               contributesMultibindingFqName.asString(),
             )
-            .map(KSAnnotation::scope)
+            .map(KSAnnotation::scopeClassName)
             .plus(
               excludedClass.findAll(contributesSubcomponentFqName.asString())
-                .map(KSAnnotation::parentScope),
+                .map { it.parentScope().toClassName() },
             )
             .any { scope -> scope in scopes }
 
@@ -887,7 +911,7 @@ internal class KspContributionMerger(
                   scopes.joinToString(
                     prefix = "[",
                     postfix = "]",
-                  ) { it.resolveKSClassDeclaration()?.qualifiedName?.asString()!! }
+                  ) { it.toString() }
                 } " +
                 "wants to exclude ${excludedClass.qualifiedName?.asString()}, but the excluded class isn't " +
                 "contributed to the same scope.",
@@ -950,7 +974,7 @@ internal class KspContributionMerger(
             resolver = resolver,
           ).onEach { contributedInterface ->
             // If it's resolvable (may not be yet in this round), add it to originating declarations
-            resolver.getClassDeclarationByName(contributedInterface.canonicalName)?.let {
+            resolver.getClassDeclarationByName(contributedInterface)?.let {
               originatingDeclarations += it
             }
           },
@@ -1060,7 +1084,7 @@ internal class KspContributionMerger(
           // We have to do this wonky name resolution because the parent component of the target
           // merged subcomponent may not be generated yet.
           val declarationToSearch = contributedSubcomponentData?.originClass?.let {
-            resolver.getClassDeclarationByName(it.canonicalName)
+            resolver.getClassDeclarationByName(it)
           } ?: targetOrigin
           // If we have a contributed subcomponent for this type, we can use its known
           // subcomponent data
@@ -1194,7 +1218,10 @@ internal class KspContributionMerger(
         if (contributedSubcomponentData != null) {
           val contributor = contributedSubcomponentData.contributor
           if (contributor != null) {
-            val parentClass = resolver.getClassDeclarationByName(contributor.canonicalName)!!
+            val parentClass = resolver.requireClassDeclaration(
+              contributor,
+              node = { mergeAnnotatedClass },
+            )
             originatingDeclarations += parentClass
             var returnType = generatedComponentClassName
             if (contributedSubcomponentData.componentFactory != null && mergedFactoryClassName != null) {
@@ -1317,7 +1344,7 @@ internal class KspContributionMerger(
 
   private fun findContributedSubcomponentModules(
     declaration: KSClassDeclaration,
-    scopes: List<KSType>,
+    scopes: List<ClassName>,
     resolver: Resolver,
   ): Sequence<ClassName> {
     return classScanner
@@ -1325,9 +1352,8 @@ internal class KspContributionMerger(
         annotation = contributesSubcomponentFqName,
         scope = null,
       )
-      .filter { clazz ->
-        clazz.find(contributesSubcomponentFqName.asString())
-          .any { it.parentScope().asType(emptyList()) in scopes }
+      .filter { contribution ->
+        contribution.contributedSubcomponentData!!.parentScope in scopes
       }
       .flatMap { contributedSubcomponent ->
         //
@@ -1338,7 +1364,7 @@ internal class KspContributionMerger(
         // @MergeSubcomponent(scope = Any::class)
         // interface UserComponent_0536E4Be : UserComponent
         //
-        val generatedMergeSubcomponentId = contributedSubcomponent.classId
+        val generatedMergeSubcomponentId = contributedSubcomponent.className.asClassId()
           .generatedAnvilSubcomponentClassId(declaration.classId)
 
         val generatedMergeSubcomponentDeclaration = resolver.getClassDeclarationByName(
@@ -1405,7 +1431,7 @@ internal class KspContributionMerger(
     val contributedCallables =
       contributedInterfaces.asSequence()
         .mapNotNull { contributedInterface ->
-          resolver.getClassDeclarationByName(contributedInterface.canonicalName)
+          resolver.getClassDeclarationByName(contributedInterface)
         }
         .flatMap { it.getAllCallables() }
     return (mergeAnnotatedComponent.getAllCallables() + contributedCallables)
@@ -1457,7 +1483,7 @@ internal class KspContributionMerger(
 
   private fun findContributedSubcomponentParentInterfaces(
     clazz: KSClassDeclaration,
-    scopes: Set<KSType>,
+    scopes: Set<ClassName>,
     resolver: Resolver,
   ): Sequence<ClassName> = trace("Finding contributed subcomponent parent interfaces") {
     return classScanner
@@ -1466,8 +1492,7 @@ internal class KspContributionMerger(
         scope = null,
       )
       .filter {
-        it.atLeastOneAnnotation(contributesSubcomponentFqName.asString()).single()
-          .parentScope().asType(emptyList()) in scopes
+        it.contributedSubcomponentData!!.parentScope in scopes
       }
       .flatMap { contributedSubcomponent ->
         //
@@ -1479,7 +1504,7 @@ internal class KspContributionMerger(
         // interface UserComponent_0536E4Be : UserComponent
         //
 
-        val generatedMergeSubcomponentId = contributedSubcomponent.classId
+        val generatedMergeSubcomponentId = contributedSubcomponent.className.asClassId()
           .generatedAnvilSubcomponentClassId(clazz.classId)
 
         val generatedMergeSubcomponentDeclaration = resolver.getClassDeclarationByName(
@@ -1533,7 +1558,7 @@ internal class KspContributionMerger(
 private fun checkSameScope(
   contributedClass: KSClassDeclaration,
   classToReplace: KSClassDeclaration,
-  scopes: List<KSType>,
+  scopes: List<ClassName>,
 ) {
   val contributesToOurScope = classToReplace
     .findAll(
@@ -1541,7 +1566,7 @@ private fun checkSameScope(
       contributesBindingFqName.asString(),
       contributesMultibindingFqName.asString(),
     )
-    .map(KSAnnotation::scope)
+    .map(KSAnnotation::scopeClassName)
     .any { scope -> scope in scopes }
 
   if (!contributesToOurScope) {
@@ -1553,7 +1578,7 @@ private fun checkSameScope(
           scopes.joinToString(
             prefix = "[",
             postfix = "]",
-          ) { it.resolveKSClassDeclaration()?.qualifiedName?.asString()!! }
+          ) { it.toString() }
         } " +
         "wants to replace ${classToReplace.qualifiedName?.asString()}, but the replaced class isn't " +
         "contributed to the same scope.",
@@ -1699,7 +1724,7 @@ private fun KSClassDeclaration.resolveMergedType(resolver: Resolver): KSClassDec
     isAnnotationPresent<MergeSubcomponent>()
   return if (isMergedType) {
     resolver.getClassDeclarationByName(
-      toClassName().mergedClassName().canonicalName,
+      toClassName().mergedClassName(),
     ) ?: throw KspAnvilException(
       message = "Could not find merged module/interface for ${qualifiedName?.asString()}",
       node = this,
@@ -1711,11 +1736,12 @@ private fun KSClassDeclaration.resolveMergedType(resolver: Resolver): KSClassDec
 
 private fun contributorsInRound(
   resolver: Resolver,
-  contributedSymbolsInRound: Map<KSType, List<KSClassDeclaration>>,
-  scope: KSType,
+  contributedSymbolsInRound: Map<ClassName, List<KSClassDeclaration>>,
+  scope: ClassName,
   isModule: Boolean,
-): List<KSClassDeclaration> {
+): Sequence<KSClassDeclaration> {
   return contributedSymbolsInRound[scope].orEmpty()
+    .asSequence()
     .map { contributedSymbol ->
       val mergeAnnotation = contributedSymbol
         .getKSAnnotationsByType(MergeModules::class)
@@ -2018,7 +2044,7 @@ private data class ContributedSubcomponentData(
 
   fun resolveCreatorDeclaration(resolver: Resolver): KSClassDeclaration? {
     val creator = componentFactory ?: return null
-    return resolver.getClassDeclarationByName(creator.canonicalName)
+    return resolver.getClassDeclarationByName(creator)
   }
 
   companion object {

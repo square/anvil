@@ -45,8 +45,9 @@ internal class ClassScanningKspProcessor(
       // Extensions to run
       val extensions = extensions(env, context)
 
-      val enableContributesSubcomponentHandling = env.options[OPTION_ENABLE_CONTRIBUTES_SUBCOMPONENT_MERGING]
-        ?.toBoolean() ?: true
+      val enableContributesSubcomponentHandling =
+        env.options[OPTION_ENABLE_CONTRIBUTES_SUBCOMPONENT_MERGING]
+          ?.toBoolean() ?: true
 
       // ContributesSubcomponent handler, which will always be run but needs to conditionally run
       // within KspContributionMerger if it's going to run.
@@ -80,7 +81,12 @@ internal class ClassScanningKspProcessor(
   override fun processChecked(resolver: Resolver): List<KSAnnotated> {
     classScanner.startRound(resolver)
     return delegates.flatMap { it.process(resolver) }
-      .also { classScanner.endRound() }
+      .also {
+        if (it.isNotEmpty()) {
+          classScanner.ensureInRoundHintsCaptured()
+        }
+        classScanner.endRound()
+      }
   }
 
   override fun finish() {

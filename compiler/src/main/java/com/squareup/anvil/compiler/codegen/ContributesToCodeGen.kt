@@ -37,6 +37,7 @@ import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionC
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
+import com.squareup.anvil.compiler.internalAnvilHintMarkerClassName
 import com.squareup.anvil.compiler.mergeModulesFqName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FileSpec
@@ -77,6 +78,7 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
             name = propertyName + REFERENCE_SUFFIX,
             type = KClass::class.asClassName().parameterizedBy(className),
           )
+          .addAnnotation(internalAnvilHintMarkerClassName)
           .initializer("%T::class", className)
           .addModifiers(PUBLIC)
           .build(),
@@ -89,6 +91,7 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
               name = propertyName + SCOPE_SUFFIX + index,
               type = KClass::class.asClassName().parameterizedBy(scope),
             )
+            .addAnnotation(internalAnvilHintMarkerClassName)
             .initializer("%T::class", scope)
             .addModifiers(PUBLIC)
             .build(),

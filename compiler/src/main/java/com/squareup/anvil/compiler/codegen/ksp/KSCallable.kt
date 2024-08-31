@@ -1,6 +1,5 @@
 package com.squareup.anvil.compiler.codegen.ksp
 
-import com.google.devtools.ksp.getClassDeclarationByName
 import com.google.devtools.ksp.isAbstract
 import com.google.devtools.ksp.processing.Resolver
 import com.google.devtools.ksp.symbol.KSClassDeclaration
@@ -22,8 +21,7 @@ internal sealed class KSCallable(
     val isFunction: Boolean,
   ) {
     fun materialize(resolver: Resolver): KSCallable {
-      val clazz = resolver.getClassDeclarationByName(containingClass.asString())
-        ?: error("Could not materialize class $containingClass")
+      val clazz = resolver.requireClassDeclaration(containingClass, node = null)
       return if (isFunction) {
         val declaration =
           clazz.getAllFunctions().find { it.qualifiedName?.asString() == declarationName }

@@ -4,6 +4,9 @@
 --------------
 
 - **New**: Add option to disable contributes subcomponent handling. This can be useful if working in a codebase or project that doesn't use `@ContributeSubcomponent` and thus doesn't need to scan the classpath for them while merging. More details can be found in the `## Options` section of `FORK.md`.
+- **Enhancement**: Improve hint caching during contribution merging. Hints from the classpath are now only searched for once rather than every round.
+- **Enhancement**: Improve error messaging when class lookups fail.
+- **Fix**: Don't use `ClassName.toString()` for `KSClassDeclaration` lookups.
 - **Fix**: Ensure round processing is correctly reset if no `@ContributeSubcomponent` triggers are found in a given round. This was an edge case that affected projects with custom code generators that generated triggers in a later round.
 
 0.2.6
