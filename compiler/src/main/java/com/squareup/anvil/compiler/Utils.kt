@@ -221,3 +221,10 @@ internal val ClassName.fqName: FqName
 
 internal inline fun <T, C : Collection<T>, O> C.ifNotEmpty(body: (C) -> O?): O? =
   if (isNotEmpty()) body(this) else null
+
+internal infix fun <E> MutableList<E>.addWithoutCopy(e: E) = apply {
+  add(e)
+}
+internal infix fun <E> MutableList<E>.addAllWithoutCopy(e: Iterable<E>) = apply {
+  addAll(e)
+}

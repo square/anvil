@@ -11,6 +11,8 @@ import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Visibility
+import com.squareup.anvil.compiler.addAllWithoutCopy
+import com.squareup.anvil.compiler.addWithoutCopy
 import com.squareup.anvil.compiler.assistedFqName
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.contextualToTypeName
@@ -118,13 +120,14 @@ private fun ParameterReference.toConstructorParameter(
 @JvmName("mapToConstructorParametersKsp")
 internal fun List<KSValueParameter>.mapToConstructorParameters(
   typeParameterResolver: TypeParameterResolver,
-): List<ConstructorParameter> {
-  return fold(listOf()) { acc, callableReference ->
-    acc + callableReference.toConstructorParameter(
-      callableReference.name!!.asString()
+): List<ConstructorParameter>? {
+  return fold(mutableListOf()) { acc, callableReference ->
+    val param = callableReference.toConstructorParameter(
+      uniqueName = callableReference.name!!.asString()
         .uniqueParameterName(acc),
-      typeParameterResolver,
-    )
+      typeParameterResolver = typeParameterResolver,
+    ) ?: return null
+    acc addWithoutCopy param
   }
 }
 
@@ -132,8 +135,9 @@ internal fun List<KSValueParameter>.mapToConstructorParameters(
 private fun KSValueParameter.toConstructorParameter(
   uniqueName: String,
   typeParameterResolver: TypeParameterResolver,
-): ConstructorParameter {
+): ConstructorParameter? {
   val type = type.resolve()
+  if (type.isError) return null
   val paramTypeName = type.contextualToTypeName(this, typeParameterResolver)
   val rawType = paramTypeName.requireRawType()
 
@@ -246,7 +250,7 @@ private fun ClassReference.declaredMemberInjectParameters(
  * The order of dependencies in `Impl_Factory`'s constructor should be:
  * Base -> Middle -> Impl
  */
-internal fun KSClassDeclaration.memberInjectParameters(): List<MemberInjectParameter> {
+internal fun KSClassDeclaration.memberInjectParameters(): List<MemberInjectParameter>? {
   // TODO can we use getAllProperties() after https://github.com/google/ksp/issues/1619?
   return sequenceOf(asType(emptyList()))
     .plus(getAllSuperTypes())
@@ -257,8 +261,9 @@ internal fun KSClassDeclaration.memberInjectParameters(): List<MemberInjectParam
       it.isInterface()
     }
     .toList()
-    .foldRight(listOf()) { classDeclaration, acc ->
-      acc + classDeclaration.declaredMemberInjectParameters(acc, this)
+    .foldRight(mutableListOf()) { classDeclaration, acc ->
+      val param = classDeclaration.declaredMemberInjectParameters(acc, this) ?: return null
+      acc addAllWithoutCopy param
     }
 }
 
@@ -270,7 +275,7 @@ internal fun KSClassDeclaration.memberInjectParameters(): List<MemberInjectParam
 private fun KSClassDeclaration.declaredMemberInjectParameters(
   superParameters: List<Parameter>,
   implementingClass: KSClassDeclaration,
-): List<MemberInjectParameter> {
+): List<MemberInjectParameter>? {
   val implementingType = implementingClass.asType(emptyList())
   return getDeclaredProperties()
     .filter {
@@ -278,14 +283,15 @@ private fun KSClassDeclaration.declaredMemberInjectParameters(
         it.setter?.isAnnotationPresent<Inject>() == true
     }
     .filter { it.getVisibility() != Visibility.PRIVATE }
-    .fold(listOf()) { acc, property ->
+    .fold(mutableListOf()) { acc, property ->
       val uniqueName = property.simpleName.asString().uniqueParameterName(superParameters, acc)
-      acc + property.toMemberInjectParameter(
+      val parameter = property.toMemberInjectParameter(
         uniqueName = uniqueName,
         declaringClass = this@declaredMemberInjectParameters,
         implementingType = implementingType,
         implementingClass = implementingClass,
-      )
+      ) ?: return null
+      acc addWithoutCopy parameter
     }
 }
 
@@ -303,7 +309,7 @@ private fun KSClassDeclaration.declaredMemberInjectParameters(
  * ```
  * Set [includeModule] to true if a Dagger module instance is part of the argument list.
  */
-internal fun List<Parameter>.asArgumentList(
+internal fun Iterable<Parameter>.asArgumentList(
   asProvider: Boolean,
   includeModule: Boolean,
 ): String {
@@ -444,7 +450,7 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
   declaringClass: KSClassDeclaration,
   implementingType: KSType,
   implementingClass: KSClassDeclaration,
-): MemberInjectParameter {
+): MemberInjectParameter? {
   if (
     !isLateInit() &&
     !isAnnotationPresent<JvmField>() &&
@@ -461,6 +467,7 @@ private fun KSPropertyDeclaration.toMemberInjectParameter(
 
   val originalName = simpleName.asString()
   val classParams = implementingClass.typeParameters.toTypeParameterResolver()
+  if (type.resolve().isError) return null
   val resolvedType = asMemberOf(implementingType)
   // TODO do we want to convert function types to lambdas?
   val propertyTypeName = resolvedType.contextualToTypeName(this, classParams)

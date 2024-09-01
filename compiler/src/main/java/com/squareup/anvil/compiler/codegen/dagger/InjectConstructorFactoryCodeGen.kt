@@ -57,32 +57,34 @@ internal object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
     class Provider : AnvilSymbolProcessorProvider(InjectConstructorFactoryCodeGen, ::KspGenerator)
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
+      val deferred = mutableListOf<KSAnnotated>()
       resolver.injectConstructors()
-        .forEach { (_, constructor) ->
+        .forEach { (clazz, constructor) ->
           if (!constructor.isAnnotationPresent<Inject>()) {
             // Only generating @Inject constructors
             return@forEach
           }
 
           generateFactoryClass(constructor)
-            .writeTo(
+            ?.writeTo(
               env.codeGenerator,
               aggregating = false,
               originatingKSFiles = listOf(constructor.containingFile!!),
             )
+            ?: deferred.add(clazz)
         }
 
-      return emptyList()
+      return deferred
     }
 
     private fun generateFactoryClass(
       constructor: KSFunctionDeclaration,
-    ): FileSpec {
+    ): FileSpec? {
       val clazz = constructor.parentDeclaration as KSClassDeclaration
       val typeParameterResolver = clazz.typeParameters.toTypeParameterResolver()
       val constructorParameters =
-        constructor.parameters.mapToConstructorParameters(typeParameterResolver)
-      val memberInjectParameters = clazz.memberInjectParameters()
+        constructor.parameters.mapToConstructorParameters(typeParameterResolver) ?: return null
+      val memberInjectParameters = clazz.memberInjectParameters() ?: return null
       val typeParameters = clazz.typeParameters.map { it.toTypeVariableName(typeParameterResolver) }
 
       return generateFactoryClass(

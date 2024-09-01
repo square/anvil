@@ -31,6 +31,7 @@ import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
 import com.squareup.anvil.compiler.codegen.ksp.reportableReturnTypeNode
+import com.squareup.anvil.compiler.codegen.ksp.returnTypeOrNull
 import com.squareup.anvil.compiler.codegen.ksp.withCompanion
 import com.squareup.anvil.compiler.codegen.ksp.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.daggerModuleFqName
@@ -82,6 +83,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
     class Provider : AnvilSymbolProcessorProvider(ProvidesMethodFactoryCodeGen, ::KspGenerator)
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
+      val deferred = mutableListOf<KSAnnotated>()
       resolver.getSymbolsWithAnnotation(daggerModuleFqName.asString())
         .filterIsInstance<KSClassDeclaration>()
         .forEach { clazz ->
@@ -91,14 +93,24 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
               .flatMap {
                 it.getAnnotatedFunctions<Provides>()
               }
+              .filter { function ->
+                sequenceOf(function.returnType).plus(function.parameters.map { it.type })
+                  .none { type -> type?.resolve()?.isError == true }
+                  .also { hasErrors ->
+                    if (hasErrors) {
+                      deferred.add(function)
+                    }
+                  }
+              }
               .onEach { function ->
                 checkFunctionIsNotAbstract(clazz, function)
               }
               .also { functions ->
                 assertNoDuplicateFunctions(clazz, functions)
               }
-              .map { function ->
+              .mapNotNull { function ->
                 CallableReference.from(function)
+                  .also { if (it == null) deferred.add(function) }
               }
 
           val properties = classAndCompanion.flatMap { it.getDeclaredProperties() }
@@ -111,8 +123,12 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
                 ) ||
                 property.getter?.isAnnotationPresent<Provides>() == true
             }
-            .map { property ->
-              CallableReference.from(property)
+            .mapNotNull { property ->
+              CallableReference.from(property).also {
+                if (it == null) {
+                  deferred.add(property)
+                }
+              }
             }
 
           val className = clazz.toClassName()
@@ -179,7 +195,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
 
     private fun CallableReference.Companion.from(
       function: KSFunctionDeclaration,
-    ): CallableReference {
+    ): CallableReference? {
       if (function.extensionReceiver != null) {
         throw KspAnvilException(
           message = "@Provides methods can not be an extension function",
@@ -190,6 +206,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         message = "Error occurred in type resolution and could not resolve return type.",
         node = function,
       )
+      if (type.isError) return null
       val typeName = type.contextualToTypeName(
         function.reportableReturnTypeNode,
       ).withJvmSuppressWildcardsIfNeeded(function, type)
@@ -200,7 +217,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
         isProperty = false,
         constructorParameters = function.parameters.mapToConstructorParameters(
           function.typeParameters.toTypeParameterResolver(),
-        ),
+        ) ?: return null,
         type = typeName,
         isNullable = type.isMarkedNullable,
         isPublishedApi = function.isAnnotationPresent<PublishedApi>(),
@@ -210,8 +227,8 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
 
     private fun CallableReference.Companion.from(
       property: KSPropertyDeclaration,
-    ): CallableReference {
-      val type = property.type.resolve()
+    ): CallableReference? {
+      val type = property.type.resolve().takeUnless { it.isError } ?: return null
       val typeName = type.contextualToTypeName(
         property.type,
       ).withJvmSuppressWildcardsIfNeeded(property, type)

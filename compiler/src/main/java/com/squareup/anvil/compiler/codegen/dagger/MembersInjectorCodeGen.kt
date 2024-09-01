@@ -59,11 +59,24 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
     class Provider : AnvilSymbolProcessorProvider(MembersInjectorCodeGen, ::KspGenerator)
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
+      val deferred = mutableListOf<KSAnnotated>()
       resolver.getSymbolsWithAnnotation(injectFqName.asString())
         .mapNotNull {
           when (it) {
-            is KSPropertySetter -> SettableProperty.Setter(it)
-            is KSPropertyDeclaration -> SettableProperty.Declaration(it)
+            is KSPropertySetter -> {
+              if (it.receiver.type.resolve().isError) {
+                deferred.add(it)
+                return@mapNotNull null
+              }
+              SettableProperty.Setter(it)
+            }
+            is KSPropertyDeclaration -> {
+              if (it.type.resolve().isError) {
+                deferred.add(it)
+                return@mapNotNull null
+              }
+              SettableProperty.Declaration(it)
+            }
             else -> null
           }
         }
@@ -75,16 +88,21 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
             .map { it.toTypeVariableName() }
           val isGeneric = typeParameters.isNotEmpty()
 
+          val parameters = clazz.memberInjectParameters() ?: run {
+            deferred.add(clazz)
+            return@forEach
+          }
+
           generateMembersInjectorClass(
             origin = clazz.toClassName(),
             isGeneric = isGeneric,
             typeParameters = typeParameters,
-            parameters = clazz.memberInjectParameters(),
+            parameters = parameters,
           )
             .writeTo(env.codeGenerator, aggregating = false, listOf(clazz.containingFile!!))
         }
 
-      return emptyList()
+      return deferred
     }
 
     /**

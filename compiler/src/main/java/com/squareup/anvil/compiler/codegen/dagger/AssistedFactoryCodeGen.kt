@@ -34,6 +34,7 @@ import com.squareup.anvil.compiler.codegen.dagger.AssistedFactoryCodeGen.KspGene
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
+import com.squareup.anvil.compiler.codegen.ksp.KspErrorTypeException
 import com.squareup.anvil.compiler.codegen.ksp.contextualToTypeName
 import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.codegen.ksp.isInterface
@@ -86,20 +87,26 @@ internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
     class Provider : AnvilSymbolProcessorProvider(AssistedFactoryCodeGen, ::KspGenerator)
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
+      val deferred = mutableListOf<KSAnnotated>()
       resolver.getSymbolsWithAnnotation(assistedFactoryFqName.asString())
         .filterIsInstance<KSClassDeclaration>()
         .forEach { clazz ->
           generateFactoryClass(clazz)
-            .writeTo(env.codeGenerator, aggregating = false, listOf(clazz.containingFile!!))
+            ?.writeTo(env.codeGenerator, aggregating = false, listOf(clazz.containingFile!!))
+            ?: deferred.add(clazz)
         }
-      return emptyList()
+      return deferred
     }
 
     private fun generateFactoryClass(
       clazz: KSClassDeclaration,
-    ): FileSpec {
+    ): FileSpec? {
       val typeParameterResolver = clazz.typeParameters.toTypeParameterResolver()
-      val function = clazz.requireSingleAbstractFunction(typeParameterResolver)
+      val function = try {
+        clazz.requireSingleAbstractFunction(typeParameterResolver)
+      } catch (e: KspErrorTypeException) {
+        return null
+      }
 
       val returnType = try {
         function.returnType
@@ -218,7 +225,11 @@ internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
       // the version from the file we're parsing ensures the correct variance of the referenced types.
       // TODO can't use getAllFunctions() yet due to https://github.com/google/ksp/issues/1619
       val assistedFunctions = sequenceOf(this)
-        .plus(getAllSuperTypes().mapNotNull { it.resolveKSClassDeclaration() })
+        .plus(
+          getAllSuperTypes()
+            .onEach { if (it.isError) throw KspErrorTypeException() }
+            .mapNotNull { it.resolveKSClassDeclaration() },
+        )
         .distinctBy { it.qualifiedName?.asString() }
         .flatMap { clazz ->
           clazz.getDeclaredFunctions()
@@ -229,6 +240,7 @@ internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
         }
         .distinctBy { it.simpleName.asString() }
         .map {
+          if (it.returnType?.resolve()?.isError == true) throw KspErrorTypeException()
           it.asMemberOf(implementingType)
             .toAssistedFactoryFunction(it, typeParameterResolver)
         }
