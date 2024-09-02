@@ -3,6 +3,11 @@
 **Unreleased**
 --------------
 
+0.3.1
+-----
+
+_2024-09-02_
+
 - **Enhancement**: Better handle error types and round deferral for generated types.
 
 0.3.0
