@@ -258,11 +258,11 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         ),
         SubpluginOption(
           key = "analysis-backend",
-          lazy { if (variant.variantFilter.useKspBackend) "KSP" else "EMBEDDED" },
+          lazy { "EMBEDDED" },
         ),
         SubpluginOption(
           key = "merging-backend",
-          lazy { if (variant.variantFilter.useKspComponentMergingBackend) "KSP" else "IR" },
+          lazy { "IR" },
         ),
       )
     }

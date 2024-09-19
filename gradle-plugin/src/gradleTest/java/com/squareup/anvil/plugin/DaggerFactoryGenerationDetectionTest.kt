@@ -242,7 +242,7 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
   ): Stream<out DynamicNode> = asContainers { versions ->
     cartesianProduct(
       listOf(true, false),
-      listOf(true, false),
+      listOf(false),
       listOf(true, false),
       listOf(true, false),
     )

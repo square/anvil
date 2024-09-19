@@ -411,10 +411,10 @@ class LifecycleTest : BaseGradleTest() {
       useKsp: Boolean,
     ) -> Unit,
   ): Stream<out DynamicNode> = asContainers { versions ->
-    listOf(true, false)
+    listOf(false)
       .asTests(
         testEnvironmentFactory = AnvilGradleTestEnvironment.Factory().wrap(versions),
-        testName = { useKsp -> if (useKsp) "KSP" else "Embedded" },
+        testName = { _ -> "Embedded" },
         testAction = { useKsp -> testAction(versions, useKsp) },
       )
   }
