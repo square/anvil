@@ -309,6 +309,7 @@ public fun compileAnvil(
   mode: AnvilCompilationMode = Embedded(emptyList()),
   moduleName: String? = null,
   jvmTarget: JvmTarget? = null,
+  kotlinLanguageVersion: String? = null,
   expectExitCode: KotlinCompilation.ExitCode? = null,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult {
@@ -317,6 +318,7 @@ public fun compileAnvil(
       kotlinCompilation.apply {
         this.allWarningsAsErrors = allWarningsAsErrors
         this.messageOutputStream = messageOutputStream
+        this.languageVersion = kotlinLanguageVersion
         if (workingDir != null) {
           this.workingDir = workingDir
         }
