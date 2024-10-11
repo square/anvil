@@ -20,6 +20,7 @@ import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
+import org.junit.Assume.assumeTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -2182,6 +2183,43 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
 
       assertThat(assistedServiceInstance)
         .isEqualTo(assistedService.createInstance(listOf<Class<out String>>(), 5))
+    }
+  }
+
+  @Test fun `when a generic parameter can't be resolved the exception contains its location`() {
+    // This issue can only happen with KSP mode and no component processing mode, ignore others
+    assumeTrue(componentProcessingMode == ComponentProcessingMode.NONE)
+    assumeTrue(mode is AnvilCompilationMode.Ksp)
+    compile(
+      """
+      package com.squareup.test
+      
+      import dagger.assisted.Assisted
+      import dagger.assisted.AssistedFactory
+      import dagger.assisted.AssistedInject
+      
+      data class AssistedService @AssistedInject constructor(
+        @Assisted val int: Int,
+        // Foo here is missing an import so it's unknown to KSP
+        val strings: List<Foo>
+      )
+      
+      @AssistedFactory
+      interface AssistedServiceFactory {
+        fun create(int: Int): AssistedService
+      }
+      """,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
+    ) {
+      assertThat(messages).contains(
+        """
+          Error type '<ERROR TYPE>' is not resolvable in the current round of processing.
+          This happened for parameter 'strings: <ERROR TYPE>'.
+          Check for missing or broken imports in Source0.kt.
+          If this is a generated type, ensure the tool that generates it has its outputs appropriately sourced as inputs to the KSP task.
+        """.trimIndent(),
+      )
+      assertThat(messages).contains(".kt:10")
     }
   }
 
