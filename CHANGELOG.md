@@ -11,7 +11,7 @@ _2024-10-11_
 - **Enhancement**: Report more context for error types, such as the name of the parameter it came from.
 - **Fix**: For generic types, check for error types in their type arguments as well.
 
-Special thanks to [@jmartinespZ](https://github.com/jmartinespZ) for contributing to this release!
+Special thanks to [@jmartinesp](https://github.com/jmartinesp) for contributing to this release!
 
 0.3.1
 -----
