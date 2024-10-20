@@ -8,7 +8,7 @@
 
 _2024-10-19_
 
-- **Enhancement**: Move various KSP helper functions to `compiler-api`.
+- **Enhancement**: Move various KSP helper functions to `compiler-utils`.
 
 Special thanks to [@WhosNickDoglio](https://github.com/WhosNickDoglio) for contributing to this release!
 
