@@ -3,6 +3,15 @@
 **Unreleased**
 --------------
 
+0.3.3
+-----
+
+_2024-10-19_
+
+- **Enhancement**: Move various KSP helper functions to `compiler-api`.
+
+Special thanks to [@WhosNickDoglio](https://github.com/WhosNickDoglio) for contributing to this release!
+
 0.3.2
 -----
 
