@@ -1,4 +1,5 @@
 com.google.dagger:dagger:2.51.1
+com.google.devtools.ksp:symbol-processing-api:1.9.24-1.0.20
 com.squareup:kotlinpoet-jvm:1.16.0
 com.squareup:kotlinpoet-ksp:1.16.0
 com.squareup:kotlinpoet:1.16.0
@@ -10,5 +11,7 @@ org.jetbrains.kotlin:kotlin-compiler-embeddable:1.9.24
 org.jetbrains.kotlin:kotlin-daemon-embeddable:1.9.24
 org.jetbrains.kotlin:kotlin-reflect:1.9.24
 org.jetbrains.kotlin:kotlin-script-runtime:1.9.24
+org.jetbrains.kotlin:kotlin-stdlib-jdk7:1.9.24
+org.jetbrains.kotlin:kotlin-stdlib-jdk8:1.9.24
 org.jetbrains.kotlin:kotlin-stdlib:1.9.24
 org.jetbrains:annotations:13.0

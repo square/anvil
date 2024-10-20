@@ -5,10 +5,10 @@ import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.KSTypeReference
 import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
-import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.reference.AnvilCompilationExceptionClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.ClassReferenceIr
+import com.squareup.anvil.compiler.internal.ksp.KspAnvilException
+import com.squareup.anvil.compiler.internal.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor

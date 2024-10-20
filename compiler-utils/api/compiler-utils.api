@@ -55,6 +55,105 @@ public final class com/squareup/anvil/compiler/internal/PsiUtilsKt {
 public final class com/squareup/anvil/compiler/internal/UtilsKt {
 	public static final fun capitalize (Ljava/lang/String;)Ljava/lang/String;
 	public static final fun decapitalize (Ljava/lang/String;)Ljava/lang/String;
+	public static final fun getFqName (Lcom/squareup/kotlinpoet/ClassName;)Lorg/jetbrains/kotlin/name/FqName;
+}
+
+public final class com/squareup/anvil/compiler/internal/ksp/KSAnnotationExtensionsKt {
+	public static final fun argumentAt (Lcom/google/devtools/ksp/symbol/KSAnnotation;Ljava/lang/String;)Lcom/google/devtools/ksp/symbol/KSValueArgument;
+	public static final fun boundTypeOrNull (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Lcom/google/devtools/ksp/symbol/KSType;
+	public static final fun checkNoDuplicateScope (Ljava/util/List;Lcom/google/devtools/ksp/symbol/KSClassDeclaration;Z)V
+	public static final fun checkNoDuplicateScopeAndBoundType (Ljava/util/List;Lcom/google/devtools/ksp/symbol/KSClassDeclaration;)V
+	public static final fun classNameArgumentAt (Lcom/google/devtools/ksp/symbol/KSAnnotation;Ljava/lang/String;)Lcom/squareup/kotlinpoet/ClassName;
+	public static final fun classNameArrayArgumentAt (Lcom/google/devtools/ksp/symbol/KSAnnotation;Ljava/lang/String;)Ljava/util/List;
+	public static final fun exclude (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Ljava/util/List;
+	public static final fun ignoreQualifier (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Z
+	public static final fun includes (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Ljava/util/List;
+	public static final fun isDaggerScope (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Z
+	public static final fun isMapKey (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Z
+	public static final fun isQualifier (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Z
+	public static final fun modules (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Ljava/util/List;
+	public static final fun parentScope (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Lcom/google/devtools/ksp/symbol/KSClassDeclaration;
+	public static final fun priorityLegacy (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Ljava/lang/Integer;
+	public static final fun qualifierAnnotation (Lcom/google/devtools/ksp/symbol/KSAnnotated;)Lcom/google/devtools/ksp/symbol/KSAnnotation;
+	public static final fun rank (Lcom/google/devtools/ksp/symbol/KSAnnotation;)I
+	public static final fun replaces (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Ljava/util/List;
+	public static final fun resolveBoundType (Lcom/google/devtools/ksp/symbol/KSAnnotation;Lcom/google/devtools/ksp/processing/Resolver;Lcom/google/devtools/ksp/symbol/KSClassDeclaration;)Lcom/google/devtools/ksp/symbol/KSClassDeclaration;
+	public static final fun scope (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Lcom/google/devtools/ksp/symbol/KSType;
+	public static final fun scopeClassName (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Lcom/squareup/kotlinpoet/ClassName;
+	public static final fun scopeOrNull (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Lcom/google/devtools/ksp/symbol/KSType;
+	public static final fun subcomponents (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Ljava/util/List;
+}
+
+public final class com/squareup/anvil/compiler/internal/ksp/KSClassDeclarationExtensionsKt {
+	public static final fun checkClassExtendsBoundType (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;Lorg/jetbrains/kotlin/name/FqName;Lcom/google/devtools/ksp/processing/Resolver;)V
+	public static final fun checkClassIsPublic (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;Lkotlin/jvm/functions/Function0;)V
+	public static final fun checkNotMoreThanOneMapKey (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;)V
+	public static final fun checkNotMoreThanOneQualifier (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;Lorg/jetbrains/kotlin/name/FqName;)V
+	public static final fun checkSingleSuperType (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;Lorg/jetbrains/kotlin/name/FqName;Lcom/google/devtools/ksp/processing/Resolver;)V
+	public static final fun isInterface (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;)Z
+	public static final fun superTypesExcludingAny (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;Lcom/google/devtools/ksp/processing/Resolver;Z)Lkotlin/sequences/Sequence;
+}
+
+public final class com/squareup/anvil/compiler/internal/ksp/KspAnvilException : java/lang/Exception {
+	public fun <init> (Ljava/lang/String;Lcom/google/devtools/ksp/symbol/KSNode;Ljava/lang/Throwable;)V
+	public synthetic fun <init> (Ljava/lang/String;Lcom/google/devtools/ksp/symbol/KSNode;Ljava/lang/Throwable;ILkotlin/jvm/internal/DefaultConstructorMarker;)V
+	public fun getCause ()Ljava/lang/Throwable;
+	public fun getMessage ()Ljava/lang/String;
+	public final fun getNode ()Lcom/google/devtools/ksp/symbol/KSNode;
+}
+
+public final class com/squareup/anvil/compiler/internal/ksp/KspErrorTypeException : java/lang/Exception {
+	public fun <init> (Ljava/util/List;)V
+	public fun <init> ([Lcom/google/devtools/ksp/symbol/KSAnnotated;)V
+	public final fun getTypesToDefer ()Ljava/util/List;
+}
+
+public final class com/squareup/anvil/compiler/internal/ksp/KspUtilKt {
+	public static final fun anySymbolsWithAnnotations (Lcom/google/devtools/ksp/processing/Resolver;Ljava/util/Collection;)Z
+	public static final fun atLeastOneAnnotation (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;Ljava/lang/String;Lcom/google/devtools/ksp/symbol/KSType;)Ljava/util/List;
+	public static synthetic fun atLeastOneAnnotation$default (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;Ljava/lang/String;Lcom/google/devtools/ksp/symbol/KSType;ILjava/lang/Object;)Ljava/util/List;
+	public static final fun contextualToClassName (Lcom/google/devtools/ksp/symbol/KSType;Lcom/google/devtools/ksp/symbol/KSNode;)Lcom/squareup/kotlinpoet/ClassName;
+	public static final fun contextualToClassName (Lcom/google/devtools/ksp/symbol/KSTypeReference;)Lcom/squareup/kotlinpoet/ClassName;
+	public static final fun contextualToTypeName (Lcom/google/devtools/ksp/symbol/KSType;Lcom/google/devtools/ksp/symbol/KSNode;Lcom/squareup/kotlinpoet/ksp/TypeParameterResolver;)Lcom/squareup/kotlinpoet/TypeName;
+	public static final fun contextualToTypeName (Lcom/google/devtools/ksp/symbol/KSTypeReference;Lcom/squareup/kotlinpoet/ksp/TypeParameterResolver;)Lcom/squareup/kotlinpoet/TypeName;
+	public static synthetic fun contextualToTypeName$default (Lcom/google/devtools/ksp/symbol/KSType;Lcom/google/devtools/ksp/symbol/KSNode;Lcom/squareup/kotlinpoet/ksp/TypeParameterResolver;ILjava/lang/Object;)Lcom/squareup/kotlinpoet/TypeName;
+	public static synthetic fun contextualToTypeName$default (Lcom/google/devtools/ksp/symbol/KSTypeReference;Lcom/squareup/kotlinpoet/ksp/TypeParameterResolver;ILjava/lang/Object;)Lcom/squareup/kotlinpoet/TypeName;
+	public static final fun find (Lcom/google/devtools/ksp/symbol/KSAnnotated;Ljava/lang/String;Lcom/google/devtools/ksp/symbol/KSType;)Ljava/util/List;
+	public static synthetic fun find$default (Lcom/google/devtools/ksp/symbol/KSAnnotated;Ljava/lang/String;Lcom/google/devtools/ksp/symbol/KSType;ILjava/lang/Object;)Ljava/util/List;
+	public static final fun findAll (Lcom/google/devtools/ksp/symbol/KSAnnotated;[Ljava/lang/String;)Ljava/util/List;
+	public static final fun getClassDeclarationByName (Lcom/google/devtools/ksp/processing/Resolver;Lcom/squareup/kotlinpoet/ClassName;)Lcom/google/devtools/ksp/symbol/KSClassDeclaration;
+	public static final fun getClassDeclarationByName (Lcom/google/devtools/ksp/processing/Resolver;Lorg/jetbrains/kotlin/name/FqName;)Lcom/google/devtools/ksp/symbol/KSClassDeclaration;
+	public static final fun getClassId (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getClassesWithAnnotations (Lcom/google/devtools/ksp/processing/Resolver;Ljava/util/Collection;)Lkotlin/sequences/Sequence;
+	public static final fun getClassesWithAnnotations (Lcom/google/devtools/ksp/processing/Resolver;[Lorg/jetbrains/kotlin/name/FqName;)Lkotlin/sequences/Sequence;
+	public static final fun getDeclaringClass (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Lcom/google/devtools/ksp/symbol/KSClassDeclaration;
+	public static final fun getFqName (Lcom/google/devtools/ksp/symbol/KSAnnotation;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getFqName (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getFqName (Lcom/google/devtools/ksp/symbol/KSType;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getKSAnnotationsByQualifiedName (Lcom/google/devtools/ksp/symbol/KSAnnotated;Ljava/lang/String;)Lkotlin/sequences/Sequence;
+	public static final fun getKSAnnotationsByType (Lcom/google/devtools/ksp/symbol/KSAnnotated;Lkotlin/reflect/KClass;)Lkotlin/sequences/Sequence;
+	public static final fun getReportableReturnTypeNode (Lcom/google/devtools/ksp/symbol/KSFunctionDeclaration;)Lcom/google/devtools/ksp/symbol/KSNode;
+	public static final fun getResolvableAnnotations (Lcom/google/devtools/ksp/symbol/KSAnnotated;)Lkotlin/sequences/Sequence;
+	public static final fun injectConstructors (Lcom/google/devtools/ksp/processing/Resolver;)Ljava/util/List;
+	public static final fun isAnnotationClass (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;)Z
+	public static final fun isAnnotationPresent (Lcom/google/devtools/ksp/symbol/KSAnnotated;Ljava/lang/String;)Z
+	public static final fun isAnnotationPresent (Lcom/google/devtools/ksp/symbol/KSAnnotated;Lkotlin/reflect/KClass;)Z
+	public static final fun isExtensionDeclaration (Lcom/google/devtools/ksp/symbol/KSFunctionDeclaration;)Z
+	public static final fun isLateInit (Lcom/google/devtools/ksp/symbol/KSModifierListOwner;)Z
+	public static final fun mergeAnnotations (Lcom/google/devtools/ksp/symbol/KSAnnotated;)Ljava/util/List;
+	public static final fun requireClassDeclaration (Lcom/google/devtools/ksp/processing/Resolver;Lcom/squareup/kotlinpoet/ClassName;Lkotlin/jvm/functions/Function0;)Lcom/google/devtools/ksp/symbol/KSClassDeclaration;
+	public static final fun requireClassDeclaration (Lcom/google/devtools/ksp/processing/Resolver;Lorg/jetbrains/kotlin/name/FqName;Lcom/google/devtools/ksp/symbol/KSNode;)Lcom/google/devtools/ksp/symbol/KSClassDeclaration;
+	public static final fun resolveKSClassDeclaration (Lcom/google/devtools/ksp/symbol/KSDeclaration;)Lcom/google/devtools/ksp/symbol/KSClassDeclaration;
+	public static final fun resolveKSClassDeclaration (Lcom/google/devtools/ksp/symbol/KSType;)Lcom/google/devtools/ksp/symbol/KSClassDeclaration;
+	public static final fun returnTypeOrNull (Lcom/google/devtools/ksp/symbol/KSFunction;)Lcom/google/devtools/ksp/symbol/KSType;
+	public static final fun returnTypeOrNull (Lcom/google/devtools/ksp/symbol/KSFunctionDeclaration;)Lcom/google/devtools/ksp/symbol/KSType;
+	public static final fun toFunSpec (Lcom/google/devtools/ksp/symbol/KSFunctionDeclaration;)Lcom/squareup/kotlinpoet/FunSpec;
+	public static final fun toParameterSpec (Lcom/google/devtools/ksp/symbol/KSValueParameter;)Lcom/squareup/kotlinpoet/ParameterSpec;
+	public static final fun toPropertySpec (Lcom/google/devtools/ksp/symbol/KSPropertyDeclaration;Lcom/squareup/kotlinpoet/TypeName;)Lcom/squareup/kotlinpoet/PropertySpec;
+	public static synthetic fun toPropertySpec$default (Lcom/google/devtools/ksp/symbol/KSPropertyDeclaration;Lcom/squareup/kotlinpoet/TypeName;ILjava/lang/Object;)Lcom/squareup/kotlinpoet/PropertySpec;
+	public static final fun unwrapTypealiases (Lcom/google/devtools/ksp/symbol/KSDeclaration;)Lcom/google/devtools/ksp/symbol/KSDeclaration;
+	public static final fun withCompanion (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;)Lkotlin/sequences/Sequence;
+	public static final fun withJvmSuppressWildcardsIfNeeded (Lcom/squareup/kotlinpoet/TypeName;Lcom/google/devtools/ksp/symbol/KSAnnotated;Lcom/google/devtools/ksp/symbol/KSType;)Lcom/squareup/kotlinpoet/TypeName;
 }
 
 public abstract interface class com/squareup/anvil/compiler/internal/reference/AnnotatedReference {

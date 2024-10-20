@@ -7,6 +7,8 @@ import com.google.devtools.ksp.symbol.KSDeclaration
 import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.google.devtools.ksp.symbol.KSType
+import com.squareup.anvil.compiler.internal.ksp.fqName
+import com.squareup.anvil.compiler.internal.ksp.requireClassDeclaration
 import org.jetbrains.kotlin.name.FqName
 
 /**

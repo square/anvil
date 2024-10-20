@@ -12,7 +12,6 @@ import com.squareup.anvil.annotations.internal.InternalAnvilHintMarker
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
 import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.fqName
-import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.asClassName
 import dagger.Binds
 import dagger.Component
@@ -25,7 +24,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.internal.DoubleCheck
-import org.jetbrains.kotlin.name.FqName
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Provider
@@ -213,11 +211,6 @@ internal inline fun <T, R> Array<T>.mapToSet(
 ): Set<R> {
   return mapTo(destination, transform)
 }
-
-internal val ClassName.fqName: FqName
-  get() {
-    return FqName(canonicalName)
-  }
 
 internal inline fun <T, C : Collection<T>, O> C.ifNotEmpty(body: (C) -> O?): O? =
   if (isNotEmpty()) body(this) else null

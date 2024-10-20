@@ -12,6 +12,7 @@ import com.squareup.anvil.compiler.codegen.reference.findAll
 import com.squareup.anvil.compiler.codegen.reference.toClassReference
 import com.squareup.anvil.compiler.internal.asClassName
 import com.squareup.anvil.compiler.internal.classIdBestGuess
+import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.reference.Visibility.PUBLIC
 import dagger.Module
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension

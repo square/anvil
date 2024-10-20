@@ -7,6 +7,7 @@ import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.codegen.toAnvilContext
+import com.squareup.anvil.compiler.internal.ksp.KspAnvilException
 import com.squareup.kotlinpoet.asClassName
 import kotlin.time.measureTimedValue
 

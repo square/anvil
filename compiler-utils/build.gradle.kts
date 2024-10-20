@@ -24,7 +24,8 @@ dependencies {
   api(project(":annotations"))
   api(project(":compiler-api"))
   api(libs.kotlin.compiler)
-  api(libs.kotlinpoet)
+  api(libs.ksp.api)
+  api(libs.kotlinpoet.ksp)
 
   implementation(platform(libs.kotlin.bom))
   implementation(libs.dagger2)

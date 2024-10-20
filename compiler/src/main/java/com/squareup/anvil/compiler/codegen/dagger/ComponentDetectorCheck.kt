@@ -11,8 +11,8 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.codegen.CheckOnlyCodeGenerator
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
-import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.daggerComponentFqName
+import com.squareup.anvil.compiler.internal.ksp.KspAnvilException
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor

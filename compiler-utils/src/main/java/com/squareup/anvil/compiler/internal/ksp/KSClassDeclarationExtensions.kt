@@ -1,4 +1,4 @@
-package com.squareup.anvil.compiler.codegen.ksp
+package com.squareup.anvil.compiler.internal.ksp
 
 import com.google.devtools.ksp.getAllSuperTypes
 import com.google.devtools.ksp.getVisibility
@@ -7,10 +7,10 @@ import com.google.devtools.ksp.symbol.ClassKind
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.google.devtools.ksp.symbol.Visibility.PUBLIC
-import com.squareup.anvil.compiler.contributesMultibindingFqName
+import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
 import org.jetbrains.kotlin.name.FqName
 
-internal fun KSClassDeclaration.checkNotMoreThanOneQualifier(
+public fun KSClassDeclaration.checkNotMoreThanOneQualifier(
   annotationFqName: FqName,
 ) {
   val annotationsList = resolvableAnnotations.toList()
@@ -28,7 +28,7 @@ internal fun KSClassDeclaration.checkNotMoreThanOneQualifier(
   }
 }
 
-internal inline fun KSClassDeclaration.checkClassIsPublic(message: () -> String) {
+public inline fun KSClassDeclaration.checkClassIsPublic(message: () -> String) {
   if (getVisibility() != PUBLIC) {
     throw KspAnvilException(
       message = message(),
@@ -37,7 +37,7 @@ internal inline fun KSClassDeclaration.checkClassIsPublic(message: () -> String)
   }
 }
 
-internal fun KSClassDeclaration.checkNotMoreThanOneMapKey() {
+public fun KSClassDeclaration.checkNotMoreThanOneMapKey() {
   // The class is annotated with @ContributesMultibinding. If there is less than 2 further
   // annotations, then there can't be more than two map keys.
   val annotationsList = resolvableAnnotations.toList()
@@ -54,7 +54,7 @@ internal fun KSClassDeclaration.checkNotMoreThanOneMapKey() {
   }
 }
 
-internal fun KSClassDeclaration.checkSingleSuperType(
+public fun KSClassDeclaration.checkSingleSuperType(
   annotationFqName: FqName,
   resolver: Resolver,
 ) {
@@ -76,7 +76,7 @@ internal fun KSClassDeclaration.checkSingleSuperType(
   }
 }
 
-internal fun KSClassDeclaration.checkClassExtendsBoundType(
+public fun KSClassDeclaration.checkClassExtendsBoundType(
   annotationFqName: FqName,
   resolver: Resolver,
 ) {
@@ -103,7 +103,7 @@ internal fun KSClassDeclaration.checkClassExtendsBoundType(
   }
 }
 
-internal fun KSClassDeclaration.superTypesExcludingAny(
+public fun KSClassDeclaration.superTypesExcludingAny(
   resolver: Resolver,
   shallow: Boolean,
 ): Sequence<KSType> {
@@ -116,6 +116,6 @@ internal fun KSClassDeclaration.superTypesExcludingAny(
     .filterNot { it == resolver.builtIns.anyType }
 }
 
-internal fun KSClassDeclaration.isInterface(): Boolean {
+public fun KSClassDeclaration.isInterface(): Boolean {
   return classKind == ClassKind.INTERFACE
 }

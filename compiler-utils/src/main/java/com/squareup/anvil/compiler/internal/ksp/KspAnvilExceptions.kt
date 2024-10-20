@@ -1,11 +1,11 @@
-package com.squareup.anvil.compiler.codegen.ksp
+package com.squareup.anvil.compiler.internal.ksp
 
 import com.google.devtools.ksp.symbol.KSAnnotated
 import com.google.devtools.ksp.symbol.KSNode
 
-internal class KspAnvilException(
+public class KspAnvilException(
   override val message: String,
-  val node: KSNode,
+  public val node: KSNode,
   override val cause: Throwable? = null,
 ) : Exception()
 
@@ -13,6 +13,6 @@ internal class KspAnvilException(
  * In rare cases, we might encounter error types that we can't easily forward back up the call
  * stack. With great shame, I hang my head in defeat with this type.
  */
-internal class KspErrorTypeException(val typesToDefer: List<KSAnnotated>) : Exception() {
-  constructor(vararg types: KSAnnotated) : this(types.toList())
+public class KspErrorTypeException(public val typesToDefer: List<KSAnnotated>) : Exception() {
+  public constructor(vararg types: KSAnnotated) : this(types.toList())
 }

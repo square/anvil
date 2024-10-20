@@ -18,10 +18,10 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
-import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
-import com.squareup.anvil.compiler.codegen.ksp.contextualToTypeName
-import com.squareup.anvil.compiler.codegen.ksp.isAnnotationClass
 import com.squareup.anvil.compiler.internal.createAnvilSpec
+import com.squareup.anvil.compiler.internal.ksp.KspAnvilException
+import com.squareup.anvil.compiler.internal.ksp.contextualToTypeName
+import com.squareup.anvil.compiler.internal.ksp.isAnnotationClass
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.MemberPropertyReference

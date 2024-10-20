@@ -1,4 +1,4 @@
-package com.squareup.anvil.compiler.codegen.ksp
+package com.squareup.anvil.compiler.internal.ksp
 
 import com.google.devtools.ksp.KspExperimental
 import com.google.devtools.ksp.containingFile
@@ -24,12 +24,12 @@ import com.google.devtools.ksp.symbol.KSTypeReference
 import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Modifier
 import com.google.devtools.ksp.symbol.NonExistLocation
-import com.squareup.anvil.compiler.fqName
+import com.squareup.anvil.compiler.internal.fqName
+import com.squareup.anvil.compiler.internal.mergeComponentFqName
+import com.squareup.anvil.compiler.internal.mergeInterfacesFqName
+import com.squareup.anvil.compiler.internal.mergeModulesFqName
+import com.squareup.anvil.compiler.internal.mergeSubcomponentFqName
 import com.squareup.anvil.compiler.internal.reference.asClassId
-import com.squareup.anvil.compiler.mergeComponentFqName
-import com.squareup.anvil.compiler.mergeInterfacesFqName
-import com.squareup.anvil.compiler.mergeModulesFqName
-import com.squareup.anvil.compiler.mergeSubcomponentFqName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
 import com.squareup.kotlinpoet.ParameterSpec
@@ -50,7 +50,7 @@ import kotlin.reflect.KClass
 /**
  * Returns a sequence of [KSAnnotations][KSAnnotation] of the given [annotationKClass] type.
  */
-internal fun <T : Annotation> KSAnnotated.getKSAnnotationsByType(
+public fun <T : Annotation> KSAnnotated.getKSAnnotationsByType(
   annotationKClass: KClass<T>,
 ): Sequence<KSAnnotation> {
   val qualifiedName = annotationKClass.qualifiedName ?: return emptySequence()
@@ -60,7 +60,7 @@ internal fun <T : Annotation> KSAnnotated.getKSAnnotationsByType(
 /**
  * Returns a sequence of [KSAnnotations][KSAnnotation] of the given [qualifiedName].
  */
-internal fun KSAnnotated.getKSAnnotationsByQualifiedName(
+public fun KSAnnotated.getKSAnnotationsByQualifiedName(
   qualifiedName: String,
 ): Sequence<KSAnnotation> {
   // Don't use resolvableAnnotations here to save the double resolve() call
@@ -76,23 +76,23 @@ internal fun KSAnnotated.getKSAnnotationsByQualifiedName(
   }
 }
 
-internal fun KSAnnotated.isAnnotationPresent(qualifiedName: String): Boolean =
+public fun KSAnnotated.isAnnotationPresent(qualifiedName: String): Boolean =
   getKSAnnotationsByQualifiedName(qualifiedName).firstOrNull() != null
 
-internal inline fun <reified T> KSAnnotated.isAnnotationPresent(): Boolean {
+public inline fun <reified T> KSAnnotated.isAnnotationPresent(): Boolean {
   return isAnnotationPresent(T::class)
 }
 
-internal fun KSAnnotated.isAnnotationPresent(klass: KClass<*>): Boolean {
+public fun KSAnnotated.isAnnotationPresent(klass: KClass<*>): Boolean {
   val fqcn = klass.qualifiedName ?: return false
   return getKSAnnotationsByQualifiedName(fqcn).firstOrNull() != null
 }
 
-internal fun KSClassDeclaration.isAnnotationClass(): Boolean = classKind == ANNOTATION_CLASS
-internal fun KSModifierListOwner.isLateInit(): Boolean = Modifier.LATEINIT in modifiers
+public fun KSClassDeclaration.isAnnotationClass(): Boolean = classKind == ANNOTATION_CLASS
+public fun KSModifierListOwner.isLateInit(): Boolean = Modifier.LATEINIT in modifiers
 
 @OptIn(KspExperimental::class)
-internal fun TypeName.withJvmSuppressWildcardsIfNeeded(
+public fun TypeName.withJvmSuppressWildcardsIfNeeded(
   annotatedReference: KSAnnotated,
   type: KSType,
 ): TypeName {
@@ -118,7 +118,7 @@ internal fun TypeName.withJvmSuppressWildcardsIfNeeded(
 /**
  * Resolves the [KSClassDeclaration] for this type, including following typealiases as needed.
  */
-internal fun KSType.resolveKSClassDeclaration(): KSClassDeclaration? =
+public fun KSType.resolveKSClassDeclaration(): KSClassDeclaration? =
   declaration.resolveKSClassDeclaration()
 
 /**
@@ -128,7 +128,7 @@ internal fun KSType.resolveKSClassDeclaration(): KSClassDeclaration? =
  * [KSTypeParameter] types will return null. If you expect one here, you should check the
  * declaration directly.
  */
-internal fun KSDeclaration.resolveKSClassDeclaration(): KSClassDeclaration? {
+public fun KSDeclaration.resolveKSClassDeclaration(): KSClassDeclaration? {
   return when (val declaration = unwrapTypealiases()) {
     is KSClassDeclaration -> declaration
     is KSTypeParameter -> null
@@ -139,7 +139,7 @@ internal fun KSDeclaration.resolveKSClassDeclaration(): KSClassDeclaration? {
 /**
  * Returns the resolved declaration following any typealiases.
  */
-internal tailrec fun KSDeclaration.unwrapTypealiases(): KSDeclaration = when (this) {
+public tailrec fun KSDeclaration.unwrapTypealiases(): KSDeclaration = when (this) {
   is KSTypeAlias -> type.resolve().declaration.unwrapTypealiases()
   else -> this
 }
@@ -147,7 +147,7 @@ internal tailrec fun KSDeclaration.unwrapTypealiases(): KSDeclaration = when (th
 /**
  * Returns a sequence of all `@Inject` and `@AssistedInject` constructors visible to this resolver
  */
-internal fun Resolver.injectConstructors(): List<Pair<KSClassDeclaration, KSFunctionDeclaration>> {
+public fun Resolver.injectConstructors(): List<Pair<KSClassDeclaration, KSFunctionDeclaration>> {
   return getAnnotatedSymbols<Inject>()
     .plus(getAnnotatedSymbols<AssistedInject>())
     .filterIsInstance<KSFunctionDeclaration>()
@@ -203,62 +203,62 @@ private fun requireSingleInjectConstructor(
   )
 }
 
-internal inline fun <reified T> Resolver.getAnnotatedSymbols(): Sequence<KSAnnotated> {
+public inline fun <reified T> Resolver.getAnnotatedSymbols(): Sequence<KSAnnotated> {
   val clazz = T::class
   val fqcn = clazz.qualifiedName
     ?: throw IllegalArgumentException("Cannot get qualified name for annotation $clazz")
   return getSymbolsWithAnnotation(fqcn)
 }
 
-internal fun KSClassDeclaration.withCompanion(): Sequence<KSClassDeclaration> =
+public fun KSClassDeclaration.withCompanion(): Sequence<KSClassDeclaration> =
   sequence {
     yield(this@withCompanion)
     yieldAll(declarations.filterIsInstance<KSClassDeclaration>().filter { it.isCompanionObject })
   }
 
-internal inline fun <reified T> KSClassDeclaration.getAnnotatedFunctions() =
+public inline fun <reified T> KSClassDeclaration.getAnnotatedFunctions(): Sequence<KSFunctionDeclaration> =
   getDeclaredFunctions()
     .filter { it.isAnnotationPresent<T>() }
 
-internal fun KSFunctionDeclaration.isExtensionDeclaration(): Boolean =
+public fun KSFunctionDeclaration.isExtensionDeclaration(): Boolean =
   extensionReceiver != null
 
-internal fun KSFunctionDeclaration.returnTypeOrNull(): KSType? =
+public fun KSFunctionDeclaration.returnTypeOrNull(): KSType? =
   returnType?.resolve()?.takeIf {
     it.declaration.qualifiedName?.asString() != "kotlin.Unit"
   }
 
-internal fun KSFunction.returnTypeOrNull(): KSType? =
+public fun KSFunction.returnTypeOrNull(): KSType? =
   returnType?.takeIf {
     it.declaration.qualifiedName?.asString() != "kotlin.Unit"
   }
 
-internal fun Resolver.getClassesWithAnnotations(
+public fun Resolver.getClassesWithAnnotations(
   vararg annotations: FqName,
 ): Sequence<KSClassDeclaration> = getClassesWithAnnotations(annotations.map { it.asString() })
 
-internal fun Resolver.getClassesWithAnnotations(
+public fun Resolver.getClassesWithAnnotations(
   annotations: Collection<String>,
 ): Sequence<KSClassDeclaration> = annotations.asSequence()
   .flatMap(::getSymbolsWithAnnotation)
   .filterIsInstance<KSClassDeclaration>()
   .distinctBy { it.qualifiedName?.asString() }
 
-internal fun Resolver.anySymbolsWithAnnotations(
+public fun Resolver.anySymbolsWithAnnotations(
   annotations: Collection<String>,
 ): Boolean {
   return annotations.any { getSymbolsWithAnnotation(it).any() }
 }
 
-internal fun KSAnnotated.findAll(vararg annotations: String): List<KSAnnotation> {
+public fun KSAnnotated.findAll(vararg annotations: String): List<KSAnnotation> {
   return annotations.flatMap { annotation ->
     getKSAnnotationsByQualifiedName(annotation)
   }
 }
 
-internal val KSAnnotation.declaringClass: KSClassDeclaration get() = parent as KSClassDeclaration
+public val KSAnnotation.declaringClass: KSClassDeclaration get() = parent as KSClassDeclaration
 
-internal fun KSAnnotated.find(
+public fun KSAnnotated.find(
   annotationName: String,
   scopeName: KSType? = null,
 ): List<KSAnnotation> {
@@ -268,7 +268,7 @@ internal fun KSAnnotated.find(
     }
 }
 
-internal fun KSClassDeclaration.atLeastOneAnnotation(
+public fun KSClassDeclaration.atLeastOneAnnotation(
   annotationName: String,
   scopeName: KSType? = null,
 ): List<KSAnnotation> {
@@ -282,9 +282,9 @@ internal fun KSClassDeclaration.atLeastOneAnnotation(
     }
 }
 
-internal val KSClassDeclaration.classId: ClassId get() = toClassName().asClassId()
+public val KSClassDeclaration.classId: ClassId get() = toClassName().asClassId()
 
-internal fun KSFunctionDeclaration.toFunSpec(): FunSpec {
+public fun KSFunctionDeclaration.toFunSpec(): FunSpec {
   val builder = FunSpec.builder(simpleName.getShortName())
     .addModifiers(modifiers.mapNotNull { it.toKModifier() })
     .addAnnotations(
@@ -301,7 +301,7 @@ internal fun KSFunctionDeclaration.toFunSpec(): FunSpec {
   return builder.build()
 }
 
-internal fun KSPropertyDeclaration.toPropertySpec(
+public fun KSPropertyDeclaration.toPropertySpec(
   typeOverride: TypeName = type.contextualToTypeName(),
 ): PropertySpec {
   return PropertySpec.builder(simpleName.getShortName(), typeOverride)
@@ -312,7 +312,7 @@ internal fun KSPropertyDeclaration.toPropertySpec(
     .build()
 }
 
-internal fun KSValueParameter.toParameterSpec(): ParameterSpec {
+public fun KSValueParameter.toParameterSpec(): ParameterSpec {
   return ParameterSpec.builder(name!!.asString(), type.contextualToTypeName())
     .addAnnotations(
       resolvableAnnotations.map { it.toAnnotationSpec() }.asIterable(),
@@ -320,7 +320,7 @@ internal fun KSValueParameter.toParameterSpec(): ParameterSpec {
     .build()
 }
 
-internal fun KSAnnotated.mergeAnnotations(): List<KSAnnotation> {
+public fun KSAnnotated.mergeAnnotations(): List<KSAnnotation> {
   return findAll(
     mergeComponentFqName.asString(),
     mergeSubcomponentFqName.asString(),
@@ -332,15 +332,15 @@ internal fun KSAnnotated.mergeAnnotations(): List<KSAnnotation> {
 /**
  * Returns a sequence of [KSAnnotation] types that are not error types.
  */
-internal val KSAnnotated.resolvableAnnotations: Sequence<KSAnnotation>
+public val KSAnnotated.resolvableAnnotations: Sequence<KSAnnotation>
   get() = annotations
     .filterNot { it.annotationType.resolve().isError }
 
-internal val KSAnnotation.fqName: FqName
+public val KSAnnotation.fqName: FqName
   get() =
     annotationType.resolve().resolveKSClassDeclaration()!!.fqName
-internal val KSType.fqName: FqName get() = resolveKSClassDeclaration()!!.fqName
-internal val KSClassDeclaration.fqName: FqName
+public val KSType.fqName: FqName get() = resolveKSClassDeclaration()!!.fqName
+public val KSClassDeclaration.fqName: FqName
   get() {
     // Call resolveKSClassDeclaration to ensure we follow typealiases
     return resolveKSClassDeclaration()!!
@@ -352,7 +352,7 @@ internal val KSClassDeclaration.fqName: FqName
  * A contextual alternative to [KSTypeReference.toTypeName] that uses [KSType.contextualToTypeName]
  * under the hood.
  */
-internal fun KSTypeReference.contextualToTypeName(
+public fun KSTypeReference.contextualToTypeName(
   typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY,
 ): TypeName {
   return resolve().contextualToTypeName(this, typeParamResolver)
@@ -362,7 +362,7 @@ internal fun KSTypeReference.contextualToTypeName(
  * A contextual alternative to [KSType.toTypeName] that requires an [origin] param to better
  * indicate the origin of the error type.
  */
-internal fun KSType.contextualToTypeName(
+public fun KSType.contextualToTypeName(
   origin: KSNode,
   typeParamResolver: TypeParameterResolver = TypeParameterResolver.EMPTY,
 ): TypeName {
@@ -374,7 +374,7 @@ internal fun KSType.contextualToTypeName(
  * A contextual alternative to `KSTypeReference.resolve().toClassName()` that uses
  * [KSType.contextualToClassName] under the hood.
  */
-internal fun KSTypeReference.contextualToClassName(): ClassName {
+public fun KSTypeReference.contextualToClassName(): ClassName {
   return resolve().contextualToClassName(this)
 }
 
@@ -382,7 +382,7 @@ internal fun KSTypeReference.contextualToClassName(): ClassName {
  * A contextual alternative to [KSType.toClassName] that requires an [origin] param to better
  * indicate the origin of the error type.
  */
-internal fun KSType.contextualToClassName(origin: KSNode): ClassName {
+public fun KSType.contextualToClassName(origin: KSNode): ClassName {
   checkErrorType(origin)
   return toClassName()
 }
@@ -434,14 +434,14 @@ private fun KSType.checkErrorType(origin: KSNode) {
   throw KspAnvilException(message = message, node = finalNode)
 }
 
-internal val KSFunctionDeclaration.reportableReturnTypeNode: KSNode
+public val KSFunctionDeclaration.reportableReturnTypeNode: KSNode
   get() = returnType ?: this
 
-internal fun Resolver.getClassDeclarationByName(className: ClassName): KSClassDeclaration? {
+public fun Resolver.getClassDeclarationByName(className: ClassName): KSClassDeclaration? {
   return getClassDeclarationByName(className.canonicalName)
 }
 
-internal fun Resolver.requireClassDeclaration(
+public fun Resolver.requireClassDeclaration(
   className: ClassName,
   node: (() -> KSNode)?,
 ): KSClassDeclaration {
@@ -459,11 +459,11 @@ internal fun Resolver.requireClassDeclaration(
     }
 }
 
-internal fun Resolver.getClassDeclarationByName(fqName: FqName): KSClassDeclaration? {
+public fun Resolver.getClassDeclarationByName(fqName: FqName): KSClassDeclaration? {
   return getClassDeclarationByName(fqName.asString())
 }
 
-internal fun Resolver.requireClassDeclaration(fqName: FqName, node: KSNode?): KSClassDeclaration {
+public fun Resolver.requireClassDeclaration(fqName: FqName, node: KSNode?): KSClassDeclaration {
   return getClassDeclarationByName(fqName)
     ?: run {
       val message = "Could not find class '${fqName.asString()}'"
