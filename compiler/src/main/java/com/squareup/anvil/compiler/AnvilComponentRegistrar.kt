@@ -3,9 +3,11 @@
 
 package com.squareup.anvil.compiler
 
+import com.google.auto.service.AutoService
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.CommandLineOptions.Companion.commandLineOptions
 import com.squareup.anvil.compiler.api.CodeGenerator
+import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
 import com.squareup.anvil.compiler.codegen.incremental.BaseDir
@@ -15,7 +17,6 @@ import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import org.jetbrains.kotlin.config.languageVersionSettings
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.util.ServiceLoader
 import kotlin.LazyThreadSafetyMode.NONE
@@ -45,11 +46,9 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
     val irMergesFile by lazy(NONE) { configuration.getNotNull(irMergesFileKey) }
     val trackSourceFiles = configuration.getNotNull(trackSourceFilesKey)
 
-    val usesK2 = configuration.languageVersionSettings.languageVersion.usesK2
-
     val mergingEnabled =
       !commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging
-    if (mergingEnabled&& !usesK2) {
+    if (mergingEnabled) {
       IrGenerationExtension.registerExtension(
         project,
         IrContributionMerger(

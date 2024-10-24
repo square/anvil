@@ -1,12 +1,9 @@
 package com.squareup.anvil.compiler
 
 import org.jetbrains.kotlin.config.CompilerConfiguration
-import java.io.File
 import java.util.Locale
 
 public class CommandLineOptions private constructor(
-  public val projectDir: File,
-  public val sourceGenFolder: File,
   public val generateFactories: Boolean,
   public val generateFactoriesOnly: Boolean,
   public val disableComponentMerging: Boolean,
@@ -16,8 +13,6 @@ public class CommandLineOptions private constructor(
   public companion object {
     public val CompilerConfiguration.commandLineOptions: CommandLineOptions
       get() = CommandLineOptions(
-        projectDir = getNotNull(gradleProjectDirKey),
-        sourceGenFolder = getNotNull(srcGenDirKey),
         generateFactories = get(generateDaggerFactoriesKey, false),
         generateFactoriesOnly = get(generateDaggerFactoriesOnlyKey, false),
         disableComponentMerging = get(disableComponentMergingKey, false),
