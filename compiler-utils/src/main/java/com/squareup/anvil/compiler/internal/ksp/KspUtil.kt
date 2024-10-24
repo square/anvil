@@ -387,18 +387,19 @@ public fun KSType.contextualToClassName(origin: KSNode): ClassName {
   return toClassName()
 }
 
-private fun KSType.checkErrorType(origin: KSNode) {
+@PublishedApi
+internal fun KSType.checkErrorType(origin: KSNode): KSType {
   val (type, node) = if (isError) {
     this to origin
   } else {
     arguments.asSequence()
-      .mapNotNull {
-        it.type?.let {
-          it.resolve() to it
+      .mapNotNull { arg ->
+        arg.type?.let { argType ->
+          argType.resolve() to argType
         }
       }
       .firstOrNull { it.first.isError }
-  } ?: return
+  } ?: return this
 
   val message = buildString {
     appendLine(

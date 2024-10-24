@@ -166,7 +166,17 @@ public fun KSAnnotation.classNameArgumentAt(
 public inline fun <reified T> KSAnnotation.argumentOfTypeAt(
   name: String,
 ): T? {
-  return argumentOfTypeWithMapperAt<T, T>(name) { _, value ->
+  return argumentOfTypeWithMapperAt<T, T>(name) { arg, value ->
+    when {
+      value is KSType -> {
+        value.checkErrorType(arg)
+      }
+      value is List<*> && value.firstOrNull() is KSType -> {
+        for (element in value) {
+          (element as KSType).checkErrorType(arg)
+        }
+      }
+    }
     value
   }
 }

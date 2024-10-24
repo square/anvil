@@ -112,6 +112,7 @@ public final class com/squareup/anvil/compiler/internal/ksp/KspUtilKt {
 	public static final fun anySymbolsWithAnnotations (Lcom/google/devtools/ksp/processing/Resolver;Ljava/util/Collection;)Z
 	public static final fun atLeastOneAnnotation (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;Ljava/lang/String;Lcom/google/devtools/ksp/symbol/KSType;)Ljava/util/List;
 	public static synthetic fun atLeastOneAnnotation$default (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;Ljava/lang/String;Lcom/google/devtools/ksp/symbol/KSType;ILjava/lang/Object;)Ljava/util/List;
+	public static final fun checkErrorType (Lcom/google/devtools/ksp/symbol/KSType;Lcom/google/devtools/ksp/symbol/KSNode;)Lcom/google/devtools/ksp/symbol/KSType;
 	public static final fun contextualToClassName (Lcom/google/devtools/ksp/symbol/KSType;Lcom/google/devtools/ksp/symbol/KSNode;)Lcom/squareup/kotlinpoet/ClassName;
 	public static final fun contextualToClassName (Lcom/google/devtools/ksp/symbol/KSTypeReference;)Lcom/squareup/kotlinpoet/ClassName;
 	public static final fun contextualToTypeName (Lcom/google/devtools/ksp/symbol/KSType;Lcom/google/devtools/ksp/symbol/KSNode;Lcom/squareup/kotlinpoet/ksp/TypeParameterResolver;)Lcom/squareup/kotlinpoet/TypeName;

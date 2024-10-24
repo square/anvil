@@ -3,6 +3,8 @@
 **Unreleased**
 --------------
 
+- **Enhancement**: Improve error messaging for error types used as annotation arguments.
+
 0.3.3
 -----
 
