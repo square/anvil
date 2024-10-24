@@ -132,13 +132,17 @@ public final class com/squareup/anvil/compiler/internal/ksp/KspUtilKt {
 	public static final fun getFqName (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;)Lorg/jetbrains/kotlin/name/FqName;
 	public static final fun getFqName (Lcom/google/devtools/ksp/symbol/KSType;)Lorg/jetbrains/kotlin/name/FqName;
 	public static final fun getKSAnnotationsByQualifiedName (Lcom/google/devtools/ksp/symbol/KSAnnotated;Ljava/lang/String;)Lkotlin/sequences/Sequence;
+	public static final fun getKSAnnotationsByQualifiedName (Lcom/google/devtools/ksp/symbol/KSAnnotated;Ljava/util/Set;)Lkotlin/sequences/Sequence;
 	public static final fun getKSAnnotationsByType (Lcom/google/devtools/ksp/symbol/KSAnnotated;Lkotlin/reflect/KClass;)Lkotlin/sequences/Sequence;
 	public static final fun getReportableReturnTypeNode (Lcom/google/devtools/ksp/symbol/KSFunctionDeclaration;)Lcom/google/devtools/ksp/symbol/KSNode;
 	public static final fun getResolvableAnnotations (Lcom/google/devtools/ksp/symbol/KSAnnotated;)Lkotlin/sequences/Sequence;
+	public static final fun getSymbolsWithAnnotations (Lcom/google/devtools/ksp/processing/Resolver;Ljava/util/Set;)Lkotlin/sequences/Sequence;
 	public static final fun injectConstructors (Lcom/google/devtools/ksp/processing/Resolver;)Ljava/util/List;
 	public static final fun isAnnotationClass (Lcom/google/devtools/ksp/symbol/KSClassDeclaration;)Z
 	public static final fun isAnnotationPresent (Lcom/google/devtools/ksp/symbol/KSAnnotated;Ljava/lang/String;)Z
+	public static final fun isAnnotationPresent (Lcom/google/devtools/ksp/symbol/KSAnnotated;Ljava/util/Set;)Z
 	public static final fun isAnnotationPresent (Lcom/google/devtools/ksp/symbol/KSAnnotated;Lkotlin/reflect/KClass;)Z
+	public static final fun isAnnotationPresentFqName (Lcom/google/devtools/ksp/symbol/KSAnnotated;Ljava/util/Set;)Z
 	public static final fun isExtensionDeclaration (Lcom/google/devtools/ksp/symbol/KSFunctionDeclaration;)Z
 	public static final fun isLateInit (Lcom/google/devtools/ksp/symbol/KSModifierListOwner;)Z
 	public static final fun mergeAnnotations (Lcom/google/devtools/ksp/symbol/KSAnnotated;)Ljava/util/List;
@@ -159,10 +163,12 @@ public final class com/squareup/anvil/compiler/internal/ksp/KspUtilKt {
 
 public abstract interface class com/squareup/anvil/compiler/internal/reference/AnnotatedReference {
 	public abstract fun getAnnotations ()Ljava/util/List;
+	public fun isAnnotatedWith (Ljava/util/Set;)Z
 	public fun isAnnotatedWith (Lorg/jetbrains/kotlin/name/FqName;)Z
 }
 
 public final class com/squareup/anvil/compiler/internal/reference/AnnotatedReference$DefaultImpls {
+	public static fun isAnnotatedWith (Lcom/squareup/anvil/compiler/internal/reference/AnnotatedReference;Ljava/util/Set;)Z
 	public static fun isAnnotatedWith (Lcom/squareup/anvil/compiler/internal/reference/AnnotatedReference;Lorg/jetbrains/kotlin/name/FqName;)Z
 }
 

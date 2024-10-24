@@ -27,7 +27,9 @@ import dagger.internal.DoubleCheck
 import java.io.File
 import javax.inject.Inject
 import javax.inject.Provider
-import javax.inject.Qualifier
+import dagger.internal.Provider as DaggerProvider
+import jakarta.inject.Inject as JakartaInject
+import jakarta.inject.Provider as JakartaProvider
 
 internal val mergeComponentFqName = MergeComponent::class.fqName
 internal val mergeComponentFactoryFqName = MergeComponent.Factory::class.fqName
@@ -69,14 +71,22 @@ internal val daggerBindsFqName = Binds::class.fqName
 internal val daggerProvidesFqName = Provides::class.fqName
 internal val daggerLazyFqName = Lazy::class.fqName
 internal val daggerLazyClassName = Lazy::class.asClassName()
-internal val injectFqName = Inject::class.fqName
-internal val qualifierFqName = Qualifier::class.fqName
+internal val injectFqNames = setOf(
+  Inject::class.fqName,
+  JakartaInject::class.fqName,
+)
 internal val mapKeyFqName = MapKey::class.fqName
 internal val assistedFqName = Assisted::class.fqName
 internal val assistedFactoryFqName = AssistedFactory::class.fqName
 internal val assistedInjectFqName = AssistedInject::class.fqName
-internal val providerFqName = Provider::class.fqName
-internal val providerClassName = Provider::class.asClassName()
+internal val daggerProviderClassName = DaggerProvider::class.asClassName()
+internal val javaxProviderClassName = Provider::class.asClassName()
+internal val providerClassNames = setOf(
+  Provider::class.asClassName(),
+  JakartaProvider::class.asClassName(),
+  DaggerProvider::class.asClassName(),
+)
+internal val providerFqNames = providerClassNames.mapToSet { it.fqName }
 internal val jvmSuppressWildcardsFqName = JvmSuppressWildcards::class.fqName
 internal val jvmFieldFqName = JvmField::class.fqName
 internal val publishedApiFqName = PublishedApi::class.fqName

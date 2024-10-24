@@ -3,7 +3,7 @@ package com.squareup.anvil.compiler.codegen
 import com.squareup.anvil.compiler.anyFqName
 import com.squareup.anvil.compiler.assistedInjectFqName
 import com.squareup.anvil.compiler.contributesMultibindingFqName
-import com.squareup.anvil.compiler.injectFqName
+import com.squareup.anvil.compiler.injectFqNames
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -116,7 +116,7 @@ internal fun ClassReference.atLeastOneAnnotation(
  */
 internal fun <T : MemberFunctionReference> Collection<T>.injectConstructor(): T? {
   val constructors = filter {
-    it.isAnnotatedWith(injectFqName) || it.isAnnotatedWith(assistedInjectFqName)
+    it.isAnnotatedWith(injectFqNames) || it.isAnnotatedWith(assistedInjectFqName)
   }
 
   return when (constructors.size) {

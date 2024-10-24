@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.squareup.anvil.compiler.codegen.dagger.Parameter.AssistedParameterKey
+import com.squareup.anvil.compiler.javaxProviderClassName
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.ParameterizedTypeName
@@ -29,7 +30,7 @@ internal sealed interface Parameter {
 
   val originalTypeName: TypeName
     get() = when {
-      isLazyWrappedInProvider -> lazyTypeName.wrapInProvider()
+      isLazyWrappedInProvider -> lazyTypeName.wrapInProvider(javaxProviderClassName)
       isWrappedInProvider -> providerTypeName
       isWrappedInLazy -> lazyTypeName
       else -> typeName

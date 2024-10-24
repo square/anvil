@@ -19,10 +19,11 @@ import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
-import com.squareup.anvil.compiler.injectFqName
+import com.squareup.anvil.compiler.injectFqNames
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.joinSimpleNames
+import com.squareup.anvil.compiler.internal.ksp.getSymbolsWithAnnotations
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.Visibility
 import com.squareup.anvil.compiler.internal.reference.asClassName
@@ -60,7 +61,7 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
 
     override fun processChecked(resolver: Resolver): List<KSAnnotated> {
       val deferred = mutableListOf<KSAnnotated>()
-      resolver.getSymbolsWithAnnotation(injectFqName.asString())
+      resolver.getSymbolsWithAnnotations(injectFqNames)
         .mapNotNull {
           when (it) {
             is KSPropertySetter -> {
@@ -153,7 +154,7 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
         // (clazz.memberInjectParameters() will do this).
         clazz.properties
           .filter { it.visibility() != Visibility.PRIVATE }
-          .any { it.isAnnotatedWith(injectFqName) }
+          .any { it.isAnnotatedWith(injectFqNames) }
       }
       .map { clazz ->
 

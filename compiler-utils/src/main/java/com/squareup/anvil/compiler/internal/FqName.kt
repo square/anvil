@@ -19,14 +19,22 @@ import javax.inject.Inject
 import javax.inject.Qualifier
 import javax.inject.Scope
 import kotlin.reflect.KClass
+import jakarta.inject.Qualifier as JakartaQualifier
+import jakarta.inject.Scope as JakartaScope
 
 internal val jvmSuppressWildcardsFqName = JvmSuppressWildcards::class.fqName
 internal val publishedApiFqName = PublishedApi::class.fqName
-internal val qualifierFqName = Qualifier::class.fqName
+internal val qualifierFqNames = setOf(
+  Qualifier::class.fqName,
+  JakartaQualifier::class.fqName,
+)
 internal val mapKeyFqName = MapKey::class.fqName
 internal val daggerProvidesFqName = Provides::class.fqName
 internal val daggerLazyFqName = Lazy::class.fqName
-internal val daggerScopeFqName = Scope::class.fqName
+internal val scopeFqNames = setOf(
+  Scope::class.fqName,
+  JakartaScope::class.fqName,
+)
 internal val injectFqName = Inject::class.fqName
 
 internal val contributesToFqName = ContributesTo::class.fqName

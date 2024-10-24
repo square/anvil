@@ -6,16 +6,16 @@ import com.squareup.anvil.compiler.internal.contributesBindingFqName
 import com.squareup.anvil.compiler.internal.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.contributesSubcomponentFqName
 import com.squareup.anvil.compiler.internal.contributesToFqName
-import com.squareup.anvil.compiler.internal.daggerScopeFqName
 import com.squareup.anvil.compiler.internal.mapKeyFqName
 import com.squareup.anvil.compiler.internal.mergeComponentFqName
 import com.squareup.anvil.compiler.internal.mergeInterfacesFqName
 import com.squareup.anvil.compiler.internal.mergeModulesFqName
 import com.squareup.anvil.compiler.internal.mergeSubcomponentFqName
-import com.squareup.anvil.compiler.internal.qualifierFqName
+import com.squareup.anvil.compiler.internal.qualifierFqNames
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference.Psi
 import com.squareup.anvil.compiler.internal.requireFqName
+import com.squareup.anvil.compiler.internal.scopeFqNames
 import com.squareup.kotlinpoet.AnnotationSpec
 import com.squareup.kotlinpoet.MemberName
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -87,9 +87,9 @@ public sealed class AnnotationReference {
   public fun exclude(parameterIndex: Int = excludeIndex(fqName)): List<ClassReference> =
     argumentAt("exclude", parameterIndex)?.value<List<ClassReference>>().orEmpty()
 
-  public fun isQualifier(): Boolean = classReference.isAnnotatedWith(qualifierFqName)
+  public fun isQualifier(): Boolean = classReference.isAnnotatedWith(qualifierFqNames)
   public fun isMapKey(): Boolean = classReference.isAnnotatedWith(mapKeyFqName)
-  public fun isDaggerScope(): Boolean = classReference.isAnnotatedWith(daggerScopeFqName)
+  public fun isDaggerScope(): Boolean = classReference.isAnnotatedWith(scopeFqNames)
 
   public fun toAnnotationSpec(): AnnotationSpec {
     return AnnotationSpec

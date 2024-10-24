@@ -16,7 +16,7 @@ import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.injectConstructor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
 import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
-import com.squareup.anvil.compiler.injectFqName
+import com.squareup.anvil.compiler.injectFqNames
 import com.squareup.anvil.compiler.internal.containingFileAsJavaFile
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.joinSimpleNames
@@ -45,7 +45,6 @@ import dagger.internal.Factory
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
-import javax.inject.Inject
 
 internal object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext) = context.generateFactories
@@ -60,7 +59,7 @@ internal object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
       val deferred = mutableListOf<KSAnnotated>()
       resolver.injectConstructors()
         .forEach { (clazz, constructor) ->
-          if (!constructor.isAnnotationPresent<Inject>()) {
+          if (!constructor.isAnnotationPresent(injectFqNames)) {
             // Only generating @Inject constructors
             return@forEach
           }
@@ -112,7 +111,7 @@ internal object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
       .mapNotNull { clazz ->
         clazz.constructors
           .injectConstructor()
-          ?.takeIf { it.isAnnotatedWith(injectFqName) }
+          ?.takeIf { it.isAnnotatedWith(injectFqNames) }
           ?.let {
             generateFactoryClass(codeGenDir, clazz, it)
           }

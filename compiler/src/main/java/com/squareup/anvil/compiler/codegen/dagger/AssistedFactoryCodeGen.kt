@@ -74,7 +74,6 @@ import dagger.internal.InstanceFactory
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
-import javax.inject.Provider
 
 internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
 
@@ -591,7 +590,7 @@ internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
               .build()
           }
           TypeSpec.companionObjectBuilder()
-            .addFunction(createFactory("create", Provider::class.asClassName()))
+            .addFunction(createFactory("create", javax.inject.Provider::class.asClassName()))
             // New in Dagger 2.50: factories for dagger.internal.Provider
             .addFunction(
               createFactory("createFactoryProvider", dagger.internal.Provider::class.asClassName()),

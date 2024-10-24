@@ -45,6 +45,7 @@ dependencies {
   implementation(platform(libs.kotlin.bom))
   implementation(libs.dagger2)
   implementation(libs.jsr250)
+  implementation(libs.jakarta)
   implementation(libs.kotlinpoet)
   implementation(libs.kotlinpoet.ksp)
 
