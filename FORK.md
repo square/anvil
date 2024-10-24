@@ -5,6 +5,8 @@ This repo is a fork of Anvil that seeks to complete KSP support. At the point of
 Anvil supported KSP contributions and factories, but not yet merging contributions or
 contributing subcomponents.
 
+Introduction blog: https://www.zacsweers.dev/introducing-anvil-ksp/
+
 ## Blockers
 
 Before trying to use KSP component merging, check this issue to see if any of the issues
