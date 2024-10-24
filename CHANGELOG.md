@@ -4,7 +4,7 @@
 --------------
 
 - **Enhancement**: Improve error messaging for error types used as annotation arguments.
-- **Enhancement**: Initial support for javax.jakarta annotations. Note that Dagger itself appears to only partially support these at the moment. Generated code is identical, but jakarta `@Inject`/`@Qualifier`/`@Scope` annotations should be recognized now.
+- **Enhancement**: Initial support for jakarta.inject annotations. Note that Dagger itself appears to only partially support these at the moment. Generated code is identical, but jakarta `@Inject`/`@Qualifier`/`@Scope` annotations should be recognized now.
 - Update Dagger to `2.52`.
 
 0.3.3
