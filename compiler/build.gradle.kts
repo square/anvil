@@ -44,7 +44,7 @@ dependencies {
   implementation(libs.kotlinpoet.ksp)
 
   compileOnly(libs.auto.service.annotations)
-  compileOnly(libs.kotlin.compiler)
+  compileOnly(libs.kotlin.compiler.embeddable)
   compileOnly(libs.ksp.compilerPlugin)
   compileOnly(libs.ksp.api)
 
@@ -56,10 +56,10 @@ dependencies {
   testImplementation(libs.guava)
   testImplementation(libs.kase)
   testImplementation(libs.kotest.assertions.core.jvm)
-  testImplementation(libs.kotlin.annotationProcessingEmbeddable)
+  testImplementation(libs.kotlin.annotation.processing.embeddable)
   testImplementation(libs.kotlin.compileTesting)
   testImplementation(libs.kotlin.compileTesting.ksp)
-  testImplementation(libs.kotlin.compiler)
+  testImplementation(libs.kotlin.compiler.embeddable)
   testImplementation(libs.kotlin.test)
   testImplementation(libs.kotlin.reflect)
   testImplementation(libs.ksp.compilerPlugin)
