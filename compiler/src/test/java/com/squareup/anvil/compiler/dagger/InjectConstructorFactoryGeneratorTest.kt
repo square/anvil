@@ -4,95 +4,106 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.compilationErrorLine
 import com.squareup.anvil.compiler.injectClass
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
+import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
-import com.squareup.anvil.compiler.testing.AnvilCompilationModeTest
+import com.squareup.anvil.compiler.useDaggerAndKspParams
+import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
 import dagger.internal.Factory
+import org.intellij.lang.annotations.Language
 import org.junit.Ignore
-import org.junit.jupiter.api.TestFactory
+import org.junit.Test
+import org.junit.runner.RunWith
+import org.junit.runners.Parameterized
+import org.junit.runners.Parameterized.Parameters
 import java.io.File
 import javax.inject.Provider
-import kotlin.streams.asSequence
 
-class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
-  AnvilCompilationMode.Embedded(),
-  AnvilCompilationMode.Ksp(),
+@RunWith(Parameterized::class)
+class InjectConstructorFactoryGeneratorTest(
+  private val useDagger: Boolean,
+  private val mode: AnvilCompilationMode,
 ) {
 
-  @TestFactory fun `a factory class is generated for an inject constructor without arguments`() =
-    testFactory {
-      /*
-  package com.squareup.test;
-
-  import dagger.internal.Factory;
-  import javax.annotation.Generated;
-
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class InjectClass_Factory implements Factory<InjectClass> {
-    @Override
-    public InjectClass get() {
-      return newInstance();
-    }
-
-    public static InjectClass_Factory create() {
-      return InstanceHolder.INSTANCE;
-    }
-
-    public static InjectClass newInstance() {
-      return new InjectClass();
-    }
-
-    private static final class InstanceHolder {
-      private static final InjectClass_Factory INSTANCE = new InjectClass_Factory();
-    }
+  companion object {
+    @Parameters(name = "Use Dagger: {0}, mode: {1}")
+    @JvmStatic
+    fun params() = useDaggerAndKspParams()
   }
-       */
 
-      compile(
-        """
+  @Test fun `a factory class is generated for an inject constructor without arguments`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  @Override
+  public InjectClass get() {
+    return newInstance();
+  }
+
+  public static InjectClass_Factory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static InjectClass newInstance() {
+    return new InjectClass();
+  }
+
+  private static final class InstanceHolder {
+    private static final InjectClass_Factory INSTANCE = new InjectClass_Factory();
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
       
       class InjectClass @Inject constructor()
       """,
-      ) {
-        val factoryClass = injectClass.factoryClass()
+    ) {
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList()).isEmpty()
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val instance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null)
+      val instance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null)
 
-        assertThat(instance).isNotNull()
-        assertThat((factoryInstance as Factory<*>).get()).isNotNull()
-      }
+      assertThat(instance).isNotNull()
+      assertThat((factoryInstance as Factory<*>).get()).isNotNull()
     }
+  }
 
   /**
    * Covers a bug that previously led to conflicting imports in the generated code:
    * https://github.com/square/anvil/issues/738
    */
-  @TestFactory fun `a factory class is generated without conflicting imports`() = testFactory {
+  @Test fun `a factory class is generated without conflicting imports`() {
     compile(
       """
       package com.squareup.test
@@ -114,51 +125,50 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
     }
   }
 
-  @TestFactory fun `a factory class is generated for an inject constructor with arguments`() =
-    testFactory {
-      /*
-  package com.squareup.test;
+  @Test fun `a factory class is generated for an inject constructor with arguments`() {
+    /*
+package com.squareup.test;
 
-  import dagger.internal.Factory;
-  import javax.annotation.Generated;
-  import javax.inject.Provider;
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+import javax.inject.Provider;
 
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class InjectClass_Factory implements Factory<InjectClass> {
-    private final Provider<String> stringProvider;
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<String> stringProvider;
 
-    private final Provider<Integer> p1_52215Provider;
+  private final Provider<Integer> p1_52215Provider;
 
-    public InjectClass_Factory(Provider<String> stringProvider, Provider<Integer> p1_52215Provider) {
-      this.stringProvider = stringProvider;
-      this.p1_52215Provider = p1_52215Provider;
-    }
-
-    @Override
-    public InjectClass get() {
-      return newInstance(stringProvider.get(), p1_52215Provider.get());
-    }
-
-    public static InjectClass_Factory create(Provider<String> stringProvider,
-        Provider<Integer> p1_52215Provider) {
-      return new InjectClass_Factory(stringProvider, p1_52215Provider);
-    }
-
-    public static InjectClass newInstance(String string, int p1_52215) {
-      return new InjectClass(string, p1_52215);
-    }
+  public InjectClass_Factory(Provider<String> stringProvider, Provider<Integer> p1_52215Provider) {
+    this.stringProvider = stringProvider;
+    this.p1_52215Provider = p1_52215Provider;
   }
-       */
 
-      compile(
-        """
+  @Override
+  public InjectClass get() {
+    return newInstance(stringProvider.get(), p1_52215Provider.get());
+  }
+
+  public static InjectClass_Factory create(Provider<String> stringProvider,
+      Provider<Integer> p1_52215Provider) {
+    return new InjectClass_Factory(stringProvider, p1_52215Provider);
+  }
+
+  public static InjectClass newInstance(String string, int p1_52215) {
+    return new InjectClass(string, p1_52215);
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -168,91 +178,90 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         val int: Int
       )
       """,
-      ) {
-        val factoryClass = injectClass.factoryClass()
+    ) {
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java, Provider::class.java)
-          .inOrder()
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java, Provider::class.java)
+        .inOrder()
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { "abc" }, Provider { 1 })
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { "abc" }, Provider { 1 })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null, "abc", 1)
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, "abc", 1)
+      val getInstance = (factoryInstance as Factory<*>).get()
 
-        assertThat(newInstance).isNotNull()
-        assertThat(getInstance).isNotNull()
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
 
-        assertThat(newInstance).isEqualTo(getInstance)
-        assertThat(newInstance).isNotSameInstanceAs(getInstance)
-      }
-    }
-
-  @TestFactory
-  fun `a factory class is generated for an inject constructor with Provider and Lazy arguments`() =
-    testFactory {
-      /*
-  package com.squareup.test;
-
-  import dagger.Lazy;
-  import dagger.internal.DoubleCheck;
-  import dagger.internal.Factory;
-  import java.util.List;
-  import javax.annotation.Generated;
-  import javax.inject.Provider;
-
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class InjectClass_Factory implements Factory<InjectClass> {
-    private final Provider<String> stringProvider;
-
-    private final Provider<String> stringProvider2;
-
-    private final Provider<List<String>> stringListProvider;
-
-    private final Provider<String> stringProvider3;
-
-    public InjectClass_Factory(Provider<String> stringProvider, Provider<String> stringProvider2,
-        Provider<List<String>> stringListProvider, Provider<String> stringProvider3) {
-      this.stringProvider = stringProvider;
-      this.stringProvider2 = stringProvider2;
-      this.stringListProvider = stringListProvider;
-      this.stringProvider3 = stringProvider3;
-    }
-
-    @Override
-    public InjectClass get() {
-      return newInstance(stringProvider.get(), stringProvider2, stringListProvider, DoubleCheck.lazy(stringProvider3));
-    }
-
-    public static InjectClass_Factory create(Provider<String> stringProvider,
-        Provider<String> stringProvider2, Provider<List<String>> stringListProvider,
-        Provider<String> stringProvider3) {
-      return new InjectClass_Factory(stringProvider, stringProvider2, stringListProvider, stringProvider3);
-    }
-
-    public static InjectClass newInstance(String string, Provider<String> stringProvider,
-        Provider<List<String>> stringListProvider, Lazy<String> lazyString) {
-      return new InjectClass(string, stringProvider, stringListProvider, lazyString);
+      assertThat(newInstance).isEqualTo(getInstance)
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
     }
   }
-       */
 
-      @Suppress("EqualsOrHashCode")
-      compile(
-        """
+  @Test
+  fun `a factory class is generated for an inject constructor with Provider and Lazy arguments`() {
+    /*
+package com.squareup.test;
+
+import dagger.Lazy;
+import dagger.internal.DoubleCheck;
+import dagger.internal.Factory;
+import java.util.List;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<String> stringProvider;
+
+  private final Provider<String> stringProvider2;
+
+  private final Provider<List<String>> stringListProvider;
+
+  private final Provider<String> stringProvider3;
+
+  public InjectClass_Factory(Provider<String> stringProvider, Provider<String> stringProvider2,
+      Provider<List<String>> stringListProvider, Provider<String> stringProvider3) {
+    this.stringProvider = stringProvider;
+    this.stringProvider2 = stringProvider2;
+    this.stringListProvider = stringListProvider;
+    this.stringProvider3 = stringProvider3;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(stringProvider.get(), stringProvider2, stringListProvider, DoubleCheck.lazy(stringProvider3));
+  }
+
+  public static InjectClass_Factory create(Provider<String> stringProvider,
+      Provider<String> stringProvider2, Provider<List<String>> stringListProvider,
+      Provider<String> stringProvider3) {
+    return new InjectClass_Factory(stringProvider, stringProvider2, stringListProvider, stringProvider3);
+  }
+
+  public static InjectClass newInstance(String string, Provider<String> stringProvider,
+      Provider<List<String>> stringListProvider, Lazy<String> lazyString) {
+    return new InjectClass(string, stringProvider, stringListProvider, lazyString);
+  }
+}
+     */
+
+    @Suppress("EqualsOrHashCode")
+    compile(
+      """
       package com.squareup.test
       
       import dagger.Lazy
@@ -274,90 +283,89 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         }
       }
       """,
-      ) {
-        val factoryClass = injectClass.factoryClass()
+    ) {
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(
-            Provider::class.java,
-            Provider::class.java,
-            Provider::class.java,
-            Provider::class.java,
-          )
-          .inOrder()
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+        )
+        .inOrder()
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(
-            null,
-            Provider { "a" },
-            Provider { "b" },
-            Provider { listOf("c") },
-            Provider { "d" },
-          )
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(
+          null,
+          Provider { "a" },
+          Provider { "b" },
+          Provider { listOf("c") },
+          Provider { "d" },
+        )
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null, "a", Provider { "b" }, Provider { listOf("c") }, Lazy { "d" })
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, "a", Provider { "b" }, Provider { listOf("c") }, Lazy { "d" })
+      val getInstance = (factoryInstance as Factory<*>).get()
 
-        assertThat(newInstance).isNotNull()
-        assertThat(getInstance).isNotNull()
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
 
-        assertThat(newInstance).isEqualTo(getInstance)
-        assertThat(newInstance).isNotSameInstanceAs(getInstance)
-      }
-    }
-
-  @TestFactory
-  fun `a factory class is generated for an inject constructor with a lazy argument wrapped in a provider`() =
-    testFactory {
-      /*
-  package com.squareup.test;
-
-  import dagger.Lazy;
-  import dagger.internal.DaggerGenerated;
-  import dagger.internal.Factory;
-  import dagger.internal.ProviderOfLazy;
-  import javax.annotation.processing.Generated;
-  import javax.inject.Provider;
-
-  @DaggerGenerated
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class InjectClass_Factory implements Factory<InjectClass> {
-    private final Provider<String> stringProvider;
-
-    public InjectClass_Factory(Provider<String> stringProvider) {
-      this.stringProvider = stringProvider;
-    }
-
-    @Override
-    public InjectClass get() {
-      return newInstance(ProviderOfLazy.create(stringProvider));
-    }
-
-    public static InjectClass_Factory create(Provider<String> stringProvider) {
-      return new InjectClass_Factory(stringProvider);
-    }
-
-    public static InjectClass newInstance(Provider<Lazy<String>> string) {
-      return new InjectClass(string);
+      assertThat(newInstance).isEqualTo(getInstance)
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
     }
   }
-       */
 
-      @Suppress("EqualsOrHashCode")
-      compile(
-        """
+  @Test
+  fun `a factory class is generated for an inject constructor with a lazy argument wrapped in a provider`() {
+    /*
+package com.squareup.test;
+
+import dagger.Lazy;
+import dagger.internal.DaggerGenerated;
+import dagger.internal.Factory;
+import dagger.internal.ProviderOfLazy;
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<String> stringProvider;
+
+  public InjectClass_Factory(Provider<String> stringProvider) {
+    this.stringProvider = stringProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(ProviderOfLazy.create(stringProvider));
+  }
+
+  public static InjectClass_Factory create(Provider<String> stringProvider) {
+    return new InjectClass_Factory(stringProvider);
+  }
+
+  public static InjectClass newInstance(Provider<Lazy<String>> string) {
+    return new InjectClass(string);
+  }
+}
+     */
+
+    @Suppress("EqualsOrHashCode")
+    compile(
+      """
       package com.squareup.test
       
       import dagger.Lazy
@@ -375,81 +383,80 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         }
       }
       """,
-      ) {
-        val factoryClass = injectClass.factoryClass()
+    ) {
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java)
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { "a" })
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { "a" })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null, Provider { dagger.Lazy { "a" } })
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, Provider { dagger.Lazy { "a" } })
+      val getInstance = (factoryInstance as Factory<*>).get()
 
-        assertThat(newInstance).isNotNull()
-        assertThat(getInstance).isNotNull()
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
 
-        assertThat(newInstance).isEqualTo(getInstance)
-        assertThat(newInstance).isNotSameInstanceAs(getInstance)
-      }
+      assertThat(newInstance).isEqualTo(getInstance)
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
     }
+  }
 
   // Notice in the get() function Dagger creates a Lazy of a Provider of Provider instead of a
   // Lazy of a Provider.
-  @TestFactory
+  @Test
   @Ignore("This test is broken with Dagger as well.")
-  fun `a factory class is generated for an inject constructor with a provider argument wrapped in a lazy`() =
-    testFactory {
-      /*
-  package com.squareup.test;
+  fun `a factory class is generated for an inject constructor with a provider argument wrapped in a lazy`() {
+    /*
+package com.squareup.test;
 
-  import dagger.Lazy;
-  import dagger.internal.DaggerGenerated;
-  import dagger.internal.DoubleCheck;
-  import dagger.internal.Factory;
-  import javax.annotation.processing.Generated;
-  import javax.inject.Provider;
+import dagger.Lazy;
+import dagger.internal.DaggerGenerated;
+import dagger.internal.DoubleCheck;
+import dagger.internal.Factory;
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
 
-  @DaggerGenerated
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class InjectClass_Factory implements Factory<InjectClass> {
-    private final Provider<Provider<String>> stringProvider;
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<Provider<String>> stringProvider;
 
-    public InjectClass_Factory(Provider<Provider<String>> stringProvider) {
-      this.stringProvider = stringProvider;
-    }
-
-    @Override
-    public InjectClass get() {
-      return newInstance(DoubleCheck.lazy(stringProvider));
-    }
-
-    public static InjectClass_Factory create(Provider<Provider<String>> stringProvider) {
-      return new InjectClass_Factory(stringProvider);
-    }
-
-    public static InjectClass newInstance(Lazy<Provider<String>> string) {
-      return new InjectClass(string);
-    }
+  public InjectClass_Factory(Provider<Provider<String>> stringProvider) {
+    this.stringProvider = stringProvider;
   }
-       */
 
-      @Suppress("EqualsOrHashCode")
-      compile(
-        """
+  @Override
+  public InjectClass get() {
+    return newInstance(DoubleCheck.lazy(stringProvider));
+  }
+
+  public static InjectClass_Factory create(Provider<Provider<String>> stringProvider) {
+    return new InjectClass_Factory(stringProvider);
+  }
+
+  public static InjectClass newInstance(Lazy<Provider<String>> string) {
+    return new InjectClass(string);
+  }
+}
+     */
+
+    @Suppress("EqualsOrHashCode")
+    compile(
+      """
       package com.squareup.test
       
       import dagger.Lazy
@@ -467,85 +474,84 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         }
       }
       """,
-      ) {
-        val factoryClass = injectClass.factoryClass()
+    ) {
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java)
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { "a" })
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { "a" })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null, dagger.Lazy { Provider { "a" } })
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, dagger.Lazy { Provider { "a" } })
+      val getInstance = (factoryInstance as Factory<*>).get()
 
-        assertThat(newInstance).isNotNull()
-        assertThat(getInstance).isNotNull()
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
 
-        assertThat(newInstance).isEqualTo(getInstance)
-        assertThat(newInstance).isNotSameInstanceAs(getInstance)
-      }
-    }
-
-  @TestFactory fun `a factory class is generated for an inject constructor with star imports`() =
-    testFactory {
-      /*
-  package com.squareup.test;
-
-  import dagger.internal.DaggerGenerated;
-  import dagger.internal.Factory;
-  import java.io.File;
-  import java.nio.file.Path;
-  import java.util.Set;
-  import javax.annotation.processing.Generated;
-  import javax.inject.Provider;
-
-  @DaggerGenerated
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class InjectClass_Factory implements Factory<InjectClass> {
-    private final Provider<File> fileProvider;
-
-    private final Provider<Path> pathProvider;
-
-    private final Provider<Set<String>> setMultibindingProvider;
-
-    public InjectClass_Factory(Provider<File> fileProvider, Provider<Path> pathProvider,
-        Provider<Set<String>> setMultibindingProvider) {
-      this.fileProvider = fileProvider;
-      this.pathProvider = pathProvider;
-      this.setMultibindingProvider = setMultibindingProvider;
-    }
-
-    @Override
-    public InjectClass get() {
-      return newInstance(fileProvider.get(), pathProvider.get(), setMultibindingProvider.get());
-    }
-
-    public static InjectClass_Factory create(Provider<File> fileProvider, Provider<Path> pathProvider,
-        Provider<Set<String>> setMultibindingProvider) {
-      return new InjectClass_Factory(fileProvider, pathProvider, setMultibindingProvider);
-    }
-
-    public static InjectClass newInstance(File file, Path path, Set<String> setMultibinding) {
-      return new InjectClass(file, path, setMultibinding);
+      assertThat(newInstance).isEqualTo(getInstance)
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
     }
   }
-       */
 
-      compile(
-        """
+  @Test fun `a factory class is generated for an inject constructor with star imports`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.DaggerGenerated;
+import dagger.internal.Factory;
+import java.io.File;
+import java.nio.file.Path;
+import java.util.Set;
+import javax.annotation.processing.Generated;
+import javax.inject.Provider;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<File> fileProvider;
+
+  private final Provider<Path> pathProvider;
+
+  private final Provider<Set<String>> setMultibindingProvider;
+
+  public InjectClass_Factory(Provider<File> fileProvider, Provider<Path> pathProvider,
+      Provider<Set<String>> setMultibindingProvider) {
+    this.fileProvider = fileProvider;
+    this.pathProvider = pathProvider;
+    this.setMultibindingProvider = setMultibindingProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(fileProvider.get(), pathProvider.get(), setMultibindingProvider.get());
+  }
+
+  public static InjectClass_Factory create(Provider<File> fileProvider, Provider<Path> pathProvider,
+      Provider<Set<String>> setMultibindingProvider) {
+    return new InjectClass_Factory(fileProvider, pathProvider, setMultibindingProvider);
+  }
+
+  public static InjectClass newInstance(File file, Path path, Set<String> setMultibinding) {
+    return new InjectClass(file, path, setMultibinding);
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import java.io.*
@@ -559,48 +565,47 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         val setMultibinding: Set<String>,
       )
       """,
-      ) {
-        val factoryClass = injectClass.factoryClass()
+    ) {
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java, Provider::class.java, Provider::class.java)
-          .inOrder()
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java, Provider::class.java, Provider::class.java)
+        .inOrder()
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(
-            null,
-            Provider { File("") },
-            Provider { File("").toPath() },
-            Provider { emptySet<String>() },
-          )
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(
+          null,
+          Provider { File("") },
+          Provider { File("").toPath() },
+          Provider { emptySet<String>() },
+        )
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null, File(""), File("").toPath(), emptySet<String>())
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, File(""), File("").toPath(), emptySet<String>())
+      val getInstance = (factoryInstance as Factory<*>).get()
 
-        assertThat(newInstance).isNotNull()
-        assertThat(getInstance).isNotNull()
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
 
-        assertThat(newInstance).isEqualTo(getInstance)
-        assertThat(newInstance).isNotSameInstanceAs(getInstance)
-      }
+      assertThat(newInstance).isEqualTo(getInstance)
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
     }
+  }
 
-  @TestFactory fun `a factory class is generated for an inject constructor with star imports - 2`() =
-    testFactory {
-      compile(
-        """
+  @Test fun `a factory class is generated for an inject constructor with star imports - 2`() {
+    compile(
+      """
         package a
   
         class A {
           abstract class AA
         }
       """,
-        """
+      """
         package b
 
         import a.A
@@ -609,63 +614,62 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         
         public class B @Inject constructor(): A.AA()
       """,
-      ) {
-        assertThat(classLoader.loadClass("b.B").factoryClass()).isNotNull()
-      }
-    }
-
-  @TestFactory fun `a factory class is generated for an inject constructor with generic arguments`() =
-    testFactory {
-      /*
-  package com.squareup.test;
-
-  import dagger.internal.Factory;
-  import java.util.List;
-  import java.util.Set;
-  import javax.annotation.Generated;
-  import javax.inject.Provider;
-  import kotlin.Pair;
-
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class InjectClass_Factory implements Factory<InjectClass> {
-    private final Provider<Pair<Pair<String, Integer>, ? extends List<String>>> pairProvider;
-
-    private final Provider<Set<String>> setProvider;
-
-    public InjectClass_Factory(
-        Provider<Pair<Pair<String, Integer>, ? extends List<String>>> pairProvider,
-        Provider<Set<String>> setProvider) {
-      this.pairProvider = pairProvider;
-      this.setProvider = setProvider;
-    }
-
-    @Override
-    public InjectClass get() {
-      return newInstance(pairProvider.get(), setProvider.get());
-    }
-
-    public static InjectClass_Factory create(
-        Provider<Pair<Pair<String, Integer>, ? extends List<String>>> pairProvider,
-        Provider<Set<String>> setProvider) {
-      return new InjectClass_Factory(pairProvider, setProvider);
-    }
-
-    public static InjectClass newInstance(Pair<Pair<String, Integer>, ? extends List<String>> pair,
-        Set<String> set) {
-      return new InjectClass(pair, set);
+    ) {
+      assertThat(classLoader.loadClass("b.B").factoryClass()).isNotNull()
     }
   }
-       */
 
-      compile(
-        """
+  @Test fun `a factory class is generated for an inject constructor with generic arguments`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import java.util.List;
+import java.util.Set;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+import kotlin.Pair;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<Pair<Pair<String, Integer>, ? extends List<String>>> pairProvider;
+
+  private final Provider<Set<String>> setProvider;
+
+  public InjectClass_Factory(
+      Provider<Pair<Pair<String, Integer>, ? extends List<String>>> pairProvider,
+      Provider<Set<String>> setProvider) {
+    this.pairProvider = pairProvider;
+    this.setProvider = setProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(pairProvider.get(), setProvider.get());
+  }
+
+  public static InjectClass_Factory create(
+      Provider<Pair<Pair<String, Integer>, ? extends List<String>>> pairProvider,
+      Provider<Set<String>> setProvider) {
+    return new InjectClass_Factory(pairProvider, setProvider);
+  }
+
+  public static InjectClass newInstance(Pair<Pair<String, Integer>, ? extends List<String>> pair,
+      Set<String> set) {
+    return new InjectClass(pair, set);
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -675,36 +679,35 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         val set: Set<String>
       )
       """,
-      ) {
-        val factoryClass = injectClass.factoryClass()
+    ) {
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java, Provider::class.java)
-          .inOrder()
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java, Provider::class.java)
+        .inOrder()
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { Pair(Pair("a", 1), listOf("b")) }, Provider { setOf("c") })
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { Pair(Pair("a", 1), listOf("b")) }, Provider { setOf("c") })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null, Pair(Pair("a", 1), listOf("b")), setOf("c"))
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, Pair(Pair("a", 1), listOf("b")), setOf("c"))
+      val getInstance = (factoryInstance as Factory<*>).get()
 
-        assertThat(newInstance).isNotNull()
-        assertThat(getInstance).isNotNull()
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
 
-        assertThat(newInstance).isEqualTo(getInstance)
-        assertThat(newInstance).isNotSameInstanceAs(getInstance)
-      }
+      assertThat(newInstance).isEqualTo(getInstance)
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
     }
+  }
 
-  @TestFactory fun `a factory class is generated for an inject constructor with a lambda as super type`() =
-    testFactory {
-      compile(
-        """
+  @Test fun `a factory class is generated for an inject constructor with a lambda as super type`() {
+    compile(
+      """
         package com.squareup.test
 
         import javax.inject.Inject
@@ -713,49 +716,48 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
           override fun invoke(integer: Int) = Unit
         }
       """,
-      ) {
-        assertThat(injectClass.factoryClass()).isNotNull()
-      }
-    }
-
-  @TestFactory fun `a factory class is generated for an inject constructor inner class`() =
-    testFactory {
-      /*
-  package com.squareup.test;
-
-  import dagger.internal.Factory;
-  import javax.annotation.Generated;
-
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class OuterClass_InjectClass_Factory implements Factory<OuterClass.InjectClass> {
-    @Override
-    public OuterClass.InjectClass get() {
-      return newInstance();
-    }
-
-    public static OuterClass_InjectClass_Factory create() {
-      return InstanceHolder.INSTANCE;
-    }
-
-    public static OuterClass.InjectClass newInstance() {
-      return new OuterClass.InjectClass();
-    }
-
-    private static final class InstanceHolder {
-      private static final OuterClass_InjectClass_Factory INSTANCE = new OuterClass_InjectClass_Factory();
+    ) {
+      assertThat(injectClass.factoryClass()).isNotNull()
     }
   }
-       */
 
-      compile(
-        """
+  @Test fun `a factory class is generated for an inject constructor inner class`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class OuterClass_InjectClass_Factory implements Factory<OuterClass.InjectClass> {
+  @Override
+  public OuterClass.InjectClass get() {
+    return newInstance();
+  }
+
+  public static OuterClass_InjectClass_Factory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static OuterClass.InjectClass newInstance() {
+    return new OuterClass.InjectClass();
+  }
+
+  private static final class InstanceHolder {
+    private static final OuterClass_InjectClass_Factory INSTANCE = new OuterClass_InjectClass_Factory();
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -764,77 +766,76 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         class InjectClass @Inject constructor()
       }
       """,
-      ) {
-        val injectClass = classLoader.loadClass("com.squareup.test.OuterClass\$InjectClass")
-        val factoryClass = injectClass.factoryClass()
+    ) {
+      val injectClass = classLoader.loadClass("com.squareup.test.OuterClass\$InjectClass")
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList()).isEmpty()
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val instance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null)
+      val instance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null)
 
-        assertThat(instance).isNotNull()
-        assertThat((factoryInstance as Factory<*>).get()).isNotNull()
-      }
-    }
-
-  @TestFactory fun `a factory class is generated for an inject constructor with function arguments`() =
-    testFactory {
-      /*
-  package com.squareup.test;
-
-  import dagger.internal.Factory;
-  import java.util.List;
-  import java.util.Set;
-  import javax.annotation.Generated;
-  import javax.inject.Provider;
-  import kotlin.jvm.functions.Function1;
-
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class InjectClass_Factory implements Factory<InjectClass> {
-    private final Provider<String> stringProvider;
-
-    private final Provider<Set<Function1<List<String>, List<String>>>> setProvider;
-
-    public InjectClass_Factory(Provider<String> stringProvider,
-        Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
-      this.stringProvider = stringProvider;
-      this.setProvider = setProvider;
-    }
-
-    @Override
-    public InjectClass get() {
-      return newInstance(stringProvider.get(), setProvider.get());
-    }
-
-    public static InjectClass_Factory create(Provider<String> stringProvider,
-        Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
-      return new InjectClass_Factory(stringProvider, setProvider);
-    }
-
-    public static InjectClass newInstance(String string,
-        Set<Function1<List<String>, List<String>>> set) {
-      return new InjectClass(string, set);
+      assertThat(instance).isNotNull()
+      assertThat((factoryInstance as Factory<*>).get()).isNotNull()
     }
   }
-       */
 
-      compile(
-        """
+  @Test fun `a factory class is generated for an inject constructor with function arguments`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import java.util.List;
+import java.util.Set;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+import kotlin.jvm.functions.Function1;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<String> stringProvider;
+
+  private final Provider<Set<Function1<List<String>, List<String>>>> setProvider;
+
+  public InjectClass_Factory(Provider<String> stringProvider,
+      Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
+    this.stringProvider = stringProvider;
+    this.setProvider = setProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(stringProvider.get(), setProvider.get());
+  }
+
+  public static InjectClass_Factory create(Provider<String> stringProvider,
+      Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
+    return new InjectClass_Factory(stringProvider, setProvider);
+  }
+
+  public static InjectClass newInstance(String string,
+      Set<Function1<List<String>, List<String>>> set) {
+    return new InjectClass(string, set);
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -846,147 +847,145 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         val set: @JvmSuppressWildcards Set<(StringList) -> StringList>
       )
       """,
-      ) {
-        val factoryClass = injectClass.factoryClass()
+    ) {
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java, Provider::class.java)
-          .inOrder()
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java, Provider::class.java)
+        .inOrder()
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { "a" }, Provider { setOf { listOf("b") } })
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { "a" }, Provider { setOf { listOf("b") } })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null, "a", setOf { _: List<String> -> listOf("b") })
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, "a", setOf { _: List<String> -> listOf("b") })
+      val getInstance = (factoryInstance as Factory<*>).get()
 
-        assertThat(newInstance).isNotNull()
-        assertThat(getInstance).isNotNull()
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
 
-        assertThat(newInstance).isNotSameInstanceAs(getInstance)
-      }
-    }
-
-  @TestFactory fun `a factory class is generated for a class starting with a lowercase character`() =
-    testFactory {
-      /*
-  package com.squareup.test;
-
-  import dagger.internal.Factory;
-  import java.util.List;
-  import java.util.Set;
-  import javax.annotation.Generated;
-  import javax.inject.Provider;
-  import kotlin.jvm.functions.Function1;
-
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class InjectClass_Factory implements Factory<InjectClass> {
-    private final Provider<String> stringProvider;
-
-    private final Provider<Set<Function1<List<String>, List<String>>>> setProvider;
-
-    public InjectClass_Factory(Provider<String> stringProvider,
-        Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
-      this.stringProvider = stringProvider;
-      this.setProvider = setProvider;
-    }
-
-    @Override
-    public InjectClass get() {
-      return newInstance(stringProvider.get(), setProvider.get());
-    }
-
-    public static InjectClass_Factory create(Provider<String> stringProvider,
-        Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
-      return new InjectClass_Factory(stringProvider, setProvider);
-    }
-
-    public static InjectClass newInstance(String string,
-        Set<Function1<List<String>, List<String>>> set) {
-      return new InjectClass(string, set);
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
     }
   }
-       */
 
-      @Suppress("ClassName")
-      compile(
-        """
+  @Test fun `a factory class is generated for a class starting with a lowercase character`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import java.util.List;
+import java.util.Set;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+import kotlin.jvm.functions.Function1;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<String> stringProvider;
+
+  private final Provider<Set<Function1<List<String>, List<String>>>> setProvider;
+
+  public InjectClass_Factory(Provider<String> stringProvider,
+      Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
+    this.stringProvider = stringProvider;
+    this.setProvider = setProvider;
+  }
+
+  @Override
+  public InjectClass get() {
+    return newInstance(stringProvider.get(), setProvider.get());
+  }
+
+  public static InjectClass_Factory create(Provider<String> stringProvider,
+      Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
+    return new InjectClass_Factory(stringProvider, setProvider);
+  }
+
+  public static InjectClass newInstance(String string,
+      Set<Function1<List<String>, List<String>>> set) {
+    return new InjectClass(string, set);
+  }
+}
+     */
+
+    @Suppress("ClassName")
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
       
       data class injectClass @Inject constructor(val string: String)
       """,
-      ) {
-        val factoryClass = classLoader.loadClass("com.squareup.test.injectClass").factoryClass()
+    ) {
+      val factoryClass = classLoader.loadClass("com.squareup.test.injectClass").factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java)
-          .inOrder()
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
+        .inOrder()
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { "a" })
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { "a" })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null, "a")
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, "a")
+      val getInstance = (factoryInstance as Factory<*>).get()
 
-        assertThat(newInstance).isNotNull()
-        assertThat(getInstance).isNotNull()
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
 
-        assertThat(newInstance).isNotSameInstanceAs(getInstance)
-      }
-    }
-
-  @TestFactory
-  fun `a factory class is generated for a class with constructor and member injection`() =
-    testFactory {
-      /*
-  import dagger.`internal`.Factory
-  import javax.inject.Provider
-  import kotlin.String
-  import kotlin.Suppress
-  import kotlin.jvm.JvmStatic
-  import kotlin.jvm.JvmSuppressWildcards
-
-  public class InjectClass_Factory(
-    private val param0: Provider<String>,
-    private val param1: Provider<@JvmSuppressWildcards Int>
-  ) : Factory<InjectClass> {
-    public override fun `get`(): InjectClass {
-      val instance = newInstance(param0.get())
-      InjectClass_MembersInjector.injectIntProvider(instance, param1)
-      return instance
-    }
-
-    public companion object {
-      @JvmStatic
-      public fun create(param0: Provider<String>, param1: Provider<@JvmSuppressWildcards Int>):
-          InjectClass_Factory = InjectClass_Factory(param0, param1)
-
-      @JvmStatic
-      public fun newInstance(param0: String): InjectClass = InjectClass(param0)
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
     }
   }
-       */
 
-      compile(
-        """
+  @Test
+  fun `a factory class is generated for a class with constructor and member injection`() {
+    /*
+import dagger.`internal`.Factory
+import javax.inject.Provider
+import kotlin.String
+import kotlin.Suppress
+import kotlin.jvm.JvmStatic
+import kotlin.jvm.JvmSuppressWildcards
+
+public class InjectClass_Factory(
+  private val param0: Provider<String>,
+  private val param1: Provider<@JvmSuppressWildcards Int>
+) : Factory<InjectClass> {
+  public override fun `get`(): InjectClass {
+    val instance = newInstance(param0.get())
+    InjectClass_MembersInjector.injectIntProvider(instance, param1)
+    return instance
+  }
+
+  public companion object {
+    @JvmStatic
+    public fun create(param0: Provider<String>, param1: Provider<@JvmSuppressWildcards Int>):
+        InjectClass_Factory = InjectClass_Factory(param0, param1)
+
+    @JvmStatic
+    public fun newInstance(param0: String): InjectClass = InjectClass(param0)
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -1015,33 +1014,33 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         }
       }
       """,
-      ) {
+    ) {
 
-        val factoryClass = injectClass.factoryClass()
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java, Provider::class.java)
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java, Provider::class.java)
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { "a" }, Provider { 1 })
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { "a" }, Provider { 1 })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null, "a")
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, "a")
+      val getInstance = (factoryInstance as Factory<*>).get()
 
-        assertThat(newInstance).isNotNull()
-        assertThat(getInstance).isNotNull()
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
 
-        assertThat(newInstance).isNotSameInstanceAs(getInstance)
-      }
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
     }
+  }
 
-  @TestFactory
-  fun `a factory class performs member injection on super classes`() = testFactory {
+  @Test
+  fun `a factory class performs member injection on super classes`() {
 
     compile(
       """
@@ -1118,12 +1117,11 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
     }
   }
 
-  @TestFactory
-  fun `a factory class performs member injection when the only fields are in a super class`() =
-    testFactory {
+  @Test
+  fun `a factory class performs member injection when the only fields are in a super class`() {
 
-      compile(
-        """
+    compile(
+      """
       package com.squareup.test
 
       import javax.inject.Inject
@@ -1139,44 +1137,43 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         lateinit var base2: List<String>
       }
       """,
-      ) {
+    ) {
 
-        val factoryClass = injectClass.factoryClass()
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(
-            Provider::class.java,
-            Provider::class.java,
-          )
-
-        val base1 = listOf(3)
-        val base2 = listOf("base2")
-
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
-
-        val factoryInstance = factoryClass.createInstance(
-          Provider { base1 },
-          Provider { base2 },
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
         )
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null)
-        assertThat(newInstance).isNotNull()
+      val base1 = listOf(3)
+      val base2 = listOf("base2")
 
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        assertThat(getInstance.getPropertyValue("base1")).isEqualTo(base1)
-        assertThat(getInstance.getPropertyValue("base2")).isEqualTo(base2)
-      }
+      val factoryInstance = factoryClass.createInstance(
+        Provider { base1 },
+        Provider { base2 },
+      )
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null)
+      assertThat(newInstance).isNotNull()
+
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(getInstance.getPropertyValue("base1")).isEqualTo(base1)
+      assertThat(getInstance.getPropertyValue("base2")).isEqualTo(base2)
     }
+  }
 
-  @TestFactory fun `a factory class performs member injection on a super class from another module`() =
-    testFactory {
+  @Test fun `a factory class performs member injection on a super class from another module`() {
 
-      val otherModuleResult = compile(
-        """
+    val otherModuleResult = compile(
+      """
       package com.squareup.test
 
       import javax.inject.Inject
@@ -1190,12 +1187,12 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         lateinit var base2: List<String>
       }
       """,
-      ) {
-        assertThat(exitCode).isEqualTo(OK)
-      }
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
 
-      compile(
-        """
+    compile(
+      """
       package com.squareup.test
 
       import javax.inject.Inject
@@ -1206,50 +1203,49 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         lateinit var name: String
       }
       """,
-        previousCompilationResult = otherModuleResult,
-      ) {
+      previousCompilationResult = otherModuleResult,
+    ) {
 
-        val factoryClass = injectClass.factoryClass()
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(
-            Provider::class.java,
-            Provider::class.java,
-            Provider::class.java,
-          )
-
-        val name = "name"
-        val base1 = listOf(3)
-        val base2 = listOf("base2")
-
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
-
-        val factoryInstance = factoryClass.createInstance(
-          Provider { base1 },
-          Provider { base2 },
-          Provider { name },
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
         )
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null)
-        assertThat(newInstance).isNotNull()
+      val name = "name"
+      val base1 = listOf(3)
+      val base2 = listOf("base2")
 
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        assertThat(getInstance.getPropertyValue("name")).isEqualTo(name)
-        assertThat(getInstance.getPropertyValue("base1")).isEqualTo(base1)
-        assertThat(getInstance.getPropertyValue("base2")).isEqualTo(base2)
-      }
+      val factoryInstance = factoryClass.createInstance(
+        Provider { base1 },
+        Provider { base2 },
+        Provider { name },
+      )
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null)
+      assertThat(newInstance).isNotNull()
+
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(getInstance.getPropertyValue("name")).isEqualTo(name)
+      assertThat(getInstance.getPropertyValue("base1")).isEqualTo(base1)
+      assertThat(getInstance.getPropertyValue("base2")).isEqualTo(base2)
     }
+  }
 
-  @TestFactory
-  fun `a factory class performs member injection on a grand-super class from another module`() =
-    testFactory {
+  @Test
+  fun `a factory class performs member injection on a grand-super class from another module`() {
 
-      val otherModuleResult = compile(
-        """
+    val otherModuleResult = compile(
+      """
       package com.squareup.test
 
       import javax.inject.Inject
@@ -1263,12 +1259,12 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         lateinit var base2: List<String>
       }
       """,
-      ) {
-        assertThat(exitCode).isEqualTo(OK)
-      }
+    ) {
+      assertThat(exitCode).isEqualTo(OK)
+    }
 
-      compile(
-        """
+    compile(
+      """
       package com.squareup.test
 
       import javax.inject.Inject
@@ -1288,54 +1284,54 @@ class InjectConstructorFactoryGeneratorTest : AnvilCompilationModeTest(
         lateinit var middle2: Set<String>
       }
       """,
-        previousCompilationResult = otherModuleResult,
-      ) {
+      previousCompilationResult = otherModuleResult,
+    ) {
 
-        val factoryClass = injectClass.factoryClass()
+      val factoryClass = injectClass.factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(
-            Provider::class.java,
-            Provider::class.java,
-            Provider::class.java,
-            Provider::class.java,
-            Provider::class.java,
-          )
-
-        val name = "name"
-        val middle1 = setOf(1)
-        val middle2 = setOf("middle2")
-        val base1 = listOf(3)
-        val base2 = listOf("base2")
-
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
-
-        val factoryInstance = factoryClass.createInstance(
-          Provider { base1 },
-          Provider { base2 },
-          Provider { middle1 },
-          Provider { middle2 },
-          Provider { name },
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
+          Provider::class.java,
         )
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null)
-        assertThat(newInstance).isNotNull()
+      val name = "name"
+      val middle1 = setOf(1)
+      val middle2 = setOf("middle2")
+      val base1 = listOf(3)
+      val base2 = listOf("base2")
 
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        assertThat(getInstance.getPropertyValue("name")).isEqualTo(name)
-        assertThat(getInstance.getPropertyValue("middle1")).isEqualTo(middle1)
-        assertThat(getInstance.getPropertyValue("middle2")).isEqualTo(middle2)
-        assertThat(getInstance.getPropertyValue("base1")).isEqualTo(base1)
-        assertThat(getInstance.getPropertyValue("base2")).isEqualTo(base2)
-      }
+      val factoryInstance = factoryClass.createInstance(
+        Provider { base1 },
+        Provider { base2 },
+        Provider { middle1 },
+        Provider { middle2 },
+        Provider { name },
+      )
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+
+      val newInstance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null)
+      assertThat(newInstance).isNotNull()
+
+      val getInstance = (factoryInstance as Factory<*>).get()
+
+      assertThat(getInstance.getPropertyValue("name")).isEqualTo(name)
+      assertThat(getInstance.getPropertyValue("middle1")).isEqualTo(middle1)
+      assertThat(getInstance.getPropertyValue("middle2")).isEqualTo(middle2)
+      assertThat(getInstance.getPropertyValue("base1")).isEqualTo(base1)
+      assertThat(getInstance.getPropertyValue("base2")).isEqualTo(base2)
     }
+  }
 
-  @TestFactory
-  fun `a factory class is generated which injects members when calling get`() = testFactory {
+  @Test
+  fun `a factory class is generated which injects members when calling get`() {
     /*
 import dagger.`internal`.Factory
 import javax.inject.Provider
@@ -1410,23 +1406,7 @@ public class InjectClass_Factory(
         }
       }
       """,
-      enableDaggerAnnotationProcessor = true,
-      generateDaggerFactories = false,
-      expectExitCode = OK,
     ) {
-
-      // this.walkGeneratedFiles(mode)
-
-      println("~~~~~~~~~~ exit code -- $exitCode")
-      println(messages)
-
-      println(
-        """
-        |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        |${generatedFiles.sorted().joinToString("\n")}
-        |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-        """.trimMargin(),
-      )
 
       val factoryClass = injectClass.factoryClass()
 
@@ -1461,57 +1441,49 @@ public class InjectClass_Factory(
       assertThat(newInstance).isNotSameInstanceAs(getInstance)
     }
   }
-    // TODO (rbusarow) delete me
-    .let {
-      check(System.getenv("CI") == null) { "delete me" }
-      it.asSequence()
-        .take(1)
-        .toList()
-    }
 
-  @TestFactory
-  fun `a factory class is generated for a class injecting a class starting with a lowercase character`() =
-    testFactory {
-      /*
-  package com.squareup.test;
+  @Test
+  fun `a factory class is generated for a class injecting a class starting with a lowercase character`() {
+    /*
+package com.squareup.test;
 
-  import dagger.internal.Factory;
-  import javax.annotation.Generated;
-  import javax.inject.Provider;
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+import javax.inject.Provider;
 
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class InjectClass_Factory implements Factory<InjectClass> {
-    private final Provider<otherClass.inner> innerProvider;
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory implements Factory<InjectClass> {
+  private final Provider<otherClass.inner> innerProvider;
 
-    public InjectClass_Factory(Provider<otherClass.inner> innerProvider) {
-      this.innerProvider = innerProvider;
-    }
-
-    @Override
-    public InjectClass get() {
-      return newInstance(innerProvider.get());
-    }
-
-    public static InjectClass_Factory create(Provider<otherClass.inner> innerProvider) {
-      return new InjectClass_Factory(innerProvider);
-    }
-
-    public static InjectClass newInstance(otherClass.inner inner) {
-      return new InjectClass(inner);
-    }
+  public InjectClass_Factory(Provider<otherClass.inner> innerProvider) {
+    this.innerProvider = innerProvider;
   }
-       */
 
-      @Suppress("ClassName")
-      compile(
-        """
+  @Override
+  public InjectClass get() {
+    return newInstance(innerProvider.get());
+  }
+
+  public static InjectClass_Factory create(Provider<otherClass.inner> innerProvider) {
+    return new InjectClass_Factory(innerProvider);
+  }
+
+  public static InjectClass newInstance(otherClass.inner inner) {
+    return new InjectClass(inner);
+  }
+}
+     */
+
+    @Suppress("ClassName")
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -1522,43 +1494,42 @@ public class InjectClass_Factory(
         class inner @Inject constructor()
       }
       """,
-      ) {
-        val constructor = injectClass.factoryClass().declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
-      }
-    }
-
-  @TestFactory
-  fun `a factory class is generated for a class injecting an inner class with a generic type parameter`() =
-    testFactory {
-      /*
-  package com.squareup.test
-
-  import com.squareup.test.Other.Inner
-  import dagger.`internal`.Factory
-  import javax.inject.Provider
-  import kotlin.String
-  import kotlin.Suppress
-  import kotlin.jvm.JvmStatic
-
-  public class InjectClass_Factory(
-    private val param0: Provider<Inner<String>>
-  ) : Factory<InjectClass> {
-    public override fun `get`(): InjectClass = newInstance(param0.get())
-
-    public companion object {
-      @JvmStatic
-      public fun create(param0: Provider<Inner<String>>): InjectClass_Factory =
-          InjectClass_Factory(param0)
-
-      @JvmStatic
-      public fun newInstance(param0: Inner<String>): InjectClass = InjectClass(param0)
+    ) {
+      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
-       */
 
-      compile(
-        """
+  @Test
+  fun `a factory class is generated for a class injecting an inner class with a generic type parameter`() {
+    /*
+package com.squareup.test
+
+import com.squareup.test.Other.Inner
+import dagger.`internal`.Factory
+import javax.inject.Provider
+import kotlin.String
+import kotlin.Suppress
+import kotlin.jvm.JvmStatic
+
+public class InjectClass_Factory(
+  private val param0: Provider<Inner<String>>
+) : Factory<InjectClass> {
+  public override fun `get`(): InjectClass = newInstance(param0.get())
+
+  public companion object {
+    @JvmStatic
+    public fun create(param0: Provider<Inner<String>>): InjectClass_Factory =
+        InjectClass_Factory(param0)
+
+    @JvmStatic
+    public fun newInstance(param0: Inner<String>): InjectClass = InjectClass(param0)
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -1571,43 +1542,42 @@ public class InjectClass_Factory(
         val inner: Other.Inner<String>
       )
       """,
-      ) {
-        val constructor = injectClass.factoryClass().declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
-      }
-    }
-
-  @TestFactory
-  fun `a factory class is generated for a class injecting a deeply nested inner class with a generic type parameter`() =
-    testFactory {
-      /*
-  package com.squareup.test
-
-  import com.squareup.test.Other.Middle.Inner
-  import dagger.`internal`.Factory
-  import javax.inject.Provider
-  import kotlin.String
-  import kotlin.Suppress
-  import kotlin.jvm.JvmStatic
-
-  public class InjectClass_Factory(
-    private val param0: Provider<Inner<String>>
-  ) : Factory<InjectClass> {
-    public override fun `get`(): InjectClass = newInstance(param0.get())
-
-    public companion object {
-      @JvmStatic
-      public fun create(param0: Provider<Inner<String>>): InjectClass_Factory =
-          InjectClass_Factory(param0)
-
-      @JvmStatic
-      public fun newInstance(param0: Inner<String>): InjectClass = InjectClass(param0)
+    ) {
+      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
-       */
 
-      compile(
-        """
+  @Test
+  fun `a factory class is generated for a class injecting a deeply nested inner class with a generic type parameter`() {
+    /*
+package com.squareup.test
+
+import com.squareup.test.Other.Middle.Inner
+import dagger.`internal`.Factory
+import javax.inject.Provider
+import kotlin.String
+import kotlin.Suppress
+import kotlin.jvm.JvmStatic
+
+public class InjectClass_Factory(
+  private val param0: Provider<Inner<String>>
+) : Factory<InjectClass> {
+  public override fun `get`(): InjectClass = newInstance(param0.get())
+
+  public companion object {
+    @JvmStatic
+    public fun create(param0: Provider<Inner<String>>): InjectClass_Factory =
+        InjectClass_Factory(param0)
+
+    @JvmStatic
+    public fun newInstance(param0: Inner<String>): InjectClass = InjectClass(param0)
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -1622,89 +1592,88 @@ public class InjectClass_Factory(
         val inner: Other.Middle.Inner<String>
       )
       """,
-      ) {
-        val constructor = injectClass.factoryClass().declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
-      }
-    }
-
-  @TestFactory
-  fun `a factory class is generated for an inner class starting with a lowercase character`() =
-    testFactory {
-      /*
-  package com.squareup.test;
-
-  import dagger.internal.Factory;
-  import javax.annotation.Generated;
-
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class MyClass_innerClass_Factory implements Factory<MyClass.innerClass> {
-    @Override
-    public MyClass.innerClass get() {
-      return newInstance();
-    }
-
-    public static MyClass_innerClass_Factory create() {
-      return InstanceHolder.INSTANCE;
-    }
-
-    public static MyClass.innerClass newInstance() {
-      return new MyClass.innerClass();
-    }
-
-    private static final class InstanceHolder {
-      private static final MyClass_innerClass_Factory INSTANCE = new MyClass_innerClass_Factory();
+    ) {
+      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
-       */
 
-      /*
-  package com.squareup.test;
+  @Test
+  fun `a factory class is generated for an inner class starting with a lowercase character`() {
+    /*
+package com.squareup.test;
 
-  import dagger.internal.Factory;
-  import javax.annotation.Generated;
-  import javax.inject.Provider;
+import dagger.internal.Factory;
+import javax.annotation.Generated;
 
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class MyClass_Factory implements Factory<MyClass> {
-    private final Provider<MyClass.innerClass> argProvider;
-
-    public MyClass_Factory(Provider<MyClass.innerClass> argProvider) {
-      this.argProvider = argProvider;
-    }
-
-    @Override
-    public MyClass get() {
-      return newInstance(argProvider.get());
-    }
-
-    public static MyClass_Factory create(Provider<MyClass.innerClass> argProvider) {
-      return new MyClass_Factory(argProvider);
-    }
-
-    public static MyClass newInstance(MyClass.innerClass arg) {
-      return new MyClass(arg);
-    }
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class MyClass_innerClass_Factory implements Factory<MyClass.innerClass> {
+  @Override
+  public MyClass.innerClass get() {
+    return newInstance();
   }
-       */
 
-      @Suppress("ClassName")
-      compile(
-        """
+  public static MyClass_innerClass_Factory create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static MyClass.innerClass newInstance() {
+    return new MyClass.innerClass();
+  }
+
+  private static final class InstanceHolder {
+    private static final MyClass_innerClass_Factory INSTANCE = new MyClass_innerClass_Factory();
+  }
+}
+     */
+
+    /*
+package com.squareup.test;
+
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+import javax.inject.Provider;
+
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class MyClass_Factory implements Factory<MyClass> {
+  private final Provider<MyClass.innerClass> argProvider;
+
+  public MyClass_Factory(Provider<MyClass.innerClass> argProvider) {
+    this.argProvider = argProvider;
+  }
+
+  @Override
+  public MyClass get() {
+    return newInstance(argProvider.get());
+  }
+
+  public static MyClass_Factory create(Provider<MyClass.innerClass> argProvider) {
+    return new MyClass_Factory(argProvider);
+  }
+
+  public static MyClass newInstance(MyClass.innerClass arg) {
+    return new MyClass(arg);
+  }
+}
+     */
+
+    @Suppress("ClassName")
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -1713,29 +1682,29 @@ public class InjectClass_Factory(
         class innerClass @Inject constructor()
       }
       """,
-      ) {
-        val factoryClass =
-          classLoader.loadClass("com.squareup.test.MyClass\$innerClass").factoryClass()
+    ) {
+      val factoryClass =
+        classLoader.loadClass("com.squareup.test.MyClass\$innerClass").factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList()).isEmpty()
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }.invoke(null)
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }.invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val newInstance = staticMethods.single { it.name == "newInstance" }.invoke(null)
-        val getInstance = (factoryInstance as Factory<*>).get()
+      val newInstance = staticMethods.single { it.name == "newInstance" }.invoke(null)
+      val getInstance = (factoryInstance as Factory<*>).get()
 
-        assertThat(newInstance).isNotNull()
-        assertThat(getInstance).isNotNull()
+      assertThat(newInstance).isNotNull()
+      assertThat(getInstance).isNotNull()
 
-        assertThat(newInstance).isNotSameInstanceAs(getInstance)
-      }
+      assertThat(newInstance).isNotSameInstanceAs(getInstance)
     }
+  }
 
-  @TestFactory fun `inner classes are imported correctly`() = testFactory {
+  @Test fun `inner classes are imported correctly`() {
     /*
 package com.squareup.test;
 
@@ -1831,7 +1800,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
-  @TestFactory fun `inner classes are imported correctly from super type`() = testFactory {
+  @Test fun `inner classes are imported correctly from super type`() {
     /*
 package com.squareup.test;
 
@@ -1930,7 +1899,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
-  @TestFactory fun `inner classes in generics are imported correctly`() = testFactory {
+  @Test fun `inner classes in generics are imported correctly`() {
     /*
 package com.squareup.test;
 
@@ -1988,7 +1957,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
-  @TestFactory fun `inner classes from outer type are imported correctly`() = testFactory {
+  @Test fun `inner classes from outer type are imported correctly`() {
     /*
 package com.squareup.test;
 
@@ -2046,43 +2015,42 @@ public final class InjectClass_Inner_Factory implements Factory<InjectClass.Inne
     }
   }
 
-  @TestFactory fun `a factory class is generated for a class with a type parameter`() =
-    testFactory {
-      /*
-  package com.squareup.test;
+  @Test fun `a factory class is generated for a class with a type parameter`() {
+    /*
+package com.squareup.test;
 
-  import dagger.internal.Factory;
-  import javax.annotation.Generated;
-  import javax.inject.Provider;
+import dagger.internal.Factory;
+import javax.annotation.Generated;
+import javax.inject.Provider;
 
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
-    private final Provider<T> creatorProvider;
-    public InjectClass_Factory(Provider<T> creatorProvider) {
-      this.creatorProvider = creatorProvider;
-    }
-    @Override
-    public BaseViewModelFactory<T> get() {
-      return newInstance(creatorProvider);
-    }
-    public static <T> InjectClass_Factory<T> create(Provider<T> creatorProvider) {
-      return new InjectClass_Factory<T>(creatorProvider);
-    }
-    public static <T> InjectClass<T> newInstance(Provider<T> creator) {
-      return new InjectClass<T>(creator);
-    }
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
+  private final Provider<T> creatorProvider;
+  public InjectClass_Factory(Provider<T> creatorProvider) {
+    this.creatorProvider = creatorProvider;
   }
-       */
+  @Override
+  public BaseViewModelFactory<T> get() {
+    return newInstance(creatorProvider);
+  }
+  public static <T> InjectClass_Factory<T> create(Provider<T> creatorProvider) {
+    return new InjectClass_Factory<T>(creatorProvider);
+  }
+  public static <T> InjectClass<T> newInstance(Provider<T> creator) {
+    return new InjectClass<T>(creator);
+  }
+}
+     */
 
-      compile(
-        """
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -2090,70 +2058,69 @@ public final class InjectClass_Inner_Factory implements Factory<InjectClass.Inne
       
       class InjectClass<T> @Inject constructor(prov: Provider<T>)
       """,
-      ) {
-        val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
-          .factoryClass().declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
-      }
-    }
-
-  @TestFactory
-  fun `a factory class is generated for a class with a type parameter no constructor argument`() =
-    testFactory {
-      /*
-  package com.squareup.test;
-
-  import dagger.internal.DaggerGenerated;
-  import dagger.internal.Factory;
-  import javax.annotation.processing.Generated;
-
-  @DaggerGenerated
-  @Generated(
-      value = "dagger.internal.codegen.ComponentProcessor",
-      comments = "https://dagger.dev"
-  )
-  @SuppressWarnings({
-      "unchecked",
-      "rawtypes"
-  })
-  public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
-    @Override
-    public InjectClass<T> get() {
-      return newInstance();
-    }
-
-    @SuppressWarnings("unchecked")
-    public static <T> InjectClass_Factory<T> create() {
-      return InstanceHolder.INSTANCE;
-    }
-
-    public static <T> InjectClass<T> newInstance() {
-      return new InjectClass<T>();
-    }
-
-    private static final class InstanceHolder {
-      @SuppressWarnings("rawtypes")
-      private static final InjectClass_Factory INSTANCE = new InjectClass_Factory();
+    ) {
+      val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
+        .factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
-       */
 
-      compile(
-        """
+  @Test
+  fun `a factory class is generated for a class with a type parameter no constructor argument`() {
+    /*
+package com.squareup.test;
+
+import dagger.internal.DaggerGenerated;
+import dagger.internal.Factory;
+import javax.annotation.processing.Generated;
+
+@DaggerGenerated
+@Generated(
+    value = "dagger.internal.codegen.ComponentProcessor",
+    comments = "https://dagger.dev"
+)
+@SuppressWarnings({
+    "unchecked",
+    "rawtypes"
+})
+public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
+  @Override
+  public InjectClass<T> get() {
+    return newInstance();
+  }
+
+  @SuppressWarnings("unchecked")
+  public static <T> InjectClass_Factory<T> create() {
+    return InstanceHolder.INSTANCE;
+  }
+
+  public static <T> InjectClass<T> newInstance() {
+    return new InjectClass<T>();
+  }
+
+  private static final class InstanceHolder {
+    @SuppressWarnings("rawtypes")
+    private static final InjectClass_Factory INSTANCE = new InjectClass_Factory();
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
       
       class InjectClass<T> @Inject constructor()
       """,
-      ) {
-        val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
-          .factoryClass().declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList()).isEmpty()
-      }
+    ) {
+      val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
+        .factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
     }
+  }
 
-  @TestFactory fun `a factory class is generated for generics without modifier`() = testFactory {
+  @Test fun `a factory class is generated for generics without modifier`() {
     /*
 package com.squareup.test;
 
@@ -2213,37 +2180,36 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
-  @TestFactory fun `a factory class is generated for type parameter which extends class`() =
-    testFactory {
-      /*
-  package com.squareup.test;
+  @Test fun `a factory class is generated for type parameter which extends class`() {
+    /*
+package com.squareup.test;
 
-  import dagger.internal.Factory;
-  import javax.inject.Provider;
+import dagger.internal.Factory;
+import javax.inject.Provider;
 
-  public final class InjectClass_Factory<T extends CharSequence> implements Factory<InjectClass<T>> {
-      private final Provider<T> elementProvider;
+public final class InjectClass_Factory<T extends CharSequence> implements Factory<InjectClass<T>> {
+    private final Provider<T> elementProvider;
 
-      public InjectClass_Factory(Provider<T> var1) {
-          this.elementProvider = var1;
-      }
+    public InjectClass_Factory(Provider<T> var1) {
+        this.elementProvider = var1;
+    }
 
-      public InjectClass<T> get() {
-          return newInstance((CharSequence)this.elementProvider.get());
-      }
+    public InjectClass<T> get() {
+        return newInstance((CharSequence)this.elementProvider.get());
+    }
 
-      public static <T extends CharSequence> InjectClass_Factory<T> create(Provider<T> var0) {
-          return new InjectClass_Factory(var0);
-      }
+    public static <T extends CharSequence> InjectClass_Factory<T> create(Provider<T> var0) {
+        return new InjectClass_Factory(var0);
+    }
 
-      public static <T extends CharSequence> InjectClass<T> newInstance(T var0) {
-          return new InjectClass(var0);
-      }
-  }
-       */
+    public static <T extends CharSequence> InjectClass<T> newInstance(T var0) {
+        return new InjectClass(var0);
+    }
+}
+     */
 
-      compile(
-        """
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -2251,44 +2217,43 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       
       class InjectClass<T : CharSequence> @Inject constructor(element: Provider<T>)
       """,
-      ) {
-        val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
-          .factoryClass().declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
-      }
-    }
-
-  @TestFactory fun `a factory class is generated for a generic class with a where clause`() =
-    testFactory {
-      /*
-  package com.squareup.test
-
-  import dagger.`internal`.Factory
-  import java.lang.Appendable
-  import javax.inject.Provider
-  import kotlin.CharSequence
-  import kotlin.Suppress
-  import kotlin.jvm.JvmStatic
-
-  public class InjectClass_Factory<T>(
-    private val param0: Provider<T>
-  ) : Factory<InjectClass<T>> where T : Appendable, T : CharSequence {
-    public override fun `get`(): InjectClass<T> = newInstance(param0.get())
-
-    public companion object {
-      @JvmStatic
-      public fun <T> create(param0: Provider<T>): InjectClass_Factory<T> where T : Appendable, T :
-          CharSequence = InjectClass_Factory<T>(param0)
-
-      @JvmStatic
-      public fun <T> newInstance(param0: T): InjectClass<T> where T : Appendable, T : CharSequence =
-          InjectClass<T>(param0)
+    ) {
+      val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
+        .factoryClass().declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
-       */
 
-      compile(
-        """
+  @Test fun `a factory class is generated for a generic class with a where clause`() {
+    /*
+package com.squareup.test
+
+import dagger.`internal`.Factory
+import java.lang.Appendable
+import javax.inject.Provider
+import kotlin.CharSequence
+import kotlin.Suppress
+import kotlin.jvm.JvmStatic
+
+public class InjectClass_Factory<T>(
+  private val param0: Provider<T>
+) : Factory<InjectClass<T>> where T : Appendable, T : CharSequence {
+  public override fun `get`(): InjectClass<T> = newInstance(param0.get())
+
+  public companion object {
+    @JvmStatic
+    public fun <T> create(param0: Provider<T>): InjectClass_Factory<T> where T : Appendable, T :
+        CharSequence = InjectClass_Factory<T>(param0)
+
+    @JvmStatic
+    public fun <T> newInstance(param0: T): InjectClass<T> where T : Appendable, T : CharSequence =
+        InjectClass<T>(param0)
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -2298,74 +2263,73 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         private val t: T
       ) where T : Appendable, T : CharSequence
       """,
-      ) {
+    ) {
 
-        val factoryClass = injectClass.factoryClass()
+      val factoryClass = injectClass.factoryClass()
 
-        val typeParams = factoryClass.typeParameters
-          .associate { param ->
-            param.name to param.bounds.map { it.typeName }
-          }
+      val typeParams = factoryClass.typeParameters
+        .associate { param ->
+          param.name to param.bounds.map { it.typeName }
+        }
 
-        assertThat(typeParams)
-          .containsExactly("T", listOf("java.lang.Appendable", "java.lang.CharSequence"))
+      assertThat(typeParams)
+        .containsExactly("T", listOf("java.lang.Appendable", "java.lang.CharSequence"))
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { StringBuilder() })
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { StringBuilder() })
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val instance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null, StringBuilder())
+      val instance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, StringBuilder())
 
-        assertThat(instance).isNotNull()
-        assertThat((factoryInstance as Factory<*>).get()).isNotNull()
-      }
-    }
-
-  @TestFactory
-  fun `a factory class is generated for a generic class with two type parameters and a where clause`() =
-    testFactory {
-      /*
-  package com.squareup.test
-
-  import dagger.Lazy
-  import dagger.`internal`.Factory
-  import java.lang.Appendable
-  import javax.inject.Provider
-  import kotlin.CharSequence
-  import kotlin.String
-  import kotlin.Suppress
-  import kotlin.collections.Set
-  import kotlin.jvm.JvmStatic
-  import kotlin.jvm.JvmSuppressWildcards
-
-  public class InjectClass_Factory<T, R : Set<String>>(
-    private val param0: Provider<T>,
-    private val param1: Provider<@JvmSuppressWildcards R>
-  ) : Factory<InjectClass<T, R>> where T : Appendable, T : CharSequence {
-    public override fun `get`(): InjectClass<T, R> = newInstance(param0.get(),
-        dagger.internal.DoubleCheck.lazy(param1))
-
-    public companion object {
-      @JvmStatic
-      public fun <T, R : Set<String>> create(param0: Provider<T>,
-          param1: Provider<@JvmSuppressWildcards R>): InjectClass_Factory<T, R> where T : Appendable,
-          T : CharSequence = InjectClass_Factory<T, R>(param0, param1)
-
-      @JvmStatic
-      public fun <T, R : Set<String>> newInstance(param0: T, param1: Lazy<@JvmSuppressWildcards R>):
-          InjectClass<T, R> where T : Appendable, T : CharSequence = InjectClass<T, R>(param0, param1)
+      assertThat(instance).isNotNull()
+      assertThat((factoryInstance as Factory<*>).get()).isNotNull()
     }
   }
-       */
 
-      compile(
-        """
+  @Test
+  fun `a factory class is generated for a generic class with two type parameters and a where clause`() {
+    /*
+package com.squareup.test
+
+import dagger.Lazy
+import dagger.`internal`.Factory
+import java.lang.Appendable
+import javax.inject.Provider
+import kotlin.CharSequence
+import kotlin.String
+import kotlin.Suppress
+import kotlin.collections.Set
+import kotlin.jvm.JvmStatic
+import kotlin.jvm.JvmSuppressWildcards
+
+public class InjectClass_Factory<T, R : Set<String>>(
+  private val param0: Provider<T>,
+  private val param1: Provider<@JvmSuppressWildcards R>
+) : Factory<InjectClass<T, R>> where T : Appendable, T : CharSequence {
+  public override fun `get`(): InjectClass<T, R> = newInstance(param0.get(),
+      dagger.internal.DoubleCheck.lazy(param1))
+
+  public companion object {
+    @JvmStatic
+    public fun <T, R : Set<String>> create(param0: Provider<T>,
+        param1: Provider<@JvmSuppressWildcards R>): InjectClass_Factory<T, R> where T : Appendable,
+        T : CharSequence = InjectClass_Factory<T, R>(param0, param1)
+
+    @JvmStatic
+    public fun <T, R : Set<String>> newInstance(param0: T, param1: Lazy<@JvmSuppressWildcards R>):
+        InjectClass<T, R> where T : Appendable, T : CharSequence = InjectClass<T, R>(param0, param1)
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import dagger.Lazy
@@ -2377,81 +2341,80 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         private val r: Lazy<R>
       ) where T : Appendable, T : CharSequence
       """,
-      ) {
+    ) {
 
-        val factoryClass = injectClass.factoryClass()
+      val factoryClass = injectClass.factoryClass()
 
-        val typeParams = factoryClass.typeParameters
-          .associate { param ->
-            param.name to param.bounds.map { it.typeName }
-          }
+      val typeParams = factoryClass.typeParameters
+        .associate { param ->
+          param.name to param.bounds.map { it.typeName }
+        }
 
-        assertThat(typeParams)
-          .containsExactly(
-            "T",
-            listOf("java.lang.Appendable", "java.lang.CharSequence"),
-            "R",
-            listOf("java.util.Set<? extends java.lang.String>"),
-          )
+      assertThat(typeParams)
+        .containsExactly(
+          "T",
+          listOf("java.lang.Appendable", "java.lang.CharSequence"),
+          "R",
+          listOf("java.util.Set<? extends java.lang.String>"),
+        )
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(
-            Provider::class.java,
-            Provider::class.java,
-          )
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(
+          Provider::class.java,
+          Provider::class.java,
+        )
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { StringBuilder() }, Provider { mutableSetOf<String>() })
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { StringBuilder() }, Provider { mutableSetOf<String>() })
 
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val instance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null, StringBuilder(), Lazy { mutableSetOf<String>() })
+      val instance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, StringBuilder(), Lazy { mutableSetOf<String>() })
 
-        assertThat(instance).isNotNull()
-        assertThat((factoryInstance as Factory<*>).get()).isNotNull()
-      }
-    }
-
-  @TestFactory
-  fun `a factory class is generated for a generic class with a where clause with a class bound`() =
-    testFactory {
-      /*
-  package com.squareup.test
-
-  import com.squareup.test.Other
-  import dagger.`internal`.Factory
-  import java.lang.Appendable
-  import javax.inject.Provider
-  import kotlin.Suppress
-  import kotlin.jvm.JvmStatic
-
-  public class InjectClass_Factory<T>(
-    private val param0: Provider<T>
-  ) : Factory<InjectClass<T>> where T : Appendable, T : Other {
-    public override fun `get`(): InjectClass<T> = newInstance(param0.get())
-
-    public companion object {
-      @JvmStatic
-      public fun <T> create(param0: Provider<T>): InjectClass_Factory<T> where T : Appendable, T :
-          Other = InjectClass_Factory<T>(param0)
-
-      @JvmStatic
-      public fun <T> newInstance(param0: T): InjectClass<T> where T : Appendable, T : Other =
-          InjectClass<T>(param0)
+      assertThat(instance).isNotNull()
+      assertThat((factoryInstance as Factory<*>).get()).isNotNull()
     }
   }
-       */
 
-      // KotlinPoet will automatically add a bound of `Any?` if creating a `TypeVariableName` with an
-      // empty list.  So, improperly handling `TypeVariableName` can result in a constraint like:
-      // `where T : Any?, T : Appendable, T : Other`
-      // This won't compile since a type can only have one bound which is a class.
-      compile(
-        """
+  @Test
+  fun `a factory class is generated for a generic class with a where clause with a class bound`() {
+    /*
+package com.squareup.test
+
+import com.squareup.test.Other
+import dagger.`internal`.Factory
+import java.lang.Appendable
+import javax.inject.Provider
+import kotlin.Suppress
+import kotlin.jvm.JvmStatic
+
+public class InjectClass_Factory<T>(
+  private val param0: Provider<T>
+) : Factory<InjectClass<T>> where T : Appendable, T : Other {
+  public override fun `get`(): InjectClass<T> = newInstance(param0.get())
+
+  public companion object {
+    @JvmStatic
+    public fun <T> create(param0: Provider<T>): InjectClass_Factory<T> where T : Appendable, T :
+        Other = InjectClass_Factory<T>(param0)
+
+    @JvmStatic
+    public fun <T> newInstance(param0: T): InjectClass<T> where T : Appendable, T : Other =
+        InjectClass<T>(param0)
+  }
+}
+     */
+
+    // KotlinPoet will automatically add a bound of `Any?` if creating a `TypeVariableName` with an
+    // empty list.  So, improperly handling `TypeVariableName` can result in a constraint like:
+    // `where T : Any?, T : Appendable, T : Other`
+    // This won't compile since a type can only have one bound which is a class.
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -2463,53 +2426,52 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         private val t: T
       ) where T : Appendable, T : Other
       """,
-      ) {
+    ) {
 
-        val factoryClass = injectClass.factoryClass()
+      val factoryClass = injectClass.factoryClass()
 
-        val typeParams = factoryClass.typeParameters
-          .associate { param ->
-            param.name to param.bounds.map { it.typeName }
-          }
+      val typeParams = factoryClass.typeParameters
+        .associate { param ->
+          param.name to param.bounds.map { it.typeName }
+        }
 
-        assertThat(typeParams)
-          .containsExactly("T", listOf("com.squareup.test.Other", "java.lang.Appendable"))
+      assertThat(typeParams)
+        .containsExactly("T", listOf("com.squareup.test.Other", "java.lang.Appendable"))
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
-      }
-    }
-
-  @TestFactory fun `a factory class is generated for a type parameter which extends a generic`() =
-    testFactory {
-      /*
-  package com.squareup.test
-
-  import dagger.`internal`.Factory
-  import javax.inject.Provider
-  import kotlin.String
-  import kotlin.Suppress
-  import kotlin.collections.List
-  import kotlin.jvm.JvmStatic
-
-  public class InjectClass_Factory<T : List<String>>(
-    private val param0: Provider<T>
-  ) : Factory<InjectClass<T>> {
-    public override fun `get`(): InjectClass<T> = newInstance(param0.get())
-
-    public companion object {
-      @JvmStatic
-      public fun <T : List<String>> create(param0: Provider<T>): InjectClass_Factory<T> =
-          InjectClass_Factory<T>(param0)
-
-      @JvmStatic
-      public fun <T : List<String>> newInstance(param0: T): InjectClass<T> = InjectClass<T>(param0)
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
-       */
 
-      compile(
-        """
+  @Test fun `a factory class is generated for a type parameter which extends a generic`() {
+    /*
+package com.squareup.test
+
+import dagger.`internal`.Factory
+import javax.inject.Provider
+import kotlin.String
+import kotlin.Suppress
+import kotlin.collections.List
+import kotlin.jvm.JvmStatic
+
+public class InjectClass_Factory<T : List<String>>(
+  private val param0: Provider<T>
+) : Factory<InjectClass<T>> {
+  public override fun `get`(): InjectClass<T> = newInstance(param0.get())
+
+  public companion object {
+    @JvmStatic
+    public fun <T : List<String>> create(param0: Provider<T>): InjectClass_Factory<T> =
+        InjectClass_Factory<T>(param0)
+
+    @JvmStatic
+    public fun <T : List<String>> newInstance(param0: T): InjectClass<T> = InjectClass<T>(param0)
+  }
+}
+     */
+
+    compile(
+      """
       package com.squareup.test
       
       import javax.inject.Inject
@@ -2519,66 +2481,65 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
         private val t: T
       )
       """,
-      ) {
+    ) {
 
-        val factoryClass = injectClass.factoryClass()
+      val factoryClass = injectClass.factoryClass()
 
-        val typeParams = factoryClass.typeParameters
-          .associate { param ->
-            param.name to param.bounds.map { it.typeName }
-          }
+      val typeParams = factoryClass.typeParameters
+        .associate { param ->
+          param.name to param.bounds.map { it.typeName }
+        }
 
-        assertThat(typeParams)
-          .containsExactly("T", listOf("java.util.List<? extends java.lang.String>"))
+      assertThat(typeParams)
+        .containsExactly("T", listOf("java.util.List<? extends java.lang.String>"))
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList())
-          .containsExactly(Provider::class.java)
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList())
+        .containsExactly(Provider::class.java)
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null, Provider { listOf<String>() })
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null, Provider { listOf<String>() })
 
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val instance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null, listOf<String>())
+      val instance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null, listOf<String>())
 
-        assertThat(instance).isNotNull()
-        assertThat((factoryInstance as Factory<*>).get()).isNotNull()
-      }
+      assertThat(instance).isNotNull()
+      assertThat((factoryInstance as Factory<*>).get()).isNotNull()
     }
+  }
 
-  @TestFactory fun `a factory class is generated for an inject constructor without a package`() =
-    testFactory {
-      compile(
-        """
+  @Test fun `a factory class is generated for an inject constructor without a package`() {
+    compile(
+      """
       import javax.inject.Inject
       
       class InjectClass @Inject constructor()
       """,
-      ) {
-        val factoryClass = classLoader.loadClass("InjectClass").factoryClass()
+    ) {
+      val factoryClass = classLoader.loadClass("InjectClass").factoryClass()
 
-        val constructor = factoryClass.declaredConstructors.single()
-        assertThat(constructor.parameterTypes.toList()).isEmpty()
+      val constructor = factoryClass.declaredConstructors.single()
+      assertThat(constructor.parameterTypes.toList()).isEmpty()
 
-        val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
+      val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
-        val factoryInstance = staticMethods.single { it.name == "create" }
-          .invoke(null)
-        assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
+      val factoryInstance = staticMethods.single { it.name == "create" }
+        .invoke(null)
+      assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
-        val instance = staticMethods.single { it.name == "newInstance" }
-          .invoke(null)
+      val instance = staticMethods.single { it.name == "newInstance" }
+        .invoke(null)
 
-        assertThat(instance).isNotNull()
-        assertThat((factoryInstance as Factory<*>).get()).isNotNull()
-      }
+      assertThat(instance).isNotNull()
+      assertThat((factoryInstance as Factory<*>).get()).isNotNull()
     }
+  }
 
-  @TestFactory fun `two inject constructors aren't supported`() = testFactory {
+  @Test fun `two inject constructors aren't supported`() {
     compile(
       """
       package com.squareup.test
@@ -2601,7 +2562,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
-  @TestFactory fun `verify the right state class is imported`() = testFactory {
+  @Test fun `verify the right state class is imported`() {
     // That was reported here https://github.com/square/anvil/issues/358
     compile(
       """
@@ -2628,7 +2589,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
-  @TestFactory fun `verify qualifiers are supported`() = testFactory {
+  @Test fun `verify qualifiers are supported`() {
     /*
 package com.squareup.test;
 
@@ -2746,7 +2707,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     }
   }
 
-  @TestFactory fun `nested inner classes are supported`() = testFactory {
+  @Test fun `nested inner classes are supported`() {
     compile(
       """
       package com.squareup.test
@@ -2772,4 +2733,21 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       assertThat(classLoader.loadClass("com.squareup.test.A\$Achild\$Factory")).isNotNull()
     }
   }
+
+  private fun compile(
+    @Language("kotlin") vararg sources: String,
+    previousCompilationResult: JvmCompilationResult? = null,
+    expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
+    block: JvmCompilationResult.() -> Unit = { },
+  ): JvmCompilationResult = compileAnvil(
+    sources = sources,
+    enableDaggerAnnotationProcessor = useDagger,
+    generateDaggerFactories = !useDagger,
+    expectExitCode = expectExitCode,
+    // Many constructor parameters are unused.
+    allWarningsAsErrors = false,
+    previousCompilationResult = previousCompilationResult,
+    mode = mode,
+    block = block,
+  )
 }

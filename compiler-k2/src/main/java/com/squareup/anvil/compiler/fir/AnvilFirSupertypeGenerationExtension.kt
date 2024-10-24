@@ -13,7 +13,6 @@ import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
-import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
@@ -22,10 +21,7 @@ import org.jetbrains.kotlin.fir.types.FirUserTypeRef
 import org.jetbrains.kotlin.fir.types.classId
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.psi.KtPsiFactory
-import org.jetbrains.kotlin.psi.KtValueArgument
-import org.jetbrains.kotlin.psi.KtValueArgumentList
 import org.jetbrains.kotlin.util.PrivateForInline
 
 public class AnvilFirSupertypeGenerationExtension(session: FirSession) :
@@ -105,97 +101,101 @@ public class AnvilFirSupertypeGenerationExtension(session: FirSession) :
 
         if (!isComponent) return@forEach
 
-        firAnnotation.argumentList
-          .arguments
-          .map { firExpression ->
-            val moduleClassArray = firExpression.psi as KtValueArgument
+        // firAnnotation.argumentList
+        //   .arguments
+        //   .forEach { firExpression ->
+        //     val moduleClassArray = firExpression.psi as? KtValueArgument
+        //
+        //     if (moduleClassArray == null) {
+        //       println("moduleClassArray is null: $firExpression")
+        //     }
+        //
+        //     // val arrayExpression = moduleClassArray.getArgumentExpression()
+        //     //   as KtCollectionLiteralExpression
+        //
+        //     // val classes = arrayExpression.innerExpressions
+        //     //   .map {
+        //     //     val classLiteral = it as KtClassLiteralExpression
+        //     //     classLiteral.fqNameOrNull()
+        //     //   }
+        //
+        //     // arrayExpression
+        //   }
 
-            val arrayExpression = moduleClassArray.getArgumentExpression()
-              as KtCollectionLiteralExpression
-
-            // val classes = arrayExpression.innerExpressions
-            //   .map {
-            //     val classLiteral = it as KtClassLiteralExpression
-            //     classLiteral.fqNameOrNull()
-            //   }
-
-            arrayExpression
-          }
-
-        (firAnnotation as FirAnnotationCall).argumentList
-          .arguments
-          .forEach { classListArg ->
-
-            // `modules = [SomeModule::class]`
-            val modulesArg = classListArg.psi as? KtValueArgument
-              ?: error("modules arg doesn't have a PSI element: ${classListArg.psi}")
-
-            // `[SomeModule::class]`
-            val modulesListExpression =
-              modulesArg.getArgumentExpression()!! as KtCollectionLiteralExpression
-
-            // `SomeModule::class`
-            val moduleArgExpressions = modulesListExpression.innerExpressions
-              // .map { it.requireFqName(org.jetbrains.kotlin.types.error.ErrorModuleDescriptor) }
-              .map { it.text }
-
-            val newModules = listOf(Names.emptyModule)
-
-            val allClassArgs = moduleArgExpressions
-              .plus(newModules.map { "${it.asString()}::class" })
-
-            modulesArg
-
-            // val originalClassListPsi = modulesArg as? KtValueArgumentList
-            //   ?: error("class list arg doesn't have a PSI element: ${classListArg.psi}")
-
-            val factory = modulesArg.ktPsiFactory()
-
-            fun createKClassValueArguments(typeFqNames: List<FqName>): KtValueArgumentList {
-              return factory.createCallArguments(
-                typeFqNames.joinToString(
-                  separator = ", ",
-                  prefix = "(",
-                  postfix = ")",
-                ) { "${it.asString()}::class" },
-              )
-            }
-
-            // val originalClassArgText = originalClassListPsi.arguments.map { it.text }
-
-            // val newModules = listOf(Names.emptyModule)
-
-            // val allClassArgs = originalClassArgText
-            //   .plus(newModules.map { "${it.asString()}::class" })
-
-            val classArgList = allClassArgs.joinToString(separator = ", ")
-
-            val annotationEntry = factory.createAnnotationEntry(
-              "@Component(modules = [$classArgList])",
-            )
-
-            // psi.project.extensionArea.registerExtensionPoint(Extensions.getRootArea(),TreeCopyHandler.EP_NAME,)
-            //
-            val va = createKClassValueArguments(listOf(Names.emptyModule))
-
-            va
-
-            // source.fakeElement()
-            // KtFakeSourceElement()
-
-            // val newArg = factory.createArgument(
-            //   expression = expression,
-            //   name = null,
-            //   isSpread = false,
-            //   reformat = false,
-            // )
-
-            // originalClassListPsi.parent.addAfter(va, originalClassListPsi)
-
-            // psi.astReplace(va)
-
-            classListArg
-          }
+        // (firAnnotation as FirAnnotationCall).argumentList
+        //   .arguments
+        //   .forEach { classListArg ->
+        //
+        //     // `modules = [SomeModule::class]`
+        //     val modulesArg = classListArg.psi as? KtValueArgument
+        //       ?: error("modules arg doesn't have a PSI element: ${classListArg.psi}")
+        //
+        //     // `[SomeModule::class]`
+        //     val modulesListExpression =
+        //       modulesArg.getArgumentExpression()!! as KtCollectionLiteralExpression
+        //
+        //     // `SomeModule::class`
+        //     val moduleArgExpressions = modulesListExpression.innerExpressions
+        //       // .map { it.requireFqName(org.jetbrains.kotlin.types.error.ErrorModuleDescriptor) }
+        //       .map { it.text }
+        //
+        //     val newModules = listOf(Names.emptyModule)
+        //
+        //     val allClassArgs = moduleArgExpressions
+        //       .plus(newModules.map { "${it.asString()}::class" })
+        //
+        //     modulesArg
+        //
+        //     // val originalClassListPsi = modulesArg as? KtValueArgumentList
+        //     //   ?: error("class list arg doesn't have a PSI element: ${classListArg.psi}")
+        //
+        //     val factory = modulesArg.ktPsiFactory()
+        //
+        //     fun createKClassValueArguments(typeFqNames: List<FqName>): KtValueArgumentList {
+        //       return factory.createCallArguments(
+        //         typeFqNames.joinToString(
+        //           separator = ", ",
+        //           prefix = "(",
+        //           postfix = ")",
+        //         ) { "${it.asString()}::class" },
+        //       )
+        //     }
+        //
+        //     // val originalClassArgText = originalClassListPsi.arguments.map { it.text }
+        //
+        //     // val newModules = listOf(Names.emptyModule)
+        //
+        //     // val allClassArgs = originalClassArgText
+        //     //   .plus(newModules.map { "${it.asString()}::class" })
+        //
+        //     val classArgList = allClassArgs.joinToString(separator = ", ")
+        //
+        //     val annotationEntry = factory.createAnnotationEntry(
+        //       "@Component(modules = [$classArgList])",
+        //     )
+        //
+        //     // psi.project.extensionArea.registerExtensionPoint(Extensions.getRootArea(),TreeCopyHandler.EP_NAME,)
+        //     //
+        //     val va = createKClassValueArguments(listOf(Names.emptyModule))
+        //
+        //     va
+        //
+        //     // source.fakeElement()
+        //     // KtFakeSourceElement()
+        //
+        //     // val newArg = factory.createArgument(
+        //     //   expression = expression,
+        //     //   name = null,
+        //     //   isSpread = false,
+        //     //   reformat = false,
+        //     // )
+        //
+        //     // originalClassListPsi.parent.addAfter(va, originalClassListPsi)
+        //
+        //     // psi.astReplace(va)
+        //
+        //     classListArg
+        //   }
       }
 
     classLikeDeclaration.transformAnnotations(

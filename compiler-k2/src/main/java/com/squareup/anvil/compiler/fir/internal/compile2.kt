@@ -90,7 +90,9 @@ internal fun compile2(
       .joinToString(File.pathSeparator)
 
     args.pluginClasspaths = listOf(
+      HostEnvironment.kotlinAnnotationProcessingEmbeddable,
       HostEnvironment.javaxInject,
+      HostEnvironment.daggerCompiler,
       HostEnvironment.anvilCompiler,
       HostEnvironment.anvilCompilerApi,
       HostEnvironment.anvilCompilerUtils,

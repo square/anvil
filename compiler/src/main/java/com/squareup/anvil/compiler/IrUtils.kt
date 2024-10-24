@@ -10,7 +10,6 @@ import org.jetbrains.kotlin.ir.declarations.IrDeclarationWithName
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
 import org.jetbrains.kotlin.ir.symbols.IrClassifierSymbol
-import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.types.IrSimpleType
 import org.jetbrains.kotlin.ir.types.classifierOrNull
 import org.jetbrains.kotlin.ir.types.typeOrNull
@@ -39,7 +38,6 @@ internal fun IrClass.requireClassId(): ClassId {
   )
 }
 
-@UnsafeDuringIrConstructionAPI
 internal fun IrClassSymbol.requireClassId(): ClassId = owner.requireClassId()
 
 internal val IrExpression.kclassUnwrapped: IrClassifierSymbol
@@ -55,7 +53,6 @@ internal val IrDeclarationWithName.fqName: FqName
     element = this,
   )
 
-@UnsafeDuringIrConstructionAPI
 internal val IrClassSymbol.fqName: FqName get() = owner.fqName
 
 // If we're evaluating an anonymous inner class, it cannot merge anything and will cause
