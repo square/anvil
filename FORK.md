@@ -142,7 +142,7 @@ these scenarios has changed the most in the move to KSP.
 If you previously implemented any custom `CodeGenerator`s from Anvil, you may need to update these
 too.
 
-1. First, they must be converted to KSP if you haven't already.
+1. First, they must be converted to KSP if you haven't already. Anvil K1's `CodeGenerator` API is no longer supported nor necessary, any custom code gen can just be implemented in KSP as another processor that generates code that Anvil can process in a later round.
 2. If they generate code that is annotated with Anvil contributor annotations (e.g. `@ContributesTo`, `@ContributesBinding`, etc), you may need to indicate them to Anvil KSP via one of two mechanisms.
 
 > [!IMPORTANT]
