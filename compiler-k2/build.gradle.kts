@@ -9,11 +9,10 @@ val VERSION_NAME: String by project
 
 buildConfig {
   className("BuildProperties")
-  packageName("com.squareup.anvil.compiler")
+  packageName("com.squareup.anvil.compiler.k2")
   useKotlinOutput { topLevelConstants = true }
 
   buildConfigField("boolean", "FULL_TEST_RUN", libs.versions.config.fullTestRun.get())
-  buildConfigField("boolean", "INCLUDE_KSP_TESTS", libs.versions.config.includeKspTests.get())
   buildConfigField("anvilVersion", VERSION_NAME)
 }
 
@@ -39,15 +38,10 @@ publish {
 dependencies {
 
   api(libs.dagger2.compiler)
-  // api(libs.intellij.core)
-  // api(libs.intellij.util)
   api(libs.kotlin.annotation.processing.embeddable)
   api(libs.kotlin.compiler.embeddable)
   api(libs.kotlin.metadata.jvm)
   api(libs.kotlin.scripting.compiler.embeddable)
-
-  compileOnly(libs.ksp.api)
-  compileOnly(libs.ksp.compilerPlugin)
 
   implementation(libs.auto.service.annotations)
   implementation(libs.classgraph)
