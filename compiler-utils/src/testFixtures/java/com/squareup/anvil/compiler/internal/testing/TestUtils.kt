@@ -11,7 +11,7 @@ import dagger.Component
 import dagger.Module
 import dagger.Provides
 import dagger.Subcomponent
-import org.jetbrains.kotlin.analysis.utils.collections.mapToSet
+import org.jetbrains.kotlin.utils.mapToSetOrEmpty
 import kotlin.reflect.KClass
 
 @ExperimentalAnvilApi
@@ -29,7 +29,7 @@ public fun Class<*>.moduleFactoryClass(
 
   val providesMethods = methodsOrCompanionMethods
     .filter { it.isAnnotationPresent(Provides::class.java) }
-    .mapToSet { it.name }
+    .mapToSetOrEmpty { it.name }
 
   assertWithMessage("No @Provides methods found in $this")
     .that(providesMethods)

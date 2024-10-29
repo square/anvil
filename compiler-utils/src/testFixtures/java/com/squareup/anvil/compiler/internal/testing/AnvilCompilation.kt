@@ -14,12 +14,14 @@ import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.addPreviousResultToClasspath
 import com.tschuchort.compiletesting.kspArgs
+import com.tschuchort.compiletesting.kspProcessorOptions
 import com.tschuchort.compiletesting.kspWithCompilation
 import com.tschuchort.compiletesting.symbolProcessorProviders
 import dagger.internal.codegen.ComponentProcessor
 import dagger.internal.codegen.KspComponentProcessor
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.config.JvmTarget
+import org.jetbrains.kotlin.config.LanguageVersion
 import java.io.File
 import java.io.OutputStream
 import java.nio.file.Files
@@ -46,7 +48,7 @@ public class AnvilCompilation internal constructor(
     disableComponentMerging: Boolean = false,
     enableExperimentalAnvilApis: Boolean = true,
     trackSourceFiles: Boolean = true,
-    mode: AnvilCompilationMode = Embedded(emptyList()),
+    mode: AnvilCompilationMode = Embedded(),
     enableAnvil: Boolean = true,
   ): AnvilCompilation = apply {
     checkNotCompiled()
@@ -153,10 +155,11 @@ public class AnvilCompilation internal constructor(
           }
           // Run KSP embedded directly within this kotlinc invocation
           kspWithCompilation = true
-          kspArgs["will-have-dagger-factories"] = generateDaggerFactories.toString()
-          kspArgs["generate-dagger-factories"] = generateDaggerFactories.toString()
-          kspArgs["generate-dagger-factories-only"] = generateDaggerFactoriesOnly.toString()
-          kspArgs["disable-component-merging"] = disableComponentMerging.toString()
+          kspProcessorOptions["will-have-dagger-factories"] = generateDaggerFactories.toString()
+          kspProcessorOptions["generate-dagger-factories"] = generateDaggerFactories.toString()
+          kspProcessorOptions["generate-dagger-factories-only"] =
+            generateDaggerFactoriesOnly.toString()
+          kspProcessorOptions["disable-component-merging"] = disableComponentMerging.toString()
         }
       }
 
@@ -306,19 +309,20 @@ public fun compileAnvil(
   enableExperimentalAnvilApis: Boolean = true,
   trackSourceFiles: Boolean = true,
   previousCompilationResult: JvmCompilationResult? = null,
-  mode: AnvilCompilationMode = Embedded(emptyList()),
+  mode: AnvilCompilationMode = Embedded(),
   moduleName: String? = null,
   jvmTarget: JvmTarget? = null,
-  kotlinLanguageVersion: String? = null,
+  kotlinLanguageVersion: String = LanguageVersion.KOTLIN_1_9.versionString,
   expectExitCode: KotlinCompilation.ExitCode? = null,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult {
   return AnvilCompilation()
     .apply {
       kotlinCompilation.apply {
+        languageVersion = kotlinLanguageVersion
+        apiVersion = kotlinLanguageVersion
         this.allWarningsAsErrors = allWarningsAsErrors
         this.messageOutputStream = messageOutputStream
-        this.languageVersion = kotlinLanguageVersion
         if (workingDir != null) {
           this.workingDir = workingDir
         }

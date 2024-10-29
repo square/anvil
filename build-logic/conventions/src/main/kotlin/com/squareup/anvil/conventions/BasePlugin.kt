@@ -108,6 +108,11 @@ abstract class BasePlugin : Plugin<Project> {
         }
 
         freeCompilerArgs.addAll(extension.kotlinCompilerArgs.get())
+        // We do not yet support K2, and KAPT + Kotlin 2.0 generates a warning about falling back to
+        // language version 1.9. Because we treat all warnings as errors, we need to suppress this
+        // specific warning to not fail the build. Related YT ticket:
+        // https://youtrack.jetbrains.com/issue/KT-68400/K2-w-Kapt-currently-doesnt-support-language-version-2.0.-Falling-back-to-1.9.
+        freeCompilerArgs.add("-Xsuppress-version-warnings")
 
         fun isTestSourceSet(): Boolean {
           val regex = """(?:gradle|Unit|[aA]ndroid)Test""".toRegex()

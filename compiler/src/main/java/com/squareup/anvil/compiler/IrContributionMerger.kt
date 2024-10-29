@@ -26,6 +26,7 @@ import org.jetbrains.kotlin.ir.declarations.IrModuleFragment
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.types.classOrFail
 import org.jetbrains.kotlin.ir.types.classOrNull
@@ -49,6 +50,7 @@ import java.io.File
  * as super types to Dagger components annotated with `@MergeComponent` or `@MergeSubcomponent`.
  * This also supports arbitrary interface merging on interfaces annotated with `@MergeInterfaces`.
  */
+@OptIn(org.jetbrains.kotlin.backend.common.extensions.FirIncompatiblePluginAPI::class)
 internal class IrContributionMerger(
   private val classScanner: ClassScanner,
   private val moduleDescriptorFactory: RealAnvilModuleDescriptor.Factory,
@@ -160,6 +162,7 @@ internal class IrContributionMerger(
     irMergesFile.writeText(mergedText)
   }
 
+  @OptIn(UnsafeDuringIrConstructionAPI::class)
   private fun IrBuilderWithScope.addMergedModules(
     annotations: List<AnnotationReferenceIr>,
     moduleFragment: IrModuleFragment,
@@ -378,6 +381,7 @@ internal class IrContributionMerger(
     contributedModules: Sequence<IrClass>,
     annotations: List<AnnotationReferenceIr>,
   ): IrConstructorCall {
+    @OptIn(UnsafeDuringIrConstructionAPI::class)
     return irCallConstructor(
       callee = pluginContext
         .referenceConstructors(daggerAnnotationFqName.classIdBestGuess())
@@ -628,6 +632,7 @@ internal class IrContributionMerger(
 
     // Since we are modifying the state of the code here, this does not need to be reflected in
     // the associated [ClassReferenceIr] which is more of an initial snapshot.
+    @OptIn(UnsafeDuringIrConstructionAPI::class)
     clazz.owner.superTypes += toAdd
 
     // Return the list of added supertypes

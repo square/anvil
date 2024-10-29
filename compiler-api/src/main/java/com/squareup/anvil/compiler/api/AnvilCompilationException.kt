@@ -12,6 +12,7 @@ import org.jetbrains.kotlin.descriptors.annotations.AnnotationDescriptor
 import org.jetbrains.kotlin.ir.IrElement
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrSymbol
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.util.render
 import org.jetbrains.kotlin.js.resolve.diagnostics.findPsi
 import org.jetbrains.kotlin.resolve.source.KotlinSourceElement
@@ -114,6 +115,7 @@ public class AnvilCompilationException(
       message: String,
       cause: Throwable? = null,
     ): AnvilCompilationException {
+      @OptIn(UnsafeDuringIrConstructionAPI::class)
       return AnvilCompilationException(
         message = message,
         cause = cause,

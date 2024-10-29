@@ -13,12 +13,15 @@ import org.jetbrains.kotlin.backend.common.lower.parents
 import org.jetbrains.kotlin.descriptors.DescriptorVisibilities
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.util.isInterface
 import org.jetbrains.kotlin.ir.util.packageFqName
+import org.jetbrains.kotlin.ir.util.parents
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import kotlin.LazyThreadSafetyMode.NONE
 
+@OptIn(UnsafeDuringIrConstructionAPI::class)
 internal class ClassReferenceIr(
   val clazz: IrClassSymbol,
   val context: IrPluginContext,
@@ -31,6 +34,7 @@ internal class ClassReferenceIr(
     get() = fqName.shortName().asString()
 
   val enclosingClassesWithSelf: List<ClassReferenceIr> by lazy {
+    @OptIn(UnsafeDuringIrConstructionAPI::class)
     clazz.owner.parents
       .filterIsInstance<IrClass>()
       .map { it.symbol.toClassReference(context) }
