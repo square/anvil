@@ -16,6 +16,10 @@ gradlePlugin {
       id = "conventions.library"
       implementationClass = "com.squareup.anvil.conventions.LibraryPlugin"
     }
+    register("kotlinMultiplatformLibrary") {
+      id = "conventions.kmp-library"
+      implementationClass = "com.squareup.anvil.conventions.LibraryKmpPlugin"
+    }
     register("minimalSupport") {
       id = "conventions.minimal"
       implementationClass = "com.squareup.anvil.conventions.MinimalSupportPlugin"

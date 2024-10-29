@@ -101,12 +101,6 @@ abstract class BasePlugin : Plugin<Project> {
             .replaceFirstChar(Char::lowercase),
         )
 
-        // Only add the experimental opt-in if the project has the `annotations` dependency,
-        // otherwise the compiler will throw a warning and fail in CI.
-        if (target.hasAnnotationDependency(sourceSetName)) {
-          freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
-        }
-
         freeCompilerArgs.addAll(extension.kotlinCompilerArgs.get())
 
         fun isTestSourceSet(): Boolean {
@@ -151,38 +145,6 @@ abstract class BasePlugin : Plugin<Project> {
         "kase.baseWorkingDir",
         target.buildDir().resolve("kase/${task.name}"),
       )
-    }
-  }
-
-  /**
-   * This is an imperfect but pretty good heuristic
-   * to determine if the receiver has the `annotations` dependency,
-   * without actually resolving the dependency graph.
-   */
-  private fun Project.hasAnnotationDependency(sourceSetName: String): Boolean {
-
-    val compileClasspath = when (sourceSetName) {
-      "main" -> "compileClasspath"
-      else -> "${sourceSetName}CompileClasspath"
-    }
-      .let { configurations.findByName(it) }
-      ?: return false
-
-    val configs = generateSequence(sequenceOf(compileClasspath)) { configs ->
-      configs.flatMap { it.extendsFrom }
-        .mapNotNull { configurations.findByName(it.name) }
-        .takeIf { it.iterator().hasNext() }
-    }
-      .flatten()
-      .distinct()
-
-    // The -api and -utils projects declare the annotations as an `api` dependency.
-    val providingProjects = setOf("annotations", "compiler-api", "compiler-utils")
-
-    return configs.any { cfg ->
-      cfg.dependencies.any { dep ->
-        dep.group == "dev.zacsweers.anvil" && dep.name in providingProjects
-      }
     }
   }
 

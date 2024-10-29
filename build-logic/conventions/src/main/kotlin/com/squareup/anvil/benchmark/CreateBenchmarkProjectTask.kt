@@ -88,6 +88,7 @@ open class CreateBenchmarkProjectTask : DefaultTask() {
           repositories {
             gradlePluginPortal()
             mavenCentral()
+            mavenLocal()
           }
           
           includeBuild '../build-logic/settings'

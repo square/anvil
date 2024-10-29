@@ -20,7 +20,9 @@ conventions {
     // compiler requires this flag when doing so.
     "-Xjvm-default=all",
     "-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi",
+    "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi",
   )
+
   addTasksToIdeSync("generateBuildConfig")
 }
 

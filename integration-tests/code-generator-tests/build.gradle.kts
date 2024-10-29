@@ -5,6 +5,10 @@ plugins {
   id("conventions.minimal")
 }
 
+conventions {
+  kotlinCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
+}
+
 anvil {
   generateDaggerFactories = true
 }

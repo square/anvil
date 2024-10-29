@@ -40,6 +40,7 @@ abstract class SettingsPlugin @Inject constructor(
       repos.mavenCentral()
       repos.gradlePluginPortal()
       repos.google()
+      repos.mavenLocal()
 
       if (target.providers.gradleProperty("anvil.allowSnapshots").orNull?.toBoolean() == true) {
         repos.maven { it.url = URI("https://maven.pkg.jetbrains.space/kotlin/p/kotlin/dev") }

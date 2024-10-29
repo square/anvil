@@ -5,8 +5,9 @@ plugins {
 }
 
 conventions {
-  kotlinCompilerArgs.add(
+  kotlinCompilerArgs.addAll(
     "-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi",
+    "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi",
   )
 }
 

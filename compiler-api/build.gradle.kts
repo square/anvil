@@ -5,6 +5,7 @@ plugins {
 
 conventions {
   explicitApi = true
+  kotlinCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
 }
 
 publish {

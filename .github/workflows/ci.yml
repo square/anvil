@@ -46,6 +46,9 @@ jobs:
           java-version: '17'
           check-latest: true
 
+      - name: Publish Annotations to Maven Local
+        run: ./gradlew :annotations:publishToMavenLocal
+
       - name: Test on Ubuntu
         run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }}
 
@@ -67,6 +70,9 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
           check-latest: true
+
+      - name: Publish Annotations to Maven Local
+        run: ./gradlew.bat :annotations:publishToMavenLocal
 
       # On Windows the command looks a little bit different. Notice that we use the .bat file and
       # quotes for the Kotlin version, because dots "." in the Kotlin version and parameter name
@@ -111,6 +117,9 @@ jobs:
           java-version: '17'
           check-latest: true
 
+      - name: Publish Annotations to Maven Local
+        run: ./gradlew :annotations:publishToMavenLocal
+
       - name: KtLint
         run: ./gradlew ktlintCheck --no-build-cache --no-daemon --stacktrace
 
@@ -125,6 +134,9 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
           check-latest: true
+
+      - name: Publish Annotations to Maven Local
+        run: ./gradlew :annotations:publishToMavenLocal
 
       - name: Android Lint
         run: ./gradlew -p build-logic/delegate lint --no-build-cache --no-daemon --stacktrace
@@ -204,6 +216,9 @@ jobs:
           java-version: '17'
           check-latest: true
 
+      - name: Publish Annotations to Maven Local
+        run: ./gradlew :annotations:publishToMavenLocal
+
       - name: Run integration tests
         run: ./gradlew -p build-logic/delegate test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
 
@@ -262,10 +277,13 @@ jobs:
           disable-animations: false
           emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           force-avd-creation: false
-          profile : Galaxy Nexus
-          ram-size : 4096M
+          profile: Galaxy Nexus
+          ram-size: 4096M
           target: default
           script: echo "Generated AVD snapshot for caching."
+
+      - name: Publish Annotations to Maven Local
+        run: ./gradlew :annotations:publishToMavenLocal
 
       - name: Instrumentation Tests
         uses: reactivecircus/android-emulator-runner@77986be26589807b8ebab3fde7bbf5c60dabec32 # v2
@@ -275,8 +293,8 @@ jobs:
           disable-animations: true
           emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
           force-avd-creation: false
-          profile : Galaxy Nexus
-          ram-size : 4096M
+          profile: Galaxy Nexus
+          ram-size: 4096M
           target: default
           script: ./gradlew connectedCheck --no-build-cache --no-daemon --stacktrace
 
@@ -298,6 +316,9 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
           check-latest: true
+
+      - name: Publish Annotations to Maven Local
+        run: ./gradlew :annotations:publishToMavenLocal
 
       - name: Gradle integration tests
         run: ./gradlew gradleTest --stacktrace
@@ -328,6 +349,9 @@ jobs:
           distribution: 'zulu'
           java-version: '17'
           check-latest: true
+
+      - name: Publish Annotations to Maven Local
+        run: ./gradlew :annotations:publishToMavenLocal
 
       - name: "Generate Project"
         run: ./gradlew :createBenchmarkProject

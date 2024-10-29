@@ -9,6 +9,7 @@ import com.squareup.anvil.conventions.utils.gradlePublishingExtension
 import com.squareup.anvil.conventions.utils.libs
 import com.vanniktech.maven.publish.JavadocJar.Dokka
 import com.vanniktech.maven.publish.KotlinJvm
+import com.vanniktech.maven.publish.KotlinMultiplatform
 import com.vanniktech.maven.publish.MavenPublishBaseExtension
 import org.gradle.api.Plugin
 import org.gradle.api.Project
@@ -61,6 +62,21 @@ open class PublishConventionPlugin : Plugin<Project> {
             )
           }
         }
+      }
+    }
+
+    target.plugins.withId("org.jetbrains.kotlin.multiplatform") {
+      mavenPublishing.configure(
+        platform = KotlinMultiplatform(
+          javadocJar = Dokka(DOKKA_HTML),
+          sourcesJar = true,
+        ),
+      )
+      target.plugins.withId(pluginPublishId) {
+        error(
+          "The '$pluginPublishId' plugin must be applied before the publishing " +
+            "convention plugin, so that plugin publishing isn't configured twice.",
+        )
       }
     }
 
@@ -123,6 +139,7 @@ open class PublishExtension @Inject constructor(
     artifactId: String,
     pomName: String,
     pomDescription: String,
+    overrideArtifactId: Boolean = true,
   ) {
 
     target.gradlePublishingExtension
@@ -131,7 +148,7 @@ open class PublishExtension @Inject constructor(
 
         // Gradle plugin publications have their own artifactID convention,
         // and that's handled automatically.
-        if (!publication.name.endsWith("PluginMarkerMaven")) {
+        if (!publication.name.endsWith("PluginMarkerMaven") && overrideArtifactId) {
           publication.artifactId = artifactId
         }
 

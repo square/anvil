@@ -5,6 +5,7 @@ dependencyResolutionManagement {
     mavenCentral()
     gradlePluginPortal()
     google()
+    mavenLocal()
   }
   versionCatalogs {
     create("libs") {
