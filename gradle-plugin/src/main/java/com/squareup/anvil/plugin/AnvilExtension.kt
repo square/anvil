@@ -1,6 +1,5 @@
 package com.squareup.anvil.plugin
 
-import com.google.devtools.ksp.gradle.KspExtension
 import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
@@ -203,18 +202,19 @@ public abstract class AnvilExtension @Inject constructor(
     val willHaveDaggerFactories = generateDaggerFactories.map { anvilGenerated ->
       // If Anvil is creating factories due to `generateDaggerFactories`, then we're done.
       // Otherwise, we have to check if the Dagger compiler dependency is in KSP's classpath.
-      anvilGenerated || kExtension.targets
-        .filter { it.isSupportedType() }
-        .any { target ->
-          target.compilations.any { c ->
-            // If using Anvil with KSP, Dagger factory generation can come from either KSP or KAPT.
-            c.kspConfigOrNull(project)?.hasDaggerCompilerDependency() == true ||
-              c.kaptConfigOrNull(project)?.hasDaggerCompilerDependency() == true
+      anvilGenerated ||
+        kExtension.targets
+          .filter { it.isSupportedType() }
+          .any { target ->
+            target.compilations.any { c ->
+              // If using Anvil with KSP, Dagger factory generation can come from either KSP or KAPT.
+              c.kspConfigOrNull(project)?.hasDaggerCompilerDependency() == true ||
+                c.kaptConfigOrNull(project)?.hasDaggerCompilerDependency() == true
+            }
           }
-        }
     }
 
-    project.extensions.configure(KspExtension::class.java) { ksp ->
+    project.extensions.configure(com.google.devtools.ksp.gradle.KspExtension::class.java) { ksp ->
       // Do not convert this to a lambda.
       // It will leak the AnvilExtension instance and break configuration caching.
       ksp.arg(

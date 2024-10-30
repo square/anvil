@@ -113,10 +113,14 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   override fun applyToCompilation(
     kotlinCompilation: KotlinCompilation<*>,
   ): Provider<List<SubpluginOption>> {
-    kotlinCompilation.compilerOptions.options.let {
+
+    kotlinCompilation.compileTaskProvider.configure { task ->
+
+      val options = task.compilerOptions
+
       @Suppress("DEPRECATION")
-      val useK2 = it.useK2.get()
-      if (useK2 || it.languageVersion.getOrElse(KOTLIN_1_9) >= KOTLIN_2_0) {
+      val useK2 = task.compilerOptions.useK2.get()
+      if (useK2 || options.languageVersion.getOrElse(KOTLIN_1_9) >= KOTLIN_2_0) {
         kotlinCompilation.project.logger
           .error(
             "NOTE: Anvil is currently incompatible with the K2 compiler. Related GH issue:" +
