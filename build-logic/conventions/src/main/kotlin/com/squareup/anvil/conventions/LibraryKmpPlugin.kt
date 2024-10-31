@@ -51,9 +51,19 @@ class LibraryKmpPlugin : Plugin<Project> {
       watchosSimulatorArm64()
       watchosX64()
 
-      mingwX64()
+      // TODO: re-enable when kotlin-inject supports it
+      // mingwX64()
 
       applyDefaultHierarchyTemplate()
+
+      sourceSets.apply {
+        val nonJvmMain = create("nonJvmMain")
+        nonJvmMain.dependsOn(commonMain.get())
+
+        nativeMain.get().dependsOn(nonJvmMain)
+        jsMain.get().dependsOn(nonJvmMain)
+        getByName("wasmJsMain").dependsOn(nonJvmMain)
+      }
     }
     configureBinaryCompatibilityValidator()
     configureExplicitApi()

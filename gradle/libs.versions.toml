@@ -101,6 +101,7 @@ gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", versio
 guava = "com.google.guava:guava:33.2.1-jre"
 
 inject = "javax.inject:javax.inject:1"
+kotlinInject = "me.tatarka.inject:kotlin-inject-runtime:0.7.2"
 jakarta = "jakarta.inject:jakarta.inject-api:2.0.1"
 jsr250 = "javax.annotation:jsr250-api:1.0"
 junit = "junit:junit:4.13.2"

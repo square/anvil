@@ -1,11 +1,11 @@
 package com.squareup.anvil.annotations.optional
 
-import javax.inject.Qualifier
 import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.reflect.KClass
+import me.tatarka.inject.annotations.Scope as KotlinInjectScope
 
 /**
- * A class based [qualfier](Qualifier).
+ * A class based [qualifier](Qualifier).
  *
  * This can be used in combination with other Anvil annotations to avoid having
  * to manually define qualifier annotations for each component and to maintain
@@ -24,9 +24,9 @@ import kotlin.reflect.KClass
  * class UserAuthenticator @Inject constructor() : Authenticator
  * ```
  */
-@Qualifier
+@KotlinInjectScope
 @Retention(RUNTIME)
-public annotation class ForScope(
+public expect annotation class ForScope(
   /**
    * The marker that identifies the component in which the annotated object is
    * provided or bound in.

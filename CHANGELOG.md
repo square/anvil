@@ -5,6 +5,8 @@
 
 - **Enhancement**: Improve error messaging for error types used as annotation arguments.
 - **Enhancement**: Initial support for jakarta.inject annotations. Note that Dagger itself appears to only partially support these at the moment. Generated code is identical, but jakarta `@Inject`/`@Qualifier`/`@Scope` annotations should be recognized now.
+- **Enhancement**: `annotations` and `annotations-optional` are now Kotlin multiplatfom libraries.
+- **Enhancement**: `@SingleIn` and `@ForScope` can now be used with jakarta.inject and kotlin-inject.
 - Update Dagger to `2.52`.
 
 0.3.3

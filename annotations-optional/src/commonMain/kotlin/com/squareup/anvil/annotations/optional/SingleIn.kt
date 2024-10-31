@@ -1,8 +1,8 @@
 package com.squareup.anvil.annotations.optional
 
-import javax.inject.Scope
 import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.reflect.KClass
+import me.tatarka.inject.annotations.Qualifier as KotlinInjectQualifier
 
 /**
  * Identifies a type that the injector only instantiates once for the given
@@ -30,9 +30,9 @@ import kotlin.reflect.KClass
  *
  * See Also: [@Scope](Scope)
  */
-@Scope
+@KotlinInjectQualifier
 @Retention(RUNTIME)
-public annotation class SingleIn(
+public expect annotation class SingleIn(
   /**
    * The marker that identifies this scope.
    */
