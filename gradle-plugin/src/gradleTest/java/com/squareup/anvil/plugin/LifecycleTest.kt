@@ -26,7 +26,7 @@ class LifecycleTest : BaseGradleTest() {
   fun `tasks are compatible with configuration caching when targeting kotlin-jvm`() =
     params
       .distinctBy { it.gradleVersion }
-      .withKspToggle { versions, useKsp ->
+      .withKspToggle { _, useKsp ->
 
         rootProject {
           buildFile {
@@ -75,10 +75,8 @@ class LifecycleTest : BaseGradleTest() {
           }
         }
 
-        val calculatingMessage = when {
-          versions.gradleVersion >= "8.5" -> "Calculating task graph as no cached configuration is available for tasks: compileKotlin"
-          else -> "Calculating task graph as no configuration cache is available for tasks: compileKotlin"
-        }
+        val calculatingMessage =
+          "Calculating task graph as no cached configuration is available for tasks: compileKotlin"
 
         val storingMessage = "Configuration cache entry stored."
 
