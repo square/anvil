@@ -3,11 +3,20 @@
 **Unreleased**
 --------------
 
-- **Enhancement**: Improve error messaging for error types used as annotation arguments.
-- **Enhancement**: Initial support for jakarta.inject annotations. Note that Dagger itself appears to only partially support these at the moment. Generated code is identical, but jakarta `@Inject`/`@Qualifier`/`@Scope` annotations should be recognized now.
-- **Enhancement**: `annotations` and `annotations-optional` are now Kotlin multiplatfom libraries.
+0.4.0
+-----
+
+_2024-11-02_
+
+**Note**: Up to this point, this library has largely attempted to preserve the pre-K2 Anvil impl and compatibility to ease adoption. This release marks a shift in that approach. New features will be implemented now (beyond just KSP support) and eventually K1 support will be dropped.
+
+- **New**: Experimental support for jakarta.inject annotations. Note that Dagger itself appears to only partially support these at the moment. Generated code is identical, but jakarta `@Inject`/`@Qualifier`/`@Scope` annotations should be recognized now.
+- **Enhancement**: The `annotations` and `annotations-optional` artifacts are now Kotlin multiplatform libraries. This allows for easier integration with multiplatform projects and/or adoption of kotlin-inject.
 - **Enhancement**: `@SingleIn` and `@ForScope` can now be used with jakarta.inject and kotlin-inject.
+- **Enhancement**: Improve error messaging for error types used as annotation arguments.
 - Update Dagger to `2.52`.
+
+Special thanks to [@mrmans0n](https://github.com/mrmans0n) and [@gabrielittner](https://github.com/gabrielittner) for contributing to this release!
 
 0.3.3
 -----
