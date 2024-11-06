@@ -1,7 +1,7 @@
 package com.squareup.anvil.compiler.k2
 
-import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.k2.internal.DefaultGeneratedDeclarationKey
+import com.squareup.anvil.compiler.k2.internal.Names
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
@@ -14,10 +14,10 @@ import org.jetbrains.kotlin.name.FqName
 public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
   FirDeclarationGenerationExtension(session) {
   public companion object {
-    private val INJECT = ClassId.topLevel(injectFqName)
+    private val INJECT = ClassId.topLevel(Names.inject)
 
     private val PREDICATE = LookupPredicate.create {
-      annotated(injectFqName) or annotatedOrUnder(injectFqName)
+      annotated(Names.inject) or annotatedOrUnder(Names.inject)
     }
   }
 

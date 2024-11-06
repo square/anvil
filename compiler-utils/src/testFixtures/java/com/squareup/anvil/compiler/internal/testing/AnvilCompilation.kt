@@ -5,11 +5,11 @@ import com.google.common.truth.Truth.assertWithMessage
 import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
-import com.squareup.anvil.compiler.fir.AnvilCompilerPluginRegistrar
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
+import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.addPreviousResultToClasspath
 import com.tschuchort.compiletesting.configureKsp
@@ -22,6 +22,7 @@ import org.jetbrains.kotlin.kapt3.Kapt3CommandLineProcessor
 import java.io.File
 import java.io.OutputStream
 import java.nio.file.Files
+import java.util.Locale
 import java.util.ServiceLoader
 
 /**
@@ -56,8 +57,6 @@ public class AnvilCompilation internal constructor(
 
     kotlinCompilation.apply {
 
-      compilerPluginRegistrars += AnvilCompilerPluginRegistrar()
-
       supportsK2 = true
       annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())
       useKapt4 = true
@@ -68,28 +67,28 @@ public class AnvilCompilation internal constructor(
       val buildDir = workingDir.resolve("build")
       val anvilCacheDir = buildDir.resolve("anvil-cache")
 
-      // pluginOptions = mutableListOf(
-      //   PluginOption(
-      //     pluginId = anvilCommandLineProcessor.pluginId,
-      //     optionName = "disable-component-merging",
-      //     optionValue = disableComponentMerging.toString(),
-      //   ),
-      //   PluginOption(
-      //     pluginId = anvilCommandLineProcessor.pluginId,
-      //     optionName = "analysis-backend",
-      //     optionValue = mode.analysisBackend.name.lowercase(Locale.US),
-      //   ),
-      //   PluginOption(
-      //     pluginId = anvilCommandLineProcessor.pluginId,
-      //     optionName = "ir-merges-file",
-      //     optionValue = anvilCacheDir.resolve("merges/ir-merges.txt").absolutePath,
-      //   ),
-      //   PluginOption(
-      //     pluginId = anvilCommandLineProcessor.pluginId,
-      //     optionName = "track-source-files",
-      //     optionValue = (trackSourceFiles && mode is Embedded).toString(),
-      //   ),
-      // )
+      pluginOptions = mutableListOf(
+        PluginOption(
+          pluginId = anvilCommandLineProcessor.pluginId,
+          optionName = "disable-component-merging",
+          optionValue = disableComponentMerging.toString(),
+        ),
+        PluginOption(
+          pluginId = anvilCommandLineProcessor.pluginId,
+          optionName = "analysis-backend",
+          optionValue = mode.analysisBackend.name.lowercase(Locale.US),
+        ),
+        PluginOption(
+          pluginId = anvilCommandLineProcessor.pluginId,
+          optionName = "ir-merges-file",
+          optionValue = anvilCacheDir.resolve("merges/ir-merges.txt").absolutePath,
+        ),
+        PluginOption(
+          pluginId = anvilCommandLineProcessor.pluginId,
+          optionName = "track-source-files",
+          optionValue = (trackSourceFiles && mode is Embedded).toString(),
+        ),
+      )
 
       when (mode) {
         is Embedded -> {

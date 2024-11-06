@@ -15,9 +15,9 @@ public class MyTotallyCustomFirTransform(session: FirSession) : FirExtension(ses
     public val NAME: FirExtensionPointName = FirExtensionPointName("TotallyCustom")
   }
 
-  final override val name: FirExtensionPointName get() = NAME
+  override val name: FirExtensionPointName get() = NAME
 
-  final override val extensionType: KClass<out FirExtension> = MyTotallyCustomFirTransform::class
+  override val extensionType: KClass<out FirExtension> = MyTotallyCustomFirTransform::class
 
   public fun doSomething() {
     error("doSomething")

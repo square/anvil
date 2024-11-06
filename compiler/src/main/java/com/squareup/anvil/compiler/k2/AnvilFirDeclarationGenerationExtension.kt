@@ -5,7 +5,7 @@ import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.classId
 import com.squareup.anvil.compiler.k2.internal.factoryDelegate
 import com.squareup.anvil.compiler.k2.internal.isFactoryDelegate
-import com.squareup.anvil.compiler.mapToSet
+import com.squareup.anvil.compiler.k2.internal.mapToSet
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -53,7 +53,7 @@ public class AnvilFactoryDelegateDeclarationGenerationExtension(session: FirSess
 
   private val predicateBasedProvider = session.predicateBasedProvider
   private val matchedClasses by lazy {
-    predicateBasedProvider.getSymbolsByPredicate(AnvilPredicates.hasFreddyAnnotation)
+    predicateBasedProvider.getSymbolsByPredicate(AnvilPredicates.hasInjectAnnotation)
       .filterIsInstance<FirConstructorSymbol>()
   }
 
@@ -150,7 +150,7 @@ public class AnvilFactoryDelegateDeclarationGenerationExtension(session: FirSess
   override fun hasPackage(packageFqName: FqName): Boolean = packageFqName == Names.foo
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
-    register(AnvilPredicates.hasFreddyAnnotation)
+    register(AnvilPredicates.hasInjectAnnotation)
   }
 }
 

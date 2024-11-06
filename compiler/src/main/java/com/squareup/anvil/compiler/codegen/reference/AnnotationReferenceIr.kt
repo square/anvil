@@ -4,6 +4,7 @@ import com.squareup.anvil.compiler.api.AnvilCompilationException
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.expressions.IrConstructorCall
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.util.getArgumentsWithIr
 import org.jetbrains.kotlin.ir.util.parentAsClass
 import org.jetbrains.kotlin.name.FqName
@@ -83,6 +84,7 @@ internal class AnnotationReferenceIr(
   }
 }
 
+@OptIn(UnsafeDuringIrConstructionAPI::class)
 internal fun IrConstructorCall.toAnnotationReference(
   context: IrPluginContext,
   declaringClass: ClassReferenceIr?,

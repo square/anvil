@@ -1,6 +1,6 @@
-package com.squareup.anvil.compiler.k2.internal
+package com.squareup.anvil.compiler.internal.testing.k2
 
-import com.squareup.anvil.compiler.anvilVersion
+import com.squareup.anvil.compiler.internal.testing.anvilVersion
 import io.github.classgraph.ClassGraph
 import java.io.File
 import kotlin.contracts.ExperimentalContracts
@@ -8,21 +8,10 @@ import kotlin.contracts.contract
 
 internal object HostEnvironment {
 
-  val File.pathSegments: List<String>
+  private val File.pathSegments: List<String>
     get() = path.split(File.separatorChar)
 
-  /** Everything in the classpath of the runtime executing the test */
   val inheritedClasspath: List<File> by lazy { getHostClasspaths() }
-
-  /** Everything in the classpath of the runtime executing the test */
-  @Deprecated(
-    "renamed to inheritedClasspath",
-    ReplaceWith(
-      "inheritedClasspath",
-      "com.squareup.kable.testing.kotlin.HostEnvironment.inheritedClasspath",
-    ),
-  )
-  val classpath: List<File> get() = inheritedClasspath
 
   val allInheritedAnvilProjects: List<File> by lazy {
 
@@ -51,8 +40,12 @@ internal object HostEnvironment {
   val anvilAnnotations: File by lazy { anvilModuleJar("annotations") }
   val anvilAnnotationsOptional: File by lazy { anvilModuleJar("annotations-optional") }
   val anvilCompiler: File by lazy { anvilModuleJar("compiler") }
+  val anvilCompilerK2: File by lazy { anvilModuleJar("compiler-k2") }
   val anvilCompilerApi: File by lazy { anvilModuleJar("compiler-api") }
   val anvilCompilerUtils: File by lazy { anvilModuleJar("compiler-utils") }
+  val anvilCompilerUtilsTestFixtures: File by lazy {
+    findInClasspath(".+build/libs/compiler-utils-$anvilVersion-test-fixtures\\.jar".toRegex())
+  }
 
   private val jetbrainsKotlin = "org.jetbrains.kotlin"
   private val jetbrainsKotlinx = "org.jetbrains.kotlinx"

@@ -664,9 +664,7 @@ public final class ParentClass_NestedInjectClass_MembersInjector implements Memb
         
             other as NestedInjectClass
         
-            if (string != other.string) return false
-        
-            return true
+            return string == other.string
           }
         
           override fun hashCode(): Int {
@@ -1710,9 +1708,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       
           other as InjectClass
       
-          if (string != other.string) return false
-      
-          return true
+          return string == other.string
         }
       
         override fun hashCode(): Int {
@@ -2189,9 +2185,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
      
           other as InjectClass
      
-          if (stringList != other.stringList) return false
-     
-          return true
+          return stringList == other.stringList
         }
         
         override fun hashCode() = stringList.hashCode()
@@ -2241,9 +2235,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
      
           other as InjectClass
      
-          if (value != other.value) return false
-     
-          return true
+          return value == other.value
         }
         
         override fun hashCode() = value.hashCode()
@@ -2446,9 +2438,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
      
           other as InjectClass
      
-          if (string != other.string) return false
-     
-          return true
+          return string == other.string
         }
 
         override fun hashCode(): Int = string.hashCode()
@@ -2554,9 +2544,6 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       class InjectClass {
         @set:Inject
         var value: String = "initial"
-          set(value) {
-            field = value
-          }
      
         override fun equals(other: Any?): Boolean {
           if (this === other) return true
@@ -2564,9 +2551,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
      
           other as InjectClass
      
-          if (value != other.value) return false
-     
-          return true
+          return value == other.value
         }
         
         override fun hashCode() = value.hashCode()

@@ -3,7 +3,7 @@ package com.squareup.anvil.compiler.k2
 import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.anvilPrefix
 import com.squareup.anvil.compiler.k2.internal.hasAnvilPrefix
-import com.squareup.anvil.compiler.mapToSet
+import com.squareup.anvil.compiler.k2.internal.mapToSet
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.fir.FirSession
