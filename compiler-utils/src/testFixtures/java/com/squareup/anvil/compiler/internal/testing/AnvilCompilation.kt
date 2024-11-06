@@ -4,10 +4,10 @@ import com.google.auto.value.processor.AutoAnnotationProcessor
 import com.google.common.truth.Truth.assertWithMessage
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
-import com.squareup.anvil.compiler.fir.AnvilCompilerPluginRegistrar
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
+import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.addPreviousResultToClasspath
 import dagger.internal.codegen.ComponentProcessor
@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.config.LanguageVersion
 import java.io.File
 import java.io.OutputStream
 import java.nio.file.Files
+import java.util.Locale
 import java.util.ServiceLoader
 
 /**
@@ -51,8 +52,6 @@ public class AnvilCompilation internal constructor(
     if (!enableAnvil) return@apply
 
     kotlinCompilation.apply {
-
-      compilerPluginRegistrars += AnvilCompilerPluginRegistrar()
 
       supportsK2 = true
       annotationProcessors = listOf(ComponentProcessor(), AutoAnnotationProcessor())

@@ -8,8 +8,8 @@ public class AnvilFirExtensionRegistrar : FirExtensionRegistrar() {
   override fun ExtensionRegistrarContext.configurePlugin() {
 
     /** [org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension] */
-    // +::AnvilFactoryDelegateDeclarationGenerationExtension
-    // +::AnvilFirInjectConstructorGenerationExtension
+    +::AnvilFactoryDelegateDeclarationGenerationExtension
+    +::AnvilFirInjectConstructorGenerationExtension
     // +::AnvilComponentSubtypeDeclarationGenerationExtension
 
     /** [org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension] */

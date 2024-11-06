@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.ir.declarations.IrValueParameter
 import org.jetbrains.kotlin.ir.expressions.IrConst
 import org.jetbrains.kotlin.ir.expressions.IrExpression
 import org.jetbrains.kotlin.ir.expressions.IrVararg
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import kotlin.LazyThreadSafetyMode.NONE
 
 internal class AnnotationArgumentReferenceIr(
@@ -25,6 +26,7 @@ internal class AnnotationArgumentReferenceIr(
 
   // We currently special-case for Classes, but this is the spot we'll need to update if we need to
   // support primitives later on.
+  @OptIn(UnsafeDuringIrConstructionAPI::class)
   private fun findValue(): Any {
     (argumentExpression as? IrConst<*>)?.let {
       return it.value as Any

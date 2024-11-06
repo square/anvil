@@ -1868,7 +1868,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
           }
         }
         """,
-        expectExitCode = ExitCode.OK,
+        expectExitCode = OK,
       ) {
         assertThat(exitCode).isEqualTo(OK)
       }
@@ -2187,7 +2187,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
-    expectExitCode: ExitCode = ExitCode.OK,
+    expectExitCode: ExitCode = OK,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult {
     return com.squareup.anvil.compiler.compile(

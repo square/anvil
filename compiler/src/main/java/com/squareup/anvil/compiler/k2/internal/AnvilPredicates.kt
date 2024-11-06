@@ -8,6 +8,8 @@ internal object AnvilPredicates {
     get() = Names.dagger.component.annotated
   val hasFreddyAnnotation
     get() = Names.freddy.annotated
+  val hasInjectAnnotation
+    get() = Names.inject.annotated
   val hasMergeComponentFirAnnotation
     get() = Names.mergeComponentFir.annotated
 
