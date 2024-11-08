@@ -69,27 +69,11 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     }
 
     //  Wire up embedded plugins
-    agpPlugins.forEach { agpPlugin ->
-      target.pluginManager.withPlugin(agpPlugin) {
-        // This is the common android test variant, similar to anvilTest above.
-        val androidTestVariant = getConfiguration(target, buildType = "androidTest").apply {
-          extendsFrom(commonConfiguration)
-        }
-
-        target.androidVariantsConfigure { variant ->
-          // E.g. "anvilDebug", "anvilTestRelease", ...
-          val configuration = getConfiguration(target, buildType = variant.name)
-
-          @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
-          when (variant) {
-            is UnitTestVariantDeprecated -> configuration.extendsFrom(testConfiguration)
-            is TestVariantDeprecated -> configuration.extendsFrom(androidTestVariant)
-            // non-test variants like "debug" extend the main config
-            else -> configuration.extendsFrom(commonConfiguration)
-          }
-        }
-      }
-    }
+    extendAndroidConfigurations(
+      target = target,
+      commonConfiguration = commonConfiguration,
+      testConfiguration = testConfiguration,
+    )
 
     jvmPlugins.forEach { javaPlugin ->
       target.pluginManager.withPlugin(javaPlugin) {
@@ -97,6 +81,65 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
         // for JVM modules. We already do this for the test configuration above, which is shared
         // between JVM and Android. The main configuration is specific to the JVM.
         getConfiguration(target, "main").extendsFrom(commonConfiguration)
+      }
+    }
+  }
+
+  @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
+  private fun extendAndroidConfigurations(
+    target: Project,
+    commonConfiguration: Configuration,
+    testConfiguration: Configuration,
+  ) {
+    /*
+       Are you seeing an error like this from Gradle when configuring non-AGP projects?
+
+         An exception occurred applying plugin request [id: 'com.squareup.anvil']
+         > Failed to apply plugin 'com.squareup.anvil'.
+            > Could not create plugin of type 'AnvilPlugin'.
+               > Could not generate a decorated class for type AnvilPlugin.
+                  > com/android/build/gradle/api/BaseVariant
+
+       This happens because there's something in the AnvilPlugin bytecode that has an AGP type
+       in its signature, and those types aren't in the build classpath.  If there aren't any
+       references to those types in the actual Kotlin code, then there's probably a lambda somewhere
+       that's getting turned into a private method.  Try using an Action<T> instead of `(T) -> Unit`.
+     */
+
+    agpPlugins.forEach { agpPlugin ->
+      target.plugins.withId(agpPlugin) {
+        // This is the common android test variant, similar to anvilTest above.
+        val androidTestVariant = getConfiguration(target, buildType = "androidTest").apply {
+          extendsFrom(commonConfiguration)
+        }
+        val androidExtension = target.extensions.findByName("android")
+
+        val variantSets = buildList {
+          when (androidExtension) {
+            is AppExtension -> add(androidExtension.applicationVariants)
+            is LibraryExtension -> add(androidExtension.libraryVariants)
+            is TestExtension -> add(androidExtension.applicationVariants)
+          }
+          if (androidExtension is TestedExtension) {
+            add(androidExtension.unitTestVariants)
+            add(androidExtension.testVariants)
+          }
+        }
+        for (variants in variantSets) {
+          // Don't let this `configureEach { ... }` block become a Kotlin lambda,
+          // or the compiler will turn it into its own method with a BaseVariant in its signature.
+          // Essentially, an `Action<BaseVariant>` is okay but `(BaseVariant) -> Unit` is not.
+          // If any types from AGP are in a signature,
+          // then `AnvilPlugin` can only be applied to projects with AGP in their build classpath.
+          variants.configureEach { variant ->
+            val configuration = getConfiguration(target, buildType = variant.name)
+            when (variant) {
+              is UnitTestVariantDeprecated -> configuration.extendsFrom(testConfiguration)
+              is TestVariantDeprecated -> configuration.extendsFrom(androidTestVariant)
+              else -> configuration.extendsFrom(commonConfiguration)
+            }
+          }
+        }
       }
     }
   }
@@ -410,28 +453,6 @@ private inline fun <reified T : Task> Project.namedLazy(name: String, action: Ac
     .configureEach(action)
 }
 
-/**
- * Runs the given [action] for each Android variant including androidTest and unit test variants.
- */
-
-private fun Project.androidVariantsConfigure(
-  @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
-  action: (BaseVariantDeprecated) -> Unit,
-) {
-  val androidExtension = extensions.findByName("android")
-
-  when (androidExtension) {
-    is AppExtension -> androidExtension.applicationVariants.configureEach(action)
-    is LibraryExtension -> androidExtension.libraryVariants.configureEach(action)
-    is TestExtension -> androidExtension.applicationVariants.configureEach(action)
-  }
-
-  if (androidExtension is TestedExtension) {
-    androidExtension.unitTestVariants.configureEach(action)
-    androidExtension.testVariants.configureEach(action)
-  }
-}
-
 // I considered extending this list with 'java-library' and 'application', but they both apply
 // the 'java' plugin implicitly. One could also apply the 'java' plugin alone without the
 // application or library plugin, so 'java' must be included in this list.
@@ -454,8 +475,6 @@ internal class Variant private constructor(
   val name: String,
   val project: Project,
   val compileTaskProvider: TaskProvider<KotlinCompile>,
-  @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
-  val androidVariant: BaseVariantDeprecated?,
   val androidSourceSets: List<AndroidSourceSet>?,
   val compilerPluginClasspathName: String,
   val variantFilter: VariantFilter,
@@ -500,9 +519,7 @@ internal class Variant private constructor(
       return Variant(
         name = kotlinCompilation.name,
         project = project,
-        compileTaskProvider = kotlinCompilation.compileTaskProvider as
-          TaskProvider<KotlinCompile>,
-        androidVariant = androidVariant,
+        compileTaskProvider = kotlinCompilation.compileTaskProvider as TaskProvider<KotlinCompile>,
         androidSourceSets = androidSourceSets,
         compilerPluginClasspathName = PLUGIN_CLASSPATH_CONFIGURATION_NAME +
           kotlinCompilation.target.targetName.replaceFirstChar(Char::uppercase) +
