@@ -3,9 +3,7 @@ package com.squareup.anvil.compiler.k2
 import com.squareup.anvil.compiler.k2.internal.AnvilPredicates
 import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.classId
-import com.squareup.anvil.compiler.k2.internal.factoryDelegate
 import com.squareup.anvil.compiler.k2.internal.isFactoryDelegate
-import com.squareup.anvil.compiler.k2.internal.mapToSet
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -20,7 +18,6 @@ import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGener
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
-import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.plugin.ClassBuildingContext
 import org.jetbrains.kotlin.fir.plugin.createConstructor
 import org.jetbrains.kotlin.fir.plugin.createMemberFunction
@@ -51,18 +48,23 @@ public class AnvilFactoryDelegateDeclarationGenerationExtension(session: FirSess
     }
   }
 
-  private val predicateBasedProvider = session.predicateBasedProvider
-  private val matchedClasses by lazy {
-    predicateBasedProvider.getSymbolsByPredicate(AnvilPredicates.hasInjectAnnotation)
-      .filterIsInstance<FirConstructorSymbol>()
-  }
+  // private val predicateBasedProvider = session.predicateBasedProvider
+  // private val matchedClasses by lazy {
+  //   predicateBasedProvider.getSymbolsByPredicate(AnvilPredicates.hasInjectAnnotation)
+  //     .filterIsInstance<FirConstructorSymbol>()
+  // }
+  //
+  // private val classIdsForMatchedClasses: Set<ClassId> by lazy {
+  //   matchedClasses.mapToSet { it.callableId.classId!! }
+  // }
 
-  private val classIdsForMatchedClasses: Set<ClassId> by lazy {
-    matchedClasses.mapToSet { it.callableId.classId!! }
+  override fun getTopLevelClassIds(): Set<ClassId> {
+    return setOf("foo.OtherClass".classId())
+    // return classIdsForMatchedClasses.mapToSet { it.factoryDelegate() }
   }
 
   override fun generateTopLevelClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*>? {
-    if (matchedClasses.isEmpty()) return null
+    // if (matchedClasses.isEmpty()) return null
 
     if (!classId.isFactoryDelegate()) return null
 
@@ -128,7 +130,8 @@ public class AnvilFactoryDelegateDeclarationGenerationExtension(session: FirSess
     callableId: CallableId,
     context: MemberGenerationContext?,
   ): List<FirNamedFunctionSymbol> {
-    if (callableId.classId !in classIdsForMatchedClasses) return emptyList()
+    if (callableId.classId != "foo.OtherClass".classId()) return emptyList()
+    // if (callableId.classId !in classIdsForMatchedClasses) return emptyList()
     val owner = context?.owner
     require(owner is FirRegularClassSymbol)
     val matchedClassId = owner.matchedClass ?: return emptyList()
@@ -141,10 +144,6 @@ public class AnvilFactoryDelegateDeclarationGenerationExtension(session: FirSess
       returnType = matchedClassSymbol.constructStarProjectedType(),
     )
     return listOf(function.symbol)
-  }
-
-  override fun getTopLevelClassIds(): Set<ClassId> {
-    return classIdsForMatchedClasses.mapToSet { it.factoryDelegate() }
   }
 
   override fun hasPackage(packageFqName: FqName): Boolean = packageFqName == Names.foo

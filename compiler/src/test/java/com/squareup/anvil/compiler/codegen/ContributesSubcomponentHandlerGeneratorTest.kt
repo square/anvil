@@ -19,11 +19,11 @@ import com.squareup.anvil.compiler.mergeComponentFqName
 import com.squareup.anvil.compiler.secondContributingInterface
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Component
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.string.shouldEndWith
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.jetbrains.kotlin.descriptors.runtime.structure.classId
 import org.junit.jupiter.api.Test
 import javax.inject.Singleton

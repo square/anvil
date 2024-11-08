@@ -15,7 +15,6 @@ import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation
 import io.kotest.assertions.ErrorCollectionMode
 import io.kotest.assertions.ErrorCollector
 import io.kotest.assertions.collectiveError
@@ -23,6 +22,7 @@ import io.kotest.assertions.errorCollector
 import io.kotest.assertions.pushErrors
 import io.kotest.assertions.throwCollectedErrors
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
 import kotlin.reflect.KProperty
@@ -72,7 +72,7 @@ class ReferencesTestEnvironment(
     allWarningsAsErrors: Boolean = false,
     previousCompilationResult: JvmCompilationResult? = null,
     codeGenerators: List<CodeGenerator> = emptyList(),
-    expectExitCode: KotlinCompilation.ExitCode? = null,
+    expectExitCode: ExitCode? = null,
     testAction: ReferencesTestCodeGenerationResult.() -> Unit,
   ) {
 

@@ -5,10 +5,10 @@ import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.ExitCode.COMPILATION_ERROR
+import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -111,7 +111,7 @@ class ComponentDetectorCheckTest(
   private fun compile(
     @Language("kotlin") vararg sources: String,
     codeGenerators: List<CodeGenerator> = emptyList(),
-    expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
+    expectExitCode: ExitCode = ExitCode.OK,
     mode: AnvilCompilationMode = AnvilCompilationMode.Embedded(codeGenerators),
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(

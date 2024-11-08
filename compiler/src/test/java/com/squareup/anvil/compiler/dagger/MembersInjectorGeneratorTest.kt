@@ -13,11 +13,11 @@ import com.squareup.anvil.compiler.internal.testing.membersInjector
 import com.squareup.anvil.compiler.nestedInjectClass
 import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
 import dagger.MembersInjector
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -2466,7 +2466,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
         var injected: String? = null
       }
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains("Dagger does not support injection into private fields")
 
@@ -2591,7 +2591,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
-    expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
+    expectExitCode: ExitCode = ExitCode.OK,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,

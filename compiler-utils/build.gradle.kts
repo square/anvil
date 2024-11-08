@@ -18,6 +18,10 @@ buildConfig {
   buildConfigField("anvilVersion", VERSION_NAME)
 }
 
+dependencyGuard {
+  configuration("testFixturesRuntimeClasspath")
+}
+
 conventions {
 
   kotlinCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
@@ -49,9 +53,10 @@ dependencies {
 
   testFixturesApi(libs.classgraph)
   testFixturesApi(libs.kase)
-  testFixturesApi(libs.kotlin.compileTesting)
+  testFixturesApi(libs.kotlin.compileTesting) {
+    exclude(group = "org.jetbrains.kotlin", module = "kotlin-annotation-processing-compiler")
+  }
   testFixturesImplementation(project(":compiler"))
-  testFixturesImplementation(project(":compiler-k2"))
   testFixturesImplementation(libs.dagger2.compiler)
   testFixturesImplementation(libs.dagger2)
   testFixturesImplementation(libs.junit)
@@ -66,7 +71,9 @@ dependencies {
     compileOnly(project(":compiler"))
     compileOnly(libs.dagger2.compiler)
     compileOnly(libs.junit)
-    compileOnly(libs.kotlin.compileTesting)
+    compileOnly(libs.kotlin.compileTesting) {
+      exclude(group = "org.jetbrains.kotlin", module = "kotlin-annotation-processing-compiler")
+    }
     compileOnly(libs.truth)
   }
 }

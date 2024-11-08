@@ -3,8 +3,7 @@ package com.squareup.anvil.compiler.internal.testing.k2
 import com.rickbusarow.kase.stdlib.createSafely
 import com.rickbusarow.kase.stdlib.letIf
 import com.squareup.anvil.compiler.k2.AnvilFactoryDelegateDeclarationGenerationExtension
-import com.squareup.anvil.compiler.k2.AnvilFirSupertypeGenerationExtension
-import com.tschuchort.compiletesting.kapt.toPluginOptions
+import com.squareup.anvil.compiler.k2.AnvilFirAnnotationMergingExtension
 import dagger.internal.codegen.ComponentProcessor
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.cli.common.ExitCode
@@ -78,7 +77,13 @@ public fun CompilationEnvironment.compile2(
       .joinToString(File.pathSeparator) { it.absolutePath }
 
     args.pluginClasspaths = HostEnvironment.inheritedClasspath
+      .asSequence()
+      .filter { it != HostEnvironment.kotlinAnnotationProcessingCompiler }
       .filter { it != HostEnvironment.kotlinAnnotationProcessingEmbeddable || mode.useKapt }
+      .filter { !it.path.contains("ksp") }
+      .filter { !it.path.contains("poko") }
+      .filter { !it.path.contains("kctfork") }
+      .toList()
       .letIf(mode.useKapt) {
         it + HostEnvironment.kotlinAnnotationProcessingEmbeddable
       }
@@ -92,12 +97,10 @@ public fun CompilationEnvironment.compile2(
   val messageRenderer = ColorizedPlainTextMessageRenderer()
 
   val b = ::AnvilFactoryDelegateDeclarationGenerationExtension
-  val c = ::AnvilFirSupertypeGenerationExtension
+  val c = ::AnvilFirAnnotationMergingExtension
 
   Compile2CompilerPluginRegistrar.threadLocalParams.set(
-    Compile2CompilerPluginRegistrar.Compile2RegistrarParams(
-      firExtensions = emptyList(),
-    ),
+    Compile2CompilerPluginRegistrar.Compile2RegistrarParams(firExtensions = emptyList()),
   )
 
   val exitCode = K2JVMCompiler().exec(

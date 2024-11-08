@@ -13,7 +13,7 @@ import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.testing.AnvilCompilationModeTest
 import com.squareup.anvil.compiler.walkGeneratedFiles
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
+import org.jetbrains.kotlin.cli.common.ExitCode
 import org.junit.jupiter.api.TestFactory
 
 class ContributesToCodeGenTest : AnvilCompilationModeTest(AnvilCompilationMode.Embedded()) {

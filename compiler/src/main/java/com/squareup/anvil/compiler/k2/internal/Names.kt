@@ -9,9 +9,10 @@ import org.jetbrains.kotlin.name.FqName
 
 internal object Names {
   val foo = "foo".fqn()
-  val ball = "foo.Ball".fqn()
+
+  val bBindingModule = "foo.BBindingModule".fqn()
   val emptyModule = "foo.EmptyModule".fqn()
-  val freddy = "foo.Freddy".fqn()
+
   val componentBase = "foo.ComponentBase".fqn()
   val mergeComponentFir = "foo.MergeComponentFir".fqn()
   val testComponent = "foo.TestComponent".fqn()

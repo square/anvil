@@ -10,10 +10,10 @@ import com.squareup.anvil.compiler.internal.testing.daggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerModule
 import com.squareup.anvil.compiler.internal.testing.daggerSubcomponent
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Component
 import dagger.Subcomponent
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized

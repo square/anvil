@@ -45,7 +45,6 @@ dependencies {
   implementation(libs.dagger2)
   implementation(libs.jsr250)
   implementation(libs.kotlinpoet)
-  implementation(libs.kotlinpoet.ksp)
 
   compileOnly(libs.auto.service.annotations)
   compileOnly(libs.kotlin.compiler.embeddable)
@@ -60,7 +59,6 @@ dependencies {
   testImplementation(libs.kotest.assertions.core.jvm)
   testImplementation(libs.kotlin.annotation.processing.embeddable)
   testImplementation(libs.kotlin.compileTesting)
-  testImplementation(libs.kotlin.compileTesting.ksp)
   testImplementation(libs.kotlin.compiler.embeddable)
   testImplementation(libs.kotlin.test)
   testImplementation(libs.kotlin.reflect)

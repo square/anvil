@@ -7,7 +7,10 @@ import com.squareup.anvil.compiler.internal.testing.k2.compile2
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestFactory
 
-class FirCanaryTest : CompilationModeTest(CompilationMode.K2(useKapt = false)) {
+class FirCanaryTest : CompilationModeTest(
+  CompilationMode.K2(useKapt = false),
+  CompilationMode.K2(useKapt = true),
+) {
 
   val targets = //language=kotlin
     """
@@ -20,13 +23,17 @@ class FirCanaryTest : CompilationModeTest(CompilationMode.K2(useKapt = false)) {
     import kotlin.reflect.KClass
     import javax.inject.Inject
 
-    @MergeComponentFir
-    @Component(
-      modules = [ABindingModule::class, EmptyModule::class],
+    @MergeComponentFir(
+       modules =       [foo.ABindingModule::class],
+       dependencies =  [DependencyComponent::class],
     )
     interface TestComponent
 
+    @Component
+    interface DependencyComponent
+
     interface ComponentBase {
+      val a: A
       val b: B
     }
 
@@ -37,14 +44,15 @@ class FirCanaryTest : CompilationModeTest(CompilationMode.K2(useKapt = false)) {
     }
 
     @Module
-    interface EmptyModule {
+    interface BBindingModule {
       @Binds
       fun bindBImpl(bImpl: BImpl): B
     }
 
-    class InjectClass @Freddy constructor()
-    
-    class OtherClass @Inject constructor()
+    class InjectClass @Inject constructor(
+      val a: A,
+      val b: B
+    )
     
     interface A
     class AImpl @Inject constructor() : A
@@ -52,32 +60,19 @@ class FirCanaryTest : CompilationModeTest(CompilationMode.K2(useKapt = false)) {
     interface B
     class BImpl @Inject constructor(val a: A) : B
 
-    annotation class Freddy
-    annotation class MergeComponentFir
-    annotation class ComponentKotlin(val modules: Array<KClass<*>>)
+    annotation class MergeComponentFir(
+      val modules: Array<KClass<*>>,
+      val dependencies: Array<KClass<*>>
+    )
     """.trimIndent()
 
   @TestFactory
-  fun `compile2 version canary`() = testFactory {
+  fun `compile2 version canary`() = params
+    .asTests {
 
-    compile2(
-      listOf(
-        workingDir.resolve("foo/targets.kt").createSafely(targets),
-      ),
-    ) shouldBe true
-  }
+      val srcFile = workingDir.resolve("foo/targets.kt")
+        .createSafely(targets)
 
-  @TestFactory
-  fun `compile2 with a string argument`() = testFactory {
-
-    compile2(
-      """
-      package squareup.test
-
-      import javax.inject.Inject
-
-      class InjectClass @Inject constructor()
-      """.trimIndent(),
-    ) shouldBe true
-  }
+      compile2(listOf(srcFile)) shouldBe true
+    }
 }

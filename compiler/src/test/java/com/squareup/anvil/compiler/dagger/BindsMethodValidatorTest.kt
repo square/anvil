@@ -5,9 +5,9 @@ import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -46,7 +46,7 @@ class BindsMethodValidatorTest(
         abstract fun bindsBar(impl: Foo): Bar
       }
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type",
@@ -79,7 +79,7 @@ class BindsMethodValidatorTest(
         abstract fun bindsBar(impl: Foo): Bar
       }
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains(
         "@Binds methods' parameter type must be assignable to the return type",
@@ -113,7 +113,7 @@ class BindsMethodValidatorTest(
         }
       }
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains("@Binds methods must be abstract")
     }
@@ -138,7 +138,7 @@ class BindsMethodValidatorTest(
         abstract fun bindsBar(): Bar
       }
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains(
         "@Binds methods must have exactly one parameter, " +
@@ -167,7 +167,7 @@ class BindsMethodValidatorTest(
         abstract fun bindsBar(impl1: Foo, impl2: Hammer): Bar
       }
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains(
         "@Binds methods must have exactly one parameter, " +
@@ -195,7 +195,7 @@ class BindsMethodValidatorTest(
         abstract fun bindsBar(impl1: Foo)
       }
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains(
         "@Binds methods must return a value (not void)",
@@ -222,7 +222,7 @@ class BindsMethodValidatorTest(
         abstract fun Foo.bindsBar(): Bar
       }
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains("@Binds methods can not be an extension function")
     }
@@ -306,7 +306,7 @@ class BindsMethodValidatorTest(
         }
       }
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains("@Binds methods can not be an extension function")
     }
@@ -340,7 +340,7 @@ class BindsMethodValidatorTest(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
     enableDagger: Boolean = useDagger,
-    expectExitCode: KotlinCompilation.ExitCode = OK,
+    expectExitCode: ExitCode = OK,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,

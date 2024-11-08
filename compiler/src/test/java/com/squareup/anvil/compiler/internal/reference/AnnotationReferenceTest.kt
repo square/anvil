@@ -3,10 +3,10 @@ package com.squareup.anvil.compiler.internal.reference
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import io.kotest.data.blocking.forAll
 import io.kotest.data.row
 import io.kotest.matchers.shouldBe
+import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.jetbrains.kotlin.name.FqName
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.TestFactory
