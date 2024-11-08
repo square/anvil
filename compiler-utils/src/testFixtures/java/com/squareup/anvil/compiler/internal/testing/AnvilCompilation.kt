@@ -7,19 +7,17 @@ import com.squareup.anvil.compiler.AnvilCommandLineProcessor
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
-import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.addPreviousResultToClasspath
 import dagger.internal.codegen.ComponentProcessor
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.config.JvmTarget
-import org.jetbrains.kotlin.kapt3.Kapt3CommandLineProcessor
 import org.jetbrains.kotlin.config.LanguageVersion
+import org.jetbrains.kotlin.kapt3.Kapt3CommandLineProcessor
 import java.io.File
 import java.io.OutputStream
 import java.nio.file.Files
-import java.util.Locale
-import java.util.ServiceLoader
 
 /**
  * A simple API over a [KotlinCompilation] with extra configuration support for Anvil.
@@ -198,7 +196,7 @@ public class AnvilCompilation internal constructor(
    */
   public fun compile(
     @Language("kotlin") vararg sources: String,
-    expectExitCode: KotlinCompilation.ExitCode? = null,
+    expectExitCode: ExitCode? = null,
     block: JvmCompilationResult.() -> Unit = {},
   ): JvmCompilationResult {
     checkNotCompiled()
@@ -211,17 +209,17 @@ public class AnvilCompilation internal constructor(
 
     return kotlinCompilation.compile().apply {
 
-      if (exitCode != expectExitCode) {
+      if (exitCode.toJBExitCode() != expectExitCode) {
         when {
           expectExitCode == null -> {
             // No expected code, so no assertion to be made
           }
-          expectExitCode == KotlinCompilation.ExitCode.OK -> {
+          expectExitCode == ExitCode.OK -> {
             assertWithMessage("Compilation failed unexpectedly\n\n$messages")
               .that(exitCode)
-              .isEqualTo(KotlinCompilation.ExitCode.OK)
+              .isEqualTo(ExitCode.OK)
           }
-          exitCode == KotlinCompilation.ExitCode.OK -> {
+          exitCode.toJBExitCode() == ExitCode.OK -> {
             assertWithMessage("Compilation succeeded unexpectedly\n\n$messages")
               .that(exitCode)
               .isEqualTo(expectExitCode)
@@ -251,6 +249,15 @@ public class AnvilCompilation internal constructor(
   }
 }
 
+public fun KotlinCompilation.ExitCode.toJBExitCode(): ExitCode {
+  return when (this) {
+    KotlinCompilation.ExitCode.OK -> ExitCode.OK
+    KotlinCompilation.ExitCode.INTERNAL_ERROR -> ExitCode.INTERNAL_ERROR
+    KotlinCompilation.ExitCode.COMPILATION_ERROR -> ExitCode.COMPILATION_ERROR
+    KotlinCompilation.ExitCode.SCRIPT_EXECUTION_ERROR -> ExitCode.SCRIPT_EXECUTION_ERROR
+  }
+}
+
 /**
  * Helpful for testing code generators in unit tests end to end.
  *
@@ -276,7 +283,7 @@ public fun compileAnvil(
   moduleName: String? = null,
   jvmTarget: JvmTarget? = null,
   kotlinLanguageVersion: String = LanguageVersion.KOTLIN_1_9.versionString,
-  expectExitCode: KotlinCompilation.ExitCode? = null,
+  expectExitCode: ExitCode? = null,
   block: JvmCompilationResult.() -> Unit = { },
 ): JvmCompilationResult {
   val c = AnvilCompilation()

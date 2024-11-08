@@ -79,7 +79,7 @@ public abstract class CompilationModeTest(
 
   override val params: List<Kase1<CompilationMode>> = kases(
     modes,
-    displayNameFactory = { "mode: ${a1::class.simpleName}" },
+    displayNameFactory = { "mode: $a1" },
   )
 
   override val testEnvironmentFactory:

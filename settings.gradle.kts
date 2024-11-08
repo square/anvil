@@ -28,7 +28,7 @@ include(":annotations")
 include(":annotations-optional")
 include(":compiler")
 include(":compiler-api")
-include(":compiler-k2")
+// include(":compiler-k2")
 include(":compiler-utils")
 include(":gradle-plugin")
 

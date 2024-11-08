@@ -13,10 +13,10 @@ import com.squareup.anvil.compiler.internal.testing.SimpleSourceFileTrackingBeha
 import com.squareup.anvil.compiler.internal.testing.SimpleSourceFileTrackingBehavior.TRACK_SOURCE_FILES
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.anvil.compiler.testing.AnvilEmbeddedCompilationTestEnvironment
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import io.kotest.matchers.file.shouldExist
 import io.kotest.matchers.shouldBe
+import org.jetbrains.kotlin.cli.common.ExitCode.COMPILATION_ERROR
+import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.junit.jupiter.api.Test
 
 class CodeGenerationExtensionTest : HasTestEnvironmentFactory<AnvilEmbeddedCompilationTestEnvironment.Factory> {

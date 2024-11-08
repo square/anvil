@@ -7,8 +7,8 @@ import com.rickbusarow.kase.ParamTestEnvironmentFactory
 import com.rickbusarow.kase.files.HasWorkingDir
 import com.rickbusarow.kase.files.TestLocation
 import com.rickbusarow.kase.kases
+import com.squareup.anvil.compiler.FULL_TEST_RUN
 import com.squareup.anvil.compiler.internal.testing.k2.CompilationEnvironment
-import com.squareup.anvil.compiler.k2.FULL_TEST_RUN
 import kotlin.reflect.KClass
 
 /**

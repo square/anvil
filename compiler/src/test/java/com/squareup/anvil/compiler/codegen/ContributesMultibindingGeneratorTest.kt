@@ -19,10 +19,10 @@ import com.squareup.anvil.compiler.multibindingOriginClass
 import com.squareup.anvil.compiler.parentInterface
 import com.squareup.anvil.compiler.testing.AnvilCompilationModeTest
 import com.squareup.anvil.compiler.testing.AnvilCompilationModeTestEnvironment
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.multibindings.StringKey
 import io.kotest.matchers.shouldBe
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.junit.jupiter.api.DynamicNode
 import org.junit.jupiter.api.TestFactory
 import java.util.stream.Stream

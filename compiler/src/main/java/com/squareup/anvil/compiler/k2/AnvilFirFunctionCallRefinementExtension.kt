@@ -1,7 +1,5 @@
 package com.squareup.anvil.compiler.k2
 
-import com.squareup.anvil.compiler.k2.internal.pretty
-import org.jetbrains.kotlin.analysis.utils.relfection.renderAsDataClassToString
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.expressions.FirFunctionCall
 import org.jetbrains.kotlin.fir.extensions.FirExtensionApiInternals
@@ -17,20 +15,7 @@ public class AnvilFirFunctionCallRefinementExtension(session: FirSession) :
 
     val containing = callInfo.containingDeclarations.last()
 
-    error(
-      """
-      |~~~~~~~~~~~~~~~~~~~~~ intercept
-      | -- callInfo
-      |${callInfo.renderAsDataClassToString().pretty()}
-      |
-      | -- containing declaration
-      |${containing.renderAsDataClassToString().pretty()}
-      |
-      | -- symbol
-      |${symbol.renderAsDataClassToString().pretty()}
-      |~~~~~~~~~~~~~~~~~~~~~
-      """.trimMargin(),
-    )
+    return null
   }
 
   override fun transform(

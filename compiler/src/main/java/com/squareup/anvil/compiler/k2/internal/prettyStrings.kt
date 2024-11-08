@@ -73,3 +73,6 @@ public fun String.indentByBrackets(tab: String = "  "): String {
 public fun String.remove(vararg strings: String): String = strings.fold(this) { acc, string ->
   acc.replace(string, "")
 }
+public fun String.remove(vararg regexes: Regex): String = regexes.fold(this) { acc, regex ->
+  acc.replace(regex, "")
+}

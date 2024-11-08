@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.fqName
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
+import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.jetbrains.kotlin.name.FqName
 import org.junit.Test
 
