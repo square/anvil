@@ -11,6 +11,7 @@
 ### Removed
 
 ### Fixed
+- The Anvil plugin will no longer cause `KaptGenerateStubsTask` tasks to be configured eagerly ([#1043](https://github.com/square/anvil/pull/1043))
 
 ### Security
 
