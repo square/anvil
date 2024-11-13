@@ -75,6 +75,68 @@ class LifecycleTest : BaseGradleTest() {
       }
 
   @TestFactory
+  fun `Kotlin tasks are not configured eagerly`() = params.asContainers { versions ->
+
+    // tests for https://github.com/square/anvil/issues/1053
+
+    listOf(true, false).asTests(
+      testEnvironmentFactory = AnvilGradleTestEnvironment.Factory().wrap(versions),
+      testName = { "with kapt: $it" },
+    ) { useKapt ->
+
+      val logPrefix = "configuring task"
+
+      rootProject {
+
+        buildFile {
+
+          pluginsBlock(useKsp = false, addKapt = useKapt)
+
+          anvilBlock(useKsp = false)
+
+          dependencies {
+            api(libs.dagger2.annotations)
+            compileOnly(libs.inject)
+            if (useKapt) {
+              kapt(libs.dagger2.compiler)
+            }
+          }
+
+          raw(
+            """
+            tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile::class.java).configureEach {
+              println("$logPrefix: ${'$'}name")
+            }
+            """.trimIndent(),
+          )
+        }
+
+        dir("src/main/java") {
+          injectClass()
+        }
+      }
+
+      shouldSucceed("help") {
+        output.lines()
+          .filter { logPrefix in it } shouldBe emptyList()
+      }
+
+      // Ensure that the task would fail by forcing configuration
+      shouldSucceed("compileKotlin", "--dry-run") {
+
+        val expected = buildList {
+          add("configuring task: compileKotlin")
+          if (useKapt) {
+            add("configuring task: kaptGenerateStubsKotlin")
+          }
+        }
+
+        output.lines().filter { logPrefix in it } shouldBe expected
+      }
+    }
+  }
+
+  @TestFactory
   fun `compileKotlin is up to date when no changes are made`() = params.withKspToggle { _, useKsp ->
 
     rootProject {

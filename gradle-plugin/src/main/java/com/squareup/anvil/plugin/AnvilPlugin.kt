@@ -12,7 +12,6 @@ import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
 import org.gradle.api.Task
-import org.gradle.api.UnknownTaskException
 import org.gradle.api.artifacts.Configuration
 import org.gradle.api.provider.Provider
 import org.gradle.api.tasks.TaskContainer
@@ -324,21 +323,21 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     }
 
     variant.project.pluginManager.withPlugin(KAPT_PLUGIN_ID) {
-      variant.project
-        .namedLazy<KaptGenerateStubsTask>(variant.stubsTaskName) { stubsTaskProvider ->
-          stubsTaskProvider.configure { stubsTask ->
-            if (!mergingIsDisabled()) {
-              // Disable incremental compilation for the stub generating task. Trigger the compiler
-              // plugin if any dependencies in the compile classpath have changed. This will make sure
-              // that we pick up any change from a dependency when merging all the classes. Without
-              // this workaround we could make changes in any library, but these changes wouldn't be
-              // contributed to the Dagger graph, because incremental compilation tricked us.
-              stubsTask.doFirstCompat {
-                stubsTask.incremental = false
-                stubsTask.log(
-                  "Anvil: Incremental compilation enabled: ${stubsTask.incremental} (stub)",
-                )
-              }
+      variant.project.tasks
+        .withType(KaptGenerateStubsTask::class.java)
+        .named { it == variant.stubsTaskName }
+        .configureEach { stubsTask ->
+          if (!mergingIsDisabled()) {
+            // Disable incremental compilation for the stub generating task. Trigger the compiler
+            // plugin if any dependencies in the compile classpath have changed. This will make sure
+            // that we pick up any change from a dependency when merging all the classes. Without
+            // this workaround we could make changes in any library, but these changes wouldn't be
+            // contributed to the Dagger graph, because incremental compilation tricked us.
+            stubsTask.doFirstCompat {
+              stubsTask.incremental = false
+              stubsTask.log(
+                "Anvil: Incremental compilation enabled: ${stubsTask.incremental} (stub)",
+              )
             }
           }
         }
@@ -400,30 +399,11 @@ private fun <T : Task> T.doFirstCompat(block: (T) -> Unit) {
  * yet. If the task is never registered, then this method will throw an error after the
  * configuration phase.
  */
-private inline fun <reified T : Task> Project.namedLazy(
-  name: String,
-  crossinline action: (TaskProvider<T>) -> Unit,
-) {
-  try {
-    action(tasks.named(name, T::class.java))
-    return
-  } catch (ignored: UnknownTaskException) {
-  }
+private inline fun <reified T : Task> Project.namedLazy(name: String, action: Action<T>) {
 
-  var didRun = false
-
-  tasks.withType(T::class.java) { task ->
-    if (task.name == name) {
-      action(tasks.named(name, T::class.java))
-      didRun = true
-    }
-  }
-
-  afterEvaluate {
-    if (!didRun) {
-      throw GradleException("Didn't find task $name with type ${T::class}.")
-    }
-  }
+  tasks.withType(T::class.java)
+    .named { it == name }
+    .configureEach(action)
 }
 
 /**
