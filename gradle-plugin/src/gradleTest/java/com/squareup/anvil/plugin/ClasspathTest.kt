@@ -127,7 +127,14 @@ internal class ClasspathTest : BaseGradleTest() {
         val taskOutputs = output.split("> Task ", "\n\n")
           .associate {
             val lines = it.trim().lines()
-            lines.first() to lines.drop(1).joinToString("\n").trim()
+            lines.first() to lines.drop(1).joinToString("\n")
+              .replace(
+                // This warning is generated when accessing `runtimeClasspath`
+                // in projects using an old version of AGP.
+                regex = """(?:\[Incubating] )?Problems report is available at.+""".toRegex(),
+                replacement = "",
+              )
+              .trim()
           }
 
         val stdlib = when {
