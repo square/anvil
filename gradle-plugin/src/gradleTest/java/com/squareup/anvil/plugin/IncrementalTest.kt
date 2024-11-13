@@ -1422,6 +1422,78 @@ class IncrementalTest : BaseGradleTest() {
     }
 
   @TestFactory
+  fun `build cache is restored when there is an uncached middle build`() = testFactory {
+
+    // reproducer for https://github.com/square/anvil/issues/1054
+
+    rootProject {
+
+      gradlePropertiesFile(
+        """
+        org.gradle.caching=true
+        com.squareup.anvil.trackSourceFiles=true
+        """.trimIndent(),
+      )
+      dir("src/main/java") {
+        dir("src/main/java") {
+          kotlinFile(
+            "com/squareup/test/AppComponent.kt",
+            """
+              package com.squareup.test
+    
+              import com.squareup.anvil.annotations.MergeComponent
+              import javax.inject.Singleton
+    
+              @MergeComponent(Any::class)
+              interface AppComponent
+            """.trimIndent(),
+          )
+          kotlinFile(
+            "com/squareup/test/BoundClass.kt",
+            """
+              package com.squareup.test
+
+              import com.squareup.anvil.annotations.ContributesBinding
+              import javax.inject.Inject
+
+              interface SomeInterface
+
+              @ContributesBinding(Any::class)
+              class BoundClass @Inject constructor() : SomeInterface
+            """.trimIndent(),
+          )
+        }
+      }
+    }
+
+    shouldSucceed("compileKotlin", withHermeticTestKit = true) {
+      task(":compileKotlin")!!.outcome shouldBe TaskOutcome.SUCCESS
+    }
+
+    val otherFile = rootProject.path / "src/main/java" / "com/squareup/test/OtherFile.kt"
+    otherFile.createSafely(
+      """
+      package com.squareup.test
+      
+      class OtherFile
+      """.trimIndent(),
+    )
+
+    // Change the artifacts in the project's `build` directory.
+    // The artifacts from the previous build will exist in the cache,
+    // so the subsequent build should be "from cache" but not "up to date".
+    shouldSucceed("compileKotlin", "--no-build-cache", withHermeticTestKit = true) {
+      task(":compileKotlin")!!.outcome shouldBe TaskOutcome.SUCCESS
+    }
+
+    otherFile.deleteOrFail()
+
+    shouldSucceed("compileKotlin", withHermeticTestKit = true) {
+      task(":compileKotlin")!!.outcome shouldBe TaskOutcome.FROM_CACHE
+    }
+  }
+
+  @TestFactory
   fun `build cache restores generated source files in a different project location and custom build dir location`() =
     testFactory {
 

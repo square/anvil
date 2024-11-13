@@ -39,8 +39,39 @@ class LifecycleTest : BaseGradleTest() {
             }
           }
 
+          gradlePropertiesFile(
+            """
+            com.squareup.anvil.trackSourceFiles=true
+            """.trimIndent(),
+          )
+
           dir("src/main/java") {
-            injectClass()
+            kotlinFile(
+              "com/squareup/test/AppComponent.kt",
+              """
+              package com.squareup.test
+    
+              import com.squareup.anvil.annotations.MergeComponent
+              import javax.inject.Singleton
+    
+              @MergeComponent(Any::class)
+              interface AppComponent
+              """.trimIndent(),
+            )
+            kotlinFile(
+              "com/squareup/test/BoundClass.kt",
+              """
+              package com.squareup.test
+
+              import com.squareup.anvil.annotations.ContributesBinding
+              import javax.inject.Inject
+
+              interface SomeInterface
+
+              @ContributesBinding(Any::class)
+              class BoundClass @Inject constructor() : SomeInterface
+              """.trimIndent(),
+            )
           }
         }
 

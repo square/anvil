@@ -11,6 +11,7 @@
 ### Removed
 
 ### Fixed
+- Gradle configuration caching will no longer be invalidated by changes to `ir-merges.txt` ([#1045](https://github.com/square/anvil/pull/1045))
 - The Anvil plugin will no longer cause `KaptGenerateStubsTask` tasks to be configured eagerly ([#1043](https://github.com/square/anvil/pull/1043))
 
 ### Security
