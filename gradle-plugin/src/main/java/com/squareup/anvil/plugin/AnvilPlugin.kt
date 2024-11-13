@@ -310,14 +310,12 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
           // arguments to an annotation or adding interface supertypes.  Those changes do not affect
           // the output .class files, which means that Kotlin's incremental logic doesn't properly
           // track the changes.  So, we disable incremental compilation whenever this file exists.
-          //
-          // Note that this is being done at configuration time,
-          // and not inside a `doFirst { }` block.  This is because the `doFirst { }` block would
-          // execute after build cache restoration has taken place.  We only need to disable
-          // incremental logic if the previous compilation happened on this machine and the
-          // resultant ModuleDescriptors are already in memory.  If the files need to be restored
-          // from cache, then the incremental logic we're avoiding won't happen anyway.
-          task.incremental = task.incremental && !irMergesFile.get().exists()
+          task.doFirstCompat {
+            task.incremental = task.incremental && !irMergesFile.get().exists()
+            task.log(
+              "Anvil: Incremental compilation enabled: ${task.incremental} (stub)",
+            )
+          }
         }
       }
     }
