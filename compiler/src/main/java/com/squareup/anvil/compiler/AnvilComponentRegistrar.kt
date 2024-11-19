@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.com.intellij.mock.MockProject
 import org.jetbrains.kotlin.com.intellij.openapi.extensions.LoadingOrder
 import org.jetbrains.kotlin.compiler.plugin.ComponentRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
+import org.jetbrains.kotlin.resolve.extensions.SyntheticResolveExtension
 import org.jetbrains.kotlin.resolve.jvm.extensions.AnalysisHandlerExtension
 import java.util.ServiceLoader
 import kotlin.LazyThreadSafetyMode.NONE
@@ -51,6 +52,14 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
       !commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging
     if (mergingEnabled) {
       if (commandLineOptions.componentMergingBackend == ComponentMergingBackend.IR) {
+        SyntheticResolveExtension.registerExtension(
+          project,
+          SyntheticContributionMerger(
+            classScanner = scanner,
+            moduleDescriptorFactory = moduleDescriptorFactory,
+          ),
+        )
+
         IrGenerationExtension.registerExtension(
           project,
           IrContributionMerger(

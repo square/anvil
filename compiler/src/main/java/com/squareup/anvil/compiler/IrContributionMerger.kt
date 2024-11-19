@@ -500,7 +500,7 @@ internal class IrContributionMerger(
       }
       .asSequence()
       .filter { clazz ->
-        clazz.isInterface && clazz.annotations.find(daggerModuleFqName).singleOrNull() == null
+        clazz.isInterface && clazz.annotations.find(daggerModuleFqName).isEmpty()
       }
       .flatMap { clazz ->
         clazz.annotations
