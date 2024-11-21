@@ -43,7 +43,7 @@ jobs:
           fi
 
       - name: Create release
-        uses: softprops/action-gh-release@c062e08bd532815e2082a85e87e3ef29c3e6d191 # v2
+        uses: softprops/action-gh-release@e7a8f85e1c67a31e6ed99a94b41bd0b71bbee6b8 # v2
         with:
           body: ${{ steps.release_notes.outputs.release_notes }}
           prerelease: ${{ steps.prerelease.outputs.isPrerelease }}
