@@ -340,6 +340,10 @@ internal class ContributesSubcomponentHandlerGenerator(
           )
         }
 
+        val superTypes by lazy {
+          contribution.clazz.directSuperTypeReferences()
+            .map { it.asClassReference() }
+        }
         val createComponentFunctions = factory.memberFunctions
           // filter by `isAbstract` even for interfaces,
           // otherwise we get `toString()`, `equals()`, and `hashCode()`.
@@ -349,7 +353,7 @@ internal class ContributesSubcomponentHandlerGenerator(
               ?.asClassReference()
               ?: return@filter false
 
-            returnType.fqName == contributionFqName
+            returnType.fqName == contributionFqName || superTypes.any { it == returnType }
           }
 
         if (createComponentFunctions.size != 1) {
