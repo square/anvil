@@ -24,6 +24,7 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import javax.inject.Provider
+import kotlin.test.assertNotNull
 
 @RunWith(Parameterized::class)
 class AssistedFactoryGeneratorTest(
@@ -142,8 +143,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -161,18 +161,18 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       import javax.inject.Inject
-      
+
       data class AssistedService @AssistedInject constructor(
         @Assisted val string: String,
         val int: Int,
         @Assisted val charSequence: CharSequence
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(
@@ -193,8 +193,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -211,20 +210,20 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       interface AssistedServiceFactorySuper {
         fun create(string: String): AssistedService
       }
-      
+
       @AssistedFactory
       interface AssistedServiceFactory : AssistedServiceFactorySuper
       """,
@@ -240,8 +239,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -257,22 +255,22 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       interface Base<R: CharSequence, T> {
         fun create(r : R): T
       }
-      
+
       interface Mid<T> : Base<String, T>
-      
+
       @AssistedFactory
       interface AssistedServiceFactory : Mid<AssistedService>
       """,
@@ -288,8 +286,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -305,16 +302,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val stringFactory: (Int) -> String
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(stringFactory: (Int) -> String): AssistedService
@@ -332,8 +329,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val lambdaArg = { num: Int -> num.toString() }
@@ -351,16 +347,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val stringFactory: suspend (Int) -> String
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(stringFactory: suspend (Int) -> String): AssistedService
@@ -378,8 +374,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val lambdaArg: suspend (Int) -> String = { num: Int -> num.toString() }
@@ -397,16 +392,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val stringFactory: Function1<Int, String>
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(stringFactory: Function1<Int, String>): AssistedService
@@ -424,8 +419,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val lambdaArg = { num: Int -> num.toString() }
@@ -443,16 +437,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val stringFactory: Function1<Int, String>
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(stringFactory: (Int) -> String): AssistedService
@@ -470,8 +464,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val lambdaArg = { num: Int -> num.toString() }
@@ -489,7 +482,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import com.squareup.anvil.annotations.ContributesBinding
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
@@ -516,8 +509,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val lambdaArg = null
@@ -534,16 +526,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val stringFactory: (Int) -> String
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(stringFactory: Function1<Int, String>): AssistedService
@@ -561,8 +553,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val lambdaArg = { num: Int -> num.toString() }
@@ -580,20 +571,20 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       import kotlin.properties.ReadOnlyProperty
       import kotlin.reflect.KProperty
-      
+
       class AssistedService @AssistedInject constructor(
           @Assisted val thisRef: String,
           @Assisted val property: KProperty<*>
       )
-      
+
       @AssistedFactory
-      interface AssistedServiceFactory : ReadOnlyProperty<String, AssistedService> 
+      interface AssistedServiceFactory : ReadOnlyProperty<String, AssistedService>
       """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
@@ -606,8 +597,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
     }
   }
@@ -622,20 +612,20 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       import kotlin.properties.ReadOnlyProperty
       import kotlin.reflect.KProperty
-      
+
       data class AssistedService @AssistedInject constructor(
           val int: Int,
           @Assisted val strings: List<String>
       )
-      
+
       @AssistedFactory
-      interface AssistedServiceFactory : Function1<@JvmSuppressWildcards List<String>, AssistedService> 
+      interface AssistedServiceFactory : Function1<@JvmSuppressWildcards List<String>, AssistedService>
       """,
     ) {
       val factoryImplClass = assistedServiceFactory.implClass()
@@ -649,8 +639,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -667,20 +656,20 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       interface AssistedServiceFactorySuper {
         fun hephaestus(string: String): AssistedService
       }
-      
+
       @AssistedFactory
       interface AssistedServiceFactory : AssistedServiceFactorySuper
       """,
@@ -696,8 +685,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -713,16 +701,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       @AssistedFactory
       abstract class AssistedServiceFactory {
         abstract fun create(string: String): AssistedService
@@ -740,8 +728,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -757,16 +744,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       @AssistedFactory
       abstract class AssistedServiceFactory {
         protected abstract fun create(string: String): AssistedService
@@ -784,8 +771,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -803,16 +789,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val strings: List<String>
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(strings: List<String>): AssistedService
@@ -830,8 +816,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -916,16 +901,16 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService<T : CharSequence> @AssistedInject constructor(
         val int: Int,
         @Assisted val string: T
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory<T : CharSequence> {
         fun create(string: T): AssistedService<T>
@@ -943,8 +928,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -960,16 +944,16 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService<T : List<String>> @AssistedInject constructor(
         val int: Int,
         @Assisted val strings: T
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory<T : List<String>> {
         fun create(strings: T): AssistedService<T>
@@ -987,8 +971,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -1010,11 +993,11 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       @Suppress("EqualsOrHashCode")
       data class AssistedService<T> @AssistedInject constructor(
         val int: Int,
@@ -1023,14 +1006,14 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
         override fun equals(other: Any?): Boolean {
             if (this === other) return true
             if (other !is AssistedService<*>) return false
-    
+
             if (int != other.int) return false
             if (stringBuilder.toString() != other.stringBuilder.toString()) return false
-    
+
             return true
         }
       }
-      
+
       @AssistedFactory
       interface AssistedServiceFactory<T> where T : Appendable, T : CharSequence {
         fun create(stringBuilder: T): AssistedService<T>
@@ -1048,8 +1031,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -1070,11 +1052,11 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
@@ -1098,8 +1080,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -1115,11 +1096,11 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       class Outer {
         data class AssistedService @AssistedInject constructor(
           val int: Int,
@@ -1147,8 +1128,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -1230,16 +1210,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String?
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(string: String?): AssistedService
@@ -1257,8 +1237,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -1274,14 +1253,14 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.AssistedFactory
-      
+
       data class AssistedService(
         val int: Int,
         val string: String
       )
-        
+
       @AssistedFactory
       interface Factory {
         fun create(string: String): AssistedService
@@ -1300,14 +1279,14 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.AssistedFactory
-      
+
       class AssistedService(
         val int: Int,
         val string: String
       )
-        
+
       @AssistedFactory
       interface Factory {
         fun create(string: String)
@@ -1327,16 +1306,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(charSequence: CharSequence, other: String): AssistedService
@@ -1355,16 +1334,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       class AssistedService @AssistedInject constructor(
         @Assisted val int: Int,
         @Assisted val string: String
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(charSequence: CharSequence, other: String): AssistedService
@@ -1415,17 +1394,17 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String,
         @Assisted val long: Long
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(long: Long, other: String): AssistedService
@@ -1443,8 +1422,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -1462,23 +1440,23 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         @Assisted val string: String,
         @Assisted val long1: Long,
         @Assisted("two") val long2: Long,
         @Assisted("three") val long3: Long,
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(
-          long11: Long, 
-          other: String, 
+          long11: Long,
+          other: String,
           @Assisted("three") long33: Long,
           @Assisted("two") long22: Long
         ): AssistedService
@@ -1496,8 +1474,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -1515,16 +1492,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         @Assisted val strings: List<String>,
         @Assisted val ints: List<Int>
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(ints: List<Int>, strings: List<String>): AssistedService
@@ -1542,8 +1519,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -1561,16 +1537,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService<T : CharSequence, S : Number> @AssistedInject constructor(
         @Assisted val string: T,
         @Assisted val number: S
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory<T : CharSequence, S : Number> {
         fun create(number: S, string: T): AssistedService<T, S>
@@ -1588,8 +1564,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -1607,20 +1582,20 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         @Assisted("one") val string1: String,
         @Assisted("two") val string2: String
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(
-          @Assisted("two") string2: String, 
+          @Assisted("two") string2: String,
           @Assisted("one") string1: String
         ): AssistedService
       }
@@ -1637,8 +1612,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -1657,12 +1631,12 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(string: String): AssistedService
@@ -1681,8 +1655,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -1699,22 +1672,22 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       class Type
-      
+
       data class AssistedService @AssistedInject constructor(
         @Assisted("one") val type1: Type,
         @Assisted("two") val type2: Type
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(
-          @Assisted("one") type1: Type, 
+          @Assisted("one") type1: Type,
           @Assisted("one") type2: Type
         ): AssistedService
       }
@@ -1732,16 +1705,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(string: String): AssistedService
@@ -1766,20 +1739,20 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       interface AssistedServiceFactory1 {
         fun createParent(string: String): AssistedService
       }
-      
+
       @AssistedFactory
       interface AssistedServiceFactory : AssistedServiceFactory1 {
         fun create(string: String): AssistedService
@@ -1803,17 +1776,17 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       import javax.inject.Provider
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory : Provider<AssistedService>{
         fun create(string: String): AssistedService
@@ -1848,27 +1821,27 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       .compile(
         """
         package com.squareup.test
-        
+
         import dagger.assisted.AssistedFactory
         import dagger.assisted.AssistedInject
         import javax.inject.Provider
-        
+
         data class AssistedService @AssistedInject constructor(
           val int: Int
         )
-        
+
         @AssistedFactory
         interface AssistedServiceFactory : Provider<AssistedService> {
           fun create(): AssistedService {
             return get()
           }
-          
+
           fun create(string: String): AssistedService {
             return create()
           }
         }
         """,
-        expectExitCode = ExitCode.OK,
+        expectExitCode = OK,
       ) {
         assertThat(exitCode).isEqualTo(OK)
       }
@@ -1878,16 +1851,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory
       """,
@@ -1904,16 +1877,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       @AssistedFactory
       abstract class AssistedServiceFactory {
         fun create(string: String): AssistedService = throw NotImplementedError()
@@ -1932,24 +1905,24 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       import dagger.Module
       import dagger.Provides
       import javax.inject.Named
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Int,
         @Assisted val string: String
       )
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(string: String): AssistedService
       }
-      
+
       @Module
       object DaggerModule1 {
         @Provides @Named("") fun provideService(): AssistedService = AssistedService(5, "Hello")
@@ -1980,14 +1953,14 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       import dagger.Lazy
       import dagger.Module
       import dagger.Provides
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Lazy<Int>,
         @Assisted val string: Lazy<String>,
@@ -1996,16 +1969,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         override fun equals(other: Any?): Boolean {
           if (this === other) return true
           if (javaClass != other?.javaClass) return false
-    
+
           other as AssistedService
-    
+
           if (int.get() != other.int.get()) return false
           if (string.get() != other.string.get()) return false
           if (long != other.long) return false
-    
+
           return true
         }
-    
+
         override fun hashCode(): Int {
           var result = int.get()
           result = 31 * result + string.get().hashCode()
@@ -2013,7 +1986,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
           return result
         }
       }
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(string: Lazy<String>): AssistedService
@@ -2032,8 +2005,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -2050,14 +2022,14 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
       import dagger.Module
       import dagger.Provides
       import javax.inject.Provider
-      
+
       data class AssistedService @AssistedInject constructor(
         val int: Provider<Int>,
         @Assisted val string: Provider<String>,
@@ -2066,16 +2038,16 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         override fun equals(other: Any?): Boolean {
           if (this === other) return true
           if (javaClass != other?.javaClass) return false
-    
+
           other as AssistedService
-    
+
           if (int.get() != other.int.get()) return false
           if (string.get() != other.string.get()) return false
           if (long != other.long) return false
-    
+
           return true
         }
-    
+
         override fun hashCode(): Int {
           var result = int.get()
           result = 31 * result + string.get().hashCode()
@@ -2083,7 +2055,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
           return result
         }
       }
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(string: Provider<String>): AssistedService
@@ -2102,8 +2074,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -2120,7 +2091,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
     compile(
       """
       package com.squareup.test
-      
+
       import dagger.assisted.Assisted
       import dagger.assisted.AssistedFactory
       import dagger.assisted.AssistedInject
@@ -2128,7 +2099,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       import dagger.Provides
       import java.lang.Class
       import javax.inject.Provider
-      
+
       data class AssistedService @AssistedInject constructor(
         @Assisted private val list: List<Class<out String>>,
         private val int: Int
@@ -2136,22 +2107,22 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         override fun equals(other: Any?): Boolean {
           if (this === other) return true
           if (javaClass != other?.javaClass) return false
-    
+
           other as AssistedService
-    
+
           if (list.size != other.list.size) return false
           if (int != other.int) return false
-    
+
           return true
         }
-    
+
         override fun hashCode(): Int {
           var result = int
           result = 31 * result + list.hashCode()
           return result
         }
       }
-      
+
       @AssistedFactory
       interface AssistedServiceFactory {
         fun create(list: List<Class<out String>>): AssistedService
@@ -2170,8 +2141,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
         .invoke(null, generatedFactoryInstance) as Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
-      val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
-        .invoke(null, generatedFactoryInstance) as dagger.internal.Provider<*>
+      val newFactoryProvider = factoryImplClass.newFactoryProvider(generatedFactoryInstance)
       assertThat(newFactoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val assistedServiceInstance = factoryImplClass.declaredMethods
@@ -2187,7 +2157,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
-    expectExitCode: ExitCode = ExitCode.OK,
+    expectExitCode: ExitCode = OK,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult {
     return com.squareup.anvil.compiler.compile(
@@ -2209,5 +2179,15 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
    */
   private fun String.removeNullabilityAnnotations(): String {
     return this.replace("@org.jetbrains.annotations.NotNull ", "")
+  }
+
+  private fun Class<*>.newFactoryProvider(factoryInstance: Any): Provider<Any> {
+    val creator = declaredMethods
+      .singleOrNull { it.isStatic && it.name == "createFactoryProvider" }
+
+    assertNotNull(creator) { "No static createFactoryProvider method found" }
+
+    @Suppress("UNCHECKED_CAST")
+    return creator.invoke(null, factoryInstance) as dagger.internal.Provider<Any>
   }
 }
