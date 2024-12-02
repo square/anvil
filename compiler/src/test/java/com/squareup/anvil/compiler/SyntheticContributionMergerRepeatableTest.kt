@@ -13,7 +13,7 @@ import org.junit.runners.Parameterized.Parameters
 import kotlin.reflect.KClass
 
 @RunWith(Parameterized::class)
-class InterfaceMergerRepeatableTest(
+class SyntheticContributionMergerRepeatableTest(
   private val annotationClass: KClass<*>,
 ) {
 
