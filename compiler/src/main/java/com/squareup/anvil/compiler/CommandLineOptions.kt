@@ -20,7 +20,7 @@ public class CommandLineOptions private constructor(
         generateFactories = get(generateDaggerFactoriesKey, false),
         generateFactoriesOnly = get(generateDaggerFactoriesOnlyKey, false),
         disableComponentMerging = get(disableComponentMergingKey, false),
-        trackSourceFiles = get(trackSourceFilesKey, false),
+        trackSourceFiles = get(trackSourceFilesKey, true),
         willHaveDaggerFactories = get(willHaveDaggerFactoriesKey, false),
         backend = parseBackend(),
         componentMergingBackend = parseComponentMergingBackend(),
