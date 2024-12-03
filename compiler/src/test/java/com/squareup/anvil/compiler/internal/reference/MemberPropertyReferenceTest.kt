@@ -4,10 +4,53 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
-import org.junit.Test
+import io.kotest.matchers.shouldBe
+import org.junit.jupiter.api.Test
 
 @Suppress("RemoveRedundantQualifierName")
 class MemberPropertyReferenceTest {
+
+  @Test fun `companion object property references include the Companion name`() {
+    compile(
+      """
+      package com.squareup.test
+
+      class Subject {
+        companion object {
+          const val nameConst: String = ""
+          @JvmField val nameJvmField: String = ""
+          @get:JvmName("nameJvmGetter") val nameJvmGetter: String = ""
+          @set:JvmName("nameJvmSetter") var nameJvmSetter: String = ""
+          val namePlain: String = ""
+        }
+      }
+      """,
+      allWarningsAsErrors = false,
+      codeGenerators = listOf(
+        simpleCodeGenerator { psiRef ->
+
+          if (!psiRef.isCompanion()) return@simpleCodeGenerator null
+
+          val descriptorRef = psiRef.toDescriptorReference()
+
+          listOf(psiRef, descriptorRef).forEach { ref ->
+
+            ref.declaredMemberProperties
+              .map { it.memberName.toString() } shouldBe listOf(
+              "com.squareup.test.Subject.Companion.nameConst",
+              "com.squareup.test.Subject.Companion.nameJvmField",
+              "com.squareup.test.Subject.Companion.nameJvmGetter",
+              "com.squareup.test.Subject.Companion.nameJvmSetter",
+              "com.squareup.test.Subject.Companion.namePlain",
+
+            )
+          }
+
+          null
+        },
+      ),
+    )
+  }
 
   @Test fun `primary constructor val properties are properties`() {
     compile(

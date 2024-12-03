@@ -4,12 +4,14 @@ import com.google.devtools.ksp.symbol.KSAnnotation
 import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.google.devtools.ksp.symbol.KSType
 import com.squareup.anvil.compiler.api.AnvilCompilationException
+import com.squareup.anvil.compiler.codegen.find
 import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
 import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
 import com.squareup.anvil.compiler.codegen.reference.AnvilCompilationExceptionClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.ClassReferenceIr
 import com.squareup.anvil.compiler.codegen.reference.find
 import com.squareup.anvil.compiler.internal.reference.AnnotationReference
+import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Descriptor
 import com.squareup.anvil.compiler.internal.reference.ClassReference.Psi
@@ -21,6 +23,12 @@ import org.jetbrains.kotlin.types.KotlinType
 private typealias Scope = ClassReferenceIr
 private typealias BindingModule = ClassReferenceIr
 private typealias OriginClass = ClassReferenceIr
+
+internal data class BindingKey2(
+  val scope: ClassReference,
+  val boundType: ClassReference,
+  val qualifierKey: String,
+)
 
 internal data class BindingKey(
   val scope: Scope,
@@ -101,6 +109,30 @@ internal data class ContributedBindings(
   }
 }
 
+internal data class ContributedBindings2(
+  val bindings: Map<ClassReference, Map<BindingKey2, List<ContributedBinding2>>>,
+) {
+  companion object {
+    fun from(
+      bindings: List<ContributedBinding2>,
+    ): ContributedBindings2 {
+      val groupedByScope = bindings.groupBy { it.scope }
+      val groupedByScopeAndKey = groupedByScope.mapValues { (_, bindings) ->
+        bindings.groupBy { it.bindingKey }
+          .mapValues innerMapValues@{ (_, bindings) ->
+            if (bindings.size < 2) return@innerMapValues bindings
+            val (multiBindings, bindingsOnly) = bindings.partition { it.isMultibinding }
+            if (bindingsOnly.size < 2) return@innerMapValues bindings
+            val highestPriorityBinding = bindingsOnly.findHighestPriorityBinding()
+            multiBindings + listOf(highestPriorityBinding)
+          }
+      }
+
+      return ContributedBindings2(groupedByScopeAndKey)
+    }
+  }
+}
+
 internal data class ContributedBinding(
   val scope: Scope,
   val isMultibinding: Boolean,
@@ -115,6 +147,19 @@ internal data class ContributedBinding(
     .replacedClasses
 }
 
+internal data class ContributedBinding2(
+  val scope: ClassReference,
+  val isMultibinding: Boolean,
+  val bindingModule: ClassReference,
+  val originClass: ClassReference,
+  val boundType: ClassReference,
+  val qualifierKey: String,
+  val rank: Int,
+) {
+  val bindingKey = BindingKey2(scope, boundType, qualifierKey)
+  val replaces = bindingModule.annotations.find(contributesToFqName).single().replaces()
+}
+
 internal fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedBinding {
   if (size == 1) return this[0]
 
@@ -126,6 +171,31 @@ internal fun List<ContributedBinding>.findHighestPriorityBinding(): ContributedB
   if (bindings.size > 1) {
     val rankName = bindings[0].rank.toString()
     throw AnvilCompilationExceptionClassReferenceIr(
+      bindings[0].boundType,
+      "There are multiple contributed bindings with the same bound type and rank. The bound type is " +
+        "${bindings[0].boundType.fqName.asString()}. The rank is $rankName. " +
+        "The contributed binding classes are: " +
+        bindings.joinToString(
+          prefix = "[",
+          postfix = "]",
+        ) { it.originClass.fqName.asString() },
+    )
+  }
+
+  return bindings[0]
+}
+
+internal fun List<ContributedBinding2>.findHighestPriorityBinding(): ContributedBinding2 {
+  if (size == 1) return this[0]
+
+  val bindings = groupBy { it.rank }
+    .toSortedMap()
+    .let { it.getValue(it.lastKey()) }
+    .distinctBy { it.originClass }
+
+  if (bindings.size > 1) {
+    val rankName = bindings[0].rank.toString()
+    throw AnvilCompilationExceptionClassReference(
       bindings[0].boundType,
       "There are multiple contributed bindings with the same bound type and rank. The bound type is " +
         "${bindings[0].boundType.fqName.asString()}. The rank is $rankName. " +
