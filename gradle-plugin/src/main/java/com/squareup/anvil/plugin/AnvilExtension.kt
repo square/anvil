@@ -110,7 +110,7 @@ public abstract class AnvilExtension @Inject constructor(
    * - Generated code is cached in a way that Gradle understands,
    *   and will be restored from cache along with other build artifacts.
    *
-   * This feature is disabled by default.
+   * This feature is enabled by default.
    *
    * This property can also be set via a Gradle property:
    *
@@ -119,7 +119,7 @@ public abstract class AnvilExtension @Inject constructor(
    * ```
    */
   public val trackSourceFiles: Property<Boolean> = objects.property(Boolean::class.java)
-    .conventionFromProperty("com.squareup.anvil.trackSourceFiles", false)
+    .conventionFromProperty("com.squareup.anvil.trackSourceFiles", true)
 
   @Suppress("PropertyName")
   internal var _variantFilter: Action<VariantFilter>? = null
