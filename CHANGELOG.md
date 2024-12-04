@@ -11,14 +11,110 @@
 ### Removed
 
 ### Fixed
-- Gradle configuration caching will no longer be invalidated by changes to `ir-merges.txt` ([#1045](https://github.com/square/anvil/pull/1045))
-- The Anvil plugin will no longer cause `KaptGenerateStubsTask` tasks to be configured eagerly ([#1043](https://github.com/square/anvil/pull/1043))
 
 ### Security
 
 ### Custom Code Generator
 
 ### Other Notes & Contributions
+
+## [2.5.0] - 2024-12-4
+
+Anvil now experimentally supports incremental compilation and Gradle's build caching,
+as of [v2.5.0](https://github.com/square/anvil/releases/tag/v2.5.0-beta01).
+
+This feature is disabled by default.
+It can be enabled via a Gradle property or the Gradle DSL:
+
+<details open>
+<summary>Gradle Properties</summary>
+
+```properties
+# gradle.properties
+com.squareup.anvil.trackSourceFiles=true # default is false
+```
+
+</details>
+<details>
+<summary>Gradle DSL</summary>
+
+```groovy
+// build.gradle
+anvil {
+  trackSourceFiles = true // default is false
+}
+```
+
+</details>
+
+### Added
+
+- Incremental compilation and build caching fixes ([#836](https://github.com/square/anvil/pull/836))
+- Configuration options can now be set via Gradle properties ([#851](https://github.com/square/anvil/pull/851))
+
+### Changed
+
+- Anvil's generated hints are now all generated to the same `anvil.hint` package, which simplifies hint lookups and better future-proofs future KSP work. Note that this is a user-invisible change, but it will require a one-time recompilation of any Anvil-generated hints. ([#975](https://github.com/square/anvil/pull/975))
+- Interface merging is now done in the IR backend, improving performance and future compatibility with K2.
+- `@ContributesBinding` and `@ContributesMultibinding` have been completely reworked to a new implementation that generates one binding dagger module for each contributed binding. While not an ABI-breaking change, this _does_ change the generated code and requires users to re-run Anvil's code gen over any projects contributing bindings in order to be merged with the new implementation.
+
+### Deprecated
+
+- `ClassReference.functions` has been deprecated in favor of `ClassReference.memberFunctions` and `ClassReference.declaredMemberFunctions`
+- `ClassReference.properties` has been deprecated in favor of `ClassReference.memberProperties` and `ClassReference.declaredMemberProperties`
+- `ClassName.generateClassName()` and `ClassReference.generateClassName()` have been renamed to `__.joinSimpleNames()` for the sake of clarity.  The `ClassName` version has also moved packages, so its new fully qualified name is `com.squareup.anvil.compiler.internal.joinSimpleNames`.
+- `ClassName.generateClassNameString()` has been renamed/moved to `com.squareup.anvil.compiler.internal.generateHintFileName()`.
+- `ContributesBinding.priority` has been deprecated in favor of the int-value-based `ContributesBinding.rank`. This allows for more granular prioritization, rather than just the three enum entries that `ContributesBinding.Priority` offered.
+
+> [!IMPORTANT]
+> IDE auto-replace can auto-replace the enum entry with the corresponding integer, but not the named argument. Automatically-migrated code may wind up with something like `priority = RANK_NORMAL`. This is an IntelliJ limitation.
+
+### Removed
+
+- Drop Kotlin 1.8 support ([#841](https://github.com/square/anvil/pull/841))
+
+### Fixed
+
+- don't leak Anvil's annotation artifacts to the target project's compile classpath ([#822](https://github.com/square/anvil/pull/822))
+- Gradle configuration caching will no longer be invalidated by changes to `ir-merges.txt` ([#1045](https://github.com/square/anvil/pull/1045))
+- The Anvil plugin will no longer cause `KaptGenerateStubsTask` tasks to be configured eagerly ([#1043](https://github.com/square/anvil/pull/1043))
+- resolve inherited field-injected generic properties to their substituted type ([#1040](https://github.com/square/anvil/pull/1040))
+- Resolve generic types when checking Subcomponent factory return types ([#1041](https://github.com/square/anvil/pull/1041))
+- consider `ignoreQualifier` arguments when checking for duplicate bindings ([#1033](https://github.com/square/anvil/pull/1033))
+- incremental compilation is automatically disabled for source sets that perform interface or module merging ([#1024](https://github.com/square/anvil/pull/1024))
+- include inherited functions in Subcomponent Factory checks ([#1038](https://github.com/square/anvil/pull/1038))
+- Anvil will now attempt to shorten the names of hint files, generated "merged" subcomponents, and contributed binding modules so that all file names derived from them will have 255 characters or fewer.
+- cache generated file paths relative to the build directory (changed from project directory) ([#979](https://github.com/square/anvil/pull/979))
+- pass files with only top-level function/property declarations to `CodeGenerator` implementations ([#956](https://github.com/square/anvil/pull/956))
+- rename the new int-based priority to `rank`, restore the enum to `priority` ([#957](https://github.com/square/anvil/pull/957))
+- Fix private targets API use ([#961](https://github.com/square/anvil/pull/961))
+- Always generate provider factories for binding modules ([#951](https://github.com/square/anvil/pull/951))
+- use the resolved value of `const` arguments in propagated annotation arguments ([#940](https://github.com/square/anvil/pull/940))
+- re-run analysis between an incremental sync and code generation ([#943](https://github.com/square/anvil/pull/943))
+- delay `@ContributesSubcomponent` generation until the last analysis rounds ([#946](https://github.com/square/anvil/pull/946))
+- Code generated because of a `@Contributes___` annotation in a dependency module is now correctly deleted when there is a relevant change in the dependency module.
+- Nested interfaces and modules can now be contributed to enclosing classes.
+- Don't fail the build when a `@Binds`-annotated function binds a generic type ([#885](https://github.com/square/anvil/issues/885))
+  - This is a revert of the changes in ([#833](https://github.com/square/anvil/issues/833)).
+- Binding supertype which is narrower than return type is wrongly allowed by @IlyaGulya in ([#833](https://github.com/square/anvil/pull/833))
+- Don't cache the `projectDir` or `binaryFile` as part of `GeneratedFileCache` ([#883](https://github.com/square/anvil/pull/883))
+- Add restored-from-cache, previously-generated files to analysis results after code generation ([#882](https://github.com/square/anvil/pull/882))
+
+### Dependencies
+- Update dependency gradle to v8.11.1 ([#1072](https://github.com/square/anvil/pull/1072))
+- Update dagger to v2.51.1 ([#944](https://github.com/square/anvil/pull/944))
+- Upgrade Kotlin to `1.9.24` ([#891](https://github.com/square/anvil/pull/891))
+
+### Custom Code Generator
+
+- The `GeneratedFile` result type has been deprecated in favor of `GeneratedFileWithSources`.  This new type allows for precise tracking of the generated files, which in turn drastically improves incremental compilation performance ([#693](https://github.com/square/anvil/pull/693)).
+
+### Other Notes & Contributions
+
+- @IlyaGulya made their first contribution in ([#833](https://github.com/square/anvil/pull/833))
+- @brentwatson made their first contribution in ([#1055](https://github.com/square/anvil/pull/1055))
+
+**Full Changelog**: https://github.com/square/anvil/compare/v2.4.9...v2.5.0
 
 ## [2.5.0-beta11] - 2024-07-29
 
@@ -772,6 +868,7 @@
 - Initial release.
 
 [Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta11...HEAD
+[2.5.0]: https://github.com/square/anvil/releases/tag/v2.5.0
 [2.5.0-beta11]: https://github.com/square/anvil/releases/tag/v2.5.0-beta11
 [2.5.0-beta10]: https://github.com/square/anvil/releases/tag/v2.5.0-beta10
 [2.5.0-beta09]: https://github.com/square/anvil/releases/tag/v2.5.0-beta09
