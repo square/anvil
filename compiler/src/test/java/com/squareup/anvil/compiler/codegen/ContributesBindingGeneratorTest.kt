@@ -29,10 +29,7 @@ import org.junit.jupiter.api.TestFactory
 import java.util.stream.Stream
 import javax.inject.Named
 
-class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
-  AnvilCompilationMode.Embedded(),
-  AnvilCompilationMode.Ksp(),
-) {
+class ContributesBindingGeneratorTest : AnvilCompilationModeTest(AnvilCompilationMode.Embedded()) {
 
   @TestFactory fun `there is a binding module for a contributed binding for interfaces`() =
     testFactory {
@@ -683,18 +680,18 @@ class ContributesBindingGeneratorTest : AnvilCompilationModeTest(
 
       compile(
         """
-      package com.squareup.test
-
-      import com.squareup.anvil.annotations.ContributesBinding
-      import com.squareup.anvil.annotations.ContributesTo
-      import com.squareup.anvil.annotations.MergeSubcomponent
-      import javax.inject.Inject
-
-      interface ParentInterface
-
-      @ContributesBinding(Unit::class)
-      object ContributingObject : ParentInterface
-      """,
+        package com.squareup.test
+  
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeSubcomponent
+        import javax.inject.Inject
+  
+        interface ParentInterface
+  
+        @ContributesBinding(Unit::class)
+        object ContributingObject : ParentInterface
+        """,
         enableDaggerAnnotationProcessor = source == DaggerFactorySource.DAGGER,
         generateDaggerFactories = source == DaggerFactorySource.ANVIL,
       ) {

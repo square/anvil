@@ -3,7 +3,7 @@ package com.squareup.anvil.compiler.dagger
 import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
-import com.squareup.anvil.compiler.useDaggerAndKspParams
+import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -22,7 +22,7 @@ class BindsMethodValidatorTest(
   companion object {
     @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun params() = useDaggerAndKspParams()
+    fun params() = testParams()
   }
 
   @Test
@@ -268,7 +268,6 @@ class BindsMethodValidatorTest(
       }
       """,
       previousCompilationResult = moduleResult,
-      forceEmbeddedMode = true,
       enableDagger = true,
     ) {
       assertThat(exitCode).isEqualTo(OK)
@@ -341,9 +340,7 @@ class BindsMethodValidatorTest(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
     enableDagger: Boolean = useDagger,
-    // Used to enable the dagger compiler even in KSP mode, which is necessary for some multi-round tests
-    forceEmbeddedMode: Boolean = false,
-    expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
+    expectExitCode: KotlinCompilation.ExitCode = OK,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,
@@ -351,7 +348,7 @@ class BindsMethodValidatorTest(
     expectExitCode = expectExitCode,
     enableDaggerAnnotationProcessor = enableDagger,
     generateDaggerFactories = !enableDagger,
-    mode = if (forceEmbeddedMode) AnvilCompilationMode.Embedded(emptyList()) else mode,
+    mode = mode,
     block = block,
   )
 }

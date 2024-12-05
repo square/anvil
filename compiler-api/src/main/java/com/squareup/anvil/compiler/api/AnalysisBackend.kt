@@ -7,7 +7,4 @@ package com.squareup.anvil.compiler.api
 public enum class AnalysisBackend {
   /** Anvil runs as a direct compiler plugin inside compileKotlin tasks. */
   EMBEDDED,
-
-  /** Anvil runs as a Kotlin Symbol Processor (KSP). */
-  KSP,
 }

@@ -21,9 +21,7 @@ class ComponentDetectorCheckTest(
   companion object {
     @Parameterized.Parameters(name = "{0}")
     @JvmStatic
-    fun modes(): Collection<Any> {
-      return listOf(AnvilCompilationMode.Embedded(), AnvilCompilationMode.Ksp())
-    }
+    fun modes(): Collection<Any> = listOf(AnvilCompilationMode.Embedded())
   }
 
   @Test fun `a Dagger component causes an error`() {

@@ -9,13 +9,12 @@ import com.squareup.anvil.compiler.dagger.UppercasePackage.lowerCaseClassInUpper
 import com.squareup.anvil.compiler.daggerModule1
 import com.squareup.anvil.compiler.innerModule
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
-import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.mergedModules
-import com.squareup.anvil.compiler.useDaggerAndKspParams
+import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import dagger.Lazy
@@ -40,7 +39,7 @@ class ProvidesMethodFactoryGeneratorTest(
   companion object {
     @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun params() = useDaggerAndKspParams()
+    fun params() = testParams()
   }
 
   @Test fun `a factory class is generated for a provider method`() {
@@ -2403,8 +2402,6 @@ public final class DaggerComponentInterface implements ComponentInterface {
 }
      */
 
-    // TODO component merging isn't possible with KSP yet
-    assumeFalse(mode is Ksp)
     compile(
       """
       package com.squareup.test
@@ -2560,8 +2557,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
         @dagger.Provides fun provideString() = "abc"
       }
       """,
-      // KSP always resolves the inferred return type
-      expectExitCode = if (mode is Ksp) ExitCode.OK else ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       if (mode is AnvilCompilationMode.Embedded) {
 
@@ -3253,9 +3249,6 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Prefe
       assertThat(exitCode).isEqualTo(ExitCode.OK)
     }
 
-    // TODO component generation isn't possible with KSP yet
-    assumeFalse(mode is Ksp)
-
     compile(
       """
       package com.squareup.test
@@ -3338,9 +3331,6 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     ) {
       assertThat(exitCode).isEqualTo(ExitCode.OK)
     }
-
-    // TODO component generation isn't possible with KSP yet
-    assumeFalse(mode is Ksp)
 
     compile(
       """
@@ -3533,12 +3523,8 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
       """,
       expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      // Amusingly, these error messages are ever-so-slightly different across KSP and Kapt.
-      if (mode is Ksp) {
-        assertThat(messages).contains("@Provides methods cannot be extension functions")
-      } else {
-        assertThat(messages).contains("@Provides methods can not be an extension function")
-      }
+
+      assertThat(messages).contains("@Provides methods can not be an extension function")
     }
   }
 

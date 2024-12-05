@@ -21,7 +21,7 @@ class AnvilMergeAnnotationDetectorCheckTest(
     @Parameterized.Parameters(name = "{0}")
     @JvmStatic
     fun modes(): Collection<Any> {
-      return listOf(AnvilCompilationMode.Embedded(), AnvilCompilationMode.Ksp())
+      return listOf(AnvilCompilationMode.Embedded())
     }
   }
 
