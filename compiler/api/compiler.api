@@ -14,9 +14,7 @@ public final class com/squareup/anvil/compiler/AnvilComponentRegistrar : org/jet
 
 public final class com/squareup/anvil/compiler/CommandLineOptions {
 	public static final field Companion Lcom/squareup/anvil/compiler/CommandLineOptions$Companion;
-	public synthetic fun <init> (ZZZZZLcom/squareup/anvil/compiler/api/AnalysisBackend;Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;Lkotlin/jvm/internal/DefaultConstructorMarker;)V
-	public final fun getBackend ()Lcom/squareup/anvil/compiler/api/AnalysisBackend;
-	public final fun getComponentMergingBackend ()Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
+	public synthetic fun <init> (ZZZZZLkotlin/jvm/internal/DefaultConstructorMarker;)V
 	public final fun getDisableComponentMerging ()Z
 	public final fun getGenerateFactories ()Z
 	public final fun getGenerateFactoriesOnly ()Z

@@ -31,7 +31,6 @@ dependencies {
   implementation(libs.inject)
 
   testFixturesApi(libs.kotlin.compileTesting)
-  testFixturesApi(libs.kotlin.compileTesting.ksp)
   testFixturesImplementation(project(":compiler"))
   testFixturesImplementation(libs.dagger2.compiler)
   testFixturesImplementation(libs.dagger2)
@@ -48,7 +47,6 @@ dependencies {
     compileOnly(libs.dagger2.compiler)
     compileOnly(libs.junit)
     compileOnly(libs.kotlin.compileTesting)
-    compileOnly(libs.kotlin.compileTesting.ksp)
     compileOnly(libs.truth)
   }
 }

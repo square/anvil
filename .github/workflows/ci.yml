@@ -75,7 +75,7 @@ jobs:
       # Expressions in Github actions are limited. If there would be an if expression, then we
       # wouldn't need to duplicate the next step and depending on the OS enable / disable them.
       - name: Test on Windows
-        run: ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace -Doverride_config-fullTestRun=false -Doverride_config-includeKspTests=false
+        run: ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace -Doverride_config-fullTestRun=false
 
       - name: Upload Test Results
         uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4

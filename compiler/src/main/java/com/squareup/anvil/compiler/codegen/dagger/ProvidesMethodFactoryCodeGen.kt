@@ -1,36 +1,12 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
-import com.google.devtools.ksp.closestClassDeclaration
-import com.google.devtools.ksp.getDeclaredProperties
-import com.google.devtools.ksp.getVisibility
-import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
-import com.google.devtools.ksp.processing.SymbolProcessorProvider
-import com.google.devtools.ksp.processing.impl.ResolverImpl
-import com.google.devtools.ksp.symbol.AnnotationUseSiteTarget.GET
-import com.google.devtools.ksp.symbol.ClassKind
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSFunctionDeclaration
-import com.google.devtools.ksp.symbol.KSNode
-import com.google.devtools.ksp.symbol.KSPropertyDeclaration
-import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
-import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
-import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
-import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
-import com.squareup.anvil.compiler.codegen.ksp.getAnnotatedFunctions
-import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
-import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
-import com.squareup.anvil.compiler.codegen.ksp.isInterface
-import com.squareup.anvil.compiler.codegen.ksp.withCompanion
-import com.squareup.anvil.compiler.codegen.ksp.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.daggerProvidesFqName
 import com.squareup.anvil.compiler.internal.capitalize
@@ -59,11 +35,6 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
-import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.toTypeName
-import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
-import com.squareup.kotlinpoet.ksp.writeTo
-import dagger.Provides
 import dagger.internal.Factory
 import dagger.internal.Preconditions
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -73,156 +44,6 @@ import java.io.File
 
 internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext) = context.generateFactories
-
-  internal class KspGenerator(
-    override val env: SymbolProcessorEnvironment,
-  ) : AnvilSymbolProcessor() {
-    @AutoService(SymbolProcessorProvider::class)
-    class Provider : AnvilSymbolProcessorProvider(ProvidesMethodFactoryCodeGen, ::KspGenerator)
-
-    override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      resolver.getSymbolsWithAnnotation(daggerModuleFqName.asString())
-        .filterIsInstance<KSClassDeclaration>()
-        .forEach { clazz ->
-          val classAndCompanion = clazz.withCompanion()
-          val functions =
-            classAndCompanion
-              .flatMap {
-                it.getAnnotatedFunctions<Provides>()
-              }
-              .onEach { function ->
-                checkFunctionIsNotAbstract(clazz, function)
-              }
-              .also { functions ->
-                assertNoDuplicateFunctions(clazz, functions)
-              }
-              .map { function ->
-                CallableReference.from(function)
-              }
-
-          val properties = classAndCompanion.flatMap { it.getDeclaredProperties() }
-            .filter { it.isAnnotationPresent<Provides>() || it.getter?.isAnnotationPresent<Provides>() == true }
-            .filter { property ->
-              // Must be '@get:Provides'.
-              (
-                property.getKSAnnotationsByType(Provides::class)
-                  .singleOrNull()?.useSiteTarget == GET
-                ) ||
-                property.getter?.isAnnotationPresent<Provides>() == true
-            }
-            .map { property ->
-              CallableReference.from(property)
-            }
-
-          val className = clazz.toClassName()
-          val containingFile = clazz.containingFile!!
-          // TODO we need a public API for this in KSP
-          //  https://github.com/google/ksp/issues/1621
-          var supportsMangledNames = false
-          var mangledNameSuffix = ""
-          try {
-            (resolver as? ResolverImpl)?.let {
-              mangledNameSuffix = it.module
-                .mangledNameSuffix()
-              supportsMangledNames = true
-            }
-          } catch (_: NoClassDefFoundError) {
-            // TODO in KSP2 this isn't supported at the moment. See above issue.
-          } catch (_: ClassCastException) {
-            // TODO in KSP2 this isn't supported at the moment. See above issue.
-          }
-          (functions + properties)
-            .forEach { declaration ->
-              if (declaration.isMangled && !supportsMangledNames) {
-                env.logger.error(
-                  "Could not determine mangled name suffix. This will be fixed in a future " +
-                    "release, but a temporary workaround is to make this declaration public.",
-                  declaration.reportableNode as? KSNode,
-                )
-              } else {
-                generateFactoryClass(
-                  declaration.isMangled,
-                  mangledNameSuffix,
-                  className,
-                  clazz.classKind == ClassKind.OBJECT,
-                  declaration,
-                ).writeTo(env.codeGenerator, aggregating = false, listOf(containingFile))
-              }
-            }
-        }
-      return emptyList()
-    }
-
-    private fun checkFunctionIsNotAbstract(
-      clazz: KSClassDeclaration,
-      function: KSFunctionDeclaration,
-    ) {
-      fun fail(): Nothing = throw KspAnvilException(
-        message = "@Provides methods cannot be abstract",
-        node = function,
-      )
-
-      // If the function is abstract, then it's an error.
-      if (function.isAbstract) fail()
-
-      // If the class is not an interface and doesn't use the abstract keyword, then there is
-      // no issue.
-      if (!clazz.isInterface()) return
-
-      // If the parent of the function is a companion object, then the function inside of the
-      // interface is not abstract.
-      if (function.closestClassDeclaration()?.isCompanionObject == true) return
-
-      fail()
-    }
-
-    private fun CallableReference.Companion.from(
-      function: KSFunctionDeclaration,
-    ): CallableReference {
-      if (function.extensionReceiver != null) {
-        throw KspAnvilException(
-          message = "@Provides methods cannot be extension functions",
-          node = function,
-        )
-      }
-      val type = function.returnType?.resolve() ?: throw KspAnvilException(
-        message = "Error occurred in type resolution and could not resolve return type.",
-        node = function,
-      )
-      val typeName = type.toTypeName().withJvmSuppressWildcardsIfNeeded(function, type)
-      return CallableReference(
-        isInternal = function.getVisibility() == Visibility.INTERNAL,
-        isCompanionObject = function.closestClassDeclaration()?.isCompanionObject == true,
-        name = function.simpleName.asString(),
-        isProperty = false,
-        constructorParameters = function.parameters.mapToConstructorParameters(
-          function.typeParameters.toTypeParameterResolver(),
-        ),
-        type = typeName,
-        isNullable = type.isMarkedNullable,
-        isPublishedApi = function.isAnnotationPresent<PublishedApi>(),
-        reportableNode = function,
-      )
-    }
-
-    private fun CallableReference.Companion.from(
-      property: KSPropertyDeclaration,
-    ): CallableReference {
-      val type = property.type.resolve()
-      val typeName = type.toTypeName().withJvmSuppressWildcardsIfNeeded(property, type)
-      return CallableReference(
-        isInternal = property.getVisibility() == Visibility.INTERNAL,
-        isCompanionObject = property.closestClassDeclaration()?.isCompanionObject == true,
-        name = property.simpleName.asString(),
-        isProperty = true,
-        constructorParameters = emptyList(),
-        type = typeName,
-        isNullable = type.isMarkedNullable,
-        isPublishedApi = property.isAnnotationPresent<PublishedApi>(),
-        reportableNode = property,
-      )
-    }
-  }
 
   @AutoService(CodeGenerator::class)
   internal class Embedded : PrivateCodeGenerator() {

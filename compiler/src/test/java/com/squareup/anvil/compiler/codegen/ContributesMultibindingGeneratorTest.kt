@@ -3,10 +3,8 @@ package com.squareup.anvil.compiler.codegen
 import com.google.common.truth.Truth.assertThat
 import com.rickbusarow.kase.Kase1
 import com.rickbusarow.kase.wrap
-import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.compiler.assertCompilationSucceeded
 import com.squareup.anvil.compiler.assertFileGenerated
-import com.squareup.anvil.compiler.codegen.ksp.simpleSymbolProcessor
 import com.squareup.anvil.compiler.contributingInterface
 import com.squareup.anvil.compiler.contributingObject
 import com.squareup.anvil.compiler.generatedMultiBindingModule
@@ -32,7 +30,6 @@ import java.util.stream.Stream
 @Suppress("RemoveRedundantQualifierName", "RedundantSuppression")
 class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
   AnvilCompilationMode.Embedded(),
-  AnvilCompilationMode.Ksp(),
 ) {
 
   @TestFactory fun `there is a binding module for a contributed multibinding for interfaces`() =
@@ -570,15 +567,6 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
         }
         AnvilCompilationMode.Embedded(listOf(codeGenerator))
       }
-
-      is AnvilCompilationMode.Ksp -> {
-        val processor = simpleSymbolProcessor { resolver ->
-          resolver.getSymbolsWithAnnotation(MergeComponent::class.qualifiedName!!)
-            .map { stubContentToGenerate }
-            .toList()
-        }
-        AnvilCompilationMode.Ksp(listOf(processor))
-      }
     }
 
     compile(
@@ -635,15 +623,6 @@ class ContributesMultibindingGeneratorTest : AnvilCompilationModeTest(
               }
           }
           AnvilCompilationMode.Embedded(listOf(codeGenerator))
-        }
-
-        is AnvilCompilationMode.Ksp -> {
-          val processor = simpleSymbolProcessor { resolver ->
-            resolver.getSymbolsWithAnnotation(MergeComponent::class.qualifiedName!!)
-              .map { stubContentToGenerate }
-              .toList()
-          }
-          AnvilCompilationMode.Ksp(listOf(processor))
         }
       }
 

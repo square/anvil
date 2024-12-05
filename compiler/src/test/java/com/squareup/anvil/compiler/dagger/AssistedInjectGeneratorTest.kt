@@ -7,7 +7,7 @@ import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
-import com.squareup.anvil.compiler.useDaggerAndKspParams
+import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import org.intellij.lang.annotations.Language
@@ -26,7 +26,7 @@ class AssistedInjectGeneratorTest(
   companion object {
     @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun params() = useDaggerAndKspParams()
+    fun params() = testParams()
   }
 
   @Test fun `a factory class is generated with one assisted parameter`() {

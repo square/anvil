@@ -2,30 +2,22 @@ package com.squareup.anvil.compiler.internal.testing
 
 import com.google.auto.value.processor.AutoAnnotationProcessor
 import com.google.common.truth.Truth.assertWithMessage
-import com.google.devtools.ksp.processing.SymbolProcessorProvider
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.AnvilCommandLineProcessor
 import com.squareup.anvil.compiler.AnvilComponentRegistrar
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
-import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.PluginOption
 import com.tschuchort.compiletesting.SourceFile
 import com.tschuchort.compiletesting.addPreviousResultToClasspath
-import com.tschuchort.compiletesting.kspProcessorOptions
-import com.tschuchort.compiletesting.kspWithCompilation
-import com.tschuchort.compiletesting.symbolProcessorProviders
 import dagger.internal.codegen.ComponentProcessor
-import dagger.internal.codegen.KspComponentProcessor
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.config.JvmTarget
 import org.jetbrains.kotlin.config.LanguageVersion
 import java.io.File
 import java.io.OutputStream
 import java.nio.file.Files
-import java.util.Locale
-import java.util.ServiceLoader
 
 /**
  * A simple API over a [KotlinCompilation] with extra configuration support for Anvil.
@@ -80,11 +72,6 @@ public class AnvilCompilation internal constructor(
         ),
         PluginOption(
           pluginId = anvilCommandLineProcessor.pluginId,
-          optionName = "analysis-backend",
-          optionValue = mode.analysisBackend.name.lowercase(Locale.US),
-        ),
-        PluginOption(
-          pluginId = anvilCommandLineProcessor.pluginId,
           optionName = "ir-merges-file",
           optionValue = anvilCacheDir.resolve("merges/ir-merges.txt").absolutePath,
         ),
@@ -136,29 +123,6 @@ public class AnvilCompilation internal constructor(
                 optionValue = (generateDaggerFactories || enableDaggerAnnotationProcessor).toString(),
               ),
             )
-        }
-
-        is Ksp -> {
-          symbolProcessorProviders += buildList {
-            addAll(
-              ServiceLoader.load(
-                SymbolProcessorProvider::class.java,
-                SymbolProcessorProvider::class.java.classLoader,
-              )
-                // TODO for now, we don't want to run the dagger KSP processor while we're testing
-                //  KSP. This will change when we start supporting dagger-KSP, at which point we can
-                //  change this filter to be based on https://github.com/square/anvil/pull/713
-                .filterNot { it is KspComponentProcessor.Provider },
-            )
-            addAll(mode.symbolProcessorProviders)
-          }
-          // Run KSP embedded directly within this kotlinc invocation
-          kspWithCompilation = true
-          kspProcessorOptions["will-have-dagger-factories"] = generateDaggerFactories.toString()
-          kspProcessorOptions["generate-dagger-factories"] = generateDaggerFactories.toString()
-          kspProcessorOptions["generate-dagger-factories-only"] =
-            generateDaggerFactoriesOnly.toString()
-          kspProcessorOptions["disable-component-merging"] = disableComponentMerging.toString()
         }
       }
 

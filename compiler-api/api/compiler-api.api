@@ -1,6 +1,5 @@
 public final class com/squareup/anvil/compiler/api/AnalysisBackend : java/lang/Enum {
 	public static final field EMBEDDED Lcom/squareup/anvil/compiler/api/AnalysisBackend;
-	public static final field KSP Lcom/squareup/anvil/compiler/api/AnalysisBackend;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/AnalysisBackend;
 	public static fun values ()[Lcom/squareup/anvil/compiler/api/AnalysisBackend;
@@ -60,7 +59,6 @@ public final class com/squareup/anvil/compiler/api/CodeGeneratorKt {
 
 public final class com/squareup/anvil/compiler/api/ComponentMergingBackend : java/lang/Enum {
 	public static final field IR Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
-	public static final field KSP Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
 	public static fun getEntries ()Lkotlin/enums/EnumEntries;
 	public static fun valueOf (Ljava/lang/String;)Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;
 	public static fun values ()[Lcom/squareup/anvil/compiler/api/ComponentMergingBackend;

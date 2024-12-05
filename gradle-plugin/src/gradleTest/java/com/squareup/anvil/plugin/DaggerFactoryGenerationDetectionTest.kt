@@ -167,9 +167,6 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
       }
 
   private fun PluginsSpec.pluginsExtras(factoryGen: FactoryGen) {
-    if (factoryGen.addKsp) {
-      id("com.google.devtools.ksp")
-    }
     if (factoryGen.addKapt) {
       kotlin("kapt")
     }
@@ -178,13 +175,6 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
   private fun BuildFileSpec.anvilBlock(factoryGen: FactoryGen) {
     anvil {
       generateDaggerFactories.set(factoryGen.genFactories)
-
-      if (factoryGen.addKsp) {
-        useKsp(
-          contributesAndFactoryGeneration = true,
-          componentMerging = false,
-        )
-      }
     }
   }
 
@@ -198,9 +188,6 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
           factoryGen.addKapt -> {
             kapt(libs.dagger2.compiler)
           }
-          factoryGen.addKsp -> {
-            ksp(libs.dagger2.compiler)
-          }
           else -> {
             error("No compiler plugin added")
           }
@@ -211,19 +198,12 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
 
   data class FactoryGen(
     val genFactories: Boolean,
-    val addKsp: Boolean,
     val addKapt: Boolean,
     val daggerCompiler: Boolean,
   ) {
     override fun toString(): String = buildString {
-      if (addKsp) {
-        append("KSP plugin | ")
-      }
       if (addKapt) {
         append("KAPT plugin | ")
-      }
-      if (!addKsp && !addKapt) {
-        append("Anvil only ")
       }
       if (daggerCompiler) {
         append("with Dagger compiler | ")
@@ -242,14 +222,12 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
   ): Stream<out DynamicNode> = asContainers { versions ->
     cartesianProduct(
       listOf(true, false),
-      listOf(false),
       listOf(true, false),
       listOf(true, false),
     )
-      .map { (genFactories, addKsp, addKapt, daggerCompiler) ->
+      .map { (genFactories, addKapt, daggerCompiler) ->
         FactoryGen(
           genFactories = genFactories,
-          addKsp = addKsp,
           addKapt = addKapt,
           daggerCompiler = daggerCompiler,
         )
@@ -257,7 +235,7 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
       .filter {
         when {
           // We can't add a Dagger compiler dependency without a plugin to add it to
-          it.daggerCompiler -> (it.addKsp || it.addKapt) && !it.genFactories
+          it.daggerCompiler -> it.addKapt && !it.genFactories
           else -> true
         }
       }
