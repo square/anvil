@@ -25,7 +25,6 @@ import org.jetbrains.kotlin.gradle.plugin.KotlinCompilation
 import org.jetbrains.kotlin.gradle.plugin.KotlinCompilerPluginSupportPlugin
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm
 import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm
-import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import org.jetbrains.kotlin.gradle.plugin.PLUGIN_CLASSPATH_CONFIGURATION_NAME
 import org.jetbrains.kotlin.gradle.plugin.SubpluginArtifact
 import org.jetbrains.kotlin.gradle.plugin.SubpluginOption
@@ -52,7 +51,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   private val variantCache = ConcurrentHashMap<String, Variant>()
 
   override fun apply(target: Project) {
-    target.extensions.create("anvil", AnvilExtension::class.java, target)
+    target.extensions.create("anvil", AnvilExtension::class.java)
 
     // TODO consider only lazily setting up these `anvil()` configurations in embedded mode?
     // Create a configuration for collecting CodeGenerator dependencies. We need to create all
@@ -305,14 +304,6 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
           key = "will-have-dagger-factories",
           lazy { variant.willHaveDaggerFactories().toString() },
         ),
-        SubpluginOption(
-          key = "analysis-backend",
-          lazy { "EMBEDDED" },
-        ),
-        SubpluginOption(
-          key = "merging-backend",
-          lazy { "IR" },
-        ),
       )
     }
   }
@@ -534,7 +525,7 @@ internal class Variant private constructor(
 }
 
 private fun addPrefixToSourceSetName(
-  prefix: String,
+  @Suppress("SameParameterValue") prefix: String,
   sourceSetName: String,
 ): String = when (sourceSetName) {
   "main" -> prefix
@@ -548,20 +539,13 @@ internal fun KotlinCompilation<*>.kaptConfigName(): String {
 internal fun KotlinCompilation<*>.kaptConfigOrNull(project: Project): Configuration? =
   project.configurations.findByName(kaptConfigName())
 
-internal fun KotlinCompilation<*>.kspConfigName(): String {
-  return "${addPrefixToSourceSetName("ksp", sourceSetName())}KotlinProcessorClasspath"
-}
-
-internal fun KotlinCompilation<*>.kspConfigOrNull(project: Project): Configuration? =
-  project.configurations.findByName(kspConfigName())
-
 internal fun KotlinCompilation<*>.sourceSetName() =
   when (val comp = this@sourceSetName) {
     // The AGP source set names for test/androidTest variants
     // (e.g. the "androidTest" variant of the "debug" source set)
     // are concatenated differently than in the KGP and Java source sets.
     // In KGP and Java, we get `debugAndroidTest`, but in AGP we get `androidTestDebug`.
-    // The KSP and KAPT configuration names are derived from the AGP name.
+    // The KAPT configuration names are derived from the AGP name.
     is KotlinJvmAndroidCompilation ->
       comp.androidVariant.sourceSets
         // For ['debug', 'androidTest', 'debugAndroidTest'], the last name is always the one we want.
@@ -570,17 +554,6 @@ internal fun KotlinCompilation<*>.sourceSetName() =
     is KotlinJvmCompilation -> comp.name
     else -> name
   }
-
-internal fun kspConfigurationNameForSourceSetName(sourceSetName: String): String {
-  return when (sourceSetName) {
-    "main" -> "ksp"
-    else -> "ksp${sourceSetName.capitalize()}"
-  }
-}
-
-internal fun KotlinTarget.kspConfigName(): String {
-  return kspConfigurationNameForSourceSetName(targetName)
-}
 
 internal fun Configuration.hasDaggerCompilerDependency(): Boolean {
   return allDependencies.any { it.group == "com.google.dagger" && it.name == "dagger-compiler" }

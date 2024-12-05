@@ -56,7 +56,6 @@ buildConfig {
     buildConfigField("fullTestRun", libs.versions.config.fullTestRun.map(String::toBoolean))
     buildConfigField("gradleVersion", gradle.gradleVersion)
     buildConfigField("kotlinVersion", libs.versions.kotlin)
-    buildConfigField("kspVersion", libs.versions.ksp)
     buildConfigField("localBuildM2Dir", buildM2)
   }
 }
@@ -84,7 +83,6 @@ dependencies {
   compileOnly(libs.kotlin.gradlePlugin)
   compileOnly(libs.kotlin.gradlePluginApi)
   compileOnly(libs.agp)
-  compileOnly(libs.ksp.gradlePlugin)
 
   testImplementation(libs.junit)
   testImplementation(libs.truth)

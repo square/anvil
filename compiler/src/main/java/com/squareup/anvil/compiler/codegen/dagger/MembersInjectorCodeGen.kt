@@ -1,24 +1,12 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
-import com.google.devtools.ksp.isPrivate
-import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
-import com.google.devtools.ksp.processing.SymbolProcessorProvider
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSDeclaration
-import com.google.devtools.ksp.symbol.KSPropertyDeclaration
-import com.google.devtools.ksp.symbol.KSPropertySetter
-import com.google.devtools.ksp.symbol.Modifier
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
-import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
-import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.createAnvilSpec
@@ -40,9 +28,6 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
-import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.toTypeVariableName
-import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.MembersInjector
 import dagger.internal.InjectedFieldSignature
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
@@ -51,71 +36,6 @@ import java.io.File
 
 internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext) = context.generateFactories
-
-  internal class KspGenerator(
-    override val env: SymbolProcessorEnvironment,
-  ) : AnvilSymbolProcessor() {
-    @AutoService(SymbolProcessorProvider::class)
-    class Provider : AnvilSymbolProcessorProvider(MembersInjectorCodeGen, ::KspGenerator)
-
-    override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      resolver.getSymbolsWithAnnotation(injectFqName.asString())
-        .mapNotNull {
-          when (it) {
-            is KSPropertySetter -> SettableProperty.Setter(it)
-            is KSPropertyDeclaration -> SettableProperty.Declaration(it)
-            else -> null
-          }
-        }
-        .filterNot { it.isPrivate }
-        .filter { it.parentDeclaration is KSClassDeclaration }
-        .groupBy { it.parentDeclaration as KSClassDeclaration }
-        .forEach { (clazz, _) ->
-          val typeParameters = clazz.typeParameters
-            .map { it.toTypeVariableName() }
-          val isGeneric = typeParameters.isNotEmpty()
-
-          generateMembersInjectorClass(
-            origin = clazz.toClassName(),
-            isGeneric = isGeneric,
-            typeParameters = typeParameters,
-            parameters = clazz.memberInjectParameters(),
-          )
-            .writeTo(env.codeGenerator, aggregating = false, listOf(clazz.containingFile!!))
-        }
-
-      return emptyList()
-    }
-
-    /**
-     * When searching for settable properties, they may come down as a [KSPropertyDeclaration]
-     * or [KSPropertySetter], so we hide them behind a simple abstraction.
-     */
-    private sealed interface SettableProperty {
-      val parentDeclaration: KSDeclaration?
-      val isPrivate: Boolean
-
-      @JvmInline
-      value class Declaration(
-        val node: KSPropertyDeclaration,
-      ) : SettableProperty {
-        override val parentDeclaration: KSDeclaration?
-          get() = node.parentDeclaration
-        override val isPrivate: Boolean
-          get() = node.isPrivate()
-      }
-
-      @JvmInline
-      value class Setter(
-        val node: KSPropertySetter,
-      ) : SettableProperty {
-        override val parentDeclaration: KSDeclaration?
-          get() = node.receiver.parentDeclaration
-        override val isPrivate: Boolean
-          get() = Modifier.PRIVATE in node.modifiers || node.receiver.isPrivate()
-      }
-    }
-  }
 
   @AutoService(CodeGenerator::class)
   internal class Embedded : PrivateCodeGenerator() {

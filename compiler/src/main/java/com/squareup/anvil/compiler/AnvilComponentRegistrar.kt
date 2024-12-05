@@ -6,9 +6,7 @@ package com.squareup.anvil.compiler
 import com.google.auto.service.AutoService
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.CommandLineOptions.Companion.commandLineOptions
-import com.squareup.anvil.compiler.api.AnalysisBackend
 import com.squareup.anvil.compiler.api.CodeGenerator
-import com.squareup.anvil.compiler.api.ComponentMergingBackend
 import com.squareup.anvil.compiler.codegen.CodeGenerationExtension
 import com.squareup.anvil.compiler.codegen.ContributesSubcomponentHandlerGenerator
 import com.squareup.anvil.compiler.codegen.incremental.BaseDir
@@ -50,25 +48,15 @@ public class AnvilComponentRegistrar : ComponentRegistrar {
     val mergingEnabled =
       !commandLineOptions.generateFactoriesOnly && !commandLineOptions.disableComponentMerging
     if (mergingEnabled) {
-      if (commandLineOptions.componentMergingBackend == ComponentMergingBackend.IR) {
-        IrGenerationExtension.registerExtension(
-          project,
-          IrContributionMerger(
-            classScanner = scanner,
-            moduleDescriptorFactory = moduleDescriptorFactory,
-            trackSourceFiles = trackSourceFiles,
-            irMergesFile = irMergesFile,
-          ),
-        )
-      } else {
-        // TODO in dagger-ksp support
-      }
-    }
-
-    // Everything below this point is only when running in embedded compilation mode. If running in
-    // KSP, there's nothing else to do.
-    if (commandLineOptions.backend != AnalysisBackend.EMBEDDED) {
-      return
+      IrGenerationExtension.registerExtension(
+        project,
+        IrContributionMerger(
+          classScanner = scanner,
+          moduleDescriptorFactory = moduleDescriptorFactory,
+          trackSourceFiles = trackSourceFiles,
+          irMergesFile = irMergesFile,
+        ),
+      )
     }
 
     val sourceGenFolder = configuration.getNotNull(srcGenDirKey)

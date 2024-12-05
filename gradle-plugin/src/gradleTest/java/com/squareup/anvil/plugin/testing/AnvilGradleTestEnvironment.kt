@@ -37,30 +37,15 @@ class AnvilGradleTestEnvironment(
 
   /** `rootProject.path.resolve("build/anvil/main/generated")` */
   val GradleTestEnvironment.rootAnvilMainGenerated: File
-    get() = rootProject.generatedDir(useKsp = false)
-
-  /** `rootProject.path.resolve("build/generated/ksp/main/kotlin")` */
-  val GradleTestEnvironment.rootGeneratedKspMainKotlin: File
-    get() = rootProject.generatedDir(useKsp = true)
+    get() = rootProject.generatedDir()
 
   val GradleProjectBuilder.buildFileAsFile: File
     get() = path.resolve(dslLanguage.buildFileName)
   val GradleProjectBuilder.settingsFileAsFile: File
     get() = path.resolve(dslLanguage.settingsFileName)
 
-  /** Resolves the main sourceset generated directory for Anvil or KSP. */
-  fun GradleTestEnvironment.rootGeneratedDir(useKsp: Boolean): File {
-    return rootProject.generatedDir(useKsp)
-  }
-
-  /** Resolves the main sourceset generated directory for Anvil or KSP. */
-  fun GradleProjectBuilder.generatedDir(useKsp: Boolean): File {
-    return if (useKsp) {
-      path.buildGeneratedKspMainKotlin
-    } else {
-      path.buildAnvilMainGenerated
-    }
-  }
+  /** Resolves the main sourceset generated directory for Anvil. */
+  fun GradleProjectBuilder.generatedDir(): File = path.buildAnvilMainGenerated
 
   /**
    * ```
@@ -116,7 +101,6 @@ class AnvilGradleTestEnvironment(
             kotlin("jvm", version = versions.kotlinVersion, apply = false)
             kotlin("kapt", version = versions.kotlinVersion, apply = false)
             id("com.squareup.anvil", version = anvilVersion, apply = false)
-            id("com.google.devtools.ksp", version = versions.kspVersion.value, apply = false)
             if (versions is HasAgpDependencyVersion) {
               id("com.android.application", versions.agpVersion, apply = false)
               id("com.android.library", versions.agpVersion, apply = false)

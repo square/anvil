@@ -1,20 +1,12 @@
 package com.squareup.anvil.plugin
 
 import org.gradle.api.Action
-import org.gradle.api.Project
 import org.gradle.api.model.ObjectFactory
 import org.gradle.api.provider.Property
 import org.gradle.api.provider.ProviderFactory
-import org.jetbrains.kotlin.gradle.dsl.KotlinMultiplatformExtension
-import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
-import org.jetbrains.kotlin.gradle.dsl.KotlinSingleTargetExtension
-import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.androidJvm
-import org.jetbrains.kotlin.gradle.plugin.KotlinPlatformType.jvm
-import org.jetbrains.kotlin.gradle.plugin.KotlinTarget
 import javax.inject.Inject
 
 public abstract class AnvilExtension @Inject constructor(
-  private val project: Project,
   objects: ObjectFactory,
   private val providers: ProviderFactory,
 ) {
@@ -140,22 +132,4 @@ public abstract class AnvilExtension @Inject constructor(
       .map(String::toBoolean)
       .orElse(default),
   )
-
-  private fun <T> Property<T>.setDisallowChanges(value: T?) {
-    set(value)
-    disallowChanges()
-  }
-
-  private companion object {
-    val SUPPORTED_PLATFORMS = setOf(androidJvm, jvm)
-
-    private fun KotlinTarget.isSupportedType(): Boolean = platformType in SUPPORTED_PLATFORMS
-  }
 }
-
-private val KotlinProjectExtension.targets: Iterable<KotlinTarget>
-  get() = when (this) {
-    is KotlinSingleTargetExtension<*> -> listOf(this.target)
-    is KotlinMultiplatformExtension -> targets
-    else -> error("Unexpected 'kotlin' extension $this")
-  }

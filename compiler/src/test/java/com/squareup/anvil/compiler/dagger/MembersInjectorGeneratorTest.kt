@@ -11,7 +11,7 @@ import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.membersInjector
 import com.squareup.anvil.compiler.nestedInjectClass
-import com.squareup.anvil.compiler.useDaggerAndKspParams
+import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
@@ -39,7 +39,7 @@ class MembersInjectorGeneratorTest(
   companion object {
     @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun params() = useDaggerAndKspParams()
+    fun params() = testParams()
   }
 
   @Test fun `a factory class is generated for a field injection`() {
