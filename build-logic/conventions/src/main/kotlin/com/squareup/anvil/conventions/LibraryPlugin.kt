@@ -2,6 +2,7 @@ package com.squareup.anvil.conventions
 
 import com.dropbox.gradle.plugins.dependencyguard.DependencyGuardPluginExtension
 import com.rickbusarow.kgx.pluginId
+import com.rickbusarow.kgx.withJavaTestFixturesPlugin
 import com.squareup.anvil.conventions.utils.isInAnvilRootBuild
 import com.squareup.anvil.conventions.utils.libs
 import org.gradle.api.Project
@@ -23,8 +24,14 @@ open class LibraryPlugin : BasePlugin() {
 
   private fun configureDependencyGuard(target: Project) {
     target.plugins.apply(target.libs.plugins.dependencyGuard.pluginId)
-    target.extensions
+
+    val dependencyGuard = target.extensions
       .getByType(DependencyGuardPluginExtension::class.java)
-      .configuration("runtimeClasspath")
+
+    dependencyGuard.configuration("runtimeClasspath")
+
+    target.plugins.withJavaTestFixturesPlugin {
+      dependencyGuard.configuration("testFixturesRuntimeClasspath")
+    }
   }
 }
