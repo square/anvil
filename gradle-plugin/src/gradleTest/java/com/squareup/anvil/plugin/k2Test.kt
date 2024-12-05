@@ -4,7 +4,7 @@ import com.rickbusarow.kase.gradle.dsl.buildFile
 import com.squareup.anvil.plugin.testing.BaseGradleTest
 import org.junit.jupiter.api.TestFactory
 
-class k2Test : BaseGradleTest() {
+class K2Test : BaseGradleTest() {
 
   @TestFactory
   fun `canary test`() = testFactory {

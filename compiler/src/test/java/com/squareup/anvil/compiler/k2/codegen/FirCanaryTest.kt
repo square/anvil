@@ -7,7 +7,7 @@ import com.squareup.anvil.compiler.internal.testing.k2.compile2
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestFactory
 
-class FirCanaryTest : CompilationModeTest(CompilationMode.K2(useKapt = false)) {
+class FirCanaryTest : CompilationModeTest(CompilationMode.K2(useKapt = true)) {
 
   val targets = //language=kotlin
     """

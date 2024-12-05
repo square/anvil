@@ -58,6 +58,8 @@ internal class MyAnnotationTransformer(
       is FirTypeRefWithNullability -> tr.coneType
     }.classId!!.asSingleFqName()
 
+    println("@@@@@@@@@@@@@@ annotationFqName -- $annotationFqName")
+
     if (annotationFqName !in setOf(Names.dagger.component, Names.componentKotlin)) {
       return super.transformAnnotationCall(annotationCall, data)
     }
@@ -134,7 +136,12 @@ internal class MyAnnotationTransformer(
     //   },
     // }
 
+    println("@@@@@@@@@@@@@@ -- oldModules -- $oldModules")
+
     oldModules.transformChildren { element ->
+
+      println("transformChildren -- $element")
+
       val oldModulesArray = element as? FirArrayLiteral
         ?: return@transformChildren element
 

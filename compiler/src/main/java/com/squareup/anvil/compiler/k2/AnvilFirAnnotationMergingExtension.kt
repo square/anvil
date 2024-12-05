@@ -2,11 +2,9 @@ package com.squareup.anvil.compiler.k2
 
 import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.classId
-import com.squareup.anvil.compiler.k2.internal.createUserType
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
-import org.jetbrains.kotlin.fir.declarations.utils.classId
 import org.jetbrains.kotlin.fir.expressions.FirAnnotation
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
@@ -14,7 +12,6 @@ import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
-import org.jetbrains.kotlin.fir.symbols.SymbolInternals
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.FirUserTypeRef
@@ -22,9 +19,8 @@ import org.jetbrains.kotlin.fir.types.classId
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtPsiFactory
-import org.jetbrains.kotlin.util.PrivateForInline
 
-public class AnvilFirSupertypeGenerationExtension(session: FirSession) :
+public class AnvilFirAnnotationMergingExtension(session: FirSession) :
   FirSupertypeGenerationExtension(session) {
 
   private companion object {
@@ -38,29 +34,15 @@ public class AnvilFirSupertypeGenerationExtension(session: FirSession) :
     register(PREDICATE)
   }
 
-  @OptIn(PrivateForInline::class, SymbolInternals::class)
   override fun computeAdditionalSupertypes(
     classLikeDeclaration: FirClassLikeDeclaration,
     resolvedSupertypes: List<FirResolvedTypeRef>,
     typeResolver: TypeResolveService,
   ): List<FirResolvedTypeRef> {
 
-    // error("@@@@@@@@@@@@@ 1")
-    // clazz.addMergedComponentAnnotation(session)
-    // error("@@@@@@@@@@@@@ 2")
-
     // clazz.transformAnnotations(MyAnnotationTransformer(mergedModules), Unit)
 
     // val symbol = clazz.symbol as? FirClassSymbol<*> ?: return emptyList()
-
-    val supertypeUserType = Names.componentBase.createUserType()
-
-    if (resolvedSupertypes.any {
-        it.coneType.classId?.asFqNameString() == Names.componentBase.asString()
-      }
-    ) {
-      return emptyList()
-    }
 
     fun FirAnnotation.id(): FqName? = when (val t = this.annotationTypeRef) {
       is FirResolvedTypeRef -> t.coneType.classId?.asSingleFqName()
@@ -230,23 +212,7 @@ public class AnvilFirSupertypeGenerationExtension(session: FirSession) :
     //   typeResolver.resolveUserType(it.rep)
     // }
 
-    val superResolved = typeResolver.resolveUserType(supertypeUserType)
-
-    check(!resolvedSupertypes.contains(superResolved)) {
-      "Supertype $supertypeUserType is already present in $resolvedSupertypes"
-    }
-
-    if (resolvedSupertypes.any { !it.coneType.toString().contains("Any") }) {
-      error(
-        """
-      |--------------------------- ${classLikeDeclaration.classId.asFqNameString()}  supertypes
-      |${resolvedSupertypes.joinToString("\n") { it.coneType.classId?.asFqNameString() ?: "null" }}
-      |---------------------------
-        """.trimMargin(),
-      )
-    }
-
-    return listOf(superResolved)
+    return listOf()
   }
 
   override fun needTransformSupertypes(declaration: FirClassLikeDeclaration): Boolean {

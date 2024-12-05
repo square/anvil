@@ -3,8 +3,7 @@ package com.squareup.anvil.compiler.internal.testing.k2
 import com.rickbusarow.kase.stdlib.createSafely
 import com.rickbusarow.kase.stdlib.letIf
 import com.squareup.anvil.compiler.k2.AnvilFactoryDelegateDeclarationGenerationExtension
-import com.squareup.anvil.compiler.k2.AnvilFirSupertypeGenerationExtension
-import com.tschuchort.compiletesting.kapt.toPluginOptions
+import com.squareup.anvil.compiler.k2.AnvilFirAnnotationMergingExtension
 import dagger.internal.codegen.ComponentProcessor
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.cli.common.ExitCode
@@ -92,12 +91,10 @@ public fun CompilationEnvironment.compile2(
   val messageRenderer = ColorizedPlainTextMessageRenderer()
 
   val b = ::AnvilFactoryDelegateDeclarationGenerationExtension
-  val c = ::AnvilFirSupertypeGenerationExtension
+  val c = ::AnvilFirAnnotationMergingExtension
 
   Compile2CompilerPluginRegistrar.threadLocalParams.set(
-    Compile2CompilerPluginRegistrar.Compile2RegistrarParams(
-      firExtensions = emptyList(),
-    ),
+    Compile2CompilerPluginRegistrar.Compile2RegistrarParams(firExtensions = emptyList()),
   )
 
   val exitCode = K2JVMCompiler().exec(
@@ -135,7 +132,7 @@ private fun kaptOptions(workingDir: File) = KaptOptions.Builder().also { kapt ->
       KaptFlag.STRIP_METADATA,
       KaptFlag.USE_LIGHT_ANALYSIS,
       KaptFlag.CORRECT_ERROR_TYPES,
-      KaptFlag.INCLUDE_COMPILE_CLASSPATH,
+      // KaptFlag.INCLUDE_COMPILE_CLASSPATH,
     ),
   )
 }
