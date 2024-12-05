@@ -77,12 +77,33 @@ public fun CompilationEnvironment.compile2(
       .joinToString(File.pathSeparator) { it.absolutePath }
 
     args.pluginClasspaths = HostEnvironment.inheritedClasspath
+      .asSequence()
+      .filter { it != HostEnvironment.kotlinAnnotationProcessingCompiler }
       .filter { it != HostEnvironment.kotlinAnnotationProcessingEmbeddable || mode.useKapt }
+      .filter { !it.path.contains("ksp") }
+      .filter { !it.path.contains("poko") }
+      .filter { !it.path.contains("kctfork") }
+      .toList()
       .letIf(mode.useKapt) {
         it + HostEnvironment.kotlinAnnotationProcessingEmbeddable
       }
       .pathStrings()
       .toTypedArray()
+      // TODO <Rick> delete me
+      .also { paths ->
+        val pretty = paths
+          .filter { it.endsWith(".jar") }
+          .map { it.substringAfterLast("files-2.1/") }
+          .map {
+            it.replace(
+              """(\S+?)/([^/]+?)/([^/]+?)/[^/]+?/[^/]+?\.jar""".toRegex(),
+              "$1:$2:$3",
+            )
+          }
+          .sorted()
+
+        println(pretty.joinToString("\n"))
+      }
 
     args.freeArgs += sourceFiles.pathStrings()
   }
@@ -132,7 +153,7 @@ private fun kaptOptions(workingDir: File) = KaptOptions.Builder().also { kapt ->
       KaptFlag.STRIP_METADATA,
       KaptFlag.USE_LIGHT_ANALYSIS,
       KaptFlag.CORRECT_ERROR_TYPES,
-      // KaptFlag.INCLUDE_COMPILE_CLASSPATH,
+      KaptFlag.INCLUDE_COMPILE_CLASSPATH,
     ),
   )
 }
