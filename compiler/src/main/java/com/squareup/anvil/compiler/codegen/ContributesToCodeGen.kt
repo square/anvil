@@ -1,11 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.auto.service.AutoService
-import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
-import com.google.devtools.ksp.processing.SymbolProcessorProvider
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.HINT_PACKAGE
 import com.squareup.anvil.compiler.REFERENCE_SUFFIX
@@ -15,15 +10,6 @@ import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
-import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
-import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
-import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
-import com.squareup.anvil.compiler.codegen.ksp.checkClassIsPublic
-import com.squareup.anvil.compiler.codegen.ksp.checkNoDuplicateScope
-import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
-import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
-import com.squareup.anvil.compiler.codegen.ksp.isInterface
-import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesToFqName
 import com.squareup.anvil.compiler.daggerModuleFqName
 import com.squareup.anvil.compiler.internal.createAnvilSpec
@@ -39,8 +25,6 @@ import com.squareup.kotlinpoet.KModifier.PUBLIC
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.PropertySpec
 import com.squareup.kotlinpoet.asClassName
-import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.Module
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
@@ -90,59 +74,6 @@ internal object ContributesToCodeGen : AnvilApplicabilityChecker {
         )
       }
     }
-  }
-
-  internal class KspGenerator(
-    override val env: SymbolProcessorEnvironment,
-  ) : AnvilSymbolProcessor() {
-
-    override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      resolver.getSymbolsWithAnnotation(ContributesTo::class.qualifiedName!!)
-        .forEach { clazz ->
-          if (clazz !is KSClassDeclaration) {
-            env.logger.error(
-              "@${ContributesTo::class.simpleName} can only be applied to classes",
-              clazz,
-            )
-            return@forEach
-          }
-          if (!clazz.isInterface() &&
-            !clazz.isAnnotationPresent(daggerModuleFqName.toString()) &&
-            !clazz.isAnnotationPresent(mergeModulesFqName.toString())
-          ) {
-            throw KspAnvilException(
-              message = "${clazz.qualifiedName!!.asString()} is annotated with " +
-                "@${ContributesTo::class.simpleName}, but this class is neither an interface " +
-                "nor a Dagger module. Did you forget to add @${Module::class.simpleName}?",
-              node = clazz,
-            )
-          }
-          clazz.checkClassIsPublic {
-            "${clazz.qualifiedName!!.asString()} is contributed to the Dagger graph, but the " +
-              "module is not public. Only public modules are supported."
-          }
-
-          val scopes = clazz.getKSAnnotationsByType(ContributesTo::class)
-            .toList()
-            .also { it.checkNoDuplicateScope(annotatedType = clazz, isContributeAnnotation = true) }
-            .map { it.scope().toClassName() }
-            .distinct()
-            // Give it a stable sort.
-            .sortedBy { it.canonicalName }
-
-          generate(clazz.toClassName(), scopes)
-            .writeTo(
-              codeGenerator = env.codeGenerator,
-              aggregating = false,
-              originatingKSFiles = listOf(clazz.containingFile!!),
-            )
-        }
-
-      return emptyList()
-    }
-
-    @AutoService(SymbolProcessorProvider::class)
-    class Provider : AnvilSymbolProcessorProvider(ContributesToCodeGen, ::KspGenerator)
   }
 
   @AutoService(CodeGenerator::class)

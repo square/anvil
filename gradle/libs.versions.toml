@@ -35,8 +35,6 @@ kotest = "5.9.1"
 kotlin = "2.0.21"
 kotlinx-binaryCompatibility = "0.16.3"
 kotlinpoet = "1.18.1"
-# If updating KSP version, we currently have ksp override logic in settings.gradle that needs to be updated too
-ksp = "2.0.21-1.0.25"
 ktlint = "1.0.1"
 ktlintPlugin = "12.1.1"
 mavenPublish = "0.29.0"
@@ -49,10 +47,6 @@ mavenPublish = "0.29.0"
 # with one annotation instead of all options. We also skip tests that run the Dagger annotation
 # processor (KAPT is slow).
 config-fullTestRun = "true"
-# This is exclusively used to work-around an issue with certain KSP tests on Windows on CI.
-# We've run the same tests without issue on local Windows machines, so this just allows us to
-# unblock KSP work for the moment until the source of the Git-Windows-CI jank can be identified.
-config-includeKspTests = "true"
 config-generateDaggerFactoriesWithAnvil = "true"
 config-warningsAsErrors = "false"
 
@@ -68,7 +62,6 @@ kotlin-jvm = { id = "org.jetbrains.kotlin.jvm", version.ref = "kotlin" }
 kotlin-kapt = { id = "org.jetbrains.kotlin.kapt", version.ref = "kotlin" }
 kotlin-multiplatform = { id = "org.jetbrains.kotlin.multiplatform", version.ref = "kotlin" }
 kotlinx-binaryCompatibility = { id = "org.jetbrains.kotlinx.binary-compatibility-validator", version.ref = "kotlinx-binaryCompatibility" }
-ksp = { id = "com.google.devtools.ksp", version.ref = "ksp" }
 ktlint = { id = "org.jlleitschuh.gradle.ktlint", version.ref = "ktlintPlugin" }
 mavenPublishBase = { id = "com.vanniktech.maven.publish.base", version.ref = "mavenPublish" }
 
@@ -134,10 +127,6 @@ kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlin
 kotlinx-binaryCompatibility = { module = "org.jetbrains.kotlinx:binary-compatibility-validator", version.ref = "kotlinx-binaryCompatibility" }
 
 kgx = { module = "com.rickbusarow.kgx:kotlin-gradle-extensions", version.ref = "kgx" }
-
-ksp-api = { module = "com.google.devtools.ksp:symbol-processing-api", version.ref = "ksp" }
-ksp-compilerPlugin = { module = "com.google.devtools.ksp:symbol-processing", version.ref = "ksp" }
-ksp-gradlePlugin = { module = "com.google.devtools.ksp:symbol-processing-gradle-plugin", version.ref = "ksp" }
 
 ktlintRaw = { module = "org.jlleitschuh.gradle:ktlint-gradle", version.ref = "ktlintPlugin" }
 

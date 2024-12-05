@@ -1,25 +1,12 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
-import com.google.devtools.ksp.KspExperimental
-import com.google.devtools.ksp.getAnnotationsByType
-import com.google.devtools.ksp.getDeclaredProperties
-import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
-import com.google.devtools.ksp.processing.SymbolProcessorProvider
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSPropertyDeclaration
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
-import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
-import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
-import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
-import com.squareup.anvil.compiler.codegen.ksp.isAnnotationClass
 import com.squareup.anvil.compiler.internal.createAnvilSpec
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -57,9 +44,6 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.joinToCode
-import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.toTypeName
-import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.MapKey
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
@@ -74,99 +58,6 @@ import kotlin.reflect.KClass
  */
 internal object MapKeyCreatorCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext) = context.generateFactories
-
-  internal class KspGenerator(
-    override val env: SymbolProcessorEnvironment,
-  ) : AnvilSymbolProcessor() {
-    @AutoService(SymbolProcessorProvider::class)
-    class Provider : AnvilSymbolProcessorProvider(MapKeyCreatorCodeGen, ::KspGenerator)
-
-    @OptIn(KspExperimental::class)
-    override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      resolver.getSymbolsWithAnnotation(mapKeyFqName.asString())
-        .filterIsInstance<KSClassDeclaration>()
-        .filter { clazz ->
-          val mapKey = clazz.getAnnotationsByType(MapKey::class)
-            .singleOrNull()
-            ?: return@filter false
-          return@filter !mapKey.unwrapValue
-        }
-        .forEach { clazz ->
-          generateCreatorClass(clazz)
-            .writeTo(
-              env.codeGenerator,
-              aggregating = false,
-              originatingKSFiles = listOf(clazz.containingFile!!),
-            )
-        }
-
-      return emptyList()
-    }
-
-    private fun generateCreatorClass(
-      clazz: KSClassDeclaration,
-    ): FileSpec {
-      // // Given this
-      // @MapKey(unwrapValue = false)
-      // annotation class ActivityKey(
-      //   val value: KClass<out Activity>,
-      //   val scope: KClass<*>,
-      // )
-      //
-      // // Generate this
-      // object ActivityKeyCreator {
-      //   @JvmStatic
-      //   fun createActivityKey(
-      //     value: Class<out Activity>,
-      //     scope: Class<*>
-      //   ): ActivityKey {
-      //     return ActivityKey(value.kotlin, scope.kotlin)
-      //   }
-      // }
-
-      val className = clazz.toClassName()
-
-      if (!clazz.isAnnotationClass()) {
-        throw KspAnvilException(
-          message = "@MapKey is only applicable to annotation classes.",
-          node = clazz,
-        )
-      }
-
-      val creatorsToGenerate = mutableSetOf<KSClassDeclaration>()
-
-      fun visitAnnotations(clazz: KSClassDeclaration) {
-        if (clazz.isAnnotationClass()) {
-          val added = creatorsToGenerate.add(clazz)
-          if (added) {
-            for (property in clazz.getDeclaredProperties()) {
-              val type = property.type.resolve().declaration as? KSClassDeclaration?
-              if (type?.isAnnotationClass() == true) {
-                visitAnnotations(type)
-              }
-            }
-          }
-        }
-      }
-
-      // Populate all used annotations
-      visitAnnotations(clazz)
-
-      val creatorFunctions = creatorsToGenerate
-        .associateBy { annotationClass ->
-          annotationClass.toClassName()
-        }
-        .toSortedMap()
-        .map { (className, clazz) ->
-          val properties = clazz.getDeclaredProperties()
-            .map { AnnotationProperty(it) }
-            .associateBy { it.name }
-          generateCreatorFunction(className, properties)
-        }
-
-      return generateCreatorFileSpec(className, creatorFunctions)
-    }
-  }
 
   @AutoService(CodeGenerator::class)
   internal class EmbeddedGenerator : PrivateCodeGenerator() {
@@ -348,10 +239,6 @@ private class AnnotationProperty(
         codeBlock,
       )
     }
-
-    operator fun invoke(
-      property: KSPropertyDeclaration,
-    ): AnnotationProperty = create(property.simpleName.asString(), property.type.toTypeName())
 
     operator fun invoke(
       property: MemberPropertyReference,

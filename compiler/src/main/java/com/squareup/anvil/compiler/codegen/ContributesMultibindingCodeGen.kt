@@ -1,12 +1,6 @@
 package com.squareup.anvil.compiler.codegen
 
 import com.google.auto.service.AutoService
-import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
-import com.google.devtools.ksp.processing.SymbolProcessorProvider
-import com.google.devtools.ksp.symbol.ClassKind
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
 import com.squareup.anvil.annotations.ContributesMultibinding
 import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
@@ -16,28 +10,10 @@ import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.checkNotGeneric
 import com.squareup.anvil.compiler.codegen.Contribution.Companion.generateFileSpecs
-import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
-import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
-import com.squareup.anvil.compiler.codegen.ksp.checkClassExtendsBoundType
-import com.squareup.anvil.compiler.codegen.ksp.checkClassIsPublic
-import com.squareup.anvil.compiler.codegen.ksp.checkNoDuplicateScopeAndBoundType
-import com.squareup.anvil.compiler.codegen.ksp.checkNotMoreThanOneMapKey
-import com.squareup.anvil.compiler.codegen.ksp.checkNotMoreThanOneQualifier
-import com.squareup.anvil.compiler.codegen.ksp.checkSingleSuperType
-import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
-import com.squareup.anvil.compiler.codegen.ksp.ignoreQualifier
-import com.squareup.anvil.compiler.codegen.ksp.isMapKey
-import com.squareup.anvil.compiler.codegen.ksp.qualifierAnnotation
-import com.squareup.anvil.compiler.codegen.ksp.replaces
-import com.squareup.anvil.compiler.codegen.ksp.resolveBoundType
-import com.squareup.anvil.compiler.codegen.ksp.scope
 import com.squareup.anvil.compiler.contributesMultibindingFqName
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.classAndInnerClassReferences
 import com.squareup.anvil.compiler.qualifierKey
-import com.squareup.kotlinpoet.ksp.toAnnotationSpec
-import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.writeTo
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
@@ -58,82 +34,6 @@ internal object ContributesMultibindingCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext): Boolean {
     willHaveDaggerFactories = context.willHaveDaggerFactories
     return !context.generateFactoriesOnly
-  }
-
-  internal class KspGenerator(
-    override val env: SymbolProcessorEnvironment,
-  ) : AnvilSymbolProcessor() {
-
-    override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      resolver.getSymbolsWithAnnotation(ContributesMultibinding::class.java.canonicalName)
-        .forEach { clazz ->
-          if (clazz !is KSClassDeclaration) {
-            env.logger.error(
-              "@${ContributesMultibinding::class.simpleName} can only be applied to classes",
-              clazz,
-            )
-            return@forEach
-          }
-          clazz.checkClassIsPublic {
-            "${clazz.qualifiedName!!.asString()} is binding a type, but the class is not public. " +
-              "Only public types are supported."
-          }
-          clazz.checkNotMoreThanOneQualifier(contributesMultibindingFqName)
-          clazz.checkNotMoreThanOneMapKey()
-          clazz.checkSingleSuperType(contributesMultibindingFqName, resolver)
-          clazz.checkClassExtendsBoundType(contributesMultibindingFqName, resolver)
-
-          // All good, generate away
-          val contributions = clazz.getKSAnnotationsByType(ContributesMultibinding::class)
-            .toList()
-            .also { it.checkNoDuplicateScopeAndBoundType(clazz) }
-            .map {
-              val scope = it.scope().toClassName()
-
-              val boundTypeDeclaration = it.resolveBoundType(resolver, clazz)
-              boundTypeDeclaration.checkNotGeneric(clazz)
-              val boundType = boundTypeDeclaration.toClassName()
-              val replaces = it.replaces().map { it.toClassName() }
-              val qualifierData = if (it.ignoreQualifier()) {
-                null
-              } else {
-                clazz.qualifierAnnotation()?.let { qualifierAnnotation ->
-                  val annotationSpec = qualifierAnnotation.toAnnotationSpec()
-                  val key = qualifierAnnotation.qualifierKey()
-                  Contribution.QualifierData(annotationSpec, key)
-                }
-              }
-              val mapKey = clazz.annotations
-                .filter { it.isMapKey() }
-                .singleOrNull()
-                ?.toAnnotationSpec()
-              Contribution.MultiBinding(
-                clazz.toClassName(),
-                scope,
-                clazz.classKind == ClassKind.OBJECT,
-                boundType,
-                replaces,
-                qualifierData,
-                mapKey,
-              )
-            }
-
-          contributions
-            .generateFileSpecs(generateProviderFactories = !willHaveDaggerFactories)
-            .forEach { spec ->
-              spec.writeTo(
-                codeGenerator = env.codeGenerator,
-                aggregating = false,
-                originatingKSFiles = listOf(clazz.containingFile!!),
-              )
-            }
-        }
-
-      return emptyList()
-    }
-
-    @AutoService(SymbolProcessorProvider::class)
-    class Provider : AnvilSymbolProcessorProvider(ContributesMultibindingCodeGen, ::KspGenerator)
   }
 
   @AutoService(CodeGenerator::class)

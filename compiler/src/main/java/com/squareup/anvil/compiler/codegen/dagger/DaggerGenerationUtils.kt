@@ -1,31 +1,10 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
-import com.google.devtools.ksp.KspExperimental
-import com.google.devtools.ksp.getAllSuperTypes
-import com.google.devtools.ksp.getAnnotationsByType
-import com.google.devtools.ksp.getDeclaredProperties
-import com.google.devtools.ksp.getVisibility
-import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSFunctionDeclaration
-import com.google.devtools.ksp.symbol.KSPropertyDeclaration
-import com.google.devtools.ksp.symbol.KSType
-import com.google.devtools.ksp.symbol.KSValueParameter
-import com.google.devtools.ksp.symbol.Visibility
 import com.squareup.anvil.compiler.assistedFqName
-import com.squareup.anvil.compiler.codegen.ksp.KspAnvilException
-import com.squareup.anvil.compiler.codegen.ksp.getKSAnnotationsByType
-import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
-import com.squareup.anvil.compiler.codegen.ksp.isInterface
-import com.squareup.anvil.compiler.codegen.ksp.isLateInit
-import com.squareup.anvil.compiler.codegen.ksp.isQualifier
-import com.squareup.anvil.compiler.codegen.ksp.resolveKSClassDeclaration
-import com.squareup.anvil.compiler.codegen.ksp.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.daggerDoubleCheckFqNameString
-import com.squareup.anvil.compiler.daggerLazyClassName
 import com.squareup.anvil.compiler.daggerLazyFqName
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.capitalize
-import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionClassReference
 import com.squareup.anvil.compiler.internal.reference.AnvilCompilationExceptionPropertyReference
 import com.squareup.anvil.compiler.internal.reference.ClassReference
@@ -39,11 +18,8 @@ import com.squareup.anvil.compiler.internal.reference.allSuperTypeClassReference
 import com.squareup.anvil.compiler.internal.reference.argumentAt
 import com.squareup.anvil.compiler.internal.reference.asClassName
 import com.squareup.anvil.compiler.internal.reference.joinSimpleNames
-import com.squareup.anvil.compiler.internal.requireRawType
-import com.squareup.anvil.compiler.internal.unwrappedTypes
 import com.squareup.anvil.compiler.internal.withJvmSuppressWildcardsIfNeeded
 import com.squareup.anvil.compiler.jvmFieldFqName
-import com.squareup.anvil.compiler.providerClassName
 import com.squareup.anvil.compiler.providerFqName
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.FunSpec
@@ -51,16 +27,8 @@ import com.squareup.kotlinpoet.ParameterizedTypeName
 import com.squareup.kotlinpoet.ParameterizedTypeName.Companion.parameterizedBy
 import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
-import com.squareup.kotlinpoet.ksp.TypeParameterResolver
-import com.squareup.kotlinpoet.ksp.toAnnotationSpec
-import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.toTypeName
-import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
 import dagger.Lazy
-import dagger.assisted.Assisted
 import dagger.internal.ProviderOfLazy
-import org.jetbrains.kotlin.name.FqName
-import javax.inject.Inject
 import javax.inject.Provider
 
 internal fun TypeName.wrapInProvider(): ParameterizedTypeName {
@@ -103,61 +71,6 @@ private fun ParameterReference.toConstructorParameter(
   return ConstructorParameter(
     name = uniqueName,
     originalName = name,
-    typeName = typeName,
-    providerTypeName = typeName.wrapInProvider(),
-    lazyTypeName = typeName.wrapInLazy(),
-    isWrappedInProvider = isWrappedInProvider,
-    isWrappedInLazy = isWrappedInLazy,
-    isLazyWrappedInProvider = isLazyWrappedInProvider,
-    isAssisted = assistedAnnotation != null,
-    assistedIdentifier = assistedIdentifier,
-  )
-}
-
-@JvmName("mapToConstructorParametersKsp")
-internal fun List<KSValueParameter>.mapToConstructorParameters(
-  typeParameterResolver: TypeParameterResolver,
-): List<ConstructorParameter> {
-  return fold(listOf()) { acc, callableReference ->
-    acc + callableReference.toConstructorParameter(
-      callableReference.name!!.asString()
-        .uniqueParameterName(acc),
-      typeParameterResolver,
-    )
-  }
-}
-
-@OptIn(KspExperimental::class)
-private fun KSValueParameter.toConstructorParameter(
-  uniqueName: String,
-  typeParameterResolver: TypeParameterResolver,
-): ConstructorParameter {
-  val type = type.resolve()
-  val paramTypeName = type.toTypeName(typeParameterResolver)
-  val rawType = paramTypeName.requireRawType()
-
-  val isWrappedInProvider = rawType == providerClassName
-  val isWrappedInLazy = rawType == daggerLazyClassName
-  val isLazyWrappedInProvider = isWrappedInProvider &&
-    (paramTypeName.unwrappedTypes.first().requireRawType()) == daggerLazyClassName
-
-  val typeName = when {
-    isLazyWrappedInProvider -> paramTypeName.unwrappedTypes.first().unwrappedTypes.first()
-    isWrappedInProvider || isWrappedInLazy -> paramTypeName.unwrappedTypes.first()
-    else -> paramTypeName
-  }.withJvmSuppressWildcardsIfNeeded(this, type)
-
-  val assistedAnnotation = getKSAnnotationsByType(Assisted::class)
-    .singleOrNull()
-
-  val assistedIdentifier = getAnnotationsByType(Assisted::class)
-    .singleOrNull()
-    ?.value
-    .orEmpty()
-
-  return ConstructorParameter(
-    name = uniqueName,
-    originalName = name!!.asString(),
     typeName = typeName,
     providerTypeName = typeName.wrapInProvider(),
     lazyTypeName = typeName.wrapInLazy(),
@@ -229,60 +142,6 @@ private fun ClassReference.declaredMemberInjectParameters(
       val uniqueName = property.name.uniqueParameterName(superParameters, acc)
       acc + property.toMemberInjectParameter(
         uniqueName = uniqueName,
-        implementingClass = implementingClass,
-      )
-    }
-}
-
-/**
- * Returns all member-injected parameters for the receiver class *and any superclasses*.
- *
- * Order is important. Dagger expects the properties of the most-upstream class to be listed first
- * in a factory's constructor.
- *
- * Given the hierarchy:
- * Impl -> Middle -> Base
- * The order of dependencies in `Impl_Factory`'s constructor should be:
- * Base -> Middle -> Impl
- */
-internal fun KSClassDeclaration.memberInjectParameters(): List<MemberInjectParameter> {
-  // TODO can we use getAllProperties() after https://github.com/google/ksp/issues/1619?
-  return sequenceOf(asType(emptyList()))
-    .plus(getAllSuperTypes())
-    .mapNotNull {
-      it.resolveKSClassDeclaration()
-    }
-    .filterNot {
-      it.isInterface()
-    }
-    .toList()
-    .foldRight(listOf()) { classDeclaration, acc ->
-      acc + classDeclaration.declaredMemberInjectParameters(acc, this)
-    }
-}
-
-/**
- * @param superParameters injected parameters from any super-classes, regardless of whether they're
- * overridden by the receiver class
- * @return the member-injected parameters for this class only, not including any super-classes
- */
-private fun KSClassDeclaration.declaredMemberInjectParameters(
-  superParameters: List<Parameter>,
-  implementingClass: KSClassDeclaration,
-): List<MemberInjectParameter> {
-  val implementingType = implementingClass.asType(emptyList())
-  return getDeclaredProperties()
-    .filter {
-      it.isAnnotationPresent<Inject>() ||
-        it.setter?.isAnnotationPresent<Inject>() == true
-    }
-    .filter { it.getVisibility() != Visibility.PRIVATE }
-    .fold(listOf()) { acc, property ->
-      val uniqueName = property.simpleName.asString().uniqueParameterName(superParameters, acc)
-      acc + property.toMemberInjectParameter(
-        uniqueName = uniqueName,
-        declaringClass = this@declaredMemberInjectParameters,
-        implementingType = implementingType,
         implementingClass = implementingClass,
       )
     }
@@ -437,111 +296,6 @@ private fun MemberPropertyReference.toMemberInjectParameter(
   )
 }
 
-@OptIn(KspExperimental::class)
-private fun KSPropertyDeclaration.toMemberInjectParameter(
-  uniqueName: String,
-  declaringClass: KSClassDeclaration,
-  implementingType: KSType,
-  implementingClass: KSClassDeclaration,
-): MemberInjectParameter {
-  if (
-    !isLateInit() &&
-    !isAnnotationPresent<JvmField>() &&
-    setter?.isAnnotationPresent<Inject>() != true
-  ) {
-    // Technically this works with Anvil and we could remove this check. But we prefer consistency
-    // with Dagger.
-    throw KspAnvilException(
-      message = "Dagger does not support injection into private fields. Either use a " +
-        "'lateinit var' or '@JvmField'.",
-      node = this,
-    )
-  }
-
-  val originalName = simpleName.asString()
-  val classParams = implementingClass.typeParameters.toTypeParameterResolver()
-  val resolvedType = asMemberOf(implementingType)
-  // TODO do we want to convert function types to lambdas?
-  val propertyTypeName = resolvedType.toTypeName(classParams)
-  val rawType = propertyTypeName.requireRawType()
-
-  val isWrappedInProvider = rawType == providerClassName
-  val isWrappedInLazy = rawType == daggerLazyClassName
-  val isLazyWrappedInProvider = isWrappedInProvider &&
-    (propertyTypeName.unwrappedTypes.first().requireRawType()) == daggerLazyClassName
-
-  val unwrappedType = when {
-    isLazyWrappedInProvider -> propertyTypeName.unwrappedTypes.first().unwrappedTypes.first()
-    isWrappedInProvider || isWrappedInLazy -> propertyTypeName.unwrappedTypes.first()
-    else -> propertyTypeName
-  }
-
-  val typeName = unwrappedType.withJvmSuppressWildcardsIfNeeded(this, resolvedType)
-
-  val resolvedTypeName =
-    if ((resolvedType.declaration as? KSClassDeclaration)?.typeParameters.orEmpty().isNotEmpty()) {
-      unwrappedType.requireRawType()
-        .optionallyParameterizedByNames(unwrappedType.unwrappedTypes)
-        .withJvmSuppressWildcardsIfNeeded(this, resolvedType)
-    } else {
-      null
-    }
-
-  val assistedAnnotation = getAnnotationsByType(Assisted::class)
-    .singleOrNull()
-
-  val assistedIdentifier = assistedAnnotation
-    ?.value
-    .orEmpty()
-
-  val implementingClassName = declaringClass
-    .toClassName()
-  val memberInjectorClassName = implementingClassName
-    .joinSimpleNames(separator = "_", suffix = "_MembersInjector")
-    .simpleNames
-    .joinToString(".")
-
-  val memberInjectorClass = ClassName(
-    implementingClassName.packageName,
-    memberInjectorClassName,
-  )
-
-  val isSetterInjected = this.setter?.isAnnotationPresent<Inject>() == true
-
-  // setter delegates require a "set" prefix for their inject function
-  val accessName = if (isSetterInjected) {
-    "set${originalName.capitalize()}"
-  } else {
-    originalName
-  }
-
-  val qualifierAnnotations = annotations
-    .filter { it.isQualifier() }
-    .map { it.toAnnotationSpec() }
-    .toList()
-
-  val providerTypeName = typeName.wrapInProvider()
-
-  return MemberInjectParameter(
-    name = uniqueName,
-    originalName = originalName,
-    typeName = typeName,
-    providerTypeName = providerTypeName,
-    lazyTypeName = typeName.wrapInLazy(),
-    isWrappedInProvider = isWrappedInProvider,
-    isWrappedInLazy = isWrappedInLazy,
-    isLazyWrappedInProvider = isLazyWrappedInProvider,
-    isAssisted = assistedAnnotation != null,
-    assistedIdentifier = assistedIdentifier,
-    memberInjectorClassName = memberInjectorClass,
-    isSetterInjected = isSetterInjected,
-    accessName = accessName,
-    qualifierAnnotationSpecs = qualifierAnnotations,
-    injectedFieldSignature = FqName(qualifiedName!!.asString()),
-    resolvedProviderTypeName = resolvedTypeName?.wrapInProvider() ?: providerTypeName,
-  )
-}
-
 private fun TypeReference.isGenericExcludingTypeAliases(): Boolean {
   // A TypeReference for 'typealias StringList = List<String> would still show up as generic but
   // would have no unwrapped types available (String).
@@ -580,24 +334,6 @@ internal fun assertNoDuplicateFunctions(
   if (duplicateFunctions.isNotEmpty()) {
     throw AnvilCompilationExceptionClassReference(
       classReference = declaringClass,
-      message = "Cannot have more than one binding method with the same name in " +
-        "a single module: ${duplicateFunctions.keys.joinToString()}",
-    )
-  }
-}
-
-internal fun assertNoDuplicateFunctions(
-  declaringClass: KSClassDeclaration,
-  functions: Sequence<KSFunctionDeclaration>,
-) {
-  // Check for duplicate function names.
-  val duplicateFunctions = functions
-    .groupBy { it.qualifiedName!!.asString() }
-    .filterValues { it.size > 1 }
-
-  if (duplicateFunctions.isNotEmpty()) {
-    throw KspAnvilException(
-      node = declaringClass,
       message = "Cannot have more than one binding method with the same name in " +
         "a single module: ${duplicateFunctions.keys.joinToString()}",
     )
