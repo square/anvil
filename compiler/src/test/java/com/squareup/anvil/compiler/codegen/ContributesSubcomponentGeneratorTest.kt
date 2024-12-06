@@ -110,7 +110,7 @@ class ContributesSubcomponentGeneratorTest(
     }
   }
 
-  @Test fun `there is a hint for contributed subcomponents with an interace factory`() {
+  @Test fun `there is a hint for contributed subcomponents with an interface factory`() {
     compile(
       """
       package com.squareup.test
@@ -556,6 +556,46 @@ class ContributesSubcomponentGeneratorTest(
 
           @Factory
           interface ComponentFactory : Creator
+        }
+
+        @MergeComponent(Unit::class)
+        interface ComponentInterface
+      """,
+      mode = mode,
+    ) {
+      assertThat(subcomponentInterface.hintSubcomponent?.java).isEqualTo(subcomponentInterface)
+      assertThat(subcomponentInterface.hintSubcomponentParentScope).isEqualTo(Unit::class)
+
+      assertThat(subcomponentInterface.componentFactoryInterface.methods.map { it.name })
+        .containsExactly("createComponent")
+    }
+  }
+
+  @Test fun `a factory function may returns the component super type`() {
+    compile(
+      """
+        package com.squareup.test
+
+        import com.squareup.anvil.annotations.ContributesSubcomponent
+        import com.squareup.anvil.annotations.ContributesSubcomponent.Factory
+        import com.squareup.anvil.annotations.ContributesTo
+        import com.squareup.anvil.annotations.MergeComponent
+
+        interface BaseSubcomponentInterface {
+            interface Factory {
+                fun createComponent(): BaseSubcomponentInterface
+            }
+        }
+
+        @ContributesSubcomponent(Any::class, parentScope = Unit::class)
+        interface SubcomponentInterface : BaseSubcomponentInterface {
+          @Factory
+          interface ComponentFactory: BaseSubcomponentInterface.Factory
+
+          @ContributesTo(Unit::class)
+          interface ParentComponent {
+            fun createFactory(): ComponentFactory
+          }
         }
 
         @MergeComponent(Unit::class)

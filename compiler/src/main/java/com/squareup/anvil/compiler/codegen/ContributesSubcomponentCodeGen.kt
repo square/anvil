@@ -208,9 +208,13 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
         .filter { it.isAbstract }
         .toList()
 
-      if (functions.size != 1 || functions[0].returnType?.resolve()
-          ?.resolveKSClassDeclaration() != this
-      ) {
+      val returnType = functions.singleOrNull()?.returnType?.resolve()?.resolveKSClassDeclaration()
+      if (returnType != this) {
+
+        val isReturnSuperType = returnType != null && this.superTypes
+          .any { type -> type.resolve().resolveKSClassDeclaration() == returnType }
+        if (isReturnSuperType) return
+
         throw KspAnvilException(
           node = factory,
           message = "A factory must have exactly one abstract function returning the " +
@@ -393,6 +397,11 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
         ?.asClassReference()
 
       if (returnType != this) {
+
+        val isReturnSuperType = returnType != null && this.directSuperTypeReferences()
+          .any { it.asClassReference() == returnType }
+        if (isReturnSuperType) return
+
         throw AnvilCompilationExceptionClassReference(
           classReference = factory,
           message = "A factory must have exactly one abstract function returning the " +
