@@ -17,7 +17,6 @@ import com.squareup.anvil.compiler.internal.capitalize
 import com.squareup.anvil.compiler.internal.generateHintFileName
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
-import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Ksp
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.kotlinpoet.asClassName
@@ -375,14 +374,11 @@ internal fun JvmCompilationResult.assertCompilationSucceeded() {
 
 internal fun isFullTestRun(): Boolean = FULL_TEST_RUN
 internal fun checkFullTestRun() = assumeTrue(isFullTestRun())
-internal fun includeKspTests(): Boolean = INCLUDE_KSP_TESTS
 
 internal fun JvmCompilationResult.walkGeneratedFiles(mode: AnvilCompilationMode): Sequence<File> {
   val dirToSearch = when (mode) {
     is Embedded ->
       outputDirectory.parentFile.resolve("build${File.separator}anvil")
-
-    is Ksp -> outputDirectory.parentFile.resolve("ksp${File.separator}sources")
   }
   return dirToSearch.walkTopDown()
     .filter { it.isFile && it.extension == "kt" }
@@ -420,9 +416,8 @@ internal fun JvmCompilationResult.generatedFileOrNull(
 /**
  * Parameters for configuring [AnvilCompilationMode] and whether to run a full test run or not.
  */
-internal fun useDaggerAndKspParams(
+internal fun testParams(
   embeddedCreator: () -> Embedded? = { Embedded() },
-  kspCreator: () -> Ksp? = { Ksp() },
 ): Collection<Any> {
   return cartesianProduct(
     listOf(
@@ -431,25 +426,15 @@ internal fun useDaggerAndKspParams(
     ),
     listOfNotNull(
       embeddedCreator(),
-      kspCreator(),
     ),
   ).mapNotNull { (useDagger, mode) ->
-    if (useDagger == true && mode is Ksp) {
-      // TODO Dagger is not supported with KSP in Anvil's tests yet
-      null
-    } else {
-      arrayOf(useDagger, mode)
-    }
+    arrayOf(useDagger, mode)
   }.distinct()
 }
 
-/** In any failing compilation in KSP, it always prints this error line first. */
-private const val KSP_ERROR_HEADER = "e: Error occurred in KSP, check log for detail"
-
 internal fun CompilationResult.compilationErrorLine(): String {
-  return messages
-    .lineSequence()
-    .first { it.startsWith("e:") && KSP_ERROR_HEADER !in it }
+  return messages.lineSequence()
+    .first { it.startsWith("e:") }
 }
 
 internal inline fun <T, R> Array<out T>.flatMapArray(transform: (T) -> Array<R>) =

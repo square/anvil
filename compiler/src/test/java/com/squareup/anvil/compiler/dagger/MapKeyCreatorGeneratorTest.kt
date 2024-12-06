@@ -4,7 +4,7 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
 import com.squareup.anvil.compiler.internal.testing.isStatic
-import com.squareup.anvil.compiler.useDaggerAndKspParams
+import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.descriptors.runtime.components.tryLoadClass
@@ -23,7 +23,7 @@ class MapKeyCreatorGeneratorTest(
   companion object {
     @Parameters(name = "Use Dagger: {0}, mode: {1}")
     @JvmStatic
-    fun params() = useDaggerAndKspParams()
+    fun params() = testParams()
   }
 
   @Test fun `a creator class is generated`() {

@@ -16,10 +16,7 @@ import com.squareup.anvil.compiler.walkGeneratedFiles
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import org.junit.jupiter.api.TestFactory
 
-class ContributesToCodeGenTest : AnvilCompilationModeTest(
-  AnvilCompilationMode.Embedded(),
-  AnvilCompilationMode.Ksp(),
-) {
+class ContributesToCodeGenTest : AnvilCompilationModeTest(AnvilCompilationMode.Embedded()) {
 
   @TestFactory
   fun `there is no hint for merge annotations`() = testFactory {
