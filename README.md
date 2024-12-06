@@ -383,6 +383,9 @@ for performance reasons. With Hilt we wouldn't be able to enforce this requireme
 component interfaces. The development of Anvil started long before Hilt was announced and the
 internal version is being used in production for a while.
 
+## Roadmap
+See [here](https://github.com/square/anvil/blob/main/docs/ROADMAP.md)
+
 ## License
 
     Copyright 2020 Square, Inc.
