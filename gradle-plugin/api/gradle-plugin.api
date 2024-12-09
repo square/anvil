@@ -18,7 +18,7 @@ public final class com/squareup/anvil/plugin/AndroidVariantFilter : com/squareup
 }
 
 public abstract class com/squareup/anvil/plugin/AnvilExtension {
-	public fun <init> (Lorg/gradle/api/Project;Lorg/gradle/api/model/ObjectFactory;Lorg/gradle/api/provider/ProviderFactory;)V
+	public fun <init> (Lorg/gradle/api/model/ObjectFactory;Lorg/gradle/api/provider/ProviderFactory;)V
 	public final fun getAddOptionalAnnotations ()Lorg/gradle/api/provider/Property;
 	public final fun getDisableComponentMerging ()Lorg/gradle/api/provider/Property;
 	public final fun getGenerateDaggerFactories ()Lorg/gradle/api/provider/Property;

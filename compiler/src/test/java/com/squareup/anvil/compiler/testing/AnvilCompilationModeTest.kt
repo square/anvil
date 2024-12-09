@@ -52,11 +52,10 @@ class AnvilCompilationModeTestEnvironment(
   }
 }
 
-@Execution(ExecutionMode.SAME_THREAD, reason = "KSP tests aren't thread-safe yet.")
+@Execution(ExecutionMode.SAME_THREAD)
 abstract class AnvilCompilationModeTest(
   modes: List<AnvilCompilationMode> = listOf(
     AnvilCompilationMode.Embedded(),
-    AnvilCompilationMode.Ksp(),
   ),
 ) : KaseTestFactory<
   Kase1<AnvilCompilationMode>,

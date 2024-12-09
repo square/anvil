@@ -1,12 +1,6 @@
 package com.squareup.anvil.compiler.codegen.dagger
 
 import com.google.auto.service.AutoService
-import com.google.devtools.ksp.processing.Resolver
-import com.google.devtools.ksp.processing.SymbolProcessorEnvironment
-import com.google.devtools.ksp.processing.SymbolProcessorProvider
-import com.google.devtools.ksp.symbol.KSAnnotated
-import com.google.devtools.ksp.symbol.KSClassDeclaration
-import com.google.devtools.ksp.symbol.KSFunctionDeclaration
 import com.squareup.anvil.compiler.api.AnvilApplicabilityChecker
 import com.squareup.anvil.compiler.api.AnvilContext
 import com.squareup.anvil.compiler.api.CodeGenerator
@@ -14,10 +8,6 @@ import com.squareup.anvil.compiler.api.GeneratedFileWithSources
 import com.squareup.anvil.compiler.api.createGeneratedFile
 import com.squareup.anvil.compiler.codegen.PrivateCodeGenerator
 import com.squareup.anvil.compiler.codegen.injectConstructor
-import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessor
-import com.squareup.anvil.compiler.codegen.ksp.AnvilSymbolProcessorProvider
-import com.squareup.anvil.compiler.codegen.ksp.injectConstructors
-import com.squareup.anvil.compiler.codegen.ksp.isAnnotationPresent
 import com.squareup.anvil.compiler.injectFqName
 import com.squareup.anvil.compiler.internal.containingFileAsJavaFile
 import com.squareup.anvil.compiler.internal.createAnvilSpec
@@ -37,62 +27,13 @@ import com.squareup.kotlinpoet.TypeSpec
 import com.squareup.kotlinpoet.TypeVariableName
 import com.squareup.kotlinpoet.asClassName
 import com.squareup.kotlinpoet.jvm.jvmStatic
-import com.squareup.kotlinpoet.ksp.toClassName
-import com.squareup.kotlinpoet.ksp.toTypeParameterResolver
-import com.squareup.kotlinpoet.ksp.toTypeVariableName
-import com.squareup.kotlinpoet.ksp.writeTo
 import dagger.internal.Factory
 import org.jetbrains.kotlin.descriptors.ModuleDescriptor
 import org.jetbrains.kotlin.psi.KtFile
 import java.io.File
-import javax.inject.Inject
 
 internal object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
   override fun isApplicable(context: AnvilContext) = context.generateFactories
-
-  internal class KspGenerator(
-    override val env: SymbolProcessorEnvironment,
-  ) : AnvilSymbolProcessor() {
-    @AutoService(SymbolProcessorProvider::class)
-    class Provider : AnvilSymbolProcessorProvider(InjectConstructorFactoryCodeGen, ::KspGenerator)
-
-    override fun processChecked(resolver: Resolver): List<KSAnnotated> {
-      resolver.injectConstructors()
-        .forEach { (_, constructor) ->
-          if (!constructor.isAnnotationPresent<Inject>()) {
-            // Only generating @Inject constructors
-            return@forEach
-          }
-
-          generateFactoryClass(constructor)
-            .writeTo(
-              env.codeGenerator,
-              aggregating = false,
-              originatingKSFiles = listOf(constructor.containingFile!!),
-            )
-        }
-
-      return emptyList()
-    }
-
-    private fun generateFactoryClass(
-      constructor: KSFunctionDeclaration,
-    ): FileSpec {
-      val clazz = constructor.parentDeclaration as KSClassDeclaration
-      val constructorParameters = constructor.parameters.mapToConstructorParameters(
-        clazz.typeParameters.toTypeParameterResolver(),
-      )
-      val memberInjectParameters = clazz.memberInjectParameters()
-      val typeParameters = clazz.typeParameters.map { it.toTypeVariableName() }
-
-      return generateFactoryClass(
-        injectedClassName = clazz.toClassName(),
-        typeParameters = typeParameters,
-        constructorParameters = constructorParameters,
-        memberInjectParameters = memberInjectParameters,
-      )
-    }
-  }
 
   @AutoService(CodeGenerator::class)
   internal class Embedded : PrivateCodeGenerator() {

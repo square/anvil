@@ -23,7 +23,6 @@ class ContributesSubcomponentGeneratorTest(
     @JvmStatic
     @Parameterized.Parameters(name = "{0}")
     fun data(): List<AnvilCompilationMode> = listOf(
-      AnvilCompilationMode.Ksp(),
       AnvilCompilationMode.Embedded(),
     )
   }
