@@ -10,6 +10,8 @@ import java.io.File
  */
 internal abstract class CheckOnlyCodeGenerator : PrivateCodeGenerator() {
 
+  override val group: Int get() = Int.MAX_VALUE
+
   final override fun generateCodePrivate(
     codeGenDir: File,
     module: ModuleDescriptor,

@@ -20,6 +20,18 @@ import java.io.File
 public interface CodeGenerator : AnvilApplicabilityChecker {
 
   /**
+   * The group in which this generator will be invoked.
+   *
+   * All code generators with the same group will be executed in a loop together,
+   * in ascending order of their fully qualified name, until no new code is generated.
+   * Lower numbers will be executed first,
+   * and will not execute again after their group has finished.
+   *
+   * The default group is 0.
+   */
+  public val group: Int get() = 0
+
+  /**
    * Returns true if this code generator is applicable for the given [context] or false if not. This
    * will only be called _once_.
    */
@@ -39,6 +51,14 @@ public interface CodeGenerator : AnvilApplicabilityChecker {
     module: ModuleDescriptor,
     projectFiles: Collection<KtFile>,
   ): Collection<FileWithContent>
+
+  public companion object {
+    /**
+     * The default [group][CodeGenerator.group] for code generators.
+     * A lower group value will be executed before any higher group value.
+     */
+    public const val GROUP_DEFAULT: Int = 0
+  }
 }
 
 /**
