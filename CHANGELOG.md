@@ -3,6 +3,7 @@
 ## [Unreleased]
 
 ### Added
+- Documented Anvil's roadmap, see [here](https://github.com/square/anvil/blob/main/docs/ROADMAP.md).
 
 ### Changed
 
