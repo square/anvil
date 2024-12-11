@@ -1,6 +1,7 @@
-package com.squareup.anvil.compiler.k2.internal
+package com.squareup.anvil.compiler.k2.internal.tree
 
-import com.squareup.anvil.compiler.k2.internal.AbstractTreePrinter.Color.Companion.colorized
+import com.squareup.anvil.compiler.k2.internal.remove
+import com.squareup.anvil.compiler.k2.internal.tree.AbstractTreePrinter.Color.Companion.colorized
 import kotlin.experimental.ExperimentalTypeInference
 
 /**

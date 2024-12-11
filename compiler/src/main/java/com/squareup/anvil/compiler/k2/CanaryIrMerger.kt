@@ -13,6 +13,7 @@ import org.jetbrains.kotlin.ir.expressions.impl.IrConstImpl
 import org.jetbrains.kotlin.ir.expressions.impl.IrReturnImpl
 import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
 import org.jetbrains.kotlin.ir.types.classFqName
+import org.jetbrains.kotlin.ir.util.classId
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 
 public class CanaryIrMerger : IrGenerationExtension {
@@ -27,8 +28,11 @@ public class CanaryIrMerger : IrGenerationExtension {
 
     moduleFragment.transform(
       object : IrElementTransformerVoid() {
+
         override fun visitSimpleFunction(declaration: IrSimpleFunction): IrStatement {
           val origin = declaration.origin
+
+          println("function origin: $origin  --  ${declaration.name}")
 
           if (origin !is GeneratedByPlugin || origin.pluginKey != TopLevelDeclarationsGenerator.Key) {
             visitElement(declaration)
@@ -57,6 +61,13 @@ public class CanaryIrMerger : IrGenerationExtension {
         }
 
         override fun visitClass(declaration: IrClass): IrStatement {
+
+          val origin = declaration.origin
+
+          println("class origin: $origin  --  ${declaration.classId}")
+          declaration.annotations.forEach {
+            println("annotation: ${it.origin}  --  ${it.type}  --  ${it.symbol}")
+          }
 
           return super.visitClass(declaration)
         }

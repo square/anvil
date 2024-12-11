@@ -1,10 +1,10 @@
 package com.squareup.anvil.compiler.k2
 
 import com.squareup.anvil.compiler.internal.ktFile
-import com.squareup.anvil.compiler.k2.internal.AbstractTreePrinter
-import com.squareup.anvil.compiler.k2.internal.AbstractTreePrinter.Color.Companion.colorized
 import com.squareup.anvil.compiler.k2.internal.Names
-import com.squareup.anvil.compiler.k2.internal.PsiTreePrinter.Companion.printEverything
+import com.squareup.anvil.compiler.k2.internal.tree.AbstractTreePrinter
+import com.squareup.anvil.compiler.k2.internal.tree.AbstractTreePrinter.Color.Companion.colorized
+import com.squareup.anvil.compiler.k2.internal.tree.PsiTreePrinter.Companion.printEverything
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
@@ -189,7 +189,7 @@ internal class MyAnnotationTransformer(
 
       // `modules = [SomeModule::class]`
       val modulesArg = classListArg.psi as? KtValueArgument
-        ?: error("modules arg doesn't have a PSI element: ${classListArg.psi}")
+        ?: error("modules arg doesn't have a PSI element: $classListArg")
 
       // `[SomeModule::class]`
       val moduleClassArray =
@@ -226,14 +226,29 @@ internal class MyAnnotationTransformer(
 
     val newCall = buildAnnotationCallCopy(annotationCall) callBuilder@{
 
+      val al1: FirArgumentList = annotationCall.argumentList
+
       val newArgs = annotationCall.argumentList.arguments
-        .map { classListArg ->
+        .mapIndexed map@{ index, classListArg ->
+          if (index != 0) return@map classListArg
 
           println("classListArg -- ${classListArg.render()}")
 
           // `modules = [SomeModule::class]`
           val modulesArg = classListArg.psi as? KtValueArgument
-            ?: error("modules arg doesn't have a PSI element: ${classListArg.psi}")
+            ?: return@map classListArg
+          // ?: error(
+          //   """
+          //   ~~~~~~~~~~~~~~~~~~~~~~~~~
+          //   modules arg doesn't have a PSI element:
+          //
+          //        render: ${classListArg.render()}
+          //         class: ${classListArg::class.qualifiedName}
+          //        source: ${classListArg.source}
+          //   source text: ${classListArg.source?.text}
+          //   ~~~~~~~~~~~~~~~~~~~~~~~~~
+          //   """.trimIndent(),
+          // )
 
           // `[SomeModule::class]`
           val modulesListExpression =
@@ -255,7 +270,7 @@ internal class MyAnnotationTransformer(
               fqName to name
             }
 
-          val newModules = listOf(Names.emptyModule)
+          val newModules = listOf(Names.bBindingModule)
 
           val newModulesMaybeImported = newModules.map { moduleFqName ->
             imports[moduleFqName.asString()] ?: moduleFqName.asString()
@@ -280,7 +295,7 @@ internal class MyAnnotationTransformer(
 
           // val originalClassArgText = originalClassListPsi.arguments.map { it.text }
 
-          // val newModules = listOf(Names.emptyModule)
+          // val newModules = listOf(Names.bBindingModule)
 
           // val allClassArgs = originalClassArgText
           //   .plus(newModules.map { "${it.asString()}::class" })

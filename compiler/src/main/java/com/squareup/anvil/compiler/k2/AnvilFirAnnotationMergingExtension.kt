@@ -121,7 +121,7 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
         //       // .map { it.requireFqName(org.jetbrains.kotlin.types.error.ErrorModuleDescriptor) }
         //       .map { it.text }
         //
-        //     val newModules = listOf(Names.emptyModule)
+        //     val newModules = listOf(Names.bBindingModule)
         //
         //     val allClassArgs = moduleArgExpressions
         //       .plus(newModules.map { "${it.asString()}::class" })
@@ -145,7 +145,7 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
         //
         //     // val originalClassArgText = originalClassListPsi.arguments.map { it.text }
         //
-        //     // val newModules = listOf(Names.emptyModule)
+        //     // val newModules = listOf(Names.bBindingModule)
         //
         //     // val allClassArgs = originalClassArgText
         //     //   .plus(newModules.map { "${it.asString()}::class" })
@@ -158,7 +158,7 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
         //
         //     // psi.project.extensionArea.registerExtensionPoint(Extensions.getRootArea(),TreeCopyHandler.EP_NAME,)
         //     //
-        //     val va = createKClassValueArguments(listOf(Names.emptyModule))
+        //     val va = createKClassValueArguments(listOf(Names.bBindingModule))
         //
         //     va
         //
@@ -187,7 +187,7 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
         mergedModules = {
           listOf(
             session.symbolProvider
-              .getClassLikeSymbolByClassId(Names.emptyModule.classId()) as FirRegularClassSymbol,
+              .getClassLikeSymbolByClassId(Names.bBindingModule.classId()) as FirRegularClassSymbol,
           )
         },
       ),

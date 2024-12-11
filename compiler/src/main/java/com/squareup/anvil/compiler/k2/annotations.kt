@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.k2
 
 import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.classId
-import dagger.Component
 import org.jetbrains.kotlin.KtFakeSourceElementKind
 import org.jetbrains.kotlin.fakeElement
 import org.jetbrains.kotlin.fir.FirSession
@@ -35,9 +34,6 @@ internal fun FirClassLikeDeclaration.addMergedComponentAnnotation(
   )
 }
 
-@Component(modules = [String::class])
-public interface Hi
-
 internal fun createMergedComponentAnnotation(
   session: FirSession,
   sourceAnnotation: FirAnnotationCall,
@@ -54,7 +50,7 @@ internal fun createMergedComponentAnnotation(
   // TODO - Hard-code `EmptyModule` for now, but this would need to happen for all merged modules.
   val newModules = listOf(
     session.symbolProvider
-      .getClassLikeSymbolByClassId(Names.emptyModule.classId()) as FirRegularClassSymbol,
+      .getClassLikeSymbolByClassId(Names.bBindingModule.classId()) as FirRegularClassSymbol,
   )
 
   // argumentList = buildArgumentList {

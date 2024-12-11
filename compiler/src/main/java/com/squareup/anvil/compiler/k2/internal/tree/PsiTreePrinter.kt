@@ -1,4 +1,4 @@
-package com.squareup.anvil.compiler.k2.internal
+package com.squareup.anvil.compiler.k2.internal.tree
 
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 

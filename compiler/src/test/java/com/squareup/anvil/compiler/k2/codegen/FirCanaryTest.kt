@@ -7,7 +7,10 @@ import com.squareup.anvil.compiler.internal.testing.k2.compile2
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestFactory
 
-class FirCanaryTest : CompilationModeTest(CompilationMode.K2(useKapt = true)) {
+class FirCanaryTest : CompilationModeTest(
+  CompilationMode.K2(useKapt = false),
+  CompilationMode.K2(useKapt = true),
+) {
 
   val targets = //language=kotlin
     """
@@ -22,7 +25,7 @@ class FirCanaryTest : CompilationModeTest(CompilationMode.K2(useKapt = true)) {
 
     @MergeComponentFir
     @Component(
-      modules = [ABindingModule::class, ABindingModule::class, EmptyModule::class],
+      modules = [ABindingModule::class],
     )
     interface TestComponent
 
@@ -37,10 +40,13 @@ class FirCanaryTest : CompilationModeTest(CompilationMode.K2(useKapt = true)) {
     }
 
     @Module
-    interface EmptyModule {
+    interface BBindingModule {
       @Binds
       fun bindBImpl(bImpl: BImpl): B
     }
+
+    @Module
+    interface EmptyModule
 
     class InjectClass @Freddy constructor()
     
@@ -58,14 +64,12 @@ class FirCanaryTest : CompilationModeTest(CompilationMode.K2(useKapt = true)) {
     """.trimIndent()
 
   @TestFactory
-  fun `compile2 version canary`() = testFactory {
+  fun `compile2 version canary`() = params
+    .filter { (mode) -> !mode.useKapt }
+    .asTests {
 
-    compile2(
-      listOf(
-        workingDir.resolve("foo/targets.kt").createSafely(targets),
-      ),
-    ) shouldBe true
-  }
+      compile2(listOf(workingDir.resolve("foo/targets.kt").createSafely(targets))) shouldBe true
+    }
 
   @TestFactory
   fun `compile2 with a string argument`() = testFactory {

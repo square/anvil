@@ -9,9 +9,8 @@ import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 
 public class AnvilFirStatusTransformerExtension(
   session: FirSession,
-) : FirStatusTransformerExtension(
-  session,
-) {
+) : FirStatusTransformerExtension(session) {
+
   override fun needTransformStatus(declaration: FirDeclaration): Boolean {
     return false
   }
