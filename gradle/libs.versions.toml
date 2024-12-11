@@ -36,7 +36,7 @@ kotlin = "2.0.21"
 kotlinx-binaryCompatibility = "0.16.3"
 kotlinpoet = "1.18.1"
 ktlint = "1.0.1"
-ktlintPlugin = "12.1.1"
+ktlintPlugin = "12.1.2"
 mavenPublish = "0.29.0"
 
 #
