@@ -18,17 +18,18 @@ import com.squareup.anvil.compiler.internal.generateHintFileName
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode.Embedded
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.toJBExitCode
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.kotlinpoet.asClassName
 import com.tschuchort.compiletesting.CompilationResult
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.COMPILATION_ERROR
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.INTERNAL_ERROR
 import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.ExitCode.COMPILATION_ERROR
+import org.jetbrains.kotlin.cli.common.ExitCode.INTERNAL_ERROR
 import org.junit.Assume.assumeTrue
 import java.io.File
 import kotlin.reflect.KClass
@@ -368,7 +369,7 @@ internal fun ComparableSubject<ExitCode>.isOK() {
 }
 
 internal fun JvmCompilationResult.assertCompilationSucceeded() {
-  assertWithMessage(messages).that(exitCode).isOK()
+  assertWithMessage(messages).that(exitCode.toJBExitCode()).isOK()
 }
 
 internal fun isFullTestRun(): Boolean = FULL_TEST_RUN

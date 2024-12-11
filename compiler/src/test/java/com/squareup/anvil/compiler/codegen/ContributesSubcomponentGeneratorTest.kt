@@ -9,7 +9,7 @@ import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.subcomponentInterface
 import com.squareup.anvil.compiler.walkGeneratedFiles
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
+import org.jetbrains.kotlin.cli.common.ExitCode
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized

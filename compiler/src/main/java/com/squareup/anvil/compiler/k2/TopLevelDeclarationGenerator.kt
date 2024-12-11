@@ -37,7 +37,8 @@ public class TopLevelDeclarationsGenerator(session: FirSession) :
   }
 
   override fun generateFunctions(
-    callableId: CallableId, context: MemberGenerationContext?
+    callableId: CallableId,
+    context: MemberGenerationContext?,
   ): List<FirNamedFunctionSymbol> {
     return emptyList()
     // if (context != null) return emptyList()
@@ -65,4 +66,3 @@ public class TopLevelDeclarationsGenerator(session: FirSession) :
     register(PREDICATE)
   }
 }
-

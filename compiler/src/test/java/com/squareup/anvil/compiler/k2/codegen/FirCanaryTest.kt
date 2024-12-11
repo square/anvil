@@ -22,7 +22,7 @@ class FirCanaryTest : CompilationModeTest(CompilationMode.K2(useKapt = true)) {
 
     @MergeComponentFir
     @Component(
-      modules = [ABindingModule::class, EmptyModule::class],
+      modules = [ABindingModule::class, ABindingModule::class, EmptyModule::class],
     )
     interface TestComponent
 

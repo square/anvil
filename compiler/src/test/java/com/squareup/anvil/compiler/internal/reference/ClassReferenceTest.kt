@@ -5,8 +5,8 @@ import com.squareup.anvil.compiler.compile
 import com.squareup.anvil.compiler.internal.testing.simpleCodeGenerator
 import com.squareup.kotlinpoet.ClassName
 import com.squareup.kotlinpoet.TypeSpec
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import io.kotest.matchers.shouldBe
+import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtClassOrObject
 import org.jetbrains.kotlin.resolve.source.getPsi

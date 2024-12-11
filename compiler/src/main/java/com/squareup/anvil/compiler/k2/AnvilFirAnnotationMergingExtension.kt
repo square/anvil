@@ -182,6 +182,7 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
 
     classLikeDeclaration.transformAnnotations(
       MyAnnotationTransformer(
+        session = session,
         typeResolver = typeResolver,
         mergedModules = {
           listOf(

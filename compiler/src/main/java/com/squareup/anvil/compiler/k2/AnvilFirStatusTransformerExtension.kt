@@ -8,7 +8,7 @@ import org.jetbrains.kotlin.fir.extensions.FirStatusTransformerExtension
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 
 public class AnvilFirStatusTransformerExtension(
-  session: FirSession
+  session: FirSession,
 ) : FirStatusTransformerExtension(
   session,
 ) {

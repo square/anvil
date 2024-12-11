@@ -11,11 +11,11 @@ import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
 import dagger.internal.Factory
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.cli.common.ExitCode
+import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.junit.Ignore
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -2550,7 +2550,7 @@ public class InjectClass_Factory<T : List<String>>(
         @Inject constructor(string: String)
       }
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(
         compilationErrorLine()
@@ -2737,7 +2737,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   private fun compile(
     @Language("kotlin") vararg sources: String,
     previousCompilationResult: JvmCompilationResult? = null,
-    expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
+    expectExitCode: ExitCode = ExitCode.OK,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult = compileAnvil(
     sources = sources,

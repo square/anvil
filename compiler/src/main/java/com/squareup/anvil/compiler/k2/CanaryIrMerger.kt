@@ -53,7 +53,6 @@ public class CanaryIrMerger : IrGenerationExtension {
             declaration.body = irFactory.createBlockBody(-1, -1, listOf(returnExpression))
           }
 
-
           return super.visitSimpleFunction(declaration)
         }
 

@@ -89,21 +89,6 @@ public fun CompilationEnvironment.compile2(
       }
       .pathStrings()
       .toTypedArray()
-      // TODO <Rick> delete me
-      .also { paths ->
-        val pretty = paths
-          .filter { it.endsWith(".jar") }
-          .map { it.substringAfterLast("files-2.1/") }
-          .map {
-            it.replace(
-              """(\S+?)/([^/]+?)/([^/]+?)/[^/]+?/[^/]+?\.jar""".toRegex(),
-              "$1:$2:$3",
-            )
-          }
-          .sorted()
-
-        println(pretty.joinToString("\n"))
-      }
 
     args.freeArgs += sourceFiles.pathStrings()
   }

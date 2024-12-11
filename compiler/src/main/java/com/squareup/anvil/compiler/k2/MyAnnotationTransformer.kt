@@ -1,21 +1,30 @@
 package com.squareup.anvil.compiler.k2
 
+import com.squareup.anvil.compiler.internal.ktFile
+import com.squareup.anvil.compiler.k2.internal.AbstractTreePrinter
+import com.squareup.anvil.compiler.k2.internal.AbstractTreePrinter.Color.Companion.colorized
 import com.squareup.anvil.compiler.k2.internal.Names
-import com.squareup.anvil.compiler.k2.internal.buildGetClassClass
-import com.squareup.anvil.compiler.k2.internal.transformChildren
-import org.jetbrains.kotlin.KtFakeSourceElementKind
-import org.jetbrains.kotlin.fakeElement
+import com.squareup.anvil.compiler.k2.internal.PsiTreePrinter.Companion.printEverything
+import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.fir.FirElement
+import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.expressions.FirAnnotation
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.FirArgumentList
 import org.jetbrains.kotlin.fir.expressions.FirArrayLiteral
+import org.jetbrains.kotlin.fir.expressions.FirClassReferenceExpression
+import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.expressions.FirLazyExpression
-import org.jetbrains.kotlin.fir.expressions.FirNamedArgumentExpression
 import org.jetbrains.kotlin.fir.expressions.FirStatement
 import org.jetbrains.kotlin.fir.expressions.UnresolvedExpressionTypeAccess
+import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationCallCopy
 import org.jetbrains.kotlin.fir.expressions.builder.buildArgumentList
+import org.jetbrains.kotlin.fir.expressions.builder.buildArrayLiteral
+import org.jetbrains.kotlin.fir.expressions.builder.buildClassReferenceExpression
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension.TypeResolveService
+import org.jetbrains.kotlin.fir.extensions.buildUserTypeFromQualifierParts
+import org.jetbrains.kotlin.fir.psi
+import org.jetbrains.kotlin.fir.render
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.FirImplicitTypeRef
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
@@ -24,10 +33,16 @@ import org.jetbrains.kotlin.fir.types.FirUserTypeRef
 import org.jetbrains.kotlin.fir.types.classId
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.visitors.FirDefaultTransformer
-import org.jetbrains.kotlin.fir.visitors.FirTransformer
+import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.psi.KtClassLiteralExpression
+import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
+import org.jetbrains.kotlin.psi.KtPsiFactory
+import org.jetbrains.kotlin.psi.KtValueArgument
+import org.jetbrains.kotlin.psi.KtValueArgumentList
 import org.jetbrains.kotlin.text
 
 internal class MyAnnotationTransformer(
+  private val session: FirSession,
   private val typeResolver: TypeResolveService,
   mergedModules: () -> List<FirRegularClassSymbol>,
 ) : FirDefaultTransformer<Unit>() {
@@ -136,30 +151,211 @@ internal class MyAnnotationTransformer(
     //   },
     // }
 
-    println("@@@@@@@@@@@@@@ -- oldModules -- $oldModules")
-
-    oldModules.transformChildren { element ->
-
-      println("transformChildren -- $element")
-
-      val oldModulesArray = element as? FirArrayLiteral
-        ?: return@transformChildren element
-
-      val oldArrayArgs = oldModulesArray.argumentList
-
-      oldModulesArray.replaceArgumentList(
-        buildArgumentList {
-          source = oldArrayArgs.source?.fakeElement(KtFakeSourceElementKind.PluginGenerated)
-          arguments += oldArrayArgs.arguments
-
-          arguments += mergedModules.map { moduleSymbol ->
-            buildGetClassClass(moduleSymbol)
-          }
-        },
+    fun KtPsiFactory.createKClassValueArguments(
+      moduleClassArgs: List<String>,
+    ): KtValueArgumentList {
+      return createCallArguments(
+        moduleClassArgs.joinToString(separator = ", ", prefix = "(", postfix = ")"),
       )
-
-      oldModulesArray
     }
+
+    fun KtPsiFactory.createModuleClassRefPsi(moduleFqName: FqName): KtClassLiteralExpression =
+      createKClassValueArguments(listOf("${moduleFqName.asString()}::class"))
+        .arguments[0]
+        .firstChild as KtClassLiteralExpression
+
+    fun createModuleClassRefExpression(
+      moduleFqName: FqName,
+    ): FirClassReferenceExpression = buildClassReferenceExpression {
+      classTypeRef = buildUserTypeFromQualifierParts(false) {
+        moduleFqName.pathSegments().forEach(::part)
+      }
+      // TODO: I don't think we need the cone type for anything?
+      coneTypeOrNull = null
+    }
+
+    fun buildModulesArray(moduleFqNames: List<FqName>, psiFactory: KtPsiFactory): FirArrayLiteral {
+      return buildArrayLiteral {
+        argumentList = buildArgumentList argList@{
+          this@argList.arguments += moduleFqNames.map { moduleFqName ->
+            createModuleClassRefExpression(moduleFqName)
+          }
+        }
+      }
+    }
+
+    fun createModuleListClassArg(oldClassList: FirExpression): FirExpression {
+      val classListArg = oldClassList
+
+      // `modules = [SomeModule::class]`
+      val modulesArg = classListArg.psi as? KtValueArgument
+        ?: error("modules arg doesn't have a PSI element: ${classListArg.psi}")
+
+      // `[SomeModule::class]`
+      val moduleClassArray =
+        modulesArg.getArgumentExpression()!! as KtCollectionLiteralExpression
+
+      // `SomeModule::class`, `foo.SomeOtherModule::class`, etc.
+      val moduleArgExpressions = moduleClassArray.innerExpressions
+        // .map { it.requireFqName(org.jetbrains.kotlin.types.error.ErrorModuleDescriptor) }
+        .map { it.text }
+
+      val imports = modulesArg.ktFile().importDirectives
+        .associate { imp ->
+          val fqName = imp.importedReference?.text
+            ?: error("import directive doesn't have a reference? $imp")
+
+          val name = imp.aliasName ?: imp.importedReference?.name
+            ?: error("import directive doesn't have a reference or alias? $imp")
+
+          fqName to name
+        }
+
+      val newModules = listOf(Names.emptyModule)
+
+      val newModulesMaybeImported = newModules.map { moduleFqName ->
+        imports[moduleFqName.asString()] ?: moduleFqName.asString()
+      }
+
+      val allClassArgs = moduleArgExpressions
+        .plus(newModulesMaybeImported.map { "$it::class" })
+        .distinct()
+
+      TODO()
+    }
+
+    val newCall = buildAnnotationCallCopy(annotationCall) callBuilder@{
+
+      val newArgs = annotationCall.argumentList.arguments
+        .map { classListArg ->
+
+          println("classListArg -- ${classListArg.render()}")
+
+          // `modules = [SomeModule::class]`
+          val modulesArg = classListArg.psi as? KtValueArgument
+            ?: error("modules arg doesn't have a PSI element: ${classListArg.psi}")
+
+          // `[SomeModule::class]`
+          val modulesListExpression =
+            modulesArg.getArgumentExpression()!! as KtCollectionLiteralExpression
+
+          // `SomeModule::class, SomeOtherModule::class`
+          val moduleArgExpressions = modulesListExpression.innerExpressions
+            // .map { it.requireFqName(org.jetbrains.kotlin.types.error.ErrorModuleDescriptor) }
+            .map { it.text }
+
+          val imports = modulesArg.ktFile().importDirectives
+            .associate { imp ->
+              val fqName = imp.importedReference?.text
+                ?: error("import directive doesn't have a reference? $imp")
+
+              val name = imp.aliasName ?: imp.importedReference?.text?.substringAfterLast('.')
+                ?: error("import directive doesn't have a reference or alias? ${imp.text}")
+
+              fqName to name
+            }
+
+          val newModules = listOf(Names.emptyModule)
+
+          val newModulesMaybeImported = newModules.map { moduleFqName ->
+            imports[moduleFqName.asString()] ?: moduleFqName.asString()
+          }
+
+          val allClassArgs = moduleArgExpressions
+            .plus(newModulesMaybeImported.map { "$it::class" })
+            .distinct()
+
+          println(
+            """
+            |******************************************** all class args
+            |${allClassArgs.joinToString("\n")}
+            |********************************************
+            """.trimMargin(),
+          )
+
+          // val originalClassListPsi = modulesArg as? KtValueArgumentList
+          //   ?: error("class list arg doesn't have a PSI element: ${classListArg.psi}")
+
+          val factory = modulesArg.ktPsiFactory()
+
+          // val originalClassArgText = originalClassListPsi.arguments.map { it.text }
+
+          // val newModules = listOf(Names.emptyModule)
+
+          // val allClassArgs = originalClassArgText
+          //   .plus(newModules.map { "${it.asString()}::class" })
+
+          val classArgList = allClassArgs.joinToString(separator = ", ")
+
+          val annotationEntry = factory.createAnnotationEntry(
+            "@Component(modules = [$classArgList])",
+          )
+
+          // psi.project.extensionArea.registerExtensionPoint(Extensions.getRootArea(),TreeCopyHandler.EP_NAME,)
+
+          val ktValueArgumentList =
+            factory.createKClassValueArguments(moduleClassArgs = allClassArgs)
+
+          // source = KtRealPsiSourceElement(modulesArg)
+
+          val thing = factory.createArgument("foo.Bar::class")
+
+          ktValueArgumentList.printEverything()
+
+          println(
+            """
+              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+              
+              ktValueArgumentList: ${ktValueArgumentList.text}
+              
+              thing: $thing
+              thing: ${thing?.text}
+              ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+            """.trimIndent().colorized(AbstractTreePrinter.Color.LIGHT_RED),
+          )
+
+          classListArg
+        }
+
+      val b = this@callBuilder
+
+      val al = buildArgumentList { }
+
+      // b.argumentList =   newArgs
+    }
+
+    println(
+      """
+      |%%%%%%%%%%%%%%%%%%%%
+      |
+      |${newCall.render()}
+      |
+      |%%%%%%%%%%%%%%%%%%%%
+      """.trimMargin(),
+    )
+
+    // oldModules.transformChildren { element ->
+    //
+    //   println("transformChildren -- $element")
+    //
+    //   val oldModulesArray = element as? FirArrayLiteral
+    //     ?: return@transformChildren element
+    //
+    //   val oldArrayArgs = oldModulesArray.argumentList
+    //
+    //   oldModulesArray.replaceArgumentList(
+    //     buildArgumentList {
+    //       source = oldArrayArgs.source?.fakeElement(KtFakeSourceElementKind.PluginGenerated)
+    //       arguments += oldArrayArgs.arguments
+    //
+    //       arguments += mergedModules.map { moduleSymbol ->
+    //         buildGetClassClass(moduleSymbol)
+    //       }
+    //     },
+    //   )
+    //
+    //   oldModulesArray
+    // }
 
     // (oldModules as FirNamedArgumentExpression).let { oldModulesExpression ->
     //   (oldModulesExpression.expression as FirArrayLiteral).let { oldModulesArray ->
@@ -178,58 +374,14 @@ internal class MyAnnotationTransformer(
     //   }
     // }
 
-    return super.transformAnnotationCall(annotationCall, data)
+    return super.transformAnnotationCall(newCall, data)
   }
 }
 
-private class NamedArgumentTransformer : FirTransformer<Nothing?>() {
-  override fun <E : FirElement> transformElement(element: E, data: Nothing?): E {
-
-    return element
-    error("transformElement -- $element")
-
-    // // We want to handle only the most top-level "real" expressions
-    // // We only recursively transform named, spread, lambda argument and vararg expressions.
-    // if (element is FirWrappedArgumentExpression || element is FirVarargArgumentsExpression) {
-    //   @Suppress("UNCHECKED_CAST")
-    //   return element.transformChildren(this, null) as E
-    // }
-    //
-    // // Once we encounter the first "real" expression, we delegate to the outer transformer.
-    // val transformed = element.transformSingle(
-    //   this@FirCallCompletionResultsWriterTransformer,
-    //   expectedArgumentsTypeMapping,
-    // )
-    //
-    // // Finally, the result can be wrapped in a SAM conversion if necessary.
-    // if (transformed is FirExpression) {
-    //   val key = (element as? FirAnonymousFunctionExpression)?.anonymousFunction ?: element
-    //   expectedArgumentsTypeMapping?.samConversions?.get(key)?.let { samInfo ->
-    //     @Suppress("UNCHECKED_CAST")
-    //     return transformed.wrapInSamExpression(samInfo.samType) as E
-    //   }
-    // }
-    //
-    // return element
-  }
-
-  override fun transformNamedArgumentExpression(
-    namedArgumentExpression: FirNamedArgumentExpression,
-    data: Nothing?,
-  ): FirStatement {
-
-    val e = namedArgumentExpression.expression
-
-    error("@@@@@@@@@@@@@@@@@@@@@@@ this expression -- $e")
-
-    val array = e as? FirArrayLiteral
-      ?: return super.transformNamedArgumentExpression(namedArgumentExpression, data)
-
-    // array.transformChildren<FirArgumentList> { list ->
-    //   error("######### existing list -- $list")
-    //   list
-    // }
-
-    return namedArgumentExpression
-  }
+private fun PsiElement.ktPsiFactory(): KtPsiFactory {
+  return KtPsiFactory.contextual(
+    context = this@ktPsiFactory,
+    markGenerated = false,
+    eventSystemEnabled = false,
+  )
 }

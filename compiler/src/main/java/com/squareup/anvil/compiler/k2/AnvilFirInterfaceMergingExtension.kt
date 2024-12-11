@@ -35,12 +35,10 @@ public class AnvilFirInterfaceMergingExtension(session: FirSession) :
 
     val supertypeUserType = Names.componentBase.createUserType()
 
-    if (resolvedSupertypes.any {
-        it.coneType.classId?.asFqNameString() == Names.componentBase.asString()
-      }
-    ) {
-      return emptyList()
+    val alreadyHasComponentBase = resolvedSupertypes.any {
+      it.coneType.classId?.asFqNameString() == Names.componentBase.asString()
     }
+    if (alreadyHasComponentBase) return emptyList()
 
     val superResolved = typeResolver.resolveUserType(supertypeUserType)
 

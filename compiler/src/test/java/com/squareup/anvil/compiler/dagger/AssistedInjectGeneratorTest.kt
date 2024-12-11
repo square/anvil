@@ -9,8 +9,8 @@ import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.cli.common.ExitCode
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -246,7 +246,7 @@ public final class AssistedService_Factory {
         @Assisted val type2: SomeType
       )
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains(
         "@AssistedInject constructor has duplicate @Assisted type: " +
@@ -270,7 +270,7 @@ public final class AssistedService_Factory {
         @Assisted(value = "one") val type2: SomeType
       )
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(messages).contains(
         "@AssistedInject constructor has duplicate @Assisted type: " +
@@ -628,7 +628,7 @@ public final class AssistedService_Factory {
         @AssistedInject constructor(@Assisted string: String)
       }
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(
         compilationErrorLine()
@@ -657,7 +657,7 @@ public final class AssistedService_Factory {
         @Inject constructor(@Assisted string: String)
       }
       """,
-      expectExitCode = KotlinCompilation.ExitCode.COMPILATION_ERROR,
+      expectExitCode = ExitCode.COMPILATION_ERROR,
     ) {
       assertThat(
         compilationErrorLine()
@@ -672,7 +672,7 @@ public final class AssistedService_Factory {
 
   private fun compile(
     @Language("kotlin") vararg sources: String,
-    expectExitCode: KotlinCompilation.ExitCode = KotlinCompilation.ExitCode.OK,
+    expectExitCode: ExitCode = ExitCode.OK,
     block: JvmCompilationResult.() -> Unit = { },
   ): JvmCompilationResult {
     return com.squareup.anvil.compiler.compile(

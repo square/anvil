@@ -4,10 +4,11 @@ import com.google.common.truth.Truth.assertThat
 import com.squareup.anvil.compiler.api.CodeGenerator
 import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.compileAnvil
+import com.squareup.anvil.compiler.internal.testing.toJBExitCode
 import com.squareup.anvil.compiler.isError
 import com.tschuchort.compiletesting.JvmCompilationResult
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import org.intellij.lang.annotations.Language
+import org.jetbrains.kotlin.cli.common.ExitCode.OK
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
@@ -123,7 +124,7 @@ class AnvilMergeAnnotationDetectorCheckTest(
   }
 
   private fun JvmCompilationResult.assertError() {
-    assertThat(exitCode).isError()
+    assertThat(exitCode.toJBExitCode()).isError()
     assertThat(messages).contains("Source0.kt:6")
     assertThat(messages).contains(
       "This Gradle module is configured to ONLY generate code with the " +

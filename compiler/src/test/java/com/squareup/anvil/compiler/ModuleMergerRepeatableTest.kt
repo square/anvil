@@ -7,7 +7,7 @@ import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.compiler.internal.testing.anyDaggerComponent
 import com.squareup.anvil.compiler.internal.testing.daggerComponent
 import com.squareup.anvil.compiler.internal.testing.withoutAnvilModules
-import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
+import org.jetbrains.kotlin.cli.common.ExitCode
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized

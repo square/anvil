@@ -3,7 +3,6 @@ package com.squareup.anvil.compiler.k2
 import com.squareup.anvil.compiler.k2.internal.AnvilPredicates
 import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.classId
-import com.squareup.anvil.compiler.k2.internal.fqn
 import com.squareup.anvil.compiler.k2.internal.isFactoryDelegate
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.descriptors.Modality
@@ -19,13 +18,10 @@ import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGener
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
-import org.jetbrains.kotlin.fir.extensions.predicate.LookupPredicate
-import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.plugin.ClassBuildingContext
 import org.jetbrains.kotlin.fir.plugin.createConstructor
 import org.jetbrains.kotlin.fir.plugin.createMemberFunction
 import org.jetbrains.kotlin.fir.plugin.createTopLevelClass
-import org.jetbrains.kotlin.fir.plugin.createTopLevelFunction
 import org.jetbrains.kotlin.fir.resolve.defaultType
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
