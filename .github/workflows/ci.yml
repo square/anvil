@@ -50,7 +50,7 @@ jobs:
         run: ./gradlew assemble test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }}
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         if: ${{ failure() }}
         with:
           name: test-results-${{ matrix.kotlin-version }}
@@ -78,7 +78,7 @@ jobs:
         run: ./gradlew.bat assemble test --no-build-cache --no-daemon --stacktrace -Doverride_config-fullTestRun=false
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         if: ${{ failure() }}
         with:
           name: test-results-windows
@@ -130,7 +130,7 @@ jobs:
         run: ./gradlew -p build-logic/delegate lint --no-build-cache --no-daemon --stacktrace
 
       - name: Upload Lint Results
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         if: ${{ failure() }}
         with:
           name: lint-results
@@ -177,7 +177,7 @@ jobs:
         run: ./gradlew :gradle-plugin:assemble :gradle-plugin:test --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_agp=${{ matrix.agp-version }}
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         if: ${{ failure() }}
         with:
           # Use the Kotlin version to prevent overrides.
@@ -211,7 +211,7 @@ jobs:
         run: ./gradlew :delegate:sample:app:assembleDebug --no-build-cache --no-daemon --stacktrace -Doverride_kotlin=${{ matrix.kotlin-version }} -Doverride_config-generateDaggerFactoriesWithAnvil=false
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         if: ${{ failure() }}
         with:
           # Use the Kotlin version to prevent overrides.
@@ -281,7 +281,7 @@ jobs:
           script: ./gradlew connectedCheck --no-build-cache --no-daemon --stacktrace
 
       - name: Upload results
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         with:
           name: instrumentation-test-results
           path: ./**/build/reports/androidTests/connected/**
@@ -303,7 +303,7 @@ jobs:
         run: ./gradlew gradleTest --stacktrace
 
       - name: Upload Test Results
-        uses: actions/upload-artifact@0b2256b8c012f0828dc542b3febcab082c67f72b # v4
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
         if: ${{ failure() }}
         with:
           name: test-results-gradle-integration
