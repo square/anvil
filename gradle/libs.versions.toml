@@ -37,7 +37,7 @@ kotlinx-binaryCompatibility = "0.16.3"
 kotlinpoet = "1.18.1"
 ktlint = "1.0.1"
 ktlintPlugin = "12.1.2"
-mavenPublish = "0.29.0"
+mavenPublish = "0.30.0"
 
 #
 # Configs that we can override in CI. Not exactly "versions" but useful to repurpose it here.
