@@ -91,7 +91,7 @@ dropbox-dependencyGuard = { module = "com.dropbox.dependency-guard:dependency-gu
 
 gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", version.ref = "gradlePublish" }
 
-guava = "com.google.guava:guava:33.2.1-jre"
+guava = "com.google.guava:guava:33.3.1-jre"
 
 inject = "javax.inject:javax.inject:1"
 jsr250 = "javax.annotation:jsr250-api:1.0"
