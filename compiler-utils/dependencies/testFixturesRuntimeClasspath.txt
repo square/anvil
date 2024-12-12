@@ -16,8 +16,8 @@ com.google.truth:truth:1.4.4
 com.squareup.okio:okio-jvm:3.9.0
 com.squareup.okio:okio:3.9.0
 com.squareup:javapoet:1.13.0
-com.squareup:kotlinpoet-jvm:1.18.1
-com.squareup:kotlinpoet:1.18.1
+com.squareup:kotlinpoet-jvm:2.0.0
+com.squareup:kotlinpoet:2.0.0
 dev.zacsweers.kctfork:core:0.5.1
 io.github.classgraph:classgraph:4.8.174
 jakarta.inject:jakarta.inject-api:2.0.1
