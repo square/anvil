@@ -100,20 +100,21 @@ class MemberFunctionReferenceTest {
             "SomeClass1" -> {
               // Notice that the size differs between the descriptor and Psi implementation. Both
               // implementations see different values and that's expected.
-              assertThat(psiRef.functions).hasSize(0)
-              assertThat(descriptorRef.functions).hasSize(3)
-              assertThat(descriptorRef.functions.map { it.name }).containsExactly(
+              assertThat(psiRef.declaredMemberFunctions).hasSize(0)
+              assertThat(descriptorRef.declaredMemberFunctions).hasSize(3)
+              assertThat(descriptorRef.declaredMemberFunctions.map { it.name }).containsExactly(
                 "equals",
                 "toString",
                 "hashCode",
               )
             }
             "SomeClass2" -> {
-              assertThat(psiRef.functions).hasSize(1)
-              assertThat(descriptorRef.functions).hasSize(4)
+              assertThat(psiRef.declaredMemberFunctions).hasSize(1)
+              assertThat(descriptorRef.declaredMemberFunctions).hasSize(4)
 
-              val psiFunction = psiRef.functions.single()
-              val descriptorFunction = descriptorRef.functions.single { it.name == "test" }
+              val psiFunction = psiRef.declaredMemberFunctions.single()
+              val descriptorFunction =
+                descriptorRef.declaredMemberFunctions.single { it.name == "test" }
 
               assertThat(psiFunction.name).isEqualTo("test")
               assertThat(descriptorFunction.name).isEqualTo("test")
@@ -127,11 +128,12 @@ class MemberFunctionReferenceTest {
                 .isEqualTo(Unit::class.fqName)
             }
             "SomeInterface" -> {
-              assertThat(psiRef.functions).hasSize(1)
-              assertThat(descriptorRef.functions).hasSize(4)
+              assertThat(psiRef.declaredMemberFunctions).hasSize(1)
+              assertThat(descriptorRef.declaredMemberFunctions).hasSize(4)
 
-              val psiFunction = psiRef.functions.single()
-              val descriptorFunction = descriptorRef.functions.single { it.name == "test" }
+              val psiFunction = psiRef.declaredMemberFunctions.single()
+              val descriptorFunction =
+                descriptorRef.declaredMemberFunctions.single { it.name == "test" }
 
               assertThat(psiFunction.name).isEqualTo("test")
               assertThat(descriptorFunction.name).isEqualTo("test")
@@ -149,8 +151,8 @@ class MemberFunctionReferenceTest {
               assertThat(psiRef.enclosingClass()?.shortName).isEqualTo("SomeInterface")
               assertThat(descriptorRef.enclosingClass()?.shortName).isEqualTo("SomeInterface")
 
-              assertThat(psiRef.functions).hasSize(1)
-              assertThat(descriptorRef.functions).hasSize(4)
+              assertThat(psiRef.declaredMemberFunctions).hasSize(1)
+              assertThat(descriptorRef.declaredMemberFunctions).hasSize(4)
             }
             else -> throw NotImplementedError()
           }
@@ -193,8 +195,9 @@ class MemberFunctionReferenceTest {
 
           when (psiRef.shortName) {
             "SomeClass1" -> {
-              val psiFunction = psiRef.functions.single()
-              val descriptorFunction = descriptorRef.functions.single { it.name == "test" }
+              val psiFunction = psiRef.declaredMemberFunctions.single()
+              val descriptorFunction =
+                descriptorRef.declaredMemberFunctions.single { it.name == "test" }
 
               assertThat(psiFunction.returnTypeOrNull()).isNull()
               assertThat(descriptorFunction.returnType().asClassReference().fqName)
@@ -206,8 +209,9 @@ class MemberFunctionReferenceTest {
               assertThat(psiFunction.resolveGenericReturnTypeOrNull(psiRef)).isNull()
             }
             "SomeClass2", "SomeClass3" -> {
-              val psiFunction = psiRef.functions.single()
-              val descriptorFunction = descriptorRef.functions.single { it.name == "hello" }
+              val psiFunction = psiRef.declaredMemberFunctions.single()
+              val descriptorFunction =
+                descriptorRef.declaredMemberFunctions.single { it.name == "hello" }
 
               assertThat(psiFunction.returnType().asClassReference().fqName)
                 .isEqualTo(FqName("kotlin.String"))
@@ -215,8 +219,9 @@ class MemberFunctionReferenceTest {
                 .isEqualTo(FqName("kotlin.String"))
             }
             "GenericInterface1" -> {
-              val psiFunction = psiRef.functions.single()
-              val descriptorFunction = descriptorRef.functions.single { it.name == "hello" }
+              val psiFunction = psiRef.declaredMemberFunctions.single()
+              val descriptorFunction =
+                descriptorRef.declaredMemberFunctions.single { it.name == "hello" }
 
               assertThat(psiFunction.returnType().asClassReferenceOrNull()).isNull()
               assertThat(descriptorFunction.returnType().asClassReferenceOrNull()).isNull()
@@ -268,10 +273,11 @@ class MemberFunctionReferenceTest {
               ).isEqualTo(FqName("kotlin.String"))
             }
             "GenericInterface2" -> {
-              assertThat(psiRef.functions).hasSize(0)
-              assertThat(descriptorRef.functions).hasSize(4)
+              assertThat(psiRef.declaredMemberFunctions).hasSize(0)
+              assertThat(descriptorRef.declaredMemberFunctions).hasSize(4)
 
-              val descriptorFunction = descriptorRef.functions.single { it.name == "hello" }
+              val descriptorFunction =
+                descriptorRef.declaredMemberFunctions.single { it.name == "hello" }
               assertThat(descriptorFunction.returnType().asClassReferenceOrNull()).isNull()
 
               val implementingClass = FqName("com.squareup.test.SomeClass3")
@@ -325,8 +331,9 @@ class MemberFunctionReferenceTest {
 
           when (psiRef.shortName) {
             "SomeClass1", "SomeClass2" -> {
-              val psiFunction = psiRef.functions.single()
-              val descriptorFunction = descriptorRef.functions.single { it.name == "hello" }
+              val psiFunction = psiRef.declaredMemberFunctions.single()
+              val descriptorFunction =
+                descriptorRef.declaredMemberFunctions.single { it.name == "hello" }
 
               assertThat(
                 psiFunction.parameters.single().typeOrNull()
@@ -347,8 +354,9 @@ class MemberFunctionReferenceTest {
               ).isNotNull()
             }
             "GenericInterface1" -> {
-              val psiFunction = psiRef.functions.single()
-              val descriptorFunction = descriptorRef.functions.single { it.name == "hello" }
+              val psiFunction = psiRef.declaredMemberFunctions.single()
+              val descriptorFunction =
+                descriptorRef.declaredMemberFunctions.single { it.name == "hello" }
 
               assertThat(psiFunction.parameters.single().type().asClassReferenceOrNull())
                 .isNull()
@@ -398,10 +406,11 @@ class MemberFunctionReferenceTest {
               ).isNotNull()
             }
             "GenericInterface2" -> {
-              assertThat(psiRef.functions).hasSize(0)
-              assertThat(descriptorRef.functions).hasSize(4)
+              assertThat(psiRef.declaredMemberFunctions).hasSize(0)
+              assertThat(descriptorRef.declaredMemberFunctions).hasSize(4)
 
-              val descriptorFunction = descriptorRef.functions.single { it.name == "hello" }
+              val descriptorFunction =
+                descriptorRef.declaredMemberFunctions.single { it.name == "hello" }
               assertThat(
                 descriptorFunction.parameters.single().type().asClassReferenceOrNull(),
               ).isNull()

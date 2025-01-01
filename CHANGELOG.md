@@ -3,6 +3,9 @@
 **Unreleased**
 --------------
 
+### Deprecated
+- `ClassReference.functions` has been deprecated in favor of `ClassReference.memberFunctions` and `ClassReference.declaredMemberFunctions`
+
 0.4.0
 -----
 

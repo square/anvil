@@ -66,8 +66,30 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
   public val packageFqName: FqName get() = classId.packageFqName
 
   public abstract val constructors: List<MemberFunctionReference>
+
+  @Deprecated(
+    "renamed to `declaredMemberFunctions`.  " +
+      "Use `memberFunctions` to include inherited functions.",
+    replaceWith = ReplaceWith("declaredMemberFunctions"),
+  )
   public abstract val functions: List<MemberFunctionReference>
+
+  /**
+   * All functions that are declared in this class, including overrides.
+   * This list does not include inherited functions that are not overridden by this class.
+   */
+  public abstract val declaredMemberFunctions: List<MemberFunctionReference>
+
+  /**
+   * All functions declared in this class or any of its super-types.
+   */
+  public val memberFunctions: List<MemberFunctionReference> by lazy(NONE) {
+    declaredMemberFunctions + directSuperTypeReferences()
+      .flatMap { it.asClassReference().memberFunctions }
+  }
+
   public abstract val properties: List<MemberPropertyReference>
+
   public abstract val typeParameters: List<TypeParameterReference>
 
   protected abstract val innerClassesAndObjects: List<ClassReference>
@@ -146,7 +168,13 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
       clazz.containingFileAsJavaFile()
     }
 
-    override val functions: List<MemberFunctionReference.Psi> by lazy(NONE) {
+    @Deprecated(
+      "renamed to `declaredMemberFunctions`.  Use `memberFunctions` to include inherited functions.",
+      replaceWith = ReplaceWith("declaredMemberFunctions"),
+    )
+    override val functions: List<MemberFunctionReference.Psi> get() = declaredMemberFunctions
+
+    override val declaredMemberFunctions: List<MemberFunctionReference.Psi> by lazy(NONE) {
       clazz
         .children
         .filterIsInstance<KtClassBody>()
@@ -263,9 +291,14 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
         )
     }
 
-    override val functions: List<MemberFunctionReference.Descriptor> by lazy(NONE) {
+    @Deprecated(
+      "renamed to `declaredMemberFunctions`.  Use `memberFunctions` to include inherited functions.",
+      replaceWith = ReplaceWith("declaredMemberFunctions"),
+    )
+    override val functions: List<MemberFunctionReference.Descriptor> get() = declaredMemberFunctions
+    override val declaredMemberFunctions: List<MemberFunctionReference.Descriptor> by lazy(NONE) {
       clazz.unsubstitutedMemberScope
-        .getContributedDescriptors(kindFilter = DescriptorKindFilter.FUNCTIONS)
+        .getDescriptorsFiltered(kindFilter = DescriptorKindFilter.FUNCTIONS)
         .filterIsInstance<FunctionDescriptor>()
         .filterNot { it is ConstructorDescriptor }
         .map { it.toFunctionReference(this) }
@@ -279,10 +312,8 @@ public sealed class ClassReference : Comparable<ClassReference>, AnnotatedRefere
       clazz.unsubstitutedMemberScope
         .getDescriptorsFiltered(kindFilter = DescriptorKindFilter.VARIABLES)
         .filterIsInstance<PropertyDescriptor>()
-        .filter {
-          // Remove inherited properties that aren't overridden in this class.
-          it.kind == DECLARATION
-        }
+        // Remove inherited properties that aren't overridden in this class.
+        .filter { it.kind == DECLARATION }
         .map { it.toPropertyReference(this) }
     }
 

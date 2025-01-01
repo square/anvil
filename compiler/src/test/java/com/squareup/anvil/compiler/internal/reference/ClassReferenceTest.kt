@@ -201,9 +201,13 @@ class ClassReferenceTest {
               assertThat(psiRef.isGenericClass()).isFalse()
               assertThat(descriptorRef.isGenericClass()).isFalse()
 
-              assertThat(psiRef.functions.single().returnType().isGenericType()).isFalse()
               assertThat(
-                descriptorRef.functions.single { it.name == "string" }
+                psiRef.declaredMemberFunctions.single()
+                  .returnType()
+                  .isGenericType(),
+              ).isFalse()
+              assertThat(
+                descriptorRef.declaredMemberFunctions.single { it.name == "string" }
                   .returnType()
                   .isGenericType(),
               ).isFalse()
@@ -223,17 +227,25 @@ class ClassReferenceTest {
               ).isTrue()
             }
             "SomeClass3" -> {
-              assertThat(psiRef.functions.single().returnType().isGenericType()).isTrue()
               assertThat(
-                descriptorRef.functions.single { it.name == "list" }
+                psiRef.declaredMemberFunctions.single()
+                  .returnType()
+                  .isGenericType(),
+              ).isTrue()
+              assertThat(
+                descriptorRef.declaredMemberFunctions.single { it.name == "list" }
                   .returnType()
                   .isGenericType(),
               ).isTrue()
             }
             "SomeClass4" -> {
-              assertThat(psiRef.functions.single().returnType().isGenericType()).isTrue()
               assertThat(
-                descriptorRef.functions.single { it.name == "list" }
+                psiRef.declaredMemberFunctions.single()
+                  .returnType()
+                  .isGenericType(),
+              ).isTrue()
+              assertThat(
+                descriptorRef.declaredMemberFunctions.single { it.name == "list" }
                   .returnType()
                   .isGenericType(),
               ).isTrue()

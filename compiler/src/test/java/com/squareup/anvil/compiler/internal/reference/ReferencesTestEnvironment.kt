@@ -79,13 +79,13 @@ class ReferencesTestEnvironment(
           ?.let { refsContainer ->
 
             val refsFun = when (referenceType) {
-              ReferenceType.Psi -> refsContainer.functions
-              ReferenceType.Descriptor -> refsContainer.toDescriptorReference().functions
+              ReferenceType.Psi -> refsContainer.declaredMemberFunctions
+              ReferenceType.Descriptor -> refsContainer.toDescriptorReference().declaredMemberFunctions
             }
               .singleOrNull { it.name == "refs" }
               ?: error {
                 "RefsContainer.refs not found.  " +
-                  "Existing functions: ${refsContainer.functions.map { it.name }}"
+                  "Existing functions: ${refsContainer.declaredMemberFunctions.map { it.name }}"
               }
 
             when (referenceType) {

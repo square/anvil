@@ -264,7 +264,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
           .asSequence()
 
         val functions = types
-          .flatMap { it.functions }
+          .flatMap { it.declaredMemberFunctions }
           .filter { it.isAnnotatedWith(daggerProvidesFqName) }
           .onEach { function ->
             checkFunctionIsNotAbstract(clazz, function)

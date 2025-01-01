@@ -207,9 +207,13 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
         .filter { it.isAbstract }
         .toList()
 
-      if (functions.size != 1 || functions[0].returnType?.resolve()
-          ?.resolveKSClassDeclaration() != this
-      ) {
+      val returnType = functions.singleOrNull()?.returnType?.resolve()?.resolveKSClassDeclaration()
+      if (returnType != this) {
+
+        val isReturnSuperType = returnType != null && this.superTypes
+          .any { type -> type.resolve().resolveKSClassDeclaration() == returnType }
+        if (isReturnSuperType) return
+
         throw KspAnvilException(
           node = factory,
           message = "A factory must have exactly one abstract function returning the " +
@@ -325,7 +329,7 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
         )
       }
 
-      val functions = componentInterface.functions
+      val functions = componentInterface.memberFunctions
         .filter { it.returnType().asClassReference() == this }
 
       if (functions.size >= 2) {
@@ -378,7 +382,7 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
         )
       }
 
-      val functions = factory.functions
+      val functions = factory.memberFunctions
         .let { functions ->
           if (factory.isInterface()) {
             functions
@@ -387,7 +391,13 @@ internal object ContributesSubcomponentCodeGen : AnvilApplicabilityChecker {
           }
         }
 
-      if (functions.size != 1 || functions[0].returnType().asClassReference() != this) {
+      val returnType = functions.singleOrNull()?.returnType()?.asClassReference()
+      if (returnType != this) {
+
+        val isReturnSuperType = returnType != null && this.directSuperTypeReferences()
+          .any { it.asClassReference() == returnType }
+        if (isReturnSuperType) return
+
         throw AnvilCompilationExceptionClassReference(
           classReference = factory,
           message = "A factory must have exactly one abstract function returning the " +
