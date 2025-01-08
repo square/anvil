@@ -49,7 +49,7 @@ internal fun PsiElement.ktPsiFactory(): KtPsiFactory {
 internal fun FirRegularClassSymbol.coneLookupTagBasedType(): ConeLookupTagBasedType {
   return classId.toLookupTag().constructType(
     typeArguments = emptyArray<ConeTypeProjection>(),
-    isNullable = false,
+    isMarkedNullable = false,
   )
 }
 
@@ -59,11 +59,11 @@ internal fun FirRegularClassSymbol.coneLookupTagBasedType(): ConeLookupTagBasedT
 internal fun FirRegularClassSymbol.toKClassRef(): ConeClassLikeType =
   StandardClassIds.KClass.constructClassLikeType(
     typeArguments = arrayOf(coneLookupTagBasedType()),
-    isNullable = false,
+    isMarkedNullable = false,
   )
 
 internal fun FirRegularClassSymbol.resolvedTypeRef(): FirResolvedTypeRef {
-  return buildResolvedTypeRef { type = toKClassRef() }
+  return buildResolvedTypeRef { coneType = toKClassRef() }
 }
 
 internal fun FirAnnotationCallBuilder.setAnnotationType(

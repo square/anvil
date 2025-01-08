@@ -28,10 +28,10 @@ import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.render
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
+import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.FirUserTypeRef
 import org.jetbrains.kotlin.fir.types.classId
-import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
@@ -56,7 +56,7 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
     classLikeDeclaration: FirClassLikeDeclaration,
     resolvedSupertypes: List<FirResolvedTypeRef>,
     typeResolver: TypeResolveService,
-  ): List<FirResolvedTypeRef> {
+  ): List<ConeKotlinType> {
 
     fun FirAnnotation.id(): FqName? = when (val t = this.annotationTypeRef) {
       is FirResolvedTypeRef -> t.coneType.classId?.asSingleFqName()

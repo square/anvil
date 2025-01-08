@@ -9,9 +9,9 @@ import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
+import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.classId
-import org.jetbrains.kotlin.fir.types.coneType
 
 public class AnvilFirInterfaceMergingExtension(session: FirSession) :
   FirSupertypeGenerationExtension(session) {
@@ -31,7 +31,7 @@ public class AnvilFirInterfaceMergingExtension(session: FirSession) :
     classLikeDeclaration: FirClassLikeDeclaration,
     resolvedSupertypes: List<FirResolvedTypeRef>,
     typeResolver: TypeResolveService,
-  ): List<FirResolvedTypeRef> {
+  ): List<ConeKotlinType> {
 
     val supertypeUserType = Names.componentBase.createUserType(sourceElement = null)
 
@@ -46,7 +46,7 @@ public class AnvilFirInterfaceMergingExtension(session: FirSession) :
       "Supertype $supertypeUserType is already present in $resolvedSupertypes"
     }
 
-    return listOf(superResolved)
+    return listOf(superResolved.coneType)
   }
 
   override fun needTransformSupertypes(declaration: FirClassLikeDeclaration): Boolean {

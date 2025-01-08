@@ -37,7 +37,7 @@ public fun CompilationEnvironment.compile2(
 
   val k2JvmArgs = K2JVMCompilerArguments().also { args ->
 
-    args.useKapt4 = true
+    args.useK2Kapt = true
     args.reportPerf = true
 
     args.moduleName = "root"
