@@ -28,7 +28,7 @@ internal class AnnotationArgumentReferenceIr(
   // support primitives later on.
   @OptIn(UnsafeDuringIrConstructionAPI::class)
   private fun findValue(): Any {
-    (argumentExpression as? IrConst<*>)?.let {
+    (argumentExpression as? IrConst)?.let {
       return it.value as Any
     }
 
