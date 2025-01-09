@@ -18,10 +18,6 @@ buildConfig {
   buildConfigField("anvilVersion", VERSION_NAME)
 }
 
-dependencyGuard {
-  configuration("testFixturesRuntimeClasspath")
-}
-
 conventions {
 
   kotlinCompilerArgs.add("-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi")
