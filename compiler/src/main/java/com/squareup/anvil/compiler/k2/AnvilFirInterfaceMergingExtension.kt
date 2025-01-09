@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.k2
 
-import com.squareup.anvil.compiler.k2.internal.Names
+import com.squareup.anvil.compiler.k2.internal.Names.anvil
+import com.squareup.anvil.compiler.k2.internal.Names.foo
 import com.squareup.anvil.compiler.k2.internal.classId
 import com.squareup.anvil.compiler.k2.internal.createUserType
 import org.jetbrains.kotlin.fir.FirSession
@@ -17,7 +18,7 @@ public class AnvilFirInterfaceMergingExtension(session: FirSession) :
   FirSupertypeGenerationExtension(session) {
 
   private companion object {
-    private val annotationClassId = Names.mergeComponentFir.classId()
+    private val annotationClassId = anvil.mergeComponent.classId()
     private val PREDICATE = DeclarationPredicate.create {
       annotated(annotationClassId.asSingleFqName())
     }
@@ -33,10 +34,10 @@ public class AnvilFirInterfaceMergingExtension(session: FirSession) :
     typeResolver: TypeResolveService,
   ): List<ConeKotlinType> {
 
-    val supertypeUserType = Names.componentBase.createUserType(sourceElement = null)
+    val supertypeUserType = foo.componentBase.createUserType(sourceElement = null)
 
     val alreadyHasComponentBase = resolvedSupertypes.any {
-      it.coneType.classId?.asFqNameString() == Names.componentBase.asString()
+      it.coneType.classId?.asFqNameString() == foo.componentBase.asString()
     }
     if (alreadyHasComponentBase) return emptyList()
 

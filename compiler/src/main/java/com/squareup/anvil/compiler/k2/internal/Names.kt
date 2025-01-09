@@ -8,16 +8,24 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 
 internal object Names {
-  val foo = "foo".fqn()
 
-  val bBindingModule = "foo.BBindingModule".fqn()
-  val emptyModule = "foo.EmptyModule".fqn()
+  object foo {
+    val packageFqName = "foo".fqn()
+    val bBindingModule = "foo.BBindingModule".fqn()
+    val componentBase = "foo.ComponentBase".fqn()
+    val testComponent = "foo.TestComponent".fqn()
+  }
 
-  val componentBase = "foo.ComponentBase".fqn()
-  val mergeComponentFir = "foo.MergeComponentFir".fqn()
-  val testComponent = "foo.TestComponent".fqn()
-  val inject = "javax.inject.Inject".fqn()
-  val componentKotlin = "foo.ComponentKotlin".fqn()
+  val inject get() = javax.inject
+  object javax {
+    val inject = "javax.inject.Inject".fqn()
+  }
+
+  object anvil {
+    val contributesBinding = "com.squareup.anvil.annotations.ContributesBinding".fqn()
+    val contributesTo = "com.squareup.anvil.annotations.ContributesTo".fqn()
+    val mergeComponent = "com.squareup.anvil.annotations.MergeComponent".fqn()
+  }
 
   object dagger {
     val binds = "dagger.Binds".fqn()

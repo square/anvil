@@ -30,7 +30,6 @@ import org.jetbrains.kotlin.fir.symbols.impl.FirConstructorSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.toFirResolvedTypeRef
-import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.types.constructStarProjectedType
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
@@ -83,10 +82,6 @@ public class AnvilFactoryDelegateDeclarationGenerationExtension(session: FirSess
     classSymbol: FirClassSymbol<*>,
     context: MemberGenerationContext,
   ): Set<Name> {
-
-    if (context.owner.classId == Names.testComponent.classId()) {
-      // error("stop")
-    }
 
     if (!classSymbol.classId.isFactoryDelegate()) return emptySet()
 
@@ -146,7 +141,7 @@ public class AnvilFactoryDelegateDeclarationGenerationExtension(session: FirSess
     return listOf(function.symbol)
   }
 
-  override fun hasPackage(packageFqName: FqName): Boolean = packageFqName == Names.foo
+  override fun hasPackage(packageFqName: FqName): Boolean = packageFqName == Names.foo.packageFqName
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(AnvilPredicates.hasInjectAnnotation)

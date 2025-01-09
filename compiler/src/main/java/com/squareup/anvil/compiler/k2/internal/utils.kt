@@ -10,6 +10,7 @@ import org.jetbrains.kotlin.fir.expressions.builder.buildGetClassCall
 import org.jetbrains.kotlin.fir.expressions.builder.buildResolvedQualifier
 import org.jetbrains.kotlin.fir.packageFqName
 import org.jetbrains.kotlin.fir.references.builder.buildSimpleNamedReference
+import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeClassLikeType
 import org.jetbrains.kotlin.fir.types.ConeLookupTagBasedType
@@ -104,7 +105,7 @@ internal fun FqName.createUserType(
   }
 }
 
-internal fun buildGetClassCall(classSymbol: FirRegularClassSymbol): FirGetClassCall {
+internal fun buildGetClassCall(classSymbol: FirClassLikeSymbol<*>): FirGetClassCall {
   return buildGetClassCall {
     argumentList = buildArgumentList {
       arguments += buildResolvedQualifier qualifier@{

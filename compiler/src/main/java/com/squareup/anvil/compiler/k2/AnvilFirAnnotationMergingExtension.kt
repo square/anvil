@@ -2,6 +2,8 @@ package com.squareup.anvil.compiler.k2
 
 import com.squareup.anvil.compiler.internal.ktFile
 import com.squareup.anvil.compiler.k2.internal.Names
+import com.squareup.anvil.compiler.k2.internal.Names.anvil
+import com.squareup.anvil.compiler.k2.internal.Names.foo
 import com.squareup.anvil.compiler.k2.internal.buildGetClassCall
 import com.squareup.anvil.compiler.k2.internal.classId
 import com.squareup.anvil.compiler.k2.internal.ktPsiFactory
@@ -27,7 +29,6 @@ import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.render
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
-import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.FirUserTypeRef
@@ -42,7 +43,7 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
   FirSupertypeGenerationExtension(session) {
 
   private companion object {
-    private val annotationClassId = Names.mergeComponentFir.classId()
+    private val annotationClassId = anvil.mergeComponent.classId()
     private val PREDICATE = DeclarationPredicate.create {
       annotated(annotationClassId.asSingleFqName())
     }
@@ -70,7 +71,7 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
     }
 
     val componentAnnotation = classLikeDeclaration.annotations
-      .single { it.id() == Names.mergeComponentFir }
+      .single { it.id() == anvil.mergeComponent }
       as FirAnnotationCall
 
     check(componentAnnotation.argumentList.arguments.size <= 2) {
@@ -78,22 +79,25 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
     }
 
     val oldModules = mutableListOf<FirExpression>()
-    val oldOtherArgs = mutableListOf<FirExpression>()
+    var dependencies: FirExpression? = null
 
     for ((i, arg) in componentAnnotation.argumentList.arguments.withIndex()) {
       when (arg) {
         is FirNamedArgumentExpression -> {
-          if (arg.name.asString() == "modules") {
-            oldModules += (arg.expression as FirArrayLiteral).arguments
-          } else {
-            oldOtherArgs += arg
+          when (arg.name.asString()) {
+            "modules" -> oldModules += (arg.expression as FirArrayLiteral).arguments
+            "dependencies" -> {
+              dependencies = arg
+            }
           }
         }
         is FirArrayLiteral -> {
-          if (i == 0) {
-            oldModules += arg.arguments
-          } else {
-            oldOtherArgs += arg
+          when (i) {
+            1 -> oldModules += arg.arguments
+            2 -> {
+              // this is `dependencies = [...]`
+              dependencies = arg
+            }
           }
         }
       }
@@ -106,7 +110,8 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
           ktPsiFactoryOrNull = classLikeDeclaration.psi?.ktPsiFactory(),
         )
 
-        val newModules = listOf(Names.bBindingModule)
+        // TODO: This is a dummy module, replace it with the actual parsed values
+        val newModules = listOf(foo.bBindingModule)
 
         val newAnnotationCallPsi = componentAnnotation.psi?.let {
           buildNewAnnotationPsi(
@@ -130,15 +135,22 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
               argumentList = buildArgumentList {
                 arguments += oldModules
                 arguments += newModules.map {
-                  val newModuleClassSymbol =
-                    session.symbolProvider.getClassLikeSymbolByClassId(it.classId()) as FirRegularClassSymbol
+
+                  val newModuleClassSymbol = session.symbolProvider
+                    .getClassLikeSymbolByClassId(it.classId())
+
+                  requireNotNull(newModuleClassSymbol) {
+                    "Couldn't find symbol for ${it.classId()}"
+                  }
 
                   buildGetClassCall(newModuleClassSymbol)
                 }
               }
             }
           }
-          arguments += oldOtherArgs
+          if (dependencies != null) {
+            arguments += dependencies
+          }
         }
       },
     )
