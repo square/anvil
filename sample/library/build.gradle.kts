@@ -17,6 +17,6 @@ if (libs.versions.config.generateDaggerFactoriesWithAnvil.get().toBoolean()) {
 }
 
 dependencies {
-  api(project(":sample:scopes"))
+  api(project(":scopes"))
   api(libs.dagger2)
 }

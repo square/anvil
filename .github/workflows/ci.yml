@@ -278,6 +278,7 @@ jobs:
           profile : Galaxy Nexus
           ram-size : 4096M
           target: default
+          working-directory: ./sample
           script: ./gradlew connectedCheck --no-build-cache --no-daemon --stacktrace
 
       - name: Upload results
@@ -285,6 +286,30 @@ jobs:
         with:
           name: instrumentation-test-results
           path: ./**/build/reports/androidTests/connected/**
+
+  integration-tests:
+    name: Integration tests
+    runs-on: macos-latest
+    timeout-minutes: 25
+
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-java@8df1039502a15bceb9433410b1a100fbe190c53b # v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+          check-latest: true
+
+      - name: Integration tests
+        working-directory: ./integration-tests
+        run: ./gradlew test jvmTest android  --stacktrace
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@b4b15b8c7c6ac21ea08fcf65892d2ee8f75cf882 # v4
+        if: ${{ failure() }}
+        with:
+          name: test-results-gradle-integration
+          path: ./**/build/reports/tests/
 
   gradle-integration-tests:
     name: Gradle integration tests

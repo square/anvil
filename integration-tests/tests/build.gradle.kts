@@ -16,7 +16,7 @@ anvil {
 }
 
 dependencies {
-  testImplementation(project(":integration-tests:library"))
+  testImplementation(project(":library"))
   testImplementation(testFixtures("com.squareup.anvil:compiler-utils"))
   testImplementation(libs.dagger2)
   testImplementation(libs.junit)

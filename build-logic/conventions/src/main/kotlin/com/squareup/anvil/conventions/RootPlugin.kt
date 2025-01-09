@@ -2,9 +2,12 @@ package com.squareup.anvil.conventions
 
 import com.rickbusarow.kgx.checkProjectIsRoot
 import com.squareup.anvil.benchmark.BenchmarkPlugin
-import com.squareup.anvil.conventions.utils.isInAnvilRootBuild
+import com.squareup.anvil.conventions.utils.isInAnvilBuild
 import com.squareup.anvil.conventions.utils.libs
 import org.gradle.api.Project
+import kotlin.io.path.createSymbolicLinkPointingTo
+import kotlin.io.path.deleteIfExists
+import kotlin.io.path.isSymbolicLink
 
 open class RootPlugin : BasePlugin() {
   override fun Project.jvmTargetInt(): Int = libs.versions.jvm.target.minimal.get().toInt()
@@ -12,15 +15,38 @@ open class RootPlugin : BasePlugin() {
 
     target.checkProjectIsRoot { "RootPlugin must only be applied to the root project" }
 
-    if (target.isInAnvilRootBuild()) {
+    if (target.isInAnvilBuild()) {
       target.plugins.apply(BenchmarkPlugin::class.java)
+    } else {
+      target.tasks.register("symlinkGradleFiles") { task ->
+
+        val anvilDir = target.gradle.includedBuild("anvil").projectDir.toPath()
+
+        val relativeFiles = listOf(
+          "gradle.properties",
+          "gradlew",
+          "gradlew.bat",
+          "gradle/wrapper/gradle-wrapper.properties",
+          "gradle/wrapper/gradle-wrapper.jar",
+        )
+
+        task.inputs.files(relativeFiles.map { anvilDir.resolve(it) })
+        task.outputs.files(relativeFiles.map { target.file(it) })
+
+        task.doLast {
+
+          relativeFiles.forEach { relative ->
+            val symlink = target.file(relative).toPath()
+            if (!symlink.isSymbolicLink()) {
+              symlink.deleteIfExists()
+              symlink.createSymbolicLinkPointingTo(anvilDir.resolve(relative))
+            }
+          }
+        }
+      }
     }
 
     target.plugins.apply("java-base")
-
-    if (target.gradle.includedBuilds.isNotEmpty()) {
-      target.plugins.apply(CompositePlugin::class.java)
-    }
   }
 
   override fun afterApply(target: Project) {
