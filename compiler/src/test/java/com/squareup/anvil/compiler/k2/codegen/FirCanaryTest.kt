@@ -16,6 +16,8 @@ class FirCanaryTest : CompilationModeTest(
     """
     package foo
 
+    import com.squareup.anvil.annotations.ContributesTo
+    import com.squareup.anvil.annotations.MergeComponent
     import dagger.Binds
     import dagger.Component
     import dagger.Module
@@ -23,18 +25,13 @@ class FirCanaryTest : CompilationModeTest(
     import kotlin.reflect.KClass
     import javax.inject.Inject
 
-    @MergeComponentFir(
-       modules =       [foo.ABindingModule::class],
-       dependencies =  [DependencyComponent::class],
-    )
-    interface TestComponent
-
-    @Component
-    interface DependencyComponent
+    @MergeComponent(Unit::class, modules = [ABindingModule::class])
+    interface TestComponent {
+      val b: B
+    }
 
     interface ComponentBase {
-      val a: A
-      val b: B
+      fun injectClass(): InjectClass
     }
 
     @Module
@@ -44,26 +41,19 @@ class FirCanaryTest : CompilationModeTest(
     }
 
     @Module
+    @ContributesTo(Unit::class)
     interface BBindingModule {
       @Binds
       fun bindBImpl(bImpl: BImpl): B
     }
-
-    class InjectClass @Inject constructor(
-      val a: A,
-      val b: B
-    )
     
     interface A
     class AImpl @Inject constructor() : A
     
     interface B
-    class BImpl @Inject constructor(val a: A) : B
+    class BImpl @Inject constructor() : B
 
-    annotation class MergeComponentFir(
-      val modules: Array<KClass<*>>,
-      val dependencies: Array<KClass<*>>
-    )
+    class InjectClass @Inject constructor(val a: A, val b: B)
     """.trimIndent()
 
   @TestFactory

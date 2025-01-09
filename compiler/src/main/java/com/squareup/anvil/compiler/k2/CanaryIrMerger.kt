@@ -1,7 +1,7 @@
 package com.squareup.anvil.compiler.k2
 
 import com.squareup.anvil.compiler.fqName
-import com.squareup.anvil.compiler.k2.internal.Names
+import com.squareup.anvil.compiler.k2.internal.Names.foo
 import com.squareup.anvil.compiler.k2.internal.tree.IrTreePrinter.Companion.printEverything
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
@@ -62,7 +62,7 @@ public class CanaryIrMerger : IrGenerationExtension {
 
         override fun visitClass(declaration: IrClass): IrStatement {
 
-          if (declaration.fqName == Names.testComponent) {
+          if (declaration.fqName == foo.testComponent) {
             declaration.annotations.forEach { constructorCall ->
               constructorCall.printEverything()
             }

@@ -2,6 +2,10 @@ package com.squareup.anvil.plugin
 
 import com.rickbusarow.kase.gradle.dsl.buildFile
 import com.squareup.anvil.plugin.testing.BaseGradleTest
+import com.squareup.anvil.plugin.testing.classGraphResult
+import io.github.classgraph.AnnotationClassRef
+import io.kotest.matchers.nulls.shouldNotBeNull
+import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestFactory
 
 class K2Test : BaseGradleTest() {
@@ -18,6 +22,16 @@ class K2Test : BaseGradleTest() {
           kotlin("kapt")
         }
 
+        raw(
+          """
+          kotlin {
+            compilerOptions {
+              languageVersion = org.jetbrains.kotlin.gradle.dsl.KotlinVersion.KOTLIN_2_0
+            }
+          }
+          """.trimIndent(),
+        )
+
         // anvil {
         //   generateDaggerFactories.set(true)
         // }
@@ -29,12 +43,20 @@ class K2Test : BaseGradleTest() {
         }
       }
 
+      gradlePropertiesFile(
+        """
+        kapt.use.k2=true
+        """.trimIndent(),
+      )
+
       dir("src/main/java") {
         kotlinFile(
           "foo/targets.kt",
           """
           package foo
   
+          import com.squareup.anvil.annotations.ContributesTo
+          import com.squareup.anvil.annotations.MergeComponent
           import dagger.Binds
           import dagger.Component
           import dagger.Module
@@ -42,12 +64,13 @@ class K2Test : BaseGradleTest() {
           import kotlin.reflect.KClass
           import javax.inject.Inject
   
-          @MergeComponentFir
-          @Component( modules = [ABindingModule::class] )
-          interface TestComponent
+          @MergeComponent(Unit::class, modules = [ABindingModule::class])
+          interface TestComponent {
+            val b: B
+          }
   
           interface ComponentBase {
-            // val b: B
+            fun injectClass(): InjectClass
           }
   
           @Module
@@ -57,48 +80,50 @@ class K2Test : BaseGradleTest() {
           }
   
           @Module
-          interface EmptyModule {
+          @ContributesTo(Unit::class)
+          interface BBindingModule {
             @Binds
             fun bindBImpl(bImpl: BImpl): B
           }
-  
-          class InjectClass @Freddy constructor()
-          
-          class OtherClass @Inject constructor()
           
           interface A
           class AImpl @Inject constructor() : A
           
           interface B
-          class BImpl @Inject constructor(val a: A) : B
+          class BImpl @Inject constructor() : B
   
-          annotation class Freddy
-          annotation class MergeComponentFir
-          annotation class ComponentKotlin(val modules: Array<KClass<*>>)
+          class InjectClass @Inject constructor(val a: A, val b: B)
           """.trimIndent(),
         )
       }
-      gradlePropertiesFile(
-        """
-          org.gradle.caching=false
-          com.squareup.anvil.trackSourceFiles=true
-          kapt.use.k2=true
-          kapt.verbose=true
-          kotlin.verbose=true
+    }
 
-          # Enable compilation of project using FIR compiler
-          kotlin.build.useFir=true
-          # Enable FIR compiler for kotlin-stdlib, kotlin-reflect, kotlin-test.
-          kotlin.build.useFirForLibraries=true
+    shouldSucceed("jar") {
+      val classGraph = rootProject.classGraphResult()
 
-        """.trimIndent(),
+      val testComponent = classGraph.getClassInfo("foo.TestComponent")
+        .shouldNotBeNull()
+
+      val generatedComponentAnnotation = testComponent.getAnnotationInfo("dagger.Component")
+
+      val moduleClasses = generatedComponentAnnotation.parameterValues
+        .getValue("modules")
+        .let { it as Array<*> }
+        .map { (it as AnnotationClassRef).name }
+        .sorted()
+
+      moduleClasses shouldBe listOf(
+        "foo.ABindingModule",
+        "foo.BBindingModule",
       )
-    }
 
-    shouldSucceed("jar", "--dry-run") {
-      // rootProject.generatedDir(useKsp = false).injectClassFactory.shouldExist()
-    }
+      val daggerTestComponent = classGraph.getClassInfo("foo.DaggerTestComponent")
+        .shouldNotBeNull()
 
-    workingDir.resolve("build").deleteRecursivelyOrFail()
+      val testComponentImpl = daggerTestComponent.innerClasses
+        .get("foo.DaggerTestComponent\$TestComponentImpl")
+
+      testComponentImpl.methodInfo.map { it.name } shouldBe listOf("injectClass", "getB")
+    }
   }
 }
