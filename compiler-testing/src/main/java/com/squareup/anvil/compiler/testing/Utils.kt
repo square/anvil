@@ -9,8 +9,7 @@ import com.squareup.anvil.annotations.MergeSubcomponent
 import com.squareup.anvil.annotations.compat.MergeInterfaces
 import com.squareup.anvil.annotations.compat.MergeModules
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
-import com.squareup.anvil.compiler.api.AnvilCompilationException
-import com.squareup.anvil.compiler.internal.fqName
+import com.squareup.anvil.compiler.testing.temp.fqName
 import com.squareup.kotlinpoet.asClassName
 import dagger.Binds
 import dagger.Component
@@ -23,7 +22,6 @@ import dagger.assisted.Assisted
 import dagger.assisted.AssistedFactory
 import dagger.assisted.AssistedInject
 import dagger.internal.DoubleCheck
-import java.io.File
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Qualifier
@@ -105,10 +103,3 @@ private val truePredicate: (Any?) -> Boolean = { true }
  * method throws an exception if more than one element is found.
  */
 internal fun <T> Iterable<T>.singleOrEmpty(): T? = singleOrEmpty(truePredicate)
-
-/** Deletes the receiver file or throws an exception if it couldn't be deleted. */
-internal fun File.requireDelete() {
-  if (!deleteRecursively()) {
-    throw AnvilCompilationException("Could not delete file: $this")
-  }
-}

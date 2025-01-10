@@ -7,8 +7,6 @@ import com.rickbusarow.kase.ParamTestEnvironmentFactory
 import com.rickbusarow.kase.files.HasWorkingDir
 import com.rickbusarow.kase.files.TestLocation
 import com.rickbusarow.kase.kases
-import com.squareup.anvil.compiler.FULL_TEST_RUN
-import com.squareup.anvil.compiler.testing.CompilationEnvironment
 import kotlin.reflect.KClass
 
 /**
@@ -40,7 +38,7 @@ import kotlin.reflect.KClass
  * @param requiredAnnotation A test case is always created for this annotation.
  * @param fullTestRunAnnotations Test cases are only created in a full test run.
  */
-abstract class AnvilAnnotationsTest(
+public abstract class AnvilAnnotationsTest(
   requiredAnnotation: KClass<out Annotation>,
   vararg fullTestRunAnnotations: KClass<out Annotation>,
 ) : KaseTestFactory<
@@ -64,8 +62,8 @@ abstract class AnvilAnnotationsTest(
     AnnotationTestEnvironment
 }
 
-class AnnotationTestEnvironment(
-  val annotationClass: KClass<out Annotation>,
+public class AnnotationTestEnvironment(
+  public val annotationClass: KClass<out Annotation>,
   hasWorkingDir: HasWorkingDir,
 ) : DefaultTestEnvironment(hasWorkingDir),
   CompilationEnvironment {
@@ -73,14 +71,14 @@ class AnnotationTestEnvironment(
   /**
    * Always an unqualified string, e.g. "@MergeComponent".
    */
-  val annotation = "@${annotationClass.simpleName}"
+  public val annotation: String = "@${annotationClass.simpleName}"
 
   /**
    * ex: `import com.squareup.anvil.annotations.MergeComponent`
    */
-  val import = "import ${annotationClass.java.canonicalName}"
+  public val import: String = "import ${annotationClass.java.canonicalName}"
 
-  companion object : ParamTestEnvironmentFactory<Kase1<KClass<out Annotation>>, AnnotationTestEnvironment> {
+  public companion object : ParamTestEnvironmentFactory<Kase1<KClass<out Annotation>>, AnnotationTestEnvironment> {
     override fun create(
       params: Kase1<KClass<out Annotation>>,
       names: List<String>,

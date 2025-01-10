@@ -283,7 +283,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
 
   override fun getPluginArtifact(): SubpluginArtifact = SubpluginArtifact(
     groupId = GROUP,
-    artifactId = "compiler",
+    artifactId = "compiler-k2",
     version = VERSION,
   )
 
