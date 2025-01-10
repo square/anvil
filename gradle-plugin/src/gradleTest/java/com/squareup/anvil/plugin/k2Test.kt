@@ -19,7 +19,7 @@ class K2Test : BaseGradleTest() {
         plugins {
           kotlin("jvm")
           id("com.squareup.anvil")
-          kotlin("kapt")
+          // kotlin("kapt")
         }
 
         raw(
@@ -39,7 +39,7 @@ class K2Test : BaseGradleTest() {
         dependencies {
           compileOnly(libs.inject)
           api(libs.dagger2.annotations)
-          kapt(libs.dagger2.compiler)
+          // kapt(libs.dagger2.compiler)
         }
       }
 
