@@ -3,8 +3,17 @@
 **Unreleased**
 --------------
 
+0.4.1
+-----
+
+_2025-01-13_
+
+Happy new year!
+
 - **Fix**: Fix missing Jakarta `@Inject`-annotated constructors in factory gen.
-- **Deprecated**: `ClassReference.functions` has been deprecated in favor of `ClassReference.memberFunctions` and `ClassReference.declaredMemberFunctions`
+- **Deprecated**: `ClassReference.functions` has been deprecated in favor of `ClassReference.memberFunctions` and `ClassReference.declaredMemberFunctions`.
+
+Special thanks to [@esafirm](https://github.com/esafirm) for contributing to this release!
 
 0.4.0
 -----
