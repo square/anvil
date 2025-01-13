@@ -25,6 +25,7 @@ import com.google.devtools.ksp.symbol.KSValueParameter
 import com.google.devtools.ksp.symbol.Modifier
 import com.google.devtools.ksp.symbol.NonExistLocation
 import com.squareup.anvil.compiler.internal.fqName
+import com.squareup.anvil.compiler.internal.injectFqNames
 import com.squareup.anvil.compiler.internal.mergeComponentFqName
 import com.squareup.anvil.compiler.internal.mergeInterfacesFqName
 import com.squareup.anvil.compiler.internal.mergeModulesFqName
@@ -44,7 +45,6 @@ import com.squareup.kotlinpoet.ksp.toTypeName
 import dagger.assisted.AssistedInject
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import javax.inject.Inject
 import kotlin.reflect.KClass
 
 /**
@@ -164,7 +164,7 @@ public tailrec fun KSDeclaration.unwrapTypealiases(): KSDeclaration = when (this
  * Returns a sequence of all `@Inject` and `@AssistedInject` constructors visible to this resolver
  */
 public fun Resolver.injectConstructors(): List<Pair<KSClassDeclaration, KSFunctionDeclaration>> {
-  return getAnnotatedSymbols<Inject>()
+  return getSymbolsWithAnnotations(injectFqNames)
     .plus(getAnnotatedSymbols<AssistedInject>())
     .filterIsInstance<KSFunctionDeclaration>()
     .filter { it.isConstructor() }

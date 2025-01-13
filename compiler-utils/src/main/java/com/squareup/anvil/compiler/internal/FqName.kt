@@ -19,6 +19,7 @@ import javax.inject.Inject
 import javax.inject.Qualifier
 import javax.inject.Scope
 import kotlin.reflect.KClass
+import jakarta.inject.Inject as JakartaInject
 import jakarta.inject.Qualifier as JakartaQualifier
 import jakarta.inject.Scope as JakartaScope
 
@@ -36,6 +37,7 @@ internal val scopeFqNames = setOf(
   JakartaScope::class.fqName,
 )
 internal val injectFqName = Inject::class.fqName
+internal val injectFqNames = setOf(injectFqName, JakartaInject::class.fqName)
 
 internal val contributesToFqName = ContributesTo::class.fqName
 internal val contributesBindingFqName = ContributesBinding::class.fqName
