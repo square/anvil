@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.k2.ir
 
 import com.squareup.anvil.compiler.k2.TopLevelDeclarationsGenerator
 import com.squareup.anvil.compiler.k2.internal.Names.foo
-import com.squareup.anvil.compiler.k2.internal.tree.IrTreePrinter.Companion.printEverything
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.IrStatement
@@ -64,7 +63,7 @@ public class CanaryK2IrExtension : IrGenerationExtension {
 
           if (declaration.symbol.isClassWithFqName(foo.testComponent.toUnsafe())) {
             declaration.annotations.forEach { constructorCall ->
-              constructorCall.printEverything()
+              // constructorCall.printEverything()
             }
           }
 

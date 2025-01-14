@@ -25,11 +25,19 @@ class FirCanaryTest : CompilationModeTest(
     import kotlin.reflect.KClass
     import javax.inject.Inject
 
+    @Module
+    @ContributesTo(Unit::class)
+    interface BBindingModule {
+      @Binds
+      fun bindBImpl(bImpl: BImpl): B
+    }
+    
     @MergeComponent(Unit::class, modules = [ABindingModule::class])
     interface TestComponent {
       val b: B
     }
 
+    @ContributesTo(Unit::class)
     interface ComponentBase {
       fun injectClass(): InjectClass
     }
@@ -40,13 +48,6 @@ class FirCanaryTest : CompilationModeTest(
       fun bindAImpl(aImpl: AImpl): A
     }
 
-    @Module
-    @ContributesTo(Unit::class)
-    interface BBindingModule {
-      @Binds
-      fun bindBImpl(bImpl: BImpl): B
-    }
-    
     interface A
     class AImpl @Inject constructor() : A
     
