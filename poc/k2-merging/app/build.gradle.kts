@@ -9,7 +9,8 @@ dependencies {
   implementation(project(":library"))
 
   implementation(libs.dagger2)
-
+  testImplementation(libs.junit.jupiter.engine)
+  testImplementation(libs.junit.jupiter.api)
   kapt(libs.dagger2.compiler)
 }
 

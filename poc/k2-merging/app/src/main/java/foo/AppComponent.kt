@@ -6,11 +6,12 @@ import dagger.Binds
 import dagger.Module
 import javax.inject.Inject
 
-@MergeComponent(Unit::class, modules = [ABindingModule::class])
+@MergeComponent(scope = Unit::class, modules = [ABindingModule::class])
 interface AppComponent {
   val b: B
 }
 
+@ContributesTo(scope = Unit::class)
 interface ComponentBase {
   fun injectClass(): InjectClass
 }
@@ -22,7 +23,7 @@ interface ABindingModule {
 }
 
 @Module
-@ContributesTo(Unit::class)
+@ContributesTo(scope = Unit::class)
 interface BBindingModule {
   @Binds
   fun bindBImpl(bImpl: BImpl): B
@@ -38,7 +39,11 @@ class InjectClass @Inject constructor(val a: A, val b: B)
 
 suspend fun main() {
 
-  val component = DaggerAppComponent.create()
+  val component = DaggerAppComponent.create() as AppComponent
+
+  val isCorrect = component is ComponentBase
+
+  println("isCorrect: $isCorrect")
 
   component.injectClass()
 }
