@@ -25,6 +25,7 @@ import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.FirUserTypeRef
 import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.builder.buildUserTypeRef
+import org.jetbrains.kotlin.fir.types.classId
 import org.jetbrains.kotlin.fir.types.constructClassLikeType
 import org.jetbrains.kotlin.fir.types.constructType
 import org.jetbrains.kotlin.fir.types.impl.FirQualifierPartImpl
@@ -43,6 +44,12 @@ import org.jetbrains.kotlin.toKtPsiSourceElement
 public fun String.fqn(): FqName = FqName(this)
 public fun FqName.classId(): ClassId = ClassId.topLevel(this)
 public fun String.classId(): ClassId = fqn().classId()
+
+internal fun ConeKotlinType.requireFqName(): FqName {
+  return this@requireFqName.classId!!.asSingleFqName()
+}
+
+internal fun FirClassLikeSymbol<*>.fqName(): FqName = classId.asSingleFqName()
 
 internal fun PsiElement.ktPsiFactory(): KtPsiFactory {
   return KtPsiFactory.contextual(
@@ -143,13 +150,13 @@ internal fun FqName.createUserType(
   }
 }
 
-internal fun buildGetClassCall(classSymbol: FirClassLikeSymbol<*>): FirGetClassCall {
+internal fun FirClassLikeSymbol<*>.toGetClassCall(): FirGetClassCall {
   return buildGetClassCall {
     argumentList = buildArgumentList {
       arguments += buildResolvedQualifier qualifier@{
         val builder = this
-        builder.symbol = classSymbol
-        builder.packageFqName = classSymbol.packageFqName()
+        builder.symbol = this@toGetClassCall
+        builder.packageFqName = this@toGetClassCall.packageFqName()
       }
     }
   }

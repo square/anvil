@@ -4,13 +4,17 @@ import com.squareup.anvil.compiler.internal.ktFile
 import com.squareup.anvil.compiler.k2.internal.AnvilPredicates
 import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.argumentAt
-import com.squareup.anvil.compiler.k2.internal.buildGetClassCall
 import com.squareup.anvil.compiler.k2.internal.classId
 import com.squareup.anvil.compiler.k2.internal.classListArgumentAt
+import com.squareup.anvil.compiler.k2.internal.contributesToScope
+import com.squareup.anvil.compiler.k2.internal.fqName
 import com.squareup.anvil.compiler.k2.internal.ktPsiFactory
+import com.squareup.anvil.compiler.k2.internal.requireFqName
 import com.squareup.anvil.compiler.k2.internal.requireScopeArgument
 import com.squareup.anvil.compiler.k2.internal.resolveConeType
 import com.squareup.anvil.compiler.k2.internal.setAnnotationType
+import com.squareup.anvil.compiler.k2.internal.toGetClassCall
+import com.squareup.anvil.compiler.k2.internal.tree.FirTreePrinter.Companion.printEverything
 import org.jetbrains.kotlin.KtFakeSourceElementKind
 import org.jetbrains.kotlin.fakeElement
 import org.jetbrains.kotlin.fir.FirSession
@@ -26,11 +30,10 @@ import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.resolve.fqName
-import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
+import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.toKtPsiSourceElement
@@ -60,8 +63,9 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
       .single { it.fqName(session) == Names.anvil.mergeComponent } as FirAnnotationCall
 
     val scope = componentAnnotation.requireScopeArgument().resolveConeType(typeResolver)
+    val scopeFqName = scope.requireFqName()
 
-    val oldModules = componentAnnotation.classListArgumentAt(Name.identifier("modules"), index = 1)
+    val oldModules = componentAnnotation.classListArgumentAt(Names.identifiers.modules, index = 1)
       .orEmpty()
 
     classLikeDeclaration.replaceAnnotations(
@@ -71,31 +75,29 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
           ktPsiFactoryOrNull = classLikeDeclaration.psi?.ktPsiFactory(),
         )
 
-        // TODO: This is a dummy module, replace it with the actual parsed values
-        val newModules = listOf(Names.foo.bBindingModule)
+        componentAnnotation.printEverything()
 
-        val packageNames = listOf(Names.foo.packageFqName)
+        val contributedModules = session.predicateBasedProvider
+          .getSymbolsByPredicate(AnvilPredicates.contributedModule)
+          .mapNotNull { moduleClass ->
+            if (moduleClass !is FirClassLikeSymbol<*>) return@mapNotNull null
 
-        session.predicateBasedProvider.getSymbolsByPredicate(AnvilPredicates.contributedModule)
-          .forEach { moduleSymbol ->
-
-            println("########### moduleSymbol: $moduleSymbol")
-          }
-
-        val lotsOfThings = packageNames.flatMap { packageFqName ->
-
-          session.symbolProvider.symbolNamesProvider
-            .getTopLevelClassifierNamesInPackage(packageFqName).orEmpty()
-            .map { packageFqName.child(it) }
-        }
-          .map { className ->
-            session.symbolProvider.getClassLikeSymbolByClassId(className.classId())
+            if (moduleClass.contributesToScope(
+                scope = scopeFqName,
+                session = session,
+                typeResolveService = typeResolver,
+              )
+            ) {
+              moduleClass
+            } else {
+              null
+            }
           }
 
         val newAnnotationCallPsi = componentAnnotation.psi?.let {
           buildNewAnnotationPsi(
             oldAnnotationCall = it as KtAnnotationEntry,
-            mergedModules = newModules,
+            mergedModules = contributedModules.map { it.fqName() },
           )
         }
 
@@ -108,27 +110,21 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
           source = componentAnnotation.source?.fakeElement(KtFakeSourceElementKind.PluginGenerated)
 
           arguments += buildNamedArgumentExpression {
-            name = Name.identifier("modules")
+            name = Names.identifiers.modules
             isSpread = false
             expression = buildArrayLiteral {
               argumentList = buildArgumentList {
                 arguments += oldModules
-                arguments += newModules.map {
-
-                  val newModuleClassSymbol = session.symbolProvider
-                    .getClassLikeSymbolByClassId(it.classId())
-
-                  requireNotNull(newModuleClassSymbol) {
-                    "Couldn't find symbol for ${it.classId()}"
-                  }
-
-                  buildGetClassCall(newModuleClassSymbol)
-                }
+                arguments += contributedModules.map { it.toGetClassCall() }
               }
             }
           }
 
-          componentAnnotation.argumentAt(name = "dependencies", index = 2)?.let {
+          componentAnnotation.argumentAt(
+            Names.identifiers.dependencies,
+            index = 2,
+            unwrapNamedArguments = false,
+          )?.let {
             arguments += it
           }
         }
