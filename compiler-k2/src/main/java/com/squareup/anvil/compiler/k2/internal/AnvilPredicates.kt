@@ -11,10 +11,12 @@ internal object AnvilPredicates {
     get() = Names.dagger.module.lookupPredicateAnnotated()
   val hasInjectAnnotation
     get() = Names.inject.lookupPredicateAnnotated()
+
   val contributedModule
     get() = LookupPredicate.create {
-      annotated(Names.anvil.contributesTo, Names.dagger.module)
+      annotated(Names.anvil.contributesTo).and(annotated(Names.dagger.module))
     }
+
   val hasContributesToAnnotation
     get() = Names.anvil.contributesTo.lookupPredicateAnnotated()
   val hasMergeComponentFirAnnotation

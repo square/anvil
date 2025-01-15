@@ -6,10 +6,22 @@ import com.squareup.anvil.compiler.internal.reference.asClassId
 import org.jetbrains.kotlin.fir.lightTree.converter.nameAsSafeName
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
+import kotlin.properties.ReadOnlyProperty
+
+@Suppress("UnusedReceiverParameter")
+internal val Names.identifier: ReadOnlyProperty<Any?, Name>
+  get() = ReadOnlyProperty { _, p -> Name.identifier(p.name) }
 
 internal object Names {
 
   val inject get() = javax.inject
+
+  internal object identifiers {
+    val scope by Names.identifier
+    val modules by Names.identifier
+    val dependencies by Names.identifier
+  }
 
   object javax {
     val inject = "javax.inject.Inject".fqn()
@@ -30,8 +42,6 @@ internal object Names {
 
   object foo {
     val packageFqName = "foo".fqn()
-    val bBindingModule = "foo.BBindingModule".fqn()
-    val componentBase = "foo.ComponentBase".fqn()
     val testComponent = "foo.TestComponent".fqn()
     val injectClass = "foo.InjectClass".fqn()
   }

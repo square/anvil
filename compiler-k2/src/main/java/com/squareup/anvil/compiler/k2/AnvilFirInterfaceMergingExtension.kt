@@ -2,7 +2,11 @@ package com.squareup.anvil.compiler.k2
 
 import com.squareup.anvil.compiler.k2.internal.AnvilPredicates
 import com.squareup.anvil.compiler.k2.internal.Names
-import com.squareup.anvil.compiler.k2.internal.classId
+import com.squareup.anvil.compiler.k2.internal.contributesToScope
+import com.squareup.anvil.compiler.k2.internal.hasAnnotation
+import com.squareup.anvil.compiler.k2.internal.mapToSet
+import com.squareup.anvil.compiler.k2.internal.requireScopeArgument
+import com.squareup.anvil.compiler.k2.internal.resolveConeType
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
@@ -11,11 +15,10 @@ import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.plugin.createConeType
 import org.jetbrains.kotlin.fir.resolve.fqName
-import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolNamesProvider
-import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
+import org.jetbrains.kotlin.fir.types.classId
 
 public class AnvilFirInterfaceMergingExtension(session: FirSession) :
   FirSupertypeGenerationExtension(session) {
@@ -24,22 +27,10 @@ public class AnvilFirInterfaceMergingExtension(session: FirSession) :
     private val PREDICATE = AnvilPredicates.hasMergeComponentFirAnnotation
   }
 
-  private val predicateBasedProvider = session.predicateBasedProvider
-  private val sessionForReal = session
-  private val scopeToSupertypes by lazy {
-    val all =
-      predicateBasedProvider.getSymbolsByPredicate(AnvilPredicates.hasContributesToAnnotation)
-    all.filterIsInstance<FirClassLikeSymbol<*>>()
-  }
-
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(PREDICATE)
     register(AnvilPredicates.hasContributesToAnnotation)
     register(AnvilPredicates.hasModuleAnnotation)
-  }
-
-  private val symbolNamesProvider: FirSymbolNamesProvider by lazy {
-    session.symbolProvider.symbolNamesProvider
   }
 
   override fun computeAdditionalSupertypes(
@@ -48,56 +39,43 @@ public class AnvilFirInterfaceMergingExtension(session: FirSession) :
     typeResolver: TypeResolveService,
   ): List<ConeKotlinType> {
 
-//    val scopeFqName = classLikeDeclaration.annotations
-//      // TODO There could be multiple MergeComponent annotations.
-//      .single { it.fqName(session) == Names.anvil.mergeComponent }
-//      .scopeArgument()
-//      .let { getClass ->
-//
-//        resolveConeTypeFromArgument(getClass, typeResolver).classId?.asSingleFqName() ?: error("no")
-//      }
+    val existingSupertypes = resolvedSupertypes.mapToSet { it.coneType.classId }
 
-    val packageNames = listOf(Names.foo.packageFqName)
+    return classLikeDeclaration.annotations
+      .filter { it.fqName(session) == Names.anvil.mergeComponent }
+      .flatMap { annotation ->
 
-    val lotsOfThings = packageNames.flatMap { packageFqName ->
+        val scopeFqName = (annotation as FirAnnotationCall).requireScopeArgument()
+          .resolveConeType(typeResolver)
+          .classId!!
+          .asSingleFqName()
 
-      symbolNamesProvider.getTopLevelClassifierNamesInPackage(packageFqName).orEmpty()
-        .map { packageFqName.child(it) }
-    }
-      .map { className ->
-        session.symbolProvider.getClassLikeSymbolByClassId(className.classId())
-      }
+        session.predicateBasedProvider
+          .getSymbolsByPredicate(AnvilPredicates.hasContributesToAnnotation)
+          .filterIsInstance<FirClassLikeSymbol<*>>()
+          .mapNotNull { contributed ->
 
-    val contributedClasses = lotsOfThings.filterNotNull()
-      .filter { clazz ->
+            val classId = contributed.classId
 
-        if (session.predicateBasedProvider.matches(AnvilPredicates.hasModuleAnnotation, clazz)) {
-          return@filter false
-        }
+            // If the class is already a supertype, we can't add it again.
+            if (classId in existingSupertypes) return@mapNotNull null
 
-        clazz.annotations
-          .filterIsInstance<FirAnnotationCall>()
-          .any { annotation ->
-            annotation.fqName(session) == Names.anvil.contributesTo
+            // If it's a contributed module, we don't add it here
+            if (contributed.hasAnnotation(Names.dagger.module, session)) return@mapNotNull null
+
+            // Only merge contributions to this scope
+            if (!contributed.contributesToScope(
+                scopeFqName,
+                session,
+                typeResolver,
+              )
+            ) {
+              return@mapNotNull null
+            }
+
+            classId.createConeType(session)
           }
       }
-      .map { it.classId }
-
-    return contributedClasses.map { supertypeUserType ->
-
-//      val alreadyHasComponentBase = resolvedSupertypes.any {
-//        it.coneType.classId?.asFqNameString() == Names.foo.componentBase.asString()
-//      }
-//      if (alreadyHasComponentBase) return@mapNotNull null
-
-      val superResolved = supertypeUserType.createConeType(session)
-
-//      check(!resolvedSupertypes.contains(superResolved)) {
-//        "Supertype $supertypeUserType is already present in $resolvedSupertypes"
-//      }
-
-      superResolved
-    }
   }
 
   override fun needTransformSupertypes(declaration: FirClassLikeDeclaration): Boolean {
