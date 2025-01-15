@@ -42,6 +42,9 @@ class FirCanaryTest : CompilationModeTest(
       fun injectClass(): InjectClass
     }
 
+    @dagger.Component
+    interface OtherComponent
+
     @Module
     interface ABindingModule {
       @Binds

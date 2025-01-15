@@ -1,6 +1,5 @@
 package com.squareup.anvil.compiler.k2.internal
 
-import com.squareup.anvil.compiler.k2.internal.Names.anvil
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.extensions.predicate.LookupPredicate
 import org.jetbrains.kotlin.name.FqName
@@ -12,10 +11,14 @@ internal object AnvilPredicates {
     get() = Names.dagger.module.lookupPredicateAnnotated()
   val hasInjectAnnotation
     get() = Names.inject.lookupPredicateAnnotated()
+  val contributedModule
+    get() = LookupPredicate.create {
+      annotated(Names.anvil.contributesTo, Names.dagger.module)
+    }
   val hasContributesToAnnotation
-    get() = anvil.contributesTo.lookupPredicateAnnotated()
+    get() = Names.anvil.contributesTo.lookupPredicateAnnotated()
   val hasMergeComponentFirAnnotation
-    get() = anvil.mergeComponent.lookupPredicateAnnotated()
+    get() = Names.anvil.mergeComponent.lookupPredicateAnnotated()
 
   private fun FqName.lookupPredicateAnnotated(): LookupPredicate =
     LookupPredicate.create { annotated(this@lookupPredicateAnnotated) }
