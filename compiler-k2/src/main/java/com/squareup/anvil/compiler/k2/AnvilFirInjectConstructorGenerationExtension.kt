@@ -4,27 +4,36 @@ import com.squareup.anvil.compiler.k2.internal.AnvilPredicates
 import com.squareup.anvil.compiler.k2.internal.DefaultGeneratedDeclarationKey
 import com.squareup.anvil.compiler.k2.internal.factory
 import com.squareup.anvil.compiler.k2.internal.wrapInProvider
+import org.jetbrains.kotlin.descriptors.EffectiveVisibility
+import org.jetbrains.kotlin.descriptors.Modality
+import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.declarations.builder.buildPrimaryConstructor
+import org.jetbrains.kotlin.fir.declarations.builder.buildValueParameter
+import org.jetbrains.kotlin.fir.declarations.impl.FirResolvedDeclarationStatusImpl
+import org.jetbrains.kotlin.fir.declarations.origin
 import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
-import org.jetbrains.kotlin.fir.plugin.createConstructor
-import org.jetbrains.kotlin.fir.plugin.createMemberProperty
+import org.jetbrains.kotlin.fir.moduleData
 import org.jetbrains.kotlin.fir.plugin.createTopLevelClass
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirConstructorSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
-import org.jetbrains.kotlin.fir.types.classId
-import org.jetbrains.kotlin.name.CallableId
+import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
+import org.jetbrains.kotlin.fir.toFirResolvedTypeRef
+import org.jetbrains.kotlin.fir.types.constructType
+import org.jetbrains.kotlin.fir.types.impl.FirImplicitTypeRefImplWithoutSource
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
 
 /**
+ * Hello we're trying to generate a constructor which looks like:
+ *
  * ```
  * public class InjectClass_Factory(
  *   private val param0: Provider<Inner<String>>
@@ -45,7 +54,6 @@ import org.jetbrains.kotlin.name.SpecialNames
 public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
   FirDeclarationGenerationExtension(session) {
   public companion object {
-
     private val PREDICATE = AnvilPredicates.hasInjectAnnotation
   }
 
@@ -56,13 +64,12 @@ public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
     predicateBasedProvider.getSymbolsByPredicate(PREDICATE)
       .filterIsInstance<FirConstructorSymbol>()
   }
+  private val toGenerate: Map<ClassId, FirConstructorSymbol> by lazy {
+    matchedClasses.associateBy { it.callableId.classId!!.factory() }
+  }
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(PREDICATE)
-  }
-
-  private val toGenerate by lazy {
-    matchedClasses.associateBy { it.callableId.classId!!.factory() }
   }
 
   @ExperimentalTopLevelDeclarationsGenerationApi
@@ -71,101 +78,50 @@ public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
   @ExperimentalTopLevelDeclarationsGenerationApi
   override fun generateTopLevelClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*> {
     return createTopLevelClass(classId, Key).symbol
-    // return createTopLevelClass(classId.factory(), Key).symbol
   }
 
   override fun getCallableNamesForClass(
     classSymbol: FirClassSymbol<*>,
     context: MemberGenerationContext,
   ): Set<Name> = if (context.owner.classId in toGenerate) {
-    setOf(SpecialNames.INIT, Name.identifier("joel"))
+    setOf(SpecialNames.INIT)
   } else {
     emptySet()
   }
 
-  override fun generateProperties(
-    callableId: CallableId,
-    context: MemberGenerationContext?,
-  ): List<FirPropertySymbol> {
-
-    val classId = context!!.owner.classId
-
-    val targetConstructor = toGenerate.getValue(classId)
-
-    return targetConstructor.valueParameterSymbols.map { param ->
-      createMemberProperty(
-        owner = context.owner,
-        key = Key,
-        name = param.name,
-        returnType = param.resolvedReturnType.wrapInProvider(session.symbolProvider),
-        isVal = true,
-      ).symbol
-    }
-  }
-
   override fun generateConstructors(context: MemberGenerationContext): List<FirConstructorSymbol> {
-
     val classId = context.owner.classId
-
     val targetConstructor = toGenerate.getValue(classId)
 
-    val targetParams = targetConstructor.valueParameterSymbols
-      .onEach { param ->
+    return buildPrimaryConstructor {
+      origin = Key.origin
+      moduleData = session.moduleData
+      symbol = FirConstructorSymbol(classId)
+      status = FirResolvedDeclarationStatusImpl(
+        visibility = Visibilities.Public,
+        modality = Modality.FINAL,
+        effectiveVisibility = EffectiveVisibility.Public,
+      )
+      returnTypeRef = FirImplicitTypeRefImplWithoutSource
+      dispatchReceiverType = FirRegularClassSymbol(classId).constructType()
 
-        val type2 = param.resolvedReturnType.wrapInProvider(session.symbolProvider)
-
-        println("name: ${param.name}  -- type: ${param.resolvedReturnType.classId}  --  type2: $type2")
-      }
-
-    // buildPrimaryConstructor {
-    //   val b = this@buildPrimaryConstructor
-    //   b.valueParameters += targetParams.map { param ->
-    //
-    //     buildDefaultSetterValueParameter {
-    //     }
-    //
-    //     val vp = buildValueParameter {
-    //       val c = this@buildValueParameter
-    //       c.name = param.name
-    //       c.backingField
-    //     }
-    //   }
-    // }
-    return listOf(
-      createConstructor(
-        owner = context.owner,
-        key = Key,
-        isPrimary = true,
-        generateDelegatedNoArgConstructorCall = true,
-      ) {
-        targetParams.forEach { param ->
-          valueParameter(
-            param.name,
-            param.resolvedReturnType.wrapInProvider(session.symbolProvider),
-          )
-          // buildValueParameter {
-          //   moduleData = session.moduleData
-          //   origin = Key.origin
-          //
-          //   name = param.name
-          //   symbol = param
-          //   returnTypeRef = param.resolvedReturnType.wrapInProvider(session.symbolProvider)
-          //     .toFirResolvedTypeRef()
-          //   visibility = Visibilities.Public
-          // }
-        }
-      }
-        .apply {
-          // replaceAnnotations(
-          //   listOf(
-          //     buildAnnotation {
-          //       annotationTypeRef = Names.inject.createUserType(null, false)
-          //       argumentMapping = FirEmptyAnnotationArgumentMapping
-          //     },
-          //   ),
-          // )
-        }
-        .symbol,
-    )
+      valueParameters.addAll(
+        targetConstructor.valueParameterSymbols.map { param ->
+          val providerType = param.resolvedReturnType
+            .wrapInProvider(session.symbolProvider)
+          buildValueParameter {
+            name = param.name
+            symbol = param
+            origin = Key.origin
+            moduleData = session.moduleData
+            returnTypeRef = providerType.toFirResolvedTypeRef()
+            containingFunctionSymbol = this@buildPrimaryConstructor.symbol
+            isCrossinline = false
+            isNoinline = false
+            isVararg = false
+          }
+        },
+      )
+    }.symbol.let(::listOf)
   }
 }
