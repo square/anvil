@@ -74,8 +74,9 @@ class FirCanaryTest : CompilationModeTest(
         package foo
     
         import javax.inject.Inject
-    
-        class InjectClass @Inject constructor(val name: String)
+
+        class InjectClass @Inject constructor(val j: String)
+        class Two (val j: javax.inject.Provider<String>)
         """.trimIndent(),
       ) shouldBe true
     }

@@ -15,6 +15,7 @@ import org.jetbrains.kotlin.fir.extensions.buildUserTypeFromQualifierParts
 import org.jetbrains.kotlin.fir.packageFqName
 import org.jetbrains.kotlin.fir.references.builder.buildSimpleNamedReference
 import org.jetbrains.kotlin.fir.references.impl.FirSimpleNamedReference
+import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeClassLikeType
@@ -44,6 +45,14 @@ import org.jetbrains.kotlin.toKtPsiSourceElement
 public fun String.fqn(): FqName = FqName(this)
 public fun FqName.classId(): ClassId = ClassId.topLevel(this)
 public fun String.classId(): ClassId = fqn().classId()
+
+internal fun ConeKotlinType.wrapInProvider(
+  symbolProvider: FirSymbolProvider,
+) = symbolProvider.getClassLikeSymbolByClassId(Names.javax.inject.provider.classId())!!
+  .constructType(
+    typeArguments = arrayOf(this@wrapInProvider),
+    isMarkedNullable = false,
+  )
 
 internal fun ConeKotlinType.requireFqName(): FqName {
   return this@requireFqName.classId!!.asSingleFqName()
