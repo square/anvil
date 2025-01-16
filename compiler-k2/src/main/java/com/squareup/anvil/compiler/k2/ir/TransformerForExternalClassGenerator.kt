@@ -1,3 +1,5 @@
+@file:OptIn(UnsafeDuringIrConstructionAPI::class)
+
 package com.squareup.anvil.compiler.k2.ir
 
 import com.squareup.anvil.compiler.k2.AnvilFactoryDelegateDeclarationGenerationExtension
@@ -6,6 +8,17 @@ import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
 import org.jetbrains.kotlin.ir.expressions.IrBody
+import org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrReturnImpl
+import org.jetbrains.kotlin.ir.symbols.IrConstructorSymbol
+import org.jetbrains.kotlin.ir.symbols.UnsafeDuringIrConstructionAPI
+import org.jetbrains.kotlin.ir.symbols.impl.IrConstructorSymbolImpl
+import org.jetbrains.kotlin.ir.types.classOrFail
+import org.jetbrains.kotlin.ir.util.constructors
+import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.ir.declarations.createBlockBody
+import org.jetbrains.kotlin.ir.declarations.createExpressionBody
+import org.jetbrains.kotlin.name.SpecialNames
 
 internal class TransformerForExternalClassGenerator(context: IrPluginContext) :
   AbstractTransformerForGenerator(context, visitBodies = false) {
@@ -17,6 +30,10 @@ internal class TransformerForExternalClassGenerator(context: IrPluginContext) :
     function: IrSimpleFunction,
     key: GeneratedDeclarationKey?,
   ): IrBody? {
+    if (function.name == SpecialNames.INIT) return null
+    // if (function.name != Name.identifier("newInstance")) {
+    //   return generateNewInstanceFunctionBody(function)
+    // }
     return generateDefaultBodyForMaterializeFunction(function)
   }
 
@@ -25,5 +42,20 @@ internal class TransformerForExternalClassGenerator(context: IrPluginContext) :
     key: GeneratedDeclarationKey?,
   ): IrBody? {
     return generateBodyForDefaultConstructor(constructor)
+  }
+
+  private fun generateNewInstanceFunctionBody(function: IrSimpleFunction): IrBody {
+    // irFactory.createExpressionBody()
+    val constructorCall = org.jetbrains.kotlin.ir.expressions.impl.IrConstructorCallImpl(
+      startOffset = -1,
+      endOffset = -1,
+      type = function.returnType,
+      symbol = function.returnType.classOrFail.constructors.single(),
+      typeArgumentsCount = 0,
+      constructorTypeArgumentsCount = 0,
+    )
+    val returnStatement =
+      IrReturnImpl(-1, -1, irBuiltIns.nothingType, function.symbol, constructorCall)
+    return irFactory.createBlockBody(-1, -1, listOf(returnStatement))
   }
 }
