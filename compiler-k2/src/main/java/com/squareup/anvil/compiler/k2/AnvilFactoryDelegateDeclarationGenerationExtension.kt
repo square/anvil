@@ -4,6 +4,7 @@ import com.squareup.anvil.compiler.k2.internal.AnvilPredicates
 import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.factoryDelegate
 import com.squareup.anvil.compiler.k2.internal.isFactoryDelegate
+import com.squareup.anvil.compiler.k2.internal.mapToSet
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
@@ -67,11 +68,6 @@ public class AnvilFactoryDelegateDeclarationGenerationExtension(session: FirSess
     return classIdsForMatchedClasses.mapToSet { it.factoryDelegate() }
   }
 
-  private inline fun <C : Collection<T>, T, R> C.mapToSet(
-    destination: MutableSet<R> = mutableSetOf(),
-    transform: (T) -> R,
-  ): Set<R> = mapTo(destination, transform)
-
   @ExperimentalTopLevelDeclarationsGenerationApi
   override fun generateTopLevelClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*>? {
     if (matchedClasses.isEmpty()) return null
@@ -103,21 +99,21 @@ public class AnvilFactoryDelegateDeclarationGenerationExtension(session: FirSess
       createConstructor(
         owner = context.owner,
         key = Key,
-        // isPrimary = true,
-        // generateDelegatedNoArgConstructorCall = true,
+        isPrimary = true,
+        generateDelegatedNoArgConstructorCall = true,
       ) {
         valueParameter(Name.identifier("thing"), session.builtinTypes.stringType.coneType)
       }
-        // .apply {
-        //   replaceAnnotations(
-        //     listOf(
-        //       buildAnnotation {
-        //         annotationTypeRef = Names.inject.createUserType(null, false)
-        //         argumentMapping = FirEmptyAnnotationArgumentMapping
-        //       },
-        //     ),
-        //   )
-        // }
+        .apply {
+          // replaceAnnotations(
+          //   listOf(
+          //     buildAnnotation {
+          //       annotationTypeRef = Names.inject.createUserType(null, false)
+          //       argumentMapping = FirEmptyAnnotationArgumentMapping
+          //     },
+          //   ),
+          // )
+        }
         .symbol,
     )
   }

@@ -14,11 +14,11 @@ import com.squareup.anvil.compiler.k2.internal.requireScopeArgument
 import com.squareup.anvil.compiler.k2.internal.resolveConeType
 import com.squareup.anvil.compiler.k2.internal.setAnnotationType
 import com.squareup.anvil.compiler.k2.internal.toGetClassCall
-import com.squareup.anvil.compiler.k2.internal.tree.FirTreePrinter.Companion.printEverything
 import org.jetbrains.kotlin.KtFakeSourceElementKind
 import org.jetbrains.kotlin.fakeElement
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
+import org.jetbrains.kotlin.fir.declarations.utils.classId
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationCallCopy
 import org.jetbrains.kotlin.fir.expressions.builder.buildArgumentList
@@ -74,8 +74,6 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
           newType = Names.dagger.component,
           ktPsiFactoryOrNull = classLikeDeclaration.psi?.ktPsiFactory(),
         )
-
-        componentAnnotation.printEverything()
 
         val contributedModules = session.predicateBasedProvider
           .getSymbolsByPredicate(AnvilPredicates.contributedModule)

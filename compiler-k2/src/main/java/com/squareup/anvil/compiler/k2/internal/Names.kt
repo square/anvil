@@ -15,7 +15,7 @@ internal val Names.identifier: ReadOnlyProperty<Any?, Name>
 
 internal object Names {
 
-  val inject get() = javax.inject
+  val inject get() = javax.inject.inject
 
   internal object identifiers {
     val scope by Names.identifier
@@ -24,7 +24,11 @@ internal object Names {
   }
 
   object javax {
-    val inject = "javax.inject.Inject".fqn()
+    object inject {
+
+      val inject = "javax.inject.Inject".fqn()
+      val provider = "javax.inject.Provider".fqn()
+    }
   }
 
   object anvil {
@@ -35,8 +39,11 @@ internal object Names {
 
   object dagger {
     val binds = "dagger.Binds".fqn()
-    val module = "dagger.Module".fqn()
     val component = "dagger.Component".fqn()
+    val factory = "dagger.`internal`.Factory".fqn()
+    val lazy = "dagger.Lazy".fqn()
+    val module = "dagger.Module".fqn()
+
     val subcomponent = "dagger.Subcomponent".fqn()
   }
 
@@ -47,10 +54,15 @@ internal object Names {
   }
 }
 
+internal fun ClassId.factory(): ClassId {
+  return asClassName().joinSimpleNames(suffix = "_Factory").asClassId()
+}
+
 internal fun ClassId.factoryDelegate(): ClassId {
   return asClassName().joinSimpleNames(suffix = "_FactoryDelegate").asClassId()
 }
 
+internal fun ClassId.isFactory() = shortClassName.asString().endsWith("_Factory")
 internal fun ClassId.isFactoryDelegate() = shortClassName.asString().endsWith("_FactoryDelegate")
 
 internal fun ClassId.hasAnvilPrefix() = shortClassName.asString().startsWith("Anvil_")

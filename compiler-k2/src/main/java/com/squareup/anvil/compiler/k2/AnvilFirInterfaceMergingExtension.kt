@@ -20,6 +20,9 @@ import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.classId
 
+/**
+ * Add
+ */
 public class AnvilFirInterfaceMergingExtension(session: FirSession) :
   FirSupertypeGenerationExtension(session) {
 
