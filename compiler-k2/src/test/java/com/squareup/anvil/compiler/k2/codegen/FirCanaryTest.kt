@@ -73,10 +73,11 @@ class FirCanaryTest : CompilationModeTest(
         """
         package foo
     
+        import com.squareup.anvil.annotations.MergeComponent
         import javax.inject.Inject
 
-        class InjectClass @Inject constructor(val j: String)
-        class Two (val j: javax.inject.Provider<String>)
+        @MergeComponent(Unit::class)
+        class InjectClass @Inject constructor(val name: String)
         """.trimIndent(),
       ) shouldBe true
     }

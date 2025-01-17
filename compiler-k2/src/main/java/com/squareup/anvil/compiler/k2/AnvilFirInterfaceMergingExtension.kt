@@ -42,6 +42,8 @@ public class AnvilFirInterfaceMergingExtension(session: FirSession) :
     typeResolver: TypeResolveService,
   ): List<ConeKotlinType> {
 
+    classLikeDeclaration
+
     val existingSupertypes = resolvedSupertypes.mapToSet { it.coneType.classId }
 
     return classLikeDeclaration.annotations
