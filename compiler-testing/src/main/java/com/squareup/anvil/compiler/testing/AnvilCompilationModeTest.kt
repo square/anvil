@@ -52,10 +52,16 @@ public class CompilationModeTestEnvironment(
 public sealed interface CompilationMode {
   public val useKapt: Boolean
 
-  public data class K2(override val useKapt: Boolean) : CompilationMode
+  public data class K2(
+    override val useKapt: Boolean,
+
+  ) : CompilationMode
 
   @Deprecated("K1 is not implemented yet", level = DeprecationLevel.ERROR)
-  public data class K1(override val useKapt: Boolean) : CompilationMode {
+  public data class K1(
+    override val useKapt: Boolean,
+
+  ) : CompilationMode {
     init {
       error("K1 is not implemented yet")
     }

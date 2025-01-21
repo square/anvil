@@ -6,6 +6,7 @@ import com.rickbusarow.kase.gradle.GradleTestEnvironment
 import com.rickbusarow.kase.gradle.KaseGradleTest
 import com.rickbusarow.kase.gradle.versions
 import com.rickbusarow.kase.stdlib.letIf
+import com.squareup.anvil.compiler.testing.MoreAsserts
 import com.squareup.anvil.plugin.buildProperties.fullTestRun
 import com.squareup.anvil.plugin.testing.AnvilGradleTestEnvironment.Factory
 

@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.k2.ir
 
 import com.squareup.anvil.compiler.k2.TopLevelDeclarationsGenerator
 import com.squareup.anvil.compiler.k2.internal.Names.foo
-import com.squareup.anvil.compiler.k2.internal.tree.IrTreePrinter.Companion.printEverything
 import org.jetbrains.kotlin.backend.common.extensions.IrGenerationExtension
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.ir.IrStatement
@@ -46,7 +45,13 @@ public class CanaryK2IrExtension : IrGenerationExtension {
 
             val className = declaration.valueParameters.single()
               .type.classFqName?.asString() ?: "<error>"
-            val const = IrConstImpl(-1, -1, irBuiltIns.stringType, IrConstKind.String, className)
+            val const = IrConstImpl(
+              startOffset = -1,
+              endOffset = -1,
+              type = irBuiltIns.stringType,
+              kind = IrConstKind.String,
+              value = className,
+            )
             val returnExpression = IrReturnImpl(
               startOffset = -1,
               endOffset = -1,
@@ -62,7 +67,7 @@ public class CanaryK2IrExtension : IrGenerationExtension {
 
         override fun visitClass(declaration: IrClass): IrStatement {
 
-          declaration.printEverything()
+          // declaration.printEverything()
 
           if (declaration.symbol.isClassWithFqName(foo.testComponent.toUnsafe())) {
             declaration.annotations.forEach { constructorCall ->

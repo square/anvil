@@ -50,6 +50,13 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
   override fun apply(target: Project) {
     target.extensions.create("anvil", AnvilExtension::class.java)
 
+    target.pluginManager.withPlugin(KAPT_PLUGIN_ID) {
+      target.tasks.withType(KaptGenerateStubsTask::class.java) {
+        // it.outputs.upToDateWhen { false }
+        it.verbose.set(true)
+      }
+    }
+
     // TODO consider only lazily setting up these `anvil()` configurations in embedded mode?
     // Create a configuration for collecting CodeGenerator dependencies. We need to create all
     // configurations eagerly and cannot wait for applyToCompilation(..) below, because this

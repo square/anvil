@@ -5,30 +5,39 @@ import java.io.File
 import kotlin.contracts.ExperimentalContracts
 import kotlin.contracts.contract
 
-internal object HostEnvironment {
+public object HostClasspath {
+  private val classGraph by lazy {
+    ClassGraph()
+      .enableSystemJarsAndModules()
+      .removeTemporaryFilesAfterScan()
+  }
 
   private val File.pathSegments: List<String>
     get() = path.split(File.separatorChar)
 
-  val inheritedClasspath: List<File> by lazy { getHostClasspaths() }
+  public val inheritedClasspath: List<File> by lazy { getHostClasspaths() }
 
-  val allInheritedAnvilProjects: List<File> by lazy {
+  public val projectClassFileDirectories: List<File> by lazy {
+    classGraph.classpathFiles.filter { it.isDirectory }
+  }
 
-    val relativeJarParents = listOf("build", "root-build", "libs")
+  public val allInheritedAnvilProjects: List<File> by lazy {
+
+    val relativeJarParents = listOf("build", "libs")
 
     inheritedClasspath
       .filter { it.isFile && it.extension == "jar" }
       .filter {
-        // [..., "anvil", "compiler", "build", "included-build", "libs", "compiler-2.5.0-SNAPSHOT.jar"]
+        // [..., "anvil", "compiler", "build", "libs", "compiler-2.5.0-SNAPSHOT.jar"]
 
         @Suppress("MagicNumber")
-        val last3Segments = it.pathSegments
-          // ["build", "included-build", "libs", "compiler-2.5.0-SNAPSHOT.jar"]
-          .takeLast(4)
-          // ["build", "included-build", "libs"]
+        val libsDir = it.pathSegments
+          // ["build", "libs", "compiler-2.5.0-SNAPSHOT.jar"]
+          .takeLast(3)
+          // ["build", "libs"]
           .dropLast(1)
 
-        last3Segments == relativeJarParents
+        libsDir == relativeJarParents
       }
   }
 
@@ -36,85 +45,93 @@ internal object HostEnvironment {
     return findInClasspath(".+build/libs/$moduleName-${anvilVersion}\\.jar".toRegex())
   }
 
-  val anvilAnnotations: File by lazy { anvilModuleJar("annotations") }
-  val anvilAnnotationsOptional: File by lazy { anvilModuleJar("annotations-optional") }
-  val anvilCompiler: File by lazy { anvilModuleJar("compiler") }
-  val anvilCompilerK2: File by lazy { anvilModuleJar("compiler-k2") }
-  val anvilCompilerApi: File by lazy { anvilModuleJar("compiler-api") }
-  val anvilCompilerUtils: File by lazy { anvilModuleJar("compiler-utils") }
-  val anvilCompilerUtilsTestFixtures: File by lazy {
+  public val anvilAnnotations: File by lazy { anvilModuleJar("annotations") }
+  public val anvilAnnotationsOptional: File by lazy { anvilModuleJar("annotations-optional") }
+  public val anvilCompiler: File by lazy { anvilModuleJar("compiler") }
+  public val anvilCompilerK2: File by lazy { anvilModuleJar("compiler-k2") }
+  public val anvilCompilerApi: File by lazy { anvilModuleJar("compiler-api") }
+  public val anvilCompilerUtils: File by lazy { anvilModuleJar("compiler-utils") }
+  public val anvilCompilerUtilsTestFixtures: File by lazy {
     findInClasspath(".+build/libs/compiler-utils-$anvilVersion-test-fixtures\\.jar".toRegex())
   }
 
-  private val jetbrainsKotlin = "org.jetbrains.kotlin"
-  private val jetbrainsKotlinx = "org.jetbrains.kotlinx"
+  private const val jetbrainsKotlin = "org.jetbrains.kotlin"
+  private const val jetbrainsKotlinx = "org.jetbrains.kotlinx"
 
-  val intellijCore: File by lazy {
+  public val intellijTrove4j: File by lazy {
+    findInClasspath(group = "com.jetbrains.intellij.deps", module = "trove4j")
+  }
+  public val intellijCore: File by lazy {
     findInClasspath(group = "com.jetbrains.intellij.platform", module = "core")
   }
 
-  val intellijUtil: File by lazy {
+  public val intellijUtil: File by lazy {
     findInClasspath(group = "com.jetbrains.intellij.platform", module = "util")
   }
-  val kotlinCompilerEmbeddable: File by lazy {
+  public val kotlinCompilerEmbeddable: File by lazy {
     findInClasspath(group = jetbrainsKotlin, module = "kotlin-compiler-embeddable")
   }
-  val kotlinScriptingCompilerEmbeddable: File by lazy {
+  public val kotlinScriptingCompilerEmbeddable: File by lazy {
     findInClasspath(group = jetbrainsKotlin, module = "kotlin-scripting-compiler-embeddable")
   }
-  val kotlinScriptingCompiler: File by lazy {
+  public val kotlinScriptingCompiler: File by lazy {
     findInClasspath(group = jetbrainsKotlin, module = "kotlin-scripting-compiler")
   }
 
-  val kotlinAnnotationProcessingEmbeddable: File by lazy {
+  public val kotlinAnnotationProcessingEmbeddable: File by lazy {
     findInClasspath(group = jetbrainsKotlin, module = "kotlin-annotation-processing-embeddable")
   }
 
-  val kotlinAnnotationProcessing: File by lazy {
+  public val kotlinAnnotationProcessing: File by lazy {
     findInClasspath(group = jetbrainsKotlin, module = "kotlin-annotation-processing")
   }
 
-  val kotlinAnnotationProcessingCompiler: File by lazy {
+  public val kotlinAnnotationProcessingCompiler: File by lazy {
     findInClasspath(group = jetbrainsKotlin, module = "kotlin-annotation-processing-compiler")
   }
 
-  val autoServiceAnnotations: File by lazy {
+  public val autoServiceAnnotations: File by lazy {
     findInClasspath(group = "com.google.auto.service", module = "auto-service-annotations")
   }
 
-  val dagger: File by lazy { findInClasspath(group = "com.google.dagger", module = "dagger") }
-  val daggerCompiler: File by lazy {
+  public val dagger: File by lazy {
+    findInClasspath(group = "com.google.dagger", module = "dagger")
+  }
+  public val daggerCompiler: File by lazy {
     findInClasspath(group = "com.google.dagger", module = "dagger-compiler")
   }
 
-  val javaxInject: File by lazy {
+  public val javaxJsr250Api: File by lazy {
+    findInClasspath(group = "javax.annotation", module = "jsr250-api")
+  }
+  public val javaxInject: File by lazy {
     findInClasspath(group = "javax.inject", module = "javax.inject")
   }
-  val jakartaInject: File by lazy {
+  public val jakartaInject: File by lazy {
     findInClasspath(group = "jakarta.inject", module = "jakarta.inject-api")
   }
 
-  val kotlinxSerializationCoreJvm: File by lazy {
+  public val kotlinxSerializationCoreJvm: File by lazy {
     findInClasspath(group = jetbrainsKotlinx, module = "kotlinx-serialization-core-jvm")
   }
 
-  val jetbrainsAnnotations: File by lazy {
+  public val jetbrainsAnnotations: File by lazy {
     findInClasspath(group = "org.jetbrains", module = "annotations")
   }
 
-  val kotlinStdLib: File by lazy {
+  public val kotlinStdLib: File by lazy {
     findInClasspath(group = jetbrainsKotlin, module = "kotlin-stdlib")
   }
 
-  val kotlinReflect: File by lazy {
+  public val kotlinReflect: File by lazy {
     findInClasspath(group = jetbrainsKotlin, module = "kotlin-reflect")
   }
 
-  val kotlinStdLibCommonJar: File by lazy {
-    findInClasspath(kotlinDependencyRegex("kotlin-stdlib-common"))
+  public val kotlinStdLibCommonJar: File by lazy {
+    findInClasspath(group = jetbrainsKotlin, module = "kotlin-stdlib-common")
   }
 
-  val kotlinStdLibJdkJar: File by lazy {
+  public val kotlinStdLibJdkJar: File by lazy {
     findInClasspath(kotlinDependencyRegex("kotlin-stdlib-jdk[0-9]+"))
   }
 
@@ -188,7 +205,7 @@ internal object HostEnvironment {
   }
 
   @OptIn(ExperimentalContracts::class)
-  inline fun <T : Any> T?.requireNotNull(lazyMessage: () -> Any): T {
+  public inline fun <T : Any> T?.requireNotNull(lazyMessage: () -> Any): T {
     contract {
       returns() implies (this@requireNotNull != null)
     }
@@ -197,9 +214,6 @@ internal object HostEnvironment {
 
   /** Returns the files on the classloader's classpath and module path. */
   private fun getHostClasspaths(): List<File> {
-    val classGraph = ClassGraph()
-      .enableSystemJarsAndModules()
-      .removeTemporaryFilesAfterScan()
 
     val classpaths = classGraph.classpathFiles
     val modules = classGraph.modules.mapNotNull { it.locationFile }

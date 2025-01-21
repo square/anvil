@@ -1,7 +1,8 @@
-package com.squareup.anvil.plugin.testing
+package com.squareup.anvil.compiler.testing
 
 import io.kotest.assertions.print.print
 import io.kotest.matchers.EqualityMatcherResult
+import io.kotest.matchers.Matcher
 import io.kotest.matchers.file.shouldExist
 import io.kotest.matchers.file.shouldNotExist
 import io.kotest.matchers.neverNullMatcher
@@ -9,29 +10,29 @@ import io.kotest.matchers.should
 import io.kotest.matchers.shouldBe
 import java.io.File
 
-interface MoreAsserts {
+public interface MoreAsserts {
 
-  fun File.deleteOrFail() {
+  public fun File.deleteOrFail() {
     delete()
     shouldNotExist()
   }
 
-  fun File.deleteRecursivelyOrFail() {
+  public fun File.deleteRecursivelyOrFail() {
     deleteRecursively()
     shouldNotExist()
   }
 
-  infix fun File.shouldExistWithText(expectedText: String) {
+  public infix fun File.shouldExistWithText(expectedText: String) {
     shouldExist()
     readText() shouldBe expectedText
   }
 
-  infix fun File.shouldExistWithTextContaining(substring: String) {
+  public infix fun File.shouldExistWithTextContaining(substring: String) {
     shouldExist()
     readText() shouldContain substring
   }
 
-  infix fun String?.shouldContain(substring: String): String? {
+  public infix fun String?.shouldContain(substring: String): String? {
     this should include(substring)
     return this
   }
@@ -42,7 +43,7 @@ interface MoreAsserts {
    * which enables the 'click to see difference' feature in IntelliJ.
    * That diff is much more legible.
    */
-  private fun include(substring: String) = neverNullMatcher<String> { actual ->
+  private fun include(substring: String): Matcher<String?> = neverNullMatcher<String> { actual ->
     EqualityMatcherResult.invoke(
       passed = actual.contains(substring),
       actual = actual,

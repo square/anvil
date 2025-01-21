@@ -1,11 +1,15 @@
 package com.squareup.anvil.compiler.k2.codegen
 
+import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.compile2
+import com.squareup.anvil.compiler.testing.getAnnotationInfo
+import io.github.classgraph.AnnotationClassRef
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
+import org.jetbrains.kotlin.cli.common.ExitCode
 import org.junit.jupiter.api.TestFactory
-import kotlin.collections.filter
 
 class FirCanaryTest : CompilationModeTest(
   CompilationMode.K2(useKapt = false),
@@ -13,10 +17,12 @@ class FirCanaryTest : CompilationModeTest(
 ) {
 
   @TestFactory
-  fun `compile2 version canary`() = testFactory {
+  fun `a merged component implements functions from merged supertypes`() = params
+    .filter { (mode) -> mode.useKapt }
+    .asTests {
 
-    compile2(
-      """
+      compile2(
+        """
       package foo
   
       import com.squareup.anvil.annotations.ContributesTo
@@ -34,7 +40,7 @@ class FirCanaryTest : CompilationModeTest(
         @Binds
         fun bindBImpl(bImpl: BImpl): B
       }
-      
+
       @MergeComponent(Unit::class, modules = [ABindingModule::class], dependencies = [OtherComponent::class])
       interface TestComponent {
         val b: B
@@ -60,25 +66,36 @@ class FirCanaryTest : CompilationModeTest(
       interface B
       class BImpl @Inject constructor() : B
   
-      class InjectClass @Inject constructor(val a: A, val b: B)
+      class InjectClass @Inject constructor(val a: A, val b: B) 
       """,
-    ) shouldBe true
-  }
+      ) {
 
-  @TestFactory
-  fun `top-level file generation`() = params
-    .filter { (mode) -> !mode.useKapt }
-    .asTests {
+        exitCode shouldBe ExitCode.OK
 
-      compile2(
-        """
-        package foo
-    
-        import javax.inject.Inject
+        val testComponent = classGraph.getClassInfo("foo.TestComponent")
+          .shouldNotBeNull()
 
-        class InjectClass @Inject constructor(val j: String)
-        class Two (val j: javax.inject.Provider<String>)
-        """.trimIndent(),
-      ) shouldBe true
+        val generatedComponentAnnotation = testComponent.getAnnotationInfo(Names.dagger.component)
+          .shouldNotBeNull()
+
+        val moduleClasses = generatedComponentAnnotation.parameterValues
+          .getValue("modules")
+          .let { it as Array<*> }
+          .map { (it as AnnotationClassRef).name }
+          .sorted()
+
+        moduleClasses shouldBe listOf(
+          "foo.ABindingModule",
+          "foo.BBindingModule",
+        )
+
+        val daggerTestComponent = classGraph.getClassInfo("foo.DaggerTestComponent")
+          .shouldNotBeNull()
+
+        val testComponentImpl = daggerTestComponent.innerClasses
+          .get("foo.DaggerTestComponent\$TestComponentImpl")
+
+        testComponentImpl.methodInfo.map { it.name } shouldBe listOf("injectClass", "getB")
+      }
     }
 }

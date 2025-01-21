@@ -37,7 +37,6 @@ publish {
 
 dependencies {
   implementation(libs.auto.service.annotations)
-  implementation(libs.classgraph)
   implementation(project(":annotations"))
   implementation(project(":compiler-api"))
   implementation(project(":compiler-utils"))
