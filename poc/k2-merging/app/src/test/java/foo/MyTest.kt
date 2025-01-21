@@ -7,7 +7,7 @@ class MyTest {
   @Test
   fun `the appComponent is a thing`() {
 
-    val factory = InjectClass_Factory({ "Butt" })
+    val factory = InjectClass_Factory({ "Butt" }, {0})
 
     val injectClass = factory
 
