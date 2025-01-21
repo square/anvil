@@ -1,6 +1,5 @@
 package com.squareup.anvil.compiler.k2
 
-import com.squareup.anvil.compiler.k2.AnvilFirInjectConstructorGenerationExtension.Key
 import com.squareup.anvil.compiler.k2.internal.AnvilPredicates
 import com.squareup.anvil.compiler.k2.internal.DefaultGeneratedDeclarationKey
 import com.squareup.anvil.compiler.k2.internal.Names
@@ -36,13 +35,10 @@ import org.jetbrains.kotlin.fir.symbols.impl.FirValueParameterSymbol
 import org.jetbrains.kotlin.fir.types.ConeClassLikeType
 import org.jetbrains.kotlin.fir.types.constructClassLikeType
 import org.jetbrains.kotlin.fir.types.constructType
-import org.jetbrains.kotlin.incremental.classpathDiff.ClassSymbol
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
-import org.jetbrains.kotlin.types.AbstractStubType.Companion.createConstructor
-import java.lang.IllegalStateException
 
 private typealias FactoryClassId = ClassId
 private typealias TargetClassId = ClassId
@@ -74,8 +70,9 @@ private typealias TargetClassId = ClassId
  * ```
  */
 @OptIn(ExperimentalTopLevelDeclarationsGenerationApi::class)
-public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
-  FirDeclarationGenerationExtension(session) {
+public class AnvilFirInjectConstructorGenerationExtension(
+  session: FirSession
+) : FirDeclarationGenerationExtension(session) {
   public companion object {
     private val PREDICATE = AnvilPredicates.hasInjectAnnotation
   }
@@ -83,26 +80,6 @@ public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
   private object Key : DefaultGeneratedDeclarationKey()
 
   private val predicateBasedProvider = session.predicateBasedProvider
-
-  // private val matchedClasses by lazy {
-  //   predicateBasedProvider.getSymbolsByPredicate(PREDICATE)
-  //     .filterIsInstance<FirConstructorSymbol>()
-  // }
-  //
-  // private val factoryClassIdToTargetConstructor by lazy {
-  //   matchedClasses.associateBy { it.callableId.classId!!.factory() }
-  // }
-  //
-
-   // private val _factoriesToGenerate = mutableMapOf<FirClassSymbol<*>, InjectConstructorGenerationTypes>()
-  // fun factoriesToGenerate(generatedSymbol: FirClassSymbol<*>): InjectConstructorGenerationTypes {
-  //   return _factoriesToGenerate.getOrPut(generatedSymbol) {
-  //
-  //      InjectConstructorGenerationTypes(
-  //       generatedClassId = generatedSymbol,
-  //       matchedConstructorSymbol = constructorSymbol,
-  //     )}
-  // }
 
   private val factoriesToGenerate: Map<ClassId, InjectConstructorGenerationTypes> by lazy {
     predicateBasedProvider.getSymbolsByPredicate(PREDICATE)
@@ -141,15 +118,14 @@ public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
   ): Set<Name> {
     if (context.owner.classId !in factoriesToGenerate.keys) return emptySet()
 
-    val targetConstructor =
-      factoriesToGenerate[classSymbol.classId]?.matchedConstructorSymbol ?: return emptySet()
-
     val names = setOf(
       SpecialNames.INIT,
       // The FIR for factoryGetName works, however the IR is not implemented yet, uncommenting will crash.
       // factoryGetName,
       *factoriesToGenerate.getValue(context.owner.classId)
-        .generatedCallableIdToParameters.keys.map { it.callableName }
+        .generatedCallableIdToParameters
+        .keys
+        .map { it.callableName }
         .toTypedArray(),
       SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT,
       // classSymbol.companionNewInstanceCallableName(),
@@ -162,36 +138,31 @@ public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
     callableId: CallableId,
     context: MemberGenerationContext?,
   ): List<FirPropertySymbol> {
-    // val owner = context?.owner ?: return emptyList()
-    // val callableParams = factoriesToGenerate[owner.classId]?.callableIdToParameters[callableId] ?: return emptyList()
-    
-    val factoryClassSymbol = context?.owner as? FirRegularClassSymbol
+    val owner = context?.owner ?: return emptyList()
+    val param = factoriesToGenerate[owner.classId]
+      ?.generatedCallableIdToParameters[callableId]
       ?: return emptyList()
 
-    val factoryConstructor = factoriesToGenerate.getValue(context.owner.classId).generatedConstructor
-
-    return factoryConstructor.valueParameters.map { param ->
-
-      createMemberProperty(
-        owner = context.owner,
-        key = Key,
-        name = param.name,
-        returnType = param.symbol.resolvedReturnType,
-      )
-        .apply {
-          replaceInitializer(
-            buildPropertyAccessExpression {
-              val b = this@buildPropertyAccessExpression
-              b.coneTypeOrNull = param.symbol.resolvedReturnType
-              calleeReference = buildPropertyFromParameterResolvedNamedReference {
-                name = param.name
-                resolvedSymbol = param.symbol
-              }
-            },
-          )
-        }
-        .symbol
-    }
+    return createMemberProperty(
+      owner = context.owner,
+      key = Key,
+      name = param.name,
+      returnType = param.resolvedReturnType,
+    )
+      .apply {
+        replaceInitializer(
+          buildPropertyAccessExpression {
+            val b = this@buildPropertyAccessExpression
+            b.coneTypeOrNull = param.resolvedReturnType
+            calleeReference = buildPropertyFromParameterResolvedNamedReference {
+              name = param.name
+              resolvedSymbol = param
+            }
+          },
+        )
+      }
+      .symbol
+      .let(::listOf)
   }
 
   override fun generateConstructors(context: MemberGenerationContext): List<FirConstructorSymbol> {
@@ -282,7 +253,7 @@ public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
     val generatedClassId: ClassId by lazy { matchedClassId.factory() }
     val matchedClassConeType: ConeClassLikeType by lazy { matchedClassId.constructClassLikeType() }
     val generatedCallableIdToParameters: Map<CallableId, FirValueParameterSymbol> by lazy {
-      matchedConstructorSymbol.valueParameterSymbols.associateBy { it.callableId() }
+      generatedConstructor.symbol.valueParameterSymbols.associateBy { it.callableId() }
     }
     val generatedClassSymbol: FirClassSymbol<*> by lazy {
       createTopLevelClass(generatedClassId, Key) {

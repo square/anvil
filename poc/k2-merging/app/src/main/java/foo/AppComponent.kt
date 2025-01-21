@@ -35,7 +35,7 @@ import javax.inject.Inject
 // class InjectClass @Inject constructor(val a: A, val b: B)
 
 @MergeComponent(Unit::class)
-class InjectClass @Inject constructor(val name: String)
+class InjectClass @Inject constructor(val name: String, val param2: Int)
 
 suspend fun main() {
 
