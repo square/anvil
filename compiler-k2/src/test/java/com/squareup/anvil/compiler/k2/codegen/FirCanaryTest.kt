@@ -5,7 +5,7 @@ import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.compile2
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestFactory
-import kotlin.collections.filter
+import javax.inject.Provider
 
 class FirCanaryTest : CompilationModeTest(
   CompilationMode.K2(useKapt = false),
@@ -76,9 +76,19 @@ class FirCanaryTest : CompilationModeTest(
     
         import javax.inject.Inject
 
-        class InjectClass @Inject constructor(val j: String)
-        class Two (val j: javax.inject.Provider<String>)
+        class InjectClass @Inject constructor(val bananas: String)
         """.trimIndent(),
-      ) shouldBe true
+      ) {
+
+        val factoryClass = classLoader.loadClass("foo.InjectClass_Factory")
+        val factoryInstance = factoryClass.constructors.first().newInstance(Provider { "Bananas" })
+
+        @Suppress("UNCHECKED_CAST")
+        val bananasProvider = factoryClass.getMethod("getBananas")
+          .invoke(factoryInstance)
+          as Provider<String>
+
+        bananasProvider.get() shouldBe "Bananas"
+      }
     }
 }

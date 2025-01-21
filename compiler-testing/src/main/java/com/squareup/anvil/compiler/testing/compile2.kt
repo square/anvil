@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler.testing
 import com.rickbusarow.kase.stdlib.createSafely
 import com.rickbusarow.kase.stdlib.letIf
 import dagger.internal.codegen.ComponentProcessor
+import io.kotest.matchers.shouldBe
 import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
@@ -15,9 +16,12 @@ import org.jetbrains.kotlin.kapt3.base.DetectMemoryLeaksMode
 import org.jetbrains.kotlin.kapt3.base.KaptFlag
 import org.jetbrains.kotlin.kapt3.base.KaptOptions
 import java.io.File
+import java.net.URLClassLoader
 
 public fun CompilationEnvironment.compile2(
   @Language("kotlin") vararg kotlinSources: String,
+  expectedExitCode: ExitCode = ExitCode.OK,
+  exec: Compile2Result.() -> Unit = {},
 ): Boolean {
   val files = kotlinSources.mapIndexed { i, kotlin ->
     val packageName = kotlin.substringAfter("package ").substringBefore("\n")
@@ -26,10 +30,25 @@ public fun CompilationEnvironment.compile2(
     workingDir.resolve("sources/$packageDir/Source$i.kt")
       .createSafely(kotlin)
   }
-  return compile2(files)
+  return compile2(files, expectedExitCode = expectedExitCode, exec = exec)
 }
 
-public fun CompilationEnvironment.compile2(sourceFiles: List<File>): Boolean {
+public fun CompilationEnvironment.compile2(
+  sourceFiles: List<File>,
+  expectedExitCode: ExitCode = ExitCode.OK,
+  exec: Compile2Result.() -> Unit = {},
+): Boolean {
+
+  val classFileDir = workingDir.resolve("kotlin/classes")
+
+  val classpathFiles = listOf(
+    HostEnvironment.jakartaInject,
+    HostEnvironment.javaxInject,
+    HostEnvironment.dagger,
+    HostEnvironment.kotlinStdLib,
+    HostEnvironment.jetbrainsAnnotations,
+    HostEnvironment.anvilAnnotations,
+  )
 
   val k2JvmArgs = K2JVMCompilerArguments().also { args ->
 
@@ -53,7 +72,7 @@ public fun CompilationEnvironment.compile2(sourceFiles: List<File>): Boolean {
     args.noReflect = true
     args.allowNoSourceFiles = true
 
-    args.destination = workingDir.resolve("kotlin/classes").absolutePath
+    args.destination = classFileDir.absolutePath
 
     if (mode.useKapt) {
       args.freeArgs += "-Xuse-kapt4"
@@ -62,15 +81,7 @@ public fun CompilationEnvironment.compile2(sourceFiles: List<File>): Boolean {
         .toTypedArray()
     }
 
-    args.classpath = listOf(
-      HostEnvironment.jakartaInject,
-      HostEnvironment.javaxInject,
-      HostEnvironment.dagger,
-      HostEnvironment.kotlinStdLib,
-      HostEnvironment.jetbrainsAnnotations,
-      HostEnvironment.anvilAnnotations,
-    )
-      .joinToString(File.pathSeparator) { it.absolutePath }
+    args.classpath = classpathFiles.joinToString(File.pathSeparator) { it.absolutePath }
 
     args.pluginClasspaths = HostEnvironment.inheritedClasspath
       .asSequence()
@@ -101,8 +112,24 @@ public fun CompilationEnvironment.compile2(sourceFiles: List<File>): Boolean {
     messageRenderer = messageRenderer,
     args = k2JvmArgs.toArgumentStrings().toTypedArray(),
   )
+  exitCode shouldBe expectedExitCode
+
+  val classLoader = URLClassLoader
+    .newInstance(
+      classpathFiles
+        .plus(classFileDir)
+        .map { it.toURI().toURL() }.toTypedArray(),
+    )
+
+  Compile2Result(exitCode, classLoader).apply(exec)
+
   return exitCode == ExitCode.OK
 }
+
+public class Compile2Result(
+  public val exitCode: ExitCode,
+  public val classLoader: ClassLoader,
+)
 
 private fun kaptOptions(workingDir: File) = KaptOptions.Builder().also { kapt ->
   kapt.detectMemoryLeaks = DetectMemoryLeaksMode.DEFAULT
