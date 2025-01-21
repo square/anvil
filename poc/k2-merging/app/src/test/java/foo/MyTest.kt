@@ -7,8 +7,14 @@ class MyTest {
   @Test
   fun `the appComponent is a thing`() {
 
-    val component = DaggerAppComponent.create()
+    val factory = InjectClass_Factory({ "Butt" })
 
-    assert(component is ComponentBase)
+    val injectClass = factory
+
+    val factoryName = factory.name as javax.inject.Provider<String>
+
+    println("######################### ${factoryName.get()}")
+
+    assert(factoryName != null)
   }
 }

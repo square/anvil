@@ -40,7 +40,7 @@ internal object Names {
   object dagger {
     val binds = "dagger.Binds".fqn()
     val component = "dagger.Component".fqn()
-    val factory = "dagger.`internal`.Factory".fqn()
+    val factory = "dagger.internal.Factory".fqn()
     val lazy = "dagger.Lazy".fqn()
     val module = "dagger.Module".fqn()
 
