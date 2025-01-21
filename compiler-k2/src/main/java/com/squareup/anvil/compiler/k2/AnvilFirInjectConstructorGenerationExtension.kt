@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.k2
 
+import com.squareup.anvil.compiler.k2.AnvilFirInjectConstructorGenerationExtension.Key
 import com.squareup.anvil.compiler.k2.internal.AnvilPredicates
 import com.squareup.anvil.compiler.k2.internal.DefaultGeneratedDeclarationKey
 import com.squareup.anvil.compiler.k2.internal.Names
@@ -35,10 +36,13 @@ import org.jetbrains.kotlin.fir.symbols.impl.FirValueParameterSymbol
 import org.jetbrains.kotlin.fir.types.ConeClassLikeType
 import org.jetbrains.kotlin.fir.types.constructClassLikeType
 import org.jetbrains.kotlin.fir.types.constructType
+import org.jetbrains.kotlin.incremental.classpathDiff.ClassSymbol
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
+import org.jetbrains.kotlin.types.AbstractStubType.Companion.createConstructor
+import java.lang.IllegalStateException
 
 private typealias FactoryClassId = ClassId
 private typealias TargetClassId = ClassId
@@ -80,26 +84,32 @@ public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
 
   private val predicateBasedProvider = session.predicateBasedProvider
 
-  private val matchedClasses by lazy {
-    predicateBasedProvider.getSymbolsByPredicate(PREDICATE)
-      .filterIsInstance<FirConstructorSymbol>()
-  }
+  // private val matchedClasses by lazy {
+  //   predicateBasedProvider.getSymbolsByPredicate(PREDICATE)
+  //     .filterIsInstance<FirConstructorSymbol>()
+  // }
+  //
+  // private val factoryClassIdToTargetConstructor by lazy {
+  //   matchedClasses.associateBy { it.callableId.classId!!.factory() }
+  // }
+  //
 
-  private val factoryClassIdToTargetConstructor by lazy {
-    matchedClasses.associateBy { it.callableId.classId!!.factory() }
-  }
-
-  private val constructorMap = mutableMapOf<FirClassSymbol<*>, FirConstructor>()
+   // private val _factoriesToGenerate = mutableMapOf<FirClassSymbol<*>, InjectConstructorGenerationTypes>()
+  // fun factoriesToGenerate(generatedSymbol: FirClassSymbol<*>): InjectConstructorGenerationTypes {
+  //   return _factoriesToGenerate.getOrPut(generatedSymbol) {
+  //
+  //      InjectConstructorGenerationTypes(
+  //       generatedClassId = generatedSymbol,
+  //       matchedConstructorSymbol = constructorSymbol,
+  //     )}
+  // }
 
   private val factoriesToGenerate: Map<ClassId, InjectConstructorGenerationTypes> by lazy {
     predicateBasedProvider.getSymbolsByPredicate(PREDICATE)
       .filterIsInstance<FirConstructorSymbol>()
       .associate { constructorSymbol ->
-        val classIdToGenerate = constructorSymbol.callableId.classId!!.factory()
-        classIdToGenerate to InjectConstructorGenerationTypes(
-          toGenerateClassId = classIdToGenerate,
-          matchedConstructorSymbol = constructorSymbol,
-        )
+        val data = InjectConstructorGenerationTypes(matchedConstructorSymbol = constructorSymbol)
+        data.generatedClassId to data
       }
   }
 
@@ -122,13 +132,7 @@ public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
 
   @ExperimentalTopLevelDeclarationsGenerationApi
   override fun generateTopLevelClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*> {
-    return createTopLevelClass(classId, Key) {
-      superType(
-        daggerFactory.constructType(
-          typeArguments = arrayOf(factoriesToGenerate.getValue(classId).matchedClassConeType),
-        ),
-      )
-    }.symbol
+    return factoriesToGenerate.getValue(classId).generatedClassSymbol
   }
 
   override fun getCallableNamesForClass(
@@ -138,14 +142,14 @@ public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
     if (context.owner.classId !in factoriesToGenerate.keys) return emptySet()
 
     val targetConstructor =
-      factoryClassIdToTargetConstructor[classSymbol.classId] ?: return emptySet()
+      factoriesToGenerate[classSymbol.classId]?.matchedConstructorSymbol ?: return emptySet()
 
     val names = setOf(
       SpecialNames.INIT,
       // The FIR for factoryGetName works, however the IR is not implemented yet, uncommenting will crash.
       // factoryGetName,
       *factoriesToGenerate.getValue(context.owner.classId)
-        .callableIdToParameters.keys.map { it.callableName }
+        .generatedCallableIdToParameters.keys.map { it.callableName }
         .toTypedArray(),
       SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT,
       // classSymbol.companionNewInstanceCallableName(),
@@ -154,8 +158,44 @@ public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
     return names
   }
 
+  override fun generateProperties(
+    callableId: CallableId,
+    context: MemberGenerationContext?,
+  ): List<FirPropertySymbol> {
+    // val owner = context?.owner ?: return emptyList()
+    // val callableParams = factoriesToGenerate[owner.classId]?.callableIdToParameters[callableId] ?: return emptyList()
+    
+    val factoryClassSymbol = context?.owner as? FirRegularClassSymbol
+      ?: return emptyList()
+
+    val factoryConstructor = factoriesToGenerate.getValue(context.owner.classId).generatedConstructor
+
+    return factoryConstructor.valueParameters.map { param ->
+
+      createMemberProperty(
+        owner = context.owner,
+        key = Key,
+        name = param.name,
+        returnType = param.symbol.resolvedReturnType,
+      )
+        .apply {
+          replaceInitializer(
+            buildPropertyAccessExpression {
+              val b = this@buildPropertyAccessExpression
+              b.coneTypeOrNull = param.symbol.resolvedReturnType
+              calleeReference = buildPropertyFromParameterResolvedNamedReference {
+                name = param.name
+                resolvedSymbol = param.symbol
+              }
+            },
+          )
+        }
+        .symbol
+    }
+  }
+
   override fun generateConstructors(context: MemberGenerationContext): List<FirConstructorSymbol> {
-    return listOf(factoryConstructor(context.owner).symbol)
+    return listOf(factoriesToGenerate.getValue(context.owner.classId).generatedConstructor.symbol)
   }
 
   override fun generateFunctions(
@@ -180,77 +220,6 @@ public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
     visibility = Visibilities.Public
     modality = Modality.FINAL
   }.symbol
-
-  private fun factoryConstructor(factoryClassSymbol: FirClassSymbol<*>): FirConstructor {
-    return constructorMap.getOrPut(factoryClassSymbol) {
-
-      val factoryClassId = factoryClassSymbol.classId
-
-      val targetConstructor = factoryClassIdToTargetConstructor.getValue(factoryClassId)
-
-      val factoryConstructor = createConstructor(
-        owner = factoryClassSymbol,
-        key = Key,
-        isPrimary = true,
-        generateDelegatedNoArgConstructorCall = true,
-      ) {
-        for (param in targetConstructor.valueParameterSymbols) {
-
-          valueParameter(
-            name = param.name,
-            type = param.resolvedReturnType.wrapInProvider(session.symbolProvider),
-          )
-        }
-      }
-      factoryConstructor
-    }
-  }
-
-  override fun generateProperties(
-    callableId: CallableId,
-    context: MemberGenerationContext?,
-  ): List<FirPropertySymbol> {
-    val factoryClassSymbol = context?.owner as? FirRegularClassSymbol
-      ?: return emptyList()
-
-    val factoryConstructor = factoryConstructor(factoryClassSymbol)
-
-    return factoryConstructor.valueParameters.map { param ->
-
-      createMemberProperty(
-        owner = context.owner,
-        key = Key,
-        name = param.name,
-        returnType = param.symbol.resolvedReturnType,
-      )
-        .apply {
-          replaceInitializer(
-            buildPropertyAccessExpression {
-              val b = this@buildPropertyAccessExpression
-              b.coneTypeOrNull = param.symbol.resolvedReturnType
-              calleeReference = buildPropertyFromParameterResolvedNamedReference {
-                name = param.name
-                resolvedSymbol = param.symbol
-              }
-            },
-          )
-        }
-        .symbol
-
-      // buildPropertyCopy(mp) {
-      //   symbol = FirPropertySymbol(callableId)
-      //   initializer = buildPropertyAccessExpression {
-      //     val b = this@buildPropertyAccessExpression
-      //     b.coneTypeOrNull = param.symbol.resolvedReturnType
-      //     calleeReference = buildPropertyFromParameterResolvedNamedReference {
-      //       name = param.name
-      //       resolvedSymbol = param.symbol
-      //     }
-      //   }
-      // }
-      //   .symbol
-    }
-  }
 
   override fun generateNestedClassLikeDeclaration(
     owner: FirClassSymbol<*>,
@@ -305,20 +274,45 @@ public class AnvilFirInjectConstructorGenerationExtension(session: FirSession) :
     }.symbol
     return symbol
   }
-}
 
-private class InjectConstructorGenerationTypes(
-  val toGenerateClassId: ClassId,
-  val matchedConstructorSymbol: FirConstructorSymbol,
-) {
-  val matchedClassId: ClassId by lazy { matchedConstructorSymbol.callableId.classId!! }
-  val matchedClassConeType: ConeClassLikeType by lazy { matchedClassId.constructClassLikeType() }
-  val callableIdToParameters: Map<CallableId, FirValueParameterSymbol> by lazy {
-    matchedConstructorSymbol.valueParameterSymbols.associateBy { it.callableId() }
-  }
+  private inner class InjectConstructorGenerationTypes(
+    val matchedConstructorSymbol: FirConstructorSymbol,
+  ) {
+    val matchedClassId: ClassId by lazy { matchedConstructorSymbol.callableId.classId!! }
+    val generatedClassId: ClassId by lazy { matchedClassId.factory() }
+    val matchedClassConeType: ConeClassLikeType by lazy { matchedClassId.constructClassLikeType() }
+    val generatedCallableIdToParameters: Map<CallableId, FirValueParameterSymbol> by lazy {
+      matchedConstructorSymbol.valueParameterSymbols.associateBy { it.callableId() }
+    }
+    val generatedClassSymbol: FirClassSymbol<*> by lazy {
+      createTopLevelClass(generatedClassId, Key) {
+        superType(
+          daggerFactory.constructType(
+            typeArguments = arrayOf(matchedClassConeType),
+          ),
+        )
+      }.symbol
+    }
+    val generatedConstructor: FirConstructor by lazy {
+      val factoryConstructor = createConstructor(
+        owner = generatedClassSymbol,
+        key = Key,
+        isPrimary = true,
+        generateDelegatedNoArgConstructorCall = true,
+      ) {
+        for (param in matchedConstructorSymbol.valueParameterSymbols) {
+          valueParameter(
+            name = param.name,
+            type = param.resolvedReturnType.wrapInProvider(session.symbolProvider),
+          )
+        }
+      }
+      factoryConstructor
+    }
 
-  private fun FirValueParameterSymbol.callableId(): CallableId {
-    return CallableId(classId = toGenerateClassId, callableName = name)
+    private fun FirValueParameterSymbol.callableId(): CallableId {
+      return CallableId(classId = generatedClassId, callableName = name)
+    }
   }
 }
 

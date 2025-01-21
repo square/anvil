@@ -5,6 +5,7 @@ import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.compile2
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestFactory
+import kotlin.collections.filter
 
 class FirCanaryTest : CompilationModeTest(
   CompilationMode.K2(useKapt = false),
