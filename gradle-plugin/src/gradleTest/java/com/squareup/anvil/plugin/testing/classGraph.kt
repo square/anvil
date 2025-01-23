@@ -12,6 +12,9 @@ import java.io.File
 /** A class that's annotated with `@Module` */
 typealias ModuleClassInfo = ClassInfo
 
+/** A class that's annotated with `@Component` */
+typealias ComponentClassInfo = ClassInfo
+
 /** A class that implements `dagger.internal.Factory` */
 typealias DaggerFactoryClassInfo = ClassInfo
 
@@ -23,6 +26,14 @@ typealias ProvidesMethodInfo = MethodInfo
 
 typealias ReturnTypeName = String
 typealias ParameterTypeName = String
+
+fun ScanResult.appComponent(packageName: String = "com.squareup.test"): ComponentClassInfo {
+  return getClassInfo("$packageName.AppComponent") as ComponentClassInfo
+}
+
+fun ScanResult.daggerAppComponent(packageName: String = "com.squareup.test"): ComponentClassInfo {
+  return getClassInfo("$packageName.DaggerAppComponent") as ComponentClassInfo
+}
 
 /**
  * Returns all classes that are annotated with `@Module` in this scan result.

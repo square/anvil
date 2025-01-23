@@ -1,17 +1,11 @@
 package com.squareup.anvil.plugin
 
-import com.google.common.collect.Lists.cartesianProduct
 import com.rickbusarow.kase.gradle.GradleKotlinAgpTestVersions
-import com.rickbusarow.kase.gradle.GradleKotlinTestVersions
 import com.rickbusarow.kase.gradle.dsl.BuildFileSpec
 import com.rickbusarow.kase.gradle.dsl.PluginsSpec
 import com.rickbusarow.kase.gradle.dsl.buildFile
-import com.rickbusarow.kase.gradle.dsl.model.HasDependenciesBlock
 import com.rickbusarow.kase.gradle.versions
-import com.rickbusarow.kase.wrap
-import com.squareup.anvil.plugin.testing.AnvilGradleTestEnvironment
-import com.squareup.anvil.plugin.testing.BaseGradleTest
-import com.squareup.anvil.plugin.testing.Libs
+import com.squareup.anvil.plugin.testing.FactoryGenTest
 import com.squareup.anvil.plugin.testing.allDaggerFactoryClasses
 import com.squareup.anvil.plugin.testing.allModuleClasses
 import com.squareup.anvil.plugin.testing.allProvidesMethods
@@ -21,11 +15,9 @@ import com.squareup.anvil.plugin.testing.names
 import io.kotest.assertions.asClue
 import io.kotest.matchers.collections.shouldBeSingleton
 import io.kotest.matchers.shouldBe
-import org.junit.jupiter.api.DynamicNode
 import org.junit.jupiter.api.TestFactory
-import java.util.stream.Stream
 
-class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
+class DaggerFactoryGenerationDetectionTest : FactoryGenTest() {
 
   @TestFactory
   fun `a provider factory is always generated for a contributed object binding - jvm`() =
@@ -176,72 +168,5 @@ class DaggerFactoryGenerationDetectionTest : BaseGradleTest() {
     anvil {
       generateDaggerFactories.set(factoryGen.genFactories)
     }
-  }
-
-  private fun HasDependenciesBlock<*>.dependenciesBlock(libs: Libs, factoryGen: FactoryGen) {
-    dependencies {
-      api(libs.dagger2.annotations)
-      compileOnly(libs.inject)
-
-      if (factoryGen.daggerCompiler) {
-        when {
-          factoryGen.addKapt -> {
-            kapt(libs.dagger2.compiler)
-          }
-          else -> {
-            error("No compiler plugin added")
-          }
-        }
-      }
-    }
-  }
-
-  data class FactoryGen(
-    val genFactories: Boolean,
-    val addKapt: Boolean,
-    val daggerCompiler: Boolean,
-  ) {
-    override fun toString(): String = buildString {
-      if (addKapt) {
-        append("KAPT plugin | ")
-      }
-      if (daggerCompiler) {
-        append("with Dagger compiler | ")
-      } else {
-        append("no Dagger compiler | ")
-      }
-      append("genFactories: $genFactories")
-    }
-  }
-
-  private inline fun <K : GradleKotlinTestVersions> List<K>.withFactoryGen(
-    crossinline testAction: suspend AnvilGradleTestEnvironment.(
-      versions: K,
-      factoryGen: FactoryGen,
-    ) -> Unit,
-  ): Stream<out DynamicNode> = asContainers { versions ->
-    cartesianProduct(
-      listOf(true, false),
-      listOf(true, false),
-      listOf(true, false),
-    )
-      .map { (genFactories, addKapt, daggerCompiler) ->
-        FactoryGen(
-          genFactories = genFactories,
-          addKapt = addKapt,
-          daggerCompiler = daggerCompiler,
-        )
-      }
-      .filter {
-        when {
-          // We can't add a Dagger compiler dependency without a plugin to add it to
-          it.daggerCompiler -> it.addKapt && !it.genFactories
-          else -> true
-        }
-      }
-      .asTests(
-        testEnvironmentFactory = AnvilGradleTestEnvironment.Factory().wrap(versions),
-        testAction = { factoryGen -> testAction(versions, factoryGen) },
-      )
   }
 }

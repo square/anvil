@@ -17,6 +17,17 @@ class Libs(
     val annotations = "com.squareup.anvil.annotations:annotations:$anvilVersion"
   }
 
+  val auto = Auto()
+  inner class Auto {
+
+    val service = Service()
+
+    inner class Service {
+      val annotations = "com.google.auto.service:auto-service-annotations:1.0-rc7"
+      val processor = "com.google.auto.service:auto-service:1.0-rc7"
+    }
+  }
+
   val dagger2 = Dagger2()
 
   inner class Dagger2 {

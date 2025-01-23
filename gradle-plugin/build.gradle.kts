@@ -53,6 +53,7 @@ buildConfig {
     val buildM2 = rootProject.layout.buildDirectory.dir("m2").map { it.asFile }
     buildConfigField("anvilVersion", VERSION_NAME)
     buildConfigField("daggerVersion", libs.versions.dagger)
+    buildConfigField("autoServiceVersion", libs.versions.autoService)
     buildConfigField("fullTestRun", libs.versions.config.fullTestRun.map(String::toBoolean))
     buildConfigField("gradleVersion", gradle.gradleVersion)
     buildConfigField("kotlinVersion", libs.versions.kotlin)
