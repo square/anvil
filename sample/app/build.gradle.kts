@@ -40,8 +40,8 @@ androidComponents {
 }
 
 dependencies {
-  implementation(project(":sample:library"))
-  implementation(project(":sample:scopes"))
+  implementation(project(":library"))
+  implementation(project(":scopes"))
 
   implementation(libs.androidx.appcompat)
   implementation(libs.androidx.core)

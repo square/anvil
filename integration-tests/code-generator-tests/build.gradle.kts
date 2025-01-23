@@ -10,7 +10,7 @@ anvil {
 }
 
 dependencies {
-  anvil(project(":integration-tests:code-generator"))
+  anvil(project(":code-generator"))
 
   implementation(libs.dagger2)
 
