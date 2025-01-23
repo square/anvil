@@ -49,3 +49,5 @@ build-anvil/
 
 # old build directories that've moved
 /gradle-plugin/build-composite-wrapper/
+
+.kotlin/
