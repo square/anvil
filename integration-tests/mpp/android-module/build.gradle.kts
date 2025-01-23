@@ -81,5 +81,5 @@ dependencies {
 
   // This dependency isn't needed. It's only here for testing purposes (this is still an
   // integration test).
-  anvilAndroidTest(project(":integration-tests:code-generator"))
+  anvilAndroidTest(project(":code-generator"))
 }

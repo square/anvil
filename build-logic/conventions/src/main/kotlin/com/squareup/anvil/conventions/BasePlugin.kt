@@ -1,14 +1,9 @@
 package com.squareup.anvil.conventions
 
-import com.rickbusarow.kgx.buildDir
-import com.rickbusarow.kgx.extras
 import com.rickbusarow.kgx.fromInt
 import com.rickbusarow.kgx.getValue
 import com.rickbusarow.kgx.javaExtension
 import com.rickbusarow.kgx.provideDelegate
-import com.squareup.anvil.conventions.utils.isInAnvilBuild
-import com.squareup.anvil.conventions.utils.isInAnvilIncludedBuild
-import com.squareup.anvil.conventions.utils.isInAnvilRootBuild
 import com.squareup.anvil.conventions.utils.libs
 import org.gradle.api.JavaVersion
 import org.gradle.api.Plugin
@@ -18,9 +13,9 @@ import org.gradle.api.tasks.testing.Test
 import org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
 import org.jetbrains.kotlin.gradle.plugin.KotlinBasePluginWrapper
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
-import java.util.Properties
 
 abstract class BasePlugin : Plugin<Project> {
 
@@ -33,10 +28,6 @@ abstract class BasePlugin : Plugin<Project> {
 
     val extension = target.extensions.create("conventions", ConventionsExtension::class.java)
 
-    if (!target.isInAnvilBuild()) {
-      target.copyRootProjectGradleProperties()
-    }
-
     beforeApply(target)
 
     target.plugins.apply("base")
@@ -44,8 +35,6 @@ abstract class BasePlugin : Plugin<Project> {
     target.plugins.apply(KtlintConventionPlugin::class.java)
 
     configureGradleProperties(target)
-
-    configureBuildDirs(target)
 
     configureJava(target)
 
@@ -55,27 +44,7 @@ abstract class BasePlugin : Plugin<Project> {
 
     configureTests(target)
 
-    target.configurations.configureEach { config ->
-      config.resolutionStrategy {
-        it.force(target.libs.kotlin.metadata)
-      }
-    }
-
     afterApply(target)
-  }
-
-  /**
-   * Included builds need the `GROUP` and `VERSION_NAME` values from the main build's
-   * `gradle.properties`. We can't just use a symlink because Windows exists.
-   * See https://github.com/square/anvil/pull/763#discussion_r1379563691
-   */
-  private fun Project.copyRootProjectGradleProperties() {
-    rootProject.file("../../gradle.properties")
-      .inputStream()
-      .use { Properties().apply { load(it) } }
-      .forEach { key, value ->
-        extras.set(key.toString(), value.toString())
-      }
   }
 
   private fun configureGradleProperties(target: Project) {
@@ -123,37 +92,10 @@ abstract class BasePlugin : Plugin<Project> {
           freeCompilerArgs.add("-Xexplicit-api=strict")
         }
 
+        languageVersion.set(KotlinVersion.KOTLIN_2_0)
+
         jvmTarget.set(JvmTarget.fromInt(target.jvmTargetInt()))
       }
-    }
-  }
-
-  /**
-   * The "anvil" projects exist in two different builds, they need two different build directories
-   * so that there is no shared mutable state.
-   */
-  private fun configureBuildDirs(target: Project) {
-
-    when {
-      !target.isInAnvilBuild() -> return
-
-      target.isInAnvilRootBuild() -> {
-        target.layout.buildDirectory.set(target.file("build/root-build"))
-      }
-
-      target.isInAnvilIncludedBuild() -> {
-        target.layout.buildDirectory.set(target.file("build/included-build"))
-      }
-    }
-
-    // Set the kase working directory ('<build directory>/kase/<test|gradleTest>') as a System property,
-    // so that it's in the right place for projects with relocated directories.
-    // https://github.com/rickbusarow/kase/blob/255db67f40d5ec83e31755bc9ce81b1a2b08cf11/kase/src/main/kotlin/com/rickbusarow/kase/files/HasWorkingDir.kt#L93-L96
-    target.tasks.withType(Test::class.java).configureEach { task ->
-      task.systemProperty(
-        "kase.baseWorkingDir",
-        target.buildDir().resolve("kase/${task.name}"),
-      )
     }
   }
 
