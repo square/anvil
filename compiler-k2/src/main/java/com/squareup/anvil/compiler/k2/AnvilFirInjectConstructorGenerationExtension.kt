@@ -6,11 +6,23 @@ import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.classId
 import com.squareup.anvil.compiler.k2.internal.factory
 import com.squareup.anvil.compiler.k2.internal.wrapInProvider
+import org.jetbrains.kotlin.KtFakeSourceElementKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
+import org.jetbrains.kotlin.fakeElement
+import org.jetbrains.kotlin.fir.FirFunctionTarget
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirConstructor
+import org.jetbrains.kotlin.fir.declarations.builder.buildField
+import org.jetbrains.kotlin.fir.declarations.builder.buildPropertyAccessor
+import org.jetbrains.kotlin.fir.declarations.utils.isCompanion
+import org.jetbrains.kotlin.fir.declarations.utils.nameOrSpecialName
+import org.jetbrains.kotlin.fir.expressions.builder.FirBlockBuilder
+import org.jetbrains.kotlin.fir.expressions.builder.buildArgumentList
+import org.jetbrains.kotlin.fir.expressions.builder.buildFunctionCall
+import org.jetbrains.kotlin.fir.expressions.builder.buildNamedArgumentExpression
 import org.jetbrains.kotlin.fir.expressions.builder.buildPropertyAccessExpression
+import org.jetbrains.kotlin.fir.expressions.builder.buildReturnExpression
 import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
@@ -19,10 +31,15 @@ import org.jetbrains.kotlin.fir.extensions.NestedClassGenerationContext
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.plugin.createCompanionObject
 import org.jetbrains.kotlin.fir.plugin.createConstructor
+import org.jetbrains.kotlin.fir.plugin.createDefaultPrivateConstructor
 import org.jetbrains.kotlin.fir.plugin.createMemberFunction
 import org.jetbrains.kotlin.fir.plugin.createMemberProperty
 import org.jetbrains.kotlin.fir.plugin.createTopLevelClass
+import org.jetbrains.kotlin.fir.references.builder.buildBackingFieldReference
 import org.jetbrains.kotlin.fir.references.builder.buildPropertyFromParameterResolvedNamedReference
+import org.jetbrains.kotlin.fir.references.builder.buildResolvedNamedReference
+import org.jetbrains.kotlin.fir.references.builder.buildSimpleNamedReference
+import org.jetbrains.kotlin.fir.references.impl.FirSimpleNamedReference
 import org.jetbrains.kotlin.fir.resolve.providers.getRegularClassSymbolByClassId
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
@@ -40,19 +57,14 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
 
-private typealias FactoryClassId = ClassId
-private typealias TargetClassId = ClassId
-
 /**
  * Given this kotlin source:
- * ```
  * class Inject @Inject constructor(private val param0: String)
- * ```
+ *
  *
  * Using a FirDeclarationGenerationExtension in kotlin k2 fir plugin generate a class file
  * representing the following:
  *
- * ```
  * public class InjectClass_Factory(
  *   private val param0: Provider<String>
  * ) : com.internal.Dagger.Factory<InjectClass> {
@@ -67,17 +79,20 @@ private typealias TargetClassId = ClassId
  *     public fun newInstance(param0: String): InjectClass = InjectClass(param0)
  *   }
  * }
- * ```
  */
+internal class LoggingAnvilFirInjectConstructorGenerationExtension(
+  session: FirSession,
+) : FirDeclarationGenerationExtensionLogger(AnvilFirInjectConstructorGenerationExtension(session))
+
 @OptIn(ExperimentalTopLevelDeclarationsGenerationApi::class)
-public class AnvilFirInjectConstructorGenerationExtension(
+internal class AnvilFirInjectConstructorGenerationExtension(
   session: FirSession
 ) : FirDeclarationGenerationExtension(session) {
-  public companion object {
+  companion object {
     private val PREDICATE = AnvilPredicates.hasInjectAnnotation
   }
 
-  private object Key : DefaultGeneratedDeclarationKey()
+  internal object Key : DefaultGeneratedDeclarationKey()
 
   private val predicateBasedProvider = session.predicateBasedProvider
 
@@ -99,6 +114,7 @@ public class AnvilFirInjectConstructorGenerationExtension(
     session.getRegularClassSymbolByClassId(factoryClassId)!!
   }
   private val factoryGetName = Name.identifier("get")
+  private val createName = Name.identifier("create")
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(PREDICATE)
@@ -116,6 +132,13 @@ public class AnvilFirInjectConstructorGenerationExtension(
     classSymbol: FirClassSymbol<*>,
     context: MemberGenerationContext,
   ): Set<Name> {
+    // TODO clean this up to something reusable for checking companion objects
+    if (context.owner.isCompanion && context.owner.classId.parentClassId in factoriesToGenerate.keys) {
+      return setOf(
+        SpecialNames.INIT,
+        createName,
+      )
+    }
     if (context.owner.classId !in factoriesToGenerate.keys) return emptySet()
 
     val names = setOf(
@@ -127,11 +150,21 @@ public class AnvilFirInjectConstructorGenerationExtension(
         .keys
         .map { it.callableName }
         .toTypedArray(),
-      SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT,
-      // classSymbol.companionNewInstanceCallableName(),
     )
 
     return names
+  }
+
+  override fun getNestedClassifiersNames(
+    classSymbol: FirClassSymbol<*>,
+    context: NestedClassGenerationContext
+  ): Set<Name> {
+    return if (context.owner.classId in factoriesToGenerate.keys) {
+      println("Creating nested classes for ${context.owner.classId}")
+      setOf(SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT)
+    } else {
+      return emptySet()
+    }
   }
 
   override fun generateProperties(
@@ -148,25 +181,32 @@ public class AnvilFirInjectConstructorGenerationExtension(
       key = Key,
       name = param.name,
       returnType = param.resolvedReturnType,
-    )
-      .apply {
-        replaceInitializer(
-          buildPropertyAccessExpression {
-            val b = this@buildPropertyAccessExpression
-            b.coneTypeOrNull = param.resolvedReturnType
-            calleeReference = buildPropertyFromParameterResolvedNamedReference {
-              name = param.name
-              resolvedSymbol = param
-            }
-          },
-        )
-      }
+    ).apply {
+      // Assigns property values from the constructor arguments
+      replaceInitializer(
+        buildPropertyAccessExpression {
+          val b = this@buildPropertyAccessExpression
+          b.coneTypeOrNull = param.resolvedReturnType
+          calleeReference = buildPropertyFromParameterResolvedNamedReference {
+            name = param.name
+            resolvedSymbol = param
+          }
+        },
+      )
+    }
       .symbol
       .let(::listOf)
   }
 
+  // WHY IS THIS NOT GETTING CALLED FOR MY COMPANION OBJECT?
   override fun generateConstructors(context: MemberGenerationContext): List<FirConstructorSymbol> {
-    return listOf(factoriesToGenerate.getValue(context.owner.classId).generatedConstructor.symbol)
+    return if (context.owner.isCompanion) {
+      val data = factoriesToGenerate.getValue(context.owner.classId.parentClassId!!)
+      listOf(data.generatedCompanionConstructor.symbol)
+    } else {
+      val data = factoriesToGenerate.getValue(context.owner.classId)
+      listOf(data.generatedConstructor.symbol)
+    }
   }
 
   override fun generateFunctions(
@@ -175,7 +215,8 @@ public class AnvilFirInjectConstructorGenerationExtension(
   ): List<FirNamedFunctionSymbol> {
     val owner = context?.owner ?: return emptyList()
     return when (callableId.callableName) {
-      owner.companionNewInstanceCallableName() -> listOf(createCompanionNewInstanceFunction(owner))
+      // owner.companionNewInstanceCallableName() -> listOf(createCompanionNewInstanceFunction(owner))
+      createName -> listOf(createCompanionCreateFunction(owner))
       factoryGetName -> listOf(createFactoryGetFunction(owner))
       else -> emptyList()
     }
@@ -197,10 +238,10 @@ public class AnvilFirInjectConstructorGenerationExtension(
     name: Name,
     context: NestedClassGenerationContext,
   ): FirClassLikeSymbol<*>? {
-    // Maybe this isn't needed since the only nested class like declaration is the companion object?
-    if (owner.classId !in factoriesToGenerate.keys) return null
-
-    return createCompanionObject(owner, Key).symbol
+    if (name == SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT) {
+      return factoriesToGenerate[owner.classId]?.generatedCompanionClass
+    }
+    return null
   }
 
   // TODO is this method in the companion object or the factory?
@@ -229,19 +270,54 @@ public class AnvilFirInjectConstructorGenerationExtension(
   private fun createCompanionCreateFunction(
     owner: FirClassSymbol<*>,
   ): FirNamedFunctionSymbol {
+    val data = factoriesToGenerate.getValue(owner.classId.parentClassId!!)
+    val params = data.matchedConstructorSymbol.valueParameterSymbols.map { parameterSymbol ->
+      parameterSymbol.name to parameterSymbol.resolvedReturnType.wrapInProvider(session.symbolProvider)
+    }
     val symbol = createMemberFunction(
       owner = owner,
       key = Key,
-      name = Name.identifier("newInstance"),
+      name = createName,
       returnType = owner.constructType(),
     ) {
-      factoriesToGenerate.getValue(owner.classId)
-        .matchedConstructorSymbol.valueParameterSymbols.forEach { parameterSymbol ->
-          this@createMemberFunction.valueParameter(
-            name = parameterSymbol.name,
-            type = parameterSymbol.resolvedReturnType.wrapInProvider(session.symbolProvider),
-          )
-        }
+      params.forEach { (name, returnType) ->
+        this@createMemberFunction.valueParameter(name = name, type = returnType)
+      }
+    }.apply {
+      replaceBody(
+        FirBlockBuilder()
+          .also { builder ->
+            builder.statements.add(
+              buildReturnExpression {
+                target = FirFunctionTarget("create", false)
+                result = buildFunctionCall {
+                  calleeReference = buildResolvedNamedReference {
+                    source = data.matchedConstructorSymbol.source!!.fakeElement(KtFakeSourceElementKind.PluginGenerated)
+                    name = data.generatedConstructor.nameOrSpecialName
+                    resolvedSymbol = data.generatedConstructor.symbol
+                  }
+                  buildArgumentList {
+                    params.forEach { (paramName, paramReturnType) ->
+                      arguments.add(
+                        buildNamedArgumentExpression {
+                          // TODO get the name
+                          name = paramName
+                          expression = buildPropertyAccessExpression {
+                            coneTypeOrNull = null
+                            calleeReference = buildSimpleNamedReference {
+                              name = paramName
+                            }
+                          }
+                        },
+                      )
+                    }
+                  }
+                }
+              },
+            )
+          }
+          .build(),
+      )
     }.symbol
     return symbol
   }
@@ -250,11 +326,9 @@ public class AnvilFirInjectConstructorGenerationExtension(
     val matchedConstructorSymbol: FirConstructorSymbol,
   ) {
     val matchedClassId: ClassId by lazy { matchedConstructorSymbol.callableId.classId!! }
-    val generatedClassId: ClassId by lazy { matchedClassId.factory() }
     val matchedClassConeType: ConeClassLikeType by lazy { matchedClassId.constructClassLikeType() }
-    val generatedCallableIdToParameters: Map<CallableId, FirValueParameterSymbol> by lazy {
-      generatedConstructor.symbol.valueParameterSymbols.associateBy { it.callableId() }
-    }
+
+    val generatedClassId: ClassId by lazy { matchedClassId.factory() }
     val generatedClassSymbol: FirClassSymbol<*> by lazy {
       createTopLevelClass(generatedClassId, Key) {
         superType(
@@ -279,6 +353,20 @@ public class AnvilFirInjectConstructorGenerationExtension(
         }
       }
       factoryConstructor
+    }
+    val generatedCallableIdToParameters: Map<CallableId, FirValueParameterSymbol> by lazy {
+      generatedConstructor.symbol.valueParameterSymbols.associateBy { it.callableId() }
+    }
+
+    // Reference https://github.com/JetBrains/kotlin/blob/436fb8fdfabc3439fde17eca5aac941ecc0170dc/plugins/plugin-sandbox/src/org/jetbrains/kotlin/plugin/sandbox/fir/generators/CompanionGenerator.kt#L33
+    val generatedCompanionClass: FirClassSymbol<*> by lazy {
+      createCompanionObject(generatedClassSymbol, Key) {
+        this@createCompanionObject.visibility = Visibilities.Public
+      }.symbol
+    }
+
+    val generatedCompanionConstructor: FirConstructor by lazy {
+      createDefaultPrivateConstructor(generatedCompanionClass, Key)
     }
 
     private fun FirValueParameterSymbol.callableId(): CallableId {
