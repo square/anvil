@@ -89,6 +89,67 @@ class FirCanaryTest : CompilationModeTest(
           as Provider<String>
 
         bananasProvider.get() shouldBe "Bananas"
+
+        // classLoader.loadClass("foo.InjectClass_Factory\$Companion")
+      }
+    }
+
+  @TestFactory
+  fun `generate companion object`() = params
+    .filter { (mode) -> !mode.useKapt }
+    .asTests {
+      compile2(
+        """
+        package foo
+
+         import javax.inject.Inject
+
+        class TestClass @Inject constructor()
+        """.trimIndent(),
+      ) {
+        classLoader.loadClass("foo.TestClass_Factory\$Companion")
+      }
+    }
+
+  @TestFactory
+  fun `generate companion object sample`() = params
+    .filter { (mode) -> !mode.useKapt }
+    .asTests {
+      compile2(
+        """
+        package foo
+
+        @com.squareup.anvil.annotations.CompanionWithFoo
+        class TestClass
+        """.trimIndent(),
+      ) {
+        classLoader.loadClass("foo.TestClass\$Companion")
+      }
+    }
+
+  @TestFactory
+  fun `what is a create function`() = params
+    .filter { (mode) -> !mode.useKapt }
+    .asTests {
+
+      compile2(
+        """
+        package foo
+        class InjectClass(val param0: String)
+        class InjectClass_Factory(
+          private val param0: Provider<String>
+        ) : com.`internal`.Dagger.Factory<InjectClass> {
+          override fun `get`(): InjectClass = newInstance(param0.get())
+          companion object {
+            @JvmStatic
+            fun create(param0: dagger.Provider<String>): InjectClass_Factory =
+                InjectClass_Factory(param0)
+            @JvmStatic
+            fun newInstance(param0: String): InjectClass = InjectClass(param0)
+          }
+        }
+        """.trimIndent(),
+      ) {
       }
     }
 }
