@@ -3,7 +3,6 @@
 ## [Unreleased]
 
 ### Added
-- Documented Anvil's roadmap, see [here](https://github.com/square/anvil/blob/main/docs/ROADMAP.md).
 
 ### Changed
 
@@ -18,6 +17,17 @@
 ### Custom Code Generator
 
 ### Other Notes & Contributions
+
+## [2.5.1] - 2025-01-24
+
+### Added
+- Documented Anvil's roadmap, see [here](https://github.com/square/anvil/blob/main/docs/ROADMAP.md).
+
+### Changed
+- Improved incremental compilation support is now enabled by default ([#1076](https://github.com/square/anvil/pull/1076)). You can still opt-out or temporarily disable this by setting `com.squareup.anvil.trackSourceFiles=false` in your `gradle.properties` file. Note that this property will be removed in a future version.
+
+### Dependencies
+- Upgrade Kotlin to `2.0.21` ([#1059](https://github.com/square/anvil/pull/1059)). Note that while this release targets Kotlin 2.0, the K2 compiler is not yet supported (see the roadmap for more details).
 
 ## [2.5.0] - 2024-12-4
 
@@ -868,7 +878,8 @@ anvil {
 
 - Initial release.
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.5.0-beta11...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.5.1...HEAD
+[2.5.1]: https://github.com/square/anvil/releases/tag/v2.5.1
 [2.5.0]: https://github.com/square/anvil/releases/tag/v2.5.0
 [2.5.0-beta11]: https://github.com/square/anvil/releases/tag/v2.5.0-beta11
 [2.5.0-beta10]: https://github.com/square/anvil/releases/tag/v2.5.0-beta10
