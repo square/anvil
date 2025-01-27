@@ -108,15 +108,18 @@ class FirCanaryTest : CompilationModeTest(
 
          import javax.inject.Inject
 
-        class TestClass @Inject constructor(val param0: String)
+        class TestClass @Inject constructor(val param0: String, val param2: Int)
         """.trimIndent(),
       ) {
+        val testClass = classLoader.loadClass("foo.TestClass").kotlin
         val factoryClass = classLoader.loadClass("foo.TestClass_Factory").kotlin
 
         val companion = factoryClass.companionObjectInstance
         val factoryCreateMethod = factoryClass.companionObject!!.functions.first { it.name == "create" }
-        val factoryInstance = factoryCreateMethod.call(companion, Provider { "Bananas" })
+        val factoryInstance = factoryCreateMethod.call(companion, Provider { "Bananas" }, Provider { 0 })
         factoryInstance!!::class.shouldBeEqual(factoryClass)
+        val factoryNewInstanceMethod = factoryClass.companionObject!!.functions.first { it.name == "newInstance" }
+        factoryNewInstanceMethod.call(companion, "Bananas", 0)!!::class.shouldBeEqual(testClass)
       }
     }
 

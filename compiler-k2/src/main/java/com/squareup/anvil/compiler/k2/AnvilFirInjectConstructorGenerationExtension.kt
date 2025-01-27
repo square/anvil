@@ -98,6 +98,7 @@ internal class AnvilFirInjectConstructorGenerationExtension(
   }
   private val factoryGetName = Name.identifier("get")
   private val createName = Name.identifier("create")
+  private val newInstance = Name.identifier("newInstance")
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(PREDICATE)
@@ -120,14 +121,13 @@ internal class AnvilFirInjectConstructorGenerationExtension(
       return setOf(
         SpecialNames.INIT,
         createName,
+        newInstance,
       )
     }
     if (context.owner.classId !in factoriesToGenerate.keys) return emptySet()
 
     val names = setOf(
       SpecialNames.INIT,
-      // The FIR for factoryGetName works, however the IR is not implemented yet, uncommenting will crash.
-      // factoryGetName,
       *factoriesToGenerate.getValue(context.owner.classId)
         .generatedCallableIdToParameters
         .keys
@@ -181,7 +181,6 @@ internal class AnvilFirInjectConstructorGenerationExtension(
       .let(::listOf)
   }
 
-  // WHY IS THIS NOT GETTING CALLED FOR MY COMPANION OBJECT?
   override fun generateConstructors(context: MemberGenerationContext): List<FirConstructorSymbol> {
     return if (context.owner.isCompanion) {
       val data = factoriesToGenerate.getValue(context.owner.classId.parentClassId!!)
@@ -198,8 +197,8 @@ internal class AnvilFirInjectConstructorGenerationExtension(
   ): List<FirNamedFunctionSymbol> {
     val owner = context?.owner ?: return emptyList()
     return when (callableId.callableName) {
-      // owner.companionNewInstanceCallableName() -> listOf(createCompanionNewInstanceFunction(owner))
       createName -> listOf(createCompanionCreateFunction(owner))
+      newInstance -> listOf(createCompanionNewInstanceFunction(owner))
       factoryGetName -> listOf(createFactoryGetFunction(owner))
       else -> emptyList()
     }
@@ -227,25 +226,24 @@ internal class AnvilFirInjectConstructorGenerationExtension(
     return null
   }
 
-  // TODO is this method in the companion object or the factory?
   private fun createCompanionNewInstanceFunction(
     owner: FirClassSymbol<*>,
   ): FirNamedFunctionSymbol {
-    val factoryToGenerate = factoriesToGenerate.getValue(owner.classId)
+    val data = factoriesToGenerate.getValue(owner.classId.parentClassId!!)
+    val params = data.matchedConstructorSymbol.valueParameterSymbols.map { parameterSymbol ->
+      parameterSymbol.name to parameterSymbol.resolvedReturnType
+    }
     val symbol = createMemberFunction(
       owner = owner,
       key = Key,
-      name = Name.identifier("newInstance"),
-      // returnType = session.builtinTypes.unitType.coneType
-      returnType = factoryToGenerate.matchedClassId.constructClassLikeType(),
+      name = newInstance,
+      returnType = data.matchedClassId.constructClassLikeType(),
     ) {
-      factoryToGenerate
-        .matchedConstructorSymbol.valueParameterSymbols.forEach { parameterSymbol ->
-          this@createMemberFunction.valueParameter(
-            name = parameterSymbol.name,
-            type = parameterSymbol.resolvedReturnType,
-          )
-        }
+      params.forEach { (name, returnType) ->
+        this@createMemberFunction.valueParameter(name = name, type = returnType)
+      }
+    }.apply {
+      replaceAnnotations(listOf(Names.kotlin.jvmStatic.toFirAnnotation()))
     }.symbol
     return symbol
   }
@@ -254,8 +252,8 @@ internal class AnvilFirInjectConstructorGenerationExtension(
     owner: FirClassSymbol<*>,
   ): FirNamedFunctionSymbol {
     val data = factoriesToGenerate.getValue(owner.classId.parentClassId!!)
-    val params = data.matchedConstructorSymbol.valueParameterSymbols.map { parameterSymbol ->
-      parameterSymbol.name to parameterSymbol.resolvedReturnType.wrapInProvider(session.symbolProvider)
+    val params = data.generatedConstructor.symbol.valueParameterSymbols.map { parameterSymbol ->
+      parameterSymbol.name to parameterSymbol.resolvedReturnType
     }
     val function = createMemberFunction(
       owner = owner,

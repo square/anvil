@@ -31,13 +31,14 @@ internal class IrInjectConstructorFactory(
     key: GeneratedDeclarationKey?
   ): IrBody {
     return when (function.name) {
-      Name.identifier("create") -> createFunctionBody(function)
+      Name.identifier("create"), Name.identifier("newInstance") -> createFunctionBody(function)
       else -> error("Unexpected function: $function")
     }
   }
 
   override fun generateBodyForConstructor(
-    constructor: IrConstructor, key: GeneratedDeclarationKey?
+    constructor: IrConstructor,
+    key: GeneratedDeclarationKey?
   ) = generateBodyForDefaultConstructor(constructor)
 
   private fun createFunctionBody(function: IrSimpleFunction): IrBody {
