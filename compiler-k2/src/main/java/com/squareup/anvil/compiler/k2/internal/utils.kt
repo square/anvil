@@ -7,9 +7,11 @@ import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.expressions.FirGetClassCall
 import org.jetbrains.kotlin.fir.expressions.FirPropertyAccessExpression
 import org.jetbrains.kotlin.fir.expressions.builder.FirAnnotationCallBuilder
+import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
 import org.jetbrains.kotlin.fir.expressions.builder.buildArgumentList
 import org.jetbrains.kotlin.fir.expressions.builder.buildGetClassCall
 import org.jetbrains.kotlin.fir.expressions.builder.buildResolvedQualifier
+import org.jetbrains.kotlin.fir.expressions.impl.FirEmptyAnnotationArgumentMapping
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension.TypeResolveService
 import org.jetbrains.kotlin.fir.extensions.buildUserTypeFromQualifierParts
 import org.jetbrains.kotlin.fir.packageFqName
@@ -168,5 +170,12 @@ internal fun FirClassLikeSymbol<*>.toGetClassCall(): FirGetClassCall {
         builder.packageFqName = this@toGetClassCall.packageFqName()
       }
     }
+  }
+}
+
+internal fun FqName.toFirAnnotation() = buildAnnotation {
+  argumentMapping = FirEmptyAnnotationArgumentMapping
+  annotationTypeRef = buildResolvedTypeRef {
+    coneType = classId().constructClassLikeType()
   }
 }

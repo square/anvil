@@ -14,7 +14,9 @@ internal val Names.identifier: ReadOnlyProperty<Any?, Name>
   get() = ReadOnlyProperty { _, p -> Name.identifier(p.name) }
 
 internal object Names {
-
+  object kotlin {
+    val jvmStatic = "kotlin.jvm.JvmStatic".fqn()
+  }
   val inject get() = javax.inject.inject
 
   internal object identifiers {

@@ -5,24 +5,14 @@ import com.squareup.anvil.compiler.k2.internal.DefaultGeneratedDeclarationKey
 import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.classId
 import com.squareup.anvil.compiler.k2.internal.factory
+import com.squareup.anvil.compiler.k2.internal.toFirAnnotation
 import com.squareup.anvil.compiler.k2.internal.wrapInProvider
-import org.jetbrains.kotlin.KtFakeSourceElementKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
-import org.jetbrains.kotlin.fakeElement
-import org.jetbrains.kotlin.fir.FirFunctionTarget
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirConstructor
-import org.jetbrains.kotlin.fir.declarations.builder.buildField
-import org.jetbrains.kotlin.fir.declarations.builder.buildPropertyAccessor
 import org.jetbrains.kotlin.fir.declarations.utils.isCompanion
-import org.jetbrains.kotlin.fir.declarations.utils.nameOrSpecialName
-import org.jetbrains.kotlin.fir.expressions.builder.FirBlockBuilder
-import org.jetbrains.kotlin.fir.expressions.builder.buildArgumentList
-import org.jetbrains.kotlin.fir.expressions.builder.buildFunctionCall
-import org.jetbrains.kotlin.fir.expressions.builder.buildNamedArgumentExpression
 import org.jetbrains.kotlin.fir.expressions.builder.buildPropertyAccessExpression
-import org.jetbrains.kotlin.fir.expressions.builder.buildReturnExpression
 import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
@@ -35,11 +25,7 @@ import org.jetbrains.kotlin.fir.plugin.createDefaultPrivateConstructor
 import org.jetbrains.kotlin.fir.plugin.createMemberFunction
 import org.jetbrains.kotlin.fir.plugin.createMemberProperty
 import org.jetbrains.kotlin.fir.plugin.createTopLevelClass
-import org.jetbrains.kotlin.fir.references.builder.buildBackingFieldReference
 import org.jetbrains.kotlin.fir.references.builder.buildPropertyFromParameterResolvedNamedReference
-import org.jetbrains.kotlin.fir.references.builder.buildResolvedNamedReference
-import org.jetbrains.kotlin.fir.references.builder.buildSimpleNamedReference
-import org.jetbrains.kotlin.fir.references.impl.FirSimpleNamedReference
 import org.jetbrains.kotlin.fir.resolve.providers.getRegularClassSymbolByClassId
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
@@ -106,9 +92,6 @@ internal class AnvilFirInjectConstructorGenerationExtension(
   }
 
   private val daggerFactory: FirRegularClassSymbol by lazy {
-    // The following crashes
-    // val factoryClassId = session.getRegularClassSymbolByClassId(Names.dagger.factory.classId())!!
-    // val factoryClassId = ClassId.fromString("dagger/internal/Factory")
     val factoryClassId = Names.dagger.factory.classId()
 
     session.getRegularClassSymbolByClassId(factoryClassId)!!
@@ -274,52 +257,19 @@ internal class AnvilFirInjectConstructorGenerationExtension(
     val params = data.matchedConstructorSymbol.valueParameterSymbols.map { parameterSymbol ->
       parameterSymbol.name to parameterSymbol.resolvedReturnType.wrapInProvider(session.symbolProvider)
     }
-    val symbol = createMemberFunction(
+    val function = createMemberFunction(
       owner = owner,
       key = Key,
       name = createName,
-      returnType = owner.constructType(),
+      returnType = data.generatedClassSymbol.constructType(),
     ) {
       params.forEach { (name, returnType) ->
         this@createMemberFunction.valueParameter(name = name, type = returnType)
       }
     }.apply {
-      replaceBody(
-        FirBlockBuilder()
-          .also { builder ->
-            builder.statements.add(
-              buildReturnExpression {
-                target = FirFunctionTarget("create", false)
-                result = buildFunctionCall {
-                  calleeReference = buildResolvedNamedReference {
-                    source = data.matchedConstructorSymbol.source!!.fakeElement(KtFakeSourceElementKind.PluginGenerated)
-                    name = data.generatedConstructor.nameOrSpecialName
-                    resolvedSymbol = data.generatedConstructor.symbol
-                  }
-                  buildArgumentList {
-                    params.forEach { (paramName, paramReturnType) ->
-                      arguments.add(
-                        buildNamedArgumentExpression {
-                          // TODO get the name
-                          name = paramName
-                          expression = buildPropertyAccessExpression {
-                            coneTypeOrNull = null
-                            calleeReference = buildSimpleNamedReference {
-                              name = paramName
-                            }
-                          }
-                        },
-                      )
-                    }
-                  }
-                }
-              },
-            )
-          }
-          .build(),
-      )
-    }.symbol
-    return symbol
+      replaceAnnotations(listOf(Names.kotlin.jvmStatic.toFirAnnotation()))
+    }
+    return function.symbol
   }
 
   private inner class InjectConstructorGenerationTypes(

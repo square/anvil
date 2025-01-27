@@ -3,9 +3,13 @@ package com.squareup.anvil.compiler.k2.codegen
 import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.compile2
+import io.kotest.matchers.equals.shouldBeEqual
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestFactory
 import javax.inject.Provider
+import kotlin.reflect.full.companionObject
+import kotlin.reflect.full.companionObjectInstance
+import kotlin.reflect.full.functions
 
 class FirCanaryTest : CompilationModeTest(
   CompilationMode.K2(useKapt = false),
@@ -104,10 +108,15 @@ class FirCanaryTest : CompilationModeTest(
 
          import javax.inject.Inject
 
-        class TestClass @Inject constructor()
+        class TestClass @Inject constructor(val param0: String)
         """.trimIndent(),
       ) {
-        classLoader.loadClass("foo.TestClass_Factory\$Companion")
+        val factoryClass = classLoader.loadClass("foo.TestClass_Factory").kotlin
+
+        val companion = factoryClass.companionObjectInstance
+        val factoryCreateMethod = factoryClass.companionObject!!.functions.first { it.name == "create" }
+        val factoryInstance = factoryCreateMethod.call(companion, Provider { "Bananas" })
+        factoryInstance!!::class.shouldBeEqual(factoryClass)
       }
     }
 
