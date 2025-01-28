@@ -4,11 +4,13 @@ import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.compile2
 import io.kotest.matchers.equals.shouldBeEqual
+import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestFactory
 import javax.inject.Provider
 import kotlin.reflect.full.companionObject
 import kotlin.reflect.full.companionObjectInstance
+import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.functions
 
 class FirCanaryTest : CompilationModeTest(
@@ -120,22 +122,6 @@ class FirCanaryTest : CompilationModeTest(
         factoryInstance!!::class.shouldBeEqual(factoryClass)
         val factoryNewInstanceMethod = factoryClass.companionObject!!.functions.first { it.name == "newInstance" }
         factoryNewInstanceMethod.call(companion, "Bananas", 0)!!::class.shouldBeEqual(testClass)
-      }
-    }
-
-  @TestFactory
-  fun `generate companion object sample`() = params
-    .filter { (mode) -> !mode.useKapt }
-    .asTests {
-      compile2(
-        """
-        package foo
-
-        @com.squareup.anvil.annotations.CompanionWithFoo
-        class TestClass
-        """.trimIndent(),
-      ) {
-        classLoader.loadClass("foo.TestClass\$Companion")
       }
     }
 

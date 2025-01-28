@@ -11,7 +11,10 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirConstructor
+import org.jetbrains.kotlin.fir.declarations.FirDeclarationStatus
+import org.jetbrains.kotlin.fir.declarations.impl.FirDeclarationStatusImpl
 import org.jetbrains.kotlin.fir.declarations.utils.isCompanion
+import org.jetbrains.kotlin.fir.declarations.utils.isOverride
 import org.jetbrains.kotlin.fir.expressions.builder.buildPropertyAccessExpression
 import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
@@ -28,6 +31,7 @@ import org.jetbrains.kotlin.fir.plugin.createTopLevelClass
 import org.jetbrains.kotlin.fir.references.builder.buildPropertyFromParameterResolvedNamedReference
 import org.jetbrains.kotlin.fir.resolve.providers.getRegularClassSymbolByClassId
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
+import org.jetbrains.kotlin.fir.scopes.impl.overrides
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirConstructorSymbol
@@ -45,7 +49,7 @@ import org.jetbrains.kotlin.name.SpecialNames
 
 /**
  * Given this kotlin source:
- * class Inject @Inject constructor(private val param0: String)
+ * class InjectClass @Inject constructor(private val param0: String)
  *
  *
  * Using a FirDeclarationGenerationExtension in kotlin k2 fir plugin generate a class file
@@ -133,6 +137,7 @@ internal class AnvilFirInjectConstructorGenerationExtension(
         .keys
         .map { it.callableName }
         .toTypedArray(),
+      factoryGetName,
     )
 
     return names
@@ -204,16 +209,33 @@ internal class AnvilFirInjectConstructorGenerationExtension(
     }
   }
 
-  private fun createFactoryGetFunction(owner: FirClassSymbol<*>) = createMemberFunction(
-    owner = owner,
-    key = Key,
-    name = factoryGetName,
-    returnType = factoriesToGenerate.getValue(owner.classId)
-      .matchedConstructorSymbol.resolvedReturnType,
-  ) {
-    visibility = Visibilities.Public
-    modality = Modality.FINAL
-  }.symbol
+  private fun createFactoryGetFunction(owner: FirClassSymbol<*>): FirNamedFunctionSymbol {
+    val data = factoriesToGenerate.getValue(owner.classId)
+    val params = data.matchedConstructorSymbol.valueParameterSymbols.map { parameterSymbol ->
+      parameterSymbol.name to parameterSymbol.resolvedReturnType
+    }
+    return createMemberFunction(
+      owner = owner,
+      key = Key,
+      name = factoryGetName,
+      returnType = data.matchedConstructorSymbol.resolvedReturnType,
+    ) {
+
+      params.forEach { (name, returnType) ->
+        this@createMemberFunction.valueParameter(name = name, type = returnType)
+      }
+    }.apply {
+      replaceStatus(
+        FirDeclarationStatusImpl(
+          visibility = Visibilities.Public,
+            modality = Modality.FINAL
+        ).apply {
+          isOverride = true
+        }
+      )
+    }
+      .symbol
+  }
 
   override fun generateNestedClassLikeDeclaration(
     owner: FirClassSymbol<*>,
@@ -322,6 +344,3 @@ internal class AnvilFirInjectConstructorGenerationExtension(
     }
   }
 }
-
-private fun FirClassSymbol<*>.companionNewInstanceCallableName(): Name =
-  Name.identifier("${name.asString()}/${SpecialNames.DEFAULT_NAME_FOR_COMPANION_OBJECT}/newInstance")
