@@ -220,19 +220,20 @@ internal class AnvilFirInjectConstructorGenerationExtension(
       name = factoryGetName,
       returnType = data.matchedConstructorSymbol.resolvedReturnType,
     ) {
-
+      visibility = Visibilities.Public
+      modality = Modality.FINAL
       params.forEach { (name, returnType) ->
         this@createMemberFunction.valueParameter(name = name, type = returnType)
       }
     }.apply {
-      replaceStatus(
-        FirDeclarationStatusImpl(
-          visibility = Visibilities.Public,
-            modality = Modality.FINAL
-        ).apply {
-          isOverride = true
-        }
-      )
+      // replaceStatus(
+      //   FirDeclarationStatusImpl(
+      //     visibility = Visibilities.Public,
+      //       modality = Modality.FINAL
+      //   ).apply {
+      //     isOverride = true
+      //   }
+      // )
     }
       .symbol
   }

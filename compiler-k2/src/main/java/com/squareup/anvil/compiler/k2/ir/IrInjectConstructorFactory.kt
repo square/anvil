@@ -1,12 +1,15 @@
 package com.squareup.anvil.compiler.k2.ir
 
+import com.squareup.anvil.compiler.fqName
 import com.squareup.anvil.compiler.k2.AnvilFirInjectConstructorGenerationExtension
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
 import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.lower.irBlockBody
 import org.jetbrains.kotlin.backend.jvm.mapping.IrCallableMethod
 import org.jetbrains.kotlin.ir.UNDEFINED_OFFSET
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
+import org.jetbrains.kotlin.ir.builders.IrSingleStatementBuilder
 import org.jetbrains.kotlin.ir.builders.IrStatementsBuilder
 import org.jetbrains.kotlin.ir.builders.Scope
 import org.jetbrains.kotlin.ir.declarations.IrClass
@@ -35,6 +38,21 @@ import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.ir.util.*
 import org.jetbrains.kotlin.ir.builders.irCall
+import org.jetbrains.kotlin.ir.builders.irCallOp
+import org.jetbrains.kotlin.ir.builders.irConcat
+import org.jetbrains.kotlin.ir.declarations.IrProperty
+import org.jetbrains.kotlin.ir.declarations.IrValueDeclaration
+import org.jetbrains.kotlin.ir.declarations.IrVariable
+import org.jetbrains.kotlin.ir.declarations.impl.IrClassImpl
+import org.jetbrains.kotlin.ir.expressions.IrPropertyReference
+import org.jetbrains.kotlin.ir.expressions.IrValueAccessExpression
+import org.jetbrains.kotlin.ir.expressions.impl.IrClassReferenceImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrGetObjectValueImpl
+import org.jetbrains.kotlin.ir.expressions.impl.IrPropertyReferenceImpl
+import org.jetbrains.kotlin.ir.symbols.IrClassSymbol
+import org.jetbrains.kotlin.ir.symbols.IrValueSymbol
+import org.jetbrains.kotlin.ir.symbols.impl.IrFieldSymbolImpl
+
 @OptIn(UnsafeDuringIrConstructionAPI::class)
 internal class IrInjectConstructorFactory(
   context: IrPluginContext
@@ -63,6 +81,7 @@ internal class IrInjectConstructorFactory(
     val constructedType = function.returnType as IrSimpleType
     val constructedClass = constructedType.classifier.owner as IrClass
     val constructor = constructedClass.primaryConstructor!!
+
     val constructorCall = IrConstructorCallImpl(
       startOffset = -1,
       endOffset = -1,
@@ -100,6 +119,11 @@ internal class IrInjectConstructorFactory(
     val parentClass = getFunction.parentAsClass
     val newInstance: IrSimpleFunction = parentClass.companionObject()!!
       .functions.single { it.name == Name.identifier("newInstance") }
+    // val newInstCall2 = DeclarationIrBuilder(context, getFunction.symbol).irBlockBody(getFunction) {
+    //   irConcat().apply {
+    //     add
+    //   }
+    // }
 
     // val constructorCall = IrConstructorCallImpl(
     //   startOffset = -1,
@@ -150,13 +174,67 @@ internal class IrInjectConstructorFactory(
       // constructorCall.putValueArgument(index, constString)
       // constructorCall.putValueArgument(index, constInt)
     }
-
+    val companionObjectIrClass: IrClass = getFunction.parentAsClass.companionObject()!!
+    // val companionReference = IrClassReferenceImpl(-1, -1, companionObjectIrClass.defaultType, companionObjectIrClass.symbol, companionObjectIrClass.defaultType)
+    val companionReference =IrGetObjectValueImpl(
+      startOffset = -1,
+      endOffset = -1,
+      type = companionObjectIrClass.defaultType,
+      symbol = companionObjectIrClass.symbol
+    )
+    // IrPropertyReferenceImpl(-1, -1, companionObjectIrClass.defaultType, 0, companionObjectIrClass.symbol,)
+    val newInstanceResult = IrSingleStatementBuilder(
+      context = context,
+      scope = Scope(companionObjectIrClass.symbol),
+      startOffset = -1,
+      endOffset = -1,
+      origin = null
+    ).irCallOp(
+      callee = newInstance.symbol,
+      type = getFunction.returnType,
+      dispatchReceiver = companionReference,
+      argument = null,
+      origin = null
+    )
+      .apply {
+        // addArguments()
+      }
+    // companionObjectIrClass.source.toIrConst()
+    // val companionSignature = IdSignature.CommonSignature(
+    //   packageFqName = companionObjectIrClass.packageFqName!!.asString(),
+    //   declarationFqName = companionObjectIrClass.fqName.asString(),
+    //   id = null,
+    //   mask = 0,
+    //   description = null
+    // )
+    // val companionObject: IrClassSymbol = context.symbolTable.referenceClass(companionSignature)
+    // val expresssion: IrExpression = IrGetValueImpl(
+    //   startOffset = -1,
+    //   endOffset = -1,
+    //   type = newInstance.returnType,
+    //   symbol = IrValueSymbol(companionObject),
+    // )
+    // IrFieldSymbolImpl(
+    //
+    // )
+    // IrPropertyReferenceImpl(
+    //   startOffset=-1,
+    //   endOffset=-1,
+    //   type=companionObjectIrClass,
+    //   symbol=companionObjectIrClass.symbol,
+    //   typeArgumentsCount=0,
+    //   field: IrFieldSymbol?,
+    // getter: IrSimpleFunctionSymbol?,
+    // setter: IrSimpleFunctionSymbol?,
+    // origin: IrStatementOrigin? = null,
+    // )
+    // irConcat
     val returnStatement = IrReturnImpl(
       startOffset = -1,
       endOffset = -1,
       type = irBuiltIns.nothingType,
       returnTargetSymbol = getFunction.symbol,
-      value = constructorCall,
+      value = newInstanceResult,
     )
     return irFactory.createBlockBody(-1, -1, listOf(returnStatement))
   }
