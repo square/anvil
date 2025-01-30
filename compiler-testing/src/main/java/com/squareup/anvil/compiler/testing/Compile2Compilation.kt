@@ -105,13 +105,30 @@ public fun CompilationEnvironment.compile2(
   return true
 }
 
+/**
+ * Represents a single compiler invocation that can handle Kotlin and Java compilation, as well as
+ * an optional KAPT pass. Used primarily by [CompilationEnvironment.compile2].
+ *
+ * @property config The [Compile2CompilationConfiguration] containing file paths, classpaths, and various optional flags.
+ * @property expectedExitCode The exit code this compilation expects. Typically [ExitCode.OK].
+ */
 public class Compile2Compilation(
   public val config: Compile2CompilationConfiguration,
   public val expectedExitCode: ExitCode,
 ) {
 
+  /** Renders compiler messages (errors, warnings, etc.) in a human-friendly format.  Now in color! */
   private val messageRenderer by lazy { ColorizedPlainTextMessageRenderer() }
 
+  /**
+   * Executes the compilation process. This includes:
+   *
+   * 1) Optionally running KAPT if [Compile2CompilationConfiguration.useKapt] is true.
+   * 2) Running the Kotlin compiler on the provided source files (plus any KAPT-generated files).
+   * 3) (Optional) Running the Java compiler if Java sources exist.
+   *
+   * @return A [Compile2Result] containing the compilation result: class loader, exit code, etc.
+   */
   internal fun execute(): Compile2Result {
 
     val baseArgs = K2JVMCompilerArguments().also { args ->
@@ -119,11 +136,6 @@ public class Compile2Compilation(
 
       args.moduleName = "root"
       args.additionalJavaModules = emptyArray()
-
-      // args.enableDebugMode = true
-      // args.noJdk = args.jdkHome == null
-      // args.reportAllWarnings = true
-      // args.reportPerf = true
 
       args.jdkHome = javaHome().absolutePath
       args.languageVersion = config.languageVersion.versionString
@@ -151,9 +163,10 @@ public class Compile2Compilation(
       args.freeArgs += config.sourceFiles.pathStrings()
     }
 
-    // sanity check to ensure the arguments translate properly
+    // Sanity check to ensure the arguments translate properly into compiler-compatible strings.
     parseCommandLineArguments<K2JVMCompilerArguments>(baseArgs.toArgumentStrings())
 
+    // Register the FIR extensions, if any, via thread-local.
     Compile2CompilerPluginRegistrar.threadLocalParams.set(
       Compile2CompilerPluginRegistrar.Compile2RegistrarParams(firExtensions = config.firExtensions),
     )
@@ -162,12 +175,12 @@ public class Compile2Compilation(
       executeKapt(baseArgs)
     }
 
+    // After KAPT, gather all sources including anything KAPT might have generated.
     val allSources = config.sourceFiles
       .plus(config.kaptGeneratedSourcesDir.walkBottomUp().filter { it.isJavaFile() })
       .distinct()
 
     val secondArgs = baseArgs.copyOf().also { args ->
-
       args.freeArgs = allSources.pathStrings()
       args.useJavac = true
     }
@@ -204,6 +217,12 @@ public class Compile2Compilation(
     }
   }
 
+  /**
+   * Compiles any Java files using `javac`. This step is only invoked if there are Java files
+   * in the final set of sources (including any KAPT-generated .java files).
+   *
+   * @param javaSources A list of Java [File]s to compile.
+   */
   private fun compileJava(javaSources: List<File>) {
     val javac = synchronized(ToolProvider::class.java) {
       ToolProvider.getSystemJavaCompiler()
@@ -224,12 +243,11 @@ public class Compile2Compilation(
 
       this.addAll(listOf("-d", config.classFilesDir.absolutePath))
 
-      this.add("-proc:none") // disable annotation processing
+      this.add("-proc:none") // disable annotation processing in javac
 
       if (config.allWarningsAsErrors) this.add("-Werror")
 
-      // also add class output path to javac classpath so it can discover already compiled Kotlin
-      // classes
+      // Also add Kotlin classes to javac classpath so references to them resolve properly.
       this.addAll(
         listOf(
           "-cp",
@@ -246,8 +264,7 @@ public class Compile2Compilation(
       /* classes */
       null,
       javaSources.map { AnvilSimpleJavaFileObject(it.toURI()) },
-    )
-      .call()
+    ).call()
 
     diagnosticCollector.diagnostics.forEach { diag ->
       when (diag.kind) {
@@ -264,6 +281,14 @@ public class Compile2Compilation(
     javaExitCode shouldBe expectedExitCode
   }
 
+  /**
+   * Executes a separate KAPT pass using the Kotlin compiler. This includes setting up
+   * [KaptOptions], applying them, and running the `K2JVMCompiler` with appropriate flags
+   * for annotation processing.
+   *
+   * @param baseArgs The [K2JVMCompilerArguments] to copy and modify for the KAPT invocation.
+   * @throws AssertionError if the KAPT pass does not match the [expectedExitCode].
+   */
   private fun executeKapt(baseArgs: K2JVMCompilerArguments) {
 
     val kaptPassArgs = baseArgs.copyOf().also { args ->
@@ -314,15 +339,49 @@ public class Compile2Compilation(
   }
 }
 
+/**
+ * A simple in-memory [SimpleJavaFileObject] for reading Java code from a [URI] rather
+ * than from a local file. Used by [Compile2Compilation.compileJava] to feed source strings
+ * directly to `javac`.
+ *
+ * @constructor Creates a file object representing the Java source pointed to by [uri].
+ */
 private class AnvilSimpleJavaFileObject(uri: URI) :
   SimpleJavaFileObject(uri, JavaFileObject.Kind.SOURCE) {
 
+  /**
+   * Opens the [InputStream] from the underlying URL so `javac` can read the file's contents.
+   */
   override fun openInputStream(): InputStream = uri.toURL().openStream()
 
+  /**
+   * Loads and returns the file contents as a [CharSequence].
+   */
   override fun getCharContent(ignoreEncodingErrors: Boolean): CharSequence =
     uri.toURL().readText()
 }
 
+/**
+ * Encapsulates all configuration needed by [Compile2Compilation] to perform a single
+ * compile operation. This includes directories, classpaths, whether to run KAPT,
+ * the Kotlin [LanguageVersion], and optional FIR extensions.
+ *
+ * @property sourceFiles All files (Kotlin and Java) to compile.
+ * @property useKapt If `true`, runs a separate KAPT pass before compiling the final set of sources.
+ * @property verbose If `true`, enables verbose logging in both the Kotlin and Java compilers.
+ * @property allWarningsAsErrors If `true`, treats all compiler warnings as errors in `javac`.
+ * @property jarOutputDir Where any resultant artifacts (like JARs) should be placed.
+ * @property classFilesDir Directory into which all `.class` files will be compiled.
+ * @property kaptStubsDir KAPT-specific directory for stubs.
+ * @property kaptGeneratedSourcesDir KAPT-specific directory for generated sources.
+ * @property kaptIncrementalDir KAPT-specific directory for incremental data output.
+ * @property kaptClassesDir KAPT-specific directory for classes output.
+ * @property languageVersion Kotlin language version to use.
+ * @property compilationClasspath Classpath files required for compilation.
+ * @property compilerPluginClasspath Classpath files for any compiler plugins (including Anvil).
+ * @property kaptPluginClasspath Classpath files for KAPT annotation processors.
+ * @property firExtensions Optional FIR plugin extensions for advanced compiler tests.
+ */
 public data class Compile2CompilationConfiguration(
   val sourceFiles: List<File>,
   val useKapt: Boolean,
@@ -364,8 +423,16 @@ public data class Compile2CompilationConfiguration(
   val firExtensions: List<KFunction1<FirSession, FirExtension>>,
 )
 
+/**
+ * @return The current `java.home` as a [File], or throws if not set. Typically used to
+ * provide the Kotlin compiler arguments with a Java home directory.
+ * @throws IllegalStateException if neither `JAVA_HOME` nor `java.home` is set.
+ */
 internal fun javaHome(): File = javaHomeOrNull() ?: error("JAVA_HOME and 'java.home' not set")
 
+/**
+ * @return The current Java home as a [File], or `null` if neither `JAVA_HOME` nor `java.home` is set.
+ */
 internal fun javaHomeOrNull(): File? {
   val path = System.getProperty("java.home")
     ?: System.getenv("JAVA_HOME")
@@ -374,6 +441,18 @@ internal fun javaHomeOrNull(): File? {
   return File(path).also { check(it.isDirectory) }
 }
 
+/**
+ * Converts each [File] in this collection to its absolute path [String], de-duplicating entries.
+ *
+ * @return A list of distinct file path strings.
+ */
 internal fun Iterable<File>.pathStrings(): List<String> = map { it.absolutePath }.distinct()
+
+/**
+ * Joins all [File] paths in this collection into a single classpath [String],
+ * separated by [File.pathSeparator].
+ *
+ * @return A classpath string suitable for compiler arguments.
+ */
 internal fun Iterable<File>.classpathString(): String =
   pathStrings().joinToString(File.pathSeparator)
