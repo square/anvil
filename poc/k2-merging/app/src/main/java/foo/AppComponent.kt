@@ -1,6 +1,9 @@
 package foo
 
+import com.apple.eawt.Application
 import com.squareup.anvil.annotations.MergeComponent
+import dagger.BindsInstance
+import dagger.Component
 import javax.inject.Inject
 
 // @MergeComponent(scope = Unit::class, modules = [ABindingModule::class])
@@ -34,8 +37,17 @@ import javax.inject.Inject
 
 // class InjectClass @Inject constructor(val a: A, val b: B)
 
-@MergeComponent(Unit::class)
-class InjectClass @Inject constructor(val name: String, val param2: Int)
+// @MergeComponent(Unit::class)
+class InjectClass @Inject constructor(val name: String)
+
+@Component
+interface AppComponent {
+  @Component.Factory
+  interface Factory {
+    fun create(@BindsInstance name: String): AppComponent
+  }
+  fun injectClass(): InjectClass
+}
 
 suspend fun main() {
 

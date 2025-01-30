@@ -222,9 +222,9 @@ internal class AnvilFirInjectConstructorGenerationExtension(
     ) {
       visibility = Visibilities.Public
       modality = Modality.FINAL
-      params.forEach { (name, returnType) ->
-        this@createMemberFunction.valueParameter(name = name, type = returnType)
-      }
+      // params.forEach { (name, returnType) ->
+      //   this@createMemberFunction.valueParameter(name = name, type = returnType)
+      // }
     }.apply {
       // replaceStatus(
       //   FirDeclarationStatusImpl(

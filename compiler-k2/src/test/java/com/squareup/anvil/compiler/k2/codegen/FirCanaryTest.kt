@@ -1,17 +1,15 @@
 package com.squareup.anvil.compiler.k2.codegen
 
+import com.squareup.anvil.compiler.k2.ir.TestClass_Factory
 import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.compile2
-import io.kotest.matchers.equals.shouldBeEqual
-import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestFactory
 import javax.inject.Provider
-import kotlin.reflect.full.companionObject
-import kotlin.reflect.full.companionObjectInstance
-import kotlin.reflect.full.createInstance
 import kotlin.reflect.full.functions
+import kotlin.reflect.full.primaryConstructor
+import kotlin.test.Test
 
 class FirCanaryTest : CompilationModeTest(
   CompilationMode.K2(useKapt = false),
@@ -100,6 +98,11 @@ class FirCanaryTest : CompilationModeTest(
       }
     }
 
+  @Test
+  fun `test_class_baseline`() {
+    TestClass_Factory({"Hi"}).get().param0.shouldBe("Hi")
+  }
+
   @TestFactory
   fun `generate companion object`() = params
     .filter { (mode) -> !mode.useKapt }
@@ -108,14 +111,22 @@ class FirCanaryTest : CompilationModeTest(
         """
         package foo
 
-         import javax.inject.Inject
-
-        class TestClass @Inject constructor()
+        import javax.inject.Inject
+        
+        class TestClass @Inject constructor(
+          val param0: String,
+        )
         """.trimIndent(),
       ) {
-        // val testClass = classLoader.loadClass("foo.TestClass").kotlin
-        // val factoryClass = classLoader.loadClass("foo.TestClass_Factory").kotlin
-        //
+        val testClass = classLoader.loadClass("foo.TestClass").kotlin
+        val factoryClass = classLoader.loadClass("foo.TestClass_Factory").kotlin
+        val factoryInstance =
+          factoryClass.primaryConstructor!!.call(dagger.internal.Provider { "Bananas" })
+        // val factoryInstance = factoryClass.constructors.first()
+        // val factoryInstance = TestClass_Factory({"Hi"})
+        factoryClass.functions.first { it.name == "get" }
+          .call(factoryInstance)!!.javaClass == testClass
+
         // val companion = factoryClass.companionObjectInstance
         // val factoryCreateMethod = factoryClass.companionObject!!.functions.first { it.name == "create" }
         // val factoryInstance = factoryCreateMethod.call(companion, Provider { "Bananas" }, Provider { 0 })

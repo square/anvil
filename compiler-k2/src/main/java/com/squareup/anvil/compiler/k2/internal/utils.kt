@@ -50,7 +50,7 @@ public fun String.classId(): ClassId = fqn().classId()
 
 internal fun ConeKotlinType.wrapInProvider(
   symbolProvider: FirSymbolProvider,
-) = symbolProvider.getClassLikeSymbolByClassId(Names.javax.inject.provider.classId())!!
+) = symbolProvider.getClassLikeSymbolByClassId(Names.dagger.provider.classId())!!
   .constructType(
     typeArguments = arrayOf(this@wrapInProvider),
     isMarkedNullable = false,
