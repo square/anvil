@@ -25,6 +25,9 @@ dependencies {
 
   kapt(libs.auto.service.processor)
 
+  testCompileOnly(libs.auto.service.annotations)
+
+  testImplementation(project(":compiler-testing"))
   testImplementation(libs.junit.jupiter.api)
   testImplementation(libs.kase)
   testImplementation(libs.kotest.assertions.api)

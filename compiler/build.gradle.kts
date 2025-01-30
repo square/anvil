@@ -52,7 +52,7 @@ dependencies {
   testImplementation(libs.guava)
   testImplementation(libs.kase)
   testImplementation(libs.kotest.assertions.core.jvm)
-  testImplementation(libs.kotlin.annotationProcessingEmbeddable)
+  testImplementation(libs.kotlin.annotation.processing.embeddable)
   testImplementation(libs.kotlin.compileTesting)
   testImplementation(libs.kotlin.compiler)
   testImplementation(libs.kotlin.test)

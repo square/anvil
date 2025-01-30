@@ -24,6 +24,7 @@ dropbox-dependencyGuard = "0.5.0"
 dokka = "1.9.20"
 espresso = "3.5.1"
 gradlePublish = "1.3.0"
+jakarta-inject = "2.0.1"
 jUnit5 = "5.11.4"
 jvm-toolchain = "17"
 jvm-target-library = "8"
@@ -94,6 +95,9 @@ gradlePublishRaw = { module = "com.gradle.publish:plugin-publish-plugin", versio
 guava = "com.google.guava:guava:33.4.0-jre"
 
 inject = "javax.inject:javax.inject:1"
+
+jakarta-inject = { module = "jakarta.inject:jakarta.inject-api", version.ref = "jakarta-inject" }
+
 jsr250 = "javax.annotation:jsr250-api:1.0"
 junit = "junit:junit:4.13.2"
 
@@ -109,17 +113,33 @@ kase-gradle-dsl = { module = "com.rickbusarow.kase:kase-gradle-dsl", version.ref
 kotest-assertions-api = { module = "io.kotest:kotest-assertions-api", version.ref = "kotest" }
 kotest-assertions-core-jvm = { module = "io.kotest:kotest-assertions-core-jvm", version.ref = "kotest" }
 
-kotlin-annotationProcessingEmbeddable = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable", version.ref = "kotlin" }
+kotlin-annotation-processing = { module = "org.jetbrains.kotlin:kotlin-annotation-processing", version.ref = "kotlin"}
+kotlin-annotation-processing-compiler = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-compiler", version.ref = "kotlin"}
+kotlin-annotation-processing-embeddable = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-embeddable", version.ref = "kotlin"}
+kotlin-annotation-processing-gradle = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-gradle", version.ref = "kotlin"}
+kotlin-annotation-processing-runtime = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-runtime", version.ref = "kotlin"}
 kotlin-bom = { module = "org.jetbrains.kotlin:kotlin-bom", version.ref = "kotlin" }
-kotlin-compileTesting = { module = "dev.zacsweers.kctfork:core", version.ref = "kct" }
-kotlin-compileTesting-ksp = { module = "dev.zacsweers.kctfork:ksp", version.ref = "kct" }
+kotlin-compiler-embeddable = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin"}
+kotlin-daemon-embeddable = { module = "org.jetbrains.kotlin:kotlin-daemon-embeddable", version.ref = "kotlin"}
 kotlin-compiler = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", version.ref = "kotlin" }
 kotlin-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradlePluginApi = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
-kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0"
+kotlin-kapt-base = { module = "org.jetbrains.kotlin:kotlin-annotation-processing-base", version.ref = "kotlin" }
+kotlin-metadata-jvm = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin"}
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
+kotlin-script-runtime = { module = "org.jetbrains.kotlin:kotlin-script-runtime", version.ref = "kotlin"}
+kotlin-scripting-common = { module = "org.jetbrains.kotlin:kotlin-scripting-common", version.ref = "kotlin"}
+kotlin-scripting-compiler-embeddable = { module = "org.jetbrains.kotlin:kotlin-scripting-compiler-embeddable", version.ref = "kotlin"}
+kotlin-scripting-compiler-impl-embeddable = { module = "org.jetbrains.kotlin:kotlin-scripting-compiler-impl-embeddable", version.ref = "kotlin"}
+kotlin-scripting-jvm = { module = "org.jetbrains.kotlin:kotlin-scripting-jvm", version.ref = "kotlin"}
+kotlin-stdlib = { module = "org.jetbrains.kotlin:kotlin-stdlib", version.ref = "kotlin"}
+kotlin-stdlib-jdk7 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk7", version.ref = "kotlin"}
+kotlin-stdlib-jdk8 = { module = "org.jetbrains.kotlin:kotlin-stdlib-jdk8", version.ref = "kotlin"}
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
+
+kotlin-compileTesting = { module = "dev.zacsweers.kctfork:core", version.ref = "kct" }
+kotlin-compileTesting-ksp = { module = "dev.zacsweers.kctfork:ksp", version.ref = "kct" }
 
 kotlinpoet = { module = "com.squareup:kotlinpoet", version.ref = "kotlinpoet" }
 kotlinpoet-ksp = { module = "com.squareup:kotlinpoet-ksp", version.ref = "kotlinpoet" }
