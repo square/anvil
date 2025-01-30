@@ -1,8 +1,11 @@
 package com.squareup.anvil.compiler.testing
 
+import com.rickbusarow.kase.stdlib.createSafely
+import com.rickbusarow.kase.stdlib.div
 import com.rickbusarow.kase.stdlib.letIf
 import dagger.internal.codegen.ComponentProcessor
 import io.kotest.matchers.shouldBe
+import org.intellij.lang.annotations.Language
 import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.cli.common.arguments.K2JVMCompilerArguments
 import org.jetbrains.kotlin.cli.common.arguments.copyOf
@@ -10,6 +13,8 @@ import org.jetbrains.kotlin.cli.common.arguments.parseCommandLineArguments
 import org.jetbrains.kotlin.cli.jvm.K2JVMCompiler
 import org.jetbrains.kotlin.compilerRunner.toArgumentStrings
 import org.jetbrains.kotlin.config.LanguageVersion
+import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.extensions.FirExtension
 import org.jetbrains.kotlin.incremental.isJavaFile
 import org.jetbrains.kotlin.kapt3.base.AptMode
 import org.jetbrains.kotlin.kapt3.base.DetectMemoryLeaksMode
@@ -26,6 +31,79 @@ import javax.tools.DiagnosticCollector
 import javax.tools.JavaFileObject
 import javax.tools.SimpleJavaFileObject
 import javax.tools.ToolProvider
+import kotlin.reflect.KFunction1
+
+public fun CompilationEnvironment.compile2(
+  @Language("kotlin") vararg kotlinSources: String,
+  javaSources: List<String> = emptyList(),
+  expectedExitCode: ExitCode = ExitCode.OK,
+  firExtensions: List<KFunction1<FirSession, FirExtension>> = emptyList(),
+  exec: Compile2Result.() -> Unit = {},
+): Boolean {
+  val sourceFiles = kotlinSources.mapIndexed { i, kotlinNotTrimmed ->
+    val kotlin = kotlinNotTrimmed.trimIndent()
+    val packageName = kotlin.substringAfter("package ").substringBefore("\n").trim()
+    val packageDir = packageName.replace(".", "/")
+
+    workingDir.resolve("sources/$packageDir/Source$i.kt")
+      .createSafely(kotlin)
+  }
+
+  val javaFiles = javaSources.map { java ->
+    val packageName = java.substringAfter("package ").substringBefore(";").trim()
+    val packageDir = packageName.replace(".", "/")
+
+    val reg = """^[^/]*(?:class|interface|enum)[\t ]+(\S+)""".toRegex()
+    val className = java.lineSequence().firstNotNullOf { line ->
+      reg.find(line)?.groupValues?.get(1)
+    }
+
+    workingDir.resolve("sources/$packageDir/$className.java")
+      .createSafely(java)
+  }
+
+  return compile2(
+    sourceFiles = sourceFiles,
+    javaFiles = javaFiles,
+    expectedExitCode = expectedExitCode,
+    firExtensions = firExtensions,
+    exec = exec,
+  )
+}
+
+public fun CompilationEnvironment.compile2(
+  sourceFiles: List<File>,
+  javaFiles: List<File>,
+  languageVersion: LanguageVersion = LanguageVersion.KOTLIN_2_0,
+  expectedExitCode: ExitCode = ExitCode.OK,
+  firExtensions: List<KFunction1<FirSession, FirExtension>> = emptyList(),
+  exec: Compile2Result.() -> Unit = {},
+): Boolean {
+
+  val kaptDir = workingDir / "kapt"
+
+  val config = Compile2CompilationConfiguration(
+    sourceFiles = sourceFiles + javaFiles,
+    useKapt = mode.useKapt,
+    verbose = false,
+    allWarningsAsErrors = true,
+    jarOutputDir = workingDir / "libs",
+    classFilesDir = workingDir / "kotlin/classes",
+    kaptStubsDir = kaptDir / "stubs",
+    kaptGeneratedSourcesDir = kaptDir / "generated",
+    kaptIncrementalDir = kaptDir / "incremental",
+    kaptClassesDir = kaptDir / "classes",
+    languageVersion = languageVersion, firExtensions = firExtensions,
+  )
+
+  val compilation = Compile2Compilation(config, expectedExitCode)
+
+  val result = compilation.execute()
+
+  result.exec()
+
+  return true
+}
 
 public class Compile2Compilation(
   public val config: Compile2CompilationConfiguration,
@@ -56,7 +134,7 @@ public class Compile2Compilation(
       args.verbose = config.verbose
       args.version = config.verbose
 
-      args.allowNoSourceFiles = config.sourceFiles.isEmpty()
+      args.allowNoSourceFiles = true
 
       args.noStdlib = true
       args.noReflect = true
@@ -77,7 +155,7 @@ public class Compile2Compilation(
     parseCommandLineArguments<K2JVMCompilerArguments>(baseArgs.toArgumentStrings())
 
     Compile2CompilerPluginRegistrar.threadLocalParams.set(
-      Compile2CompilerPluginRegistrar.Compile2RegistrarParams(firExtensions = listOf()),
+      Compile2CompilerPluginRegistrar.Compile2RegistrarParams(firExtensions = config.firExtensions),
     )
 
     if (config.useKapt) {
@@ -136,17 +214,6 @@ public class Compile2Compilation(
 
     val internalMessageStream = PrintStream(System.out)
 
-    class AnvilSimpleJavaFileObject(uri: URI) : SimpleJavaFileObject(
-      uri,
-      JavaFileObject.Kind.SOURCE,
-    ) {
-
-      override fun openInputStream(): InputStream = uri.toURL().openStream()
-
-      override fun getCharContent(ignoreEncodingErrors: Boolean): CharSequence =
-        uri.toURL().readText()
-    }
-
     val javacArgs = buildList {
       if (config.verbose) {
         this.add("-verbose")
@@ -163,7 +230,12 @@ public class Compile2Compilation(
 
       // also add class output path to javac classpath so it can discover already compiled Kotlin
       // classes
-      this.addAll(listOf("-cp", (config.compilationClasspath + config.classFilesDir).classpathString()))
+      this.addAll(
+        listOf(
+          "-cp",
+          (config.compilationClasspath + config.classFilesDir).classpathString(),
+        ),
+      )
     }
 
     val javacSuccess = javac.getTask(
@@ -242,6 +314,15 @@ public class Compile2Compilation(
   }
 }
 
+private class AnvilSimpleJavaFileObject(uri: URI) :
+  SimpleJavaFileObject(uri, JavaFileObject.Kind.SOURCE) {
+
+  override fun openInputStream(): InputStream = uri.toURL().openStream()
+
+  override fun getCharContent(ignoreEncodingErrors: Boolean): CharSequence =
+    uri.toURL().readText()
+}
+
 public data class Compile2CompilationConfiguration(
   val sourceFiles: List<File>,
   val useKapt: Boolean,
@@ -280,4 +361,19 @@ public data class Compile2CompilationConfiguration(
     HostClasspath.jetbrainsAnnotations,
     HostClasspath.anvilAnnotations,
   ),
+  val firExtensions: List<KFunction1<FirSession, FirExtension>>,
 )
+
+internal fun javaHome(): File = javaHomeOrNull() ?: error("JAVA_HOME and 'java.home' not set")
+
+internal fun javaHomeOrNull(): File? {
+  val path = System.getProperty("java.home")
+    ?: System.getenv("JAVA_HOME")
+    ?: return null
+
+  return File(path).also { check(it.isDirectory) }
+}
+
+internal fun Iterable<File>.pathStrings(): List<String> = map { it.absolutePath }.distinct()
+internal fun Iterable<File>.classpathString(): String =
+  pathStrings().joinToString(File.pathSeparator)
