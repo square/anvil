@@ -40,7 +40,7 @@ public fun CompilationEnvironment.compile2(
   firExtensions: List<AnvilFirExtensionFactory<*>> = emptyList(),
   exec: Compile2Result.() -> Unit = {},
 ): Boolean {
-  val sourceFiles = kotlinSources.mapIndexed { i, kotlinNotTrimmed ->
+  val kotlinFiles = kotlinSources.mapIndexed { i, kotlinNotTrimmed ->
     val kotlin = kotlinNotTrimmed.trimIndent()
     val packageName = kotlin.substringAfter("package ").substringBefore("\n").trim()
     val packageDir = packageName.replace(".", "/")
@@ -63,8 +63,7 @@ public fun CompilationEnvironment.compile2(
   }
 
   return compile2(
-    sourceFiles = sourceFiles,
-    javaFiles = javaFiles,
+    sourceFiles = kotlinFiles + javaFiles,
     expectedExitCode = expectedExitCode,
     firExtensions = firExtensions,
     exec = exec,
@@ -73,7 +72,6 @@ public fun CompilationEnvironment.compile2(
 
 public fun CompilationEnvironment.compile2(
   sourceFiles: List<File>,
-  javaFiles: List<File>,
   languageVersion: LanguageVersion = LanguageVersion.KOTLIN_2_0,
   expectedExitCode: ExitCode = ExitCode.OK,
   firExtensions: List<AnvilFirExtensionFactory<*>> = emptyList(),
@@ -84,7 +82,7 @@ public fun CompilationEnvironment.compile2(
 
   val config = Compile2CompilationConfiguration(
     rootDir = workingDir,
-    sourceFiles = sourceFiles + javaFiles,
+    sourceFiles = sourceFiles,
     useKapt = mode.useKapt,
     verbose = false,
     allWarningsAsErrors = true,
@@ -125,9 +123,9 @@ public class Compile2Compilation(
   /**
    * Executes the compilation process. This includes:
    *
-   * 1) Optionally running KAPT if [Compile2CompilationConfiguration.useKapt] is true.
-   * 2) Running the Kotlin compiler on the provided source files (plus any KAPT-generated files).
-   * 3) (Optional) Running the Java compiler if Java sources exist.
+   * 1. Optionally running KAPT if [Compile2CompilationConfiguration.useKapt] is true.
+   * 2. Running the Kotlin compiler on the provided source files (plus any KAPT-generated files).
+   * 3. (Optional) Running the Java compiler if Java sources exist.
    *
    * @return A [Compile2Result] containing the compilation result: class loader, exit code, etc.
    */
