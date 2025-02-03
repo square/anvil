@@ -39,7 +39,7 @@ public fun CompilationEnvironment.compile2(
   expectedExitCode: ExitCode = ExitCode.OK,
   firExtensions: List<AnvilFirExtensionFactory<*>> = emptyList(),
   exec: Compile2Result.() -> Unit = {},
-): Boolean {
+): Compile2Result {
   val kotlinFiles = kotlinSources.mapIndexed { i, kotlinNotTrimmed ->
     val kotlin = kotlinNotTrimmed.trimIndent()
     val packageName = kotlin.substringAfter("package ").substringBefore("\n").trim()
@@ -76,7 +76,7 @@ public fun CompilationEnvironment.compile2(
   expectedExitCode: ExitCode = ExitCode.OK,
   firExtensions: List<AnvilFirExtensionFactory<*>> = emptyList(),
   exec: Compile2Result.() -> Unit = {},
-): Boolean {
+): Compile2Result {
 
   val kaptDir = workingDir / "kapt"
 
@@ -98,11 +98,7 @@ public fun CompilationEnvironment.compile2(
 
   val compilation = Compile2Compilation(config, expectedExitCode)
 
-  val result = compilation.execute()
-
-  result.exec()
-
-  return true
+  return compilation.execute().also { it.exec() }
 }
 
 /**
@@ -166,12 +162,14 @@ public class Compile2Compilation(
     // Sanity check to ensure the arguments translate properly into compiler-compatible strings.
     parseCommandLineArguments<K2JVMCompilerArguments>(baseArgs.toArgumentStrings())
 
-    // Register the FIR extensions, if any, via thread-local.
-    Compile2CompilerPluginRegistrar.threadLocalParams.set(
-      Compile2CompilerPluginRegistrar.Compile2RegistrarParams(
-        firExtensionFactories = config.firExtensions,
-      ),
-    )
+    if (config.firExtensions.isNotEmpty()) {
+      // Register the FIR extensions, if any, via thread-local.
+      Compile2CompilerPluginRegistrar.threadLocalParams.set(
+        Compile2CompilerPluginRegistrar.Compile2RegistrarParams(
+          firExtensionFactories = config.firExtensions,
+        ),
+      )
+    }
 
     if (config.useKapt) {
       executeKapt(baseArgs)
