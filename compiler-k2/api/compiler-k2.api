@@ -1,0 +1,10 @@
+public final class com/squareup/anvil/compiler/k2/fir/AnvilFirCompilerPluginRegistrar : org/jetbrains/kotlin/compiler/plugin/CompilerPluginRegistrar {
+	public fun <init> ()V
+	public fun getSupportsK2 ()Z
+	public fun registerExtensions (Lorg/jetbrains/kotlin/compiler/plugin/CompilerPluginRegistrar$ExtensionStorage;Lorg/jetbrains/kotlin/config/CompilerConfiguration;)V
+}
+
+public final class com/squareup/anvil/compiler/k2/fir/AnvilFirExtensionRegistrar : org/jetbrains/kotlin/fir/extensions/FirExtensionRegistrar {
+	public fun <init> (Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;)V
+}
+
