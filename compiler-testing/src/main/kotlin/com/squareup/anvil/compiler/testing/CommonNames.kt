@@ -32,7 +32,8 @@ internal object CommonNames {
   val anyQualifier = FqName("com.squareup.test.AnyQualifier")
 }
 
-internal operator fun Compile2Result.invoke(fqName: FqName): Class<*> = classLoader.loadClass(fqName)
+internal operator fun Compile2Result.invoke(fqName: FqName): Class<*> =
+  classLoader.loadClass(fqName)
 
 internal operator fun ClassLoader.get(fqName: FqName): Class<*> = loadClass(fqName)
 internal operator fun ClassLoader.get(fqName: String): Class<*> = loadClass(fqName)
@@ -141,6 +142,7 @@ internal fun ClassLoader.loadClassOrNull(fqName: FqName): Class<*>? = try {
 internal fun FqName.loadClass(classLoader: ClassLoader): Class<*> {
   return classLoader.loadClass(this.asString())
 }
+
 internal fun FqName.loadClass(scanResult: ScanResult): ClassInfo? {
   return scanResult.getClassInfo(this)
 }
