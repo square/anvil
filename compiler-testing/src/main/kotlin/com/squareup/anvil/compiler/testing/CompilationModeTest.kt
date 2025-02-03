@@ -3,30 +3,12 @@ package com.squareup.anvil.compiler.testing
 import com.rickbusarow.kase.DefaultTestEnvironment
 import com.rickbusarow.kase.Kase1
 import com.rickbusarow.kase.KaseTestFactory
-import com.rickbusarow.kase.NoParamTestEnvironmentFactory
 import com.rickbusarow.kase.ParamTestEnvironmentFactory
 import com.rickbusarow.kase.files.HasWorkingDir
 import com.rickbusarow.kase.files.TestLocation
 import com.rickbusarow.kase.kases
 import org.junit.jupiter.api.parallel.Execution
 import org.junit.jupiter.api.parallel.ExecutionMode
-
-public class AnvilEmbeddedCompilationTestEnvironment(
-  hasWorkingDir: HasWorkingDir,
-) : DefaultTestEnvironment(hasWorkingDir),
-  CompilationEnvironment {
-
-  override val mode: CompilationMode = CompilationMode.K2(useKapt = false)
-
-  public companion object Factory : NoParamTestEnvironmentFactory<AnvilEmbeddedCompilationTestEnvironment> {
-    override fun create(
-      names: List<String>,
-      location: TestLocation,
-    ): AnvilEmbeddedCompilationTestEnvironment = AnvilEmbeddedCompilationTestEnvironment(
-      hasWorkingDir = HasWorkingDir(names, location),
-    )
-  }
-}
 
 public class CompilationModeTestEnvironment(
   override val mode: CompilationMode,

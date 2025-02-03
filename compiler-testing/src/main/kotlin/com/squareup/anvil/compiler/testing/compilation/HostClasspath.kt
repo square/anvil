@@ -42,18 +42,25 @@ public object HostClasspath {
       }
   }
 
-  private fun anvilModuleJar(moduleName: String): File {
-    return findInClasspath(".+build/libs/$moduleName-$anvilVersion\\.jar".toRegex())
+  private fun anvilModuleJar(moduleName: String, afterVersion: String = ""): File {
+    val localBuildDirLibs =
+      Regex.escape("+${File.separatorChar}build${File.separatorChar}libs${File.separatorChar}")
+
+    return findInClasspathOrNull("${localBuildDirLibs}$moduleName-$anvilVersion${afterVersion}\\.jar".toRegex())
+      // If the jar isn't in a project build directory, this is probably being consumed by an external project.
+      // In that case, the jar should resolve like any other dependency from the Gradle cache.
+      ?: findInClasspath(group = "com.squareup.anvil", module = moduleName, version = anvilVersion)
   }
 
   public val anvilAnnotations: File by lazy { anvilModuleJar("annotations") }
   public val anvilAnnotationsOptional: File by lazy { anvilModuleJar("annotations-optional") }
   public val anvilCompiler: File by lazy { anvilModuleJar("compiler") }
   public val anvilCompilerK2: File by lazy { anvilModuleJar("compiler-k2") }
+  public val anvilCompilerK2Api: File by lazy { anvilModuleJar("compiler-k2-api") }
   public val anvilCompilerApi: File by lazy { anvilModuleJar("compiler-api") }
   public val anvilCompilerUtils: File by lazy { anvilModuleJar("compiler-utils") }
   public val anvilCompilerUtilsTestFixtures: File by lazy {
-    findInClasspath(".+build/libs/compiler-utils-$anvilVersion-test-fixtures\\.jar".toRegex())
+    anvilModuleJar("compiler-utils", "-test-fixtures")
   }
 
   private const val jetbrainsKotlin = "org.jetbrains.kotlin"
@@ -136,14 +143,19 @@ public object HostClasspath {
     findInClasspath(kotlinDependencyRegex("kotlin-stdlib-jdk[0-9]+"))
   }
 
+  private val SLASH = File.separatorChar
+
   private fun kotlinDependencyRegex(prefix: String): Regex {
-    return Regex("$prefix(-[0-9]+\\.[0-9]+(\\.[0-9]+)?)([-0-9a-zA-Z]+)?\\.jar")
+    return Regex("""$prefix(-[0-9]+\.[0-9]+(\.[0-9]+)?)([-0-9a-zA-Z]+)?\.jar""")
   }
 
   /** Tries to find a file matching the given [regex] in the host process' classpath. */
-  private fun findInClasspath(regex: Regex): File = inheritedClasspath
-    .firstOrNull { classpath -> classpath.path.matches(regex) }
+  private fun findInClasspath(regex: Regex): File = findInClasspathOrNull(regex)
     .requireNotNull { "could not find classpath file via regex: $regex" }
+
+  /** Tries to find a file matching the given [regex] in the host process' classpath. */
+  private fun findInClasspathOrNull(regex: Regex): File? = inheritedClasspath
+    .firstOrNull { classpath -> classpath.path.matches(regex) }
 
   /** Tries to find a .jar file given pieces of its maven coordinates */
   private fun findInClasspath(
@@ -154,7 +166,7 @@ public object HostClasspath {
     require(group != null || module != null || version != null)
     return inheritedClasspath.firstOrNull { classpath ->
 
-      val classpathIsLocal = classpath.absolutePath.contains(".m2/repository/")
+      val classpathIsLocal = classpath.absolutePath.contains(".m2${SLASH}repository$SLASH")
 
       val (fileGroup, fileModule, fileVersion) = if (classpathIsLocal) {
         parseMavenLocalClasspath(classpath)
@@ -174,7 +186,7 @@ public object HostClasspath {
   private fun parseMavenLocalClasspath(classpath: File): List<String> {
     // ~/.m2/repository/com/square/anvil/compiler-utils/1.0.0/compiler-utils-1.0.0.jar
     return classpath.absolutePath
-      .substringAfter(".m2/repository/")
+      .substringAfter(".m2${SLASH}repository$SLASH")
       // Groups have their dots replaced with file separators, like "com/squareup/anvil".
       // Module names use dashes, so they're unchanged.
       .split(File.separatorChar)
