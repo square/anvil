@@ -44,7 +44,9 @@ public interface MoreAsserts {
  * which enables the 'click to see difference' feature in IntelliJ.
  * That diff is much more legible.
  */
-private fun includeAsEquality(substring: String): Matcher<String?> = neverNullMatcher<String> { actual ->
+private fun includeAsEquality(
+  substring: String,
+): Matcher<String?> = neverNullMatcher<String> { actual ->
   EqualityMatcherResult.invoke(
     passed = actual.contains(substring),
     actual = actual,

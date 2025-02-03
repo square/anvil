@@ -168,7 +168,9 @@ public class Compile2Compilation(
 
     // Register the FIR extensions, if any, via thread-local.
     Compile2CompilerPluginRegistrar.threadLocalParams.set(
-      Compile2CompilerPluginRegistrar.Compile2RegistrarParams(firExtensionFactories = config.firExtensions),
+      Compile2CompilerPluginRegistrar.Compile2RegistrarParams(
+        firExtensionFactories = config.firExtensions,
+      ),
     )
 
     if (config.useKapt) {
