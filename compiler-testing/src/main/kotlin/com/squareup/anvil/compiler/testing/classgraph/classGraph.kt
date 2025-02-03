@@ -36,10 +36,7 @@ public fun ClassInfo.getAnnotationInfo(fqName: FqName): AnnotationInfo? {
  * fun `my test`() = testFactory {
  *   // ...
  *
- *   shouldSucceed("jar") // note the "jar" task
- *
- *   rootProject.classGraphResult()
- *     .allModuleClasses()
+ *   classGraph.allModuleClasses()
  *     .names() shouldBe listOf( /* ... */ )
  * }
  * ```
@@ -59,10 +56,7 @@ public fun ScanResult.allModuleClasses(): List<ModuleClassInfo> {
  * fun `my test`() = testFactory {
  *   // ...
  *
- *   shouldSucceed("jar") // note the "jar" task
- *
- *   rootProject.classGraphResult()
- *     .allDaggerFactoryClasses()
+ *   classGraph.allDaggerFactoryClasses()
  *     .names() shouldBe listOf( /* ... */ )
  * }
  * ```
@@ -82,10 +76,7 @@ public fun ScanResult.allDaggerFactoryClasses(): List<DaggerFactoryClassInfo> {
  * fun `my test`() = testFactory {
  *   // ...
  *
- *   shouldSucceed("jar") // note the "jar" task
- *
- *   rootProject.classGraphResult()
- *     .allMergedModulesForComponent("com.squareup.test.AppComponent")
+ *   classGraph.allMergedModulesForComponent("com.squareup.test.AppComponent")
  *     .names() shouldBe listOf(
  *       "com.squareup.test.ModuleA",
  *       "com.squareup.test.ModuleB",
@@ -108,31 +99,10 @@ public fun ScanResult.allMergedModulesForComponent(
  * ```
  * @TestFactory
  * fun `my test`() = testFactory {
- *   rootProject {
- *     dir("src/main/java") {
- *       kotlinFile(
- *         path = "com/squareup/test/AppComponent.kt",
- *         content = """
- *           package com.squareup.test
  *
- *           interface Base
+ *   // ...
  *
- *           @ContributesTo(Any::class)
- *           interface A : Base
- *           @ContributesTo(Any::class)
- *           interface B : Base
- *
- *           @MergeComponent(Any::class)
- *           interface AppComponent
- *         """.trimIndent()
- *       )
- *     }
- *   }
- *
- *   shouldSucceed("jar") // note the "jar" task
- *
- *   rootProject.classGraphResult()
- *     .allMergedModulesForComponent("com.squareup.test.AppComponent")
+ *   classGraph.allMergedModulesForComponent("com.squareup.test.AppComponent")
  *     .names() shouldBe listOf(
  *       "com.squareup.test.A",
  *       "com.squareup.test.B",
@@ -155,10 +125,7 @@ public fun ScanResult.allDirectInterfaces(className: String): List<ClassInfo> {
  * fun `my test`() = testFactory {
  *   // ...
  *
- *   shouldSucceed("jar") // note the "jar" task
- *
- *   rootProject.classGraphResult()
- *     .allBindsMethods()
+ *   classGraph.allBindsMethods()
  *     .names() shouldBe listOf( /* ... */ )
  * }
  * ```
@@ -180,10 +147,7 @@ public fun ScanResult.allBindsMethods(): List<BindsMethodInfo> {
  * fun `my test`() = testFactory {
  *   // ...
  *
- *   shouldSucceed("jar") // note the "jar" task
- *
- *   rootProject.classGraphResult()
- *     .allBoundTypes() shouldBe listOf("com.example.FooImpl" to "com.example.Foo")
+ *   classGraph.allBoundTypes() shouldBe listOf("com.example.FooImpl" to "com.example.Foo")
  * }
  * ```
  */
