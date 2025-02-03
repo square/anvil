@@ -1,12 +1,13 @@
 package com.squareup.anvil.compiler.k2.ir
 
 import com.squareup.anvil.compiler.k2.AnvilFirInjectConstructorGenerationExtension
-import com.squareup.anvil.compiler.k2.internal.Names
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.backend.common.extensions.IrPluginContext
+import org.jetbrains.kotlin.backend.common.lower.DeclarationIrBuilder
+import org.jetbrains.kotlin.backend.common.lower.irBlockBody
 import org.jetbrains.kotlin.ir.builders.IrBlockBodyBuilder
-import org.jetbrains.kotlin.ir.builders.IrSingleStatementBuilder
-import org.jetbrains.kotlin.ir.builders.Scope
+import org.jetbrains.kotlin.ir.builders.IrBuilderWithScope
+import org.jetbrains.kotlin.ir.builders.IrGeneratorWithScope
 import org.jetbrains.kotlin.ir.declarations.IrClass
 import org.jetbrains.kotlin.ir.declarations.IrConstructor
 import org.jetbrains.kotlin.ir.declarations.IrSimpleFunction
@@ -24,17 +25,13 @@ import org.jetbrains.kotlin.ir.util.functions
 import org.jetbrains.kotlin.ir.util.primaryConstructor
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.ir.util.*
-import org.jetbrains.kotlin.ir.builders.irCall
 import org.jetbrains.kotlin.ir.builders.irCallOp
 import org.jetbrains.kotlin.ir.builders.irGet
-import org.jetbrains.kotlin.ir.builders.irGetField
 import org.jetbrains.kotlin.ir.builders.irGetObjectValue
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.builders.irReturn
-import org.jetbrains.kotlin.ir.builders.irString
-import org.jetbrains.kotlin.ir.expressions.impl.IrGetObjectValueImpl
-import org.jetbrains.kotlin.ir.get
+import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 
 @OptIn(UnsafeDuringIrConstructionAPI::class)
 internal class IrInjectConstructorFactory(
@@ -87,56 +84,70 @@ internal class IrInjectConstructorFactory(
     return irFactory.createBlockBody(-1, -1, listOf(returnStatement))
   }
 
-  private fun createGetFunctionBody(getFunction: IrSimpleFunction): IrBody {
-    getFunction.symbol.owner
-    val parentClass = getFunction.parentAsClass
+  private fun createGetFunctionBody(declaration: IrSimpleFunction): IrBody {
+    val parentClass = declaration.parentAsClass
     val newInstance: IrSimpleFunction = parentClass.companionObject()!!
       .functions.single { it.name == Name.identifier("newInstance") }
-    val companionObjectIrClass: IrClass = getFunction.parentAsClass.companionObject()!!
+    val companionObjectIrClass: IrClass = declaration.parentAsClass.companionObject()!!
+    return DeclarationIrBuilder(context, declaration.symbol).run {
+      irBlockBody(declaration) {
+        val companionReference = irGetObjectValue(
+          type = companionObjectIrClass.defaultType,
+          classSymbol = companionObjectIrClass.symbol,
+        )
 
-    return context.irFactory.createBlockBody(-1, -1) {
-      val builder = IrBlockBodyBuilder(context, Scope(getFunction.symbol), -1, -1)
-      val companionReference = builder.irGetObjectValue(
-        type = companionObjectIrClass.defaultType,
-        classSymbol = companionObjectIrClass.symbol,
-      )
+        val arguments = parentClass.properties
+          .filter { properties ->
+            parentClass.primaryConstructor
+              ?.valueParameters?.any { it.name == properties.name }
+              ?: false
+          }
+          .map { property: IrProperty ->
+            val backingField = property.backingField!!
+            val propertyType = backingField.type
+            val providerGetFunction: IrSimpleFunction =
+              propertyType.getClass()!!.functions.first { it.name.toString() == "get" }
 
-      val arguments = parentClass.properties
-        .filter { properties ->
-          parentClass.primaryConstructor
-            ?.valueParameters?.any { it.name == properties.name }
-            ?: false
-        }
-        .map { property: IrProperty ->
-          val backingField = property.backingField!!
-          val propertyType = backingField.type
-          val providerGetFunction: IrSimpleFunction =
-            propertyType.getClass()!!.functions.first { it.name.toString() == "get" }
-
-          val param0Provider = builder.irCallOp(
-            callee = property.getter!!.symbol,
-            type = property.getter!!.returnType,
-            dispatchReceiver = builder.irGet(getFunction.dispatchReceiverParameter!!)
-            //
-          )
-          statements += param0Provider
-          builder.irCallOp(
-            callee = providerGetFunction.symbol,
-            type = context.irBuiltIns.stringType,
-            dispatchReceiver = param0Provider
-          )
-        }
-      val newInstanceStatement = builder.irCallOp(
-        callee = newInstance.symbol,
-        type = newInstance.returnType,
-        dispatchReceiver = companionReference,
-      ).apply {
-        arguments.forEachIndexed { index, argument ->
-          putValueArgument(index, argument)
-        }
+            irCallOp(
+              callee = providerGetFunction.symbol,
+              type = context.irBuiltIns.stringType,
+              dispatchReceiver = irGetProperty(
+                property = property,
+                dispatchReceiver = declaration.dispatchReceiverParameter!!,
+              ),
+            )
+          }
+        +irReturn(
+          irCallWithArguments(
+            callee = newInstance,
+            dispatchReceiver = companionReference,
+            arguments = arguments,
+          ),
+        )
       }
+    }
+  }
 
-      statements += builder.irReturn(newInstanceStatement)
+  private fun IrBuilderWithScope.irGetProperty(
+    property: IrProperty,
+    dispatchReceiver: IrValueParameter,
+  ) = irCallOp(
+    callee = property.getter!!.symbol,
+    type = property.getter!!.returnType,
+    dispatchReceiver = irGet(dispatchReceiver),
+  )
+
+  private fun IrBuilderWithScope.irCallWithArguments(
+    callee: IrSimpleFunction,
+    dispatchReceiver: IrExpression,
+    arguments: Sequence<IrMemberAccessExpression<*>>
+  ) = irCallOp(
+    callee = callee.symbol,
+    type = callee.returnType,
+    dispatchReceiver = dispatchReceiver,
+  ).apply {
+    arguments.forEachIndexed { index, argument ->
+      putValueArgument(index, argument)
     }
   }
 

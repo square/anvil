@@ -1,20 +1,12 @@
 package foo
 
+import junit.framework.TestCase.assertTrue
 import org.junit.jupiter.api.Test
 
 class MyTest {
 
   @Test
   fun `the appComponent is a thing`() {
-
-    val factory = InjectClass_Factory({ "Banana" }) as dagger.internal.Factory<InjectClass>
-
-    val injectClass = factory.get()
-
-    // val factoryName = factory.name as dagger.internal.Provider<String>
-    //
-    // println("######################### ${factoryName.get()}")
-    //
-    assert(injectClass.name != null)
+    assertTrue(DaggerJavaComponent.factory().create("Hello").injectClass.name.equals("Hello"))
   }
 }

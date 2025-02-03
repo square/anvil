@@ -38,16 +38,19 @@ import javax.inject.Inject
 // class InjectClass @Inject constructor(val a: A, val b: B)
 
 // @MergeComponent(Unit::class)
-class InjectClass @Inject constructor(val name: String)
-
-@Component
-interface AppComponent {
-  @Component.Factory
-  interface Factory {
-    fun create(@BindsInstance name: String): AppComponent
-  }
-  fun injectClass(): InjectClass
+class InjectClass @Inject constructor(injectClass: InjectClass2) {
+  val name: String = injectClass.name
 }
+class InjectClass2 @Inject constructor(val name: String)
+
+// @Component
+// interface AppComponent {
+//   @Component.Factory
+//   interface Factory {
+//     fun create(@BindsInstance name: String): AppComponent
+//   }
+//   fun injectClass(): InjectClass
+// }
 
 suspend fun main() {
 

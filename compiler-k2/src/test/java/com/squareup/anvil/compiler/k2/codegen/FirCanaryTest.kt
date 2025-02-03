@@ -122,17 +122,9 @@ class FirCanaryTest : CompilationModeTest(
         val factoryClass = classLoader.loadClass("foo.TestClass_Factory").kotlin
         val factoryInstance =
           factoryClass.primaryConstructor!!.call(dagger.internal.Provider { "Bananas" })
-        // val factoryInstance = factoryClass.constructors.first()
-        // val factoryInstance = TestClass_Factory({"Hi"})
         factoryClass.functions.first { it.name == "get" }
           .call(factoryInstance)!!.javaClass == testClass
 
-        // val companion = factoryClass.companionObjectInstance
-        // val factoryCreateMethod = factoryClass.companionObject!!.functions.first { it.name == "create" }
-        // val factoryInstance = factoryCreateMethod.call(companion, Provider { "Bananas" }, Provider { 0 })
-        // factoryInstance!!::class.shouldBeEqual(factoryClass)
-        // val factoryNewInstanceMethod = factoryClass.companionObject!!.functions.first { it.name == "newInstance" }
-        // factoryNewInstanceMethod.call(companion, "Bananas", 0)!!::class.shouldBeEqual(testClass)
       }
     }
 
