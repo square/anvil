@@ -100,8 +100,7 @@ internal class IrInjectConstructorFactory(
         type = companionObjectIrClass.defaultType,
         classSymbol = companionObjectIrClass.symbol,
       )
-      val thisParam: IrValueParameter = parentClass.thisReceiver!!
-      // val providerGetFunction = Names.dagger.provider
+
       val arguments = parentClass.properties
         .filter { properties ->
           parentClass.primaryConstructor
@@ -114,30 +113,17 @@ internal class IrInjectConstructorFactory(
           val providerGetFunction: IrSimpleFunction =
             propertyType.getClass()!!.functions.first { it.name.toString() == "get" }
 
-          val thisReceiver = builder.irGet(thisParam)
-          // statements += thisReceiver
-            // IrSingleStatementBuilder(context, Scope(parentClass.symbol), -1, -1).irGet(thisParam)
-          // val getBuilder = IrSingleStatementBuilder(context, Scope(parentClass.symbol), -1, -1)
-
-          // statements += builder.irGetField(thisReceiver, backingField)
-          // val param0Function = parentClass.getSimpleFunction("getParam0")!!
           val param0Provider = builder.irCallOp(
             callee = property.getter!!.symbol,
             type = property.getter!!.returnType,
-            dispatchReceiver = thisReceiver
+            dispatchReceiver = builder.irGet(getFunction.dispatchReceiverParameter!!)
             //
           )
           statements += param0Provider
           builder.irCallOp(
             callee = providerGetFunction.symbol,
             type = context.irBuiltIns.stringType,
-            dispatchReceiver = param0Provider//builder.irGetField(null, backingField)
-              // builder.irCall(
-              //   callee = property.getter!!.symbol,
-                // callee = param0Function,
-                // type = propertyType,
-                // dispatchReceiver = builder.irGet(thisParam),
-              // ),
+            dispatchReceiver = param0Provider
           )
         }
       val newInstanceStatement = builder.irCallOp(
