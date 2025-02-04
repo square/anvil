@@ -2,6 +2,7 @@ plugins {
   alias(libs.plugins.kotlin.jvm)
   id("com.squareup.anvil")
   id("conventions.minimal")
+  id("com.sergei-lapin.napt") version("1.19") apply true
   // id("java-anno")
   // alias(libs.plugins.java.kapt)
 }

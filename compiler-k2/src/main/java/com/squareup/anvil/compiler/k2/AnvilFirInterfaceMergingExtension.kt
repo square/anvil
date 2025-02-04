@@ -1,5 +1,8 @@
 package com.squareup.anvil.compiler.k2
 
+import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.joinSimpleNames
+import com.squareup.anvil.compiler.internal.reference.asClassId
 import com.squareup.anvil.compiler.k2.internal.AnvilPredicates
 import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.contributesToScope
@@ -9,6 +12,7 @@ import com.squareup.anvil.compiler.k2.internal.requireScopeArgument
 import com.squareup.anvil.compiler.k2.internal.resolveConeType
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
+import org.jetbrains.kotlin.fir.declarations.utils.classId
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
@@ -16,6 +20,7 @@ import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.plugin.createConeType
 import org.jetbrains.kotlin.fir.resolve.fqName
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.classId
@@ -33,7 +38,12 @@ public class AnvilFirInterfaceMergingExtension(session: FirSession) :
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(PREDICATE)
     register(AnvilPredicates.hasContributesToAnnotation)
+    register(AnvilPredicates.hasContributesBindingAnnotation)
     register(AnvilPredicates.hasModuleAnnotation)
+  }
+
+  override fun needTransformSupertypes(declaration: FirClassLikeDeclaration): Boolean {
+    return session.predicateBasedProvider.matches(PREDICATE, declaration)
   }
 
   override fun computeAdditionalSupertypes(
@@ -52,8 +62,7 @@ public class AnvilFirInterfaceMergingExtension(session: FirSession) :
           .resolveConeType(typeResolver)
           .classId!!
           .asSingleFqName()
-
-        session.predicateBasedProvider
+        val contributesToModules = session.predicateBasedProvider
           .getSymbolsByPredicate(AnvilPredicates.hasContributesToAnnotation)
           .filterIsInstance<FirClassLikeSymbol<*>>()
           .mapNotNull { contributed ->
@@ -78,10 +87,8 @@ public class AnvilFirInterfaceMergingExtension(session: FirSession) :
 
             classId.createConeType(session)
           }
+        contributesToModules
       }
   }
 
-  override fun needTransformSupertypes(declaration: FirClassLikeDeclaration): Boolean {
-    return session.predicateBasedProvider.matches(PREDICATE, declaration)
-  }
 }

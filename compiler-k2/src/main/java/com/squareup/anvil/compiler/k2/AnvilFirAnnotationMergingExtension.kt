@@ -1,6 +1,9 @@
 package com.squareup.anvil.compiler.k2
 
+import com.squareup.anvil.compiler.internal.asClassName
+import com.squareup.anvil.compiler.internal.joinSimpleNames
 import com.squareup.anvil.compiler.internal.ktFile
+import com.squareup.anvil.compiler.internal.reference.asClassId
 import com.squareup.anvil.compiler.k2.internal.AnvilPredicates
 import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.argumentAt
@@ -28,9 +31,11 @@ import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
+import org.jetbrains.kotlin.fir.plugin.createConeType
 import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.resolve.fqName
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.name.FqName
@@ -58,7 +63,15 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
     resolvedSupertypes: List<FirResolvedTypeRef>,
     typeResolver: TypeResolveService,
   ): List<ConeKotlinType> {
-
+    // val bindingModules = session.predicateBasedProvider
+    //   .getSymbolsByPredicate(AnvilPredicates.hasContributesBindingAnnotation)
+    //   .filterIsInstance<FirRegularClassSymbol>()
+    //   .mapNotNull { contributedClass ->
+    //     contributedClass.classId.asClassName()
+    //       .joinSimpleNames(suffix = "_BindingModule")
+    //       .asClassId()
+    //       .createConeType(session)
+    //   }
     val componentAnnotation = classLikeDeclaration.annotations
       .single { it.fqName(session) == Names.anvil.mergeComponent } as FirAnnotationCall
 
@@ -114,6 +127,7 @@ public class AnvilFirAnnotationMergingExtension(session: FirSession) :
               argumentList = buildArgumentList {
                 arguments += oldModules
                 arguments += contributedModules.map { it.toGetClassCall() }
+                // + contributedModules.map { it.toGetClassCall() }
               }
             }
           }

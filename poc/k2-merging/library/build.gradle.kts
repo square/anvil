@@ -4,7 +4,7 @@ plugins {
   id("conventions.minimal")
 }
 
-if (libs.versions.config.generateDaggerFactoriesWithAnvil.get().toBoolean()) {
+if (true) {
   anvil {
     generateDaggerFactories = true
   }

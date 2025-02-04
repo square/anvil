@@ -1,7 +1,10 @@
 package foo
 
 import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.annotations.MergeComponent
 import com.squareup.anvil.annotations.compat.MergeModules
+import dagger.BindsInstance
+import dagger.Component
 import javax.inject.Inject
 
 // @MergeComponent(scope = Unit::class, modules = [ABindingModule::class])
@@ -36,28 +39,30 @@ import javax.inject.Inject
 // class InjectClass @Inject constructor(val a: A, val b: B)
 
 // @MergeComponent(Unit::class)
-class InjectClass @Inject constructor(injectClass: MyType) {
-  val name: String = injectClass.name
+class InjectClass @Inject constructor(
+  private val libraryInjectClass: LibraryInjectClass
+) {
+  val name: String = "injectClass.name"
 }
 
-@ContributesBinding(scope = Unit::class, boundType = MyType::class)
-class InjectClass2 @Inject constructor(override val name: String): MyType
+@ContributesBinding(scope = Any::class, boundType = MyType::class)
+class InjectClass2 @Inject constructor(override val name: String) : MyType
 
-@MergeModules(scope = Unit::class)
-interface MergedModules
+// @MergeModules(scope = Unit::class)
+// interface MergedModules
 
 interface MyType {
   val name: String
 }
 
-// @Component
-// interface AppComponent {
-//   @Component.Factory
-//   interface Factory {
-//     fun create(@BindsInstance name: String): AppComponent
-//   }
-//   fun injectClass(): InjectClass
-// }
+@MergeComponent(Any::class)
+interface AppComponent {
+  @Component.Factory
+  interface Factory {
+    fun create(@BindsInstance name: String): AppComponent
+  }
+  fun injectClass(): LibraryBinding
+}
 
 suspend fun main() {
 

@@ -3,10 +3,10 @@ package foo;
 import dagger.BindsInstance;
 import dagger.Component;
 
-@Component(modules = MergedModules.class)
+//@Component(modules = MyTypeBindingModule.class)
 public interface JavaComponent {
-  InjectClass getInjectClass();
-  @Component.Factory
+  LibraryBinding injectClass();
+  //@Component.Factory
   interface Factory {
     JavaComponent create(@BindsInstance String name);
   }

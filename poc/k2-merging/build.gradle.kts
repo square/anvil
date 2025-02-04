@@ -18,4 +18,5 @@ plugins {
   alias(libs.plugins.kotlin.multiplatform) apply false
   id("conventions.root")
   id("com.squareup.anvil") apply false
+  id("com.sergei-lapin.napt") version("1.19") apply false
 }

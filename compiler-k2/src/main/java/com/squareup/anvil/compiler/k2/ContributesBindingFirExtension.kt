@@ -127,10 +127,10 @@ public class ContributesBindingFirExtension(
         coneType = contributesToFqName.classId().constructClassLikeType()
       }
       argumentMapping = FirAnnotationArgumentMappingImpl(
-              null,
-              contributesBindingAnnotation.argumentMapping.mapping.filter { (key, _) ->
-                  key.asString() == "scope"
-              },
+        null,
+        contributesBindingAnnotation.argumentMapping.mapping.filter { (key, _) ->
+          key.asString() == "scope"
+        },
       )
     }
 
