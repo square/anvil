@@ -1,12 +1,31 @@
 package com.squareup.anvil.compiler.testing.compilation
 
-import com.squareup.anvil.compiler.testing.anvilVersion
+import com.squareup.anvil.compiler.testing.BuildConfig.anvilVersion
 import io.github.classgraph.ClassGraph
 import java.io.File
-import kotlin.contracts.ExperimentalContracts
-import kotlin.contracts.contract
 
+/**
+ * Provides references to host-side classpath entries (jars and directories) which are often needed
+ * for compiler tests. This includes:
+ * - Kotlin stdlib, annotation processing, and compiler jars.
+ * - Various Anvil modules (e.g., `anvil-annotations`, `anvil-compiler`, etc.).
+ * - Third-party dependencies like Dagger, Jakarta Inject, and JetBrains annotations.
+ *
+ * **Usage**
+ * - Most commonly, you won't interact directly with this object. Instead, it's used to pre-fill
+ *   classpaths for compilation.
+ * - In more advanced scenarios, you might directly reference something like
+ *   [HostClasspath.kotlinxSerializationCoreJvm] or [HostClasspath.kotlinReflect]
+ *   for custom classloading or other tasks.
+ */
 public object HostClasspath {
+
+  /**
+   * A lazily computed [ClassGraph] instance configured to scan the current JVM process's
+   * classpath and module path.
+   *
+   * This will typically be a test source set's runtime classpath.
+   */
   private val classGraph by lazy {
     ClassGraph()
       .enableSystemJarsAndModules()
@@ -16,12 +35,24 @@ public object HostClasspath {
   private val File.pathSegments: List<String>
     get() = path.split(File.separatorChar)
 
+  /**
+   * All resolved files from the host process's classpath and module path, including `.jar` files
+   * and directories. Determined by scanning with [classGraph].
+   *
+   * This will typically be a test source set's runtime classpath.
+   */
   public val inheritedClasspath: List<File> by lazy { getHostClasspaths() }
 
+  /** All directories for internal project (Gradle module) dependencies. */
   public val projectClassFileDirectories: List<File> by lazy {
     classGraph.classpathFiles.filter { it.isDirectory }
   }
 
+  /**
+   * All JAR files in the inherited classpath that appear to be Anvil module builds,
+   * discovered by matching a typical Gradle build output directory structure.
+   * For example, jar files under `anvil/compiler/build/libs/`.
+   */
   public val allInheritedAnvilProjects: List<File> by lazy {
 
     val relativeJarParents = listOf("build", "libs")
@@ -29,11 +60,10 @@ public object HostClasspath {
     inheritedClasspath
       .filter { it.isFile && it.extension == "jar" }
       .filter {
-        // [..., "anvil", "compiler", "build", "libs", "compiler-2.5.0-SNAPSHOT.jar"]
-
+        // e.g. [..., "anvil", "compiler", "build", "libs", "compiler-2.5.0-SNAPSHOT.jar"]
         @Suppress("MagicNumber")
         val libsDir = it.pathSegments
-          // ["build", "libs", "compiler-2.5.0-SNAPSHOT.jar"]
+          // e.g. ["build", "libs", "compiler-2.5.0-SNAPSHOT.jar"]
           .takeLast(3)
           // ["build", "libs"]
           .dropLast(1)
@@ -44,7 +74,7 @@ public object HostClasspath {
 
   private fun anvilModuleJar(moduleName: String, afterVersion: String = ""): File {
     val localBuildDirLibs =
-      Regex.escape("+${File.separatorChar}build${File.separatorChar}libs${File.separatorChar}")
+      ".+" + Regex.escape("${File.separatorChar}build${File.separatorChar}libs${File.separatorChar}")
 
     return findInClasspathOrNull("${localBuildDirLibs}$moduleName-$anvilVersion${afterVersion}\\.jar".toRegex())
       // If the jar isn't in a project build directory, this is probably being consumed by an external project.
@@ -143,19 +173,20 @@ public object HostClasspath {
     findInClasspath(kotlinDependencyRegex("kotlin-stdlib-jdk[0-9]+"))
   }
 
-  private val SLASH = File.separatorChar
-
   private fun kotlinDependencyRegex(prefix: String): Regex {
     return Regex("""$prefix(-[0-9]+\.[0-9]+(\.[0-9]+)?)([-0-9a-zA-Z]+)?\.jar""")
   }
 
   /** Tries to find a file matching the given [regex] in the host process' classpath. */
-  private fun findInClasspath(regex: Regex): File = findInClasspathOrNull(regex)
-    .requireNotNull { "could not find classpath file via regex: $regex" }
+  private fun findInClasspath(regex: Regex): File = requireNotNull(findInClasspathOrNull(regex)) {
+    "could not find classpath file via regex: $regex"
+  }
 
   /** Tries to find a file matching the given [regex] in the host process' classpath. */
   private fun findInClasspathOrNull(regex: Regex): File? = inheritedClasspath
     .firstOrNull { classpath -> classpath.path.matches(regex) }
+
+  private val SLASH = File.separatorChar
 
   /** Tries to find a .jar file given pieces of its maven coordinates */
   private fun findInClasspath(
@@ -166,9 +197,10 @@ public object HostClasspath {
     require(group != null || module != null || version != null)
     return inheritedClasspath.firstOrNull { classpath ->
 
-      val classpathIsLocal = classpath.absolutePath.contains(".m2${SLASH}repository$SLASH")
-
-      val (fileGroup, fileModule, fileVersion) = if (classpathIsLocal) {
+      // A cached .jar could be in Maven's cache (`~/.m2`), or in Gradle's (`~/.gradle/caches`).
+      // The folder structure will be different.
+      val classpathIsLocalMaven = classpath.absolutePath.contains(".m2${SLASH}repository$SLASH")
+      val (fileGroup, fileModule, fileVersion) = if (classpathIsLocalMaven) {
         parseMavenLocalClasspath(classpath)
       } else {
         parseGradleCacheClasspath(classpath)
@@ -178,11 +210,20 @@ public object HostClasspath {
       if (module != null && module != fileModule) return@firstOrNull false
       version == null || version == fileVersion
     }
-      .requireNotNull {
-        "could not find classpath file [group: $group, module: $module, version: $version]"
+      .let {
+        requireNotNull(it) {
+          "could not find classpath file [group: $group, module: $module, version: $version]"
+        }
       }
   }
 
+  /**
+   * Infers group, module, and version from a `.m2/repository/` path.
+   *
+   * Example path:
+   * `~/.m2/repository/com/squareup/anvil/compiler-utils/1.0.0/compiler-utils-1.0.0.jar`
+   * becomes `[com.squareup.anvil, compiler-utils, 1.0.0]`.
+   */
   private fun parseMavenLocalClasspath(classpath: File): List<String> {
     // ~/.m2/repository/com/square/anvil/compiler-utils/1.0.0/compiler-utils-1.0.0.jar
     return classpath.absolutePath
@@ -194,7 +235,8 @@ public object HostClasspath {
       // drop the simple name and extension
       .dropLast(1)
       .let { segments ->
-
+        // last 2 segments are module and version
+        // everything prior is the group
         listOf(
           // everything but the last two segments is the group
           segments.dropLast(2).joinToString("."),
@@ -206,6 +248,13 @@ public object HostClasspath {
       }
   }
 
+  /**
+   * Parses the group, module, and version from a Gradle cache path.
+   *
+   * Example path:
+   * `[...]/com.squareup.anvil/compiler/1.0.0/abcdef123/compiler-1.0.0.jar`
+   * results in `[com.squareup.anvil, compiler, 1.0.0]`.
+   */
   @Suppress("MagicNumber")
   private fun parseGradleCacheClasspath(classpath: File): List<String> {
     // example of a starting path:
@@ -215,14 +264,6 @@ public object HostClasspath {
       // [..., "com.square.anvil", "compiler", "1.0.0", "91...38", "compiler-1.0.0.jar"]
       .dropLast(2)
       .takeLast(3)
-  }
-
-  @OptIn(ExperimentalContracts::class)
-  public inline fun <T : Any> T?.requireNotNull(lazyMessage: () -> Any): T {
-    contract {
-      returns() implies (this@requireNotNull != null)
-    }
-    return requireNotNull(this, lazyMessage)
   }
 
   /** Returns the files on the classloader's classpath and module path. */

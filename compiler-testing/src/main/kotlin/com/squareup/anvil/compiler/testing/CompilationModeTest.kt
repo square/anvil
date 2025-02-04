@@ -6,9 +6,8 @@ import com.rickbusarow.kase.KaseTestFactory
 import com.rickbusarow.kase.ParamTestEnvironmentFactory
 import com.rickbusarow.kase.files.HasWorkingDir
 import com.rickbusarow.kase.files.TestLocation
+import com.rickbusarow.kase.kase
 import com.rickbusarow.kase.kases
-import org.junit.jupiter.api.parallel.Execution
-import org.junit.jupiter.api.parallel.ExecutionMode
 
 public class CompilationModeTestEnvironment(
   override val mode: CompilationMode,
@@ -50,7 +49,6 @@ public sealed interface CompilationMode {
   }
 }
 
-@Execution(ExecutionMode.SAME_THREAD, reason = "KSP tests aren't thread-safe yet.")
 public abstract class CompilationModeTest(
   modes: List<CompilationMode> = listOf(
     CompilationMode.K2(false),
@@ -60,6 +58,21 @@ public abstract class CompilationModeTest(
   CompilationModeTestEnvironment,
   ParamTestEnvironmentFactory<Kase1<CompilationMode>, CompilationModeTestEnvironment>,
   > {
+
+  public fun test(
+    mode: CompilationMode,
+    names: List<String> = emptyList(),
+    testLocation: TestLocation = TestLocation.get(),
+    testAction: suspend CompilationModeTestEnvironment.() -> Unit,
+  ) {
+    test(
+      param = kase(mode),
+      testEnvironmentFactory = testEnvironmentFactory,
+      names = names,
+      testLocation = testLocation,
+      testAction = testAction,
+    )
+  }
 
   public constructor(mode: CompilationMode, vararg additionalModes: CompilationMode) : this(
     listOf(mode, *additionalModes),

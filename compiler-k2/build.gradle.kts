@@ -1,7 +1,7 @@
 plugins {
   id("conventions.library")
   id("conventions.publish")
-  kotlin("kapt")
+  alias(libs.plugins.kotlin.kapt)
 }
 
 conventions {
@@ -11,7 +11,7 @@ conventions {
 publish {
   configurePom(
     artifactId = "compiler-k2",
-    pomName = "Anvil Compiler Implementation for Kotlin 2+",
+    pomName = "Anvil Compiler Implementation for the K2 compiler",
     pomDescription = "The core implementation module for Anvil, responsible for hooking into " +
       "the Kotlin compiler and orchestrating code generation",
   )

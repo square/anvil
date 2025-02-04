@@ -5,18 +5,6 @@ plugins {
   alias(libs.plugins.buildconfig)
 }
 
-val VERSION_NAME: String by project
-
-buildConfig {
-  className("BuildProperties")
-  packageName("com.squareup.anvil.compiler.testing")
-  useKotlinOutput { topLevelConstants = true }
-
-  buildConfigField("FULL_TEST_RUN", libs.versions.config.fullTestRun.map { it.toBoolean() })
-  buildConfigField("anvilVersion", VERSION_NAME)
-  buildConfigField("kotlinVersion", libs.versions.kotlin)
-}
-
 conventions {
   kotlinCompilerArgs.addAll(
     // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin
@@ -29,9 +17,26 @@ conventions {
 
 publish {
   configurePom(
-    artifactId = "compiler-k2-testing",
-    pomName = "Anvil Compiler K2 Testing",
+    artifactId = "compiler-testing",
+    pomName = "Anvil Compiler Testing",
     pomDescription = "Testing utilties for Anvil",
+  )
+}
+
+val VERSION_NAME: String by project
+
+buildConfig {
+  className("BuildConfig")
+  packageName("com.squareup.anvil.compiler.testing")
+  useKotlinOutput { topLevelConstants = false }
+
+  buildConfigField("FULL_TEST_RUN", libs.versions.config.fullTestRun.map { it.toBoolean() })
+  buildConfigField("anvilVersion", VERSION_NAME)
+  buildConfigField("kotlinVersion", libs.versions.kotlin)
+  buildConfigField(
+    "org.jetbrains.kotlin.config.LanguageVersion",
+    "languageVersion",
+    libs.versions.kotlinLanguageVersion.map { "LanguageVersion.KOTLIN_${it.replace(".", "_")}" },
   )
 }
 
