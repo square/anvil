@@ -6,6 +6,12 @@ plugins {
 
 conventions {
   explicitApi = true
+  kotlinCompilerArgs.addAll(
+    // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin
+    // compiler requires this flag when doing so.
+    "-Xjvm-default=all",
+    "-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi",
+  )
 }
 
 publish {
@@ -22,6 +28,8 @@ dependencies {
   api(project(":annotations"))
   api(project(":compiler-k2-api"))
   api(libs.kotlin.compiler)
+  api(libs.inject)
+  api(libs.dagger2)
 
   kapt(libs.auto.service.processor)
 
