@@ -7,6 +7,6 @@ class MyTest {
 
   @Test
   fun `the appComponent is a thing`() {
-    assertTrue(DaggerJavaComponent.factory().create("Hello").injectClass.name.equals("Hello"))
+    assertTrue(DaggerJavaComponent.factory().create("Hello").getInjectClass().name.equals("Hello"))
   }
 }

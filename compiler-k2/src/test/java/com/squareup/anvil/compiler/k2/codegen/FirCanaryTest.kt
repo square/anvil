@@ -128,6 +128,33 @@ class FirCanaryTest : CompilationModeTest(
       }
     }
 
+
+  @TestFactory
+  fun `generate dagger binding module`() = params
+    .filter { (mode) -> !mode.useKapt }
+    .asTests {
+      compile2(
+        """
+        package foo
+
+        import javax.inject.Inject
+        
+        interface MyType
+
+        @com.squareup.anvil.annotations.ContributesBinding(
+          scope = Any::class, 
+          boundType = MyType::class
+        )
+        class TestClass @Inject constructor(
+          val param0: String,
+        ) : MyType
+        """.trimIndent(),
+      ) {
+        classLoader.loadClass("foo.TestClass_BindingModule").kotlin
+          .functions.single { it.name == "bindMyType" }
+      }
+    }
+
   @TestFactory
   fun `what is a create function`() = params
     .filter { (mode) -> !mode.useKapt }

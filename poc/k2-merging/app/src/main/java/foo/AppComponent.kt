@@ -1,9 +1,7 @@
 package foo
 
-import com.apple.eawt.Application
-import com.squareup.anvil.annotations.MergeComponent
-import dagger.BindsInstance
-import dagger.Component
+import com.squareup.anvil.annotations.ContributesBinding
+import com.squareup.anvil.annotations.compat.MergeModules
 import javax.inject.Inject
 
 // @MergeComponent(scope = Unit::class, modules = [ABindingModule::class])
@@ -38,10 +36,19 @@ import javax.inject.Inject
 // class InjectClass @Inject constructor(val a: A, val b: B)
 
 // @MergeComponent(Unit::class)
-class InjectClass @Inject constructor(injectClass: InjectClass2) {
+class InjectClass @Inject constructor(injectClass: MyType) {
   val name: String = injectClass.name
 }
-class InjectClass2 @Inject constructor(val name: String)
+
+@ContributesBinding(scope = Unit::class, boundType = MyType::class)
+class InjectClass2 @Inject constructor(override val name: String): MyType
+
+@MergeModules(scope = Unit::class)
+interface MergedModules
+
+interface MyType {
+  val name: String
+}
 
 // @Component
 // interface AppComponent {

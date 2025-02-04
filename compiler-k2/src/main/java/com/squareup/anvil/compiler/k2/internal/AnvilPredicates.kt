@@ -19,6 +19,8 @@ internal object AnvilPredicates {
 
   val hasContributesToAnnotation
     get() = Names.anvil.contributesTo.lookupPredicateAnnotated()
+  val hasContributesBindingAnnotation
+    get() = Names.anvil.contributesBinding.lookupPredicateAnnotated()
   val hasMergeComponentFirAnnotation
     get() = Names.anvil.mergeComponent.lookupPredicateAnnotated()
 
