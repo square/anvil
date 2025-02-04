@@ -11,6 +11,14 @@ import com.squareup.anvil.compiler.k2.utils.fir.requireScopeArgument
 import com.squareup.anvil.compiler.k2.utils.fir.resolveConeType
 import com.squareup.anvil.compiler.k2.utils.mapToSet
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
+import com.squareup.anvil.compiler.k2.fir.internal.AnvilPredicates
+import com.squareup.anvil.compiler.k2.fir.internal.Names
+import com.squareup.anvil.compiler.k2.fir.internal.contributesToScope
+import com.squareup.anvil.compiler.k2.fir.internal.hasAnnotation
+import com.squareup.anvil.compiler.k2.fir.internal.mapToSet
+import com.squareup.anvil.compiler.k2.fir.internal.requireFqName
+import com.squareup.anvil.compiler.k2.fir.internal.requireScopeArgument
+import com.squareup.anvil.compiler.k2.fir.internal.resolveConeType
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
@@ -63,6 +71,8 @@ public class AnvilFirInterfaceMergingExtension(
           .resolveConeType(typeResolver)
           .classId!!
           .asSingleFqName()
+
+        val scopeFqName = scope.requireFqName()
 
         session.predicateBasedProvider
           .getSymbolsByPredicate(AnvilPredicates.hasContributesToAnnotation)
