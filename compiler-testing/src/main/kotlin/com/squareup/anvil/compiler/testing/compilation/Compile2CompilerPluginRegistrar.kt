@@ -19,14 +19,17 @@ internal class Compile2CompilerPluginRegistrar : CompilerPluginRegistrar() {
     get() = true
 
   override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
-    val factories = threadLocalParams.get().firExtensionFactories
+    val factories: List<AnvilFirExtensionFactory<*>>? =
+      threadLocalParams.get()?.firExtensionFactories
 
-    FirExtensionRegistrarAdapter.registerExtension(
-      Compile2FirExtensionRegistrar(
-        messageCollector = configuration.messageCollector,
-        factories = factories,
-      ),
-    )
+    if (!factories.isNullOrEmpty()) {
+      FirExtensionRegistrarAdapter.registerExtension(
+        Compile2FirExtensionRegistrar(
+          messageCollector = configuration.messageCollector,
+          factories = factories,
+        ),
+      )
+    }
   }
 
   companion object {

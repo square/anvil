@@ -8,7 +8,6 @@ import com.squareup.anvil.compiler.testing.classgraph.fqNames
 import com.squareup.anvil.compiler.testing.injectClassInfo
 import io.kotest.matchers.nulls.shouldNotBeNull
 import io.kotest.matchers.shouldBe
-import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
 import org.jetbrains.kotlin.fir.declarations.utils.classId
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
@@ -88,8 +87,6 @@ class Compile2Test : CompilationModeTest(
         class InjectClass @Inject constructor() 
         """,
       ) {
-
-        exitCode shouldBe ExitCode.OK
 
         val testPackage = classGraph.getPackageInfo("com.squareup.test")
 

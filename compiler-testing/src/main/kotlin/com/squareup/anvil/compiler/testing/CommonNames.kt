@@ -1,5 +1,7 @@
 package com.squareup.anvil.compiler.testing
 
+import com.squareup.anvil.compiler.testing.classgraph.getClassInfo
+import com.squareup.anvil.compiler.testing.classgraph.loadClass
 import com.squareup.anvil.compiler.testing.compilation.Compile2Result
 import io.github.classgraph.ClassInfo
 import io.github.classgraph.ScanResult
@@ -124,25 +126,3 @@ internal val Compile2Result.anyQualifier: Class<*>
   get() = classLoader.loadClass(CommonNames.anyQualifier)
 internal val Compile2Result.anyQualifierInfo: ClassInfo
   get() = classGraph.getClassInfo(CommonNames.anyQualifier)
-
-internal fun ScanResult.getClassInfo(fqName: FqName) = getClassInfo(fqName.asString())
-internal fun ScanResult.getClassInfoOrNull(fqName: FqName) = try {
-  getClassInfo(fqName)
-} catch (e: ClassNotFoundException) {
-  null
-}
-
-internal fun ClassLoader.loadClass(fqName: FqName): Class<*> = loadClass(fqName.asString())
-internal fun ClassLoader.loadClassOrNull(fqName: FqName): Class<*>? = try {
-  loadClass(fqName.asString())
-} catch (e: ClassNotFoundException) {
-  null
-}
-
-internal fun FqName.loadClass(classLoader: ClassLoader): Class<*> {
-  return classLoader.loadClass(this.asString())
-}
-
-internal fun FqName.loadClass(scanResult: ScanResult): ClassInfo? {
-  return scanResult.getClassInfo(this)
-}

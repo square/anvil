@@ -6,6 +6,7 @@ import io.github.classgraph.ClassInfo
 import io.github.classgraph.HasName
 import io.github.classgraph.MethodInfo
 import io.github.classgraph.ScanResult
+import io.kotest.matchers.nulls.shouldNotBeNull
 import org.jetbrains.kotlin.name.FqName
 
 /** A class that's annotated with `@Module` */
@@ -181,3 +182,32 @@ public fun BindsMethodInfo.boundTypes(): Pair<ParameterTypeName, ReturnTypeName>
 }
 
 public fun Collection<HasName>.fqNames(): List<FqName> = map { FqName(it.name) }
+
+public fun ScanResult.shouldContainClass(classFqName: String): ClassInfo {
+  return getClassInfo(classFqName).shouldNotBeNull()
+}
+
+public fun ScanResult.shouldContainClass(classFqName: FqName): ClassInfo {
+  return getClassInfo(classFqName).shouldNotBeNull()
+}
+
+public fun ScanResult.getClassInfo(fqName: FqName): ClassInfo =
+  requireNotNull(getClassInfo(fqName.asString())) { "Class not found: $fqName" }
+
+public fun ScanResult.getClassInfoOrNull(fqName: FqName): ClassInfo? =
+  getClassInfo(fqName.asString())
+
+public fun ClassLoader.loadClass(fqName: FqName): Class<*> = loadClass(fqName.asString())
+public fun ClassLoader.loadClassOrNull(fqName: FqName): Class<*>? = try {
+  loadClass(fqName.asString())
+} catch (e: ClassNotFoundException) {
+  null
+}
+
+public fun FqName.loadClass(classLoader: ClassLoader): Class<*> {
+  return classLoader.loadClass(this.asString())
+}
+
+public fun FqName.loadClass(scanResult: ScanResult): ClassInfo? {
+  return scanResult.getClassInfo(this)
+}

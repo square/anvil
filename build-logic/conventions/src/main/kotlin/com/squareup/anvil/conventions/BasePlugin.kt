@@ -92,7 +92,9 @@ abstract class BasePlugin : Plugin<Project> {
           freeCompilerArgs.add("-Xexplicit-api=strict")
         }
 
-        languageVersion.set(KotlinVersion.KOTLIN_2_0)
+        languageVersion.set(
+          target.libs.versions.kotlinLanguageVersion.map { KotlinVersion.fromVersion(it) },
+        )
 
         jvmTarget.set(JvmTarget.fromInt(target.jvmTargetInt()))
       }
