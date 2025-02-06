@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.cli.common.ExitCode
 import java.io.File
 import java.util.jar.JarEntry
 import java.util.jar.JarOutputStream
+import kotlin.io.path.pathString
 
 /**
  * Represents the result of a single [Compile2Compilation] invocation.
@@ -81,7 +82,10 @@ private fun createJar(
       classFilesDir.walkTopDown().forEach { file ->
         if (file.isFile && file.extension == "class") {
           // Determine the relative path inside the jar
-          val entryName = classFilesDir.toPath().relativize(file.toPath()).toString()
+          val entryName = classFilesDir.toPath().relativize(file.toPath())
+            .pathString
+            // Force Windows separators to be unix-style
+            .replace("\\", "/")
           val entry = JarEntry(entryName)
           jos.putNextEntry(entry)
           // Copy the .class file into the jar
