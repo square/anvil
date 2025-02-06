@@ -43,7 +43,7 @@ public annotation class ContributesTo(
   /**
    * The scope in which to include this module.
    */
-  val scope: KClass<*>,
+  val scope: KClass<*> = Any::class,
   /**
    * This contributed module will replace these contributed classes. The array is allowed to
    * include other contributed bindings, multibindings and Dagger modules. All replaced classes

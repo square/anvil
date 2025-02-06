@@ -10,23 +10,29 @@ import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.Names.anvil.contributesBinding
 import com.squareup.anvil.compiler.k2.internal.classId
 import com.squareup.anvil.compiler.k2.internal.toFirAnnotation
+import com.squareup.anvil.compiler.mapToSet
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.backend.utils.createFilesWithGeneratedDeclarations
+import org.jetbrains.kotlin.fir.caches.FirCache
+import org.jetbrains.kotlin.fir.caches.firCachesFactory
 import org.jetbrains.kotlin.fir.declarations.getKClassArgument
 import org.jetbrains.kotlin.fir.expressions.FirAnnotation
-import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
 import org.jetbrains.kotlin.fir.expressions.impl.FirAnnotationArgumentMappingImpl
 import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
+import org.jetbrains.kotlin.fir.extensions.FirExtension
+import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.plugin.createMemberFunction
 import org.jetbrains.kotlin.fir.plugin.createTopLevelClass
 import org.jetbrains.kotlin.fir.resolve.fqName
+import org.jetbrains.kotlin.fir.resolve.providers.firProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
@@ -39,31 +45,44 @@ import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 
+public class MyCustomThing(session: FirSession) : FirExtensionSessionComponent(session) {
+
+  public val matchedClassSymbols: Map<ClassId, FirClassSymbol<*>> by lazy {
+    session.predicateBasedProvider.getSymbolsByPredicate(hasContributesBindingAnnotation)
+      .filterIsInstance<FirClassSymbol<*>>()
+      .associateBy { it.classId }
+  }
+  override fun FirDeclarationPredicateRegistrar.registerPredicates() {
+    register(hasContributesBindingAnnotation)
+  }
+  public val myCache: FirCache<ClassId, ContributesBindingFirExtension.BindModulesData, FirSession> = session.firCachesFactory
+    .createCache<ClassId, ContributesBindingFirExtension.BindModulesData, FirSession> { key: ClassId, context ->
+      ContributesBindingFirExtension.BindModulesData(matchedClassSymbols[key], this@MyCustomThing, session)
+    }
+
+}
+
+public val FirSession.myCustomThing: MyCustomThing by FirSession.sessionComponentAccessor()
+
 @OptIn(ExperimentalTopLevelDeclarationsGenerationApi::class)
 public class ContributesBindingFirExtension(
   session: FirSession,
 ) : FirDeclarationGenerationExtension(session) {
   public companion object Key : GeneratedDeclarationKey()
 
-  private val modulesToGenerate: Map<ClassId, BindModulesData> by lazy {
-    session.predicateBasedProvider.getSymbolsByPredicate(hasContributesBindingAnnotation)
-      .filterIsInstance<FirClassSymbol<*>>()
-      .associate { classSymbol ->
-        val data = BindModulesData(classSymbol)
-        data.generatedClassId to data
-      }
-  }
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(hasContributesBindingAnnotation)
   }
 
   override fun getTopLevelClassIds(): Set<ClassId> {
-    return modulesToGenerate.keys
+    return session.myCustomThing.matchedClassSymbols.values.mapToSet { it.classId }
   }
 
   override fun generateTopLevelClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*> {
-    return modulesToGenerate[classId]!!.generatedClassSymbol
+    println("Jacob generating binding class symbols")
+    val matchedSymbols = session.myCustomThing.matchedClassSymbols.keys
+    return matchedSymbols.mapToSet { session.myCustomThing.myCache.getValue(matchedSymbols, session) }
   }
 
   override fun getCallableNamesForClass(
@@ -97,16 +116,18 @@ public class ContributesBindingFirExtension(
     )
   }
 
-  internal inner class BindModulesData(
-    val matchedClassSymbol: FirClassSymbol<*>,
+  public class BindModulesData(
+    public val matchedClassSymbol: FirClassSymbol<*>,
+    public val firExtension: FirExtension,
+    public val session: FirSession,
   ) {
-    val generatedClassId: ClassId by lazy {
+    public val generatedClassId: ClassId by lazy {
       matchedClassSymbol.classId.asClassName()
         .joinSimpleNames(suffix = "_BindingModule")
         .asClassId()
     }
-    val generatedClassSymbol: FirClassLikeSymbol<*> by lazy {
-      createTopLevelClass(
+    public val generatedClassSymbol: FirClassLikeSymbol<*> by lazy {
+      firExtension.createTopLevelClass(
         classId = generatedClassId,
         key = Key,
         classKind = ClassKind.INTERFACE,
@@ -128,30 +149,31 @@ public class ContributesBindingFirExtension(
       }
       argumentMapping = FirAnnotationArgumentMappingImpl(
         null,
-        contributesBindingAnnotation.argumentMapping.mapping.filter { (key, _) ->
-          key.asString() == "scope"
-        },
+        contributesBindingAnnotation.argumentMapping.mapping
+          .filter { (key, _) ->
+            key.asString() == "scope"
+          },
       )
     }
 
-    val contributesBindingAnnotation: FirAnnotation by lazy {
+    public val contributesBindingAnnotation: FirAnnotation by lazy {
       matchedClassSymbol.annotations.single {
         it.fqName(session)?.equals(contributesBinding) ?: false
       }
     }
-    val scope: ConeKotlinType by lazy {
+    public val scope: ConeKotlinType by lazy {
       // TODO add logic for repeated annotations.
       // TODO add logic to interpret default value when only a single parent exists.
       contributesBindingAnnotation.getKClassArgument(Name.identifier("scope"), session)!!
     }
 
-    val boundType: ConeKotlinType by lazy {
+    public val boundType: ConeKotlinType by lazy {
       // TODO add logic for repeated annotations.
       // TODO add logic to interpret default value when only a single parent exists.
       contributesBindingAnnotation.getKClassArgument(Name.identifier("boundType"), session)!!
     }
 
-    val callableName by lazy {
+    public val callableName: Name by lazy {
       "bind${boundType.classId!!.asClassName().simpleName}"
         .let(Name::identifier)
     }

@@ -7,6 +7,6 @@ class MyTest {
 
   @Test
   fun `the appComponent is a thing`() {
-    assertTrue(DaggerAppComponent.factory().create("Hello").injectClass().param0.equals("Hello"))
+    assertTrue(DaggerAppComponent.factory().create("Hello").injectClass().name.equals("Hello"))
   }
 }

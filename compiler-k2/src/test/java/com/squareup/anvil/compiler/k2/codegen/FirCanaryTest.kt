@@ -141,18 +141,12 @@ class FirCanaryTest : CompilationModeTest(
         
         interface MyType
 
-        // @com.squareup.anvil.annotations.ContributesBinding(
-        //   scope = Any::class, 
-        //   boundType = foo.MyType::class
-        // )
+        @com.squareup.anvil.annotations.ContributesBinding(
+          scope = Any::class, 
+          boundType = foo.MyType::class
+        )
         class TestClass @Inject constructor() : foo.MyType
         
-        @com.squareup.anvil.annotations.ContributesTo(scope = Any::class)
-        @dagger.Module
-        interface BindingModule {
-          @dagger.Binds
-          fun testClassBinding(testClass: TestClass): foo.MyType
-        }
         @com.squareup.anvil.annotations.MergeComponent(scope = Any::class)
         interface TestComponent {
           fun testClass(): foo.MyType

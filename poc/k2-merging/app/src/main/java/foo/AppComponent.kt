@@ -39,21 +39,12 @@ import javax.inject.Inject
 // class InjectClass @Inject constructor(val a: A, val b: B)
 
 // @MergeComponent(Unit::class)
-class InjectClass @Inject constructor(
-  private val libraryInjectClass: LibraryInjectClass
-) {
-  val name: String = "injectClass.name"
-}
-
-@ContributesBinding(scope = Any::class, boundType = MyType::class)
-class InjectClass2 @Inject constructor(override val name: String) : MyType
-
-// @MergeModules(scope = Unit::class)
-// interface MergedModules
-
 interface MyType {
   val name: String
 }
+
+@ContributesBinding(scope = Any::class, boundType = MyType::class)
+class InjectClass @Inject constructor(override val name: String) : MyType
 
 @MergeComponent(Any::class)
 interface AppComponent {
@@ -61,7 +52,7 @@ interface AppComponent {
   interface Factory {
     fun create(@BindsInstance name: String): AppComponent
   }
-  fun injectClass(): LibraryBinding
+  fun injectClass(): MyType
 }
 
 suspend fun main() {

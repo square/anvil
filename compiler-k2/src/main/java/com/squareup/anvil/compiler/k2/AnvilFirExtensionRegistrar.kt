@@ -6,13 +6,14 @@ import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 public class AnvilFirExtensionRegistrar : FirExtensionRegistrar() {
   @OptIn(FirExtensionApiInternals::class)
   override fun ExtensionRegistrarContext.configurePlugin() {
-
     /** [org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension] */
     // +::AnvilFactoryDelegateDeclarationGenerationExtension
     // +::TopLevelDeclarationsGenerator
-    +::LoggingAnvilFirInjectConstructorGenerationExtension
+    +::AnvilFirInjectConstructorGenerationExtension
     +::ContributesBindingFirExtension
     // +::AnvilComponentSubtypeDeclarationGenerationExtension
+
+    +::MyCustomThing
 
     /** [org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension] */
     +::AnvilFirInterfaceMergingExtension

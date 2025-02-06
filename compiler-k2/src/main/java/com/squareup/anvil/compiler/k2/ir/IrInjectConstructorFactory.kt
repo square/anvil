@@ -31,6 +31,7 @@ import org.jetbrains.kotlin.ir.builders.irGetObjectValue
 import org.jetbrains.kotlin.ir.declarations.IrProperty
 import org.jetbrains.kotlin.ir.types.getClass
 import org.jetbrains.kotlin.ir.builders.irReturn
+import org.jetbrains.kotlin.ir.builders.parent
 import org.jetbrains.kotlin.ir.expressions.IrMemberAccessExpression
 
 @OptIn(UnsafeDuringIrConstructionAPI::class)
