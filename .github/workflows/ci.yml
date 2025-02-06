@@ -97,7 +97,12 @@ jobs:
           check-latest: true
 
       - name: Dependency Guard Check
-        run: ./gradlew dependencyGuard --no-build-cache --no-daemon --stacktrace
+        # Using --no-parallel to avoid the following error during dependency locking:
+        # > java.lang.IllegalStateException: Something has been appended to this collector already
+        #
+        # https://youtrack.jetbrains.com/issue/KT-74241/Dependency-locking-sometimes-fails-with-gradle-kotlin-plugin
+        # https://youtrack.jetbrains.com/issue/KT-74394/KGP-isolated-projects-Something-has-been-appended-to-this-collector-already
+        run: ./gradlew dependencyGuard --no-parallel
 
   ktlint:
     runs-on: ubuntu-latest
