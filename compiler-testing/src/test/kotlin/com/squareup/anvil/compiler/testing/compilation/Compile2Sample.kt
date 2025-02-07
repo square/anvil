@@ -1,9 +1,9 @@
 package com.squareup.anvil.compiler.testing.compilation
 
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
-import com.squareup.anvil.compiler.testing.CommonNames
 import com.squareup.anvil.compiler.testing.CompilationMode.K2
 import com.squareup.anvil.compiler.testing.CompilationModeTest
+import com.squareup.anvil.compiler.testing.TestNames
 import com.squareup.anvil.compiler.testing.classgraph.fqNames
 import com.squareup.anvil.compiler.testing.classgraph.shouldContainClass
 import com.squareup.anvil.compiler.testing.injectClassInfo
@@ -59,7 +59,7 @@ class Compile2Sample : CompilationModeTest(K2(useKapt = false), K2(useKapt = tru
       firExtensions = listOf(myCustomGenerator()),
     ) {
 
-      injectClassInfo.interfaces.fqNames() shouldBe listOf(CommonNames.parentInterface)
+      injectClassInfo.interfaces.fqNames() shouldBe listOf(TestNames.parentInterface)
     }
   }
 
@@ -70,14 +70,14 @@ class Compile2Sample : CompilationModeTest(K2(useKapt = false), K2(useKapt = tru
         object : AnvilFirSupertypeGenerationExtension(ctx, session) {
           override fun needTransformSupertypes(
             declaration: FirClassLikeDeclaration,
-          ): Boolean = declaration.classId.asSingleFqName() == CommonNames.injectClass
+          ): Boolean = declaration.classId.asSingleFqName() == TestNames.injectClass
 
           override fun computeAdditionalSupertypes(
             classLikeDeclaration: FirClassLikeDeclaration,
             resolvedSupertypes: List<FirResolvedTypeRef>,
             typeResolver: TypeResolveService,
           ): List<ConeKotlinType> = listOf(
-            ClassId.topLevel(CommonNames.parentInterface).constructClassLikeType(),
+            ClassId.topLevel(TestNames.parentInterface).constructClassLikeType(),
           )
         }
       }
