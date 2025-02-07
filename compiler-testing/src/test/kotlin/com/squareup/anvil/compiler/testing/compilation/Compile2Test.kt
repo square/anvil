@@ -1,9 +1,9 @@
 package com.squareup.anvil.compiler.testing.compilation
 
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
-import com.squareup.anvil.compiler.testing.CommonNames
 import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
+import com.squareup.anvil.compiler.testing.TestNames
 import com.squareup.anvil.compiler.testing.classgraph.fqNames
 import com.squareup.anvil.compiler.testing.injectClassInfo
 import io.kotest.matchers.nulls.shouldNotBeNull
@@ -120,14 +120,14 @@ class Compile2Test : CompilationModeTest(
               object : AnvilFirSupertypeGenerationExtension(ctx, session) {
                 override fun needTransformSupertypes(
                   declaration: FirClassLikeDeclaration,
-                ): Boolean = declaration.classId.asSingleFqName() == CommonNames.injectClass
+                ): Boolean = declaration.classId.asSingleFqName() == TestNames.injectClass
 
                 override fun computeAdditionalSupertypes(
                   classLikeDeclaration: FirClassLikeDeclaration,
                   resolvedSupertypes: List<FirResolvedTypeRef>,
                   typeResolver: TypeResolveService,
                 ): List<ConeKotlinType> = listOf(
-                  ClassId.topLevel(CommonNames.parentInterface).constructClassLikeType(),
+                  ClassId.topLevel(TestNames.parentInterface).constructClassLikeType(),
                 )
               }
             }
@@ -135,7 +135,7 @@ class Compile2Test : CompilationModeTest(
         ),
       ) {
 
-        injectClassInfo.interfaces.fqNames() shouldBe listOf(CommonNames.parentInterface)
+        injectClassInfo.interfaces.fqNames() shouldBe listOf(TestNames.parentInterface)
       }
     }
 }
