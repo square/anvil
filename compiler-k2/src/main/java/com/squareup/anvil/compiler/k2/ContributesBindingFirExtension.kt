@@ -9,17 +9,19 @@ import com.squareup.anvil.compiler.k2.internal.AnvilPredicates.hasContributesBin
 import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.Names.anvil.contributesBinding
 import com.squareup.anvil.compiler.k2.internal.classId
+import com.squareup.anvil.compiler.k2.internal.requireScopeArgument
 import com.squareup.anvil.compiler.k2.internal.toFirAnnotation
-import com.squareup.anvil.compiler.mapToSet
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.fir.FirSession
-import org.jetbrains.kotlin.fir.backend.utils.createFilesWithGeneratedDeclarations
 import org.jetbrains.kotlin.fir.caches.FirCache
+import org.jetbrains.kotlin.fir.caches.contains
 import org.jetbrains.kotlin.fir.caches.firCachesFactory
 import org.jetbrains.kotlin.fir.declarations.getKClassArgument
 import org.jetbrains.kotlin.fir.expressions.FirAnnotation
+import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
+import org.jetbrains.kotlin.fir.expressions.FirPropertyAccessExpression
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
 import org.jetbrains.kotlin.fir.expressions.impl.FirAnnotationArgumentMappingImpl
 import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi
@@ -31,8 +33,8 @@ import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.plugin.createMemberFunction
 import org.jetbrains.kotlin.fir.plugin.createTopLevelClass
+import org.jetbrains.kotlin.fir.references.FirNamedReference
 import org.jetbrains.kotlin.fir.resolve.fqName
-import org.jetbrains.kotlin.fir.resolve.providers.firProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
@@ -45,24 +47,45 @@ import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 
-public class MyCustomThing(session: FirSession) : FirExtensionSessionComponent(session) {
-
-  public val matchedClassSymbols: Map<ClassId, FirClassSymbol<*>> by lazy {
+/**
+ * Responsible for tracking the classes annotated with @ContributesBinding and creating + caching
+ * their generated Dagger module metadata.
+ */
+public class ContributesBindingSessionComponent(session: FirSession) : FirExtensionSessionComponent(
+  session,
+) {
+  /**
+   * A map to help us track the original annotated classes' bindings, and their
+   * generated module IDs.
+   * E.g. Key: "Foo_BindingModule", Value: ClassSymbol<Foo>
+   */
+  public val generatedIdsToMatchedSymbols: Map<ClassId, FirClassSymbol<*>> by lazy {
     session.predicateBasedProvider.getSymbolsByPredicate(hasContributesBindingAnnotation)
       .filterIsInstance<FirClassSymbol<*>>()
-      .associateBy { it.classId }
+      .associateBy {
+        it.classId.asClassName()
+          .joinSimpleNames(suffix = "_BindingModule")
+          .asClassId()
+      }
   }
+
+  public val bindingModuleCache: FirCache<ClassId, ContributesBindingFirExtension.BindModulesData, FirSession> =
+    session.firCachesFactory
+      .createCache<ClassId, ContributesBindingFirExtension.BindModulesData, FirSession> { key: ClassId, context ->
+        ContributesBindingFirExtension.BindModulesData(
+          key,
+          generatedIdsToMatchedSymbols[key] as FirClassSymbol<*>,
+          this@ContributesBindingSessionComponent,
+          session,
+        )
+      }
+
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(hasContributesBindingAnnotation)
   }
-  public val myCache: FirCache<ClassId, ContributesBindingFirExtension.BindModulesData, FirSession> = session.firCachesFactory
-    .createCache<ClassId, ContributesBindingFirExtension.BindModulesData, FirSession> { key: ClassId, context ->
-      ContributesBindingFirExtension.BindModulesData(matchedClassSymbols[key], this@MyCustomThing, session)
-    }
-
 }
 
-public val FirSession.myCustomThing: MyCustomThing by FirSession.sessionComponentAccessor()
+public val FirSession.contributesBindingSessionComponent: ContributesBindingSessionComponent by FirSession.sessionComponentAccessor()
 
 @OptIn(ExperimentalTopLevelDeclarationsGenerationApi::class)
 public class ContributesBindingFirExtension(
@@ -70,26 +93,33 @@ public class ContributesBindingFirExtension(
 ) : FirDeclarationGenerationExtension(session) {
   public companion object Key : GeneratedDeclarationKey()
 
-
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(hasContributesBindingAnnotation)
   }
 
   override fun getTopLevelClassIds(): Set<ClassId> {
-    return session.myCustomThing.matchedClassSymbols.values.mapToSet { it.classId }
+    return session.contributesBindingSessionComponent.generatedIdsToMatchedSymbols.keys
   }
 
   override fun generateTopLevelClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*> {
-    println("Jacob generating binding class symbols")
-    val matchedSymbols = session.myCustomThing.matchedClassSymbols.keys
-    return matchedSymbols.mapToSet { session.myCustomThing.myCache.getValue(matchedSymbols, session) }
+    val matchedSymbol =
+      session.contributesBindingSessionComponent.bindingModuleCache.getValue(classId, session)
+
+    return matchedSymbol.generatedClassSymbol
   }
 
   override fun getCallableNamesForClass(
     classSymbol: FirClassSymbol<*>,
     context: MemberGenerationContext
   ): Set<Name> {
-    val data = modulesToGenerate[classSymbol.classId] ?: return emptySet()
+    if (!session.contributesBindingSessionComponent.bindingModuleCache.contains(classSymbol.classId)) {
+      return emptySet()
+    }
+    val data = session.contributesBindingSessionComponent.bindingModuleCache.getValue(
+      classSymbol.classId,
+      session,
+    )
+
     return setOf(data.callableName)
   }
 
@@ -97,7 +127,11 @@ public class ContributesBindingFirExtension(
     callableId: CallableId,
     context: MemberGenerationContext?
   ): List<FirNamedFunctionSymbol> {
-    val data = modulesToGenerate[context!!.owner.classId]!!
+    val data = session.contributesBindingSessionComponent.bindingModuleCache.getValue(
+      context!!.owner.classId,
+      session,
+    )
+
     return listOf(
       createMemberFunction(
         owner = context.owner,
@@ -117,15 +151,11 @@ public class ContributesBindingFirExtension(
   }
 
   public class BindModulesData(
+    public val generatedClassId: ClassId,
     public val matchedClassSymbol: FirClassSymbol<*>,
     public val firExtension: FirExtension,
     public val session: FirSession,
   ) {
-    public val generatedClassId: ClassId by lazy {
-      matchedClassSymbol.classId.asClassName()
-        .joinSimpleNames(suffix = "_BindingModule")
-        .asClassId()
-    }
     public val generatedClassSymbol: FirClassLikeSymbol<*> by lazy {
       firExtension.createTopLevelClass(
         classId = generatedClassId,

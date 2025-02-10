@@ -13,7 +13,8 @@ public class AnvilFirExtensionRegistrar : FirExtensionRegistrar() {
     +::ContributesBindingFirExtension
     // +::AnvilComponentSubtypeDeclarationGenerationExtension
 
-    +::MyCustomThing
+    /** [org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent] */
+    +::ContributesBindingSessionComponent
 
     /** [org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension] */
     +::AnvilFirInterfaceMergingExtension

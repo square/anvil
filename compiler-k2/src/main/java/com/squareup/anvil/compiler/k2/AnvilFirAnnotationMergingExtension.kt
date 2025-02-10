@@ -1,10 +1,8 @@
 package com.squareup.anvil.compiler.k2
 
 import com.squareup.anvil.compiler.internal.ktFile
-import com.squareup.anvil.compiler.k2.ContributesBindingFirExtension
 import com.squareup.anvil.compiler.k2.ContributesBindingFirExtension.BindModulesData
 import com.squareup.anvil.compiler.k2.internal.AnvilPredicates
-import com.squareup.anvil.compiler.k2.internal.AnvilPredicates.hasContributesBindingAnnotation
 import com.squareup.anvil.compiler.k2.internal.Names
 import com.squareup.anvil.compiler.k2.internal.argumentAt
 import com.squareup.anvil.compiler.k2.internal.classId
@@ -17,13 +15,11 @@ import com.squareup.anvil.compiler.k2.internal.requireScopeArgument
 import com.squareup.anvil.compiler.k2.internal.resolveConeType
 import com.squareup.anvil.compiler.k2.internal.setAnnotationType
 import com.squareup.anvil.compiler.k2.internal.toGetClassCall
-import com.squareup.anvil.compiler.mapToSet
 import org.jetbrains.kotlin.KtFakeSourceElementKind
 import org.jetbrains.kotlin.fakeElement
 import org.jetbrains.kotlin.fir.FirSession
-import org.jetbrains.kotlin.fir.caches.FirCache
-import org.jetbrains.kotlin.fir.caches.firCachesFactory
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
+import org.jetbrains.kotlin.fir.declarations.utils.classId
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationCallCopy
 import org.jetbrains.kotlin.fir.expressions.builder.buildArgumentList
@@ -36,9 +32,9 @@ import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.resolve.fqName
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
+import org.jetbrains.kotlin.fir.types.classId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
@@ -83,12 +79,21 @@ public class AnvilFirAnnotationMergingExtension(
           newType = Names.dagger.component,
           ktPsiFactoryOrNull = classLikeDeclaration.psi?.ktPsiFactory(),
         )
-        val generatedContributedModules: Set<BindModulesData> = session.predicateBasedProvider
-          .getSymbolsByPredicate(hasContributesBindingAnnotation)
-          .filterIsInstance<FirClassSymbol<*>>()
-          .mapToSet { matchedClassSymbol ->
-            session.myCustomThing.myCache.getValue(matchedClassSymbol, session)
+        val generatedContributedModules: Set<BindModulesData> = session.contributesBindingSessionComponent
+          .generatedIdsToMatchedSymbols
+          .keys
+          .mapNotNull { id: ClassId ->
+            val bindingData = session.contributesBindingSessionComponent.bindingModuleCache.getValue(id, session)
+            val bindingScope = (bindingData.contributesBindingAnnotation as FirAnnotationCall).requireScopeArgument()
+              .resolveConeType(typeResolver)
+            if (bindingScope == scope) {
+              bindingData
+            } else {
+              null
+            }
           }
+          .toSet()
+
         val contributedModules = session.predicateBasedProvider
           .getSymbolsByPredicate(AnvilPredicates.contributedModule)
           .mapNotNull { moduleClass ->
@@ -105,12 +110,11 @@ public class AnvilFirAnnotationMergingExtension(
               null
             }
           }
-        // + bindingModules
 
         val newAnnotationCallPsi = componentAnnotation.psi?.let {
           buildNewAnnotationPsi(
             oldAnnotationCall = it as KtAnnotationEntry,
-            mergedModules = contributedModules.map { it.fqName() } + generatedContributedModules.map { it.generatedClassId.packageFqName },
+            mergedModules = contributedModules.map { it.fqName() } + generatedContributedModules.map { it.generatedClassId.asSingleFqName() },
           )
         }
 
@@ -129,7 +133,6 @@ public class AnvilFirAnnotationMergingExtension(
               argumentList = buildArgumentList {
                 arguments += oldModules
                 arguments += contributedModules.map { it.toGetClassCall() } + generatedContributedModules.map { it.generatedClassSymbol.toGetClassCall() }
-                // + contributedModules.map { it.toGetClassCall() }
               }
             }
           }

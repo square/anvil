@@ -1,10 +1,17 @@
 package com.squareup.anvil.compiler.k2.codegen
 
+import com.google.common.truth.Truth.assertThat
+import com.squareup.anvil.annotations.ExperimentalAnvilApi
+import com.squareup.anvil.compiler.internal.testing.daggerComponent
+import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.k2.ir.TestClass_Factory
 import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.compile2
+import dagger.Component
 import io.kotest.matchers.shouldBe
+import junit.framework.TestCase.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.jupiter.api.TestFactory
 import javax.inject.Provider
 import kotlin.reflect.full.functions
@@ -159,6 +166,83 @@ class FirCanaryTest : CompilationModeTest(
       ) {
         // classLoader.loadClass("foo.TestClass_BindingModule").kotlin
         //   .functions.single { it.name == "bindMyType" }
+      }
+    }
+
+  @TestFactory
+  fun `generated dagger binding module is picked up by annotation merging`() = params
+    .filter { (mode) -> !mode.useKapt }
+    .asTests {
+      compile2(
+          """
+          package foo.woo
+    
+          interface WooScope
+          """.trimIndent(),
+        """
+        package foo
+
+        import foo.woo.WooScope
+        import javax.inject.Inject
+        
+        interface MyType
+
+        @com.squareup.anvil.annotations.ContributesBinding(
+          scope = WooScope::class, 
+          boundType = foo.MyType::class
+        )
+        class TestClass @Inject constructor() : foo.MyType
+        
+        @com.squareup.anvil.annotations.MergeComponent(scope = WooScope::class)
+        interface TestComponent {
+          fun testClass(): foo.MyType
+          @dagger.Component.Factory
+          interface Factory {
+            fun create(): TestComponent
+          }
+        }
+         """.trimIndent(),
+      ) {
+        val bindingModule = classLoader.loadClass("foo.TestClass_BindingModule").kotlin
+        val testComponent = classLoader.loadClass("foo.TestComponent")
+        val componentModules = testComponent.daggerComponent.modules
+
+        assertEquals(bindingModule, componentModules.single())
+      }
+    }
+
+  @TestFactory
+  fun `generated dagger binding module with different scope is not picked up by annotation merging`() = params
+    .filter { (mode) -> !mode.useKapt }
+    .asTests {
+      compile2(
+        """
+        package foo
+
+        import javax.inject.Inject
+        
+        interface MyType
+
+        @com.squareup.anvil.annotations.ContributesBinding(
+          scope = Int::class, 
+          boundType = foo.MyType::class
+        )
+        class TestClass @Inject constructor() : foo.MyType
+        
+        @com.squareup.anvil.annotations.MergeComponent(scope = Any::class)
+        interface TestComponent {
+          fun testClass(): foo.MyType
+          @dagger.Component.Factory
+          interface Factory {
+            fun create(): TestComponent
+          }
+        }
+         """.trimIndent(),
+      ) {
+        val testComponent = classLoader.loadClass("foo.TestComponent")
+        val componentModules = testComponent.daggerComponent.modules
+
+        assertTrue(componentModules.isEmpty())
       }
     }
 
