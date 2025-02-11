@@ -14,3 +14,27 @@ internal fun ClassId.append(suffix: String): ClassId {
 internal val FqName.classId: ClassId get() {
   return ClassId.topLevel(this)
 }
+
+/**
+ * Joins the simple names of a class with the given [separator], [prefix], and [suffix].
+ *
+ * ```
+ * val normalName = ClassName("com.example", "Outer", "Middle", "Inner")
+ * val joinedName = normalName.joinSimpleNames(separator = "_", suffix = "Factory")
+ *
+ * println(joinedName) // com.example.Outer_Middle_InnerFactory
+ * ```
+ * @throws IllegalArgumentException if the resulting class name is too long to be a valid file name.
+ */
+internal fun ClassId.joinSimpleNames(
+  separator: String = "_",
+  prefix: String = "",
+  suffix: String = "",
+): ClassId = ClassId.topLevel(
+  packageFqName.child(
+    Name.identifier(
+      relativeClassName.pathSegments()
+        .joinToString(separator = separator, prefix = prefix, postfix = suffix),
+    ),
+  ),
+)

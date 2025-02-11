@@ -69,6 +69,9 @@ public object ClassIds {
   /** `dagger.internal.Factory` */
   public val daggerFactory: ClassId = classId("dagger.internal", "Factory")
 
+  /** `dagger.Module` */
+  public val daggerModule: ClassId = classId("dagger", "Module")
+
   /** `dagger.internal.Provider` */
   public val daggerProvider: ClassId = classId("dagger.internal", "Provider")
 
