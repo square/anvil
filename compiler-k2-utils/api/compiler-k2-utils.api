@@ -24,6 +24,7 @@ public final class com/squareup/anvil/compiler/k2/utils/names/ClassIds {
 	public final fun getDaggerComponent ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getDaggerFactory ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getDaggerLazy ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getDaggerModule ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getDaggerProvider ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getDaggerSubcomponent ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getJavaxInject ()Lorg/jetbrains/kotlin/name/ClassId;

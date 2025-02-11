@@ -394,6 +394,7 @@ public final class com/squareup/anvil/compiler/testing/reflect/ReflectionKt {
 	public static final fun getAssistedServiceFactory (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getClassId (Ljava/lang/Class;)Lorg/jetbrains/kotlin/name/ClassId;
 	public static final fun getComponentInterface (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getContributesToAnnotation (Ljava/lang/Class;)Lcom/squareup/anvil/annotations/ContributesTo;
 	public static final fun getContributingInterface (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getContributingObject (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getDaggerModule1 (Ljava/lang/ClassLoader;)Ljava/lang/Class;
@@ -402,6 +403,7 @@ public final class com/squareup/anvil/compiler/testing/reflect/ReflectionKt {
 	public static final fun getDaggerModule4 (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getDeclaredFieldValue (Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;
 	public static final fun getFieldValue (Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;
+	public static final fun getGeneratedBindingModule (Ljava/lang/Class;)Ljava/lang/Class;
 	public static final fun getInjectClass (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getInjectClass_Factory (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getJavaClass (Ljava/lang/ClassLoader;)Ljava/lang/Class;

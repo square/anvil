@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.testing.reflect
 
+import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.testing.TestNames
 import com.squareup.anvil.compiler.testing.asJavaNameString
@@ -146,3 +147,8 @@ public val ClassLoader.javaClass: Class<*>
   get() = loadClass(TestNames.javaClass)
 public val ClassLoader.anyQualifier: Class<*>
   get() = loadClass(TestNames.anyQualifier)
+
+public val Class<*>.generatedBindingModule: Class<*>
+  get() = classLoader.loadClass("${kotlin.qualifiedName}BindingModule")
+public val Class<*>.contributesToAnnotation: ContributesTo
+  get() = annotations.filterIsInstance<ContributesTo>().single()
