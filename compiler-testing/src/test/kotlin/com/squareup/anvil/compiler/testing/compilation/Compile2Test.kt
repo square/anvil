@@ -11,8 +11,8 @@ import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
 import org.jetbrains.kotlin.fir.declarations.utils.classId
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
+import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
-import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.constructClassLikeType
 import org.jetbrains.kotlin.name.ClassId
 import org.junit.jupiter.api.TestFactory
@@ -126,9 +126,9 @@ class Compile2Test : CompilationModeTest(
                   classLikeDeclaration: FirClassLikeDeclaration,
                   resolvedSupertypes: List<FirResolvedTypeRef>,
                   typeResolver: TypeResolveService,
-                ): List<FirResolvedTypeRef> = buildResolvedTypeRef {
-                  type = ClassId.topLevel(CommonNames.parentInterface).constructClassLikeType()
-                }.let(::listOf)
+                ): List<ConeKotlinType> = listOf(
+                  ClassId.topLevel(CommonNames.parentInterface).constructClassLikeType(),
+                )
               }
             }
           },

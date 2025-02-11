@@ -1,9 +1,9 @@
 org.jetbrains.intellij.deps:trove4j:1.0.20200330
-org.jetbrains.kotlin:kotlin-bom:2.0.21
-org.jetbrains.kotlin:kotlin-compiler-embeddable:2.0.21
-org.jetbrains.kotlin:kotlin-daemon-embeddable:2.0.21
-org.jetbrains.kotlin:kotlin-reflect:2.0.21
-org.jetbrains.kotlin:kotlin-script-runtime:2.0.21
-org.jetbrains.kotlin:kotlin-stdlib:2.0.21
+org.jetbrains.kotlin:kotlin-bom:2.1.0
+org.jetbrains.kotlin:kotlin-compiler-embeddable:2.1.0
+org.jetbrains.kotlin:kotlin-daemon-embeddable:2.1.0
+org.jetbrains.kotlin:kotlin-reflect:2.1.0
+org.jetbrains.kotlin:kotlin-script-runtime:2.1.0
+org.jetbrains.kotlin:kotlin-stdlib:2.1.0
 org.jetbrains.kotlinx:kotlinx-coroutines-core-jvm:1.6.4
 org.jetbrains:annotations:13.0
