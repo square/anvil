@@ -9,5 +9,5 @@ public abstract class AnvilFirExtensionSessionComponent(
 ) : FirExtensionSessionComponent(session),
   AnvilFirExtension {
 
-  public fun interface Factory : AnvilFirExtensionFactory<FirExtensionSessionComponent.Factory>
+  public fun interface Factory : AnvilFirExtensionFactory
 }

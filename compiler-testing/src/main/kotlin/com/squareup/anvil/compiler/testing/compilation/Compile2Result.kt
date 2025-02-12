@@ -65,7 +65,7 @@ public class Compile2Result(
    * @see classLoader for another way to load java Class types for introspection.
    */
   public val scanResult: ScanResult by lazy(LazyThreadSafetyMode.NONE) {
-    classGraphResult(classpathFiles + jar)
+    classGraphResult(classpathFiles.filter { it.isJarFile() } + jar)
   }
 
   @Deprecated("use scanResult", ReplaceWith("scanResult"))
@@ -110,6 +110,11 @@ public fun File.requireIsJarFile(): File = apply {
   this.shouldBeAFile()
   require(extension == "jar") { "Expected a .jar file, but was: $this" }
 }
+
+/**
+ * @return `true` if the receiver is an existing file and has a `.jar` extension, otherwise `false`
+ */
+public fun File.isJarFile(): Boolean = isFile && extension == "jar"
 
 /**
  * Creates a [ScanResult] by scanning all provided [jars] with [ClassGraph].

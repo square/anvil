@@ -87,6 +87,7 @@ dependencies {
   testImplementation(libs.junit)
   testImplementation(libs.truth)
 
+  gradleTestImplementation(project(":compiler-testing"))
   gradleTestImplementation(gradleTestKit())
   gradleTestImplementation(libs.classgraph)
   gradleTestImplementation(libs.dagger2)

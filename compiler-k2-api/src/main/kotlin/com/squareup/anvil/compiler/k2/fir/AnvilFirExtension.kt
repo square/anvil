@@ -11,6 +11,6 @@ public sealed interface AnvilFirExtension {
   public val anvilFirContext: AnvilFirContext
 }
 
-public sealed interface AnvilFirExtensionFactory<T : FirExtension.Factory<*>> {
-  public fun create(anvilFirContext: AnvilFirContext): T
+public sealed interface AnvilFirExtensionFactory {
+  public fun create(anvilFirContext: AnvilFirContext): FirExtension.Factory<*>
 }

@@ -44,10 +44,11 @@ public data class Compile2CompilationConfiguration(
   val kaptClassesDir: File,
   val languageVersion: LanguageVersion,
   val jdkHome: File?,
+  val moduleName: String,
   val compilationClasspath: List<File>,
   val compilerPluginClasspath: List<File>,
   val kaptPluginClasspath: List<File>,
-  val firExtensions: List<AnvilFirExtensionFactory<*>>,
+  val firExtensions: List<AnvilFirExtensionFactory>,
 ) {
 
   public companion object {
@@ -85,6 +86,7 @@ public data class Compile2CompilationConfiguration(
         kaptClassesDir = kaptDir / "classes",
         languageVersion = BuildConfig.languageVersion,
         jdkHome = javaHomeOrNull(),
+        moduleName = workingDir.name,
         firExtensions = emptyList(),
 
         // Classpath for the compiler itself.

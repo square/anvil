@@ -56,9 +56,10 @@ public interface CompilationEnvironment : TestEnvironment {
   public fun compile2(
     @Language("kotlin") vararg kotlinSources: String,
     javaSources: List<String> = emptyList(),
-    firExtensions: List<AnvilFirExtensionFactory<*>> = emptyList(),
+    firExtensions: List<AnvilFirExtensionFactory> = emptyList(),
     configuration: (Compile2CompilationConfiguration) -> Compile2CompilationConfiguration = { it },
     expectedExitCode: ExitCode = ExitCode.OK,
+    workingDir: File = this@CompilationEnvironment.workingDir,
     exec: Compile2Result.() -> Unit = {},
   ): Compile2Result {
     val kotlinFiles = kotlinSources.mapIndexed { i, kotlinNotTrimmed ->
@@ -121,9 +122,10 @@ public interface CompilationEnvironment : TestEnvironment {
    */
   public fun compile2(
     sourceFiles: List<File>,
-    firExtensions: List<AnvilFirExtensionFactory<*>> = emptyList(),
+    firExtensions: List<AnvilFirExtensionFactory> = emptyList(),
     configuration: (Compile2CompilationConfiguration) -> Compile2CompilationConfiguration = { it },
     expectedExitCode: ExitCode = ExitCode.OK,
+    workingDir: File = this@CompilationEnvironment.workingDir,
     exec: Compile2Result.() -> Unit = {},
   ): Compile2Result {
 
@@ -131,6 +133,7 @@ public interface CompilationEnvironment : TestEnvironment {
       .copy(
         sourceFiles = sourceFiles,
         firExtensions = firExtensions,
+        rootDir = workingDir,
       )
       .let(configuration)
 
