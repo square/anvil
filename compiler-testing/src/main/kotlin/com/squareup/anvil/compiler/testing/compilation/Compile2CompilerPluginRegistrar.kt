@@ -10,8 +10,11 @@ import org.jetbrains.kotlin.cli.common.messages.MessageCollector
 import org.jetbrains.kotlin.compiler.plugin.CompilerPluginRegistrar
 import org.jetbrains.kotlin.config.CompilerConfiguration
 import org.jetbrains.kotlin.config.messageCollector
+import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrar
 import org.jetbrains.kotlin.fir.extensions.FirExtensionRegistrarAdapter
+import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
+import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 
 @AutoService(CompilerPluginRegistrar::class)
 internal class Compile2CompilerPluginRegistrar : CompilerPluginRegistrar() {
@@ -19,7 +22,7 @@ internal class Compile2CompilerPluginRegistrar : CompilerPluginRegistrar() {
     get() = true
 
   override fun ExtensionStorage.registerExtensions(configuration: CompilerConfiguration) {
-    val factories: List<AnvilFirExtensionFactory<*>>? =
+    val factories: List<AnvilFirExtensionFactory>? =
       threadLocalParams.get()?.firExtensionFactories
 
     if (!factories.isNullOrEmpty()) {
@@ -37,13 +40,13 @@ internal class Compile2CompilerPluginRegistrar : CompilerPluginRegistrar() {
   }
 
   data class Compile2RegistrarParams(
-    val firExtensionFactories: List<AnvilFirExtensionFactory<*>>,
+    val firExtensionFactories: List<AnvilFirExtensionFactory>,
   )
 }
 
 public class Compile2FirExtensionRegistrar(
   private val messageCollector: MessageCollector,
-  private val factories: List<AnvilFirExtensionFactory<*>>,
+  private val factories: List<AnvilFirExtensionFactory>,
 ) : FirExtensionRegistrar() {
 
   override fun ExtensionRegistrarContext.configurePlugin() {
@@ -53,9 +56,12 @@ public class Compile2FirExtensionRegistrar(
     for (factory in factories) {
 
       when (factory) {
-        is AnvilFirDeclarationGenerationExtension.Factory -> factory.create(ctx).unaryPlus()
-        is AnvilFirSupertypeGenerationExtension.Factory -> factory.create(ctx).unaryPlus()
-        is AnvilFirExtensionSessionComponent.Factory -> factory.create(ctx).unaryPlus()
+        is AnvilFirDeclarationGenerationExtension.Factory ->
+          (factory.create(ctx) as FirDeclarationGenerationExtension.Factory).unaryPlus()
+        is AnvilFirSupertypeGenerationExtension.Factory ->
+          (factory.create(ctx) as FirSupertypeGenerationExtension.Factory).unaryPlus()
+        is AnvilFirExtensionSessionComponent.Factory ->
+          (factory.create(ctx) as FirExtensionSessionComponent.Factory).unaryPlus()
       }
     }
   }

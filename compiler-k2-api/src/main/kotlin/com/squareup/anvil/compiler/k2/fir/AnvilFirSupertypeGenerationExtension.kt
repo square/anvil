@@ -8,5 +8,5 @@ public abstract class AnvilFirSupertypeGenerationExtension(
   session: FirSession,
 ) : FirSupertypeGenerationExtension(session),
   AnvilFirExtension {
-  public fun interface Factory : AnvilFirExtensionFactory<FirSupertypeGenerationExtension.Factory>
+  public fun interface Factory : AnvilFirExtensionFactory
 }

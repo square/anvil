@@ -2,6 +2,8 @@ package com.squareup.anvil.compiler.k2.fir.merging
 
 import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
+import com.squareup.anvil.compiler.k2.fir.AnvilFirExtension
+import com.squareup.anvil.compiler.k2.fir.AnvilFirExtension
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
 import com.squareup.anvil.compiler.k2.fir.AnvilPredicates
@@ -17,10 +19,28 @@ import com.squareup.anvil.compiler.k2.utils.fir.setAnnotationType
 import com.squareup.anvil.compiler.k2.utils.fir.toGetClassCall
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import com.squareup.anvil.compiler.k2.utils.names.Names
+import com.squareup.anvil.compiler.k2.fir.internal.AnvilPredicates
+import com.squareup.anvil.compiler.k2.fir.internal.Names
+import com.squareup.anvil.compiler.k2.fir.internal.argumentAt
+import com.squareup.anvil.compiler.k2.fir.internal.classId
+import com.squareup.anvil.compiler.k2.fir.internal.classListArgumentAt
+import com.squareup.anvil.compiler.k2.fir.internal.contributesToScope
+import com.squareup.anvil.compiler.k2.fir.internal.fqName
+import com.squareup.anvil.compiler.k2.fir.internal.ktPsiFactory
+import com.squareup.anvil.compiler.k2.fir.internal.requireFqName
+import com.squareup.anvil.compiler.k2.fir.internal.requireScopeArgument
+import com.squareup.anvil.compiler.k2.fir.internal.resolveConeType
+import com.squareup.anvil.compiler.k2.fir.internal.setAnnotationType
+import com.squareup.anvil.compiler.k2.fir.internal.toGetClassCall
+import com.squareup.anvil.compiler.k2.fir.internal.tree.FirTreePrinter
 import org.jetbrains.kotlin.KtFakeSourceElementKind
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
+import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.fakeElement
+import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
+import org.jetbrains.kotlin.fir.declarations.utils.classId
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationCallCopy
 import org.jetbrains.kotlin.fir.expressions.builder.buildArgumentList
@@ -30,15 +50,37 @@ import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
+import org.jetbrains.kotlin.fir.java.FirCliSession
+import org.jetbrains.kotlin.fir.moduleData
 import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.resolve.fqName
+import org.jetbrains.kotlin.fir.resolve.providers.dependenciesSymbolProvider
+import org.jetbrains.kotlin.fir.resolve.providers.firProvider
+import org.jetbrains.kotlin.fir.resolve.providers.impl.FirProviderImpl
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
+import org.jetbrains.kotlin.fir.visitors.FirDefaultTransformer
+import org.jetbrains.kotlin.fir.visitors.transformSingle
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.toKtPsiSourceElement
+
+public fun AnvilFirExtension.logInfo(message: String) {
+  anvilFirContext.messageCollector.report(CompilerMessageSeverity.WARNING, message)
+}
+
+public fun AnvilFirExtension.printThing(name: String, thing: Any?) {
+  logInfo(
+    """
+    |************************************************************ $name
+    |$thing
+    |***************************************************************
+    """.trimMargin(),
+  )
+}
 
 /**
  * This extension merges all contributed Dagger modules on the classpath and includes them on the
@@ -66,6 +108,7 @@ public class AnvilFirAnnotationMergingExtension(
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(AnvilPredicates.hasMergeComponentAnnotation)
+    register(AnvilPredicates.hasInjectAnnotation)
     register(AnvilPredicates.contributedModule)
   }
 
@@ -74,6 +117,73 @@ public class AnvilFirAnnotationMergingExtension(
     resolvedSupertypes: List<FirResolvedTypeRef>,
     typeResolver: TypeResolveService,
   ): List<ConeKotlinType> {
+
+    val deps = session.moduleData.dependencies
+
+    val fromDeps = deps.flatMap {
+      it.session.predicateBasedProvider.getSymbolsByPredicate(AnvilPredicates.contributedModule)
+    }
+
+    val depModuleData = deps.single()
+    val depSession = depModuleData.session as FirCliSession
+
+    session.dependenciesSymbolProvider
+
+    val file = session.firProvider.getFirClassifierContainerFile(classLikeDeclaration.classId)
+
+    printThing("fir file", FirTreePrinter().treeString(file))
+
+    (session.firProvider as FirProviderImpl)
+
+    file.transformSingle(
+      object : FirDefaultTransformer<Nothing?>() {
+        override fun <E : FirElement> transformElement(element: E, data: Nothing?): E {
+          logInfo("element: ${element.javaClass.simpleName}")
+          return element
+        }
+      },
+      null,
+    )
+
+    printThing(
+      name = "local inject",
+      thing = session.predicateBasedProvider
+        .getSymbolsByPredicate(AnvilPredicates.hasInjectAnnotation),
+    )
+    printThing(
+      name = "deps inject",
+      thing = depSession.predicateBasedProvider
+        .getSymbolsByPredicate(AnvilPredicates.hasInjectAnnotation),
+    )
+
+    printThing(
+      name = "@Module modules",
+      thing = session.predicateBasedProvider
+        .getSymbolsByPredicate(AnvilPredicates.contributedModule)
+        .plus(fromDeps),
+    )
+
+    printThing(
+      name = "dependencies getPackageNamesWithTopLevelClassifiers",
+      thing = session.dependenciesSymbolProvider.symbolNamesProvider
+        .getPackageNamesWithTopLevelClassifiers()
+        .orEmpty()
+        .joinToString("\n"),
+    )
+
+    printThing(
+      name = "deps package getPackageNamesWithTopLevelCallables",
+      thing = session.dependenciesSymbolProvider.symbolNamesProvider
+        .getPackageNamesWithTopLevelCallables()
+        .orEmpty()
+        .joinToString("\n"),
+    )
+
+    printThing(
+      name = "deps package InjectClass",
+      thing = session.dependenciesSymbolProvider
+        .getClassLikeSymbolByClassId(ClassId.topLevel(FqName("com.squareup.test.dep.InjectClass"))),
+    )
 
     val componentAnnotation = classLikeDeclaration.annotations
       .single { it.fqName(session) == ClassIds.anvilMergeComponent.asSingleFqName() } as FirAnnotationCall
@@ -109,9 +219,9 @@ public class AnvilFirAnnotationMergingExtension(
             }
           }
 
-        val newAnnotationCallPsi = componentAnnotation.psi?.let {
+        val newAnnotationCallPsi = componentAnnotation.psi?.let { psi ->
           buildNewAnnotationPsi(
-            oldAnnotationCall = it as KtAnnotationEntry,
+            oldAnnotationCall = psi as KtAnnotationEntry,
             mergedModules = contributedModules.map { it.fqName() },
           )
         }

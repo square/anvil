@@ -59,7 +59,7 @@ public class Compile2Compilation(
 
     val baseArgs = K2JVMCompilerArguments().also { args ->
 
-      args.moduleName = "root"
+      args.moduleName = config.moduleName
       args.additionalJavaModules = emptyArray()
 
       args.jdkHome = config.jdkHome?.absolutePath

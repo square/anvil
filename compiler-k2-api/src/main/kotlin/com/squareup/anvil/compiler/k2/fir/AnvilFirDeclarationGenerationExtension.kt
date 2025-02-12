@@ -7,5 +7,5 @@ public abstract class AnvilFirDeclarationGenerationExtension(
   override val anvilFirContext: AnvilFirContext,
   session: FirSession,
 ) : FirDeclarationGenerationExtension(session), AnvilFirExtension {
-  public fun interface Factory : AnvilFirExtensionFactory<FirDeclarationGenerationExtension.Factory>
+  public fun interface Factory : AnvilFirExtensionFactory
 }
