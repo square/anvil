@@ -5,7 +5,6 @@ import com.rickbusarow.kase.HasTestEnvironmentFactory
 import com.rickbusarow.kase.KaseTestFactory
 import com.rickbusarow.kase.ParamTestEnvironmentFactory
 import com.rickbusarow.kase.TestEnvironment
-import com.rickbusarow.kase.files.HasWorkingDir
 import com.rickbusarow.kase.stdlib.createSafely
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.testing.compilation.Compile2Compilation
@@ -24,7 +23,8 @@ public interface DefaultTestEnvironmentTest : HasTestEnvironmentFactory<DefaultT
     get() = DefaultTestEnvironment.Factory()
 }
 
-public interface CompilationEnvironment : HasWorkingDir {
+public interface CompilationEnvironment : TestEnvironment {
+
   public val mode: CompilationMode
     get() = CompilationMode.K2(useKapt = false)
 
