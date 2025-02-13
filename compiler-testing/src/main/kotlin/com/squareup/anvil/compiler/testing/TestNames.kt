@@ -1,131 +1,276 @@
 package com.squareup.anvil.compiler.testing
 
-import com.squareup.anvil.compiler.testing.classgraph.getClassInfo
-import com.squareup.anvil.compiler.testing.classgraph.loadClass
-import com.squareup.anvil.compiler.testing.compilation.Compile2Result
-import io.github.classgraph.ClassInfo
-import io.github.classgraph.ScanResult
+import com.rickbusarow.kase.stdlib.letIf
+import com.squareup.anvil.compiler.k2.utils.names.child
+import com.squareup.anvil.compiler.k2.utils.names.factorySibling
+import com.squareup.anvil.compiler.k2.utils.names.nested
+import io.kotest.matchers.nulls.shouldNotBeNull
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
+import kotlin.properties.ReadOnlyProperty
+import kotlin.reflect.KClass
 
 public object TestNames {
-  public val testPackage: String = "package com.squareup.test"
-  public val any: FqName = FqName("kotlin.Any")
-  public val nothing: FqName = FqName("kotlin.Nothing")
-  public val contributingObject: FqName = FqName("com.squareup.test.ContributingObject")
-  public val contributingInterface: FqName = FqName("com.squareup.test.ContributingInterface")
-  public val secondContributingInterface: FqName =
-    FqName("com.squareup.test.SecondContributingInterface")
-  public val someClassInnerInterface: FqName = FqName("com.squareup.test.SomeClass\$InnerInterface")
-  public val parentInterface: FqName = FqName("com.squareup.test.ParentInterface")
-  public val parentInterface1: FqName = FqName("com.squareup.test.ParentInterface1")
-  public val parentInterface2: FqName = FqName("com.squareup.test.ParentInterface2")
-  public val componentInterface: FqName = FqName("com.squareup.test.ComponentInterface")
-  public val subcomponentInterface: FqName = FqName("com.squareup.test.SubcomponentInterface")
-  public val daggerModule1: FqName = FqName("com.squareup.test.DaggerModule1")
-  public val assistedService: FqName = FqName("com.squareup.test.AssistedService")
-  public val assistedServiceFactory: FqName = FqName("com.squareup.test.AssistedServiceFactory")
-  public val daggerModule2: FqName = FqName("com.squareup.test.DaggerModule2")
-  public val daggerModule3: FqName = FqName("com.squareup.test.DaggerModule3")
-  public val daggerModule4: FqName = FqName("com.squareup.test.DaggerModule4")
-  public val componentInterfaceInnerModule: FqName =
-    FqName("com.squareup.test.ComponentInterface\$InnerModule")
-  public val parentClassNestedInjectClass: FqName =
-    FqName("com.squareup.test.ParentClass\$NestedInjectClass")
-  public val injectClass: FqName = FqName("com.squareup.test.InjectClass")
-  public val injectClassFactory: FqName = FqName("com.squareup.test.InjectClass_Factory")
-  public val javaClass: FqName = FqName("com.squareup.test.JavaClass")
-  public val anyQualifier: FqName = FqName("com.squareup.test.AnyQualifier")
+  /** `kotlin.Any` */
+  public val any: ClassId = ClassId.fromString("kotlin.Any")
+
+  /** `kotlin.Nothing` */
+  public val nothing: ClassId = ClassId.fromString("kotlin.Nothing")
+
+  /** `com.squareup.test` */
+  public val squareupTest: FqName = FqName("com.squareup.test")
+
+  /** `com.squareup.test.ContributingObject` */
+  public val contributingObject: ClassId = classId(squareupTest, "ContributingObject")
+
+  /** `com.squareup.test.ContributingInterface` */
+  public val contributingInterface: ClassId = classId(squareupTest, "ContributingInterface")
+
+  /** `com.squareup.test.SecondContributingInterface` */
+  public val secondContributingInterface: ClassId =
+    classId(squareupTest, "SecondContributingInterface")
+
+  /** `com.squareup.test.SomeClass` */
+  public val someClass: ClassId = classId(squareupTest, "SomeClass")
+
+  /** `com.squareup.test.ParentInterface` */
+  public val parentInterface: ClassId = classId(squareupTest, "ParentInterface")
+
+  /** `com.squareup.test.ParentInterface1` */
+  public val parentInterface1: ClassId = classId(squareupTest, "ParentInterface1")
+
+  /** `com.squareup.test.ParentInterface2` */
+  public val parentInterface2: ClassId = classId(squareupTest, "ParentInterface2")
+
+  /** `com.squareup.test.ComponentInterface` */
+  public val componentInterface: ClassId = classId(squareupTest, "ComponentInterface")
+
+  /** `com.squareup.test.SubcomponentInterface` */
+  public val subcomponentInterface: ClassId = classId(squareupTest, "SubcomponentInterface")
+
+  /** `com.squareup.test.AssistedService` */
+  public val assistedService: ClassId = classId(squareupTest, "AssistedService")
+
+  /** `com.squareup.test.AssistedServiceFactory` */
+  public val assistedServiceFactory: ClassId = classId(squareupTest, "AssistedServiceFactory")
+
+  /** `com.squareup.test.DaggerModule1` */
+  public val daggerModule1: ClassId = classId(squareupTest, "DaggerModule1")
+
+  /** `com.squareup.test.DaggerModule2` */
+  public val daggerModule2: ClassId = classId(squareupTest, "DaggerModule2")
+
+  /** `com.squareup.test.DaggerModule3` */
+  public val daggerModule3: ClassId = classId(squareupTest, "DaggerModule3")
+
+  /** `com.squareup.test.DaggerModule4` */
+  public val daggerModule4: ClassId = classId(squareupTest, "DaggerModule4")
+
+  /** `com.squareup.test.InjectClass` */
+  public val injectClass: ClassId = classId(squareupTest, "InjectClass")
+
+  /** `com.squareup.test.InjectClass_Factory` */
+  public val injectClass_Factory: ClassId get() = injectClass.factorySibling
+
+  /** `com.squareup.test.JavaClass` */
+  public val javaClass: ClassId = classId(squareupTest, "JavaClass")
+
+  /** `com.squareup.test.AnyQualifier` */
+  public val anyQualifier: ClassId = classId(squareupTest, "AnyQualifier")
 }
 
-internal operator fun Compile2Result.invoke(fqName: FqName): Class<*> =
-  classLoader.loadClass(fqName)
+private fun classId(
+  packageFqName: FqName,
+  simpleName: String,
+  vararg nestedSimpleNames: String,
+): ClassId = nestedSimpleNames
+  .fold(ClassId(packageFqName, Name.identifier(simpleName))) { acc, name ->
+    acc.child(name)
+  }
 
-internal operator fun ClassLoader.get(fqName: FqName): Class<*> = loadClass(fqName)
-internal operator fun ClassLoader.get(fqName: String): Class<*> = loadClass(fqName)
-internal operator fun ScanResult.get(fqName: FqName): ClassInfo = getClassInfo(fqName)
-internal operator fun ScanResult.get(fqName: String): ClassInfo = getClassInfo(fqName)
+/**
+ * Creates a new ClassId with a nested type named `InnerModule`.
+ * ```
+ * ClassId("com.example", "SomeClass").innerModule shouldBe
+ *     ClassId("com.example", "SomeClass.InnerModule")
+ * ```
+ */
+public val ClassId.innerModule: ClassId get() = child("InnerModule")
 
-public val Compile2Result.contributingObject: Class<*>
-  get() = classLoader.loadClass(TestNames.contributingObject)
-public val Compile2Result.contributingObjectInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.contributingObject)
-public val Compile2Result.contributingInterface: Class<*>
-  get() = classLoader.loadClass(TestNames.contributingInterface)
-public val Compile2Result.contributingInterfaceInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.contributingInterface)
-public val Compile2Result.secondContributingInterface: Class<*>
-  get() = classLoader.loadClass(TestNames.secondContributingInterface)
-public val Compile2Result.secondContributingInterfaceInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.secondContributingInterface)
-public val Compile2Result.someClassInnerInterface: Class<*>
-  get() = classLoader.loadClass(TestNames.someClassInnerInterface)
-public val Compile2Result.someClassInnerInterfaceInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.someClassInnerInterface)
-public val Compile2Result.parentInterface: Class<*>
-  get() = classLoader.loadClass(TestNames.parentInterface)
-public val Compile2Result.parentInterfaceInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.parentInterface)
-public val Compile2Result.parentInterface1: Class<*>
-  get() = classLoader.loadClass(TestNames.parentInterface1)
-public val Compile2Result.parentInterface1Info: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.parentInterface1)
-public val Compile2Result.parentInterface2: Class<*>
-  get() = classLoader.loadClass(TestNames.parentInterface2)
-public val Compile2Result.parentInterface2Info: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.parentInterface2)
-public val Compile2Result.componentInterface: Class<*>
-  get() = classLoader.loadClass(TestNames.componentInterface)
-public val Compile2Result.componentInterfaceInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.componentInterface)
-public val Compile2Result.subcomponentInterface: Class<*>
-  get() = classLoader.loadClass(TestNames.subcomponentInterface)
-public val Compile2Result.subcomponentInterfaceInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.subcomponentInterface)
-public val Compile2Result.daggerModule1: Class<*>
-  get() = classLoader.loadClass(TestNames.daggerModule1)
-public val Compile2Result.daggerModule1Info: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.daggerModule1)
-public val Compile2Result.assistedService: Class<*>
-  get() = classLoader.loadClass(TestNames.assistedService)
-public val Compile2Result.assistedServiceInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.assistedService)
-public val Compile2Result.assistedServiceFactory: Class<*>
-  get() = classLoader.loadClass(TestNames.assistedServiceFactory)
-public val Compile2Result.assistedServiceFactoryInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.assistedServiceFactory)
-public val Compile2Result.daggerModule2: Class<*>
-  get() = classLoader.loadClass(TestNames.daggerModule2)
-public val Compile2Result.daggerModule2Info: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.daggerModule2)
-public val Compile2Result.daggerModule3: Class<*>
-  get() = classLoader.loadClass(TestNames.daggerModule3)
-public val Compile2Result.daggerModule3Info: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.daggerModule3)
-public val Compile2Result.daggerModule4: Class<*>
-  get() = classLoader.loadClass(TestNames.daggerModule4)
-public val Compile2Result.daggerModule4Info: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.daggerModule4)
-public val Compile2Result.componentInterfaceInnerModule: Class<*>
-  get() = classLoader.loadClass(TestNames.componentInterfaceInnerModule)
-public val Compile2Result.componentInterfaceInnerModuleInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.componentInterfaceInnerModule)
-public val Compile2Result.parentClassNestedInjectClass: Class<*>
-  get() = classLoader.loadClass(TestNames.parentClassNestedInjectClass)
-public val Compile2Result.parentClassNestedInjectClassInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.parentClassNestedInjectClass)
-public val Compile2Result.injectClass: Class<*>
-  get() = classLoader.loadClass(TestNames.injectClass)
-public val Compile2Result.injectClassInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.injectClass)
-public val Compile2Result.injectClassFactory: Class<*>
-  get() = classLoader.loadClass(TestNames.injectClassFactory)
-public val Compile2Result.injectClassFactoryInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.injectClassFactory)
-public val Compile2Result.javaClass: Class<*>
-  get() = classLoader.loadClass(TestNames.javaClass)
-public val Compile2Result.javaClassInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.javaClass)
-public val Compile2Result.anyQualifier: Class<*>
-  get() = classLoader.loadClass(TestNames.anyQualifier)
-public val Compile2Result.anyQualifierInfo: ClassInfo
-  get() = scanResult.getClassInfo(TestNames.anyQualifier)
+/**
+ * Creates a new ClassId with a nested type named `NestedInterface`.
+ * ```
+ * ClassId("com.example", "SomeClass").nestedInterface shouldBe
+ *     ClassId("com.example", "SomeClass.NestedInterface")
+ * ```
+ */
+public val ClassId.nestedInterface: ClassId get() = child("NestedInterface")
+
+/**
+ * Creates a new ClassId with a nested type named `NestedClass`.
+ * ```
+ * ClassId("com.example", "SomeClass").nestedClass shouldBe
+ *     ClassId("com.example", "SomeClass.NestedClass")
+ * ```
+ */
+public val ClassId.nestedClass: ClassId get() = child("NestedClass")
+
+/**
+ * Creates a new ClassId with a nested type named `NestedObject`.
+ * ```
+ * ClassId("com.example", "SomeClass").nestedObject shouldBe
+ *     ClassId("com.example", "SomeClass.NestedObject")
+ * ```
+ */
+public val ClassId.nestedObject: ClassId get() = child("NestedObject")
+public val ClassId.companion: ClassId get() = child("Companion")
+
+internal fun String.capitalize(): String = replaceFirstChar(Char::uppercaseChar)
+
+/** Returns the ClassId for this KClass. */
+@Suppress("RecursivePropertyAccessor")
+public val KClass<*>.classId: ClassId
+  get() = this.java.enclosingClass?.kotlin?.classId?.createNestedClassId(Name.identifier(simpleName!!))
+    ?: ClassId.topLevel(FqName(qualifiedName!!))
+
+/**
+ * Returns the fully qualified Java-style name (nested classes joined by `$`).
+ *
+ * |     Kotlin Class Name     |      Java Class Name      |
+ * |---------------------------|---------------------------|
+ * | `com.example.Foo`         | `com.example.Foo`         |
+ * | `com.example.Foo.Bar`     | `com.example.Foo$Bar`     |
+ * | `com.example.Foo.Bar.Baz` | `com.example.Foo$Bar$Baz` |
+ * | (root package) `Foo.Bar`  | `Foo$Bar`                 |
+ *
+ * @see ClassId.asFqNameString for a version that returns an entirely dot-separated string
+ */
+public fun ClassId.asJavaNameString(): String {
+  return relativeClassName.pathSegments()
+    .joinToString(
+      separator = "$",
+      prefix = if (packageFqName.isRoot) "" else "${packageFqName.asString()}.",
+    )
+}
+
+public fun ClassId.child(capitalize: Boolean = true): ReadOnlyProperty<Any?, ClassId> =
+  nested(capitalize)
+
+public fun ClassId.nested(capitalize: Boolean = true): ReadOnlyProperty<Any?, ClassId> {
+  return ReadOnlyProperty { _, p ->
+    nested(p.name.letIf(capitalize) { it.capitalize() })
+  }
+}
+
+/**
+ * alias for [com.squareup.anvil.compiler.testing.nested]
+ *
+ * ```
+ * val kotlinMap = ClassId.fromString("kotlin/collections.Map")
+ *
+ * val entry by kotlinMap.child()
+ *
+ * entry.asFqNameString() shouldBe "kotlin.collections.Map.Entry"
+ * ```
+ * @see ClassId.createNestedClassId
+ */
+public fun ClassId.child(nameString: String): ClassId = nested(nameString)
+
+/**
+ * alias for [com.squareup.anvil.compiler.testing.nested]
+ *
+ * ```
+ * val kotlinMap = ClassId.fromString("kotlin/collections.Map")
+ *
+ * val entry by kotlinMap.nested()
+ *
+ * entry.asFqNameString() shouldBe "kotlin.collections.Map.Entry"
+ * ```
+ * @see ClassId.createNestedClassId
+ */
+public fun ClassId.nested(nameString: String): ClassId {
+  return createNestedClassId(Name.identifier(nameString))
+}
+
+/**
+ * ```
+ *  given: `com.example.SomeClass
+ * output: `com.example.SomeClass_BindingModule`
+ * ```
+ */
+public val FqName.bindingModuleSibling: FqName
+  get() = sibling("${shortName().asString()}_BindingModule")
+
+/**
+ * ```
+ *  given: `com.example.SomeClass
+ * output: `com.example.SomeClass_Factory`
+ * ```
+ */
+public val FqName.factorySibling: FqName
+  get() = sibling("${shortName().asString()}_Factory")
+
+public fun FqName.sibling(nameString: String): FqName = parent().shouldNotBeNull().child(nameString)
+
+public val FqName.innerModule: FqName get() = child("InnerModule")
+public val FqName.nestedInterface: FqName get() = child("NestedInterface")
+public val FqName.nestedClass: FqName get() = child("NestedClass")
+public val FqName.nestedObject: FqName get() = child("NestedObject")
+public val FqName.companion: FqName get() = child("Companion")
+
+/** Returns the FqName for this Class. Throws if the class is primitive or an array. */
+public val Class<*>.fqName: FqName
+  get() {
+    require(!isPrimitive) { "Can't compute FqName for primitive type: $this" }
+    require(!isArray) { "Can't compute FqName for array type: $this" }
+    val outerClass = declaringClass
+    @Suppress("RecursivePropertyAccessor")
+    return when {
+      outerClass == null -> FqName(canonicalName)
+      else -> outerClass.fqName.child(Name.identifier(simpleName))
+    }
+  }
+
+/** Returns the FqName for this KClass. */
+@Suppress("RecursivePropertyAccessor")
+public val KClass<*>.fqName: FqName
+  get() = this.java.enclosingClass?.kotlin?.fqName?.child(Name.identifier(simpleName!!))
+    ?: FqName(qualifiedName!!)
+
+public fun FqName.child(capitalize: Boolean = true): ReadOnlyProperty<Any?, FqName> =
+  nested(capitalize)
+
+public fun FqName.nested(capitalize: Boolean = true): ReadOnlyProperty<Any?, FqName> {
+  return ReadOnlyProperty { _, p ->
+    nested(p.name.letIf(capitalize) { it.capitalize() })
+  }
+}
+
+/**
+ * alias for [com.squareup.anvil.compiler.testing.nested]
+ *
+ * ```
+ * val kotlinMap = FqName("kotlin.collections.Map")
+ *
+ * val entry by kotlinMap.child()
+ *
+ * entry.asString() shouldBe "kotlin.collections.Map.Entry"
+ * ```
+ * @see FqName.child
+ */
+public fun FqName.child(nameString: String): FqName = nested(nameString)
+
+/**
+ * alias for [com.squareup.anvil.compiler.testing.nested]
+ *
+ * ```
+ * val kotlinMap = FqName("kotlin.collections.Map")
+ *
+ * val entry by kotlinMap.nested()
+ *
+ * entry.asString() shouldBe "kotlin.collections.Map.Entry"
+ * ```
+ * @see FqName.child
+ */
+public fun FqName.nested(nameString: String): FqName = child(Name.identifier(nameString))

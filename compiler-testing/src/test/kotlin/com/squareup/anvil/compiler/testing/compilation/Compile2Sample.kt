@@ -4,9 +4,7 @@ import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
 import com.squareup.anvil.compiler.testing.CompilationMode.K2
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.TestNames
-import com.squareup.anvil.compiler.testing.classgraph.fqNames
-import com.squareup.anvil.compiler.testing.classgraph.shouldContainClass
-import com.squareup.anvil.compiler.testing.injectClassInfo
+import com.squareup.anvil.compiler.testing.classgraph.injectClass
 import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
 import org.jetbrains.kotlin.fir.declarations.utils.classId
@@ -14,7 +12,6 @@ import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.constructClassLikeType
-import org.jetbrains.kotlin.name.ClassId
 import org.junit.jupiter.api.Test
 
 class Compile2Sample : CompilationModeTest(K2(useKapt = false), K2(useKapt = true)) {
@@ -38,8 +35,8 @@ class Compile2Sample : CompilationModeTest(K2(useKapt = false), K2(useKapt = tru
       ),
     ) {
 
-      scanResult.shouldContainClass("com.squareup.test.KotlinClass")
-      scanResult.shouldContainClass("com.squareup.test.JavaClass")
+      scanResult shouldContainClass "com.squareup.test.KotlinClass"
+      scanResult shouldContainClass "com.squareup.test.JavaClass"
     }
   }
 
@@ -59,7 +56,7 @@ class Compile2Sample : CompilationModeTest(K2(useKapt = false), K2(useKapt = tru
       firExtensions = listOf(myCustomGenerator()),
     ) {
 
-      injectClassInfo.interfaces.fqNames() shouldBe listOf(TestNames.parentInterface)
+      classGraph.injectClass.interfaces.names shouldBe listOf("com.squareup.test.ParentInterface")
     }
   }
 
@@ -70,14 +67,14 @@ class Compile2Sample : CompilationModeTest(K2(useKapt = false), K2(useKapt = tru
         object : AnvilFirSupertypeGenerationExtension(ctx, session) {
           override fun needTransformSupertypes(
             declaration: FirClassLikeDeclaration,
-          ): Boolean = declaration.classId.asSingleFqName() == TestNames.injectClass
+          ): Boolean = declaration.classId == TestNames.injectClass
 
           override fun computeAdditionalSupertypes(
             classLikeDeclaration: FirClassLikeDeclaration,
             resolvedSupertypes: List<FirResolvedTypeRef>,
             typeResolver: TypeResolveService,
           ): List<ConeKotlinType> = listOf(
-            ClassId.topLevel(TestNames.parentInterface).constructClassLikeType(),
+            TestNames.parentInterface.constructClassLikeType(),
           )
         }
       }

@@ -1,4 +1,4 @@
-public abstract interface class com/squareup/anvil/compiler/testing/CompilationEnvironment : com/rickbusarow/kase/files/HasWorkingDir {
+public abstract interface class com/squareup/anvil/compiler/testing/CompilationEnvironment : com/rickbusarow/kase/TestEnvironment {
 	public fun compile2 (Ljava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function1;Lorg/jetbrains/kotlin/cli/common/ExitCode;Lkotlin/jvm/functions/Function1;)Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;
 	public fun compile2 ([Ljava/lang/String;Ljava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function1;Lorg/jetbrains/kotlin/cli/common/ExitCode;Lkotlin/jvm/functions/Function1;)Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;
 	public static synthetic fun compile2$default (Lcom/squareup/anvil/compiler/testing/CompilationEnvironment;Ljava/util/List;Ljava/util/List;Lkotlin/jvm/functions/Function1;Lorg/jetbrains/kotlin/cli/common/ExitCode;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;
@@ -8,6 +8,7 @@ public abstract interface class com/squareup/anvil/compiler/testing/CompilationE
 
 public final class com/squareup/anvil/compiler/testing/CompilationEnvironment$DefaultImpls {
 	public static fun cleanOutput (Lcom/squareup/anvil/compiler/testing/CompilationEnvironment;Ljava/lang/String;)Ljava/lang/String;
+	public static fun tearDown (Lcom/squareup/anvil/compiler/testing/CompilationEnvironment;)V
 }
 
 public abstract interface class com/squareup/anvil/compiler/testing/CompilationMode {
@@ -36,7 +37,7 @@ public final class com/squareup/anvil/compiler/testing/CompilationMode$K2 : com/
 	public fun toString ()Ljava/lang/String;
 }
 
-public abstract class com/squareup/anvil/compiler/testing/CompilationModeTest : com/rickbusarow/kase/KaseTestFactory {
+public abstract class com/squareup/anvil/compiler/testing/CompilationModeTest : com/rickbusarow/kase/KaseTestFactory, com/squareup/anvil/compiler/testing/MoreAsserts, com/squareup/anvil/compiler/testing/classgraph/ClassGraphAsserts, com/squareup/anvil/compiler/testing/classgraph/ClassInfoAsserts {
 	public fun <init> ()V
 	public fun <init> (Lcom/squareup/anvil/compiler/testing/CompilationMode;[Lcom/squareup/anvil/compiler/testing/CompilationMode;)V
 	public fun <init> (Ljava/util/List;)V
@@ -117,6 +118,7 @@ public abstract interface class com/squareup/anvil/compiler/testing/K2CodeGenera
 public abstract interface class com/squareup/anvil/compiler/testing/MoreAsserts {
 	public fun deleteOrFail (Ljava/io/File;)V
 	public fun deleteRecursivelyOrFail (Ljava/io/File;)V
+	public fun shouldContain (Ljava/lang/Iterable;Ljava/lang/Object;)Ljava/lang/Iterable;
 	public fun shouldContain (Ljava/lang/String;Ljava/lang/String;)Ljava/lang/String;
 	public fun shouldExistWithText (Ljava/io/File;Ljava/lang/String;)V
 	public fun shouldExistWithTextContaining (Ljava/io/File;Ljava/lang/String;)V
@@ -124,97 +126,156 @@ public abstract interface class com/squareup/anvil/compiler/testing/MoreAsserts 
 
 public final class com/squareup/anvil/compiler/testing/TestNames {
 	public static final field INSTANCE Lcom/squareup/anvil/compiler/testing/TestNames;
-	public final fun getAny ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getAnyQualifier ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getAssistedService ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getAssistedServiceFactory ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getComponentInterface ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getComponentInterfaceInnerModule ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getContributingInterface ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getContributingObject ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getDaggerModule1 ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getDaggerModule2 ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getDaggerModule3 ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getDaggerModule4 ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getInjectClass ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getInjectClassFactory ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getJavaClass ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getNothing ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getParentClassNestedInjectClass ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getParentInterface ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getParentInterface1 ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getParentInterface2 ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getSecondContributingInterface ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getSomeClassInnerInterface ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getSubcomponentInterface ()Lorg/jetbrains/kotlin/name/FqName;
-	public final fun getTestPackage ()Ljava/lang/String;
+	public final fun getAny ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getAnyQualifier ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getAssistedService ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getAssistedServiceFactory ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getComponentInterface ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getContributingInterface ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getContributingObject ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getDaggerModule1 ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getDaggerModule2 ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getDaggerModule3 ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getDaggerModule4 ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getInjectClass ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getInjectClass_Factory ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getJavaClass ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getNothing ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getParentInterface ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getParentInterface1 ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getParentInterface2 ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getSecondContributingInterface ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getSomeClass ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getSquareupTest ()Lorg/jetbrains/kotlin/name/FqName;
+	public final fun getSubcomponentInterface ()Lorg/jetbrains/kotlin/name/ClassId;
 }
 
 public final class com/squareup/anvil/compiler/testing/TestNamesKt {
-	public static final fun getAnyQualifier (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getAnyQualifierInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getAssistedService (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getAssistedServiceFactory (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getAssistedServiceFactoryInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getAssistedServiceInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getComponentInterface (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getComponentInterfaceInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getComponentInterfaceInnerModule (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getComponentInterfaceInnerModuleInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getContributingInterface (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getContributingInterfaceInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getContributingObject (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getContributingObjectInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getDaggerModule1 (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getDaggerModule1Info (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getDaggerModule2 (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getDaggerModule2Info (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getDaggerModule3 (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getDaggerModule3Info (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getDaggerModule4 (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getDaggerModule4Info (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getInjectClass (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getInjectClassFactory (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getInjectClassFactoryInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getInjectClassInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getJavaClass (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getJavaClassInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getParentClassNestedInjectClass (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getParentClassNestedInjectClassInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getParentInterface (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getParentInterface1 (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getParentInterface1Info (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getParentInterface2 (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getParentInterface2Info (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getParentInterfaceInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getSecondContributingInterface (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getSecondContributingInterfaceInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getSomeClassInnerInterface (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getSomeClassInnerInterfaceInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
-	public static final fun getSubcomponentInterface (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/Class;
-	public static final fun getSubcomponentInterfaceInfo (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Lio/github/classgraph/ClassInfo;
+	public static final fun asJavaNameString (Lorg/jetbrains/kotlin/name/ClassId;)Ljava/lang/String;
+	public static final fun child (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun child (Lorg/jetbrains/kotlin/name/ClassId;Z)Lkotlin/properties/ReadOnlyProperty;
+	public static final fun child (Lorg/jetbrains/kotlin/name/FqName;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun child (Lorg/jetbrains/kotlin/name/FqName;Z)Lkotlin/properties/ReadOnlyProperty;
+	public static synthetic fun child$default (Lorg/jetbrains/kotlin/name/ClassId;ZILjava/lang/Object;)Lkotlin/properties/ReadOnlyProperty;
+	public static synthetic fun child$default (Lorg/jetbrains/kotlin/name/FqName;ZILjava/lang/Object;)Lkotlin/properties/ReadOnlyProperty;
+	public static final fun getBindingModuleSibling (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getBindingModuleSibling (Lorg/jetbrains/kotlin/name/FqName;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getClassId (Ljava/lang/Class;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getClassId (Lkotlin/reflect/KClass;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getCompanion (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getCompanion (Lorg/jetbrains/kotlin/name/FqName;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getFactorySibling (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getFactorySibling (Lorg/jetbrains/kotlin/name/FqName;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getFqName (Ljava/lang/Class;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getFqName (Lkotlin/reflect/KClass;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getInnerModule (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getInnerModule (Lorg/jetbrains/kotlin/name/FqName;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getNestedClass (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getNestedClass (Lorg/jetbrains/kotlin/name/FqName;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getNestedInterface (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getNestedInterface (Lorg/jetbrains/kotlin/name/FqName;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getNestedObject (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getNestedObject (Lorg/jetbrains/kotlin/name/FqName;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun nested (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun nested (Lorg/jetbrains/kotlin/name/ClassId;Z)Lkotlin/properties/ReadOnlyProperty;
+	public static final fun nested (Lorg/jetbrains/kotlin/name/FqName;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun nested (Lorg/jetbrains/kotlin/name/FqName;Z)Lkotlin/properties/ReadOnlyProperty;
+	public static synthetic fun nested$default (Lorg/jetbrains/kotlin/name/ClassId;ZILjava/lang/Object;)Lkotlin/properties/ReadOnlyProperty;
+	public static synthetic fun nested$default (Lorg/jetbrains/kotlin/name/FqName;ZILjava/lang/Object;)Lkotlin/properties/ReadOnlyProperty;
+	public static final fun packageName (Ljava/lang/Class;)Ljava/lang/String;
+	public static final fun sibling (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun sibling (Lorg/jetbrains/kotlin/name/FqName;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/FqName;
 }
 
-public final class com/squareup/anvil/compiler/testing/classgraph/ClassGraphKt {
+public abstract interface class com/squareup/anvil/compiler/testing/classgraph/ClassGraphAsserts : com/squareup/anvil/compiler/testing/MoreAsserts {
+	public fun shouldBe (Lio/github/classgraph/ClassInfoList;Ljava/util/Collection;)V
+	public fun shouldContainClass (Lio/github/classgraph/ClassInfoList;Ljava/lang/String;)Lio/github/classgraph/ClassInfo;
+	public fun shouldContainClass (Lio/github/classgraph/ClassInfoList;Lorg/jetbrains/kotlin/name/ClassId;)Lio/github/classgraph/ClassInfo;
+	public fun shouldContainClass (Lio/github/classgraph/ScanResult;Ljava/lang/String;)Lio/github/classgraph/ClassInfo;
+	public fun shouldContainClass (Lio/github/classgraph/ScanResult;Lorg/jetbrains/kotlin/name/ClassId;)Lio/github/classgraph/ClassInfo;
+	public fun shouldContainClasses (Lio/github/classgraph/ClassInfoList;Ljava/lang/Iterable;)V
+	public fun shouldContainClasses (Lio/github/classgraph/ClassInfoList;Ljava/util/Collection;)V
+	public fun shouldContainClasses (Lio/github/classgraph/ScanResult;Ljava/lang/Iterable;)V
+	public fun shouldContainClasses (Lio/github/classgraph/ScanResult;Ljava/util/Collection;)V
+	public fun shouldContainExactly (Lio/github/classgraph/ClassInfoList;Ljava/util/Collection;)V
+	public fun shouldContainPackage (Lio/github/classgraph/ScanResult;Ljava/lang/String;)Lio/github/classgraph/PackageInfo;
+	public fun shouldContainPackage (Lio/github/classgraph/ScanResult;Lorg/jetbrains/kotlin/name/FqName;)Lio/github/classgraph/PackageInfo;
+	public fun shouldNotContainClass (Lio/github/classgraph/ClassInfoList;Ljava/lang/String;)V
+	public fun shouldNotContainClass (Lio/github/classgraph/ClassInfoList;Lorg/jetbrains/kotlin/name/ClassId;)V
+	public fun shouldNotContainClass (Lio/github/classgraph/ScanResult;Ljava/lang/String;)V
+	public fun shouldNotContainClass (Lio/github/classgraph/ScanResult;Lorg/jetbrains/kotlin/name/ClassId;)V
+}
+
+public abstract interface class com/squareup/anvil/compiler/testing/classgraph/ClassInfoAsserts {
+	public fun shouldContainDeclaredField (Lio/github/classgraph/ClassInfo;Ljava/lang/String;)Lio/github/classgraph/FieldInfo;
+	public fun shouldContainDeclaredFields (Lio/github/classgraph/ClassInfo;Ljava/util/Collection;)V
+	public fun shouldContainDeclaredMethod (Lio/github/classgraph/ClassInfo;Ljava/lang/String;)Lio/github/classgraph/MethodInfo;
+	public fun shouldContainDeclaredMethods (Lio/github/classgraph/ClassInfo;Ljava/util/Collection;)V
+	public fun shouldContainExactDeclaredFields (Lio/github/classgraph/ClassInfo;Ljava/util/Collection;)V
+	public fun shouldContainExactDeclaredMethods (Lio/github/classgraph/ClassInfo;Ljava/util/Collection;)V
+	public fun shouldContainExactFields (Lio/github/classgraph/ClassInfo;Ljava/util/Collection;)V
+	public fun shouldContainExactMethods (Lio/github/classgraph/ClassInfo;Ljava/util/Collection;)V
+	public fun shouldContainField (Lio/github/classgraph/ClassInfo;Ljava/lang/String;)Lio/github/classgraph/FieldInfo;
+	public fun shouldContainFields (Lio/github/classgraph/ClassInfo;Ljava/util/Collection;)V
+	public fun shouldContainMethod (Lio/github/classgraph/ClassInfo;Ljava/lang/String;)Lio/github/classgraph/MethodInfo;
+	public fun shouldContainMethods (Lio/github/classgraph/ClassInfo;Ljava/util/Collection;)V
+	public fun shouldContainOverloadedMethodsNamed (Lio/github/classgraph/ClassInfo;Ljava/lang/String;)Lio/github/classgraph/MethodInfoList;
+	public fun shouldHaveSingleConstructor (Lio/github/classgraph/ClassInfo;)Lio/github/classgraph/MethodInfo;
+}
+
+public final class com/squareup/anvil/compiler/testing/classgraph/ClassInfoKt {
 	public static final fun allBindMethods (Lio/github/classgraph/ClassInfo;)Ljava/util/List;
+	public static final fun allProvidesMethods (Lio/github/classgraph/ClassInfo;)Ljava/util/List;
+	public static final fun classIds (Ljava/util/Collection;)Ljava/util/List;
+	public static final fun fqNames (Ljava/util/Collection;)Ljava/util/List;
+	public static final fun getAnnotationInfo (Lio/github/classgraph/ClassInfo;Lorg/jetbrains/kotlin/name/ClassId;)Lio/github/classgraph/AnnotationInfo;
+	public static final fun getClassId (Lio/github/classgraph/ClassInfo;)Lorg/jetbrains/kotlin/name/ClassId;
+}
+
+public final class com/squareup/anvil/compiler/testing/classgraph/MethodInfoKt {
+	public static final fun boundTypes (Lio/github/classgraph/MethodInfo;)Lkotlin/Pair;
+}
+
+public final class com/squareup/anvil/compiler/testing/classgraph/ScanResultKt {
 	public static final fun allBindsMethods (Lio/github/classgraph/ScanResult;)Ljava/util/List;
 	public static final fun allBoundTypes (Lio/github/classgraph/ScanResult;)Ljava/util/List;
 	public static final fun allDaggerFactoryClasses (Lio/github/classgraph/ScanResult;)Ljava/util/List;
 	public static final fun allDirectInterfaces (Lio/github/classgraph/ScanResult;Ljava/lang/String;)Ljava/util/List;
 	public static final fun allMergedModulesForComponent (Lio/github/classgraph/ScanResult;Ljava/lang/String;)Ljava/util/List;
 	public static final fun allModuleClasses (Lio/github/classgraph/ScanResult;)Ljava/util/List;
-	public static final fun allProvidesMethods (Lio/github/classgraph/ClassInfo;)Ljava/util/List;
-	public static final fun boundTypes (Lio/github/classgraph/MethodInfo;)Lkotlin/Pair;
-	public static final fun fqNames (Ljava/util/Collection;)Ljava/util/List;
-	public static final fun getAnnotationInfo (Lio/github/classgraph/ClassInfo;Lorg/jetbrains/kotlin/name/FqName;)Lio/github/classgraph/AnnotationInfo;
+	public static final fun declaredField (Lio/github/classgraph/ClassInfo;)Lkotlin/properties/ReadOnlyProperty;
+	public static final fun field (Lio/github/classgraph/ClassInfo;)Lkotlin/properties/ReadOnlyProperty;
+	public static final fun get (Lio/github/classgraph/ClassInfoList;Lorg/jetbrains/kotlin/name/ClassId;)Lio/github/classgraph/ClassInfo;
+	public static final fun get (Lio/github/classgraph/ScanResult;Ljava/lang/String;)Lio/github/classgraph/ClassInfo;
+	public static final fun get (Lio/github/classgraph/ScanResult;Lorg/jetbrains/kotlin/name/FqName;)Lio/github/classgraph/ClassInfo;
+	public static final fun getAllClassNames (Lio/github/classgraph/PackageInfo;)Ljava/util/List;
+	public static final fun getAny (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getAnyQualifier (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getAssistedService (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getAssistedServiceFactory (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getClassInfo (Lio/github/classgraph/ScanResult;Lorg/jetbrains/kotlin/name/ClassId;)Lio/github/classgraph/ClassInfo;
 	public static final fun getClassInfo (Lio/github/classgraph/ScanResult;Lorg/jetbrains/kotlin/name/FqName;)Lio/github/classgraph/ClassInfo;
+	public static final fun getClassInfo (Lorg/jetbrains/kotlin/name/FqName;Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
 	public static final fun getClassInfoOrNull (Lio/github/classgraph/ScanResult;Lorg/jetbrains/kotlin/name/FqName;)Lio/github/classgraph/ClassInfo;
-	public static final fun loadClass (Ljava/lang/ClassLoader;Lorg/jetbrains/kotlin/name/FqName;)Ljava/lang/Class;
-	public static final fun loadClass (Lorg/jetbrains/kotlin/name/FqName;Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
-	public static final fun loadClass (Lorg/jetbrains/kotlin/name/FqName;Ljava/lang/ClassLoader;)Ljava/lang/Class;
-	public static final fun loadClassOrNull (Ljava/lang/ClassLoader;Lorg/jetbrains/kotlin/name/FqName;)Ljava/lang/Class;
-	public static final fun shouldContainClass (Lio/github/classgraph/ScanResult;Ljava/lang/String;)Lio/github/classgraph/ClassInfo;
-	public static final fun shouldContainClass (Lio/github/classgraph/ScanResult;Lorg/jetbrains/kotlin/name/FqName;)Lio/github/classgraph/ClassInfo;
+	public static final fun getComponentInterface (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getContributingInterface (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getContributingObject (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getDaggerModule1 (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getDaggerModule2 (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getDaggerModule3 (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getDaggerModule4 (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getInjectClass (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getInjectClass_Factory (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getJavaClass (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getNothing (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getPackageInfo (Lio/github/classgraph/ScanResult;Lorg/jetbrains/kotlin/name/FqName;)Lio/github/classgraph/PackageInfo;
+	public static final fun getParentInterface (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getParentInterface1 (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getParentInterface2 (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getSecondContributingInterface (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getSquareupTest (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/PackageInfo;
+	public static final fun getSubcomponentInterface (Lio/github/classgraph/ScanResult;)Lio/github/classgraph/ClassInfo;
+	public static final fun getValue (Lio/github/classgraph/ScanResult;Ljava/lang/Object;Lkotlin/reflect/KProperty;)Lio/github/classgraph/ClassInfo;
 }
 
 public final class com/squareup/anvil/compiler/testing/compilation/Compile2Compilation {
@@ -327,5 +388,44 @@ public final class com/squareup/anvil/compiler/testing/compilation/HostClasspath
 	public final fun getKotlinStdLibJdkJar ()Ljava/io/File;
 	public final fun getKotlinxSerializationCoreJvm ()Ljava/io/File;
 	public final fun getProjectClassFileDirectories ()Ljava/util/List;
+}
+
+public final class com/squareup/anvil/compiler/testing/reflect/ReflectionKt {
+	public static final fun createInstance (Ljava/lang/Class;[Ljava/lang/Object;)Ljava/lang/Object;
+	public static final fun declaredField (Ljava/lang/Class;)Lkotlin/properties/ReadOnlyProperty;
+	public static final fun field (Ljava/lang/Class;)Lkotlin/properties/ReadOnlyProperty;
+	public static final fun get (Ljava/lang/ClassLoader;Ljava/lang/String;)Ljava/lang/Class;
+	public static final fun get (Ljava/lang/ClassLoader;Lorg/jetbrains/kotlin/name/FqName;)Ljava/lang/Class;
+	public static final fun getAny (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getAnyQualifier (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getAssistedService (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getAssistedServiceFactory (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getComponentInterface (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getContributingInterface (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getContributingObject (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getDaggerModule1 (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getDaggerModule2 (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getDaggerModule3 (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getDaggerModule4 (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getDeclaredFieldValue (Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;
+	public static final fun getFieldValue (Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;
+	public static final fun getInjectClass (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getInjectClass_Factory (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getJavaClass (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getNothing (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getParentInterface (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getParentInterface1 (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getParentInterface2 (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getSecondContributingInterface (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun getSubcomponentInterface (Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun invokeGet (Ljava/lang/Object;[Ljava/lang/Object;)Ljava/lang/Object;
+	public static final fun isAbstract (Ljava/lang/reflect/Member;)Z
+	public static final fun isStatic (Ljava/lang/reflect/Member;)Z
+	public static final fun loadClass (Ljava/lang/ClassLoader;Lorg/jetbrains/kotlin/name/ClassId;)Ljava/lang/Class;
+	public static final fun loadClass (Ljava/lang/ClassLoader;Lorg/jetbrains/kotlin/name/FqName;)Ljava/lang/Class;
+	public static final fun loadClass (Lorg/jetbrains/kotlin/name/FqName;Ljava/lang/ClassLoader;)Ljava/lang/Class;
+	public static final fun loadClassOrNull (Ljava/lang/ClassLoader;Lorg/jetbrains/kotlin/name/ClassId;)Ljava/lang/Class;
+	public static final fun loadClassOrNull (Ljava/lang/ClassLoader;Lorg/jetbrains/kotlin/name/FqName;)Ljava/lang/Class;
+	public static final fun use (Ljava/lang/reflect/AccessibleObject;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
 }
 

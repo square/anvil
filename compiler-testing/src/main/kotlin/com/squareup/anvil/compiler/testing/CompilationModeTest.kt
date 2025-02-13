@@ -8,6 +8,8 @@ import com.rickbusarow.kase.files.HasWorkingDir
 import com.rickbusarow.kase.files.TestLocation
 import com.rickbusarow.kase.kase
 import com.rickbusarow.kase.kases
+import com.squareup.anvil.compiler.testing.classgraph.ClassGraphAsserts
+import com.squareup.anvil.compiler.testing.classgraph.ClassInfoAsserts
 
 public class CompilationModeTestEnvironment(
   override val mode: CompilationMode,
@@ -57,7 +59,10 @@ public abstract class CompilationModeTest(
   Kase1<CompilationMode>,
   CompilationModeTestEnvironment,
   ParamTestEnvironmentFactory<Kase1<CompilationMode>, CompilationModeTestEnvironment>,
-  > {
+  >,
+  ClassGraphAsserts,
+  ClassInfoAsserts,
+  MoreAsserts {
 
   public fun test(
     mode: CompilationMode,

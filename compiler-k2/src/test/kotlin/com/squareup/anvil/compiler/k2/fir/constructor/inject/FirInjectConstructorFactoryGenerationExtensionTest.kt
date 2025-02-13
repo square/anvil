@@ -3,13 +3,12 @@ package com.squareup.anvil.compiler.k2.fir.constructor.inject
 import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.TestNames
-import com.squareup.anvil.compiler.testing.injectClass
-import com.squareup.anvil.compiler.testing.injectClassFactory
-import dagger.internal.Provider
-import io.kotest.matchers.nulls.shouldBeNull
-import io.kotest.matchers.nulls.shouldNotBeNull
+import com.squareup.anvil.compiler.testing.reflect.getDeclaredFieldValue
+import com.squareup.anvil.compiler.testing.reflect.injectClass_Factory
+import com.squareup.anvil.compiler.testing.reflect.invokeGet
 import io.kotest.matchers.shouldBe
 import org.junit.jupiter.api.TestFactory
+import javax.inject.Provider
 
 class FirInjectConstructorFactoryGenerationExtensionTest : CompilationModeTest(
   CompilationMode.K2(useKapt = false),
@@ -18,11 +17,12 @@ class FirInjectConstructorFactoryGenerationExtensionTest : CompilationModeTest(
   fun `factory class is generated for @Inject annotation`() = testFactory {
     compile2(
       """
-      ${TestNames.testPackage}
+      package com.squareup.test
+
       class InjectClass @javax.inject.Inject constructor()
       """.trimIndent(),
     ) {
-      injectClassFactory.shouldNotBeNull()
+      classGraph shouldContainClass TestNames.injectClass_Factory
     }
   }
 
@@ -30,11 +30,13 @@ class FirInjectConstructorFactoryGenerationExtensionTest : CompilationModeTest(
   fun `factory class is not generated if class is not annotated`() = testFactory {
     compile2(
       """
-      ${TestNames.testPackage}
-      class InjectClass()
+      package com.squareup.test
+
+      class InjectClass
       """.trimIndent(),
     ) {
-      scanResult.allClassesAsMap[TestNames.injectClassFactory.asString()].shouldBeNull()
+
+      scanResult shouldNotContainClass TestNames.injectClass_Factory
     }
   }
 
@@ -42,7 +44,8 @@ class FirInjectConstructorFactoryGenerationExtensionTest : CompilationModeTest(
   fun `factory class creates source class with values from provider`() = testFactory {
     compile2(
       """
-      ${TestNames.testPackage}
+      package com.squareup.test
+
       class InjectClass @javax.inject.Inject constructor(
         val param0: String,
         val param1: Int,
@@ -51,13 +54,19 @@ class FirInjectConstructorFactoryGenerationExtensionTest : CompilationModeTest(
     ) {
       val expectedString = "ExpectedString"
       val expectedInt = 77
-      val factoryInstance = injectClassFactory.methods.first { it.name == "create" }
-        .invoke(injectClassFactory, Provider { expectedString }, Provider { expectedInt })
+      val factoryClass = classLoader.injectClass_Factory
 
-      val injectClassInstance = injectClassFactory.getMethod("get").invoke(factoryInstance)
+      val factoryInstance = factoryClass.getMethod(
+        "create",
+        Provider::class.java,
+        Provider::class.java,
+      )
+        .invoke(factoryClass, Provider { expectedString }, Provider { expectedInt })
 
-      injectClass.getMethod("getParam0").invoke(injectClassInstance).shouldBe(expectedString)
-      injectClass.getMethod("getParam1").invoke(injectClassInstance).shouldBe(expectedInt)
+      val injectClassInstance = factoryInstance.invokeGet()
+
+      injectClassInstance.getDeclaredFieldValue("param0") shouldBe expectedString
+      injectClassInstance.getDeclaredFieldValue("param1") shouldBe expectedInt
     }
   }
 }
