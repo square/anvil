@@ -67,56 +67,6 @@ public fun AnvilFirExtension.printThing(name: String, thing: Any?) {
   )
 }
 
-/*
-This is the IC issue I've been referring to. Every report of IC issues I've seen comes down to this
-same stacktrace:
-
-```
-Suppressed: java.lang.IllegalStateException: Expected absolute path but found relative path: __GENERATED DECLARATIONS__.kt
-                at org.jetbrains.kotlin.incremental.storage.RelocatableFileToPathConverter.toPath(RelocatableFileToPathConverter.kt:20)
-```
-
-`__GENERATED DECLARATIONS__.kt` is the dummy file they point to for synthetic code with top-level
-declarations.
-
-Solutions that I haven't ruled out yet:
-
-### Nested types
-
-Generate companion objects or nested classes instead. We just don't know if that's good enough for
-Dagger, since we don't know how it resolves the generated factories it needs. If it's simply
-hard-coded to look for `"${className}_Factory"`, then a nested type won't work.
-
-### Adding new top-level types to existing files
-
-Can we find a way to match a symbol (like `@Inject constructor()`), then use the `ClassId`
-to look up that class's `FirFile` and add a new top-level type to it? For example, `InjectClass` and
-`InjectClass_Factory` would be in the same file.
-
-```kotlin
-val file = session.firProvider.getFirClassifierContainerFile(someClassId)
-
-firFile.transformSingle(
-    object : FirDefaultTransformer<Nothing?>() {
-        override fun <E : FirElement> transformElement(element: E, data: Nothing?): E {
-            TODO("magic")
-        }
-    },
-    null,
-)
-```
-
-### Creating our own `FirFile`
-
-Don't declare any new ids in  `FirDeclarationGenerationExtension.getTopLevelClassIds()`,
-or any types in `FirDeclarationGenerationExtension.generateTopLevelClassLikeDeclaration()`.
-That would mean that the `__GENERATED DECLARATIONS__.kt` FirFile isn't created. Instead, we create
-our own files using `buildFile { }` and give it some dummy path that looks like it starts with a
-root, like `/my-generated-file.kt`. This seems brittle, and it's a hack, but it might work.
-
-
- */
-
 public class AnvilFirAnnotationMergingExtension(
   anvilFirContext: AnvilFirContext,
   session: FirSession,
