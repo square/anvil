@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler.k2.constructor.inject
 
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirDeclarationGenerationExtension
-import com.squareup.anvil.compiler.k2.names.Names
+import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.utils.isCompanion
@@ -184,7 +184,7 @@ internal class FirInjectConstructorFactoryGenerationExtension(
 
   companion object Key : GeneratedDeclarationKey() {
     private val injectAnnotationPredicate = LookupPredicate.create {
-      annotated(Names.javaxInject)
+      annotated(ClassIds.javaxInject.asSingleFqName())
     }
   }
 }

@@ -2,9 +2,9 @@ package com.squareup.anvil.compiler.k2.constructor.inject
 
 import com.squareup.anvil.compiler.k2.constructor.inject.FirInjectConstructorFactoryGenerationExtension.Key
 import com.squareup.anvil.compiler.k2.fir.utils.append
-import com.squareup.anvil.compiler.k2.fir.utils.resolvedSymbol
-import com.squareup.anvil.compiler.k2.fir.utils.toFirAnnotation
-import com.squareup.anvil.compiler.k2.names.Names
+import com.squareup.anvil.compiler.k2.utils.fir.createFirAnnotation
+import com.squareup.anvil.compiler.k2.utils.fir.requireClassLikeSymbol
+import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.fir.FirSession
@@ -44,7 +44,7 @@ internal class InjectConstructorGenerationModel(
   val generatedClassSymbol: FirClassSymbol<*> by lazy {
     val classSymbol = extension.createTopLevelClass(generatedClassId, Key) {
       superType(
-        session.resolvedSymbol(Names.daggerFactory)
+        ClassIds.daggerFactory.requireClassLikeSymbol(session)
           .constructType(
             typeArguments = arrayOf(matchedClassId.constructClassLikeType()),
           ),
@@ -71,7 +71,7 @@ internal class InjectConstructorGenerationModel(
       isPrimary = true,
       generateDelegatedNoArgConstructorCall = true,
     ) {
-      val providerSymbol = session.resolvedSymbol(Names.javaxProvider)
+      val providerSymbol = ClassIds.javaxProvider.requireClassLikeSymbol(session)
       for (param in matchedConstructorSymbol.valueParameterSymbols) {
         valueParameter(
           name = param.name,
@@ -125,7 +125,7 @@ internal class InjectConstructorGenerationModel(
         )
       }
     }
-    function.replaceAnnotations(listOf(Names.kotlinJvmStatic.toFirAnnotation()))
+    function.replaceAnnotations(listOf(createFirAnnotation(ClassIds.kotlinJvmStatic)))
     return function.symbol
   }
 
@@ -143,7 +143,7 @@ internal class InjectConstructorGenerationModel(
         )
       }
     }
-    function.replaceAnnotations(listOf(Names.kotlinJvmStatic.toFirAnnotation()))
+    function.replaceAnnotations(listOf(createFirAnnotation(ClassIds.kotlinJvmStatic)))
     return function.symbol
   }
 
