@@ -56,7 +56,7 @@ class Compile2Sample : CompilationModeTest(K2(useKapt = false), K2(useKapt = tru
       firExtensions = listOf(myCustomGenerator()),
     ) {
 
-      classGraph.injectClass.interfaces.names shouldBe listOf("com.squareup.test.ParentInterface")
+      scanResult.injectClass.interfaces.names shouldBe listOf("com.squareup.test.ParentInterface")
     }
   }
 

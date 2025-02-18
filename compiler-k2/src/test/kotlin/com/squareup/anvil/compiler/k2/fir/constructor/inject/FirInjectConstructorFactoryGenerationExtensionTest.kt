@@ -22,7 +22,7 @@ class FirInjectConstructorFactoryGenerationExtensionTest : CompilationModeTest(
       class InjectClass @javax.inject.Inject constructor()
       """.trimIndent(),
     ) {
-      classGraph shouldContainClass TestNames.injectClass_Factory
+      scanResult shouldContainClass TestNames.injectClass_Factory
     }
   }
 

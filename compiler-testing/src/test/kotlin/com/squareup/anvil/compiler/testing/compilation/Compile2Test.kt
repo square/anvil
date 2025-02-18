@@ -130,7 +130,7 @@ class Compile2Test : CompilationModeTest(
         ),
       ) {
 
-        classGraph.injectClass.interfaces.classIds() shouldBe listOf(TestNames.parentInterface)
+        scanResult.injectClass.interfaces.classIds() shouldBe listOf(TestNames.parentInterface)
       }
     }
 }

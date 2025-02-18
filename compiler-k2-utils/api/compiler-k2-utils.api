@@ -1,0 +1,53 @@
+public final class com/squareup/anvil/compiler/k2/utils/fir/FirAnnotationKt {
+	public static final fun createFirAnnotation (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationArgumentMapping;Lorg/jetbrains/kotlin/KtSourceElement;Lorg/jetbrains/kotlin/descriptors/annotations/AnnotationUseSiteTarget;)Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;
+	public static synthetic fun createFirAnnotation$default (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationArgumentMapping;Lorg/jetbrains/kotlin/KtSourceElement;Lorg/jetbrains/kotlin/descriptors/annotations/AnnotationUseSiteTarget;ILjava/lang/Object;)Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;
+}
+
+public final class com/squareup/anvil/compiler/k2/utils/fir/ResolveKt {
+	public static final fun classLikeSymbolOrNull (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/FirSession;)Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;
+	public static final fun regularClassSymbolOrNull (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/FirSession;)Lorg/jetbrains/kotlin/fir/symbols/impl/FirRegularClassSymbol;
+	public static final fun requireClassLikeSymbol (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/FirSession;)Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;
+	public static final fun requireRegularClassSymbol (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/FirSession;)Lorg/jetbrains/kotlin/fir/symbols/impl/FirRegularClassSymbol;
+}
+
+public final class com/squareup/anvil/compiler/k2/utils/names/ClassIds {
+	public static final field INSTANCE Lcom/squareup/anvil/compiler/k2/utils/names/ClassIds;
+	public final fun getAnvilContributesBinding ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getAnvilContributesMultibinding ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getAnvilContributesSubcomponent ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getAnvilContributesTo ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getAnvilMergeComponent ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getAnvilMergeInterfaces ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getAnvilMergeModules ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getAnvilMergeSubcomponent ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getDaggerBinds ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getDaggerComponent ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getDaggerFactory ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getDaggerLazy ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getDaggerProvider ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getDaggerSubcomponent ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getJavaxInject ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getJavaxProvider ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getJavaxQualifier ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getJavaxScope ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getKotlinJvmStatic ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getKotlinJvmSuppressWildcards ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getKotlinPublishedApi ()Lorg/jetbrains/kotlin/name/ClassId;
+}
+
+public final class com/squareup/anvil/compiler/k2/utils/names/ClassIdsKt {
+	public static final fun child (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getBindingModuleSibling (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getCompanion (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getFactorySibling (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun nested (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun sibling (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/ClassId;
+}
+
+public final class com/squareup/anvil/compiler/k2/utils/names/Names {
+	public static final field INSTANCE Lcom/squareup/anvil/compiler/k2/utils/names/Names;
+	public final fun getDependencies ()Lorg/jetbrains/kotlin/name/Name;
+	public final fun getModules ()Lorg/jetbrains/kotlin/name/Name;
+	public final fun getScope ()Lorg/jetbrains/kotlin/name/Name;
+}
+
