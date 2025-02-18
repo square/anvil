@@ -124,7 +124,6 @@ public val ClassId.nestedClass: ClassId get() = child("NestedClass")
  * ```
  */
 public val ClassId.nestedObject: ClassId get() = child("NestedObject")
-public val ClassId.companion: ClassId get() = child("Companion")
 
 internal fun String.capitalize(): String = replaceFirstChar(Char::uppercaseChar)
 
@@ -161,36 +160,6 @@ public fun ClassId.nested(capitalize: Boolean = true): ReadOnlyProperty<Any?, Cl
   return ReadOnlyProperty { _, p ->
     nested(p.name.letIf(capitalize) { it.capitalize() })
   }
-}
-
-/**
- * alias for [com.squareup.anvil.compiler.testing.nested]
- *
- * ```
- * val kotlinMap = ClassId.fromString("kotlin/collections.Map")
- *
- * val entry by kotlinMap.child()
- *
- * entry.asFqNameString() shouldBe "kotlin.collections.Map.Entry"
- * ```
- * @see ClassId.createNestedClassId
- */
-public fun ClassId.child(nameString: String): ClassId = nested(nameString)
-
-/**
- * alias for [com.squareup.anvil.compiler.testing.nested]
- *
- * ```
- * val kotlinMap = ClassId.fromString("kotlin/collections.Map")
- *
- * val entry by kotlinMap.nested()
- *
- * entry.asFqNameString() shouldBe "kotlin.collections.Map.Entry"
- * ```
- * @see ClassId.createNestedClassId
- */
-public fun ClassId.nested(nameString: String): ClassId {
-  return createNestedClassId(Name.identifier(nameString))
 }
 
 /**
