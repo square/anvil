@@ -10,6 +10,7 @@ import com.rickbusarow.kase.kase
 import com.rickbusarow.kase.kases
 import com.squareup.anvil.compiler.testing.classgraph.ClassGraphAsserts
 import com.squareup.anvil.compiler.testing.classgraph.ClassInfoAsserts
+import com.squareup.anvil.compiler.testing.reflect.ClassAsserts
 
 public class CompilationModeTestEnvironment(
   override val mode: CompilationMode,
@@ -34,26 +35,31 @@ public class CompilationModeTestEnvironment(
 
 public sealed interface CompilationMode {
   public val useKapt: Boolean
+  public val generateDaggerFactories: Boolean
+  public val generateDaggerFactoriesOnly: Boolean
+
+  public data class K1(
+    override val useKapt: Boolean,
+    override val generateDaggerFactories: Boolean,
+    override val generateDaggerFactoriesOnly: Boolean,
+    val trackSourceFiles: Boolean,
+    val disableComponentMerging: Boolean,
+  ) : CompilationMode
 
   public data class K2(
     override val useKapt: Boolean,
-
+    override val generateDaggerFactories: Boolean,
+    override val generateDaggerFactoriesOnly: Boolean,
   ) : CompilationMode
-
-  @Deprecated("K1 is not implemented yet", level = DeprecationLevel.ERROR)
-  public data class K1(
-    override val useKapt: Boolean,
-
-  ) : CompilationMode {
-    init {
-      error("K1 is not implemented yet")
-    }
-  }
 }
 
 public abstract class CompilationModeTest(
   modes: List<CompilationMode> = listOf(
-    CompilationMode.K2(false),
+    CompilationMode.K2(
+      useKapt = false,
+      generateDaggerFactories = true,
+      generateDaggerFactoriesOnly = false,
+    ),
   ),
 ) : KaseTestFactory<
   Kase1<CompilationMode>,
@@ -62,6 +68,7 @@ public abstract class CompilationModeTest(
   >,
   ClassGraphAsserts,
   ClassInfoAsserts,
+  ClassAsserts,
   MoreAsserts {
 
   public fun test(

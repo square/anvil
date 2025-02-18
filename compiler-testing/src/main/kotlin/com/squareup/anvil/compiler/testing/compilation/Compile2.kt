@@ -1,6 +1,8 @@
 package com.squareup.anvil.compiler.testing.compilation
 
+import com.rickbusarow.kase.stdlib.div
 import com.squareup.anvil.compiler.testing.CompilationEnvironment
+import com.squareup.anvil.compiler.testing.CompilationMode
 import dagger.internal.codegen.ComponentProcessor
 import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.cli.common.ExitCode
@@ -59,7 +61,7 @@ public class Compile2Compilation(
 
     val baseArgs = K2JVMCompilerArguments().also { args ->
 
-      args.moduleName = "root"
+      args.moduleName = config.moduleName
       args.additionalJavaModules = emptyArray()
 
       args.jdkHome = config.jdkHome?.absolutePath
@@ -84,6 +86,40 @@ public class Compile2Compilation(
       args.pluginClasspaths = config.compilerPluginClasspath
         .pathStrings()
         .toTypedArray()
+
+      if (config.languageVersion < LanguageVersion.KOTLIN_2_0) {
+        val anvilPluginOptions = buildList {
+
+          fun option(optionName: String, value: String) {
+            add("plugin:com.squareup.anvil.compiler:$optionName=$value")
+          }
+
+          if (!config.mode.isK2) {
+            val buildDir = config.rootDir / "build"
+            val anvilCacheDir = config.rootDir / "anvil-cache"
+            option("track-source-files", config.anvilMode.trackSourceFiles.toString())
+            option("ir-merges-file", anvilCacheDir.resolve("merges/ir-merges.txt").absolutePath)
+            option("disable-component-merging", config.mode.disableComponentMerging.toString())
+            option("src-gen-dir", buildDir.resolve("anvil").absolutePath)
+            option("anvil-cache-dir", anvilCacheDir.absolutePath)
+            option("gradle-project-dir", config.rootDir.absolutePath)
+            option("gradle-build-dir", buildDir.absolutePath)
+          }
+          option(
+            "generate-dagger-factories",
+            (!config.mode.useKapt && config.mode.generateDaggerFactories).toString(),
+          )
+          option(
+            "generate-dagger-factories-only",
+            (!config.mode.useKapt && config.mode.generateDaggerFactories && !config.mode.mergeComponents).toString(),
+          )
+          option(
+            "will-have-dagger-factories",
+            config.mode.run { generateDaggerFactories || useKapt }.toString(),
+          )
+        }
+        args.pluginOptions = anvilPluginOptions.toTypedArray()
+      }
 
       // All initial Kotlin sources (no KAPT output yet).
       args.freeArgs += config.sourceFiles.pathStrings()
@@ -222,8 +258,9 @@ public class Compile2Compilation(
         }
       }
 
-      args.pluginOptions = kaptOptions.toPluginOptions()
-        .toTypedArray()
+      args.pluginOptions = args.pluginOptions
+        ?.let { it + kaptOptions.toPluginOptions().toTypedArray() }
+        ?: kaptOptions.toPluginOptions().toTypedArray()
     }
 
     val exitCode = K2JVMCompiler().exec(

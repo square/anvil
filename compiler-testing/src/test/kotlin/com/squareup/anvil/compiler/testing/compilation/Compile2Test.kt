@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.testing.compilation
 
+import com.rickbusarow.kase.stdlib.div
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
 import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
@@ -150,4 +151,30 @@ class Compile2Test : CompilationModeTest(
         scanResult.injectClass.interfaces.classIds() shouldBe listOf(TestNames.parentInterface)
       }
     }
+
+  @TestFactory
+  fun `one compilation result may be used in a subsequent one`() = testFactory {
+
+    val firstResult = compile2(
+      """
+        package com.squareup.test.dep
+
+        class DepClass
+      """.trimIndent(),
+      workingDir = workingDir / "dep",
+    )
+
+    val secondResult = compile2(
+      """
+        package com.squareup.test.app
+
+        import com.squareup.test.dep.DepClass
+
+        class AppClass(depClass: DepClass)
+      """.trimIndent(),
+      workingDir = workingDir / "app",
+      previousCompilation = firstResult,
+    ) {
+    }
+  }
 }
