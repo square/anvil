@@ -21,6 +21,7 @@ dependencies {
   compileOnly(libs.auto.service.annotations)
   api(project(":annotations"))
   api(project(":compiler-k2-api"))
+  api(project(":compiler-k2-utils"))
   api(libs.kotlin.compiler)
 
   kapt(libs.auto.service.processor)
