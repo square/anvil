@@ -1,4 +1,4 @@
-package com.squareup.anvil.compiler.dagger
+package com.squareup.anvil.compiler.testing
 
 /**
  * Removes parameters of the functions in a String like
@@ -11,7 +11,7 @@ package com.squareup.anvil.compiler.dagger
  *
  * Dagger also doesn't guarantee any order of functions.
  */
-internal fun String.removeParametersAndSort(): String {
+public fun String.removeParametersAndSort(): String {
   val start = 1 + (indexOf('[').takeIf { it >= 0 } ?: return this)
   val end = indexOfLast { it == ']' }.takeIf { it >= 0 } ?: return this
 

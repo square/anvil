@@ -4,15 +4,8 @@ import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.compiler.testing.TestNames
 import com.squareup.anvil.compiler.testing.asJavaNameString
-import io.kotest.matchers.nulls.shouldNotBeNull
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.name.Name
-import java.lang.reflect.AccessibleObject
-import java.lang.reflect.Field
-import java.lang.reflect.Member
-import java.lang.reflect.Modifier
-import kotlin.properties.ReadOnlyProperty
 
 @ExperimentalAnvilApi
 public fun Any.invokeGet(vararg args: Any?): Any {
@@ -20,21 +13,17 @@ public fun Any.invokeGet(vararg args: Any?): Any {
   return method.invoke(this, *args)
 }
 
+@Deprecated("renamed to `getFieldValue`", ReplaceWith("getFieldValue(name)"))
 @ExperimentalAnvilApi
-public fun Any.getFieldValue(name: String): Any {
-  return javaClass.getField(name).use { it.get(this) }
-}
+public fun Any.getPropertyValue(name: String): Any = javaClass.getField(name).use { it.get(this) }
+
+@ExperimentalAnvilApi
+public fun Any.getFieldValue(name: String): Any = javaClass.getField(name).use { it.get(this) }
 
 @ExperimentalAnvilApi
 public fun Any.getDeclaredFieldValue(name: String): Any {
   return javaClass.getDeclaredField(name).use { it.get(this) }
 }
-
-@ExperimentalAnvilApi
-public val Member.isStatic: Boolean get() = Modifier.isStatic(modifiers)
-
-@ExperimentalAnvilApi
-public val Member.isAbstract: Boolean get() = Modifier.isAbstract(modifiers)
 
 public fun FqName.loadClass(classLoader: ClassLoader): Class<*> {
   return classLoader.loadClass(this.asString())
@@ -55,57 +44,8 @@ public fun ClassLoader.loadClassOrNull(classId: ClassId): Class<*>? = try {
   null
 }
 
-@ExperimentalAnvilApi
-public fun Class<*>.packageName(): String = `package`.name.let {
-  if (it.isBlank()) "" else "$it."
-}
-
-/** Returns the ClassId for this Class. Throws if the class is primitive or an array. */
-public val Class<*>.classId: ClassId
-  get() {
-    require(!isPrimitive) { "Can't compute ClassId for primitive type: $this" }
-    require(!isArray) { "Can't compute ClassId for array type: $this" }
-    val outerClass = declaringClass
-    @Suppress("RecursivePropertyAccessor")
-    return when {
-      outerClass == null -> ClassId.topLevel(FqName(canonicalName))
-      isLocalClass -> ClassId(FqName(packageName()), FqName(simpleName), isLocalClass)
-      else -> outerClass.classId.createNestedClassId(Name.identifier(simpleName))
-    }
-  }
-
-/**
- * Creates a new instance of this class with the given arguments. This method assumes that this
- * class only declares a single constructor.
- */
-@ExperimentalAnvilApi
-@Suppress("UNCHECKED_CAST")
-public fun <T : Any> Class<T>.createInstance(
-  vararg initargs: Any?,
-): T = declaredConstructors.single().use { it.newInstance(*initargs) } as T
-
-@ExperimentalAnvilApi
-public inline fun <T, E : AccessibleObject> E.use(block: (E) -> T): T {
-  // Deprecated since Java 9, but many projects still use JDK 8 for compilation.
-  @Suppress("DEPRECATION")
-  val original = isAccessible
-
-  return try {
-    isAccessible = true
-    block(this)
-  } finally {
-    isAccessible = original
-  }
-}
-
 public operator fun ClassLoader.get(fqName: FqName): Class<*> = loadClass(fqName)
 public operator fun ClassLoader.get(fqName: String): Class<*> = loadClass(fqName)
-
-public fun Class<*>.field(): ReadOnlyProperty<Any?, Field> =
-  ReadOnlyProperty { _, property -> getField(property.name).shouldNotBeNull() }
-
-public fun Class<*>.declaredField(): ReadOnlyProperty<Any?, Field> =
-  ReadOnlyProperty { _, property -> getDeclaredField(property.name).shouldNotBeNull() }
 
 public val ClassLoader.any: Class<*>
   get() = loadClass(TestNames.any)

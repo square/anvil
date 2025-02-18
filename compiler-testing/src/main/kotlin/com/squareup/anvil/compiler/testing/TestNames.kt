@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler.testing
 
 import com.rickbusarow.kase.stdlib.letIf
 import com.squareup.anvil.compiler.k2.utils.names.child
-import com.squareup.anvil.compiler.k2.utils.names.factorySibling
+import com.squareup.anvil.compiler.k2.utils.names.factoryJoined
 import com.squareup.anvil.compiler.k2.utils.names.nested
 import io.kotest.matchers.nulls.shouldNotBeNull
 import org.jetbrains.kotlin.name.ClassId
@@ -71,7 +71,7 @@ public object TestNames {
   public val injectClass: ClassId = classId(squareupTest, "InjectClass")
 
   /** `com.squareup.test.InjectClass_Factory` */
-  public val injectClass_Factory: ClassId get() = injectClass.factorySibling
+  public val injectClass_Factory: ClassId get() = injectClass.factoryJoined
 
   /** `com.squareup.test.JavaClass` */
   public val javaClass: ClassId = classId(squareupTest, "JavaClass")
@@ -170,6 +170,15 @@ public fun ClassId.nested(capitalize: Boolean = true): ReadOnlyProperty<Any?, Cl
  */
 public val FqName.bindingModuleSibling: FqName
   get() = sibling("${shortName().asString()}_BindingModule")
+
+/**
+ * ```
+ *  given: `com.example.SomeClass
+ * output: `com.example.SomeClass_MembersInjector`
+ * ```
+ */
+public val FqName.membersInjectorSibling: FqName
+  get() = sibling("${shortName().asString()}_MembersInjector")
 
 /**
  * ```

@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.k2.fir
 
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
-import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.classgraph.getAnnotationInfo
 import com.squareup.anvil.compiler.testing.classgraph.moduleNames
@@ -9,10 +8,7 @@ import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.TestFactory
 
-class FirCanaryTest : CompilationModeTest(
-  CompilationMode.K2(useKapt = false),
-  CompilationMode.K2(useKapt = true),
-) {
+class FirCanaryTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2 }) {
 
   @TestFactory
   fun `a merged component implements functions from merged supertypes`() = testFactory {
@@ -65,8 +61,10 @@ class FirCanaryTest : CompilationModeTest(
       class InjectClass @Inject constructor(val a: A, val b: B) 
       """,
     ) {
-      val testComponent = scanResult.getClassInfo("com.squareup.test.TestComponent") shouldNotBe null
-      val generatedComponentAnnotation = testComponent.getAnnotationInfo(ClassIds.daggerComponent) shouldNotBe null
+      val testComponent =
+        scanResult.getClassInfo("com.squareup.test.TestComponent") shouldNotBe null
+      val generatedComponentAnnotation =
+        testComponent.getAnnotationInfo(ClassIds.daggerComponent) shouldNotBe null
 
       generatedComponentAnnotation.moduleNames shouldBe listOf(
         "com.squareup.test.ABindingModule",
@@ -74,7 +72,8 @@ class FirCanaryTest : CompilationModeTest(
       )
 
       if (mode.useKapt) {
-        val daggerTestComponent = scanResult.getClassInfo("com.squareup.test.DaggerTestComponent") shouldNotBe null
+        val daggerTestComponent =
+          scanResult.getClassInfo("com.squareup.test.DaggerTestComponent") shouldNotBe null
 
         val testComponentImpl = daggerTestComponent.innerClasses
           .get("com.squareup.test.DaggerTestComponent\$TestComponentImpl")

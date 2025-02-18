@@ -15,6 +15,7 @@ import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.internal.testing.use
 import com.squareup.anvil.compiler.testParams
+import com.squareup.anvil.compiler.testing.removeParametersAndSort
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
