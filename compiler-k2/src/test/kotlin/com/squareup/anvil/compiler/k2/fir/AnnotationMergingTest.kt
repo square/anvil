@@ -1,13 +1,13 @@
 package com.squareup.anvil.compiler.k2.fir
 
 import com.rickbusarow.kase.stdlib.div
-import com.squareup.anvil.compiler.testing.CommonNames
 import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
-import com.squareup.anvil.compiler.testing.child
+import com.squareup.anvil.compiler.testing.TestNames
 import com.squareup.anvil.compiler.testing.classgraph.allMergedModulesForComponent
 import com.squareup.anvil.compiler.testing.classgraph.fqNames
 import io.kotest.matchers.shouldBe
+import org.jetbrains.kotlin.name.FqName
 import org.junit.jupiter.api.TestFactory
 
 class AnnotationMergingTest : CompilationModeTest(
@@ -65,11 +65,11 @@ class AnnotationMergingTest : CompilationModeTest(
     ) {
 
       classGraph
-        .allMergedModulesForComponent(CommonNames.componentInterface)
+        .allMergedModulesForComponent(TestNames.componentInterface)
         .fqNames() shouldBe listOf(
         // CommonNames.daggerModule1,
-        CommonNames.squareupTest.child("dep").child("DaggerModule1"),
-        CommonNames.daggerModule2,
+        FqName("com.squareup.test.dep.DaggerModule1"),
+        TestNames.daggerModule2,
       )
     }
   }
