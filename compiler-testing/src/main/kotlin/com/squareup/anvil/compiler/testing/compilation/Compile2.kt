@@ -173,14 +173,16 @@ public class Compile2Compilation(
       // from `useKapt4` to `useK2Kapt` in Kotlin 2.1.0.
       // We use the string version so that it's source-compatible.
       when {
-        config.languageVersion < LanguageVersion.KOTLIN_2_0 -> Unit // Kapt4 requires 2.0+
-        config.languageVersion == LanguageVersion.KOTLIN_2_0 -> {
+        KotlinVersion.CURRENT.isAtLeast(major = 2, minor = 1) -> {
+          // aka `args.useK2Kapt = true`
+          args.freeArgs += "-Xuse-k2-kapt"
+        }
+        KotlinVersion.CURRENT.isAtLeast(major = 2, minor = 0) -> {
           // aka `args.useKapt4 = true`
           args.freeArgs += "-Xuse-kapt4"
         }
         else -> {
-          // aka `args.useK2Kapt = true`
-          args.freeArgs += "-Xuse-k2-kapt"
+          // Kapt4 requires 2.0+, so there's nothing to do here
         }
       }
 
