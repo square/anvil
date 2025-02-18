@@ -38,7 +38,7 @@ class Compile2Test : CompilationModeTest(
         ),
       ) {
 
-        val javaClass = classGraph.getClassInfo("com.squareup.test.JavaClass")
+        val javaClass = scanResult.getClassInfo("com.squareup.test.JavaClass")
 
         javaClass.shouldNotBeNull()
       }
@@ -67,7 +67,7 @@ class Compile2Test : CompilationModeTest(
         ),
       ) {
 
-        val javaClass = classGraph.getClassInfo("com.squareup.test.JavaClass")
+        val javaClass = scanResult.getClassInfo("com.squareup.test.JavaClass")
 
         javaClass.shouldNotBeNull()
       }
@@ -88,7 +88,7 @@ class Compile2Test : CompilationModeTest(
         """,
       ) {
 
-        val testPackage = classGraph.getPackageInfo("com.squareup.test")
+        val testPackage = scanResult.getPackageInfo("com.squareup.test")
 
         testPackage.classInfoRecursive.names shouldBe setOf(
           "com.squareup.test.InjectClass",

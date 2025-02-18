@@ -38,8 +38,8 @@ class Compile2Sample : CompilationModeTest(K2(useKapt = false), K2(useKapt = tru
       ),
     ) {
 
-      classGraph.shouldContainClass("com.squareup.test.KotlinClass")
-      classGraph.shouldContainClass("com.squareup.test.JavaClass")
+      scanResult.shouldContainClass("com.squareup.test.KotlinClass")
+      scanResult.shouldContainClass("com.squareup.test.JavaClass")
     }
   }
 

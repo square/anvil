@@ -48,84 +48,84 @@ internal operator fun ScanResult.get(fqName: String): ClassInfo = getClassInfo(f
 public val Compile2Result.contributingObject: Class<*>
   get() = classLoader.loadClass(TestNames.contributingObject)
 public val Compile2Result.contributingObjectInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.contributingObject)
+  get() = scanResult.getClassInfo(TestNames.contributingObject)
 public val Compile2Result.contributingInterface: Class<*>
   get() = classLoader.loadClass(TestNames.contributingInterface)
 public val Compile2Result.contributingInterfaceInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.contributingInterface)
+  get() = scanResult.getClassInfo(TestNames.contributingInterface)
 public val Compile2Result.secondContributingInterface: Class<*>
   get() = classLoader.loadClass(TestNames.secondContributingInterface)
 public val Compile2Result.secondContributingInterfaceInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.secondContributingInterface)
+  get() = scanResult.getClassInfo(TestNames.secondContributingInterface)
 public val Compile2Result.someClassInnerInterface: Class<*>
   get() = classLoader.loadClass(TestNames.someClassInnerInterface)
 public val Compile2Result.someClassInnerInterfaceInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.someClassInnerInterface)
+  get() = scanResult.getClassInfo(TestNames.someClassInnerInterface)
 public val Compile2Result.parentInterface: Class<*>
   get() = classLoader.loadClass(TestNames.parentInterface)
 public val Compile2Result.parentInterfaceInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.parentInterface)
+  get() = scanResult.getClassInfo(TestNames.parentInterface)
 public val Compile2Result.parentInterface1: Class<*>
   get() = classLoader.loadClass(TestNames.parentInterface1)
 public val Compile2Result.parentInterface1Info: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.parentInterface1)
+  get() = scanResult.getClassInfo(TestNames.parentInterface1)
 public val Compile2Result.parentInterface2: Class<*>
   get() = classLoader.loadClass(TestNames.parentInterface2)
 public val Compile2Result.parentInterface2Info: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.parentInterface2)
+  get() = scanResult.getClassInfo(TestNames.parentInterface2)
 public val Compile2Result.componentInterface: Class<*>
   get() = classLoader.loadClass(TestNames.componentInterface)
 public val Compile2Result.componentInterfaceInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.componentInterface)
+  get() = scanResult.getClassInfo(TestNames.componentInterface)
 public val Compile2Result.subcomponentInterface: Class<*>
   get() = classLoader.loadClass(TestNames.subcomponentInterface)
 public val Compile2Result.subcomponentInterfaceInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.subcomponentInterface)
+  get() = scanResult.getClassInfo(TestNames.subcomponentInterface)
 public val Compile2Result.daggerModule1: Class<*>
   get() = classLoader.loadClass(TestNames.daggerModule1)
 public val Compile2Result.daggerModule1Info: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.daggerModule1)
+  get() = scanResult.getClassInfo(TestNames.daggerModule1)
 public val Compile2Result.assistedService: Class<*>
   get() = classLoader.loadClass(TestNames.assistedService)
 public val Compile2Result.assistedServiceInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.assistedService)
+  get() = scanResult.getClassInfo(TestNames.assistedService)
 public val Compile2Result.assistedServiceFactory: Class<*>
   get() = classLoader.loadClass(TestNames.assistedServiceFactory)
 public val Compile2Result.assistedServiceFactoryInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.assistedServiceFactory)
+  get() = scanResult.getClassInfo(TestNames.assistedServiceFactory)
 public val Compile2Result.daggerModule2: Class<*>
   get() = classLoader.loadClass(TestNames.daggerModule2)
 public val Compile2Result.daggerModule2Info: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.daggerModule2)
+  get() = scanResult.getClassInfo(TestNames.daggerModule2)
 public val Compile2Result.daggerModule3: Class<*>
   get() = classLoader.loadClass(TestNames.daggerModule3)
 public val Compile2Result.daggerModule3Info: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.daggerModule3)
+  get() = scanResult.getClassInfo(TestNames.daggerModule3)
 public val Compile2Result.daggerModule4: Class<*>
   get() = classLoader.loadClass(TestNames.daggerModule4)
 public val Compile2Result.daggerModule4Info: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.daggerModule4)
+  get() = scanResult.getClassInfo(TestNames.daggerModule4)
 public val Compile2Result.componentInterfaceInnerModule: Class<*>
   get() = classLoader.loadClass(TestNames.componentInterfaceInnerModule)
 public val Compile2Result.componentInterfaceInnerModuleInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.componentInterfaceInnerModule)
+  get() = scanResult.getClassInfo(TestNames.componentInterfaceInnerModule)
 public val Compile2Result.parentClassNestedInjectClass: Class<*>
   get() = classLoader.loadClass(TestNames.parentClassNestedInjectClass)
 public val Compile2Result.parentClassNestedInjectClassInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.parentClassNestedInjectClass)
+  get() = scanResult.getClassInfo(TestNames.parentClassNestedInjectClass)
 public val Compile2Result.injectClass: Class<*>
   get() = classLoader.loadClass(TestNames.injectClass)
 public val Compile2Result.injectClassInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.injectClass)
+  get() = scanResult.getClassInfo(TestNames.injectClass)
 public val Compile2Result.injectClassFactory: Class<*>
   get() = classLoader.loadClass(TestNames.injectClassFactory)
 public val Compile2Result.injectClassFactoryInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.injectClassFactory)
+  get() = scanResult.getClassInfo(TestNames.injectClassFactory)
 public val Compile2Result.javaClass: Class<*>
   get() = classLoader.loadClass(TestNames.javaClass)
 public val Compile2Result.javaClassInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.javaClass)
+  get() = scanResult.getClassInfo(TestNames.javaClass)
 public val Compile2Result.anyQualifier: Class<*>
   get() = classLoader.loadClass(TestNames.anyQualifier)
 public val Compile2Result.anyQualifierInfo: ClassInfo
-  get() = classGraph.getClassInfo(TestNames.anyQualifier)
+  get() = scanResult.getClassInfo(TestNames.anyQualifier)
