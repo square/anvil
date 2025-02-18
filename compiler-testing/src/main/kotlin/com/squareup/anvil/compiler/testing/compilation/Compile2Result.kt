@@ -64,9 +64,12 @@ public class Compile2Result(
    *
    * @see classLoader for another way to load java Class types for introspection.
    */
-  public val classGraph: ScanResult by lazy(LazyThreadSafetyMode.NONE) {
+  public val scanResult: ScanResult by lazy(LazyThreadSafetyMode.NONE) {
     classGraphResult(classpathFiles + jar)
   }
+
+  @Deprecated("use scanResult", ReplaceWith("scanResult"))
+  public val classGraph: ScanResult get() = scanResult
 }
 
 private fun createJar(

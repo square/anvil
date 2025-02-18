@@ -34,7 +34,7 @@ class FirInjectConstructorFactoryGenerationExtensionTest : CompilationModeTest(
       class InjectClass()
       """.trimIndent(),
     ) {
-      classGraph.allClassesAsMap[TestNames.injectClassFactory.asString()].shouldBeNull()
+      scanResult.allClassesAsMap[TestNames.injectClassFactory.asString()].shouldBeNull()
     }
   }
 

@@ -285,6 +285,7 @@ public final class com/squareup/anvil/compiler/testing/compilation/Compile2Resul
 	public final fun getJar ()Ljava/io/File;
 	public final fun getLibsDir ()Ljava/io/File;
 	public final fun getRootDir ()Ljava/io/File;
+	public final fun getScanResult ()Lio/github/classgraph/ScanResult;
 }
 
 public final class com/squareup/anvil/compiler/testing/compilation/Compile2ResultKt {
