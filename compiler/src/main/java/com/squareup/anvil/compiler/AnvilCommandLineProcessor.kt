@@ -52,7 +52,7 @@ internal val willHaveDaggerFactoriesKey =
  */
 @AutoService(CommandLineProcessor::class)
 public class AnvilCommandLineProcessor : CommandLineProcessor {
-  override val pluginId: String = "com.squareup.anvil.compiler"
+  override val pluginId: String = ANVIL_PLUGIN_ID
 
   override val pluginOptions: Collection<AbstractCliOption> = listOf(
     CliOption(
@@ -160,5 +160,9 @@ public class AnvilCommandLineProcessor : CommandLineProcessor {
       trackSourceFilesName ->
         configuration.put(trackSourceFilesKey, value.toBoolean())
     }
+  }
+
+  public companion object {
+    public const val ANVIL_PLUGIN_ID: String = "com.squareup.anvil.compiler"
   }
 }

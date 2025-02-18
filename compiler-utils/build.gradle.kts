@@ -31,6 +31,7 @@ dependencies {
   implementation(libs.inject)
 
   testFixturesApi(libs.kotlin.compileTesting)
+  testFixturesImplementation(project(":compiler-testing"))
   testFixturesImplementation(project(":compiler"))
   testFixturesImplementation(libs.dagger2.compiler)
   testFixturesImplementation(libs.dagger2)

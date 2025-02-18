@@ -174,6 +174,15 @@ public val FqName.bindingModuleSibling: FqName
 /**
  * ```
  *  given: `com.example.SomeClass
+ * output: `com.example.SomeClass_MembersInjector`
+ * ```
+ */
+public val FqName.membersInjectorSibling: FqName
+  get() = sibling("${shortName().asString()}_MembersInjector")
+
+/**
+ * ```
+ *  given: `com.example.SomeClass
  * output: `com.example.SomeClass_Factory`
  * ```
  */

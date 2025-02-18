@@ -2055,7 +2055,9 @@ public final class InjectClass_Inner_Factory implements Factory<InjectClass.Inne
       """
       package com.squareup.anvil.compiler.dagger
       
-      open class OuterClass {
+      abstract class OuterClass(
+        @Suppress("UNUSED_PARAMETER") innerClass: InnerClass,
+      ) {
         class InnerClass
       }
       """,

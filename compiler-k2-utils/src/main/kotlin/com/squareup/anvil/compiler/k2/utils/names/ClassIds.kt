@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.k2.utils.names
 
+import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -99,7 +100,16 @@ private fun classId(
  * ```
  */
 public val ClassId.bindingModuleSibling: ClassId
-  get() = sibling("${shortClassName.asString()}_BindingModule")
+  get() = joinSimpleNames(separator = "_", suffix = "_BindingModule")
+
+/**
+ * ```
+ *  given: `com.example.SomeClass
+ * output: `com.example.SomeClass_MembersInjector`
+ * ```
+ */
+public val ClassId.membersInjectorSibling: ClassId
+  get() = joinSimpleNames(separator = "_", suffix = "_MembersInjector")
 
 /**
  * ```
@@ -108,7 +118,7 @@ public val ClassId.bindingModuleSibling: ClassId
  * ```
  */
 public val ClassId.factorySibling: ClassId
-  get() = sibling("${shortClassName.asString()}_Factory")
+  get() = joinSimpleNames(separator = "_", suffix = "_Factory")
 
 public val ClassId.companion: ClassId get() = child("Companion")
 
@@ -168,3 +178,28 @@ public fun ClassId.child(nameString: String): ClassId = nested(nameString)
 public fun ClassId.nested(nameString: String): ClassId {
   return createNestedClassId(Name.identifier(nameString))
 }
+
+/**
+ * Joins the simple names of a class with the given [separator], [prefix], and [suffix].
+ *
+ * ```
+ * val normalName = ClassName("com.example", "Outer", "Middle", "Inner")
+ * val joinedName = normalName.joinSimpleNames(separator = "_", suffix = "Factory")
+ *
+ * println(joinedName) // com.example.Outer_Middle_InnerFactory
+ * ```
+ * @throws IllegalArgumentException if the resulting class name is too long to be a valid file name.
+ */
+@ExperimentalAnvilApi
+public fun ClassId.joinSimpleNames(
+  separator: String = "_",
+  prefix: String = "",
+  suffix: String = "",
+): ClassId = ClassId.topLevel(
+  packageFqName.child(
+    Name.identifier(
+      relativeClassName.pathSegments()
+        .joinToString(separator = separator, prefix = prefix, postfix = suffix),
+    ),
+  ),
+)
