@@ -55,6 +55,7 @@ dependencies {
 
   api(project(":annotations"))
   api(project(":compiler-k2-api"))
+  api(project(":compiler-k2-utils"))
 
   compileOnly(libs.auto.service.annotations)
 
