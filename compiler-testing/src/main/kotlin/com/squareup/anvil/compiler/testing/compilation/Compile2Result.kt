@@ -3,6 +3,7 @@ package com.squareup.anvil.compiler.testing.compilation
 import com.rickbusarow.kase.stdlib.div
 import io.github.classgraph.ClassGraph
 import io.github.classgraph.ScanResult
+import io.kotest.matchers.collections.shouldHaveSingleElement
 import io.kotest.matchers.file.shouldBeAFile
 import org.jetbrains.kotlin.cli.common.ExitCode
 import java.io.File
@@ -41,6 +42,7 @@ public class Compile2Result(
   public val classpathFiles: List<File>,
   public val exitCode: ExitCode,
   public val classLoader: ClassLoader,
+  public val compilerMessages: CompilerMessages,
 ) {
   /**
    * A `.jar` archive containing all `.class` files produced by this compilation.  This is equivalent
@@ -129,3 +131,16 @@ public fun classGraphResult(jars: List<File>): ScanResult =
   ClassGraph().enableAllInfo()
     .overrideClasspath(jars.onEach { it.requireIsJarFile() })
     .scan()
+
+/**
+ * Returns a single error message from the compilation result, or throws if there are none or more
+ * than one.
+ *
+ * @return The single error message.
+ * @throws AssertionError if there are no error messages.
+ * @throws AssertionError if there are more than one error messages.
+ */
+public fun Compile2Result.compilationErrorLine(): String {
+  compilerMessages.all.shouldHaveSingleElement { it.first.isError }
+  return compilerMessages.errors.single()
+}

@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.testParams
+import com.squareup.anvil.compiler.testing.removeParametersAndSort
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
 import org.intellij.lang.annotations.Language

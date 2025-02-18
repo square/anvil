@@ -20,6 +20,7 @@ gradle-user-home
 !.idea/vcs.xml
 !.idea/runConfigurations/
 !.idea/scopes/
+!.idea/inspectionProfiles/
 *.iml
 *.ipl
 *.ipr
