@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.testing.classgraph.classIds
 import com.squareup.anvil.compiler.testing.classgraph.injectClass
 import com.squareup.anvil.compiler.testing.classgraph.squareupTest
 import io.kotest.matchers.shouldBe
+import org.jetbrains.kotlin.cli.common.ExitCode
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
 import org.jetbrains.kotlin.fir.declarations.utils.classId
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
@@ -77,18 +78,34 @@ class Compile2Test : CompilationModeTest(
         """
         package com.squareup.test
 
+        import dagger.Component
         import javax.inject.Inject
-
-        class InjectClass @Inject constructor() 
+    
+        @Component
+        interface TestComponent {
+          val a: A
+          fun injectClass(): InjectClass
+        }
+    
+        class A @Inject constructor()
+    
+        class InjectClass @Inject constructor(val a: A) 
         """,
       ) {
+        exitCode shouldBe ExitCode.OK
 
         val testPackage = scanResult.squareupTest
 
         testPackage.classInfoRecursive.names shouldBe setOf(
+          "com.squareup.test.A",
+          "com.squareup.test.A_Factory",
+          "com.squareup.test.A_Factory\$InstanceHolder",
+          "com.squareup.test.DaggerTestComponent",
+          "com.squareup.test.DaggerTestComponent\$Builder",
+          "com.squareup.test.DaggerTestComponent\$TestComponentImpl",
           "com.squareup.test.InjectClass",
           "com.squareup.test.InjectClass_Factory",
-          "com.squareup.test.InjectClass_Factory\$InstanceHolder",
+          "com.squareup.test.TestComponent",
         )
       }
     }

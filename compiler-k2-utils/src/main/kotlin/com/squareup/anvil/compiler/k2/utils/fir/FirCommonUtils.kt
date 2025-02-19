@@ -1,5 +1,6 @@
-package com.squareup.anvil.compiler.k2.fir.internal
+package com.squareup.anvil.compiler.k2.utils.fir
 
+import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import org.jetbrains.kotlin.KtFakeSourceElementKind
 import org.jetbrains.kotlin.KtSourceElement
 import org.jetbrains.kotlin.com.intellij.psi.PsiElement
@@ -34,7 +35,6 @@ import org.jetbrains.kotlin.fir.types.impl.FirTypeArgumentListImpl
 import org.jetbrains.kotlin.fir.types.isResolved
 import org.jetbrains.kotlin.fir.types.resolvedType
 import org.jetbrains.kotlin.fir.types.toLookupTag
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.StandardClassIds
@@ -42,25 +42,21 @@ import org.jetbrains.kotlin.psi.KtPsiFactory
 import org.jetbrains.kotlin.resolve.calls.util.asCallableReferenceExpression
 import org.jetbrains.kotlin.toKtPsiSourceElement
 
-public fun String.fqn(): FqName = FqName(this)
-public fun FqName.classId(): ClassId = ClassId.topLevel(this)
-public fun String.classId(): ClassId = fqn().classId()
-
-internal fun ConeKotlinType.wrapInProvider(
+public fun ConeKotlinType.wrapInProvider(
   symbolProvider: FirSymbolProvider,
-) = symbolProvider.getClassLikeSymbolByClassId(Names.javax.inject.provider.classId())!!
+) = symbolProvider.getClassLikeSymbolByClassId(ClassIds.javaxProvider)!!
   .constructType(
     typeArguments = arrayOf(this@wrapInProvider),
     isMarkedNullable = false,
   )
 
-internal fun ConeKotlinType.requireFqName(): FqName {
+public fun ConeKotlinType.requireFqName(): FqName {
   return this@requireFqName.classId!!.asSingleFqName()
 }
 
-internal fun FirClassLikeSymbol<*>.fqName(): FqName = classId.asSingleFqName()
+public fun FirClassLikeSymbol<*>.fqName(): FqName = classId.asSingleFqName()
 
-internal fun PsiElement.ktPsiFactory(): KtPsiFactory {
+public fun PsiElement.ktPsiFactory(): KtPsiFactory {
   return KtPsiFactory.contextual(
     context = this@ktPsiFactory,
     markGenerated = false,
@@ -68,7 +64,7 @@ internal fun PsiElement.ktPsiFactory(): KtPsiFactory {
   )
 }
 
-internal fun FirPropertyAccessExpression.qualifierSegmentsWithSelf() = buildList<Name> {
+public fun FirPropertyAccessExpression.qualifierSegmentsWithSelf() = buildList<Name> {
   fun visitQualifiers(expression: FirExpression) {
     if (expression !is FirPropertyAccessExpression) return
     expression.explicitReceiver?.let { visitQualifiers(it) }
@@ -77,7 +73,7 @@ internal fun FirPropertyAccessExpression.qualifierSegmentsWithSelf() = buildList
   visitQualifiers(this@qualifierSegmentsWithSelf)
 }
 
-internal fun FirGetClassCall.userTypeRef(): FirUserTypeRef {
+public fun FirGetClassCall.userTypeRef(): FirUserTypeRef {
   return buildUserTypeFromQualifierParts(isMarkedNullable = false) {
     (argument as FirPropertyAccessExpression)
       .qualifierSegmentsWithSelf()
@@ -86,7 +82,7 @@ internal fun FirGetClassCall.userTypeRef(): FirUserTypeRef {
 }
 
 // https://github.com/JetBrains/kotlin/blob/master/plugins/kotlinx-serialization/kotlinx-serialization.k2/src/org/jetbrains/kotlinx/serialization/compiler/fir/SerializationFirSupertypesExtension.kt
-internal fun FirGetClassCall.resolveConeType(
+public fun FirGetClassCall.resolveConeType(
   typeResolveService: TypeResolveService,
 ): ConeKotlinType = if (isResolved) {
   resolvedType
@@ -94,14 +90,14 @@ internal fun FirGetClassCall.resolveConeType(
   typeResolveService.resolveUserType(userTypeRef()).coneType
 }
 
-internal val FirPropertyAccessExpression.qualifierName: Name?
+public val FirPropertyAccessExpression.qualifierName: Name?
   get() = (calleeReference as? FirSimpleNamedReference)?.name
 
 /**
  * Creates the type name symbol as you would see it in a type argument, like
  * `com.foo.Bar` in `List<com.foo.Bar>`.
  */
-internal fun FirRegularClassSymbol.coneLookupTagBasedType(): ConeLookupTagBasedType {
+public fun FirRegularClassSymbol.coneLookupTagBasedType(): ConeLookupTagBasedType {
   return classId.toLookupTag().constructType(
     typeArguments = emptyArray<ConeTypeProjection>(),
     isMarkedNullable = false,
@@ -111,17 +107,17 @@ internal fun FirRegularClassSymbol.coneLookupTagBasedType(): ConeLookupTagBasedT
 /**
  * Creates a `kotlin.reflect.KClass` reference to the class symbol, like `KClass<com.foo.Bar>`.
  */
-internal fun FirRegularClassSymbol.toKClassRef(): ConeClassLikeType =
+public fun FirRegularClassSymbol.toKClassRef(): ConeClassLikeType =
   StandardClassIds.KClass.constructClassLikeType(
     typeArguments = arrayOf(coneLookupTagBasedType()),
     isMarkedNullable = false,
   )
 
-internal fun FirRegularClassSymbol.resolvedTypeRef(): FirResolvedTypeRef {
+public fun FirRegularClassSymbol.resolvedTypeRef(): FirResolvedTypeRef {
   return buildResolvedTypeRef { coneType = toKClassRef() }
 }
 
-internal fun FirAnnotationCallBuilder.setAnnotationType(
+public fun FirAnnotationCallBuilder.setAnnotationType(
   newType: FqName,
   ktPsiFactoryOrNull: KtPsiFactory?,
 ) {
@@ -142,7 +138,7 @@ internal fun FirAnnotationCallBuilder.setAnnotationType(
   }
 }
 
-internal fun FqName.createUserType(
+public fun FqName.createUserType(
   sourceElement: KtSourceElement?,
   nullable: Boolean = false,
 ): FirUserTypeRef {
@@ -159,7 +155,7 @@ internal fun FqName.createUserType(
   }
 }
 
-internal fun FirClassLikeSymbol<*>.toGetClassCall(): FirGetClassCall {
+public fun FirClassLikeSymbol<*>.toGetClassCall(): FirGetClassCall {
   return buildGetClassCall {
     argumentList = buildArgumentList {
       arguments += buildResolvedQualifier qualifier@{
