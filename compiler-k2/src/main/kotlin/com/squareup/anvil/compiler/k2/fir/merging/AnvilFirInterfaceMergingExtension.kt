@@ -4,13 +4,13 @@ import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
-import com.squareup.anvil.compiler.k2.fir.internal.AnvilPredicates
-import com.squareup.anvil.compiler.k2.fir.internal.Names
-import com.squareup.anvil.compiler.k2.fir.internal.contributesToScope
-import com.squareup.anvil.compiler.k2.fir.internal.hasAnnotation
-import com.squareup.anvil.compiler.k2.fir.internal.mapToSet
-import com.squareup.anvil.compiler.k2.fir.internal.requireScopeArgument
-import com.squareup.anvil.compiler.k2.fir.internal.resolveConeType
+import com.squareup.anvil.compiler.k2.fir.AnvilPredicates
+import com.squareup.anvil.compiler.k2.utils.fir.contributesToScope
+import com.squareup.anvil.compiler.k2.utils.fir.hasAnnotation
+import com.squareup.anvil.compiler.k2.utils.fir.requireScopeArgument
+import com.squareup.anvil.compiler.k2.utils.fir.resolveConeType
+import com.squareup.anvil.compiler.k2.utils.mapToSet
+import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
@@ -24,6 +24,10 @@ import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.classId
 
+/**
+ * This extension finds all contributed component interfaces and adds them as super types to Dagger
+ * components annotated with `@MergeComponent`
+ */
 public class AnvilFirInterfaceMergingExtension(
   anvilFirContext: AnvilFirContext,
   session: FirSession,
@@ -52,25 +56,13 @@ public class AnvilFirInterfaceMergingExtension(
     val existingSupertypes = resolvedSupertypes.mapToSet { it.coneType.classId }
 
     return classLikeDeclaration.annotations
-      .filter { it.fqName(session) == Names.anvil.mergeComponent }
+      .filter { it.fqName(session) == ClassIds.anvilMergeComponent.asSingleFqName() }
       .flatMap { annotation ->
 
         val scopeFqName = (annotation as FirAnnotationCall).requireScopeArgument()
           .resolveConeType(typeResolver)
           .classId!!
           .asSingleFqName()
-
-        println(
-          """
-        |############################
-        |${
-            session.contributedThingsProvider
-              .getContributedThingsForScope(scopeFqName)
-              .joinToString("\n")
-          }
-        |############################
-          """.trimMargin(),
-        )
 
         session.predicateBasedProvider
           .getSymbolsByPredicate(AnvilPredicates.hasContributesToAnnotation)
@@ -83,7 +75,9 @@ public class AnvilFirInterfaceMergingExtension(
             if (classId in existingSupertypes) return@mapNotNull null
 
             // If it's a contributed module, we don't add it here
-            if (contributed.hasAnnotation(Names.dagger.module, session)) return@mapNotNull null
+            if (contributed.hasAnnotation(ClassIds.daggerModule.asSingleFqName(), session)) {
+              return@mapNotNull null
+            }
 
             // Only merge contributions to this scope
             if (!contributed.contributesToScope(
@@ -101,6 +95,9 @@ public class AnvilFirInterfaceMergingExtension(
   }
 
   override fun needTransformSupertypes(declaration: FirClassLikeDeclaration): Boolean {
-    return session.predicateBasedProvider.matches(AnvilPredicates.hasMergeComponentAnnotation, declaration)
+    return session.predicateBasedProvider.matches(
+      AnvilPredicates.hasMergeComponentAnnotation,
+      declaration,
+    )
   }
 }

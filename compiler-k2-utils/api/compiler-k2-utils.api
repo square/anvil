@@ -1,6 +1,45 @@
+public final class com/squareup/anvil/compiler/k2/utils/CollectionExtensionsKt {
+	public static final fun mapNotNullToSet (Ljava/util/Collection;Ljava/util/Set;Lkotlin/jvm/functions/Function1;)Ljava/util/Set;
+	public static synthetic fun mapNotNullToSet$default (Ljava/util/Collection;Ljava/util/Set;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/util/Set;
+	public static final fun mapToSet (Ljava/util/Collection;Ljava/util/Set;Lkotlin/jvm/functions/Function1;)Ljava/util/Set;
+	public static final fun mapToSet ([Ljava/lang/Object;Ljava/util/Set;Lkotlin/jvm/functions/Function1;)Ljava/util/Set;
+	public static synthetic fun mapToSet$default (Ljava/util/Collection;Ljava/util/Set;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/util/Set;
+	public static synthetic fun mapToSet$default ([Ljava/lang/Object;Ljava/util/Set;Lkotlin/jvm/functions/Function1;ILjava/lang/Object;)Ljava/util/Set;
+	public static final fun singleOrNone (Ljava/lang/Iterable;)Ljava/lang/Object;
+	public static final fun singleOrNone (Ljava/lang/Iterable;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
+}
+
 public final class com/squareup/anvil/compiler/k2/utils/fir/FirAnnotationKt {
+	public static final fun argumentAt (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Ljava/lang/String;IZ)Lorg/jetbrains/kotlin/fir/expressions/FirExpression;
+	public static final fun argumentAt (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Lorg/jetbrains/kotlin/name/Name;IZ)Lorg/jetbrains/kotlin/fir/expressions/FirExpression;
+	public static final fun classListArgumentAt (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationCall;Lorg/jetbrains/kotlin/name/Name;I)Ljava/util/List;
+	public static final fun contributesToAnnotations (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;Lorg/jetbrains/kotlin/fir/FirSession;)Ljava/util/List;
+	public static final fun contributesToScope (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;Lorg/jetbrains/kotlin/name/FqName;Lorg/jetbrains/kotlin/fir/FirSession;Lorg/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension$TypeResolveService;)Z
 	public static final fun createFirAnnotation (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationArgumentMapping;Lorg/jetbrains/kotlin/KtSourceElement;Lorg/jetbrains/kotlin/descriptors/annotations/AnnotationUseSiteTarget;)Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;
 	public static synthetic fun createFirAnnotation$default (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationArgumentMapping;Lorg/jetbrains/kotlin/KtSourceElement;Lorg/jetbrains/kotlin/descriptors/annotations/AnnotationUseSiteTarget;ILjava/lang/Object;)Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;
+	public static final fun hasAnnotation (Lorg/jetbrains/kotlin/fir/symbols/FirBasedSymbol;Lorg/jetbrains/kotlin/name/FqName;Lorg/jetbrains/kotlin/fir/FirSession;)Z
+	public static final fun requireArgumentAt (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationCall;Ljava/lang/String;IZ)Lorg/jetbrains/kotlin/fir/expressions/FirExpression;
+	public static final fun requireArgumentAt (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationCall;Lorg/jetbrains/kotlin/name/Name;IZ)Lorg/jetbrains/kotlin/fir/expressions/FirExpression;
+	public static final fun requireScopeArgument (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationCall;)Lorg/jetbrains/kotlin/fir/expressions/FirGetClassCall;
+	public static final fun toFirAnnotation (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;
+}
+
+public final class com/squareup/anvil/compiler/k2/utils/fir/FirCommonUtilsKt {
+	public static final fun coneLookupTagBasedType (Lorg/jetbrains/kotlin/fir/symbols/impl/FirRegularClassSymbol;)Lorg/jetbrains/kotlin/fir/types/ConeLookupTagBasedType;
+	public static final fun createUserType (Lorg/jetbrains/kotlin/name/FqName;Lorg/jetbrains/kotlin/KtSourceElement;Z)Lorg/jetbrains/kotlin/fir/types/FirUserTypeRef;
+	public static synthetic fun createUserType$default (Lorg/jetbrains/kotlin/name/FqName;Lorg/jetbrains/kotlin/KtSourceElement;ZILjava/lang/Object;)Lorg/jetbrains/kotlin/fir/types/FirUserTypeRef;
+	public static final fun fqName (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getQualifierName (Lorg/jetbrains/kotlin/fir/expressions/FirPropertyAccessExpression;)Lorg/jetbrains/kotlin/name/Name;
+	public static final fun ktPsiFactory (Lorg/jetbrains/kotlin/com/intellij/psi/PsiElement;)Lorg/jetbrains/kotlin/psi/KtPsiFactory;
+	public static final fun qualifierSegmentsWithSelf (Lorg/jetbrains/kotlin/fir/expressions/FirPropertyAccessExpression;)Ljava/util/List;
+	public static final fun requireFqName (Lorg/jetbrains/kotlin/fir/types/ConeKotlinType;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun resolveConeType (Lorg/jetbrains/kotlin/fir/expressions/FirGetClassCall;Lorg/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension$TypeResolveService;)Lorg/jetbrains/kotlin/fir/types/ConeKotlinType;
+	public static final fun resolvedTypeRef (Lorg/jetbrains/kotlin/fir/symbols/impl/FirRegularClassSymbol;)Lorg/jetbrains/kotlin/fir/types/FirResolvedTypeRef;
+	public static final fun setAnnotationType (Lorg/jetbrains/kotlin/fir/expressions/builder/FirAnnotationCallBuilder;Lorg/jetbrains/kotlin/name/FqName;Lorg/jetbrains/kotlin/psi/KtPsiFactory;)V
+	public static final fun toGetClassCall (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;)Lorg/jetbrains/kotlin/fir/expressions/FirGetClassCall;
+	public static final fun toKClassRef (Lorg/jetbrains/kotlin/fir/symbols/impl/FirRegularClassSymbol;)Lorg/jetbrains/kotlin/fir/types/ConeClassLikeType;
+	public static final fun userTypeRef (Lorg/jetbrains/kotlin/fir/expressions/FirGetClassCall;)Lorg/jetbrains/kotlin/fir/types/FirUserTypeRef;
+	public static final fun wrapInProvider (Lorg/jetbrains/kotlin/fir/types/ConeKotlinType;Lorg/jetbrains/kotlin/fir/resolve/providers/FirSymbolProvider;)Lorg/jetbrains/kotlin/fir/types/ConeClassLikeType;
 }
 
 public final class com/squareup/anvil/compiler/k2/utils/fir/ResolveKt {
