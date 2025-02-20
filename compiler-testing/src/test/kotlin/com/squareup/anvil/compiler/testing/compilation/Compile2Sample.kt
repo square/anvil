@@ -1,7 +1,6 @@
 package com.squareup.anvil.compiler.testing.compilation
 
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
-import com.squareup.anvil.compiler.testing.CompilationMode.K2
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.TestNames
 import com.squareup.anvil.compiler.testing.classgraph.injectClass
@@ -12,12 +11,12 @@ import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.constructClassLikeType
-import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.TestFactory
 
-class Compile2Sample : CompilationModeTest(K2(useKapt = false), K2(useKapt = true)) {
+class Compile2Sample : CompilationModeTest() {
 
-  @Test
-  fun compile_source_strings() = test(K2(useKapt = false)) {
+  @TestFactory
+  fun compile_source_strings() = testFactory {
 
     compile2(
       """
@@ -40,8 +39,8 @@ class Compile2Sample : CompilationModeTest(K2(useKapt = false), K2(useKapt = tru
     }
   }
 
-  @Test
-  fun pass_a_custom_generator() = test(K2(useKapt = false)) {
+  @TestFactory
+  fun pass_a_custom_generator() = params.filter { it.isK2 }.asTests {
 
     compile2(
       """

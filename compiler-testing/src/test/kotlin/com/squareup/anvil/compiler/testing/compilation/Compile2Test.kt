@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.testing.compilation
 
 import com.rickbusarow.kase.stdlib.div
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
-import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.TestNames
 import com.squareup.anvil.compiler.testing.classgraph.classIds
@@ -17,14 +16,11 @@ import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.constructClassLikeType
 import org.junit.jupiter.api.TestFactory
 
-class Compile2Test : CompilationModeTest(
-  CompilationMode.K2(useKapt = false),
-  CompilationMode.K2(useKapt = true),
-) {
+class Compile2Test : CompilationModeTest() {
 
   @TestFactory
   fun `java source files are compiled without any Kotlin files`() = params
-    .filter { (mode) -> !mode.useKapt }
+    .filter { !it.useKapt }
     .asTests {
 
       compile2(
@@ -44,7 +40,7 @@ class Compile2Test : CompilationModeTest(
 
   @TestFactory
   fun `java source files are compiled alongside Kotlin files`() = params
-    .filter { (mode) -> !mode.useKapt }
+    .filter { !it.useKapt }
     .asTests {
 
       compile2(
@@ -71,7 +67,7 @@ class Compile2Test : CompilationModeTest(
 
   @TestFactory
   fun `kapt-generated java source files are compiled`() = params
-    .filter { (mode) -> mode.useKapt }
+    .filter { it.useKapt }
     .asTests {
 
       compile2(
@@ -96,7 +92,7 @@ class Compile2Test : CompilationModeTest(
 
   @TestFactory
   fun `a custom additional generator is invoked`() = params
-    .filter { (mode) -> !mode.useKapt }
+    .filter { it.isK2 }
     .asTests {
 
       compile2(

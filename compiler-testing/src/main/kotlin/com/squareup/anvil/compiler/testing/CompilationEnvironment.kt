@@ -27,10 +27,11 @@ public interface DefaultTestEnvironmentTest : HasTestEnvironmentFactory<DefaultT
 public interface CompilationEnvironment : TestEnvironment {
 
   public val mode: CompilationMode
-    get() = CompilationMode.K2(
+    get() = CompilationMode(
+      languageVersion = BuildConfig.languageVersion,
       useKapt = false,
       generateDaggerFactories = true,
-      generateDaggerFactoriesOnly = false,
+      mergeComponents = true,
     )
 
   /**
