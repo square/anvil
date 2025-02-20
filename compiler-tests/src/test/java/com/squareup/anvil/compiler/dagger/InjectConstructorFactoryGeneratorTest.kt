@@ -12,6 +12,7 @@ import dagger.Lazy
 import dagger.internal.Factory
 import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.cli.common.ExitCode
+import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.TestFactory
 import java.io.File
@@ -636,7 +637,7 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
         public class B @Inject constructor(): A.AA()
       """,
       ) {
-        classGraph shouldContainClass "b.B_Factory"
+        scanResult shouldContainClass "b.B_Factory"
       }
     }
 
@@ -1016,6 +1017,11 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
   }
        */
 
+      // TODO support member injection
+      assumeFalse(mode.generateDaggerFactories && mode is CompilationMode.K2) {
+        "https://github.com/square/anvil/issues/1117"
+      }
+
       compile2(
         """
       package com.squareup.test
@@ -1073,6 +1079,11 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
 
   @TestFactory
   fun `a factory class performs member injection on super classes`() = testFactory {
+
+    // TODO support member injection
+    assumeFalse(mode.generateDaggerFactories && mode is CompilationMode.K2) {
+      "https://github.com/square/anvil/issues/1117"
+    }
 
     compile2(
       """
@@ -1153,6 +1164,11 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
   fun `a factory class performs member injection when the only fields are in a super class`() =
     testFactory {
 
+      // TODO support member injection
+      assumeFalse(mode.generateDaggerFactories && mode is CompilationMode.K2) {
+        "https://github.com/square/anvil/issues/1117"
+      }
+
       compile2(
         """
       package com.squareup.test
@@ -1206,6 +1222,11 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
   @TestFactory
   fun `a factory class performs member injection on a super class from another module`() =
     testFactory {
+
+      // TODO support member injection
+      assumeFalse(mode.generateDaggerFactories && mode is CompilationMode.K2) {
+        "https://github.com/square/anvil/issues/1117"
+      }
 
       val otherModuleResult = compile2(
         """
@@ -1279,6 +1300,11 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
   @TestFactory
   fun `a factory class performs member injection on a grand-super class from another module`() =
     testFactory {
+
+      // TODO support member injection
+      assumeFalse(mode.generateDaggerFactories && mode is CompilationMode.K2) {
+        "https://github.com/square/anvil/issues/1117"
+      }
 
       val otherModuleResult = compile2(
         """
@@ -1406,6 +1432,18 @@ public class InjectClass_Factory(
 }
      */
 
+    fun skipWhen(predicate: Boolean, message: () -> String) {
+      assumeFalse(predicate, message)
+    }
+
+    skipWhen(mode.useKapt && mode is CompilationMode.K2) {
+      "https://github.com/square/anvil/issues/1118"
+    }
+    // TODO support member injection
+    assumeFalse(mode.generateDaggerFactories && mode is CompilationMode.K2) {
+      "https://github.com/square/anvil/issues/1117"
+    }
+
     compile2(
       """
       package com.squareup.test
@@ -1447,13 +1485,12 @@ public class InjectClass_Factory(
       val factoryClass = classLoader.injectClass_Factory
 
       val constructor = factoryClass.declaredConstructors.single()
-      assertThat(constructor.parameterTypes.toList())
-        .containsExactly(
-          Provider::class.java,
-          Provider::class.java,
-          Provider::class.java,
-          Provider::class.java,
-        )
+      constructor.parameterTypes shouldBe listOf(
+        Provider::class.java,
+        Provider::class.java,
+        Provider::class.java,
+        Provider::class.java,
+      )
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
 
@@ -2048,7 +2085,7 @@ public final class InjectClass_Inner_Factory implements Factory<InjectClass.Inne
       import com.squareup.anvil.compiler.dagger.OuterClass
       import javax.inject.Inject
       
-      class InjectClass(val innerClass: InnerClass): OuterClass() {
+      class InjectClass(innerClass: InnerClass): OuterClass(innerClass) {
         class Inner @Inject constructor(val innerClass: InnerClass)
       }
       """,

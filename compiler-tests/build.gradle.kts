@@ -42,5 +42,6 @@ dependencies {
   testImplementation(project(":compiler-utils"))
 
   testRuntimeOnly(libs.junit.jupiter.engine)
+  testImplementation(libs.junit.jupiter.api)
   testRuntimeOnly(libs.kotest.assertions.core.jvm)
 }

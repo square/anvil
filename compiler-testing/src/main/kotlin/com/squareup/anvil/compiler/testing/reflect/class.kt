@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler.testing.reflect
 
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
-import com.squareup.anvil.compiler.k2.utils.names.factorySibling
+import com.squareup.anvil.compiler.k2.utils.names.factoryJoined
 import com.squareup.anvil.compiler.k2.utils.names.membersInjectorSibling
 import dagger.Component
 import dagger.Module
@@ -33,7 +33,7 @@ public val Class<*>.daggerModule: Module
   get() = annotations.filterIsInstance<Module>().single()
 
 @ExperimentalAnvilApi
-public fun Class<*>.factoryClass(): Class<*> = classLoader.loadClass(classId.factorySibling)
+public fun Class<*>.factoryClass(): Class<*> = classLoader.loadClass(classId.factoryJoined)
 
 public fun Class<*>.field(): ReadOnlyProperty<Any?, Field> =
   ReadOnlyProperty { _, property -> getField(property.name).shouldNotBeNull() }

@@ -100,7 +100,7 @@ private fun classId(
  * ```
  */
 public val ClassId.bindingModuleSibling: ClassId
-  get() = joinSimpleNames(separator = "_", suffix = "_BindingModule")
+  get() = sibling("${shortClassName.asString()}_BindingModule")
 
 /**
  * ```
@@ -118,6 +118,15 @@ public val ClassId.membersInjectorSibling: ClassId
  * ```
  */
 public val ClassId.factorySibling: ClassId
+  get() = sibling("${shortClassName.asString()}_Factory")
+
+/**
+ * ```
+ *  given: `com.example.OuterClass.InnerClass
+ * output: `com.example.OuterClass_InnerClass_Factory`
+ * ```
+ */
+public val ClassId.factoryJoined: ClassId
   get() = joinSimpleNames(separator = "_", suffix = "_Factory")
 
 public val ClassId.companion: ClassId get() = child("Companion")

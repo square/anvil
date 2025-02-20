@@ -1,10 +1,10 @@
 package com.squareup.anvil.compiler.k2.constructor.inject
 
 import com.squareup.anvil.compiler.k2.constructor.inject.FirInjectConstructorFactoryGenerationExtension.Key
-import com.squareup.anvil.compiler.k2.fir.utils.append
 import com.squareup.anvil.compiler.k2.utils.fir.createFirAnnotation
 import com.squareup.anvil.compiler.k2.utils.fir.requireClassLikeSymbol
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
+import com.squareup.anvil.compiler.k2.utils.names.factoryJoined
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.fir.FirSession
@@ -40,7 +40,7 @@ internal class InjectConstructorGenerationModel(
 ) {
   val matchedClassId: ClassId by lazy { matchedConstructorSymbol.callableId.classId!! }
 
-  val generatedClassId: ClassId by lazy { matchedClassId.asFactory() }
+  val generatedClassId: ClassId by lazy { matchedClassId.factoryJoined }
   val generatedClassSymbol: FirClassSymbol<*> by lazy {
     val classSymbol = extension.createTopLevelClass(generatedClassId, Key) {
       superType(
@@ -148,12 +148,9 @@ internal class InjectConstructorGenerationModel(
   }
 
   companion object ConstructorInjectionNames {
-    const val FACTORY_SUFFIX = "_Factory"
 
     val factoryGetName = Name.identifier("get")
     val createName = Name.identifier("create")
     val newInstance = Name.identifier("newInstance")
-
-    fun ClassId.asFactory(): ClassId = append(FACTORY_SUFFIX)
   }
 }
