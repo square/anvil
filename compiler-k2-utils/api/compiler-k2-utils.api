@@ -79,7 +79,11 @@ public final class com/squareup/anvil/compiler/k2/utils/names/ClassIdsKt {
 	public static final fun child (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/ClassId;
 	public static final fun getBindingModuleSibling (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
 	public static final fun getCompanion (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getFactoryJoined (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
 	public static final fun getFactorySibling (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getMembersInjectorSibling (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun joinSimpleNames (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static synthetic fun joinSimpleNames$default (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;ILjava/lang/Object;)Lorg/jetbrains/kotlin/name/ClassId;
 	public static final fun nested (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/ClassId;
 	public static final fun sibling (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/ClassId;
 }

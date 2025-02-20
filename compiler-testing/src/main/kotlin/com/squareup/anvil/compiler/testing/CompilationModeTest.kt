@@ -1,7 +1,7 @@
 package com.squareup.anvil.compiler.testing
 
 import com.rickbusarow.kase.DefaultTestEnvironment
-import com.rickbusarow.kase.Kase1
+import com.rickbusarow.kase.Kase4
 import com.rickbusarow.kase.KaseTestFactory
 import com.rickbusarow.kase.ParamTestEnvironmentFactory
 import com.rickbusarow.kase.files.HasWorkingDir
@@ -11,6 +11,7 @@ import com.rickbusarow.kase.kases
 import com.squareup.anvil.compiler.testing.classgraph.ClassGraphAsserts
 import com.squareup.anvil.compiler.testing.classgraph.ClassInfoAsserts
 import com.squareup.anvil.compiler.testing.reflect.ClassAsserts
+import org.jetbrains.kotlin.config.LanguageVersion
 
 public class CompilationModeTestEnvironment(
   override val mode: CompilationMode,
@@ -19,52 +20,42 @@ public class CompilationModeTestEnvironment(
   CompilationEnvironment {
 
   public companion object : ParamTestEnvironmentFactory<
-    Kase1<CompilationMode>,
+    CompilationMode,
     CompilationModeTestEnvironment,
     > {
     override fun create(
-      params: Kase1<CompilationMode>,
+      params: CompilationMode,
       names: List<String>,
       location: TestLocation,
     ): CompilationModeTestEnvironment = CompilationModeTestEnvironment(
-      mode = params.a1,
+      mode = params,
       hasWorkingDir = HasWorkingDir(names, location),
     )
   }
 }
 
-public sealed interface CompilationMode {
-  public val useKapt: Boolean
-  public val generateDaggerFactories: Boolean
-  public val generateDaggerFactoriesOnly: Boolean
-
-  public data class K1(
-    override val useKapt: Boolean,
-    override val generateDaggerFactories: Boolean,
-    override val generateDaggerFactoriesOnly: Boolean,
-    val trackSourceFiles: Boolean,
-    val disableComponentMerging: Boolean,
-  ) : CompilationMode
-
-  public data class K2(
-    override val useKapt: Boolean,
-    override val generateDaggerFactories: Boolean,
-    override val generateDaggerFactoriesOnly: Boolean,
-  ) : CompilationMode
+public data class CompilationMode(
+  public val languageVersion: LanguageVersion,
+  public val useKapt: Boolean,
+  public val generateDaggerFactories: Boolean = true,
+  public val mergeComponents: Boolean = true,
+) : Kase4<LanguageVersion, Boolean, Boolean, Boolean> by kase(
+  a1 = languageVersion,
+  a2 = useKapt,
+  a3 = generateDaggerFactories,
+  a4 = mergeComponents,
+  displayNameFactory =
+  { "languageVersion: ${a1.versionString} | kapt: $a2 | factory gen: $a3 | merging: $a4" },
+) {
+  val isK2: Boolean get() = languageVersion.usesK2
 }
 
 public abstract class CompilationModeTest(
-  modes: List<CompilationMode> = listOf(
-    CompilationMode.K2(
-      useKapt = false,
-      generateDaggerFactories = true,
-      generateDaggerFactoriesOnly = false,
-    ),
-  ),
+  modes: List<CompilationMode> = MODE_DEFAULTS,
 ) : KaseTestFactory<
-  Kase1<CompilationMode>,
+  CompilationMode,
   CompilationModeTestEnvironment,
-  ParamTestEnvironmentFactory<Kase1<CompilationMode>, CompilationModeTestEnvironment>,
+  ParamTestEnvironmentFactory<CompilationMode, CompilationModeTestEnvironment>,
   >,
   ClassGraphAsserts,
   ClassInfoAsserts,
@@ -78,7 +69,7 @@ public abstract class CompilationModeTest(
     testAction: suspend CompilationModeTestEnvironment.() -> Unit,
   ) {
     test(
-      param = kase(mode),
+      param = mode,
       testEnvironmentFactory = testEnvironmentFactory,
       names = names,
       testLocation = testLocation,
@@ -90,12 +81,28 @@ public abstract class CompilationModeTest(
     listOf(mode, *additionalModes),
   )
 
-  override val params: List<Kase1<CompilationMode>> = kases(
-    modes,
-    displayNameFactory = { "mode: $a1" },
-  )
+  override val params: List<CompilationMode> = modes
 
   override val testEnvironmentFactory:
-    ParamTestEnvironmentFactory<Kase1<CompilationMode>, CompilationModeTestEnvironment> =
+    ParamTestEnvironmentFactory<CompilationMode, CompilationModeTestEnvironment> =
     CompilationModeTestEnvironment
+
+  public companion object {
+
+    public val MODE_DEFAULTS: List<CompilationMode> = kases(
+      listOf(
+        LanguageVersion.KOTLIN_1_9,
+        LanguageVersion.KOTLIN_2_0,
+        LanguageVersion.KOTLIN_2_1,
+      ),
+      listOf(true, false),
+    ).map { (languageVersion, useKapt) ->
+      CompilationMode(
+        languageVersion = languageVersion,
+        useKapt = useKapt,
+        generateDaggerFactories = true,
+        mergeComponents = true,
+      )
+    }
+  }
 }

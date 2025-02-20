@@ -98,7 +98,7 @@ public data class Compile2CompilationConfiguration(
         kaptGeneratedSourcesDir = kaptDir / "generated",
         kaptIncrementalDir = kaptDir / "incremental",
         kaptClassesDir = kaptDir / "classes",
-        languageVersion = if (mode is CompilationMode.K2) {
+        languageVersion = if (mode.isK2) {
           BuildConfig.languageVersion
         } else {
           LanguageVersion.KOTLIN_1_9

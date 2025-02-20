@@ -2,7 +2,6 @@ package com.squareup.anvil.compiler.testing.compilation
 
 import com.rickbusarow.kase.stdlib.div
 import com.squareup.anvil.compiler.testing.CompilationEnvironment
-import com.squareup.anvil.compiler.testing.CompilationMode
 import dagger.internal.codegen.ComponentProcessor
 import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.cli.common.ExitCode
@@ -97,9 +96,9 @@ public class Compile2Compilation(
           if (!config.mode.isK2) {
             val buildDir = config.rootDir / "build"
             val anvilCacheDir = config.rootDir / "anvil-cache"
-            option("track-source-files", config.anvilMode.trackSourceFiles.toString())
+            option("track-source-files", "true")
             option("ir-merges-file", anvilCacheDir.resolve("merges/ir-merges.txt").absolutePath)
-            option("disable-component-merging", config.mode.disableComponentMerging.toString())
+            option("disable-component-merging", (!config.mode.mergeComponents).toString())
             option("src-gen-dir", buildDir.resolve("anvil").absolutePath)
             option("anvil-cache-dir", anvilCacheDir.absolutePath)
             option("gradle-project-dir", config.rootDir.absolutePath)

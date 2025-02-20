@@ -159,7 +159,7 @@ public fun ClassId.sibling(nameString: String): ClassId {
 }
 
 /**
- * alias for [com.squareup.anvil.compiler.testing.nested]
+ * alias for [com.squareup.anvil.compiler.k2.utils.names.nested]
  *
  * ```
  * val kotlinMap = ClassId.fromString("kotlin/collections.Map")
@@ -173,7 +173,7 @@ public fun ClassId.sibling(nameString: String): ClassId {
 public fun ClassId.child(nameString: String): ClassId = nested(nameString)
 
 /**
- * alias for [com.squareup.anvil.compiler.testing.nested]
+ * alias for [com.squareup.anvil.compiler.k2.utils.names.child]
  *
  * ```
  * val kotlinMap = ClassId.fromString("kotlin/collections.Map")

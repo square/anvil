@@ -1,50 +1,23 @@
 package com.squareup.anvil.compiler.dagger
 
 import com.google.common.truth.Truth.assertThat
-import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.reflect.createInstance
 import com.squareup.anvil.compiler.testing.reflect.factoryClass
 import com.squareup.anvil.compiler.testing.reflect.getFieldValue
 import com.squareup.anvil.compiler.testing.reflect.injectClass_Factory
 import com.squareup.anvil.compiler.testing.reflect.isStatic
+import com.squareup.anvil.compiler.testing.skipWhen
 import dagger.Lazy
 import dagger.internal.Factory
 import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.cli.common.ExitCode
-import org.junit.jupiter.api.Assumptions.assumeFalse
 import org.junit.jupiter.api.Disabled
 import org.junit.jupiter.api.TestFactory
 import java.io.File
 import javax.inject.Provider
 
-class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
-  // TODO: figure out what the actual valid configurations are and throw them into a matrix
-  // CompilationMode.K1(
-  //   useKapt = true,
-  //   generateDaggerFactories = true,
-  //   generateDaggerFactoriesOnly = false,
-  //   trackSourceFiles = true,
-  //   disableComponentMerging = false,
-  // ),
-  // CompilationMode.K1(
-  //   useKapt = false,
-  //   generateDaggerFactories = true,
-  //   generateDaggerFactoriesOnly = false,
-  //   trackSourceFiles = true,
-  //   disableComponentMerging = false,
-  // ),
-  // CompilationMode.K2(
-  //   useKapt = true,
-  //   generateDaggerFactories = false,
-  //   generateDaggerFactoriesOnly = false,
-  // ),
-  CompilationMode.K2(
-    useKapt = false,
-    generateDaggerFactories = true,
-    generateDaggerFactoriesOnly = false,
-  ),
-) {
+class InjectConstructorFactoryGeneratorTest : CompilationModeTest() {
 
   @TestFactory
   fun `a factory class is generated for an inject constructor without arguments`() =
@@ -275,30 +248,32 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
   }
        */
 
+      skipWhen(mode.isK2) { "https://github.com/square/anvil/issues/1120" }
+
       @Suppress("EqualsOrHashCode")
       compile2(
         """
-      package com.squareup.test
-      
-      import dagger.Lazy
-      import javax.inject.Inject
-      import javax.inject.Provider
-      
-      class InjectClass @Inject constructor(
-        val string: String, 
-        val stringProvider: Provider<String>,
-        val stringListProvider: Provider<List<String>>,
-        val lazyString: Lazy<String>
-      ) {
-        override fun equals(other: Any?): Boolean {
-          return toString() == other.toString()
+        package com.squareup.test
+        
+        import dagger.Lazy
+        import javax.inject.Inject
+        import javax.inject.Provider
+        
+        class InjectClass @Inject constructor(
+          val string: String, 
+          val stringProvider: Provider<String>,
+          val stringListProvider: Provider<List<String>>,
+          val lazyString: Lazy<String>
+        ) {
+          override fun equals(other: Any?): Boolean {
+            return toString() == other.toString()
+          }
+          override fun toString(): String {
+           return string + stringProvider.get() + 
+               stringListProvider.get()[0] + lazyString.get()
+          }
         }
-        override fun toString(): String {
-         return string + stringProvider.get() + 
-             stringListProvider.get()[0] + lazyString.get()
-        }
-      }
-      """,
+        """,
       ) {
         val factoryClass = classLoader.injectClass_Factory
 
@@ -380,26 +355,28 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
   }
        */
 
+      skipWhen(mode.isK2) { "https://github.com/square/anvil/issues/1120" }
+
       @Suppress("EqualsOrHashCode")
       compile2(
         """
-      package com.squareup.test
-      
-      import dagger.Lazy
-      import javax.inject.Inject
-      import javax.inject.Provider
-      
-      class InjectClass @Inject constructor(
-        val string: Provider<Lazy<String>>
-      ) {
-        override fun equals(other: Any?): Boolean {
-          return toString() == other.toString()
+        package com.squareup.test
+        
+        import dagger.Lazy
+        import javax.inject.Inject
+        import javax.inject.Provider
+        
+        class InjectClass @Inject constructor(
+          val string: Provider<Lazy<String>>
+        ) {
+          override fun equals(other: Any?): Boolean {
+            return toString() == other.toString()
+          }
+          override fun toString(): String {
+           return string.get().get() 
+          }
         }
-        override fun toString(): String {
-         return string.get().get() 
-        }
-      }
-      """,
+        """,
       ) {
         val factoryClass = classLoader.injectClass_Factory
 
@@ -1017,8 +994,7 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
   }
        */
 
-      // TODO support member injection
-      assumeFalse(mode.generateDaggerFactories && mode is CompilationMode.K2) {
+      skipWhen(mode.generateDaggerFactories && mode.isK2) {
         "https://github.com/square/anvil/issues/1117"
       }
 
@@ -1080,8 +1056,7 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
   @TestFactory
   fun `a factory class performs member injection on super classes`() = testFactory {
 
-    // TODO support member injection
-    assumeFalse(mode.generateDaggerFactories && mode is CompilationMode.K2) {
+    skipWhen(mode.generateDaggerFactories && mode.isK2) {
       "https://github.com/square/anvil/issues/1117"
     }
 
@@ -1164,8 +1139,7 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
   fun `a factory class performs member injection when the only fields are in a super class`() =
     testFactory {
 
-      // TODO support member injection
-      assumeFalse(mode.generateDaggerFactories && mode is CompilationMode.K2) {
+      skipWhen(mode.generateDaggerFactories && mode.isK2) {
         "https://github.com/square/anvil/issues/1117"
       }
 
@@ -1223,8 +1197,7 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
   fun `a factory class performs member injection on a super class from another module`() =
     testFactory {
 
-      // TODO support member injection
-      assumeFalse(mode.generateDaggerFactories && mode is CompilationMode.K2) {
+      skipWhen(mode.generateDaggerFactories && mode.isK2) {
         "https://github.com/square/anvil/issues/1117"
       }
 
@@ -1301,8 +1274,7 @@ class InjectConstructorFactoryGeneratorTest : CompilationModeTest(
   fun `a factory class performs member injection on a grand-super class from another module`() =
     testFactory {
 
-      // TODO support member injection
-      assumeFalse(mode.generateDaggerFactories && mode is CompilationMode.K2) {
+      skipWhen(mode.generateDaggerFactories && mode.isK2) {
         "https://github.com/square/anvil/issues/1117"
       }
 
@@ -1432,16 +1404,11 @@ public class InjectClass_Factory(
 }
      */
 
-    fun skipWhen(predicate: Boolean, message: () -> String) {
-      assumeFalse(predicate, message)
-    }
-
-    skipWhen(mode.useKapt && mode is CompilationMode.K2) {
-      "https://github.com/square/anvil/issues/1118"
-    }
-    // TODO support member injection
-    assumeFalse(mode.generateDaggerFactories && mode is CompilationMode.K2) {
-      "https://github.com/square/anvil/issues/1117"
+    skipWhen(mode.generateDaggerFactories && mode.isK2) {
+      """
+        https://github.com/square/anvil/issues/1118
+        https://github.com/square/anvil/issues/1117
+      """.trimIndent()
     }
 
     compile2(
@@ -2350,17 +2317,19 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   }
        */
 
+      skipWhen(mode.isK2) { "https://github.com/square/anvil/issues/1122" }
+
       compile2(
         """
-      package com.squareup.test
-      
-      import javax.inject.Inject
-      import javax.inject.Provider
-      
-      class InjectClass<T> @Inject constructor(
-        private val t: T
-      ) where T : Appendable, T : CharSequence
-      """,
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        import javax.inject.Provider
+        
+        class InjectClass<T> @Inject constructor(
+          private val t: T
+        ) where T : Appendable, T : CharSequence
+        """,
       ) {
 
         val factoryClass = classLoader.injectClass_Factory
@@ -2427,19 +2396,21 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   }
        */
 
+      skipWhen(mode.isK2) { "https://github.com/square/anvil/issues/1122" }
+
       compile2(
         """
-      package com.squareup.test
-      
-      import dagger.Lazy
-      import javax.inject.Inject
-      import javax.inject.Provider
-      
-      class InjectClass<T, R : Set<String>> @Inject constructor(
-        private val t: T,
-        private val r: Lazy<R>
-      ) where T : Appendable, T : CharSequence
-      """,
+        package com.squareup.test
+        
+        import dagger.Lazy
+        import javax.inject.Inject
+        import javax.inject.Provider
+        
+        class InjectClass<T, R : Set<String>> @Inject constructor(
+          private val t: T,
+          private val r: Lazy<R>
+        ) where T : Appendable, T : CharSequence
+        """,
       ) {
 
         val factoryClass = classLoader.injectClass_Factory
@@ -2509,6 +2480,8 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   }
        */
 
+      skipWhen(mode.isK2) { "https://github.com/square/anvil/issues/1120" }
+
       // KotlinPoet will automatically add a bound of `Any?` if creating a `TypeVariableName` with an
       // empty list.  So, improperly handling `TypeVariableName` can result in a constraint like:
       // `where T : Any?, T : Appendable, T : Other`
@@ -2572,17 +2545,19 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
   }
        */
 
+      skipWhen(mode.isK2) { "https://github.com/square/anvil/issues/1122" }
+
       compile2(
         """
-      package com.squareup.test
-      
-      import javax.inject.Inject
-      import javax.inject.Provider
- 
-      class InjectClass<T : List<String>> @Inject constructor(
-        private val t: T
-      )
-      """,
+        package com.squareup.test
+        
+        import javax.inject.Inject
+        import javax.inject.Provider
+  
+        class InjectClass<T : List<String>> @Inject constructor(
+          private val t: T
+        )
+        """,
       ) {
 
         val factoryClass = classLoader.injectClass_Factory
