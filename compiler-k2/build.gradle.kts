@@ -6,6 +6,9 @@ plugins {
 
 conventions {
   explicitApi = true
+  kotlinCompilerArgs.add(
+    "-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi",
+  )
 }
 
 publish {
@@ -23,6 +26,8 @@ dependencies {
   api(project(":compiler-k2-api"))
   api(project(":compiler-k2-utils"))
   api(libs.kotlin.compiler)
+  api(libs.inject)
+  api(libs.dagger2)
 
   kapt(libs.auto.service.processor)
 

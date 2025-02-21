@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.k2.utils.names
 
+import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -68,6 +69,9 @@ public object ClassIds {
 
   /** `dagger.internal.Factory` */
   public val daggerFactory: ClassId = classId("dagger.internal", "Factory")
+
+  /** `dagger.Module` */
+  public val daggerModule: ClassId = classId("dagger", "Module")
 
   /** `dagger.internal.Provider` */
   public val daggerProvider: ClassId = classId("dagger.internal", "Provider")
@@ -165,3 +169,28 @@ public fun ClassId.child(nameString: String): ClassId = nested(nameString)
 public fun ClassId.nested(nameString: String): ClassId {
   return createNestedClassId(Name.identifier(nameString))
 }
+
+/**
+ * Joins the simple names of a class with the given [separator], [prefix], and [suffix].
+ *
+ * ```
+ * val normalName = ClassName("com.example", "Outer", "Middle", "Inner")
+ * val joinedName = normalName.joinSimpleNames(separator = "_", suffix = "Factory")
+ *
+ * println(joinedName) // com.example.Outer_Middle_InnerFactory
+ * ```
+ * @throws IllegalArgumentException if the resulting class name is too long to be a valid file name.
+ */
+@ExperimentalAnvilApi
+public fun ClassId.joinSimpleNames(
+  separator: String = "_",
+  prefix: String = "",
+  suffix: String = "",
+): ClassId = ClassId.topLevel(
+  packageFqName.child(
+    Name.identifier(
+      relativeClassName.pathSegments()
+        .joinToString(separator = separator, prefix = prefix, postfix = suffix),
+    ),
+  ),
+)
