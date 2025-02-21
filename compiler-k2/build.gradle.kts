@@ -6,7 +6,7 @@ plugins {
 
 conventions {
   explicitApi = true
-  kotlinCompilerArgs.addAll(
+  kotlinCompilerArgs.add(
     "-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi",
   )
 }

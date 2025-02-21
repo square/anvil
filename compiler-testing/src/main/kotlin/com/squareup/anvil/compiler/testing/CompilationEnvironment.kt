@@ -99,6 +99,7 @@ public interface CompilationEnvironment : TestEnvironment {
       expectedExitCode = expectedExitCode,
       previousCompilation = previousCompilation,
       mode = mode,
+      workingDir = workingDir,
       exec = exec,
     )
   }
