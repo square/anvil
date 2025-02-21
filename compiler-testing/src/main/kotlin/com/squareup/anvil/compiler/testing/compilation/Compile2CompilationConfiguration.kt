@@ -4,6 +4,7 @@ import com.rickbusarow.kase.stdlib.div
 import com.rickbusarow.kase.stdlib.letIf
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.testing.BuildConfig
+import com.squareup.anvil.compiler.testing.CompilationMode
 import org.jetbrains.kotlin.config.LanguageVersion
 import java.io.File
 
@@ -32,6 +33,7 @@ import java.io.File
  */
 public data class Compile2CompilationConfiguration(
   val rootDir: File,
+  val anvilMode: CompilationMode,
   val sourceFiles: List<File>,
   val useKapt: Boolean,
   val verbose: Boolean,
@@ -44,6 +46,7 @@ public data class Compile2CompilationConfiguration(
   val kaptClassesDir: File,
   val languageVersion: LanguageVersion,
   val jdkHome: File?,
+  val moduleName: String,
   val compilationClasspath: List<File>,
   val compilerPluginClasspath: List<File>,
   val kaptPluginClasspath: List<File>,
@@ -60,7 +63,14 @@ public data class Compile2CompilationConfiguration(
      * @param useKapt Whether to enable KAPT support in the resulting configuration.
      * @return A [Compile2CompilationConfiguration] pre-filled with typical defaults.
      */
-    public fun default(workingDir: File, useKapt: Boolean): Compile2CompilationConfiguration {
+    public fun default(
+      sourceFiles: List<File>,
+      firExtensions: List<AnvilFirExtensionFactory<*>>,
+      workingDir: File,
+      useKapt: Boolean,
+      mode: CompilationMode,
+      previousCompilation: Compile2Result? = null,
+    ): Compile2CompilationConfiguration {
       val kaptDir = workingDir / "kapt"
       val compilationClasspath = listOf(
         HostClasspath.jakartaInject,
@@ -70,10 +80,14 @@ public data class Compile2CompilationConfiguration(
         HostClasspath.jetbrainsAnnotations,
         HostClasspath.anvilAnnotations,
       )
+        .letIf(previousCompilation != null) {
+          it + previousCompilation!!.classFilesDir
+        }
 
       return Compile2CompilationConfiguration(
         rootDir = workingDir,
-        sourceFiles = emptyList(),
+        anvilMode = mode,
+        sourceFiles = sourceFiles,
         useKapt = useKapt,
         verbose = false,
         allWarningsAsErrors = false,
@@ -83,9 +97,14 @@ public data class Compile2CompilationConfiguration(
         kaptGeneratedSourcesDir = kaptDir / "generated",
         kaptIncrementalDir = kaptDir / "incremental",
         kaptClassesDir = kaptDir / "classes",
-        languageVersion = BuildConfig.languageVersion,
+        languageVersion = if (mode.isK2) {
+          BuildConfig.languageVersion
+        } else {
+          LanguageVersion.KOTLIN_1_9
+        },
         jdkHome = javaHomeOrNull(),
-        firExtensions = emptyList(),
+        moduleName = workingDir.name,
+        firExtensions = firExtensions,
 
         // Classpath for the compiler itself.
         compilationClasspath = compilationClasspath,
