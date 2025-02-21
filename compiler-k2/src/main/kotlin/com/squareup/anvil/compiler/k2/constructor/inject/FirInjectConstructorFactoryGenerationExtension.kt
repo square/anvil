@@ -117,7 +117,7 @@ internal class FirInjectConstructorFactoryGenerationExtension(
   ): List<FirPropertySymbol> {
     val owner = context?.owner ?: return emptyList()
     val param = factoriesToGenerate[owner.classId]
-      ?.generatedCallableIdToParameters[callableId]
+      ?.generatedCallableIdToParameters?.get(callableId)
       ?: return emptyList()
 
     return createMemberProperty(
