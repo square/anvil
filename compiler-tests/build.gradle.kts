@@ -11,14 +11,6 @@ buildConfig {
   buildConfigField("boolean", "FULL_TEST_RUN", libs.versions.config.fullTestRun.get())
 }
 
-conventions {
-  kotlinCompilerArgs.addAll(
-    // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin
-    // compiler requires this flag when doing so.
-    "-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi",
-  )
-}
-
 dependencies {
 
   testImplementation(libs.dagger2)
