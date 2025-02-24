@@ -1,6 +1,8 @@
 package com.squareup.anvil.compiler.testing.classgraph
 
+import com.squareup.anvil.compiler.k2.utils.names.Names
 import com.squareup.anvil.compiler.testing.asJavaNameString
+import io.github.classgraph.AnnotationClassRef
 import io.github.classgraph.AnnotationInfo
 import io.github.classgraph.ClassInfo
 import org.jetbrains.kotlin.name.ClassId
@@ -26,6 +28,18 @@ public fun Collection<ClassInfo>.classIds(): List<ClassId> = map { it.classId }
 public fun ClassInfo.getAnnotationInfo(annotationClassId: ClassId): AnnotationInfo {
   return getAnnotationInfo(annotationClassId.asJavaNameString())
 }
+
+/**
+ * Returns all Dagger modules specified by the Component as fully qualified names
+ */
+public val AnnotationInfo.moduleNames: List<String>
+  get() {
+    return parameterValues
+      .getValue(Names.modules.identifier)
+      .let { it as Array<*> }
+      .map { (it as AnnotationClassRef).name }
+      .sorted()
+  }
 
 /**
  * Returns all binding methods declared in a particular `@Module` type.
