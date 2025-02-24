@@ -1,7 +1,10 @@
 package com.squareup.anvil.compiler.k2.fir.contributions
 
+import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
+import com.squareup.anvil.compiler.testing.classgraph.getAnnotationInfo
+import com.squareup.anvil.compiler.testing.classgraph.moduleNames
 import com.squareup.anvil.compiler.testing.reflect.contributesToAnnotation
 import com.squareup.anvil.compiler.testing.reflect.contributingObject
 import com.squareup.anvil.compiler.testing.reflect.generatedBindingModule
@@ -97,4 +100,80 @@ class ContributesBindingFirExtensionTest : CompilationModeTest(
       bindingMethod.isAnnotationPresent(Binds::class.java) shouldBe true
     }
   }
+
+  @TestFactory
+  fun `generated dagger binding module is picked up by annotation merging`() = testFactory {
+    compile2(
+      """
+      package com.squareup.test
+      
+      import com.squareup.anvil.annotations.ContributesBinding
+      import com.squareup.anvil.annotations.MergeComponent
+      import dagger.Component
+      
+      interface ParentInterface
+      
+      @ContributesBinding(
+        scope = Any::class, 
+        boundType = ParentInterface::class
+      )
+      object ContributingObject : ParentInterface
+      
+      @MergeComponent(scope = Any::class)
+      interface TestComponent {
+        fun testClass(): ParentInterface 
+      
+        @Component.Factory
+        interface Factory {
+          fun create(): TestComponent
+        }
+      }
+      """.trimIndent(),
+    ) {
+      val bindingModule = classLoader.contributingObject.generatedBindingModule.name
+      val testComponent = scanResult.getClassInfo("com.squareup.test.TestComponent")
+      val generatedComponentAnnotation = testComponent.getAnnotationInfo(ClassIds.daggerComponent)
+
+      generatedComponentAnnotation.moduleNames shouldBe listOf(
+        bindingModule,
+      )
+    }
+  }
+
+  @TestFactory
+  fun `generated dagger binding module with different scope is not picked up by annotation merging`() =
+    testFactory {
+      compile2(
+        """
+        package com.squareup.test
+        
+        import com.squareup.anvil.annotations.ContributesBinding
+        import com.squareup.anvil.annotations.MergeComponent
+        import dagger.Component
+        
+        interface ParentInterface
+        
+        @ContributesBinding(
+          scope = Int::class, 
+          boundType = ParentInterface::class
+        )
+        object ContributingObject : ParentInterface
+        
+        @MergeComponent(scope = Any::class)
+        interface TestComponent {
+          fun testClass(): ParentInterface 
+        
+          @Component.Factory
+          interface Factory {
+            fun create(): TestComponent
+          }
+        }
+        """.trimIndent(),
+      ) {
+        val testComponent = scanResult.getClassInfo("com.squareup.test.TestComponent")
+        val generatedComponentAnnotation = testComponent.getAnnotationInfo(ClassIds.daggerComponent)
+
+        generatedComponentAnnotation.moduleNames shouldBe emptyList()
+      }
+    }
 }
