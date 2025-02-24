@@ -17,7 +17,7 @@ conventions {
   kotlinCompilerArgs.addAll(
     // The flag is needed because we extend an interface that uses @JvmDefault and the Kotlin
     // compiler requires this flag when doing so.
-    "-Xjvm-default=all",
+    // "-Xjvm-default=all",
     "-opt-in=org.jetbrains.kotlin.compiler.plugin.ExperimentalCompilerApi",
   )
   addTasksToIdeSync("generateBuildConfig")
@@ -46,6 +46,7 @@ dependencies {
 
   kapt(libs.auto.service.processor)
 
+  testImplementation(project(":compiler-testing"))
   testImplementation(testFixtures(project(":compiler-utils")))
   testImplementation(libs.dagger2.compiler)
   // Force later guava version for Dagger's needs
@@ -60,6 +61,6 @@ dependencies {
   testImplementation(libs.truth)
 
   testRuntimeOnly(libs.kotest.assertions.core.jvm)
-  testRuntimeOnly(libs.junit.vintage.engine)
+  // testRuntimeOnly(libs.junit.vintage.engine)
   testRuntimeOnly(libs.junit.jupiter.engine)
 }

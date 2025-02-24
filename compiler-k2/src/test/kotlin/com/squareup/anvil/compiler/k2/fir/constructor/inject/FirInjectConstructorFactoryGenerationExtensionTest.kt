@@ -1,6 +1,5 @@
 package com.squareup.anvil.compiler.k2.fir.constructor.inject
 
-import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.TestNames
 import com.squareup.anvil.compiler.testing.reflect.getDeclaredFieldValue
@@ -11,7 +10,7 @@ import org.junit.jupiter.api.TestFactory
 import javax.inject.Provider
 
 class FirInjectConstructorFactoryGenerationExtensionTest : CompilationModeTest(
-  CompilationMode.K2(useKapt = false),
+  MODE_DEFAULTS.filter { it.isK2 && !it.useKapt },
 ) {
   @TestFactory
   fun `factory class is generated for @Inject annotation`() = testFactory {

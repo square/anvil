@@ -1,0 +1,16 @@
+<component name="InspectionProjectProfileManager">
+  <profile version="1.0">
+    <option name="myName" value="Project Default" />
+    <inspection_tool class="SSBasedInspection" enabled="true" level="WARNING" enabled_by_default="true">
+      <searchConfiguration name="skipWhen" description="`skipWhen() { }` is used to skip tests." suppressId="skip_when" problemDescriptor="Don't skip tests!" text="$skipWhen$($PREDICATE$) { $LAMBDA$ }" recursive="true" caseInsensitive="true" type="Kotlin" pattern_context="default" search_injected="false">
+        <constraint name="__context__" within="" contains="" />
+        <constraint name="PREDICATE" within="" contains="" />
+        <constraint name="LAMBDA" within="" contains="" />
+        <constraint name="skipWhen" regexp="skipWhen" within="" contains="" />
+      </searchConfiguration>
+    </inspection_tool>
+    <inspection_tool class="e7383f32-8558-313c-b5b5-fc6fcc7ebf98" enabled="true" level="WARNING" enabled_by_default="false">
+      <scope name="Tests" level="WARNING" enabled="true" editorAttributes="WARNING_ATTRIBUTES" />
+    </inspection_tool>
+  </profile>
+</component>

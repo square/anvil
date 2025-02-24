@@ -16,7 +16,8 @@ import java.io.File
 
 public interface K2CodeGenerator
 
-public interface CompilationTest<PARAM, ENV : TestEnvironment> : KaseTestFactory<PARAM, ENV, ParamTestEnvironmentFactory<PARAM, ENV>>
+public interface CompilationTest<PARAM, ENV : TestEnvironment> :
+  KaseTestFactory<PARAM, ENV, ParamTestEnvironmentFactory<PARAM, ENV>>
 
 public interface DefaultTestEnvironmentTest : HasTestEnvironmentFactory<DefaultTestEnvironment.Factory> {
   override val testEnvironmentFactory: DefaultTestEnvironment.Factory
@@ -26,7 +27,12 @@ public interface DefaultTestEnvironmentTest : HasTestEnvironmentFactory<DefaultT
 public interface CompilationEnvironment : TestEnvironment {
 
   public val mode: CompilationMode
-    get() = CompilationMode.K2(useKapt = false)
+    get() = CompilationMode(
+      languageVersion = BuildConfig.languageVersion,
+      useKapt = false,
+      generateDaggerFactories = true,
+      mergeComponents = true,
+    )
 
   /**
    * A convenience overload of [compile2] that accepts raw Kotlin and Java source code strings.
@@ -59,6 +65,8 @@ public interface CompilationEnvironment : TestEnvironment {
     firExtensions: List<AnvilFirExtensionFactory<*>> = emptyList(),
     configuration: (Compile2CompilationConfiguration) -> Compile2CompilationConfiguration = { it },
     expectedExitCode: ExitCode = ExitCode.OK,
+    previousCompilation: Compile2Result? = null,
+    workingDir: File = this@CompilationEnvironment.workingDir,
     exec: Compile2Result.() -> Unit = {},
   ): Compile2Result {
     val kotlinFiles = kotlinSources.mapIndexed { i, kotlinNotTrimmed ->
@@ -88,6 +96,8 @@ public interface CompilationEnvironment : TestEnvironment {
       firExtensions = firExtensions,
       configuration = configuration,
       expectedExitCode = expectedExitCode,
+      previousCompilation = previousCompilation,
+      mode = mode,
       exec = exec,
     )
   }
@@ -110,6 +120,7 @@ public interface CompilationEnvironment : TestEnvironment {
    * @param firExtensions optional FIR extension factories for advanced compiler customization
    * @param configuration an optional config transform to modify the default [Compile2CompilationConfiguration]
    * @param expectedExitCode automatically asserted against each compilation phase's result
+   * @param previousCompilation a previous [Compile2Result] to add to the classpath for this compilation
    * @param exec invoked with the [Compile2Result] after compilation
    * @return a [Compile2Result] referencing all compilation outputs
    * @see com.squareup.anvil.compiler.testing.CompilationEnvironment.compile2
@@ -124,14 +135,20 @@ public interface CompilationEnvironment : TestEnvironment {
     firExtensions: List<AnvilFirExtensionFactory<*>> = emptyList(),
     configuration: (Compile2CompilationConfiguration) -> Compile2CompilationConfiguration = { it },
     expectedExitCode: ExitCode = ExitCode.OK,
+    previousCompilation: Compile2Result? = null,
+    mode: CompilationMode,
+    workingDir: File = this@CompilationEnvironment.workingDir,
     exec: Compile2Result.() -> Unit = {},
   ): Compile2Result {
 
-    val config = Compile2CompilationConfiguration.default(workingDir, mode.useKapt)
-      .copy(
-        sourceFiles = sourceFiles,
-        firExtensions = firExtensions,
-      )
+    val config = Compile2CompilationConfiguration.default(
+      sourceFiles = sourceFiles,
+      firExtensions = firExtensions,
+      workingDir = workingDir,
+      useKapt = mode.useKapt,
+      previousCompilation = previousCompilation,
+      mode = mode,
+    )
       .let(configuration)
 
     val compilation = Compile2Compilation(config, expectedExitCode)

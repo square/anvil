@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.k2.utils.names
 
+import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -104,11 +105,29 @@ public val ClassId.bindingModuleSibling: ClassId
 /**
  * ```
  *  given: `com.example.SomeClass
+ * output: `com.example.SomeClass_MembersInjector`
+ * ```
+ */
+public val ClassId.membersInjectorSibling: ClassId
+  get() = joinSimpleNames(separator = "_", suffix = "_MembersInjector")
+
+/**
+ * ```
+ *  given: `com.example.SomeClass
  * output: `com.example.SomeClass_Factory`
  * ```
  */
 public val ClassId.factorySibling: ClassId
   get() = sibling("${shortClassName.asString()}_Factory")
+
+/**
+ * ```
+ *  given: `com.example.OuterClass.InnerClass
+ * output: `com.example.OuterClass_InnerClass_Factory`
+ * ```
+ */
+public val ClassId.factoryJoined: ClassId
+  get() = joinSimpleNames(separator = "_", suffix = "_Factory")
 
 public val ClassId.companion: ClassId get() = child("Companion")
 
@@ -140,7 +159,7 @@ public fun ClassId.sibling(nameString: String): ClassId {
 }
 
 /**
- * alias for [com.squareup.anvil.compiler.testing.nested]
+ * alias for [com.squareup.anvil.compiler.k2.utils.names.nested]
  *
  * ```
  * val kotlinMap = ClassId.fromString("kotlin/collections.Map")
@@ -154,7 +173,7 @@ public fun ClassId.sibling(nameString: String): ClassId {
 public fun ClassId.child(nameString: String): ClassId = nested(nameString)
 
 /**
- * alias for [com.squareup.anvil.compiler.testing.nested]
+ * alias for [com.squareup.anvil.compiler.k2.utils.names.child]
  *
  * ```
  * val kotlinMap = ClassId.fromString("kotlin/collections.Map")
@@ -168,3 +187,28 @@ public fun ClassId.child(nameString: String): ClassId = nested(nameString)
 public fun ClassId.nested(nameString: String): ClassId {
   return createNestedClassId(Name.identifier(nameString))
 }
+
+/**
+ * Joins the simple names of a class with the given [separator], [prefix], and [suffix].
+ *
+ * ```
+ * val normalName = ClassName("com.example", "Outer", "Middle", "Inner")
+ * val joinedName = normalName.joinSimpleNames(separator = "_", suffix = "Factory")
+ *
+ * println(joinedName) // com.example.Outer_Middle_InnerFactory
+ * ```
+ * @throws IllegalArgumentException if the resulting class name is too long to be a valid file name.
+ */
+@ExperimentalAnvilApi
+public fun ClassId.joinSimpleNames(
+  separator: String = "_",
+  prefix: String = "",
+  suffix: String = "",
+): ClassId = ClassId.topLevel(
+  packageFqName.child(
+    Name.identifier(
+      relativeClassName.pathSegments()
+        .joinToString(separator = separator, prefix = prefix, postfix = suffix),
+    ),
+  ),
+)

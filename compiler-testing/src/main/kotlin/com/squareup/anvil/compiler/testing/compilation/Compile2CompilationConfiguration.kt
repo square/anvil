@@ -4,6 +4,7 @@ import com.rickbusarow.kase.stdlib.div
 import com.rickbusarow.kase.stdlib.letIf
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.testing.BuildConfig
+import com.squareup.anvil.compiler.testing.CompilationMode
 import org.jetbrains.kotlin.config.LanguageVersion
 import java.io.File
 
@@ -32,6 +33,7 @@ import java.io.File
  */
 public data class Compile2CompilationConfiguration(
   val rootDir: File,
+  val mode: CompilationMode,
   val sourceFiles: List<File>,
   val useKapt: Boolean,
   val verbose: Boolean,
@@ -44,6 +46,7 @@ public data class Compile2CompilationConfiguration(
   val kaptClassesDir: File,
   val languageVersion: LanguageVersion,
   val jdkHome: File?,
+  val moduleName: String,
   val compilationClasspath: List<File>,
   val compilerPluginClasspath: List<File>,
   val kaptPluginClasspath: List<File>,
@@ -56,13 +59,24 @@ public data class Compile2CompilationConfiguration(
      * Creates a [Compile2CompilationConfiguration] with default paths and classpaths
      * suitable for typical test usage.
      *
+     * @param sourceFiles a list of .kt or .java files to be compiled
+     * @param firExtensions optional FIR extension factories for custom processing
      * @param workingDir The directory to serve as [rootDir].
      * @param useKapt Whether to enable KAPT support in the resulting configuration.
+     * @param previousCompilation a previous [Compile2Result] to add to the classpath for this compilation
      * @return A [Compile2CompilationConfiguration] pre-filled with typical defaults.
      */
-    public fun default(workingDir: File, useKapt: Boolean): Compile2CompilationConfiguration {
+    public fun default(
+      sourceFiles: List<File>,
+      firExtensions: List<AnvilFirExtensionFactory<*>>,
+      workingDir: File,
+      useKapt: Boolean,
+      mode: CompilationMode,
+      previousCompilation: Compile2Result? = null,
+    ): Compile2CompilationConfiguration {
       val kaptDir = workingDir / "kapt"
-      val compilationClasspath = listOf(
+      val compilationClasspath = listOfNotNull(
+        previousCompilation?.classFilesDir,
         HostClasspath.jakartaInject,
         HostClasspath.javaxInject,
         HostClasspath.dagger,
@@ -73,7 +87,8 @@ public data class Compile2CompilationConfiguration(
 
       return Compile2CompilationConfiguration(
         rootDir = workingDir,
-        sourceFiles = emptyList(),
+        mode = mode,
+        sourceFiles = sourceFiles,
         useKapt = useKapt,
         verbose = false,
         allWarningsAsErrors = false,
@@ -83,9 +98,14 @@ public data class Compile2CompilationConfiguration(
         kaptGeneratedSourcesDir = kaptDir / "generated",
         kaptIncrementalDir = kaptDir / "incremental",
         kaptClassesDir = kaptDir / "classes",
-        languageVersion = BuildConfig.languageVersion,
+        languageVersion = if (mode.isK2) {
+          BuildConfig.languageVersion
+        } else {
+          LanguageVersion.KOTLIN_1_9
+        },
         jdkHome = javaHomeOrNull(),
-        firExtensions = emptyList(),
+        moduleName = workingDir.name,
+        firExtensions = firExtensions,
 
         // Classpath for the compiler itself.
         compilationClasspath = compilationClasspath,
