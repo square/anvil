@@ -222,6 +222,7 @@ public final class com/squareup/anvil/compiler/testing/classgraph/ClassInfoKt {
 	public static final fun fqNames (Ljava/util/Collection;)Ljava/util/List;
 	public static final fun getAnnotationInfo (Lio/github/classgraph/ClassInfo;Lorg/jetbrains/kotlin/name/ClassId;)Lio/github/classgraph/AnnotationInfo;
 	public static final fun getClassId (Lio/github/classgraph/ClassInfo;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getModuleNames (Lio/github/classgraph/AnnotationInfo;)Ljava/util/List;
 }
 
 public final class com/squareup/anvil/compiler/testing/classgraph/MethodInfoKt {

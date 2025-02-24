@@ -5,6 +5,8 @@ import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
 import com.squareup.anvil.compiler.k2.fir.AnvilPredicates
+import com.squareup.anvil.compiler.k2.fir.contributions.BindingModuleData
+import com.squareup.anvil.compiler.k2.fir.contributions.contributesBindingSessionComponent
 import com.squareup.anvil.compiler.k2.utils.fir.argumentAt
 import com.squareup.anvil.compiler.k2.utils.fir.classListArgumentAt
 import com.squareup.anvil.compiler.k2.utils.fir.contributesToScope
@@ -35,6 +37,7 @@ import org.jetbrains.kotlin.fir.resolve.fqName
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
@@ -78,8 +81,8 @@ public class AnvilFirAnnotationMergingExtension(
     val componentAnnotation = classLikeDeclaration.annotations
       .single { it.fqName(session) == ClassIds.anvilMergeComponent.asSingleFqName() } as FirAnnotationCall
 
-    val scope = componentAnnotation.requireScopeArgument().resolveConeType(typeResolver)
-    val scopeFqName = scope.requireFqName()
+    val mergeScope = componentAnnotation.requireScopeArgument().resolveConeType(typeResolver)
+    val mergeScopeName = mergeScope.requireFqName()
 
     val oldModules = componentAnnotation
       .classListArgumentAt(Names.modules, index = 1)
@@ -92,27 +95,16 @@ public class AnvilFirAnnotationMergingExtension(
           ktPsiFactoryOrNull = classLikeDeclaration.psi?.ktPsiFactory(),
         )
 
-        val contributedModules = session.predicateBasedProvider
-          .getSymbolsByPredicate(AnvilPredicates.contributedModule)
-          .mapNotNull { moduleClass ->
-            if (moduleClass !is FirClassLikeSymbol<*>) return@mapNotNull null
+        val contributedModules = getContributedModules(mergeScopeName, typeResolver)
+        val generatedBindingModules = getGeneratedBindingModules(mergeScope, typeResolver)
 
-            if (moduleClass.contributesToScope(
-                scope = scopeFqName,
-                session = session,
-                typeResolveService = typeResolver,
-              )
-            ) {
-              moduleClass
-            } else {
-              null
-            }
-          }
+        val mergedModules = contributedModules.map { it.fqName() } +
+          generatedBindingModules.map { it.generatedClassId.asSingleFqName() }
 
         val newAnnotationCallPsi = componentAnnotation.psi?.let {
           buildNewAnnotationPsi(
             oldAnnotationCall = it as KtAnnotationEntry,
-            mergedModules = contributedModules.map { it.fqName() },
+            mergedModules = mergedModules,
           )
         }
 
@@ -131,6 +123,7 @@ public class AnvilFirAnnotationMergingExtension(
               argumentList = buildArgumentList {
                 arguments += oldModules
                 arguments += contributedModules.map { it.toGetClassCall() }
+                arguments += generatedBindingModules.map { it.generatedClassSymbol.toGetClassCall() }
               }
             }
           }
@@ -147,6 +140,58 @@ public class AnvilFirAnnotationMergingExtension(
     )
 
     return listOf()
+  }
+
+  /**
+   * Gets all Dagger modules annotated with @ContributesTo that match the scope being merged
+   */
+  private fun getContributedModules(
+    mergeScopeName: FqName,
+    typeResolver: TypeResolveService,
+  ): List<FirClassLikeSymbol<*>> {
+    return session.predicateBasedProvider
+      .getSymbolsByPredicate(AnvilPredicates.contributedModule)
+      .mapNotNull { moduleClass ->
+        if (moduleClass !is FirClassLikeSymbol<*>) return@mapNotNull null
+
+        if (moduleClass.contributesToScope(
+            scope = mergeScopeName,
+            session = session,
+            typeResolveService = typeResolver,
+          )
+        ) {
+          moduleClass
+        } else {
+          null
+        }
+      }
+  }
+
+  /**
+   * Gets data for all Dagger modules generated from a @ContributesBinding-annotated class matching
+   * the scope that is being merged
+   */
+  private fun getGeneratedBindingModules(
+    mergeScope: ConeKotlinType,
+    typeResolver: TypeResolveService,
+  ): Set<BindingModuleData> {
+    return session.contributesBindingSessionComponent
+      .generatedIdsToMatchedSymbols
+      .keys
+      .mapNotNull { id: ClassId ->
+        val bindingData =
+          session.contributesBindingSessionComponent.bindingModuleCache.getValue(id, session)
+        val bindingScope =
+          (bindingData.contributesBindingAnnotation as FirAnnotationCall).requireScopeArgument()
+            .resolveConeType(typeResolver)
+
+        if (bindingScope == mergeScope) {
+          bindingData
+        } else {
+          null
+        }
+      }
+      .toSet()
   }
 
   private fun buildNewAnnotationPsi(
@@ -179,7 +224,8 @@ public class AnvilFirAnnotationMergingExtension(
         val fqName = imp.importedReference?.text
           ?: error("import directive doesn't have a reference? $imp")
 
-        val name = imp.aliasName ?: imp.importedReference?.text?.substringAfterLast('.')
+        val name = imp.aliasName
+          ?: imp.importedReference?.text?.substringAfterLast('.')
           ?: error("import directive doesn't have a reference or alias? ${imp.text}")
 
         fqName to name

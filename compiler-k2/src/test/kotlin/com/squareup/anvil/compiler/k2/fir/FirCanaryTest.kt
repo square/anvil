@@ -4,7 +4,7 @@ import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import com.squareup.anvil.compiler.testing.CompilationMode
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.classgraph.getAnnotationInfo
-import io.github.classgraph.AnnotationClassRef
+import com.squareup.anvil.compiler.testing.classgraph.moduleNames
 import io.kotest.matchers.shouldBe
 import io.kotest.matchers.shouldNotBe
 import org.junit.jupiter.api.TestFactory
@@ -68,13 +68,7 @@ class FirCanaryTest : CompilationModeTest(
       val testComponent = scanResult.getClassInfo("com.squareup.test.TestComponent") shouldNotBe null
       val generatedComponentAnnotation = testComponent.getAnnotationInfo(ClassIds.daggerComponent) shouldNotBe null
 
-      val moduleClasses = generatedComponentAnnotation.parameterValues
-        .getValue("modules")
-        .let { it as Array<*> }
-        .map { (it as AnnotationClassRef).name }
-        .sorted()
-
-      moduleClasses shouldBe listOf(
+      generatedComponentAnnotation.moduleNames shouldBe listOf(
         "com.squareup.test.ABindingModule",
         "com.squareup.test.BBindingModule",
       )
