@@ -64,8 +64,8 @@ class AnnotationMergingTest : CompilationModeTest(
       workingDir = workingDir / "consumer",
     ) {
 
-      classGraph
-        .allMergedModulesForComponent(TestNames.componentInterface)
+      scanResult
+        .allMergedModulesForComponent(TestNames.componentInterface.asFqNameString())
         .fqNames() shouldBe listOf(
         // CommonNames.daggerModule1,
         FqName("com.squareup.test.dep.DaggerModule1"),

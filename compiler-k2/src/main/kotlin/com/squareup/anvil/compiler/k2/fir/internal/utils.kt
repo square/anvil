@@ -1,22 +1,13 @@
 package com.squareup.anvil.compiler.k2.fir.internal
 
-import org.jetbrains.kotlin.KtFakeSourceElementKind
+import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import org.jetbrains.kotlin.KtSourceElement
-import org.jetbrains.kotlin.com.intellij.psi.PsiElement
 import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.expressions.FirGetClassCall
 import org.jetbrains.kotlin.fir.expressions.FirPropertyAccessExpression
-import org.jetbrains.kotlin.fir.expressions.builder.FirAnnotationCallBuilder
-import org.jetbrains.kotlin.fir.expressions.builder.buildArgumentList
-import org.jetbrains.kotlin.fir.expressions.builder.buildGetClassCall
-import org.jetbrains.kotlin.fir.expressions.builder.buildResolvedQualifier
-import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension.TypeResolveService
 import org.jetbrains.kotlin.fir.extensions.buildUserTypeFromQualifierParts
-import org.jetbrains.kotlin.fir.packageFqName
-import org.jetbrains.kotlin.fir.references.builder.buildSimpleNamedReference
 import org.jetbrains.kotlin.fir.references.impl.FirSimpleNamedReference
 import org.jetbrains.kotlin.fir.resolve.providers.FirSymbolProvider
-import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeClassLikeType
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
@@ -31,44 +22,26 @@ import org.jetbrains.kotlin.fir.types.constructClassLikeType
 import org.jetbrains.kotlin.fir.types.constructType
 import org.jetbrains.kotlin.fir.types.impl.FirQualifierPartImpl
 import org.jetbrains.kotlin.fir.types.impl.FirTypeArgumentListImpl
-import org.jetbrains.kotlin.fir.types.isResolved
-import org.jetbrains.kotlin.fir.types.resolvedType
 import org.jetbrains.kotlin.fir.types.toLookupTag
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.StandardClassIds
-import org.jetbrains.kotlin.psi.KtPsiFactory
-import org.jetbrains.kotlin.resolve.calls.util.asCallableReferenceExpression
-import org.jetbrains.kotlin.toKtPsiSourceElement
 
 public fun String.fqn(): FqName = FqName(this)
 public fun FqName.classId(): ClassId = ClassId.topLevel(this)
 public fun String.classId(): ClassId = fqn().classId()
 
-public fun ConeKotlinType.requireClassId(): ClassId = requireNotNull(classId) { "ClassId is null: $this" }
+public fun ConeKotlinType.requireClassId(): ClassId =
+  requireNotNull(classId) { "ClassId is null: $this" }
 
 internal fun ConeKotlinType.wrapInProvider(
   symbolProvider: FirSymbolProvider,
-) = symbolProvider.getClassLikeSymbolByClassId(Names.javax.inject.provider.classId())!!
+) = symbolProvider.getClassLikeSymbolByClassId(ClassIds.javaxProvider)!!
   .constructType(
     typeArguments = arrayOf(this@wrapInProvider),
     isMarkedNullable = false,
   )
-
-internal fun ConeKotlinType.requireFqName(): FqName {
-  return this@requireFqName.classId!!.asSingleFqName()
-}
-
-internal fun FirClassLikeSymbol<*>.fqName(): FqName = classId.asSingleFqName()
-
-internal fun PsiElement.ktPsiFactory(): KtPsiFactory {
-  return KtPsiFactory.contextual(
-    context = this@ktPsiFactory,
-    markGenerated = false,
-    eventSystemEnabled = false,
-  )
-}
 
 internal fun FirPropertyAccessExpression.qualifierSegmentsWithSelf() = buildList<Name> {
   fun visitQualifiers(expression: FirExpression) {
@@ -85,15 +58,6 @@ internal fun FirGetClassCall.userTypeRef(): FirUserTypeRef {
       .qualifierSegmentsWithSelf()
       .forEach(::part)
   }
-}
-
-// https://github.com/JetBrains/kotlin/blob/master/plugins/kotlinx-serialization/kotlinx-serialization.k2/src/org/jetbrains/kotlinx/serialization/compiler/fir/SerializationFirSupertypesExtension.kt
-internal fun FirGetClassCall.resolveConeType(
-  typeResolveService: TypeResolveService,
-): ConeKotlinType = if (isResolved) {
-  resolvedType
-} else {
-  typeResolveService.resolveUserType(userTypeRef()).coneType
 }
 
 internal val FirPropertyAccessExpression.qualifierName: Name?
@@ -123,27 +87,6 @@ internal fun FirRegularClassSymbol.resolvedTypeRef(): FirResolvedTypeRef {
   return buildResolvedTypeRef { coneType = toKClassRef() }
 }
 
-internal fun FirAnnotationCallBuilder.setAnnotationType(
-  newType: FqName,
-  ktPsiFactoryOrNull: KtPsiFactory?,
-) {
-  val componentTypeRef = ktPsiFactoryOrNull
-    ?.createTypeArgument(newType.asString())
-    ?.typeReference
-
-  annotationTypeRef = newType
-    .createUserType(
-      sourceElement = componentTypeRef?.toKtPsiSourceElement(KtFakeSourceElementKind.PluginGenerated),
-      nullable = false,
-    )
-  calleeReference = buildSimpleNamedReference {
-    name = newType.shortName()
-    source = componentTypeRef?.asCallableReferenceExpression()
-      ?.callableReference
-      ?.toKtPsiSourceElement(KtFakeSourceElementKind.PluginGenerated)
-  }
-}
-
 internal fun FqName.createUserType(
   sourceElement: KtSourceElement?,
   nullable: Boolean = false,
@@ -157,18 +100,6 @@ internal fun FqName.createUserType(
         name = name,
         typeArgumentList = FirTypeArgumentListImpl(source = null),
       )
-    }
-  }
-}
-
-internal fun FirClassLikeSymbol<*>.toGetClassCall(): FirGetClassCall {
-  return buildGetClassCall {
-    argumentList = buildArgumentList {
-      arguments += buildResolvedQualifier qualifier@{
-        val builder = this
-        builder.symbol = this@toGetClassCall
-        builder.packageFqName = this@toGetClassCall.packageFqName()
-      }
     }
   }
 }

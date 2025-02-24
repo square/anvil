@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.name.Name
 
 public object Names {
   public val scope: Name = Name.identifier("scope")
+  public val replaces: Name = Name.identifier("replaces")
   public val modules: Name = Name.identifier("modules")
   public val dependencies: Name = Name.identifier("dependencies")
 }

@@ -146,7 +146,7 @@ public fun FirAnnotation.argumentAt(
   return null
 }
 
-public fun ClassId.toFirAnnotation() = buildAnnotation {
+public fun ClassId.toFirAnnotation(): FirAnnotation = buildAnnotation {
   argumentMapping = FirEmptyAnnotationArgumentMapping
   annotationTypeRef = buildResolvedTypeRef {
     coneType = constructClassLikeType()

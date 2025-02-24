@@ -44,7 +44,7 @@ import org.jetbrains.kotlin.toKtPsiSourceElement
 
 public fun ConeKotlinType.wrapInProvider(
   symbolProvider: FirSymbolProvider,
-) = symbolProvider.getClassLikeSymbolByClassId(ClassIds.javaxProvider)!!
+): ConeClassLikeType = symbolProvider.getClassLikeSymbolByClassId(ClassIds.javaxProvider)!!
   .constructType(
     typeArguments = arrayOf(this@wrapInProvider),
     isMarkedNullable = false,
@@ -64,7 +64,7 @@ public fun PsiElement.ktPsiFactory(): KtPsiFactory {
   )
 }
 
-public fun FirPropertyAccessExpression.qualifierSegmentsWithSelf() = buildList<Name> {
+public fun FirPropertyAccessExpression.qualifierSegmentsWithSelf(): List<Name> = buildList {
   fun visitQualifiers(expression: FirExpression) {
     if (expression !is FirPropertyAccessExpression) return
     expression.explicitReceiver?.let { visitQualifiers(it) }
@@ -165,4 +165,4 @@ public fun FirClassLikeSymbol<*>.toGetClassCall(): FirGetClassCall {
       }
     }
   }
-}
+} 

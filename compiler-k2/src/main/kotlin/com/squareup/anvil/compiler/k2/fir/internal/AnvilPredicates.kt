@@ -1,33 +1,41 @@
 package com.squareup.anvil.compiler.k2.fir.internal
 
+import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.extensions.predicate.LookupPredicate
-import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.ClassId
 
 internal object AnvilPredicates {
-  val hasComponentAnnotation
-    get() = Names.dagger.component.lookupPredicateAnnotated()
+
   val hasModuleAnnotation
-    get() = Names.dagger.module.lookupPredicateAnnotated()
-  val hasInjectAnnotation
-    get() = Names.inject.lookupPredicateAnnotated()
+    get() = ClassIds.daggerModule.lookupPredicateAnnotated()
 
   val contributedModule
     get() = LookupPredicate.create {
-      annotated(Names.anvil.contributesTo).and(annotated(Names.dagger.module))
+      annotated(ClassIds.anvilContributesTo.asSingleFqName())
+        .and(annotated(ClassIds.daggerModule.asSingleFqName()))
     }
 
-  val hasContributesSubcomponentAnnotation
-    get() = Names.anvil.contributesSubcomponent.lookupPredicateAnnotated()
   val hasContributesToAnnotation
-    get() = Names.anvil.contributesTo.lookupPredicateAnnotated()
+    get() = ClassIds.anvilContributesTo.lookupPredicateAnnotated()
 
   val hasMergeComponentAnnotation
-    get() = Names.anvil.mergeComponent.lookupPredicateAnnotated()
+    get() = ClassIds.anvilMergeComponent.lookupPredicateAnnotated()
 
-  private fun FqName.lookupPredicateAnnotated(): LookupPredicate =
-    LookupPredicate.create { annotated(this@lookupPredicateAnnotated) }
+  val hasContributesBindingAnnotation
+    get() = ClassIds.anvilContributesBinding.lookupPredicateAnnotated()
 
-  private fun FqName.declarationPredicateAnnotated(): DeclarationPredicate =
-    DeclarationPredicate.create { annotated(this@declarationPredicateAnnotated) }
+  val hasComponentAnnotation
+    get() = ClassIds.daggerComponent.lookupPredicateAnnotated()
+  val hasInjectAnnotation
+    get() = ClassIds.javaxInject.lookupPredicateAnnotated()
+
+  val hasContributesSubcomponentAnnotation
+    get() = ClassIds.anvilContributesSubcomponent.lookupPredicateAnnotated()
+
+  private fun ClassId.declarationPredicateAnnotated(): DeclarationPredicate =
+    DeclarationPredicate.create { annotated(this@declarationPredicateAnnotated.asSingleFqName()) }
+
+  private fun ClassId.lookupPredicateAnnotated(): LookupPredicate =
+    LookupPredicate.create { annotated(this@lookupPredicateAnnotated.asSingleFqName()) }
 }
