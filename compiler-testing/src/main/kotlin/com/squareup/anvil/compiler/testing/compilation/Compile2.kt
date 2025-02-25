@@ -68,6 +68,7 @@ public class Compile2Compilation(
       args.verbose = config.verbose
       args.version = config.verbose
       args.reportPerf = false
+      args.reportOutputFiles = false
 
       // Still run the compiler (for kapt) even if there are no Kotlin files.
       args.allowNoSourceFiles = true

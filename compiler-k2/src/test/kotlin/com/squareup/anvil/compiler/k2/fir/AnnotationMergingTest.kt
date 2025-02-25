@@ -18,18 +18,32 @@ class AnnotationMergingTest : CompilationModeTest(
   @TestFactory
   fun `contributed modules from dependency compilations are merged`() = testFactory {
 
+    val dep1 = compile2(
+      """
+        package anvil.hint
+
+        @javax.inject.Named("this.is.a.hint")
+        private interface ContributedBindings_1
+      """.trimIndent(),
+      workingDir = workingDir / "dependency_1",
+    )
+
+    val dep2 = compile2(
+      """
+        package anvil.hint
+
+        @javax.inject.Named("this.is.a.hint")
+        private interface ContributedBindings_2
+      """.trimIndent(),
+      workingDir = workingDir / "dependency_2",
+    )
+
     val dep = compile2(
       """
         package com.squareup.test.dep
 
         import com.squareup.anvil.annotations.ContributesTo
         import dagger.Module
-        import javax.inject.Inject
-
-        class InjectClass @Inject constructor()
-
-        @javax.inject.Named("foo.bar.baz")
-        val someHint: String = "This could be a hint"
 
         @Module
         @ContributesTo(Unit::class)
@@ -54,11 +68,14 @@ class AnnotationMergingTest : CompilationModeTest(
 
         @MergeComponent(Unit::class)
         interface ComponentInterface
-
-        fun referenceToOtherCompilation(module: com.squareup.test.dep.DaggerModule1) { }
       """.trimIndent(),
       configuration = {
-        it.copy(compilationClasspath = it.compilationClasspath.plus(dep.jar).plus(dep.classFilesDir))
+        it.copy(
+          compilationClasspath = it.compilationClasspath
+            // .plus(dep.classFilesDir)
+            .plus(dep1.classFilesDir)
+            .plus(dep2.classFilesDir),
+        )
       },
       workingDir = workingDir / "consumer",
     ) {

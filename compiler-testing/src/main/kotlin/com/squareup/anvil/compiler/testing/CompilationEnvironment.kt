@@ -89,6 +89,7 @@ public interface CompilationEnvironment : TestEnvironment {
       firExtensions = firExtensions,
       configuration = configuration,
       expectedExitCode = expectedExitCode,
+      workingDir = workingDir,
       exec = exec,
     )
   }
@@ -133,7 +134,6 @@ public interface CompilationEnvironment : TestEnvironment {
       .copy(
         sourceFiles = sourceFiles,
         firExtensions = firExtensions,
-        rootDir = workingDir,
       )
       .let(configuration)
 

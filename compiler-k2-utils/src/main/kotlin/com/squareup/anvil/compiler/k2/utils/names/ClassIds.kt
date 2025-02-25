@@ -7,7 +7,7 @@ import org.jetbrains.kotlin.name.Name
 /** Well-known FqNames used by Anvil. */
 public object FqNames {
 
-  public val anvilHint: FqName = FqName("anvil.hint")
+  public val hintsPackage: FqName = FqName("anvil.hint")
 }
 
 /** Well-known class ids used by Anvil. */

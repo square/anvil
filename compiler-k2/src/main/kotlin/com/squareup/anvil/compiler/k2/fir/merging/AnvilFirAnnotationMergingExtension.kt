@@ -18,6 +18,7 @@ import com.squareup.anvil.compiler.k2.utils.fir.resolveConeType
 import com.squareup.anvil.compiler.k2.utils.fir.setAnnotationType
 import com.squareup.anvil.compiler.k2.utils.fir.toGetClassCall
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
+import com.squareup.anvil.compiler.k2.utils.names.FqNames
 import com.squareup.anvil.compiler.k2.utils.names.Names
 import org.jetbrains.kotlin.KtFakeSourceElementKind
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
@@ -43,6 +44,7 @@ import org.jetbrains.kotlin.fir.resolve.providers.firProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
@@ -124,7 +126,8 @@ public class AnvilFirAnnotationMergingExtension(
     typeResolver: TypeResolveService,
   ): List<ConeKotlinType> {
 
-    val hintsPackage = FqName("com.squareup.test.dep")
+    val hintsPackage = FqNames.hintsPackage
+
     val depsSymbolNamesProvider = session.dependenciesSymbolProvider.symbolNamesProvider
 
     val md = session.moduleData
@@ -132,16 +135,14 @@ public class AnvilFirAnnotationMergingExtension(
     val computed = (depsSymbolNamesProvider as? FirCachedSymbolNamesProvider)
       ?.computeTopLevelClassifierNames(hintsPackage)
       .orEmpty()
-
-    md
-
-    md.dependencies.map { depMod ->
-      depMod
-    }
+      .mapNotNull {
+        session.dependenciesSymbolProvider.getClassLikeSymbolByClassId(ClassId(hintsPackage, it))
+      }
 
     printThings(
       "deps computed names" to computed.lines(),
-      "fir class names in package" to session.firProvider.getClassNamesInPackage(hintsPackage).lines(),
+      "fir class names in package" to session.firProvider.getClassNamesInPackage(hintsPackage)
+        .lines(),
       "deps package names" to depsSymbolNamesProvider.getPackageNames().lines(),
       // "deps package names with top level classifiers" to depsSymbolNamesProvider.getPackageNamesWithTopLevelClassifiers().lines(),
       // "deps package names with top level callables" to depsSymbolNamesProvider.getPackageNamesWithTopLevelCallables().lines(),
