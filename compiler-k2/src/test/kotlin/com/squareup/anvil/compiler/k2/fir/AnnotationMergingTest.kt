@@ -11,8 +11,8 @@ import org.jetbrains.kotlin.name.FqName
 import org.junit.jupiter.api.TestFactory
 
 class AnnotationMergingTest : CompilationModeTest(
-  // CompilationMode.K2(useKapt = false),
-  CompilationMode.K2(useKapt = true),
+  CompilationMode.K2(useKapt = false),
+  // CompilationMode.K2(useKapt = true),
 ) {
 
   @TestFactory
@@ -27,6 +27,9 @@ class AnnotationMergingTest : CompilationModeTest(
         import javax.inject.Inject
 
         class InjectClass @Inject constructor()
+
+        @javax.inject.Named("foo.bar.baz")
+        val someHint: String = "This could be a hint"
 
         @Module
         @ContributesTo(Unit::class)
@@ -55,11 +58,7 @@ class AnnotationMergingTest : CompilationModeTest(
         fun referenceToOtherCompilation(module: com.squareup.test.dep.DaggerModule1) { }
       """.trimIndent(),
       configuration = {
-        it.copy(
-          compilationClasspath = it.compilationClasspath
-            .plus(dep.jar)
-            .plus(dep.classFilesDir),
-        )
+        it.copy(compilationClasspath = it.compilationClasspath.plus(dep.jar).plus(dep.classFilesDir))
       },
       workingDir = workingDir / "consumer",
     ) {

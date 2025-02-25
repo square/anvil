@@ -6,7 +6,7 @@ import com.squareup.anvil.compiler.k2.fir.AnvilFirExtension
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
 import com.squareup.anvil.compiler.k2.fir.internal.AnvilPredicates
-import com.squareup.anvil.compiler.k2.fir.internal.tree.FirTreePrinter
+import com.squareup.anvil.compiler.k2.fir.internal.classId
 import com.squareup.anvil.compiler.k2.utils.fir.argumentAt
 import com.squareup.anvil.compiler.k2.utils.fir.classListArgumentAt
 import com.squareup.anvil.compiler.k2.utils.fir.contributesToScope
@@ -22,7 +22,6 @@ import com.squareup.anvil.compiler.k2.utils.names.Names
 import org.jetbrains.kotlin.KtFakeSourceElementKind
 import org.jetbrains.kotlin.cli.common.messages.CompilerMessageSeverity
 import org.jetbrains.kotlin.fakeElement
-import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
 import org.jetbrains.kotlin.fir.declarations.utils.classId
@@ -35,34 +34,56 @@ import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
-import org.jetbrains.kotlin.fir.java.FirCliSession
 import org.jetbrains.kotlin.fir.moduleData
 import org.jetbrains.kotlin.fir.psi
 import org.jetbrains.kotlin.fir.resolve.fqName
+import org.jetbrains.kotlin.fir.resolve.providers.FirCachedSymbolNamesProvider
 import org.jetbrains.kotlin.fir.resolve.providers.dependenciesSymbolProvider
 import org.jetbrains.kotlin.fir.resolve.providers.firProvider
-import org.jetbrains.kotlin.fir.resolve.providers.impl.FirProviderImpl
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
-import org.jetbrains.kotlin.fir.visitors.FirDefaultTransformer
-import org.jetbrains.kotlin.fir.visitors.transformSingle
-import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
 import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.toKtPsiSourceElement
 
 public fun AnvilFirExtension.logInfo(message: String) {
-  anvilFirContext.messageCollector.report(CompilerMessageSeverity.WARNING, message)
+  anvilFirContext.messageCollector.report(CompilerMessageSeverity.INFO, message)
+}
+
+private fun Collection<*>?.lines(): String {
+  return this?.map { it.toString() }
+    ?.sorted()
+    ?.joinToString("\n")
+    ?: "null"
+}
+
+public fun AnvilFirExtension.printThings(vararg things: Pair<String, Any?>) {
+
+  logInfo(
+    things.joinToString(
+      separator = "\n*****\n",
+      prefix = "*****\n",
+      postfix = "\n*****",
+    ) { (name, thing) ->
+      val ts = thing.toString().lines()
+      """
+      |${name.padStart(50, ' ')}  --  ${ts.first()}
+      |${ts.drop(1).joinToString("\n") { " ".repeat(56) + it }}
+      """.trimMargin()
+    },
+  )
 }
 
 public fun AnvilFirExtension.printThing(name: String, thing: Any?) {
+  val ts = thing.toString().lines()
   logInfo(
     """
-    |************************************************************ $name
-    |$thing
-    |***************************************************************
+    |************************************************************
+    |${name.padStart(50, ' ')}  --  ${ts.first()}
+    |${ts.drop(1).joinToString("\n") { " ".repeat(56) + it }}
+    |************************************************************
     """.trimMargin(),
   )
 }
@@ -103,72 +124,87 @@ public class AnvilFirAnnotationMergingExtension(
     typeResolver: TypeResolveService,
   ): List<ConeKotlinType> {
 
-    val deps = session.moduleData.dependencies
+    val hintsPackage = FqName("com.squareup.test.dep")
+    val depsSymbolNamesProvider = session.dependenciesSymbolProvider.symbolNamesProvider
 
-    val fromDeps = deps.flatMap {
-      it.session.predicateBasedProvider.getSymbolsByPredicate(AnvilPredicates.contributedModule)
+    val md = session.moduleData
+
+    val computed = (depsSymbolNamesProvider as? FirCachedSymbolNamesProvider)
+      ?.computeTopLevelClassifierNames(hintsPackage)
+      .orEmpty()
+
+    md
+
+    md.dependencies.map { depMod ->
+      depMod
     }
 
-    val depModuleData = deps.single()
-    val depSession = depModuleData.session as FirCliSession
-
-    session.dependenciesSymbolProvider
+    printThings(
+      "deps computed names" to computed.lines(),
+      "fir class names in package" to session.firProvider.getClassNamesInPackage(hintsPackage).lines(),
+      "deps package names" to depsSymbolNamesProvider.getPackageNames().lines(),
+      // "deps package names with top level classifiers" to depsSymbolNamesProvider.getPackageNamesWithTopLevelClassifiers().lines(),
+      // "deps package names with top level callables" to depsSymbolNamesProvider.getPackageNamesWithTopLevelCallables().lines(),
+      "deps hints" to
+        depsSymbolNamesProvider.getTopLevelCallableNamesInPackage(hintsPackage)
+          .orEmpty()
+          .flatMap { propertyName ->
+            session.dependenciesSymbolProvider.getTopLevelCallableSymbols(
+              hintsPackage,
+              propertyName,
+            )
+          }
+          .map { callable -> callable.annotations.map { it.classId(session) } }
+          .lines(),
+    )
 
     val file = session.firProvider.getFirClassifierContainerFile(classLikeDeclaration.classId)
 
-    printThing("fir file", FirTreePrinter().treeString(file))
+    // printThing("fir file", FirTreePrinter().treeString(file))
 
-    (session.firProvider as FirProviderImpl)
+    // (session.firProvider as FirProviderImpl)
+    //
+    // file.transformSingle(
+    //   object : FirDefaultTransformer<Nothing?>() {
+    //     override fun <E : FirElement> transformElement(element: E, data: Nothing?): E {
+    //       logInfo("element: ${element.javaClass.simpleName}")
+    //       return element
+    //     }
+    //   },
+    //   null,
+    // )
+    //
+    // printThing(
+    //   name = "local inject",
+    //   thing = session.predicateBasedProvider
+    //     .getSymbolsByPredicate(AnvilPredicates.hasInjectAnnotation),
+    // )
+    // printThing(
+    //   name = "deps inject",
+    //   thing = depSession.predicateBasedProvider
+    //     .getSymbolsByPredicate(AnvilPredicates.hasInjectAnnotation),
+    // )
+    //
+    // printThing(
+    //   name = "@Module modules",
+    //   thing = session.predicateBasedProvider
+    //     .getSymbolsByPredicate(AnvilPredicates.contributedModule)
+    //     .plus(fromDeps),
+    // )
+    //
+    // printThing(
+    //   name = "dependencies getPackageNamesWithTopLevelClassifiers",
+    //   thing = session.dependenciesSymbolProvider.symbolNamesProvider
+    //     .getPackageNamesWithTopLevelClassifiers()
+    //     .orEmpty()
+    //     .joinToString("\n"),
+    // )
 
-    file.transformSingle(
-      object : FirDefaultTransformer<Nothing?>() {
-        override fun <E : FirElement> transformElement(element: E, data: Nothing?): E {
-          logInfo("element: ${element.javaClass.simpleName}")
-          return element
-        }
-      },
-      null,
-    )
-
-    printThing(
-      name = "local inject",
-      thing = session.predicateBasedProvider
-        .getSymbolsByPredicate(AnvilPredicates.hasInjectAnnotation),
-    )
-    printThing(
-      name = "deps inject",
-      thing = depSession.predicateBasedProvider
-        .getSymbolsByPredicate(AnvilPredicates.hasInjectAnnotation),
-    )
-
-    printThing(
-      name = "@Module modules",
-      thing = session.predicateBasedProvider
-        .getSymbolsByPredicate(AnvilPredicates.contributedModule)
-        .plus(fromDeps),
-    )
-
-    printThing(
-      name = "dependencies getPackageNamesWithTopLevelClassifiers",
-      thing = session.dependenciesSymbolProvider.symbolNamesProvider
-        .getPackageNamesWithTopLevelClassifiers()
-        .orEmpty()
-        .joinToString("\n"),
-    )
-
-    printThing(
-      name = "deps package getPackageNamesWithTopLevelCallables",
-      thing = session.dependenciesSymbolProvider.symbolNamesProvider
-        .getPackageNamesWithTopLevelCallables()
-        .orEmpty()
-        .joinToString("\n"),
-    )
-
-    printThing(
-      name = "deps package InjectClass",
-      thing = session.dependenciesSymbolProvider
-        .getClassLikeSymbolByClassId(ClassId.topLevel(FqName("com.squareup.test.dep.InjectClass"))),
-    )
+    // printThing(
+    //   name = "deps package InjectClass",
+    //   thing = session.dependenciesSymbolProvider
+    //     .getClassLikeSymbolByClassId(ClassId.topLevel(FqName("com.squareup.test.dep.InjectClass"))),
+    // )
 
     val componentAnnotation = classLikeDeclaration.annotations
       .single { it.fqName(session) == ClassIds.anvilMergeComponent.asSingleFqName() } as FirAnnotationCall
