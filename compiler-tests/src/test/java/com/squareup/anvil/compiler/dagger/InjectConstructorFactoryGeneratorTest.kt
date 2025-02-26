@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.testing.reflect.factoryClass
 import com.squareup.anvil.compiler.testing.reflect.getFieldValue
 import com.squareup.anvil.compiler.testing.reflect.injectClass_Factory
 import com.squareup.anvil.compiler.testing.reflect.isStatic
+import com.squareup.anvil.compiler.testing.removeParametersAndSort
 import com.squareup.anvil.compiler.testing.skipWhen
 import dagger.Lazy
 import dagger.internal.Factory
@@ -2632,13 +2633,15 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       """,
       expectedExitCode = ExitCode.COMPILATION_ERROR,
     ) {
-      // assertThat(
-      //   compilationErrorLine()
-      //     .removeParametersAndSort(),
-      // ).contains(
-      //   "Type com.squareup.test.InjectClass may only contain one injected constructor. " +
-      //     "Found: [@Inject com.squareup.test.InjectClass, @Inject com.squareup.test.InjectClass]",
-      // )
+
+      // TODO add Dagger-like checks to K2
+      skipWhen(mode.isK2) {
+        "K2 doesn't add a second constructor check like Dagger and K1"
+      }
+
+      compilerMessages.errors.joinToString { it.removeParametersAndSort() } shouldContain
+        "Type com.squareup.test.InjectClass may only contain one injected constructor. Found: " +
+        "[@Inject com.squareup.test.InjectClass, @Inject com.squareup.test.InjectClass]"
     }
   }
 
