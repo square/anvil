@@ -7,7 +7,7 @@ import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.contributions.ContributedModule
 import com.squareup.anvil.compiler.k2.fir.contributions.GeneratedBindingHintKey
 import com.squareup.anvil.compiler.k2.fir.contributions.anvilFirScopedContributionProvider
-import com.squareup.anvil.compiler.k2.fir.contributions.createSyntheticFile
+import com.squareup.anvil.compiler.k2.fir.contributions.wrapInSyntheticFile
 import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import com.squareup.anvil.compiler.k2.utils.fir.createFirAnnotation
 import com.squareup.anvil.compiler.k2.utils.fir.requireClassLikeSymbol
@@ -18,7 +18,6 @@ import com.squareup.anvil.compiler.k2.utils.names.Names
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.fir.FirSession
-import org.jetbrains.kotlin.fir.declarations.origin
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationArgumentMapping
 import org.jetbrains.kotlin.fir.expressions.builder.buildArgumentList
 import org.jetbrains.kotlin.fir.expressions.builder.buildArrayLiteral
@@ -32,6 +31,7 @@ import org.jetbrains.kotlin.fir.types.createArrayType
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.resolve.checkers.OptInNames
 import org.jetbrains.kotlin.types.ConstantValueKind
 import java.security.MessageDigest
 
@@ -67,7 +67,7 @@ public class AnvilFirContributesModuleExtension(
   @ExperimentalTopLevelDeclarationsGenerationApi
   override fun generateTopLevelClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*> {
 
-    val clazz = createTopLevelClass(
+    return createTopLevelClass(
       classId = classId,
       key = GeneratedBindingHintKey,
       classKind = ClassKind.INTERFACE,
@@ -76,12 +76,15 @@ public class AnvilFirContributesModuleExtension(
     }
       .apply {
         val newAnnotations = listOf(
+          // creates `@OptIn(AnvilInternalContributedModule::class)`
           createFirAnnotation(
-            type = ClassId.topLevel(FqName("kotlin.OptIn")),
+            type = OptInNames.OPT_IN_CLASS_ID,
             argumentMapping = buildAnnotationArgumentMapping {
-              mapping[Name.identifier("markerClass")] = ClassIds.anvilInternalContributedModule.requireClassLikeSymbol(session).toGetClassCall()
+              mapping[OptInNames.OPT_IN_ANNOTATION_CLASS] =
+                ClassIds.anvilInternalContributedModule.requireClassLikeSymbol(session).toGetClassCall()
             },
           ),
+          // creates `@AnvilInternalContributedModule(hints = ["scope|contributedType|replaces"])`
           createFirAnnotation(
             type = ClassIds.anvilInternalContributedModule,
             argumentMapping = buildAnnotationArgumentMapping {
@@ -96,7 +99,7 @@ public class AnvilFirContributesModuleExtension(
                       value = listOf(
                         module.scopeType,
                         module.contributedType,
-                        *module.replaces.toTypedArray(),
+                        *module.replaces.toTypedArray<ClassId>(),
                       ).joinToString("|") { it.asFqNameString() },
                       annotations = null,
                       setType = true,
@@ -111,15 +114,7 @@ public class AnvilFirContributesModuleExtension(
 
         replaceAnnotations(newAnnotations)
       }
-
-    session.createSyntheticFile(
-      origin = GeneratedBindingHintKey.origin,
-      packageName = classId.packageFqName,
-      simpleName = classId.shortClassName.asString(),
-      declarations = listOf(clazz),
-    )
-
-    return clazz.symbol
+      .wrapInSyntheticFile(session).symbol
   }
 
   private val HASH_STRING_LENGTH = 8

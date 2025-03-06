@@ -18,6 +18,7 @@ import org.jetbrains.kotlin.fir.declarations.FirFile
 import org.jetbrains.kotlin.fir.declarations.FirRegularClass
 import org.jetbrains.kotlin.fir.declarations.builder.buildFile
 import org.jetbrains.kotlin.fir.declarations.getKClassArgument
+import org.jetbrains.kotlin.fir.declarations.utils.classId
 import org.jetbrains.kotlin.fir.expressions.FirAnnotation
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
@@ -38,6 +39,7 @@ import org.jetbrains.kotlin.fir.visitors.FirDefaultTransformer
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.utils.exceptions.checkWithAttachment
 
 @OptIn(ExperimentalTopLevelDeclarationsGenerationApi::class)
 public class BindingModuleData(
@@ -126,6 +128,15 @@ public class BindingModuleData(
   }
 }
 
+public fun FirRegularClass.wrapInSyntheticFile(session: FirSession): FirRegularClass = apply {
+  session.createSyntheticFile(
+    origin = origin,
+    packageName = classId.packageFqName,
+    simpleName = "${classId.shortClassName.asString()}.kt",
+    declarations = listOf(this),
+  )
+}
+
 public fun FirSession.createSyntheticFile(
   origin: FirDeclarationOrigin,
   packageName: FqName,
@@ -136,6 +147,12 @@ public fun FirSession.createSyntheticFile(
   this@buildFile.moduleData = this@createSyntheticFile.moduleData
   packageDirective = buildPackageDirective {
     this.packageFqName = packageName
+  }
+  checkWithAttachment(
+    simpleName.matches(".+\\.kts?$".toRegex()),
+    { "simpleName must end with .kt or .kts" },
+  ) {
+    withEntry("simpleName", simpleName)
   }
   this.name = simpleName
   this.declarations.addAll(declarations)
