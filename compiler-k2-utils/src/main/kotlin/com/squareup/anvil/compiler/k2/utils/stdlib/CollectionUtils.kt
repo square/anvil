@@ -1,4 +1,4 @@
-package com.squareup.anvil.compiler.k2.utils
+package com.squareup.anvil.compiler.k2.utils.stdlib
 
 private val truePredicate: (Any?) -> Boolean = { true }
 

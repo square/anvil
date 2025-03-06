@@ -2,8 +2,8 @@ package com.squareup.anvil.compiler.k2.fir.contributions
 
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionSessionComponent
-import com.squareup.anvil.compiler.k2.fir.utils.joinSimpleNames
-import com.squareup.anvil.compiler.k2.util.AnvilPredicates.hasContributesBindingAnnotation
+import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates.hasAnvilContributesBinding
+import com.squareup.anvil.compiler.k2.utils.names.joinSimpleNames
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.caches.FirCache
 import org.jetbrains.kotlin.fir.caches.firCachesFactory
@@ -26,7 +26,7 @@ public class ContributesBindingSessionComponent(
    * E.g. Key: "Foo_BindingModule", Value: ClassSymbol<Foo>
    */
   public val generatedIdsToMatchedSymbols: Map<ClassId, FirClassSymbol<*>> by lazy {
-    session.predicateBasedProvider.getSymbolsByPredicate(hasContributesBindingAnnotation)
+    session.predicateBasedProvider.getSymbolsByPredicate(hasAnvilContributesBinding)
       .filterIsInstance<FirClassSymbol<*>>()
       .associateBy {
         it.classId.joinSimpleNames(suffix = "BindingModule")
@@ -45,7 +45,7 @@ public class ContributesBindingSessionComponent(
       }
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
-    register(hasContributesBindingAnnotation)
+    register(hasAnvilContributesBinding)
   }
 }
 

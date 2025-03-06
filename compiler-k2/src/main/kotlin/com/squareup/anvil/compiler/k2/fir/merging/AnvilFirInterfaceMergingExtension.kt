@@ -4,13 +4,13 @@ import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
-import com.squareup.anvil.compiler.k2.fir.AnvilPredicates
+import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import com.squareup.anvil.compiler.k2.utils.fir.contributesToScope
 import com.squareup.anvil.compiler.k2.utils.fir.hasAnnotation
 import com.squareup.anvil.compiler.k2.utils.fir.requireScopeArgument
 import com.squareup.anvil.compiler.k2.utils.fir.resolveConeType
-import com.squareup.anvil.compiler.k2.utils.mapToSet
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
+import com.squareup.anvil.compiler.k2.utils.stdlib.mapToSet
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
@@ -43,7 +43,7 @@ public class AnvilFirInterfaceMergingExtension(
   }
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
-    register(AnvilPredicates.hasContributesToAnnotation)
+    register(AnvilPredicates.hasAnvilContributesTo)
     register(AnvilPredicates.hasModuleAnnotation)
   }
 
@@ -65,7 +65,7 @@ public class AnvilFirInterfaceMergingExtension(
           .asSingleFqName()
 
         session.predicateBasedProvider
-          .getSymbolsByPredicate(AnvilPredicates.hasContributesToAnnotation)
+          .getSymbolsByPredicate(AnvilPredicates.hasAnvilContributesTo)
           .filterIsInstance<FirClassLikeSymbol<*>>()
           .mapNotNull { contributed ->
 
@@ -75,7 +75,7 @@ public class AnvilFirInterfaceMergingExtension(
             if (classId in existingSupertypes) return@mapNotNull null
 
             // If it's a contributed module, we don't add it here
-            if (contributed.hasAnnotation(ClassIds.daggerModule.asSingleFqName(), session)) {
+            if (contributed.hasAnnotation(ClassIds.daggerModule, session)) {
               return@mapNotNull null
             }
 
