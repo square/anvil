@@ -2,10 +2,8 @@ package com.squareup.anvil.compiler.k2.fir.contributions
 
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionSessionComponent
-import com.squareup.anvil.compiler.k2.util.AnvilPredicates.hasContributesBindingAnnotation
-import com.squareup.anvil.compiler.k2.utils.names.bindingModuleSibling
 import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates.hasAnvilContributesBinding
-import com.squareup.anvil.compiler.k2.utils.names.joinSimpleNames
+import com.squareup.anvil.compiler.k2.utils.names.bindingModuleSibling
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.caches.FirCache
 import org.jetbrains.kotlin.fir.caches.firCachesFactory

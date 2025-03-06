@@ -20,6 +20,13 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.StandardClassIds
 
+public fun FirClassLikeSymbol<*>.getContributesBindingAnnotations(
+  session: FirSession,
+): List<FirAnnotationCall> {
+  return annotations.filter { it.classId(session) == ClassIds.anvilContributesBinding }
+    .map { it as FirAnnotationCall }
+}
+
 public fun FirClassLikeSymbol<*>.contributesToAnnotations(
   session: FirSession,
 ): List<FirAnnotationCall> {

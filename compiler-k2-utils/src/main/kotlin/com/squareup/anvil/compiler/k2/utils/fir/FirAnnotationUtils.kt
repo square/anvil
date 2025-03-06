@@ -1,5 +1,6 @@
 package com.squareup.anvil.compiler.k2.utils.fir
 
+import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import com.squareup.anvil.compiler.k2.utils.names.Names
 import com.squareup.anvil.compiler.k2.utils.names.classId
 import org.jetbrains.kotlin.KtSourceElement
@@ -12,6 +13,7 @@ import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.FirArrayLiteral
 import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.expressions.FirGetClassCall
+import org.jetbrains.kotlin.fir.expressions.FirLiteralExpression
 import org.jetbrains.kotlin.fir.expressions.FirNamedArgumentExpression
 import org.jetbrains.kotlin.fir.expressions.arguments
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
@@ -39,6 +41,57 @@ public fun FirAnnotation.requireClassId(session: FirSession): ClassId {
     withFirEntry("annotation", this@requireClassId)
   }
   return expandedSymbol.classId
+}
+
+public fun FirAnnotation.replacesArgumentOrNull(session: FirSession): List<FirGetClassCall>? {
+  return classListArgumentAt(
+    name = Names.replaces,
+    index = replacesIndex(requireClassId(session)),
+  )
+}
+
+public fun FirAnnotation.boundTypeArgumentOrNull(session: FirSession): FirGetClassCall? {
+  return argumentAt(
+    name = Names.replaces,
+    index = replacesIndex(requireClassId(session)),
+    unwrapNamedArguments = true,
+  )?.let { it as FirGetClassCall }
+}
+
+public fun FirAnnotation.rankArgumentOrNull(session: FirSession): Int? {
+  val arg = argumentAt(
+    name = Names.rank,
+    index = rankIndex(requireClassId(session)),
+    unwrapNamedArguments = true,
+  ) ?: return null
+  return arg.evaluateAs<FirLiteralExpression>(session)?.value as? Int
+}
+
+public fun FirAnnotation.requireReplacesArgument(session: FirSession): List<FirGetClassCall> {
+  return classListArgumentAt(
+    name = Names.replaces,
+    index = replacesIndex(requireClassId(session)),
+  ).orEmpty()
+}
+
+private fun rankIndex(annotationClassId: ClassId): Int {
+  return when (annotationClassId) {
+    ClassIds.anvilContributesBinding, ClassIds.anvilContributesMultibinding -> 6
+    else -> throw NotImplementedError(
+      "Couldn't find index of rank argument for $annotationClassId.",
+    )
+  }
+}
+
+private fun replacesIndex(annotationClassId: ClassId): Int {
+  return when (annotationClassId) {
+    ClassIds.anvilContributesTo -> 1
+    ClassIds.anvilContributesBinding, ClassIds.anvilContributesMultibinding -> 2
+    ClassIds.anvilContributesSubcomponent -> 4
+    else -> errorWithAttachment(
+      "Couldn't find index of replaces argument for $annotationClassId.",
+    )
+  }
 }
 
 public fun FirAnnotation.requireScopeArgument(session: FirSession): ConeKotlinType {

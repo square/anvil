@@ -21,6 +21,8 @@ public object AnvilPredicates {
     get() = ClassIds.anvilContributesSubcomponent.lookupPredicateAnnotated()
   public val hasAnvilContributesTo: LookupPredicate
     get() = ClassIds.anvilContributesTo.lookupPredicateAnnotated()
+  public val hasAnvilInternalContributedModule: LookupPredicate
+    get() = ClassIds.anvilInternalContributedModule.lookupPredicateAnnotated()
   public val hasAnyAnvilContributes: LookupPredicate
     get() = hasAnvilContributesTo
       .or(hasAnvilContributesBinding)
