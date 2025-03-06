@@ -93,6 +93,8 @@ private fun classId(
   isLocal = isLocal,
 )
 
+public fun FqName.classId(): ClassId = ClassId.topLevel(this)
+
 /**
  * ```
  *  given: `com.example.SomeClass

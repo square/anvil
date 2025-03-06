@@ -4,14 +4,13 @@ import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
-import com.squareup.anvil.compiler.k2.fir.AnvilPredicates
 import com.squareup.anvil.compiler.k2.fir.contributions.BindingModuleData
 import com.squareup.anvil.compiler.k2.fir.contributions.contributesBindingSessionComponent
+import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import com.squareup.anvil.compiler.k2.utils.fir.argumentAt
 import com.squareup.anvil.compiler.k2.utils.fir.classListArgumentAt
 import com.squareup.anvil.compiler.k2.utils.fir.contributesToScope
 import com.squareup.anvil.compiler.k2.utils.fir.fqName
-import com.squareup.anvil.compiler.k2.utils.fir.ktPsiFactory
 import com.squareup.anvil.compiler.k2.utils.fir.requireFqName
 import com.squareup.anvil.compiler.k2.utils.fir.requireScopeArgument
 import com.squareup.anvil.compiler.k2.utils.fir.resolveConeType
@@ -19,6 +18,7 @@ import com.squareup.anvil.compiler.k2.utils.fir.setAnnotationType
 import com.squareup.anvil.compiler.k2.utils.fir.toGetClassCall
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import com.squareup.anvil.compiler.k2.utils.names.Names
+import com.squareup.anvil.compiler.k2.utils.psi.ktPsiFactory
 import org.jetbrains.kotlin.KtFakeSourceElementKind
 import org.jetbrains.kotlin.fakeElement
 import org.jetbrains.kotlin.fir.FirSession
@@ -91,7 +91,7 @@ public class AnvilFirAnnotationMergingExtension(
     classLikeDeclaration.replaceAnnotations(
       classLikeDeclaration.annotations + buildAnnotationCallCopy(componentAnnotation) {
         setAnnotationType(
-          newType = ClassIds.daggerComponent.asSingleFqName(),
+          newType = ClassIds.daggerComponent,
           ktPsiFactoryOrNull = classLikeDeclaration.psi?.ktPsiFactory(),
         )
 
