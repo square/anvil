@@ -75,37 +75,39 @@ public class AnvilFirContributesModuleExtension(
       visibility = Visibilities.Private
     }
       .apply {
-        val newAnnotations = contributedModules
-          .groupBy { it.scopeType }
-          .entries
-          .map { (scope, modules) ->
+        val newAnnotations = listOf(
+          createFirAnnotation(
+            type = ClassId.topLevel(FqName("kotlin.OptIn")),
+            argumentMapping = buildAnnotationArgumentMapping {
+              mapping[Name.identifier("markerClass")] = ClassIds.anvilInternalContributedModule.requireClassLikeSymbol(session).toGetClassCall()
+            },
+          ),
+          createFirAnnotation(
+            type = ClassIds.anvilInternalContributedModule,
+            argumentMapping = buildAnnotationArgumentMapping {
 
-            createFirAnnotation(
-              ClassIds.anvilInternalContributedModule,
-              buildAnnotationArgumentMapping {
-
-                mapping[Names.scope] = scope.requireClassLikeSymbol(session).toGetClassCall()
-
-                mapping[Names.hints] = buildArrayLiteral {
-                  coneTypeOrNull = session.builtinTypes.stringType.coneType.createArrayType()
-                  argumentList = buildArgumentList {
-                    modules.forEach { module ->
-                      arguments.add(
-                        buildLiteralExpression(
-                          source = null,
-                          kind = ConstantValueKind.String,
-                          value = module.contributedType.asFqNameString(),
-                          annotations = null,
-                          setType = true,
-                          prefix = null,
-                        ),
-                      )
-                    }
+              mapping[Names.hints] = buildArrayLiteral {
+                coneTypeOrNull = session.builtinTypes.stringType.coneType.createArrayType()
+                argumentList = buildArgumentList {
+                  contributedModules.mapTo(arguments) { module ->
+                    buildLiteralExpression(
+                      source = null,
+                      kind = ConstantValueKind.String,
+                      value = listOf(
+                        module.scopeType,
+                        module.contributedType,
+                        *module.replaces.toTypedArray(),
+                      ).joinToString("|") { it.asFqNameString() },
+                      annotations = null,
+                      setType = true,
+                      prefix = null,
+                    )
                   }
                 }
-              },
-            )
-          }
+              }
+            },
+          ),
+        )
 
         replaceAnnotations(newAnnotations)
       }
@@ -121,6 +123,7 @@ public class AnvilFirContributesModuleExtension(
   }
 
   private val HASH_STRING_LENGTH = 8
+
   private val MAX_FILE_NAME_LENGTH = 255
     .minus(14) // ".kapt_metadata" is the longest extension
     .minus(8) // "Provider" is the longest suffix that Dagger might add

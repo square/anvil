@@ -1,7 +1,6 @@
 package com.squareup.anvil.annotations.internal
 
 import com.squareup.anvil.annotations.ContributesBinding
-import kotlin.annotation.AnnotationRetention.BINARY
 import kotlin.annotation.AnnotationRetention.RUNTIME
 import kotlin.annotation.AnnotationTarget.CLASS
 import kotlin.reflect.KClass
@@ -28,12 +27,4 @@ public annotation class InternalBindingMarker(
   val isMultibinding: Boolean,
   val rank: Int = Int.MIN_VALUE,
   val qualifierKey: String = "",
-)
-
-@Target(CLASS)
-@Retention(BINARY)
-@Repeatable
-public annotation class InternalContributedModule(
-  val scope: KClass<*>,
-  val hints: Array<String>,
 )

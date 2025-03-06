@@ -35,7 +35,7 @@ public class AnvilContributionResolveExtension(
   }
 
   override fun needTransformSupertypes(declaration: FirClassLikeDeclaration): Boolean {
-    return !session.anvilFirScopedContributionProvider.initialized
+    return !session.anvilFirScopedContributionProvider.isInitialized()
   }
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {

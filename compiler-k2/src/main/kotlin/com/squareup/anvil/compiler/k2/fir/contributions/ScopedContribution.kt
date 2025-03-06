@@ -53,30 +53,30 @@ public data class ContributedSupertype(
  */
 public data class ContributedSubcomponent(
   override val scopeType: ClassId,
-  val parentScopeType: ClassId,
+  public val parentScopeType: ClassId,
   override val contributedType: ClassId,
   override val replaces: List<ClassId>,
-  val modules: List<ClassId>,
-  val exclude: List<ClassId>,
+  public val modules: List<ClassId>,
+  public val exclude: List<ClassId>,
 ) : ScopedContribution
 
 /**
  * @see com.squareup.anvil.annotations.ContributesBinding
  * @see com.squareup.anvil.annotations.ContributesMultibinding
  */
-public data class ContributedBinding(
+public class ContributedBinding(
   override val scopeType: ClassId,
-  val boundType: FirLazyValue<ClassId>,
+  public val boundType: FirLazyValue<ClassId>,
   override val contributedType: ClassId,
   override val replaces: List<ClassId>,
-  val rank: Int,
-  val ignoreQualifier: Boolean,
-  val isMultibinding: Boolean,
-  val bindingModule: ClassId,
+  public val rank: Int,
+  public val ignoreQualifier: Boolean,
+  public val isMultibinding: Boolean,
+  public val bindingModule: ClassId,
   // val bindingModuleSymbol: FirClassSymbol<*>,
-  val qualifier: Qualifier?,
+  public val qualifier: Qualifier?,
 ) : ScopedContribution {
-  val bindingKey: BindingKey by lazy(LazyThreadSafetyMode.NONE) {
+  public val bindingKey: BindingKey by lazy(LazyThreadSafetyMode.NONE) {
     BindingKey(
       scopeType = scopeType,
       contributedType = contributedType,
@@ -87,9 +87,9 @@ public data class ContributedBinding(
 
 /** A unique composite key for a contributed binding. */
 public data class BindingKey(
-  val scopeType: ClassId,
-  val contributedType: ClassId,
-  val qualifier: Qualifier?,
+  public val scopeType: ClassId,
+  public val contributedType: ClassId,
+  public val qualifier: Qualifier?,
 )
 
 public data class Qualifier(
@@ -109,6 +109,7 @@ public data class Qualifier(
         is FirArrayLiteral -> unwrapped.arguments.joinToString(",") { argument ->
           argument.value()
         }
+
         is FirGetClassCall -> unwrapped.resolveConeType(resolveService).classId.toString()
         else -> unwrapped.psi?.text ?: unwrapped.toString()
       }

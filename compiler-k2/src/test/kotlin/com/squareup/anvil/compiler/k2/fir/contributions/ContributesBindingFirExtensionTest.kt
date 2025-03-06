@@ -1,13 +1,10 @@
 package com.squareup.anvil.compiler.k2.fir.contributions
 
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
-import com.squareup.anvil.compiler.k2.utils.names.bindingModuleSibling
 import com.squareup.anvil.compiler.testing.CompilationModeTest
-import com.squareup.anvil.compiler.testing.TestNames
 import com.squareup.anvil.compiler.testing.classgraph.getAnnotationInfo
 import com.squareup.anvil.compiler.testing.classgraph.hints
 import com.squareup.anvil.compiler.testing.classgraph.moduleNames
-import com.squareup.anvil.compiler.testing.classgraph.scope
 import com.squareup.anvil.compiler.testing.reflect.contributingObject
 import com.squareup.anvil.compiler.testing.reflect.generatedBindingModule
 import com.squareup.anvil.compiler.testing.reflect.isAbstract
@@ -50,10 +47,8 @@ class ContributesBindingFirExtensionTest : CompilationModeTest(
 
       val annotation = singleClass.getAnnotationInfo(ClassIds.anvilInternalContributedModule)
 
-      annotation.scope shouldBe "com.squareup.test.other.AppScope"
-
       annotation.hints shouldBe listOf(
-        TestNames.contributingObject.bindingModuleSibling.asFqNameString(),
+        "com.squareup.test.other.AppScope|com.squareup.test.ContributingObject_BindingModule",
       )
     }
   }

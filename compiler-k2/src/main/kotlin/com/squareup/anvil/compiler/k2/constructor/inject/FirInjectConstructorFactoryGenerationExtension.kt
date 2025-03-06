@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler.k2.constructor.inject
 
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirDeclarationGenerationExtension
-import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates.hasInjectAnnotation
+import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.utils.isCompanion
@@ -11,6 +11,7 @@ import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGener
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.extensions.NestedClassGenerationContext
+import org.jetbrains.kotlin.fir.extensions.predicate.LookupPredicate
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.plugin.createMemberProperty
 import org.jetbrains.kotlin.fir.references.builder.buildPropertyFromParameterResolvedNamedReference
@@ -53,7 +54,7 @@ internal class FirInjectConstructorFactoryGenerationExtension(
 ) : AnvilFirDeclarationGenerationExtension(anvilFirContext, session) {
 
   private val factoriesToGenerate: Map<ClassId, InjectConstructorGenerationModel> by lazy {
-    session.predicateBasedProvider.getSymbolsByPredicate(hasInjectAnnotation)
+    session.predicateBasedProvider.getSymbolsByPredicate(injectAnnotationPredicate)
       .filterIsInstance<FirConstructorSymbol>()
       .associate { constructorSymbol ->
         val model = InjectConstructorGenerationModel(this, session, constructorSymbol)
@@ -62,7 +63,7 @@ internal class FirInjectConstructorFactoryGenerationExtension(
   }
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
-    register(hasInjectAnnotation)
+    register(injectAnnotationPredicate)
   }
 
   @ExperimentalTopLevelDeclarationsGenerationApi
@@ -180,5 +181,9 @@ internal class FirInjectConstructorFactoryGenerationExtension(
     return null
   }
 
-  companion object Key : GeneratedDeclarationKey()
+  companion object Key : GeneratedDeclarationKey() {
+    private val injectAnnotationPredicate = LookupPredicate.create {
+      annotated(ClassIds.javaxInject.asSingleFqName())
+    }
+  }
 }
