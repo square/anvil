@@ -1,6 +1,6 @@
 package com.squareup.anvil.compiler.k2.fir.contributions
 
-import com.squareup.anvil.compiler.k2.util.toFirAnnotation
+import com.squareup.anvil.compiler.k2.utils.fir.createFirAnnotation
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.fir.FirSession
@@ -39,7 +39,7 @@ public class BindingModuleData(
       replaceAnnotations(
         listOf(
           buildContributesToAnnotation(),
-          ClassIds.daggerModule.asSingleFqName().toFirAnnotation(),
+          createFirAnnotation(ClassIds.daggerModule),
         ),
       )
     }.symbol
