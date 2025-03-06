@@ -1,7 +1,7 @@
 package com.squareup.anvil.compiler.k2.fir.contributions
 
-import com.squareup.anvil.compiler.k2.fir.internal.requireClassId
 import com.squareup.anvil.compiler.k2.fir.internal.resolveConeType
+import com.squareup.anvil.compiler.k2.utils.fir.requireClassId
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.caches.FirLazyValue
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall

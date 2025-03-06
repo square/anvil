@@ -84,9 +84,4 @@ class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2
       ).map(::FqName)
     }
   }
-    // TODO (rbusarow) delete me
-    .let {
-      check(System.getenv("CI") == null) { "delete me" }
-      it.skip(1)
-    }
 }
