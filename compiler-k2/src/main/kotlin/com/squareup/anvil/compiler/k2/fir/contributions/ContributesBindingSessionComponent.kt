@@ -11,7 +11,7 @@ import org.jetbrains.kotlin.fir.caches.FirCache
 import org.jetbrains.kotlin.fir.caches.firCachesFactory
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
-import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.name.ClassId
 
 /**
@@ -27,9 +27,9 @@ public class ContributesBindingSessionComponent(
    * generated module IDs.
    * E.g. Key: "Foo_BindingModule", Value: ClassSymbol<Foo>
    */
-  public val generatedIdsToMatchedSymbols: Map<ClassId, FirClassSymbol<*>> by lazy {
+  public val generatedIdsToMatchedSymbols: Map<ClassId, FirRegularClassSymbol> by lazy {
     session.predicateBasedProvider.getSymbolsByPredicate(hasAnvilContributesBinding)
-      .filterIsInstance<FirClassSymbol<*>>()
+      .filterIsInstance<FirRegularClassSymbol>()
       .associateBy {
         it.classId.bindingModuleSibling
       }
@@ -40,7 +40,7 @@ public class ContributesBindingSessionComponent(
       .createCache<ClassId, BindingModuleData, FirSession> { key: ClassId, context ->
         BindingModuleData(
           generatedClassId = key,
-          matchedClassSymbol = generatedIdsToMatchedSymbols[key] as FirClassSymbol<*>,
+          matchedClassSymbol = generatedIdsToMatchedSymbols.getValue(key),
           firExtension = this@ContributesBindingSessionComponent,
           session = session,
         )
