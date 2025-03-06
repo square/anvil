@@ -12,7 +12,9 @@ public val AnnotationInfo.scope: String
 
 /** Returns all Dagger modules specified by the Component as fully qualified names */
 public val AnnotationInfo.moduleNames: List<String>
-  get() = requireParameterAs<Array<*>>(Names.modules).map { (it as AnnotationClassRef).name }.sorted()
+  get() = requireParameterAs<Array<*>>(
+    Names.modules,
+  ).map { (it as AnnotationClassRef).name }.sorted()
 
 /** Returns all Dagger modules specified by the Component as fully qualified names */
 public val AnnotationInfo.hints: List<String>

@@ -208,6 +208,14 @@ public final class com/squareup/anvil/compiler/testing/TestNamesKt {
 	public static final fun sibling (Lorg/jetbrains/kotlin/name/FqName;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/FqName;
 }
 
+public final class com/squareup/anvil/compiler/testing/classgraph/AnnotationInfoKt {
+	public static final fun getHints (Lio/github/classgraph/AnnotationInfo;)Ljava/util/List;
+	public static final fun getModuleNames (Lio/github/classgraph/AnnotationInfo;)Ljava/util/List;
+	public static final fun getScope (Lio/github/classgraph/AnnotationInfo;)Ljava/lang/String;
+	public static final fun requireParameter (Lio/github/classgraph/AnnotationInfo;Lorg/jetbrains/kotlin/name/Name;Z)Ljava/lang/Object;
+	public static synthetic fun requireParameter$default (Lio/github/classgraph/AnnotationInfo;Lorg/jetbrains/kotlin/name/Name;ZILjava/lang/Object;)Ljava/lang/Object;
+}
+
 public abstract interface class com/squareup/anvil/compiler/testing/classgraph/ClassGraphAsserts : com/squareup/anvil/compiler/testing/MoreAsserts {
 	public fun shouldBe (Lio/github/classgraph/ClassInfoList;Ljava/util/Collection;)V
 	public fun shouldContainClass (Lio/github/classgraph/ClassInfoList;Ljava/lang/String;)Lio/github/classgraph/ClassInfo;
@@ -251,7 +259,6 @@ public final class com/squareup/anvil/compiler/testing/classgraph/ClassInfoKt {
 	public static final fun fqNames (Ljava/util/Collection;)Ljava/util/List;
 	public static final fun getAnnotationInfo (Lio/github/classgraph/ClassInfo;Lorg/jetbrains/kotlin/name/ClassId;)Lio/github/classgraph/AnnotationInfo;
 	public static final fun getClassId (Lio/github/classgraph/ClassInfo;)Lorg/jetbrains/kotlin/name/ClassId;
-	public static final fun getModuleNames (Lio/github/classgraph/AnnotationInfo;)Ljava/util/List;
 }
 
 public final class com/squareup/anvil/compiler/testing/classgraph/MethodInfoKt {
@@ -380,6 +387,7 @@ public final class com/squareup/anvil/compiler/testing/compilation/Compile2Resul
 public final class com/squareup/anvil/compiler/testing/compilation/Compile2ResultKt {
 	public static final fun classGraphResult (Ljava/util/List;)Lio/github/classgraph/ScanResult;
 	public static final fun compilationErrorLine (Lcom/squareup/anvil/compiler/testing/compilation/Compile2Result;)Ljava/lang/String;
+	public static final fun isJarFile (Ljava/io/File;)Z
 	public static final fun requireIsJarFile (Ljava/io/File;)Ljava/io/File;
 }
 
@@ -454,9 +462,11 @@ public final class com/squareup/anvil/compiler/testing/reflect/ClassKt {
 	public static final fun factoryClass (Ljava/lang/Class;)Ljava/lang/Class;
 	public static final fun field (Ljava/lang/Class;)Lkotlin/properties/ReadOnlyProperty;
 	public static final fun getClassId (Ljava/lang/Class;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun getContributesToAnnotation (Ljava/lang/Class;)Lcom/squareup/anvil/annotations/ContributesTo;
 	public static final fun getDaggerComponent (Ljava/lang/Class;)Ldagger/Component;
 	public static final fun getDaggerModule (Ljava/lang/Class;)Ldagger/Module;
 	public static final fun getDaggerSubcomponent (Ljava/lang/Class;)Ldagger/Subcomponent;
+	public static final fun getGeneratedBindingModule (Ljava/lang/Class;)Ljava/lang/Class;
 	public static final fun getMembersInjector (Ljava/lang/Class;)Ljava/lang/Class;
 	public static final fun packageName (Ljava/lang/Class;)Ljava/lang/String;
 	public static final fun use (Ljava/lang/reflect/AccessibleObject;Lkotlin/jvm/functions/Function1;)Ljava/lang/Object;
@@ -477,7 +487,6 @@ public final class com/squareup/anvil/compiler/testing/reflect/ReflectionKt {
 	public static final fun getAssistedService (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getAssistedServiceFactory (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getComponentInterface (Ljava/lang/ClassLoader;)Ljava/lang/Class;
-	public static final fun getContributesToAnnotation (Ljava/lang/Class;)Lcom/squareup/anvil/annotations/ContributesTo;
 	public static final fun getContributingInterface (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getContributingObject (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getDaggerModule1 (Ljava/lang/ClassLoader;)Ljava/lang/Class;
@@ -486,7 +495,6 @@ public final class com/squareup/anvil/compiler/testing/reflect/ReflectionKt {
 	public static final fun getDaggerModule4 (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getDeclaredFieldValue (Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;
 	public static final fun getFieldValue (Ljava/lang/Object;Ljava/lang/String;)Ljava/lang/Object;
-	public static final fun getGeneratedBindingModule (Ljava/lang/Class;)Ljava/lang/Class;
 	public static final fun getInjectClass (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getInjectClass_Factory (Ljava/lang/ClassLoader;)Ljava/lang/Class;
 	public static final fun getJavaClass (Ljava/lang/ClassLoader;)Ljava/lang/Class;
