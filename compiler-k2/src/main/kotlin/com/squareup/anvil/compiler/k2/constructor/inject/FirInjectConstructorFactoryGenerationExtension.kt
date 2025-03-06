@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler.k2.constructor.inject
 
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirDeclarationGenerationExtension
-import com.squareup.anvil.compiler.k2.utils.names.ClassIds
+import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates.hasInjectAnnotation
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.utils.isCompanion
@@ -11,7 +11,6 @@ import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGener
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.extensions.NestedClassGenerationContext
-import org.jetbrains.kotlin.fir.extensions.predicate.LookupPredicate
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.plugin.createMemberProperty
 import org.jetbrains.kotlin.fir.references.builder.buildPropertyFromParameterResolvedNamedReference
@@ -24,7 +23,6 @@ import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.SpecialNames
-import kotlin.collections.get
 
 /**
  * Given this kotlin source:
@@ -55,7 +53,7 @@ internal class FirInjectConstructorFactoryGenerationExtension(
 ) : AnvilFirDeclarationGenerationExtension(anvilFirContext, session) {
 
   private val factoriesToGenerate: Map<ClassId, InjectConstructorGenerationModel> by lazy {
-    session.predicateBasedProvider.getSymbolsByPredicate(injectAnnotationPredicate)
+    session.predicateBasedProvider.getSymbolsByPredicate(hasInjectAnnotation)
       .filterIsInstance<FirConstructorSymbol>()
       .associate { constructorSymbol ->
         val model = InjectConstructorGenerationModel(this, session, constructorSymbol)
@@ -64,7 +62,7 @@ internal class FirInjectConstructorFactoryGenerationExtension(
   }
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
-    register(injectAnnotationPredicate)
+    register(hasInjectAnnotation)
   }
 
   @ExperimentalTopLevelDeclarationsGenerationApi
@@ -182,9 +180,5 @@ internal class FirInjectConstructorFactoryGenerationExtension(
     return null
   }
 
-  companion object Key : GeneratedDeclarationKey() {
-    private val injectAnnotationPredicate = LookupPredicate.create {
-      annotated(ClassIds.javaxInject.asSingleFqName())
-    }
-  }
+  companion object Key : GeneratedDeclarationKey()
 }

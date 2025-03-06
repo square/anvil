@@ -6,7 +6,7 @@ import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
 import com.squareup.anvil.compiler.k2.fir.contributions.AnvilFirScopedContributionProvider
 import com.squareup.anvil.compiler.k2.fir.contributions.anvilFirScopedContributionProvider
-import com.squareup.anvil.compiler.k2.fir.internal.AnvilPredicates
+import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar

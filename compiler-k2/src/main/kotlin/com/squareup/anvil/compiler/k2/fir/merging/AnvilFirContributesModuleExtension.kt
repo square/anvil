@@ -8,7 +8,7 @@ import com.squareup.anvil.compiler.k2.fir.contributions.ContributedModule
 import com.squareup.anvil.compiler.k2.fir.contributions.GeneratedBindingHintKey
 import com.squareup.anvil.compiler.k2.fir.contributions.anvilFirScopedContributionProvider
 import com.squareup.anvil.compiler.k2.fir.contributions.createSyntheticFile
-import com.squareup.anvil.compiler.k2.fir.internal.AnvilPredicates
+import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import com.squareup.anvil.compiler.k2.utils.fir.createFirAnnotation
 import com.squareup.anvil.compiler.k2.utils.fir.requireClassLikeSymbol
 import com.squareup.anvil.compiler.k2.utils.fir.toGetClassCall

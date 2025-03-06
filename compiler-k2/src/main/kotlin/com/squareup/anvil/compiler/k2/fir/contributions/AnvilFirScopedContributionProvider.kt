@@ -6,7 +6,7 @@ import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionSessionComponent
 import com.squareup.anvil.compiler.k2.fir.cache.lazyWithContext
-import com.squareup.anvil.compiler.k2.fir.internal.AnvilPredicates
+import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import com.squareup.anvil.compiler.k2.utils.fir.boundTypeArgumentOrNull
 import com.squareup.anvil.compiler.k2.utils.fir.contributesToAnnotations
 import com.squareup.anvil.compiler.k2.utils.fir.getContributesBindingAnnotations
@@ -69,7 +69,7 @@ public class AnvilFirScopedContributionProvider(
   }
 
   public val contributesToSymbols: List<FirClassLikeSymbol<*>> by cachesFactory.createLazyValue {
-    session.predicateBasedProvider.getSymbolsByPredicate(AnvilPredicates.hasContributesToAnnotation)
+    session.predicateBasedProvider.getSymbolsByPredicate(AnvilPredicates.hasAnvilContributesTo)
       .filterIsInstance<FirClassLikeSymbol<*>>()
   }
   public val contributedModuleSymbols: List<FirClassLikeSymbol<*>> by cachesFactory.createLazyValue {
@@ -109,7 +109,7 @@ public class AnvilFirScopedContributionProvider(
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(AnvilPredicates.contributedModule)
-    register(AnvilPredicates.hasContributesToAnnotation)
+    register(AnvilPredicates.hasAnvilContributesTo)
   }
 
   public fun getContributionsForScope(

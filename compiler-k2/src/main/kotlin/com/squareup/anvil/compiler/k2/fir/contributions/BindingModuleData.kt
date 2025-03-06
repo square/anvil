@@ -1,16 +1,12 @@
 package com.squareup.anvil.compiler.k2.fir.contributions
 
-import com.squareup.anvil.compiler.k2.utils.names.ClassIds
-import com.squareup.anvil.compiler.k2.fir.internal.requireAnnotation
-import com.squareup.anvil.compiler.k2.fir.internal.requireClassId
-import com.squareup.anvil.compiler.k2.fir.internal.requireScopeArgument
-import com.squareup.anvil.compiler.k2.util.toFirAnnotation
+import com.squareup.anvil.compiler.k2.utils.fir.createFirAnnotation
 import com.squareup.anvil.compiler.k2.utils.fir.requireAnnotationCall
 import com.squareup.anvil.compiler.k2.utils.fir.requireClassId
 import com.squareup.anvil.compiler.k2.utils.fir.requireClassLikeSymbol
 import com.squareup.anvil.compiler.k2.utils.fir.requireScopeArgument
 import com.squareup.anvil.compiler.k2.utils.fir.toGetClassCall
-import com.squareup.anvil.compiler.k2.utils.fir.createFirAnnotation
+import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import com.squareup.anvil.compiler.k2.utils.names.Names
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.fir.FirElement

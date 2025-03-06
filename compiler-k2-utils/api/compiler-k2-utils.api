@@ -5,6 +5,7 @@ public final class com/squareup/anvil/compiler/k2/utils/fir/AnvilPredicates {
 	public final fun getHasAnvilContributesMultibinding ()Lorg/jetbrains/kotlin/fir/extensions/predicate/LookupPredicate;
 	public final fun getHasAnvilContributesSubcomponent ()Lorg/jetbrains/kotlin/fir/extensions/predicate/LookupPredicate;
 	public final fun getHasAnvilContributesTo ()Lorg/jetbrains/kotlin/fir/extensions/predicate/LookupPredicate;
+	public final fun getHasAnvilInternalContributedModule ()Lorg/jetbrains/kotlin/fir/extensions/predicate/LookupPredicate;
 	public final fun getHasAnyAnvilContributes ()Lorg/jetbrains/kotlin/fir/extensions/predicate/LookupPredicate;
 	public final fun getHasInjectAnnotation ()Lorg/jetbrains/kotlin/fir/extensions/predicate/LookupPredicate;
 	public final fun getHasMergeComponentAnnotation ()Lorg/jetbrains/kotlin/fir/extensions/predicate/LookupPredicate;
@@ -24,12 +25,16 @@ public final class com/squareup/anvil/compiler/k2/utils/fir/FirAnnotationCallBui
 
 public final class com/squareup/anvil/compiler/k2/utils/fir/FirAnnotationUtilsKt {
 	public static final fun argumentAt (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Lorg/jetbrains/kotlin/name/Name;IZ)Lorg/jetbrains/kotlin/fir/expressions/FirExpression;
+	public static final fun boundTypeArgumentOrNull (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Lorg/jetbrains/kotlin/fir/FirSession;)Lorg/jetbrains/kotlin/fir/expressions/FirGetClassCall;
 	public static final fun classId (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Lorg/jetbrains/kotlin/fir/FirSession;)Lorg/jetbrains/kotlin/name/ClassId;
 	public static final fun classListArgumentAt (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Lorg/jetbrains/kotlin/name/Name;I)Ljava/util/List;
 	public static final fun createFirAnnotation (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationArgumentMapping;Lorg/jetbrains/kotlin/KtSourceElement;Lorg/jetbrains/kotlin/descriptors/annotations/AnnotationUseSiteTarget;)Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;
 	public static synthetic fun createFirAnnotation$default (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationArgumentMapping;Lorg/jetbrains/kotlin/KtSourceElement;Lorg/jetbrains/kotlin/descriptors/annotations/AnnotationUseSiteTarget;ILjava/lang/Object;)Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;
+	public static final fun rankArgumentOrNull (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Lorg/jetbrains/kotlin/fir/FirSession;)Ljava/lang/Integer;
+	public static final fun replacesArgumentOrNull (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Lorg/jetbrains/kotlin/fir/FirSession;)Ljava/util/List;
 	public static final fun requireArgumentAt (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Lorg/jetbrains/kotlin/name/Name;IZ)Lorg/jetbrains/kotlin/fir/expressions/FirExpression;
 	public static final fun requireClassId (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Lorg/jetbrains/kotlin/fir/FirSession;)Lorg/jetbrains/kotlin/name/ClassId;
+	public static final fun requireReplacesArgument (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Lorg/jetbrains/kotlin/fir/FirSession;)Ljava/util/List;
 	public static final fun requireScopeArgument (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;)Lorg/jetbrains/kotlin/fir/expressions/FirGetClassCall;
 	public static final fun requireScopeArgument (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Lorg/jetbrains/kotlin/fir/FirSession;)Lorg/jetbrains/kotlin/fir/types/ConeKotlinType;
 	public static final fun requireScopeArgument (Lorg/jetbrains/kotlin/fir/expressions/FirAnnotation;Lorg/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension$TypeResolveService;)Lorg/jetbrains/kotlin/fir/types/ConeKotlinType;
@@ -47,6 +52,7 @@ public final class com/squareup/anvil/compiler/k2/utils/fir/FirClassLikeSymbolUt
 	public static final fun contributesToScope (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/FirSession;Lorg/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension$TypeResolveService;)Z
 	public static final fun contributesToScope (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;Lorg/jetbrains/kotlin/name/FqName;Lorg/jetbrains/kotlin/fir/FirSession;Lorg/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension$TypeResolveService;)Z
 	public static final fun fqName (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;)Lorg/jetbrains/kotlin/name/FqName;
+	public static final fun getContributesBindingAnnotations (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;Lorg/jetbrains/kotlin/fir/FirSession;)Ljava/util/List;
 	public static final fun toGetClassCall (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;)Lorg/jetbrains/kotlin/fir/expressions/FirGetClassCall;
 	public static final fun toKClassRef (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;)Lorg/jetbrains/kotlin/fir/types/ConeClassLikeType;
 }
@@ -61,6 +67,10 @@ public final class com/squareup/anvil/compiler/k2/utils/fir/FirGetClassCallUtils
 public final class com/squareup/anvil/compiler/k2/utils/fir/FirPropertyAccessExpressionUtilsKt {
 	public static final fun getQualifierName (Lorg/jetbrains/kotlin/fir/expressions/FirPropertyAccessExpression;)Lorg/jetbrains/kotlin/name/Name;
 	public static final fun qualifierSegmentsWithSelf (Lorg/jetbrains/kotlin/fir/expressions/FirPropertyAccessExpression;)Ljava/util/List;
+}
+
+public final class com/squareup/anvil/compiler/k2/utils/fir/FirRegularClassSymbolUtilsKt {
+	public static final fun resolvedTypeRef (Lorg/jetbrains/kotlin/fir/symbols/impl/FirRegularClassSymbol;)Lorg/jetbrains/kotlin/fir/types/FirResolvedTypeRef;
 }
 
 public final class com/squareup/anvil/compiler/k2/utils/fir/FirUserTypeRefUtilsKt {
@@ -81,6 +91,7 @@ public final class com/squareup/anvil/compiler/k2/utils/names/ClassIds {
 	public final fun getAnvilContributesMultibinding ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getAnvilContributesSubcomponent ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getAnvilContributesTo ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getAnvilInternalContributedModule ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getAnvilMergeComponent ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getAnvilMergeInterfaces ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getAnvilMergeModules ()Lorg/jetbrains/kotlin/name/ClassId;
@@ -115,10 +126,19 @@ public final class com/squareup/anvil/compiler/k2/utils/names/ClassIdsKt {
 	public static final fun sibling (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;)Lorg/jetbrains/kotlin/name/ClassId;
 }
 
+public final class com/squareup/anvil/compiler/k2/utils/names/FqNames {
+	public static final field INSTANCE Lcom/squareup/anvil/compiler/k2/utils/names/FqNames;
+	public final fun getAnvilHintPackage ()Lorg/jetbrains/kotlin/name/FqName;
+}
+
 public final class com/squareup/anvil/compiler/k2/utils/names/Names {
 	public static final field INSTANCE Lcom/squareup/anvil/compiler/k2/utils/names/Names;
+	public final fun getBoundType ()Lorg/jetbrains/kotlin/name/Name;
 	public final fun getDependencies ()Lorg/jetbrains/kotlin/name/Name;
+	public final fun getHints ()Lorg/jetbrains/kotlin/name/Name;
 	public final fun getModules ()Lorg/jetbrains/kotlin/name/Name;
+	public final fun getRank ()Lorg/jetbrains/kotlin/name/Name;
+	public final fun getReplaces ()Lorg/jetbrains/kotlin/name/Name;
 	public final fun getScope ()Lorg/jetbrains/kotlin/name/Name;
 }
 
