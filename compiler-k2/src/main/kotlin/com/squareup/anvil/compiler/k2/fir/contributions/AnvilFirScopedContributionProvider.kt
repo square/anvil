@@ -1,36 +1,44 @@
 package com.squareup.anvil.compiler.k2.fir.contributions
 
 import com.google.auto.service.AutoService
+import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionSessionComponent
 import com.squareup.anvil.compiler.k2.fir.cache.lazyWithContext
 import com.squareup.anvil.compiler.k2.fir.internal.AnvilPredicates
+import com.squareup.anvil.compiler.k2.fir.internal.argumentAt
 import com.squareup.anvil.compiler.k2.fir.internal.contributesToAnnotations
 import com.squareup.anvil.compiler.k2.fir.internal.getContributesBindingAnnotations
+import com.squareup.anvil.compiler.k2.fir.internal.rankArgumentOrNull
 import com.squareup.anvil.compiler.k2.fir.internal.replacesArgumentOrNull
 import com.squareup.anvil.compiler.k2.fir.internal.requireClassId
 import com.squareup.anvil.compiler.k2.fir.internal.requireScopeArgument
+import com.squareup.anvil.compiler.k2.fir.internal.requireTargetClassId
+import com.squareup.anvil.compiler.k2.utils.fir.resolveConeType
 import com.squareup.anvil.compiler.k2.utils.names.FqNames
 import com.squareup.anvil.compiler.k2.utils.names.Names
+import com.squareup.anvil.compiler.k2.utils.names.bindingModuleSibling
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.caches.FirCache
 import org.jetbrains.kotlin.fir.caches.contains
 import org.jetbrains.kotlin.fir.caches.firCachesFactory
 import org.jetbrains.kotlin.fir.caches.getValue
 import org.jetbrains.kotlin.fir.declarations.evaluateAs
-import org.jetbrains.kotlin.fir.declarations.getTargetType
 import org.jetbrains.kotlin.fir.declarations.unwrapVarargValue
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
+import org.jetbrains.kotlin.fir.expressions.FirGetClassCall
 import org.jetbrains.kotlin.fir.expressions.FirLiteralExpression
 import org.jetbrains.kotlin.fir.expressions.unwrapExpression
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
+import org.jetbrains.kotlin.fir.resolve.getSuperTypes
 import org.jetbrains.kotlin.fir.resolve.providers.FirCachedSymbolNamesProvider
 import org.jetbrains.kotlin.fir.resolve.providers.dependenciesSymbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.utils.checkWithAttachment
@@ -77,9 +85,9 @@ public class AnvilFirScopedContributionProvider(
       initList(typeResolveService)
     }
 
-  private val map_1: FirCache<ClassId, List<ScopedContribution>, FirSupertypeGenerationExtension.TypeResolveService> =
+  private val contributionsByScope: FirCache<ClassId, List<ScopedContribution>, FirSupertypeGenerationExtension.TypeResolveService> =
     session.firCachesFactory.createCache { scopeType, typeResolver ->
-      createContributedThings(scopeType, typeResolver)
+      getContributions(typeResolver).filter { it.scopeType == scopeType }
     }
 
   public fun getContributions(): List<ScopedContribution> {
@@ -106,11 +114,11 @@ public class AnvilFirScopedContributionProvider(
   public fun getContributionsForScope(
     scopeType: ClassId,
     typeResolveService: FirSupertypeGenerationExtension.TypeResolveService,
-  ): List<ScopedContribution> = map_1.getValue(scopeType, typeResolveService)
+  ): List<ScopedContribution> = contributionsByScope.getValue(scopeType, typeResolveService)
 
   public fun getContributionsForScope(scopeType: ClassId): List<ScopedContribution> {
     checkWithAttachment(
-      map_1.contains(scopeType),
+      contributionsByScope.contains(scopeType),
       {
         val resolverName = FirSupertypeGenerationExtension.TypeResolveService::class.simpleName
         "Scoped contributions for scope `$scopeType` have not been computed yet.  " +
@@ -119,7 +127,7 @@ public class AnvilFirScopedContributionProvider(
     ) {
       it.withAttachment("scopeType", scopeType)
     }
-    return map_1.getValueIfComputed(scopeType).orEmpty()
+    return contributionsByScope.getValueIfComputed(scopeType).orEmpty()
   }
 
   private fun initList(
@@ -156,102 +164,95 @@ public class AnvilFirScopedContributionProvider(
       ContributedModule(
         scopeType = session.builtinTypes.unitType.id,
         contributedType = ClassId.topLevel(FqName(moduleFqName)),
+        // TODO this needs to be populated, but first the replaces arg must be written to annotation
         replaces = emptyList(),
       )
     }
 
     val fromSession = contributesToSymbols
-      .flatMap { clazz -> clazz.getContributions(typeResolveService) }
+      .flatMap { clazz -> clazz.getContributesTo(typeResolveService) }
 
     val generated = session.contributesBindingSessionComponent
       .generatedIdsToMatchedSymbols
       .flatMap { (moduleClassId, symbol) ->
-        symbol.getContributesBindingAnnotations(session)
-          .map { annotation ->
-
-            // val getClassCall = annotation.argumentAt(
-            //   name = Names.boundType,
-            //   index = 1,
-            //   unwrapNamedArguments = true,
-            // ) as? FirGetClassCall
-            //
-            // val boundType = getClassCall?.resolveConeType(typeResolveService)?.classId
-
-            // ContributedBinding(
-            //   scopeType = annotation.requireScopeArgument(typeResolveService).requireClassId(),
-            //   boundType = annotation.boundTypeArgumentOrNull(session)?.requireClassId()
-            //     ?: singleSupCTCI,
-            //   contributedType = annotation.boundTypeArgumentOrNull(session)?.requireClassId()
-            //     ?: symbol.classId,
-            //   replaces = annotation.replacesArgumentOrNull(session)
-            //     ?.map {
-            //       requireNotNull(it.getTargetType()) { "Replaces argument must be a type" }
-            //         .requireClassId()
-            //     }
-            //     .orEmpty(),
-            //   rank = annotation.rankArgumentOrNull(session) ?: ContributesBinding.RANK_NORMAL,
-            //   ignoreQualifier = false,
-            //   isMultibinding = false,
-            //   bindingModule = classId.bindingModuleSibling,
-            //   qualifier = null,
-            // )
-
-            ContributedModule(
-              scopeType = annotation.requireScopeArgument(typeResolveService).requireClassId(),
-              contributedType = moduleClassId,
-              replaces = annotation.replacesArgumentOrNull(session)
-                ?.map {
-                  requireNotNull(it.getTargetType()) { "Replaces argument must be a type" }
-                    .requireClassId()
-                }
-                .orEmpty(),
-            )
-          }
+        getContributedBinding(symbol, moduleClassId, typeResolveService)
       }
 
     return contributedModulesInDependencies + fromSession + generated
   }
 
-  private fun FirClassLikeSymbol<*>.getContributions(
+  private fun getContributedBinding(
+    matchedSymbol: FirRegularClassSymbol,
+    moduleClassId: ClassId,
     typeResolveService: FirSupertypeGenerationExtension.TypeResolveService,
-  ): List<ScopedContribution> {
-    val predicateMatcher = session.predicateBasedProvider
-    val clazz = this@getContributions
-    return contributesToAnnotations(session)
-      .map { annotation ->
+  ): List<ScopedContribution> = matchedSymbol.getContributesBindingAnnotations(this.session)
+    .flatMap { annotation ->
 
-        val scopeArg = annotation.requireScopeArgument(typeResolveService)
-        val scopeType = scopeArg.requireClassId()
-
-        if (predicateMatcher.matches(AnvilPredicates.hasModuleAnnotation, clazz)) {
-          ContributedModule(
-            scopeType = scopeType,
-            contributedType = classId,
-            replaces = annotation.replacesArgumentOrNull(session)
-              ?.map {
-                requireNotNull(it.getTargetType()) { "Replaces argument must be a type" }
-                  .requireClassId()
-              }
-              .orEmpty(),
+      val boundType = cachesFactory.createLazyValue {
+        annotation.argumentAt(
+          name = Names.boundType,
+          index = 1,
+          unwrapNamedArguments = true,
+        )
+          ?.let { it as? FirGetClassCall }
+          ?.resolveConeType(typeResolveService)
+          ?.requireClassId()
+          ?: matchedSymbol.getSuperTypes(
+            useSiteSession = session,
+            recursive = false,
+            lookupInterfaces = true,
           )
-        } else {
-          ContributedSupertype(
-            scopeType = scopeType,
-            contributedType = classId,
-            replaces = annotation.replacesArgumentOrNull(session)
-              ?.map {
-                requireNotNull(it.getTargetType()) { "Replaces argument must be a type" }
-                  .requireClassId()
-              }
-              .orEmpty(),
-          )
-        }
+            .single()
+            .requireClassId()
       }
+
+      listOf(
+        ContributedBinding(
+          scopeType = annotation.requireScopeArgument(typeResolveService).requireClassId(),
+          boundType = boundType,
+          contributedType = matchedSymbol.classId,
+          replaces = annotation.replacesClassIds(),
+          rank = annotation.rankArgumentOrNull(session) ?: ContributesBinding.RANK_NORMAL,
+          ignoreQualifier = false,
+          isMultibinding = false,
+          bindingModule = matchedSymbol.classId.bindingModuleSibling,
+          qualifier = null,
+        ),
+        ContributedModule(
+          scopeType = annotation.requireScopeArgument(typeResolveService).requireClassId(),
+          contributedType = moduleClassId,
+          replaces = annotation.replacesClassIds(),
+        ),
+      )
+    }
+
+  private fun FirClassLikeSymbol<*>.getContributesTo(
+    typeResolveService: FirSupertypeGenerationExtension.TypeResolveService,
+  ): List<ContributedTo> {
+    val predicateMatcher = session.predicateBasedProvider
+    val clazz = this@getContributesTo
+
+    return contributesToAnnotations(session).map { annotation ->
+
+      val scopeType = annotation.requireScopeArgument(typeResolveService).requireClassId()
+
+      if (predicateMatcher.matches(AnvilPredicates.hasModuleAnnotation, clazz)) {
+        ContributedModule(
+          scopeType = scopeType,
+          contributedType = classId,
+          replaces = annotation.replacesClassIds(),
+        )
+      } else {
+        ContributedSupertype(
+          scopeType = scopeType,
+          contributedType = classId,
+          replaces = annotation.replacesClassIds(),
+        )
+      }
+    }
   }
 
-  private fun createContributedThings(
-    scopeType: ClassId,
-    typeResolveService: FirSupertypeGenerationExtension.TypeResolveService,
-  ): List<ScopedContribution> =
-    getContributions(typeResolveService).filter { it.scopeType == scopeType }
+  private fun FirAnnotationCall.replacesClassIds() = replacesArgumentOrNull(session)
+    ?.map { it.requireTargetClassId() }
+    .orEmpty()
 }

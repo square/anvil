@@ -130,6 +130,9 @@ internal fun FirAnnotationCall.requireScopeArgument(session: FirSession): ConeKo
   return evaluated.requireTargetType()
 }
 
+/** For `kotlin.Unit::class`, returns `kotlin.Unit`. */
+internal fun FirGetClassCall.requireTargetClassId(): ClassId = requireTargetType().requireClassId()
+
 internal fun FirGetClassCall.requireTargetType(): ConeKotlinType {
   checkWithAttachment(isResolved, { "Type is not yet resolved" }) {
     withFirEntry("FirGetClassCall", this@requireTargetType)

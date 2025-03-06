@@ -8,6 +8,7 @@ import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.fir.FirFunctionTarget
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.caches.FirLazyValue
 import org.jetbrains.kotlin.fir.declarations.FirProperty
 import org.jetbrains.kotlin.fir.declarations.FirPropertyBodyResolveState
 import org.jetbrains.kotlin.fir.declarations.FirResolvePhase
@@ -294,7 +295,7 @@ public data class ContributedSubcomponent(
  */
 public data class ContributedBinding(
   override val scopeType: ClassId,
-  val boundType: ClassId,
+  val boundType: FirLazyValue<ClassId>,
   override val contributedType: ClassId,
   override val replaces: List<ClassId>,
   val rank: Int,

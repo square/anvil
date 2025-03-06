@@ -30,7 +30,7 @@ import org.jetbrains.kotlin.fir.plugin.createTopLevelClass
 import org.jetbrains.kotlin.fir.resolve.providers.firProvider
 import org.jetbrains.kotlin.fir.resolve.providers.impl.FirProviderImpl
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
-import org.jetbrains.kotlin.fir.symbols.impl.FirClassSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.classId
@@ -43,7 +43,7 @@ import org.jetbrains.kotlin.name.Name
 @OptIn(ExperimentalTopLevelDeclarationsGenerationApi::class)
 public class BindingModuleData(
   public val generatedClassId: ClassId,
-  public val matchedClassSymbol: FirClassSymbol<*>,
+  public val matchedClassSymbol: FirRegularClassSymbol,
   firExtension: FirExtension,
   private val session: FirSession,
 ) {

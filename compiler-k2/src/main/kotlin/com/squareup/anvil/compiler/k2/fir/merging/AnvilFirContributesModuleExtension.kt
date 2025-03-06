@@ -65,9 +65,7 @@ public class AnvilFirContributesModuleExtension(
   }
 
   @ExperimentalTopLevelDeclarationsGenerationApi
-  override fun generateTopLevelClassLikeDeclaration(
-    classId: ClassId,
-  ): FirClassLikeSymbol<*> {
+  override fun generateTopLevelClassLikeDeclaration(classId: ClassId): FirClassLikeSymbol<*> {
 
     val clazz = createTopLevelClass(
       classId = classId,

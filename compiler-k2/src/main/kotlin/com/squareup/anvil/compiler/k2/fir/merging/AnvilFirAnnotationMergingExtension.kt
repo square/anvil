@@ -91,7 +91,8 @@ public class AnvilFirAnnotationMergingExtension(
     val mergeScopeId = mergeScope.requireClassId()
 
     val contributedModules = getContributedModules(mergeScopeId, typeResolver)
-    val generatedBindingModules = getGeneratedBindingModules(mergeScopeId, typeResolver)
+    // val generatedBindingModules = getGeneratedBindingModules(mergeScopeId, typeResolver)
+    val generatedBindingModules = emptyList<ClassId>()
 
     val oldModules = componentAnnotation
       .classListArgumentAt(Names.modules, index = 1)
