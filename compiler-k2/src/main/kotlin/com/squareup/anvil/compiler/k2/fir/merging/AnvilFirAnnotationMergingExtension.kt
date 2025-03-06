@@ -18,6 +18,7 @@ import com.squareup.anvil.compiler.k2.utils.fir.ktPsiFactory
 import com.squareup.anvil.compiler.k2.utils.fir.contributesToScope
 import com.squareup.anvil.compiler.k2.utils.fir.fqName
 import com.squareup.anvil.compiler.k2.utils.fir.requireFqName
+import com.squareup.anvil.compiler.k2.utils.fir.requireClassId
 import com.squareup.anvil.compiler.k2.utils.fir.requireScopeArgument
 import com.squareup.anvil.compiler.k2.utils.fir.resolveConeType
 import com.squareup.anvil.compiler.k2.utils.fir.setAnnotationType

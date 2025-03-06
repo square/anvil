@@ -7,15 +7,18 @@ import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionSessionComponent
 import com.squareup.anvil.compiler.k2.fir.cache.lazyWithContext
 import com.squareup.anvil.compiler.k2.fir.internal.AnvilPredicates
-import com.squareup.anvil.compiler.k2.fir.internal.argumentAt
-import com.squareup.anvil.compiler.k2.fir.internal.contributesToAnnotations
-import com.squareup.anvil.compiler.k2.fir.internal.getContributesBindingAnnotations
-import com.squareup.anvil.compiler.k2.fir.internal.rankArgumentOrNull
-import com.squareup.anvil.compiler.k2.fir.internal.replacesArgumentOrNull
-import com.squareup.anvil.compiler.k2.fir.internal.requireClassId
-import com.squareup.anvil.compiler.k2.fir.internal.requireScopeArgument
-import com.squareup.anvil.compiler.k2.fir.internal.requireTargetClassId
+import com.squareup.anvil.compiler.k2.utils.fir.boundTypeArgumentOrNull
+import com.squareup.anvil.compiler.k2.utils.fir.contributesToAnnotations
+import com.squareup.anvil.compiler.k2.utils.fir.getContributesBindingAnnotations
+import com.squareup.anvil.compiler.k2.utils.fir.rankArgumentOrNull
+import com.squareup.anvil.compiler.k2.utils.fir.replacesArgumentOrNull
+import com.squareup.anvil.compiler.k2.utils.fir.requireAnnotation
+import com.squareup.anvil.compiler.k2.utils.fir.requireArgumentAt
+import com.squareup.anvil.compiler.k2.utils.fir.requireClassId
+import com.squareup.anvil.compiler.k2.utils.fir.requireScopeArgument
+import com.squareup.anvil.compiler.k2.utils.fir.requireTargetClassId
 import com.squareup.anvil.compiler.k2.utils.fir.resolveConeType
+import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import com.squareup.anvil.compiler.k2.utils.names.FqNames
 import com.squareup.anvil.compiler.k2.utils.names.Names
 import com.squareup.anvil.compiler.k2.utils.names.bindingModuleSibling
@@ -27,15 +30,12 @@ import org.jetbrains.kotlin.fir.caches.getValue
 import org.jetbrains.kotlin.fir.declarations.evaluateAs
 import org.jetbrains.kotlin.fir.declarations.unwrapVarargValue
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
-import org.jetbrains.kotlin.fir.expressions.FirGetClassCall
 import org.jetbrains.kotlin.fir.expressions.FirLiteralExpression
-import org.jetbrains.kotlin.fir.expressions.unwrapExpression
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.resolve.getSuperTypes
-import org.jetbrains.kotlin.fir.resolve.providers.FirCachedSymbolNamesProvider
 import org.jetbrains.kotlin.fir.resolve.providers.dependenciesSymbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
@@ -131,44 +131,52 @@ public class AnvilFirScopedContributionProvider(
     return contributionsByScope.getValueIfComputed(scopeType).orEmpty()
   }
 
-  private fun initList(
-    typeResolveService: FirSupertypeGenerationExtension.TypeResolveService,
-  ): List<ScopedContribution> {
-
-    val depsSymbolNamesProvider = session.dependenciesSymbolProvider
-      .symbolNamesProvider as FirCachedSymbolNamesProvider
-
-    val interfaces = depsSymbolNamesProvider
-      .computeTopLevelClassifierNames(FqNames.anvilHintPackage)
+  private val dependencyHintClassSymbols by cachesFactory.createLazyValue {
+    session.dependenciesSymbolProvider
+      .symbolNamesProvider.getTopLevelClassifierNamesInPackage(FqNames.anvilHintPackage)
       .orEmpty()
       .mapNotNull {
         session.dependenciesSymbolProvider
           .getClassLikeSymbolByClassId(ClassId(FqNames.anvilHintPackage, it))
       }
+  }
 
-    val contributedModulesInDependencies = interfaces.flatMap { int ->
-      int.annotations.single().let { annotation ->
+  private fun initList(
+    typeResolveService: FirSupertypeGenerationExtension.TypeResolveService,
+  ): List<ScopedContribution> {
 
-        val arg = if (annotation is FirAnnotationCall) {
-          annotation.argumentList.arguments[1]
-        } else {
-          annotation.argumentMapping.mapping[Names.hints]!!
-        }
-        arg.unwrapExpression()
-          .unwrapVarargValue()
+    val contributedModulesInDependencies = dependencyHintClassSymbols
+      .flatMap { clazzSymbol ->
+
+        val annotation = clazzSymbol.requireAnnotation(
+          classId = ClassIds.anvilInternalContributedModule,
+          session = session,
+        )
+
+        val arg = annotation.requireArgumentAt(
+          name = Names.hints,
+          index = 1,
+          unwrapNamedArguments = true,
+        )
+
+        val argStrings = arg.unwrapVarargValue()
           .map {
             it.evaluateAs<FirLiteralExpression>(session)
               .sure { "can't evaluate expression: $it" }.value as String
           }
+
+        argStrings.map { line ->
+          val allNames = line.splitToSequence('|')
+            .map { ClassId.topLevel(FqName(it.trim())) }
+          allNames.first() to allNames.drop(1)
+        }
+      }.map { (moduleFqName, replaces) ->
+        ContributedModule(
+          scopeType = session.builtinTypes.unitType.id,
+          contributedType = moduleFqName,
+          replaces = replaces.toList(),
+        )
       }
-    }.map { moduleFqName ->
-      ContributedModule(
-        scopeType = session.builtinTypes.unitType.id,
-        contributedType = ClassId.topLevel(FqName(moduleFqName)),
-        // TODO this needs to be populated, but first the replaces arg must be written to annotation
-        replaces = emptyList(),
-      )
-    }
 
     val fromSession = contributesToSymbols
       .flatMap { clazz -> clazz.getContributesTo(typeResolveService) }
@@ -190,12 +198,7 @@ public class AnvilFirScopedContributionProvider(
     .flatMap { annotation ->
 
       val boundType = cachesFactory.createLazyValue {
-        annotation.argumentAt(
-          name = Names.boundType,
-          index = 1,
-          unwrapNamedArguments = true,
-        )
-          ?.let { it as? FirGetClassCall }
+        annotation.boundTypeArgumentOrNull(session)
           ?.resolveConeType(typeResolveService)
           ?.requireClassId()
           ?: matchedSymbol.getSuperTypes(

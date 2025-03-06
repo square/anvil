@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.fir.types.impl.FirTypeArgumentListImpl
 import org.jetbrains.kotlin.fir.types.isResolved
 import org.jetbrains.kotlin.fir.types.resolvedType
 import org.jetbrains.kotlin.fir.types.toLookupTag
+import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.name.StandardClassIds
@@ -49,8 +50,11 @@ public fun ConeKotlinType.wrapInProvider(
     isMarkedNullable = false,
   )
 
+public fun ConeKotlinType.requireClassId(): ClassId =
+  requireNotNull(classId) { "ClassId is null: $this" }
+
 public fun ConeKotlinType.requireFqName(): FqName {
-  return this@requireFqName.classId!!.asSingleFqName()
+  return this@requireFqName.requireClassId().asSingleFqName()
 }
 
 public fun FirClassLikeSymbol<*>.fqName(): FqName = classId.asSingleFqName()
