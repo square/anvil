@@ -27,7 +27,7 @@ public final class com/squareup/anvil/compiler/k2/fir/contributions/AnvilFirScop
 	public final fun getContributions (Lorg/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension$TypeResolveService;)Ljava/util/List;
 	public final fun getContributionsForScope (Lorg/jetbrains/kotlin/name/ClassId;)Ljava/util/List;
 	public final fun getContributionsForScope (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension$TypeResolveService;)Ljava/util/List;
-	public final fun getInitialized ()Z
+	public final fun isInitialized ()Z
 	public fun registerPredicates (Lorg/jetbrains/kotlin/fir/extensions/FirDeclarationPredicateRegistrar;)V
 }
 
@@ -73,18 +73,6 @@ public final class com/squareup/anvil/compiler/k2/fir/contributions/BindingModul
 
 public final class com/squareup/anvil/compiler/k2/fir/contributions/ContributedBinding : com/squareup/anvil/compiler/k2/fir/contributions/ScopedContribution {
 	public fun <init> (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/name/ClassId;Ljava/util/List;IZZLorg/jetbrains/kotlin/name/ClassId;Lcom/squareup/anvil/compiler/k2/fir/contributions/Qualifier;)V
-	public final fun component1 ()Lorg/jetbrains/kotlin/name/ClassId;
-	public final fun component2 ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
-	public final fun component3 ()Lorg/jetbrains/kotlin/name/ClassId;
-	public final fun component4 ()Ljava/util/List;
-	public final fun component5 ()I
-	public final fun component6 ()Z
-	public final fun component7 ()Z
-	public final fun component8 ()Lorg/jetbrains/kotlin/name/ClassId;
-	public final fun component9 ()Lcom/squareup/anvil/compiler/k2/fir/contributions/Qualifier;
-	public final fun copy (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/name/ClassId;Ljava/util/List;IZZLorg/jetbrains/kotlin/name/ClassId;Lcom/squareup/anvil/compiler/k2/fir/contributions/Qualifier;)Lcom/squareup/anvil/compiler/k2/fir/contributions/ContributedBinding;
-	public static synthetic fun copy$default (Lcom/squareup/anvil/compiler/k2/fir/contributions/ContributedBinding;Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/name/ClassId;Ljava/util/List;IZZLorg/jetbrains/kotlin/name/ClassId;Lcom/squareup/anvil/compiler/k2/fir/contributions/Qualifier;ILjava/lang/Object;)Lcom/squareup/anvil/compiler/k2/fir/contributions/ContributedBinding;
-	public fun equals (Ljava/lang/Object;)Z
 	public final fun getBindingKey ()Lcom/squareup/anvil/compiler/k2/fir/contributions/BindingKey;
 	public final fun getBindingModule ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getBoundType ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
@@ -94,9 +82,7 @@ public final class com/squareup/anvil/compiler/k2/fir/contributions/ContributedB
 	public final fun getRank ()I
 	public fun getReplaces ()Ljava/util/List;
 	public fun getScopeType ()Lorg/jetbrains/kotlin/name/ClassId;
-	public fun hashCode ()I
 	public final fun isMultibinding ()Z
-	public fun toString ()Ljava/lang/String;
 }
 
 public final class com/squareup/anvil/compiler/k2/fir/contributions/ContributedModule : com/squareup/anvil/compiler/k2/fir/contributions/ContributedTo {

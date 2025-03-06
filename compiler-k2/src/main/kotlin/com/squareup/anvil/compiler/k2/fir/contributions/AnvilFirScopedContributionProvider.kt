@@ -39,9 +39,10 @@ import org.jetbrains.kotlin.fir.resolve.getSuperTypes
 import org.jetbrains.kotlin.fir.resolve.providers.dependenciesSymbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
+import org.jetbrains.kotlin.fir.utils.exceptions.withFirEntry
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
-import org.jetbrains.kotlin.utils.checkWithAttachment
+import org.jetbrains.kotlin.utils.exceptions.checkWithAttachment
 import org.jetbrains.kotlin.utils.sure
 
 public val FirSession.anvilFirScopedContributionProvider: AnvilFirScopedContributionProvider
@@ -78,18 +79,28 @@ public class AnvilFirScopedContributionProvider(
     }
   }
 
-  public val initialized: Boolean get() = allScopedContributions.isInitialized()
-
   private val allScopedContributions =
     lazyWithContext { typeResolveService: FirSupertypeGenerationExtension.TypeResolveService ->
       initList(typeResolveService)
     }
+
+  private val dependencyHintClassSymbols by cachesFactory.createLazyValue {
+    session.dependenciesSymbolProvider
+      .symbolNamesProvider.getTopLevelClassifierNamesInPackage(FqNames.anvilHintPackage)
+      .orEmpty()
+      .mapNotNull {
+        session.dependenciesSymbolProvider
+          .getClassLikeSymbolByClassId(ClassId(FqNames.anvilHintPackage, it))
+      }
+  }
 
   private val contributionsByScope:
     FirCache<ClassId, List<ScopedContribution>, FirSupertypeGenerationExtension.TypeResolveService> =
     session.firCachesFactory.createCache { scopeType, typeResolver ->
       getContributions(typeResolver).filter { it.scopeType == scopeType }
     }
+
+  public fun isInitialized(): Boolean = allScopedContributions.isInitialized()
 
   public fun getContributions(): List<ScopedContribution> {
     checkWithAttachment(
@@ -126,19 +137,9 @@ public class AnvilFirScopedContributionProvider(
           "Call the overloaded version with a $resolverName first."
       },
     ) {
-      it.withAttachment("scopeType", scopeType)
+      withEntry("scopeType", scopeType.asFqNameString())
     }
     return contributionsByScope.getValueIfComputed(scopeType).orEmpty()
-  }
-
-  private val dependencyHintClassSymbols by cachesFactory.createLazyValue {
-    session.dependenciesSymbolProvider
-      .symbolNamesProvider.getTopLevelClassifierNamesInPackage(FqNames.anvilHintPackage)
-      .orEmpty()
-      .mapNotNull {
-        session.dependenciesSymbolProvider
-          .getClassLikeSymbolByClassId(ClassId(FqNames.anvilHintPackage, it))
-      }
   }
 
   private fun initList(
@@ -166,16 +167,22 @@ public class AnvilFirScopedContributionProvider(
           }
 
         argStrings.map { line ->
-          val allNames = line.splitToSequence('|')
+          val allNames = line.split('|')
             .map { ClassId.topLevel(FqName(it.trim())) }
-          allNames.first() to allNames.drop(1)
+
+          checkWithAttachment(allNames.size >= 2, {
+            "Expected at least two names in contributed module hint"
+          }) {
+            withFirEntry("annotation", annotation)
+            withEntry("contributed module hint", line)
+          }
+
+          ContributedModule(
+            scopeType = allNames[0],
+            contributedType = allNames[1],
+            replaces = allNames.drop(2),
+          )
         }
-      }.map { (moduleFqName, replaces) ->
-        ContributedModule(
-          scopeType = session.builtinTypes.unitType.id,
-          contributedType = moduleFqName,
-          replaces = replaces.toList(),
-        )
       }
 
     val fromSession = contributesToSymbols

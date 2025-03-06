@@ -73,7 +73,10 @@ abstract class BasePlugin : Plugin<Project> {
         // Only add the experimental opt-in if the project has the `annotations` dependency,
         // otherwise the compiler will throw a warning and fail in CI.
         if (target.hasAnnotationDependency(sourceSetName)) {
-          freeCompilerArgs.add("-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi")
+          freeCompilerArgs.addAll(
+            "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi",
+            "-opt-in=com.squareup.anvil.annotations.internal.InternalAnvilApi",
+          )
         }
 
         freeCompilerArgs.addAll(extension.kotlinCompilerArgs.get())
