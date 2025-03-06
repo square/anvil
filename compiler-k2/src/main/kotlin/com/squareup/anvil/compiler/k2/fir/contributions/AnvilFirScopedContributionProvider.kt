@@ -85,7 +85,8 @@ public class AnvilFirScopedContributionProvider(
       initList(typeResolveService)
     }
 
-  private val contributionsByScope: FirCache<ClassId, List<ScopedContribution>, FirSupertypeGenerationExtension.TypeResolveService> =
+  private val contributionsByScope:
+    FirCache<ClassId, List<ScopedContribution>, FirSupertypeGenerationExtension.TypeResolveService> =
     session.firCachesFactory.createCache { scopeType, typeResolver ->
       getContributions(typeResolver).filter { it.scopeType == scopeType }
     }

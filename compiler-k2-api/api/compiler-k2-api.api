@@ -1,5 +1,6 @@
 public final class com/squareup/anvil/compiler/k2/fir/AnvilFirContext {
 	public fun <init> (Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;)V
+	public final fun getLogger ()Lorg/jetbrains/kotlin/util/Logger;
 	public final fun getMessageCollector ()Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;
 }
 

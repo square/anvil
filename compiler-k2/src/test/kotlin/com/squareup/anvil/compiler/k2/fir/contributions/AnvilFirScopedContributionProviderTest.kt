@@ -13,7 +13,11 @@ import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.junit.jupiter.api.TestFactory
 import kotlin.properties.Delegates
 
-class AnvilFirScopedContributionProviderTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2 }) {
+class AnvilFirScopedContributionProviderTest : CompilationModeTest(
+  MODE_DEFAULTS.filter {
+    it.isK2
+  },
+) {
 
   @TestFactory
   fun `doing stuff`() = testFactory {

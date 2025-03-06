@@ -36,7 +36,9 @@ internal object AnvilPredicates {
 
   val contributedModule: LookupPredicate
     get() = LookupPredicate.create {
-      annotated(ClassIds.anvilContributesTo.asSingleFqName()).and(annotated(ClassIds.daggerModule.asSingleFqName()))
+      annotated(
+        ClassIds.anvilContributesTo.asSingleFqName(),
+      ).and(annotated(ClassIds.daggerModule.asSingleFqName()))
     }
 
   val hasContributesSubcomponentAnnotation: LookupPredicate
