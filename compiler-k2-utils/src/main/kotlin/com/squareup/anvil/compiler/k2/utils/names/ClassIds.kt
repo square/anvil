@@ -45,6 +45,10 @@ public object ClassIds {
   public val anvilContributesTo: ClassId =
     classId("com.squareup.anvil.annotations", "ContributesTo")
 
+  /** `com.squareup.anvil.annotations.internal.InternalContributedModule` */
+  public val anvilInternalContributedModule: ClassId =
+    classId("com.squareup.anvil.annotations.internal", "InternalContributedModule")
+
   /** `com.squareup.anvil.annotations.MergeComponent` */
   public val anvilMergeComponent: ClassId =
     classId("com.squareup.anvil.annotations", "MergeComponent")
@@ -92,6 +96,8 @@ private fun classId(
   relativeClassName = FqName(relativeName),
   isLocal = isLocal,
 )
+
+public fun FqName.classId(): ClassId = ClassId.topLevel(this)
 
 /**
  * ```

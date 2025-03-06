@@ -3,8 +3,8 @@ package com.squareup.anvil.compiler.k2.fir.contributions
 import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirDeclarationGenerationExtension
-import com.squareup.anvil.compiler.k2.util.AnvilPredicates.hasContributesBindingAnnotation
-import com.squareup.anvil.compiler.k2.util.toFirAnnotation
+import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
+import com.squareup.anvil.compiler.k2.utils.fir.createFirAnnotation
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import org.jetbrains.kotlin.descriptors.Modality
 import org.jetbrains.kotlin.fir.FirSession
@@ -47,7 +47,7 @@ public class ContributesBindingFirExtension(
 ) : AnvilFirDeclarationGenerationExtension(anvilFirContext, session) {
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
-    register(hasContributesBindingAnnotation)
+    register(AnvilPredicates.hasAnvilContributesBinding)
   }
 
   override fun getTopLevelClassIds(): Set<ClassId> {
@@ -96,7 +96,7 @@ public class ContributesBindingFirExtension(
           type = bindingData.matchedClassSymbol.constructType(),
         )
       }.apply {
-        replaceAnnotations(listOf(ClassIds.daggerBinds.asSingleFqName().toFirAnnotation()))
+        replaceAnnotations(listOf(createFirAnnotation(ClassIds.daggerBinds)))
       }.symbol,
     )
   }

@@ -1,9 +1,12 @@
 package com.squareup.anvil.compiler.testing.reflect
 
+import com.squareup.anvil.annotations.ContributesTo
 import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import com.squareup.anvil.annotations.internal.InternalBindingMarker
+import com.squareup.anvil.compiler.k2.utils.names.bindingModuleSibling
 import com.squareup.anvil.compiler.k2.utils.names.factoryJoined
 import com.squareup.anvil.compiler.k2.utils.names.membersInjectorSibling
+import com.squareup.anvil.compiler.testing.classId
 import dagger.Component
 import dagger.Module
 import dagger.Subcomponent
@@ -15,6 +18,12 @@ import java.lang.reflect.AccessibleObject
 import java.lang.reflect.Field
 import kotlin.properties.ReadOnlyProperty
 import kotlin.reflect.KClass
+
+public val Class<*>.generatedBindingModule: Class<*>
+  get() = classLoader.loadClass(kotlin.classId.bindingModuleSibling)
+
+public val Class<*>.contributesToAnnotation: ContributesTo
+  get() = annotations.filterIsInstance<ContributesTo>().single()
 
 @ExperimentalAnvilApi
 public val Class<*>.membersInjector: Class<*>
