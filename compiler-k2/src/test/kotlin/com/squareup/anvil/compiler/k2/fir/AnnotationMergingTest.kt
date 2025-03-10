@@ -8,6 +8,7 @@ import com.squareup.anvil.compiler.testing.classgraph.fqNames
 import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.name.FqName
 import org.junit.jupiter.api.TestFactory
+import kotlin.streams.asSequence
 
 class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2 && !it.useKapt }) {
 
@@ -46,10 +47,6 @@ class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2
         package com.squareup.test
 
         import com.squareup.anvil.annotations.MergeComponent
-        import dagger.Binds
-        import dagger.Component
-        import dagger.Subcomponent
-        import javax.inject.Inject
 
         @dagger.Module
         @com.squareup.anvil.annotations.ContributesTo(Unit::class)
@@ -84,4 +81,46 @@ class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2
       ).map(::FqName)
     }
   }
+    // TODO (rbusarow) delete me
+    .let {
+      check(System.getenv("CI") == null) { "delete me" }
+
+      it.asSequence()
+        .toList()
+        .takeLast(1)
+    }
+
+  @TestFactory
+  fun `canary things`() = testFactory {
+
+    compile2(
+      """
+        package com.squareup.test
+
+        @dagger.Module
+        @com.squareup.anvil.annotations.ContributesTo(Unit::class) interface LocalProjectModule
+
+        // @com.squareup.anvil.annotations.ContributesBinding(Unit::class)
+        // class LocalAImpl @javax.inject.Inject constructor() : LocalA
+        // interface LocalA
+
+        // @com.squareup.anvil.annotations.MergeComponent(Unit::class) interface ComponentInterface
+      """.trimIndent(),
+      workingDir = workingDir / "consumer",
+    ) {
+
+      scanResult
+        .allMergedModulesForComponent(TestNames.componentInterface.asFqNameString())
+        .fqNames() shouldBe listOf(
+        "com.squareup.test.dep1.DependencyModule1",
+        "com.squareup.test.dep2.DependencyModule2",
+        "com.squareup.test.dep2.Dep2AImpl_BindingModule",
+        "com.squareup.test.LocalProjectModule",
+        "com.squareup.test.LocalAImpl_BindingModule",
+      ).map(::FqName)
+    }
+  }
+    .asSequence()
+    .toList()
+    .takeLast(1)
 }

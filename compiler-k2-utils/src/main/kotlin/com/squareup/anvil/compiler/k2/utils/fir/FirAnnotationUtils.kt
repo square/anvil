@@ -6,22 +6,28 @@ import com.squareup.anvil.compiler.k2.utils.names.classId
 import org.jetbrains.kotlin.KtSourceElement
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.declarations.FirResolvePhase
 import org.jetbrains.kotlin.fir.declarations.evaluateAs
 import org.jetbrains.kotlin.fir.expressions.FirAnnotation
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationArgumentMapping
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
+import org.jetbrains.kotlin.fir.expressions.FirArgumentList
 import org.jetbrains.kotlin.fir.expressions.FirArrayLiteral
+import org.jetbrains.kotlin.fir.expressions.FirEmptyArgumentList
 import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.expressions.FirGetClassCall
 import org.jetbrains.kotlin.fir.expressions.FirLiteralExpression
 import org.jetbrains.kotlin.fir.expressions.FirNamedArgumentExpression
 import org.jetbrains.kotlin.fir.expressions.arguments
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
+import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.impl.FirEmptyAnnotationArgumentMapping
 import org.jetbrains.kotlin.fir.expressions.unwrapArgument
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.resolve.fqName
 import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
+import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
+import org.jetbrains.kotlin.fir.symbols.lazyResolveToPhaseRecursively
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.coneType
@@ -94,15 +100,31 @@ private fun replacesIndex(annotationClassId: ClassId): Int {
   }
 }
 
+// public fun FirAnnotationCall.requireScopeArgument(session: FirSession): ConeKotlinType {
+//   containingDeclarationSymbol.lazyResolveToPhaseRecursively(FirResolvePhase.ANNOTATION_ARGUMENTS)
+//   return requireScopeArgument(session)
+// }
+
 public fun FirAnnotation.requireScopeArgument(session: FirSession): ConeKotlinType {
+
+  (this as? FirAnnotationCall)?.containingDeclarationSymbol
+    ?.lazyResolveToPhaseRecursively(FirResolvePhase.ANNOTATION_ARGUMENTS)
+
+  println(this)
+
+  // return getKClassArgument(Names.scope, session)
+  //   ?: errorWithAttachment("Scope argument is not resolved yet: ${this@requireScopeArgument.render()}") {
+  //     withFirEntry("scope argument expression", this@requireScopeArgument)
+  //   }
 
   val expression = requireArgumentAt(
     name = Names.scope,
     index = 0,
     unwrapNamedArguments = true,
   )
+  // check(expression.isResolved) { "expression isn't resolved yet" }
   val evaluated = expression.evaluateAs<FirGetClassCall>(session)
-    ?: errorWithAttachment("Scope argument is not a FirGetClassCall: $expression") {
+    ?: errorWithAttachment("Scope argument is not resolved yet: $expression") {
       withFirEntry("scope argument expression", expression)
     }
   return evaluated.requireTargetType()
@@ -233,6 +255,32 @@ public fun createFirAnnotation(
   useSiteTarget: AnnotationUseSiteTarget? = null,
 ): FirAnnotation = buildAnnotation {
   this.argumentMapping = argumentMapping
+  this.source = source
+  this.useSiteTarget = useSiteTarget
+  annotationTypeRef = buildResolvedTypeRef {
+    coneType = type.constructClassLikeType()
+  }
+}
+
+/**
+ * Creates a [FirAnnotation] instance with the specified type, argument mapping, source, and use-site target.
+ *
+ * @param type The [ClassId] representing the annotation type.
+ * @param containingDeclarationSymbol The symbol of the declaration to be annotated.
+ * @param argumentList Named parameters.  Defaults to empty.
+ * @param source `null` or a [org.jetbrains.kotlin.KtFakeSourceElement] is typically fine.
+ * @param useSiteTarget `get`, `set`, `field`, `file`, etc.  see [AnnotationUseSiteTarget].
+ * @return A [FirAnnotation] instance.
+ */
+public fun createFirAnnotationCall(
+  type: ClassId,
+  containingDeclarationSymbol: FirBasedSymbol<*>,
+  argumentList: FirArgumentList = FirEmptyArgumentList,
+  source: KtSourceElement? = null,
+  useSiteTarget: AnnotationUseSiteTarget? = null,
+): FirAnnotationCall = buildAnnotationCall {
+  this.containingDeclarationSymbol = containingDeclarationSymbol
+  this.argumentList = argumentList
   this.source = source
   this.useSiteTarget = useSiteTarget
   annotationTypeRef = buildResolvedTypeRef {

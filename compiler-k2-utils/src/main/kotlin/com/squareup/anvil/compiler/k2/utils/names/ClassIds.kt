@@ -4,6 +4,7 @@ import com.squareup.anvil.annotations.ExperimentalAnvilApi
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
+import java.security.MessageDigest
 
 /** Well-known class ids used by Anvil. */
 public object ClassIds {
@@ -49,6 +50,10 @@ public object ClassIds {
   public val anvilInternalContributedModule: ClassId =
     classId("com.squareup.anvil.annotations.internal", "InternalContributedModule")
 
+  /** `com.squareup.anvil.annotations.internal.InternalContributedModule` */
+  public val anvilInternalAnvilApi: ClassId =
+    classId("com.squareup.anvil.annotations.internal", "InternalAnvilApi")
+
   /** `com.squareup.anvil.annotations.MergeComponent` */
   public val anvilMergeComponent: ClassId =
     classId("com.squareup.anvil.annotations", "MergeComponent")
@@ -85,6 +90,22 @@ public object ClassIds {
 
   /** `dagger.Subcomponent` */
   public val daggerSubcomponent: ClassId = classId("dagger", "Subcomponent")
+
+  public fun anvilContributedModules(moduleTypes: List<ClassId>): ClassId {
+    return ClassId(
+      FqNames.anvilHintPackage,
+      Name.identifier("AnvilModuleHints_${md5Hash(moduleTypes.map { it.asString() })}"),
+    )
+  }
+
+  private const val HASH_STRING_LENGTH: Int = 8
+
+  private fun md5Hash(params: List<Any>): String =
+    MessageDigest.getInstance("MD5")
+      .apply { for (it in params) update(it.toString().toByteArray()) }
+      .digest()
+      .take(HASH_STRING_LENGTH / 2)
+      .joinToString("") { "%02x".format(it) }
 }
 
 private fun classId(

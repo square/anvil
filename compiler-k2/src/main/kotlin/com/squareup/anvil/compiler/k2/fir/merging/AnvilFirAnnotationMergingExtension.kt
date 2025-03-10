@@ -4,15 +4,14 @@ import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
-import com.squareup.anvil.compiler.k2.fir.contributions.ContributedBinding
+import com.squareup.anvil.compiler.k2.fir.abstraction.providers.anvilFirScopedContributionProvider
 import com.squareup.anvil.compiler.k2.fir.contributions.ContributedModule
-import com.squareup.anvil.compiler.k2.fir.contributions.anvilFirScopedContributionProvider
 import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import com.squareup.anvil.compiler.k2.utils.fir.argumentAt
 import com.squareup.anvil.compiler.k2.utils.fir.classListArgumentAt
+import com.squareup.anvil.compiler.k2.utils.fir.requireAnnotationCall
 import com.squareup.anvil.compiler.k2.utils.fir.requireClassId
 import com.squareup.anvil.compiler.k2.utils.fir.requireScopeArgument
-import com.squareup.anvil.compiler.k2.utils.fir.resolveConeType
 import com.squareup.anvil.compiler.k2.utils.fir.setAnnotationType
 import com.squareup.anvil.compiler.k2.utils.fir.toGetClassCall
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
@@ -20,9 +19,10 @@ import com.squareup.anvil.compiler.k2.utils.names.Names
 import com.squareup.anvil.compiler.k2.utils.psi.ktPsiFactory
 import org.jetbrains.kotlin.KtFakeSourceElementKind
 import org.jetbrains.kotlin.fakeElement
+import org.jetbrains.kotlin.fir.FirElement
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
-import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
+import org.jetbrains.kotlin.fir.declarations.FirRegularClass
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationCallCopy
 import org.jetbrains.kotlin.fir.expressions.builder.buildArgumentList
 import org.jetbrains.kotlin.fir.expressions.builder.buildArrayLiteral
@@ -32,10 +32,11 @@ import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.predicate.DeclarationPredicate
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.psi
-import org.jetbrains.kotlin.fir.resolve.fqName
 import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
+import org.jetbrains.kotlin.fir.visitors.FirDefaultTransformer
+import org.jetbrains.kotlin.fir.visitors.transformSingle
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.psi.KtAnnotationEntry
@@ -77,102 +78,102 @@ public class AnvilFirAnnotationMergingExtension(
     typeResolver: TypeResolveService,
   ): List<ConeKotlinType> {
 
-    val componentAnnotation = classLikeDeclaration.annotations
-      .single { it.fqName(session) == ClassIds.anvilMergeComponent.asSingleFqName() } as FirAnnotationCall
-
-    val mergeScope = componentAnnotation.requireScopeArgument().resolveConeType(typeResolver)
-    val mergeScopeId = mergeScope.requireClassId()
-
-    val contributedModules = getContributedModules(mergeScopeId, typeResolver)
-    // val generatedBindingModules = getGeneratedBindingModules(mergeScopeId, typeResolver)
-    val generatedBindingModules = emptyList<ClassId>()
-
-    val oldModules = componentAnnotation
-      .classListArgumentAt(Names.modules, index = 1)
-      .orEmpty()
-
-    classLikeDeclaration.replaceAnnotations(
-      classLikeDeclaration.annotations + buildAnnotationCallCopy(componentAnnotation) {
-        setAnnotationType(
-          newType = ClassIds.daggerComponent,
-          ktPsiFactoryOrNull = classLikeDeclaration.psi?.ktPsiFactory(),
-        )
-
-        val mergedModules = contributedModules.map { it.asSingleFqName() } +
-          generatedBindingModules.map { it.asSingleFqName() }
-
-        val newAnnotationCallPsi = componentAnnotation.psi?.let {
-          buildNewAnnotationPsi(
-            oldAnnotationCall = it as KtAnnotationEntry,
-            mergedModules = mergedModules,
-          )
-        }
-
-        val newSource =
-          newAnnotationCallPsi?.toKtPsiSourceElement(KtFakeSourceElementKind.PluginGenerated)
-            ?: componentAnnotation.source?.fakeElement(KtFakeSourceElementKind.PluginGenerated)
-        source = newSource
-
-        argumentList = buildArgumentList {
-          source = componentAnnotation.source?.fakeElement(KtFakeSourceElementKind.PluginGenerated)
-
-          arguments += buildNamedArgumentExpression {
-            name = Names.modules
-            isSpread = false
-            expression = buildArrayLiteral {
-              argumentList = buildArgumentList {
-                arguments += oldModules
-                arguments += contributedModules.map {
-                  session.symbolProvider.getClassLikeSymbolByClassId(it)!!.toGetClassCall()
-                }
-                arguments += generatedBindingModules.map {
-                  session.symbolProvider.getClassLikeSymbolByClassId(it)!!.toGetClassCall()
-                }
-              }
-            }
-          }
-
-          componentAnnotation.argumentAt(
-            Names.dependencies,
-            index = 2,
-            unwrapNamedArguments = false,
-          )?.let {
-            arguments += it
-          }
-        }
-      },
+    val componentAnnotation = classLikeDeclaration.symbol.requireAnnotationCall(
+      classId = ClassIds.anvilMergeComponent,
+      session = session,
     )
 
-    return listOf()
+    val mergeScopeId = componentAnnotation.requireScopeArgument(session).requireClassId()
+
+    val contributedModules = getContributedModules(mergeScopeId)
+
+    classLikeDeclaration.transformSingle(
+      object : FirDefaultTransformer<Nothing?>() {
+        override fun <E : FirElement> transformElement(element: E, data: Nothing?): E {
+
+          // element as FirAnnotationCall
+          // element.containingDeclarationSymbol
+
+          val elementClass = element as FirRegularClass
+
+          val generatedBindingModules = emptyList<ClassId>()
+
+          val oldModules = componentAnnotation
+            .classListArgumentAt(Names.modules, index = 1)
+            .orEmpty()
+
+          elementClass.replaceAnnotations(
+            elementClass.annotations + buildAnnotationCallCopy(componentAnnotation) {
+
+              setAnnotationType(
+                newType = ClassIds.daggerComponent,
+                ktPsiFactoryOrNull = elementClass.psi?.ktPsiFactory(),
+              )
+
+              val mergedModules = contributedModules.map { it.asSingleFqName() } +
+                generatedBindingModules.map { it.asSingleFqName() }
+
+              val newAnnotationCallPsi = componentAnnotation.psi?.let {
+                buildNewAnnotationPsi(
+                  oldAnnotationCall = it as KtAnnotationEntry,
+                  mergedModules = mergedModules,
+                )
+              }
+
+              val newSource =
+                newAnnotationCallPsi?.toKtPsiSourceElement(KtFakeSourceElementKind.PluginGenerated)
+                  ?: componentAnnotation.source?.fakeElement(KtFakeSourceElementKind.PluginGenerated)
+              source = newSource
+
+              argumentList = buildArgumentList {
+                source =
+                  componentAnnotation.source?.fakeElement(KtFakeSourceElementKind.PluginGenerated)
+
+                arguments += buildNamedArgumentExpression {
+                  name = Names.modules
+                  isSpread = false
+                  expression = buildArrayLiteral {
+                    argumentList = buildArgumentList {
+                      arguments += oldModules
+                      arguments += contributedModules.map {
+                        session.symbolProvider.getClassLikeSymbolByClassId(it)!!.toGetClassCall()
+                      }
+                      arguments += generatedBindingModules.map {
+                        session.symbolProvider.getClassLikeSymbolByClassId(it)!!.toGetClassCall()
+                      }
+                    }
+                  }
+                }
+
+                componentAnnotation.argumentAt(
+                  Names.dependencies,
+                  index = 2,
+                  unwrapNamedArguments = false,
+                )?.let {
+                  arguments += it
+                }
+              }
+            },
+          )
+
+          return element
+        }
+      },
+      null,
+    )
+
+    return emptyList()
   }
 
   /**
    * Gets all Dagger modules annotated with @ContributesTo that match the scope being merged
    */
-  private fun getContributedModules(
-    mergeScopeId: ClassId,
-    typeResolveService: TypeResolveService,
-  ): List<ClassId> = session.anvilFirScopedContributionProvider.getContributionsForScope(
-    scopeType = mergeScopeId,
-    typeResolveService = typeResolveService,
-  )
-    .filterIsInstance<ContributedModule>()
-    .map { it.contributedType }
-
-  /**
-   * Gets data for all Dagger modules generated from a @ContributesBinding-annotated class matching
-   * the scope that is being merged
-   */
-  private fun getGeneratedBindingModules(
-    mergeScopeId: ClassId,
-    typeResolveService: TypeResolveService,
-  ): List<ClassId> {
-
-    return session.anvilFirScopedContributionProvider
-      .getContributionsForScope(mergeScopeId, typeResolveService)
-      .filterIsInstance<ContributedBinding>()
-      .map { it.bindingModule }
-  }
+  private fun getContributedModules(mergeScopeId: ClassId): List<ClassId> =
+    session.anvilFirScopedContributionProvider
+      .getContributions()
+      .filterIsInstance<ContributedModule>()
+      .filter { it.scopeType.getValue() == mergeScopeId }
+      .map { it.contributedType }
 
   private fun buildNewAnnotationPsi(
     oldAnnotationCall: KtAnnotationEntry,
@@ -226,7 +227,7 @@ public class AnvilFirAnnotationMergingExtension(
 
     val newModulesText = "modules = [$classArgList]"
 
-    val componentCall = ClassIds.daggerComponent.asString().let { fqString ->
+    val componentCall = ClassIds.daggerComponent.asFqNameString().let { fqString ->
       imports[fqString] ?: fqString
     }
 
