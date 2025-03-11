@@ -4,27 +4,35 @@ import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionSessionComponent
+import com.squareup.anvil.compiler.k2.fir.cache.lazyWithContext
 import com.squareup.anvil.compiler.k2.fir.contributions.ContributedModule
 import com.squareup.anvil.compiler.k2.fir.contributions.ScopedContribution
 import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import com.squareup.anvil.compiler.k2.utils.fir.requireAnnotation
 import com.squareup.anvil.compiler.k2.utils.fir.requireArgumentAt
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
+import com.squareup.anvil.compiler.k2.utils.names.FqNames
 import com.squareup.anvil.compiler.k2.utils.names.Names
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.caches.FirLazyValue
 import org.jetbrains.kotlin.fir.caches.firCachesFactory
+import org.jetbrains.kotlin.fir.caches.getValue
 import org.jetbrains.kotlin.fir.declarations.evaluateAs
 import org.jetbrains.kotlin.fir.declarations.unwrapVarargValue
 import org.jetbrains.kotlin.fir.expressions.FirLiteralExpression
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
+import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
+import org.jetbrains.kotlin.fir.moduleData
+import org.jetbrains.kotlin.fir.resolve.providers.FirCompositeCachedSymbolNamesProvider
+import org.jetbrains.kotlin.fir.resolve.providers.dependenciesSymbolProvider
+import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
 import org.jetbrains.kotlin.fir.utils.exceptions.withFirEntry
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.utils.exceptions.checkWithAttachment
 import org.jetbrains.kotlin.utils.sure
-import kotlin.properties.ReadOnlyProperty
 
 public val FirSession.anvilFirDependencyHintProvider: AnvilFirDependencyHintProvider by FirSession.sessionComponentAccessor()
 
@@ -35,28 +43,59 @@ public class AnvilFirDependencyHintProvider(
 
   private val cachesFactory = session.firCachesFactory
 
-  // private fun <V> createLazyValue(createValue: () -> V): FirLazyValue<V> =
-  //   cachesFactory.createLazyValue(createValue)
-
-  private fun <V> createLazyValue(createValue: () -> V): ReadOnlyProperty<Any?, V> =
-    ReadOnlyProperty { _, _ -> createValue() }
+  private fun <V> createLazyValue(createValue: () -> V): FirLazyValue<V> =
+    cachesFactory.createLazyValue(createValue)
 
   private val dependencyHintClassSymbols by createLazyValue {
 
-    // session.dependenciesSymbolProvider
-    //   .symbolNamesProvider.getTopLevelCallableIdsInPackage(FqNames.anvilHintPackage)
-    //   .orEmpty()
-    //   .mapNotNull {
-    //     session.dependenciesSymbolProvider
-    //       .getClassLikeSymbolByClassId(ClassId(FqNames.anvilHintPackage, it))
-    //   }
+    val fancyNames = session.dependenciesSymbolProvider
+      .symbolNamesProvider as FirCompositeCachedSymbolNamesProvider
+
+    val names = fancyNames.getTopLevelCallableNamesInPackage(FqNames.anvilHintPackage)
+
+    val consumerPackages = session.symbolProvider.symbolNamesProvider.getPackageNames()
+
+    val packages = fancyNames.computePackageNames()
+    // ?.filter { it.startsWith(FqNames.anvilHintPackage.asString()) }
+
+    val classifiers = fancyNames.getTopLevelClassifierNamesInPackage(FqNames.anvilHintPackage)
+
+    val symbols = classifiers.orEmpty()
+      .map {
+        session.dependenciesSymbolProvider
+          .getClassLikeSymbolByClassId(ClassId(FqNames.anvilHintPackage, it))
+
+        // .filterIsInstance<FirPropertySymbol>()
+      }
+
+    println(
+      """
+      |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ${session.moduleData.name}
+      | -- consumerPackages
+      |${consumerPackages?.joinToString("\n")}
+      |
+      | -- packages
+      |${packages?.joinToString("\n")}
+      |~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+      """.trimMargin(),
+    )
+
+    symbols
 
     emptyList<FirPropertySymbol>()
   }
 
-  private val allScopedContributions by createLazyValue { parseDependencyHints() }
+  private val allScopedContributions =
+    lazyWithContext { typeResolver: FirSupertypeGenerationExtension.TypeResolveService ->
+      val hints = parseDependencyHints()
 
-  public fun getContributions(): List<ScopedContribution> = allScopedContributions
+      hints
+    }
+
+  public fun getContributions(): List<ScopedContribution> = allScopedContributions.getValue()
+  public fun getContributions(
+    typeResolver: FirSupertypeGenerationExtension.TypeResolveService,
+  ): List<ScopedContribution> = allScopedContributions.getValue(typeResolver)
 
   private fun parseDependencyHints(): List<ScopedContribution> = dependencyHintClassSymbols
     .flatMap { clazzSymbol ->

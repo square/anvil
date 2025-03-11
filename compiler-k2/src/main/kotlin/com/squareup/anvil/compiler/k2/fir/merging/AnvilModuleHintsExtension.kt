@@ -11,15 +11,19 @@ import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import com.squareup.anvil.compiler.k2.utils.names.FqNames
 import com.squareup.anvil.compiler.k2.utils.stdlib.mapToSet
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.caches.FirLazyValue
 import org.jetbrains.kotlin.fir.caches.firCachesFactory
+import org.jetbrains.kotlin.fir.caches.getValue
 import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
+import org.jetbrains.kotlin.fir.moduleData
+import org.jetbrains.kotlin.fir.resolve.providers.dependenciesSymbolProvider
+import org.jetbrains.kotlin.fir.resolve.providers.symbolProvider
 import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
 import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.FqName
-import kotlin.properties.ReadOnlyProperty
 
 public class AnvilModuleHintsExtension(
   anvilFirContext: AnvilFirContext,
@@ -28,11 +32,8 @@ public class AnvilModuleHintsExtension(
 
   private val cachesFactory = session.firCachesFactory
 
-  // private fun <V> createLazyValue(createValue: () -> V): FirLazyValue<V> =
-  //   cachesFactory.createLazyValue(createValue)
-
-  private fun <V> createLazyValue(createValue: () -> V): ReadOnlyProperty<Any?, V> =
-    ReadOnlyProperty { _, _ -> createValue() }
+  private fun <V> createLazyValue(createValue: () -> V): FirLazyValue<V> =
+    cachesFactory.createLazyValue(createValue)
 
   private val contributedModules by createLazyValue {
     session.anvilFirScopedContributionProvider.getContributions()
@@ -56,13 +57,33 @@ public class AnvilModuleHintsExtension(
   }
 
   override fun hasPackage(packageFqName: FqName): Boolean {
-    return packageFqName == FqNames.anvilHintPackage && contributedModules.isNotEmpty()
+    return packageFqName == FqNames.anvilHintPackage // && contributedModules.isNotEmpty()
   }
 
   override fun generateProperties(
     callableId: CallableId,
     context: MemberGenerationContext?,
   ): List<FirPropertySymbol> {
+
+    val names = session.symbolProvider.symbolNamesProvider
+      .getTopLevelCallableNamesInPackage(FqNames.anvilHintPackage)
+
+    val deps = session.dependenciesSymbolProvider.symbolNamesProvider
+      .getPackageNamesWithTopLevelClassifiers()
+    // .getTopLevelCallableNamesInPackage(FqNames.anvilHintPackage)
+
+    println(
+      """
+      |======================================= ${session.moduleData.name}  generateProperties names
+      | -- names
+      |${names?.joinToString("\n")}
+      |
+      | -- deps
+      |${deps?.joinToString("\n")}
+      |=======================================
+      """.trimMargin(),
+    )
+
     return listOf(moduleHintClassesMap.getValue(callableId).generatedProperty.getValue().symbol)
   }
 

@@ -23,6 +23,7 @@ import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.checkers.OptInNames
 import org.jetbrains.kotlin.types.ConstantValueKind
+import java.util.UUID
 
 internal class AnvilContributedModulesGenerator(
   private val anvilFirContext: AnvilFirContext,
@@ -36,7 +37,7 @@ internal class AnvilContributedModulesGenerator(
     .map { (_, modules) ->
 
       PendingTopLevelProperty(
-        callableId = CallableId(FqNames.anvilHintPackage, Name.identifier("my_hints")),
+        callableId = CallableId(FqNames.anvilHintPackage, Name.identifier("my_hints_${UUID.randomUUID().leastSignificantBits}")),
         key = GeneratedBindingHintKey,
         visibility = Visibilities.Private,
         annotations = session.firCachesFactory.createLazyValue {

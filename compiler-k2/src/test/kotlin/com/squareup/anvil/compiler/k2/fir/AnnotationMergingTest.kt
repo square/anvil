@@ -23,6 +23,17 @@ class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2
         @com.squareup.anvil.annotations.ContributesTo(Unit::class)
         interface DependencyModule1
       """.trimIndent(),
+      """
+        package anvil.hint.dep1
+
+        val myHint = Unit
+
+        fun things() {
+          println("hello world")
+        }
+
+        interface Dep1HintInterface
+      """.trimIndent(),
       workingDir = workingDir / "dep1",
     )
 
@@ -46,6 +57,8 @@ class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2
       """
         package com.squareup.test
 
+        fun foo(d2a: com.squareup.test.dep2.Dep2A) {}
+
         @dagger.Module
         @com.squareup.anvil.annotations.ContributesTo(Unit::class)
         interface LocalProjectModule
@@ -67,6 +80,8 @@ class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2
       },
       workingDir = workingDir / "consumer",
     ) {
+
+      val hintPackage = scanResult.getPackageInfo("anvil.hint")
 
       scanResult
         .allMergedModulesForComponent(TestNames.componentInterface.asFqNameString())

@@ -11,14 +11,6 @@ public abstract class LazyWithContext<out V, in C> : FirLazyValue<V>(), Serializ
   public abstract fun isInitialized(): Boolean
 }
 
-internal class InitializedLazyWithContext<out V, in C>(private val value: V) :
-  LazyWithContext<V, C>() {
-  override fun isInitialized() = true
-  override fun getValue(): V = value
-  override fun getValue(context: C): V = value
-  override fun toString(): String = value.toString()
-}
-
 @Suppress("ClassName")
 private object UNINITIALIZED_VALUE
 
