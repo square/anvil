@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.k2.fir.contributions.ContributedModule
 import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import com.squareup.anvil.compiler.k2.utils.fir.argumentAt
 import com.squareup.anvil.compiler.k2.utils.fir.classListArgumentAt
+import com.squareup.anvil.compiler.k2.utils.fir.contributesToAnnotations
 import com.squareup.anvil.compiler.k2.utils.fir.requireAnnotationCall
 import com.squareup.anvil.compiler.k2.utils.fir.requireClassId
 import com.squareup.anvil.compiler.k2.utils.fir.requireScopeArgument
@@ -79,11 +80,24 @@ public class AnvilFirAnnotationMergingExtension(
   ): List<ConeKotlinType> {
 
     val componentAnnotation = classLikeDeclaration.symbol.requireAnnotationCall(
-      classId = ClassIds.anvilMergeComponent,
-      session = session,
+      ClassIds.anvilMergeComponent,
+      session,
+      resolveArguments = true,
     )
 
-    val mergeScopeId = componentAnnotation.requireScopeArgument(session).requireClassId()
+    val mergeScopeId = componentAnnotation.requireScopeArgument(typeResolver).requireClassId()
+
+    val scopes = session.anvilFirScopedContributionProvider.contributesToSymbols
+      .flatMap { clazz ->
+        clazz.contributesToAnnotations(session)
+          .map { annotationCall ->
+            Triple(
+              clazz.classId.asSingleFqName(),
+              annotationCall,
+              annotationCall.requireScopeArgument(typeResolver),
+            )
+          }
+      }
 
     val contributedModules = getContributedModules(mergeScopeId)
 

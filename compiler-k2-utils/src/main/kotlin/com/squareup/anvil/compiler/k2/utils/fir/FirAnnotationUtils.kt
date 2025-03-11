@@ -6,7 +6,6 @@ import com.squareup.anvil.compiler.k2.utils.names.classId
 import org.jetbrains.kotlin.KtSourceElement
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
 import org.jetbrains.kotlin.fir.FirSession
-import org.jetbrains.kotlin.fir.declarations.FirResolvePhase
 import org.jetbrains.kotlin.fir.declarations.evaluateAs
 import org.jetbrains.kotlin.fir.expressions.FirAnnotation
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationArgumentMapping
@@ -18,16 +17,19 @@ import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.expressions.FirGetClassCall
 import org.jetbrains.kotlin.fir.expressions.FirLiteralExpression
 import org.jetbrains.kotlin.fir.expressions.FirNamedArgumentExpression
+import org.jetbrains.kotlin.fir.expressions.FirPropertyAccessExpression
+import org.jetbrains.kotlin.fir.expressions.FirResolvedQualifier
+import org.jetbrains.kotlin.fir.expressions.UnresolvedExpressionTypeAccess
 import org.jetbrains.kotlin.fir.expressions.arguments
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.impl.FirEmptyAnnotationArgumentMapping
 import org.jetbrains.kotlin.fir.expressions.unwrapArgument
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
+import org.jetbrains.kotlin.fir.render
 import org.jetbrains.kotlin.fir.resolve.fqName
 import org.jetbrains.kotlin.fir.resolve.toRegularClassSymbol
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
-import org.jetbrains.kotlin.fir.symbols.lazyResolveToPhaseRecursively
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.coneType
@@ -105,12 +107,8 @@ private fun replacesIndex(annotationClassId: ClassId): Int {
 //   return requireScopeArgument(session)
 // }
 
+@OptIn(UnresolvedExpressionTypeAccess::class)
 public fun FirAnnotation.requireScopeArgument(session: FirSession): ConeKotlinType {
-
-  (this as? FirAnnotationCall)?.containingDeclarationSymbol
-    ?.lazyResolveToPhaseRecursively(FirResolvePhase.ANNOTATION_ARGUMENTS)
-
-  println(this)
 
   // return getKClassArgument(Names.scope, session)
   //   ?: errorWithAttachment("Scope argument is not resolved yet: ${this@requireScopeArgument.render()}") {
@@ -122,12 +120,27 @@ public fun FirAnnotation.requireScopeArgument(session: FirSession): ConeKotlinTy
     index = 0,
     unwrapNamedArguments = true,
   )
+
   // check(expression.isResolved) { "expression isn't resolved yet" }
-  val evaluated = expression.evaluateAs<FirGetClassCall>(session)
+
+  val arg = (expression as FirGetClassCall).argument
+
+  println("@@@@@@@@@@@@@@@@@@@@@@ $arg  --  ${render()}")
+
+  if (arg is FirPropertyAccessExpression) {
+    val ref = expression.userTypeRef()
+    ref
+  } else {
+    arg
+  }
+
+  (arg as? FirPropertyAccessExpression)
+
+  return ((expression as FirGetClassCall).argument as? FirResolvedQualifier)?.coneTypeOrNull
+    ?: expression.evaluateAs<FirGetClassCall>(session)?.requireTargetType()
     ?: errorWithAttachment("Scope argument is not resolved yet: $expression") {
       withFirEntry("scope argument expression", expression)
     }
-  return evaluated.requireTargetType()
 }
 
 public fun FirAnnotation.requireScopeArgument(

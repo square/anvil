@@ -46,8 +46,6 @@ class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2
       """
         package com.squareup.test
 
-        import com.squareup.anvil.annotations.MergeComponent
-
         @dagger.Module
         @com.squareup.anvil.annotations.ContributesTo(Unit::class)
         interface LocalProjectModule
@@ -57,7 +55,7 @@ class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2
         @com.squareup.anvil.annotations.ContributesBinding(Unit::class)
         class LocalAImpl @javax.inject.Inject constructor() : LocalA
 
-        @MergeComponent(Unit::class)
+        @com.squareup.anvil.annotations.MergeComponent(Unit::class)
         interface ComponentInterface
       """.trimIndent(),
       configuration = {
@@ -118,6 +116,26 @@ class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2
         "com.squareup.test.LocalProjectModule",
         "com.squareup.test.LocalAImpl_BindingModule",
       ).map(::FqName)
+    }
+  }
+    .asSequence()
+    .toList()
+    .takeLast(1)
+
+  @TestFactory
+  fun `canary things 2`() = testFactory {
+
+    compile2(
+      """
+        package com.squareup.test
+
+        annotation class Dinosaur
+  
+        @Dinosaur
+        class Canary1
+      """.trimIndent(),
+      workingDir = workingDir / "consumer",
+    ) {
     }
   }
     .asSequence()

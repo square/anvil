@@ -46,11 +46,11 @@ public object ClassIds {
   public val anvilContributesTo: ClassId =
     classId("com.squareup.anvil.annotations", "ContributesTo")
 
-  /** `com.squareup.anvil.annotations.internal.InternalContributedModule` */
-  public val anvilInternalContributedModule: ClassId =
-    classId("com.squareup.anvil.annotations.internal", "InternalContributedModule")
+  /** `com.squareup.anvil.annotations.internal.InternalContributedModuleHints` */
+  public val anvilInternalContributedModuleHints: ClassId =
+    classId("com.squareup.anvil.annotations.internal", "InternalContributedModuleHints")
 
-  /** `com.squareup.anvil.annotations.internal.InternalContributedModule` */
+  /** `com.squareup.anvil.annotations.internal.InternalContributedModuleHints` */
   public val anvilInternalAnvilApi: ClassId =
     classId("com.squareup.anvil.annotations.internal", "InternalAnvilApi")
 

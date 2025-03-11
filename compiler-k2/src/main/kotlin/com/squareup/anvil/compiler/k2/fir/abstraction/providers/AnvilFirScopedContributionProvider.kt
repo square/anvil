@@ -24,8 +24,6 @@ import com.squareup.anvil.compiler.k2.utils.fir.resolveConeType
 import com.squareup.anvil.compiler.k2.utils.names.bindingModuleSibling
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.caches.firCachesFactory
-import org.jetbrains.kotlin.fir.caches.getValue
-import org.jetbrains.kotlin.fir.declarations.FirResolvePhase
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
@@ -33,8 +31,8 @@ import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.resolve.getSuperTypes
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
-import org.jetbrains.kotlin.fir.symbols.lazyResolveToPhaseRecursively
 import org.jetbrains.kotlin.name.ClassId
+import kotlin.properties.ReadOnlyProperty
 
 public val FirSession.anvilFirScopedContributionProvider: AnvilFirScopedContributionProvider
   by FirSession.sessionComponentAccessor()
@@ -55,29 +53,31 @@ public class AnvilFirScopedContributionProvider(
 
   private val cachesFactory = session.firCachesFactory
 
-  public val contributesBindingSymbols: List<FirRegularClassSymbol> by cachesFactory.createLazyValue {
+  public val contributesBindingSymbols: List<FirRegularClassSymbol> by createLazyValue {
     session.predicateBasedProvider.getSymbolsByPredicate(AnvilPredicates.hasAnvilContributesBinding)
       .filterIsInstance<FirRegularClassSymbol>()
   }
 
-  public val contributesToSymbols: List<FirRegularClassSymbol> by cachesFactory.createLazyValue {
+  public val contributesToSymbols: List<FirRegularClassSymbol> by createLazyValue {
     session.predicateBasedProvider.getSymbolsByPredicate(AnvilPredicates.hasAnvilContributesTo)
       .filterIsInstance<FirRegularClassSymbol>()
   }
 
-  public val contributedModuleSymbols: List<FirRegularClassSymbol> by cachesFactory.createLazyValue {
+  public val contributedModuleSymbols: List<FirRegularClassSymbol> by createLazyValue {
     contributesToSymbols.filter {
       session.predicateBasedProvider.matches(AnvilPredicates.contributedModule, it)
     }
   }
 
-  private var allScopesInitialized = false
-  private val allScopedContributions = cachesFactory.createLazyValue {
-    allScopesInitialized = true
+  private val allScopedContributions by createLazyValue {
     initList()
   }
 
-  public fun isInitialized(): Boolean = allScopesInitialized
+  // private fun <V> createLazyValue(createValue: () -> V): FirLazyValue<V> =
+  //   cachesFactory.createLazyValue(createValue)
+
+  private fun <V> createLazyValue(createValue: () -> V): ReadOnlyProperty<Any?, V> =
+    ReadOnlyProperty { _, _ -> createValue() }
 
   public fun getContributions(): List<ScopedContribution> {
     // checkWithAttachment(allScopesInitialized,
@@ -87,7 +87,7 @@ public class AnvilFirScopedContributionProvider(
     //       "Call the overloaded version with a $resolverName first."
     //   },
     // )
-    return allScopedContributions.getValue()
+    return allScopedContributions
   }
 
   // public fun getContributions(
@@ -106,7 +106,7 @@ public class AnvilFirScopedContributionProvider(
 
     return fromSession
 
-    val contributedModulesInDependencies = session.anvilFirHintProvider.getContributions()
+    val contributedModulesInDependencies = session.anvilFirDependencyHintProvider.getContributions()
 
     val generated = contributesBindingSymbols.flatMap { symbol ->
       getContributesBindingContributions(
@@ -163,17 +163,7 @@ public class AnvilFirScopedContributionProvider(
     val predicateMatcher = session.predicateBasedProvider
     val clazz = this@getContributesTo
 
-    val annotations = contributesToAnnotations(session)
-
-    for (annotationCall in annotations) {
-      annotationCall.containingDeclarationSymbol
-        .lazyResolveToPhaseRecursively(FirResolvePhase.ANNOTATION_ARGUMENTS)
-    }
-
     return contributesToAnnotations(session).map { annotation ->
-
-      annotation.containingDeclarationSymbol
-        .lazyResolveToPhaseRecursively(FirResolvePhase.ANNOTATION_ARGUMENTS)
 
       val scopeType = cachesFactory.createLazyValue {
         annotation.requireScopeArgument(session).requireClassId()

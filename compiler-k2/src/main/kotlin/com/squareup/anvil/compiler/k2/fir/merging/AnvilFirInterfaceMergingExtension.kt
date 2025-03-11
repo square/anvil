@@ -75,7 +75,7 @@ public class AnvilFirInterfaceMergingExtension(
             if (classId in existingSupertypes) return@mapNotNull null
 
             // If it's a contributed module, we don't add it here
-            if (contributed.hasAnnotation(ClassIds.daggerModule, session)) {
+            if (contributed.hasAnnotation(session, ClassIds.daggerModule)) {
               return@mapNotNull null
             }
 

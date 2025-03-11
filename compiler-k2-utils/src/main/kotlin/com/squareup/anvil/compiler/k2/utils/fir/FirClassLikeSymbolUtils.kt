@@ -2,6 +2,7 @@ package com.squareup.anvil.compiler.k2.utils.fir
 
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import org.jetbrains.kotlin.fir.FirSession
+import org.jetbrains.kotlin.fir.declarations.getAnnotationsByClassId
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.FirGetClassCall
 import org.jetbrains.kotlin.fir.expressions.buildUnaryArgumentList
@@ -32,7 +33,7 @@ public fun FirClassLikeSymbol<*>.contributesToAnnotations(
   session: FirSession,
 ): List<FirAnnotationCall> {
   return resolvedAnnotationsWithArguments
-    .filter { it.classId(session) == ClassIds.anvilContributesTo }
+    .getAnnotationsByClassId(ClassIds.anvilContributesTo, session)
     .map { it as FirAnnotationCall }
 }
 

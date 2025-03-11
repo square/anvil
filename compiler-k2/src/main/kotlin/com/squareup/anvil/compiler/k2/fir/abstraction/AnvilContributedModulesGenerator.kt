@@ -7,8 +7,8 @@ import com.squareup.anvil.compiler.k2.utils.fir.createFirAnnotation
 import com.squareup.anvil.compiler.k2.utils.fir.requireClassLikeSymbol
 import com.squareup.anvil.compiler.k2.utils.fir.toGetClassCall
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
+import com.squareup.anvil.compiler.k2.utils.names.FqNames
 import com.squareup.anvil.compiler.k2.utils.names.Names
-import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibilities
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.caches.firCachesFactory
@@ -18,7 +18,9 @@ import org.jetbrains.kotlin.fir.expressions.builder.buildArrayLiteral
 import org.jetbrains.kotlin.fir.expressions.builder.buildLiteralExpression
 import org.jetbrains.kotlin.fir.extensions.FirExtension
 import org.jetbrains.kotlin.fir.types.createArrayType
+import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.Name
 import org.jetbrains.kotlin.resolve.checkers.OptInNames
 import org.jetbrains.kotlin.types.ConstantValueKind
 
@@ -30,13 +32,12 @@ internal class AnvilContributedModulesGenerator(
   fun doThings(
     contributedModules: List<ContributedModule>,
     firExtension: FirExtension,
-  ): List<PendingTopLevelClass> = contributedModules.groupBy { it.scopeType }
+  ): List<PendingTopLevelProperty> = contributedModules.groupBy { it.scopeType }
     .map { (_, modules) ->
 
-      val pendingTopLevelClass = PendingTopLevelClass(
-        classId = ClassIds.anvilContributedModules(modules.map { it.contributedType }),
+      PendingTopLevelProperty(
+        callableId = CallableId(FqNames.anvilHintPackage, Name.identifier("my_hints")),
         key = GeneratedBindingHintKey,
-        classKind = ClassKind.INTERFACE,
         visibility = Visibilities.Private,
         annotations = session.firCachesFactory.createLazyValue {
 
@@ -58,7 +59,7 @@ internal class AnvilContributedModulesGenerator(
               },
             ),
             createFirAnnotation(
-              type = ClassIds.anvilInternalContributedModule,
+              type = ClassIds.anvilInternalContributedModuleHints,
               argumentMapping = buildAnnotationArgumentMapping {
                 mapping[Names.hints] = buildArrayLiteral {
                   coneTypeOrNull = session.builtinTypes.stringType.coneType.createArrayType()
@@ -82,7 +83,5 @@ internal class AnvilContributedModulesGenerator(
         cachesFactory = session.firCachesFactory,
         firExtension = firExtension,
       )
-
-      pendingTopLevelClass
     }
 }

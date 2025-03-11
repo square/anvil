@@ -45,7 +45,7 @@ class ContributesBindingFirExtensionTest : CompilationModeTest(
 
       val singleClass = scanResult.getPackageInfo("anvil.hint").classInfo.single()
 
-      val annotation = singleClass.getAnnotationInfo(ClassIds.anvilInternalContributedModule)
+      val annotation = singleClass.getAnnotationInfo(ClassIds.anvilInternalContributedModuleHints)
 
       annotation.hints shouldBe listOf(
         "com.squareup.test.other.AppScope|com.squareup.test.ContributingObject_BindingModule",

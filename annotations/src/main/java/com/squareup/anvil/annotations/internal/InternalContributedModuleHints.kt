@@ -6,10 +6,10 @@ package com.squareup.anvil.annotations.internal
  *
  * @param hints Each hint corresponds to a single contributed module.
  */
-@Target(AnnotationTarget.CLASS)
+@Target(AnnotationTarget.PROPERTY)
 @Retention(AnnotationRetention.BINARY)
 @Repeatable
 @InternalAnvilApi
-public annotation class InternalContributedModule(
+public annotation class InternalContributedModuleHints(
   val hints: Array<String>,
 )

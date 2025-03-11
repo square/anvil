@@ -13,51 +13,58 @@ import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import com.squareup.anvil.compiler.k2.utils.names.Names
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.caches.firCachesFactory
-import org.jetbrains.kotlin.fir.caches.getValue
 import org.jetbrains.kotlin.fir.declarations.evaluateAs
 import org.jetbrains.kotlin.fir.declarations.unwrapVarargValue
 import org.jetbrains.kotlin.fir.expressions.FirLiteralExpression
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
-import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirPropertySymbol
 import org.jetbrains.kotlin.fir.utils.exceptions.withFirEntry
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.utils.exceptions.checkWithAttachment
 import org.jetbrains.kotlin.utils.sure
+import kotlin.properties.ReadOnlyProperty
 
-public val FirSession.anvilFirHintProvider: AnvilFirHintProvider by FirSession.sessionComponentAccessor()
+public val FirSession.anvilFirDependencyHintProvider: AnvilFirDependencyHintProvider by FirSession.sessionComponentAccessor()
 
-public class AnvilFirHintProvider(
+public class AnvilFirDependencyHintProvider(
   anvilFirContext: AnvilFirContext,
   session: FirSession,
 ) : AnvilFirExtensionSessionComponent(anvilFirContext, session) {
 
   private val cachesFactory = session.firCachesFactory
 
-  private val dependencyHintClassSymbols by cachesFactory.createLazyValue {
+  // private fun <V> createLazyValue(createValue: () -> V): FirLazyValue<V> =
+  //   cachesFactory.createLazyValue(createValue)
+
+  private fun <V> createLazyValue(createValue: () -> V): ReadOnlyProperty<Any?, V> =
+    ReadOnlyProperty { _, _ -> createValue() }
+
+  private val dependencyHintClassSymbols by createLazyValue {
 
     // session.dependenciesSymbolProvider
-    //   .symbolNamesProvider.getTopLevelClassifierNamesInPackage(FqNames.anvilHintPackage)
+    //   .symbolNamesProvider.getTopLevelCallableIdsInPackage(FqNames.anvilHintPackage)
     //   .orEmpty()
     //   .mapNotNull {
     //     session.dependenciesSymbolProvider
     //       .getClassLikeSymbolByClassId(ClassId(FqNames.anvilHintPackage, it))
     //   }
 
-    emptyList<FirClassLikeSymbol<*>>()
+    emptyList<FirPropertySymbol>()
   }
 
-  private val allScopedContributions = cachesFactory.createLazyValue { parseDependencyHints() }
+  private val allScopedContributions by createLazyValue { parseDependencyHints() }
 
-  public fun getContributions(): List<ScopedContribution> = allScopedContributions.getValue()
+  public fun getContributions(): List<ScopedContribution> = allScopedContributions
 
   private fun parseDependencyHints(): List<ScopedContribution> = dependencyHintClassSymbols
     .flatMap { clazzSymbol ->
 
       val annotation = clazzSymbol.requireAnnotation(
-        classId = ClassIds.anvilInternalContributedModule,
-        session = session,
+        ClassIds.anvilInternalContributedModuleHints,
+        session,
+        resolveArguments = true,
       )
 
       annotation.requireArgumentAt(
@@ -96,10 +103,10 @@ public class AnvilFirHintProvider(
 }
 
 @AutoService(AnvilFirExtensionFactory::class)
-public class AnvilFirHintProviderFactory : AnvilFirExtensionSessionComponent.Factory {
+public class AnvilFirDependencyHintProviderFactory : AnvilFirExtensionSessionComponent.Factory {
   override fun create(anvilFirContext: AnvilFirContext): FirExtensionSessionComponent.Factory {
     return FirExtensionSessionComponent.Factory { session ->
-      AnvilFirHintProvider(anvilFirContext, session)
+      AnvilFirDependencyHintProvider(anvilFirContext, session)
     }
   }
 }
