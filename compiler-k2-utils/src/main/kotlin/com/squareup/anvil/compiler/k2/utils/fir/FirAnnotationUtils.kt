@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.builder.buildResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.coneType
 import org.jetbrains.kotlin.fir.types.constructClassLikeType
+import org.jetbrains.kotlin.fir.types.type
 import org.jetbrains.kotlin.fir.utils.exceptions.withFirEntry
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
@@ -145,7 +146,13 @@ public fun FirAnnotation.requireScopeArgument(session: FirSession): ConeKotlinTy
 
 public fun FirAnnotation.requireScopeArgument(
   typeResolveService: FirSupertypeGenerationExtension.TypeResolveService,
-): ConeKotlinType = requireScopeArgument().resolveConeType(typeResolveService)
+): ConeKotlinType {
+  val getClass = requireScopeArgument()
+  val ct = getClass.resolveConeType(typeResolveService)
+  val typeArgs = ct.typeArguments
+
+  return typeArgs.singleOrNull()?.type ?: ct
+}
 
 public fun FirAnnotation.requireScopeArgument(): FirGetClassCall {
   return requireArgumentAt(

@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
 import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import com.squareup.anvil.compiler.k2.utils.fir.contributesToScope
 import com.squareup.anvil.compiler.k2.utils.fir.hasAnnotation
+import com.squareup.anvil.compiler.k2.utils.fir.requireClassId
 import com.squareup.anvil.compiler.k2.utils.fir.requireScopeArgument
 import com.squareup.anvil.compiler.k2.utils.fir.resolveConeType
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
@@ -44,7 +45,7 @@ public class AnvilFirInterfaceMergingExtension(
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(AnvilPredicates.hasAnvilContributesTo)
-    register(AnvilPredicates.hasModuleAnnotation)
+    register(AnvilPredicates.hasDaggerModule)
   }
 
   override fun computeAdditionalSupertypes(
@@ -61,7 +62,7 @@ public class AnvilFirInterfaceMergingExtension(
 
         val scopeFqName = (annotation as FirAnnotationCall).requireScopeArgument()
           .resolveConeType(typeResolver)
-          .classId!!
+          .requireClassId()
           .asSingleFqName()
 
         session.predicateBasedProvider
@@ -96,7 +97,7 @@ public class AnvilFirInterfaceMergingExtension(
 
   override fun needTransformSupertypes(declaration: FirClassLikeDeclaration): Boolean {
     return session.predicateBasedProvider.matches(
-      AnvilPredicates.hasMergeComponentAnnotation,
+      AnvilPredicates.hasAnvilMergeComponent,
       declaration,
     )
   }

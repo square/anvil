@@ -4,7 +4,8 @@ import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
-import com.squareup.anvil.compiler.k2.fir.abstraction.providers.anvilFirScopedContributionProvider
+import com.squareup.anvil.compiler.k2.fir.abstraction.providers.RequiresTypesResolutionPhase
+import com.squareup.anvil.compiler.k2.fir.abstraction.providers.scopedContributionProvider
 import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
@@ -25,18 +26,20 @@ public class AnvilContributionResolveExtension(
   session: FirSession,
 ) : AnvilFirSupertypeGenerationExtension(anvilFirContext, session) {
 
+  @OptIn(RequiresTypesResolutionPhase::class)
   override fun computeAdditionalSupertypes(
     classLikeDeclaration: FirClassLikeDeclaration,
     resolvedSupertypes: List<FirResolvedTypeRef>,
     typeResolver: TypeResolveService,
   ): List<ConeKotlinType> {
-    session.anvilFirScopedContributionProvider.getContributions(typeResolver)
+    session.scopedContributionProvider.bindTypeResolveService(typeResolver)
     // session.anvilFirDependencyHintProvider.getContributions(typeResolver)
     return emptyList()
   }
 
   override fun needTransformSupertypes(declaration: FirClassLikeDeclaration): Boolean {
-    return !session.anvilFirScopedContributionProvider.isInitialized()
+    @OptIn(RequiresTypesResolutionPhase::class)
+    return !session.scopedContributionProvider.isInitialized()
   }
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {

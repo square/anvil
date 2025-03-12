@@ -86,11 +86,11 @@ class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2
       scanResult
         .allMergedModulesForComponent(TestNames.componentInterface.asFqNameString())
         .fqNames() shouldBe listOf(
-        "com.squareup.test.dep1.DependencyModule1",
-        "com.squareup.test.dep2.DependencyModule2",
-        "com.squareup.test.dep2.Dep2AImpl_BindingModule",
-        "com.squareup.test.LocalProjectModule",
         "com.squareup.test.LocalAImpl_BindingModule",
+        "com.squareup.test.LocalProjectModule",
+        "com.squareup.test.dep1.DependencyModule1",
+        "com.squareup.test.dep2.Dep2AImpl_BindingModule",
+        "com.squareup.test.dep2.DependencyModule2",
       ).map(::FqName)
     }
   }

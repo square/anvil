@@ -73,6 +73,9 @@ public object ClassIds {
   /** `dagger.Binds` */
   public val daggerBinds: ClassId = classId("dagger", "Binds")
 
+  /** `dagger.Provides` */
+  public val daggerProvides: ClassId = classId("dagger", "Provides")
+
   /** `dagger.Component` */
   public val daggerComponent: ClassId = classId("dagger", "Component")
 
@@ -90,6 +93,32 @@ public object ClassIds {
 
   /** `dagger.Subcomponent` */
   public val daggerSubcomponent: ClassId = classId("dagger", "Subcomponent")
+
+  /*
+  dagger.assisted.Assisted
+  dagger.assisted.AssistedFactory
+  dagger.assisted.AssistedInject
+
+  dagger.Binds
+  dagger.BindsInstance
+  dagger.BindsOptionalOf
+  dagger.Component
+  dagger.MapKey
+  dagger.Module
+  dagger.Provides
+  dagger.Reusable
+  dagger.Subcomponent
+
+  dagger.multibindings.ClassKey
+  dagger.multibindings.ElementsIntoSet
+  dagger.multibindings.IntKey
+  dagger.multibindings.IntoMap
+  dagger.multibindings.IntoSet
+  dagger.multibindings.LazyClassKey
+  dagger.multibindings.LongKey
+  dagger.multibindings.Multibinds
+  dagger.multibindings.StringKey
+   */
 
   public fun anvilContributedModules(moduleTypes: List<ClassId>): ClassId {
     return ClassId(

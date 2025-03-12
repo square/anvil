@@ -110,7 +110,7 @@ public class AnvilFirScopedContributionProvider(
       .flatMap { clazz -> clazz.getContributesTo(typeResolver) }
 
     val contributedModulesInDependencies = session.anvilFirDependencyHintProvider
-      .getContributions(typeResolver)
+      .getContributions()
 
     val generated = contributesBindingSymbols.flatMap { symbol ->
       getContributesBindingContributions(
@@ -177,7 +177,7 @@ public class AnvilFirScopedContributionProvider(
         annotation.requireScopeArgument(typeResolver).requireClassId()
       }
 
-      if (predicateMatcher.matches(AnvilPredicates.hasModuleAnnotation, clazz)) {
+      if (predicateMatcher.matches(AnvilPredicates.hasDaggerModule, clazz)) {
         ContributedModule(
           scopeType = scopeType,
           contributedType = classId,
