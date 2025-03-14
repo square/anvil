@@ -1,3 +1,8 @@
+public abstract class com/squareup/anvil/compiler/k2/fir/AbstractAnvilFirProcessorFactory : com/squareup/anvil/compiler/k2/fir/AnvilFirProcessor$Factory {
+	public fun <init> (Lkotlin/jvm/functions/Function1;)V
+	public final fun create (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;)Lcom/squareup/anvil/compiler/k2/fir/AnvilFirProcessor;
+}
+
 public final class com/squareup/anvil/compiler/k2/fir/AnvilFirContext {
 	public fun <init> (Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;)V
 	public final fun getLogger ()Lorg/jetbrains/kotlin/util/Logger;
@@ -69,6 +74,7 @@ public final class com/squareup/anvil/compiler/k2/fir/BindingKey {
 
 public final class com/squareup/anvil/compiler/k2/fir/ContributedBinding : com/squareup/anvil/compiler/k2/fir/ScopedContribution {
 	public fun <init> (Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;IZZLorg/jetbrains/kotlin/name/ClassId;Lcom/squareup/anvil/compiler/k2/fir/Qualifier;)V
+	public final fun getBindingCallableName ()Lorg/jetbrains/kotlin/name/Name;
 	public final fun getBindingKey ()Lcom/squareup/anvil/compiler/k2/fir/BindingKey;
 	public final fun getBindingModule ()Lorg/jetbrains/kotlin/name/ClassId;
 	public final fun getBoundType ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
@@ -174,7 +180,9 @@ public abstract class com/squareup/anvil/compiler/k2/fir/SupertypeProcessor : co
 
 public abstract class com/squareup/anvil/compiler/k2/fir/TopLevelClassProcessor : com/squareup/anvil/compiler/k2/fir/AnvilFirProcessor {
 	public fun <init> ()V
+	public fun generateFunctions (Lorg/jetbrains/kotlin/name/CallableId;Lorg/jetbrains/kotlin/fir/extensions/DeclarationGenerationContext$Member;Lorg/jetbrains/kotlin/fir/extensions/FirExtension;)Ljava/util/List;
 	public abstract fun generateTopLevelClassLikeDeclaration (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/extensions/FirExtension;)Lcom/squareup/anvil/compiler/k2/fir/PendingTopLevelClass;
+	public fun getCallableNamesForClass (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;Lorg/jetbrains/kotlin/fir/extensions/DeclarationGenerationContext$Member;)Ljava/util/Set;
 	public abstract fun getTopLevelClassIds ()Ljava/util/Set;
 	public abstract fun hasPackage (Lorg/jetbrains/kotlin/name/FqName;)Z
 }

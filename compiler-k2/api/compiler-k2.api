@@ -8,14 +8,16 @@ public final class com/squareup/anvil/compiler/k2/fir/AnvilFirExtensionRegistrar
 	public fun <init> (Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;)V
 }
 
-public final class com/squareup/anvil/compiler/k2/fir/abstraction/AnvilContributedComponentHintGeneratorFactory : com/squareup/anvil/compiler/k2/fir/AnvilFirProcessor$Factory {
+public final class com/squareup/anvil/compiler/k2/fir/abstraction/AnvilContributedComponentHintGeneratorFactory : com/squareup/anvil/compiler/k2/fir/AbstractAnvilFirProcessorFactory {
 	public fun <init> ()V
-	public fun create (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;)Lcom/squareup/anvil/compiler/k2/fir/AnvilFirProcessor;
 }
 
-public final class com/squareup/anvil/compiler/k2/fir/abstraction/AnvilContributedModuleHintGeneratorFactory : com/squareup/anvil/compiler/k2/fir/AnvilFirProcessor$Factory {
+public final class com/squareup/anvil/compiler/k2/fir/abstraction/AnvilContributedModuleHintGeneratorFactory : com/squareup/anvil/compiler/k2/fir/AbstractAnvilFirProcessorFactory {
 	public fun <init> ()V
-	public fun create (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;)Lcom/squareup/anvil/compiler/k2/fir/AnvilFirProcessor;
+}
+
+public final class com/squareup/anvil/compiler/k2/fir/abstraction/BindingModuleGeneratorFactory : com/squareup/anvil/compiler/k2/fir/AbstractAnvilFirProcessorFactory {
+	public fun <init> ()V
 }
 
 public final class com/squareup/anvil/compiler/k2/fir/abstraction/extensions/SupertypeProcessorExtension : org/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension {
@@ -28,7 +30,9 @@ public final class com/squareup/anvil/compiler/k2/fir/abstraction/extensions/Sup
 
 public final class com/squareup/anvil/compiler/k2/fir/abstraction/extensions/TopLevelClassProcessorExtension : org/jetbrains/kotlin/fir/extensions/FirDeclarationGenerationExtension {
 	public fun <init> (Lorg/jetbrains/kotlin/fir/FirSession;)V
+	public fun generateFunctions (Lorg/jetbrains/kotlin/name/CallableId;Lorg/jetbrains/kotlin/fir/extensions/DeclarationGenerationContext$Member;)Ljava/util/List;
 	public fun generateTopLevelClassLikeDeclaration (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;
+	public fun getCallableNamesForClass (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassSymbol;Lorg/jetbrains/kotlin/fir/extensions/DeclarationGenerationContext$Member;)Ljava/util/Set;
 	public fun getTopLevelClassIds ()Ljava/util/Set;
 	public fun hasPackage (Lorg/jetbrains/kotlin/name/FqName;)Z
 	public fun registerPredicates (Lorg/jetbrains/kotlin/fir/extensions/FirDeclarationPredicateRegistrar;)V
@@ -96,37 +100,6 @@ public final class com/squareup/anvil/compiler/k2/fir/abstraction/providers/Scop
 	public static final fun getScopedContributionProvider (Lorg/jetbrains/kotlin/fir/FirSession;)Lcom/squareup/anvil/compiler/k2/fir/abstraction/providers/ScopedContributionProvider;
 }
 
-public final class com/squareup/anvil/compiler/k2/fir/contributions/BindingModuleData {
-	public fun <init> (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/symbols/impl/FirRegularClassSymbol;Lorg/jetbrains/kotlin/fir/extensions/FirExtension;Lorg/jetbrains/kotlin/fir/FirSession;)V
-	public final fun getBoundType ()Lorg/jetbrains/kotlin/fir/types/ConeKotlinType;
-	public final fun getCallableName ()Lorg/jetbrains/kotlin/name/Name;
-	public final fun getContributesBindingAnnotation ()Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationCall;
-	public final fun getGeneratedClass ()Lorg/jetbrains/kotlin/fir/declarations/FirRegularClass;
-	public final fun getGeneratedClassId ()Lorg/jetbrains/kotlin/name/ClassId;
-	public final fun getGeneratedClassSymbol ()Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;
-	public final fun getMatchedClassSymbol ()Lorg/jetbrains/kotlin/fir/symbols/impl/FirRegularClassSymbol;
-}
-
-public final class com/squareup/anvil/compiler/k2/fir/contributions/ContributesBindingFirExtension : com/squareup/anvil/compiler/k2/fir/AnvilFirDeclarationGenerationExtension {
-	public fun <init> (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;Lorg/jetbrains/kotlin/fir/FirSession;)V
-	public fun generateFunctions (Lorg/jetbrains/kotlin/name/CallableId;Lorg/jetbrains/kotlin/fir/extensions/DeclarationGenerationContext$Member;)Ljava/util/List;
-	public fun generateTopLevelClassLikeDeclaration (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassLikeSymbol;
-	public fun getCallableNamesForClass (Lorg/jetbrains/kotlin/fir/symbols/impl/FirClassSymbol;Lorg/jetbrains/kotlin/fir/extensions/DeclarationGenerationContext$Member;)Ljava/util/Set;
-	public fun getTopLevelClassIds ()Ljava/util/Set;
-	public fun registerPredicates (Lorg/jetbrains/kotlin/fir/extensions/FirDeclarationPredicateRegistrar;)V
-}
-
-public final class com/squareup/anvil/compiler/k2/fir/contributions/ContributesBindingSessionComponent : com/squareup/anvil/compiler/k2/fir/AnvilFirExtensionSessionComponent {
-	public fun <init> (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;Lorg/jetbrains/kotlin/fir/FirSession;)V
-	public final fun getBindingModuleCache ()Lorg/jetbrains/kotlin/fir/caches/FirCache;
-	public final fun getGeneratedIdsToMatchedSymbols ()Ljava/util/Map;
-	public fun registerPredicates (Lorg/jetbrains/kotlin/fir/extensions/FirDeclarationPredicateRegistrar;)V
-}
-
-public final class com/squareup/anvil/compiler/k2/fir/contributions/ContributesBindingSessionComponentKt {
-	public static final fun getContributesBindingSessionComponent (Lorg/jetbrains/kotlin/fir/FirSession;)Lcom/squareup/anvil/compiler/k2/fir/contributions/ContributesBindingSessionComponent;
-}
-
 public abstract interface class com/squareup/anvil/compiler/k2/fir/internal/AnvilLogger {
 	public abstract fun error (Ljava/lang/String;)V
 	public abstract fun exception (Ljava/lang/Throwable;)V
@@ -171,9 +144,8 @@ public final class com/squareup/anvil/compiler/k2/fir/merging/AnnotationMergingG
 	public fun shouldProcess (Lorg/jetbrains/kotlin/fir/declarations/FirClassLikeDeclaration;)Z
 }
 
-public final class com/squareup/anvil/compiler/k2/fir/merging/AnnotationMergingGeneratorFactory : com/squareup/anvil/compiler/k2/fir/AnvilFirProcessor$Factory {
+public final class com/squareup/anvil/compiler/k2/fir/merging/AnnotationMergingGeneratorFactory : com/squareup/anvil/compiler/k2/fir/AbstractAnvilFirProcessorFactory {
 	public fun <init> ()V
-	public fun create (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;)Lcom/squareup/anvil/compiler/k2/fir/AnvilFirProcessor;
 }
 
 public final class com/squareup/anvil/compiler/k2/fir/merging/InterfaceMergingGenerator : com/squareup/anvil/compiler/k2/fir/SupertypeProcessor {
@@ -183,9 +155,8 @@ public final class com/squareup/anvil/compiler/k2/fir/merging/InterfaceMergingGe
 	public fun shouldProcess (Lorg/jetbrains/kotlin/fir/declarations/FirClassLikeDeclaration;)Z
 }
 
-public final class com/squareup/anvil/compiler/k2/fir/merging/InterfaceMergingGeneratorFactory : com/squareup/anvil/compiler/k2/fir/AnvilFirProcessor$Factory {
+public final class com/squareup/anvil/compiler/k2/fir/merging/InterfaceMergingGeneratorFactory : com/squareup/anvil/compiler/k2/fir/AbstractAnvilFirProcessorFactory {
 	public fun <init> ()V
-	public fun create (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;)Lcom/squareup/anvil/compiler/k2/fir/AnvilFirProcessor;
 }
 
 public final class com/squareup/anvil/compiler/k2/ir/GeneratedDeclarationsIrBodyFiller : org/jetbrains/kotlin/backend/common/extensions/IrGenerationExtension {

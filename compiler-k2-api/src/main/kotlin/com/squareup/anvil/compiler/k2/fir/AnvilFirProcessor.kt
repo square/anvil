@@ -11,13 +11,18 @@ import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGener
 import org.jetbrains.kotlin.fir.extensions.FirExtension
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension.TypeResolveService
+import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.extensions.predicate.LookupPredicate
 import org.jetbrains.kotlin.fir.extensions.predicateBasedProvider
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirClassLikeSymbol
+import org.jetbrains.kotlin.fir.symbols.impl.FirNamedFunctionSymbol
 import org.jetbrains.kotlin.fir.types.ConeKotlinType
 import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
+import org.jetbrains.kotlin.name.CallableId
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.FqName
+import org.jetbrains.kotlin.name.Name
 
 public sealed class AnvilFirProcessor : HasAnvilFirContext {
 
@@ -58,6 +63,17 @@ public abstract class TopLevelClassProcessor : AnvilFirProcessor() {
     classId: ClassId,
     firExtension: FirExtension,
   ): PendingTopLevelClass
+
+  public open fun getCallableNamesForClass(
+    classSymbol: FirClassLikeSymbol<*>,
+    context: MemberGenerationContext,
+  ): Set<Name> = emptySet()
+
+  public open fun generateFunctions(
+    callableId: CallableId,
+    context: MemberGenerationContext?,
+    firExtension: FirExtension,
+  ): List<FirNamedFunctionSymbol> = emptyList()
 }
 
 public abstract class SupertypeProcessor : AnvilFirProcessor() {

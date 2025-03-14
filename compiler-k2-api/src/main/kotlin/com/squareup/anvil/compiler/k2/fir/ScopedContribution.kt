@@ -4,6 +4,7 @@ import org.jetbrains.kotlin.fir.caches.FirLazyValue
 import org.jetbrains.kotlin.fir.declarations.FirClassLikeDeclaration
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.name.ClassId
+import org.jetbrains.kotlin.name.Name
 
 public sealed interface ScopedMerge {
   public val scopeType: FirLazyValue<ClassId>
@@ -90,6 +91,10 @@ public class ContributedBinding(
       contributedType = contributedType,
       qualifier = qualifier,
     )
+  }
+  public val bindingCallableName: Name by lazy(LazyThreadSafetyMode.NONE) {
+    val relativeName = boundType.getValue().relativeClassName.asString().replace('.', '_')
+    Name.identifier("bind_$relativeName")
   }
 }
 
