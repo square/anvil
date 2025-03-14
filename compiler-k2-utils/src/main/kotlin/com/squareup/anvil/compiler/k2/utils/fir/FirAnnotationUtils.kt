@@ -7,6 +7,7 @@ import org.jetbrains.kotlin.KtSourceElement
 import org.jetbrains.kotlin.descriptors.annotations.AnnotationUseSiteTarget
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.evaluateAs
+import org.jetbrains.kotlin.fir.declarations.getKClassArgument
 import org.jetbrains.kotlin.fir.expressions.FirAnnotation
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationArgumentMapping
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
@@ -17,11 +18,9 @@ import org.jetbrains.kotlin.fir.expressions.FirExpression
 import org.jetbrains.kotlin.fir.expressions.FirGetClassCall
 import org.jetbrains.kotlin.fir.expressions.FirLiteralExpression
 import org.jetbrains.kotlin.fir.expressions.FirNamedArgumentExpression
-import org.jetbrains.kotlin.fir.expressions.FirPropertyAccessExpression
-import org.jetbrains.kotlin.fir.expressions.FirResolvedQualifier
-import org.jetbrains.kotlin.fir.expressions.UnresolvedExpressionTypeAccess
 import org.jetbrains.kotlin.fir.expressions.arguments
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotation
+import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationArgumentMapping
 import org.jetbrains.kotlin.fir.expressions.builder.buildAnnotationCall
 import org.jetbrains.kotlin.fir.expressions.impl.FirEmptyAnnotationArgumentMapping
 import org.jetbrains.kotlin.fir.expressions.unwrapArgument
@@ -38,6 +37,8 @@ import org.jetbrains.kotlin.fir.types.type
 import org.jetbrains.kotlin.fir.utils.exceptions.withFirEntry
 import org.jetbrains.kotlin.name.ClassId
 import org.jetbrains.kotlin.name.Name
+import org.jetbrains.kotlin.psi.KtPsiFactory
+import org.jetbrains.kotlin.resolve.checkers.OptInNames
 import org.jetbrains.kotlin.utils.exceptions.KotlinIllegalArgumentExceptionWithAttachments
 import org.jetbrains.kotlin.utils.exceptions.checkWithAttachment
 import org.jetbrains.kotlin.utils.exceptions.errorWithAttachment
@@ -103,44 +104,10 @@ private fun replacesIndex(annotationClassId: ClassId): Int {
   }
 }
 
-// public fun FirAnnotationCall.requireScopeArgument(session: FirSession): ConeKotlinType {
-//   containingDeclarationSymbol.lazyResolveToPhaseRecursively(FirResolvePhase.ANNOTATION_ARGUMENTS)
-//   return requireScopeArgument(session)
-// }
-
-@OptIn(UnresolvedExpressionTypeAccess::class)
 public fun FirAnnotation.requireScopeArgument(session: FirSession): ConeKotlinType {
-
-  // return getKClassArgument(Names.scope, session)
-  //   ?: errorWithAttachment("Scope argument is not resolved yet: ${this@requireScopeArgument.render()}") {
-  //     withFirEntry("scope argument expression", this@requireScopeArgument)
-  //   }
-
-  val expression = requireArgumentAt(
-    name = Names.scope,
-    index = 0,
-    unwrapNamedArguments = true,
-  )
-
-  // check(expression.isResolved) { "expression isn't resolved yet" }
-
-  val arg = (expression as FirGetClassCall).argument
-
-  println("@@@@@@@@@@@@@@@@@@@@@@ $arg  --  ${render()}")
-
-  if (arg is FirPropertyAccessExpression) {
-    val ref = expression.userTypeRef()
-    ref
-  } else {
-    arg
-  }
-
-  (arg as? FirPropertyAccessExpression)
-
-  return ((expression as FirGetClassCall).argument as? FirResolvedQualifier)?.coneTypeOrNull
-    ?: expression.evaluateAs<FirGetClassCall>(session)?.requireTargetType()
-    ?: errorWithAttachment("Scope argument is not resolved yet: $expression") {
-      withFirEntry("scope argument expression", expression)
+  return getKClassArgument(Names.scope, session)
+    ?: errorWithAttachment("Scope argument is not resolved yet: ${this@requireScopeArgument.render()}") {
+      withFirEntry("scope argument expression", this@requireScopeArgument)
     }
 }
 
@@ -282,6 +249,16 @@ public fun createFirAnnotation(
   }
 }
 
+public fun createOptInAnnotation(optInType: ClassId, session: FirSession): FirAnnotation {
+  return createFirAnnotation(
+    type = OptInNames.OPT_IN_CLASS_ID,
+    argumentMapping = buildAnnotationArgumentMapping {
+      mapping[OptInNames.OPT_IN_ANNOTATION_CLASS] =
+        optInType.requireClassLikeSymbol(session).toGetClassCall()
+    },
+  )
+}
+
 /**
  * Creates a [FirAnnotation] instance with the specified type, argument mapping, source, and use-site target.
  *
@@ -298,7 +275,9 @@ public fun createFirAnnotationCall(
   argumentList: FirArgumentList = FirEmptyArgumentList,
   source: KtSourceElement? = null,
   useSiteTarget: AnnotationUseSiteTarget? = null,
+  ktPsiFactory: KtPsiFactory? = null,
 ): FirAnnotationCall = buildAnnotationCall {
+  setAnnotationType(type, ktPsiFactory)
   this.containingDeclarationSymbol = containingDeclarationSymbol
   this.argumentList = argumentList
   this.source = source

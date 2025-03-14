@@ -10,6 +10,10 @@ package com.squareup.anvil.annotations.internal
 @Retention(AnnotationRetention.BINARY)
 @Repeatable
 @InternalAnvilApi
-public annotation class InternalContributedModuleHints(
-  val hints: Array<String>,
-)
+public annotation class InternalContributedModuleHints(val hints: Array<String>)
+
+@Target(AnnotationTarget.PROPERTY)
+@Retention(AnnotationRetention.BINARY)
+@Repeatable
+@InternalAnvilApi
+public annotation class InternalContributedComponentHints(val hints: Array<String>)

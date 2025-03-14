@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 
 public abstract class AnvilFirDeclarationGenerationExtension(
-  override val anvilFirContext: AnvilFirContext,
+  public val anvilFirContext: AnvilFirContext,
   session: FirSession,
 ) : FirDeclarationGenerationExtension(session),
   AnvilFirExtension {

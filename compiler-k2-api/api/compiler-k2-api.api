@@ -4,35 +4,178 @@ public final class com/squareup/anvil/compiler/k2/fir/AnvilFirContext {
 	public final fun getMessageCollector ()Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;
 }
 
+public final class com/squareup/anvil/compiler/k2/fir/AnvilFirContext2 {
+	public fun <init> (Lorg/jetbrains/kotlin/fir/FirSession;Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;)V
+	public final fun getLogger ()Lorg/jetbrains/kotlin/util/Logger;
+	public final fun getMessageCollector ()Lorg/jetbrains/kotlin/cli/common/messages/MessageCollector;
+	public final fun getSession ()Lorg/jetbrains/kotlin/fir/FirSession;
+}
+
 public abstract class com/squareup/anvil/compiler/k2/fir/AnvilFirDeclarationGenerationExtension : org/jetbrains/kotlin/fir/extensions/FirDeclarationGenerationExtension, com/squareup/anvil/compiler/k2/fir/AnvilFirExtension {
 	public fun <init> (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;Lorg/jetbrains/kotlin/fir/FirSession;)V
-	public fun getAnvilFirContext ()Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;
+	public final fun getAnvilFirContext ()Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;
 }
 
 public abstract interface class com/squareup/anvil/compiler/k2/fir/AnvilFirDeclarationGenerationExtension$Factory : com/squareup/anvil/compiler/k2/fir/AnvilFirExtensionFactory {
 }
 
 public abstract interface class com/squareup/anvil/compiler/k2/fir/AnvilFirExtension {
-	public abstract fun getAnvilFirContext ()Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;
 }
 
 public abstract interface class com/squareup/anvil/compiler/k2/fir/AnvilFirExtensionFactory {
 	public abstract fun create (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;)Lorg/jetbrains/kotlin/fir/extensions/FirExtension$Factory;
 }
 
+public final class com/squareup/anvil/compiler/k2/fir/AnvilFirExtensionKt {
+	public static final fun getSession (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;)Lorg/jetbrains/kotlin/fir/FirSession;
+}
+
 public abstract class com/squareup/anvil/compiler/k2/fir/AnvilFirExtensionSessionComponent : org/jetbrains/kotlin/fir/extensions/FirExtensionSessionComponent, com/squareup/anvil/compiler/k2/fir/AnvilFirExtension {
 	public fun <init> (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;Lorg/jetbrains/kotlin/fir/FirSession;)V
-	public fun getAnvilFirContext ()Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;
+	public final fun getAnvilFirContext ()Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;
+	protected final fun lazyValue (Lkotlin/jvm/functions/Function0;)Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	protected final fun map (Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lkotlin/jvm/functions/Function1;)Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
 }
 
 public abstract interface class com/squareup/anvil/compiler/k2/fir/AnvilFirExtensionSessionComponent$Factory : com/squareup/anvil/compiler/k2/fir/AnvilFirExtensionFactory {
 }
 
+public abstract class com/squareup/anvil/compiler/k2/fir/AnvilFirProcessor : com/squareup/anvil/compiler/k2/fir/HasAnvilFirContext {
+	protected final fun getCachesFactory ()Lorg/jetbrains/kotlin/fir/caches/FirCachesFactory;
+	protected final fun getSession ()Lorg/jetbrains/kotlin/fir/FirSession;
+	protected final fun lazySymbols (Lorg/jetbrains/kotlin/fir/extensions/predicate/LookupPredicate;)Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	protected final fun lazyValue (Lkotlin/jvm/functions/Function0;)Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	protected final fun map (Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lkotlin/jvm/functions/Function1;)Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+}
+
+public abstract interface class com/squareup/anvil/compiler/k2/fir/AnvilFirProcessor$Factory {
+	public abstract fun create (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;)Lcom/squareup/anvil/compiler/k2/fir/AnvilFirProcessor;
+}
+
 public abstract class com/squareup/anvil/compiler/k2/fir/AnvilFirSupertypeGenerationExtension : org/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension, com/squareup/anvil/compiler/k2/fir/AnvilFirExtension {
 	public fun <init> (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;Lorg/jetbrains/kotlin/fir/FirSession;)V
-	public fun getAnvilFirContext ()Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;
+	public final fun getAnvilFirContext ()Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext;
 }
 
 public abstract interface class com/squareup/anvil/compiler/k2/fir/AnvilFirSupertypeGenerationExtension$Factory : com/squareup/anvil/compiler/k2/fir/AnvilFirExtensionFactory {
+}
+
+public final class com/squareup/anvil/compiler/k2/fir/BindingKey {
+	public fun <init> (Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/name/ClassId;Lcom/squareup/anvil/compiler/k2/fir/Qualifier;)V
+	public final fun getContributedType ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getQualifier ()Lcom/squareup/anvil/compiler/k2/fir/Qualifier;
+	public final fun getScopeType ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+}
+
+public final class com/squareup/anvil/compiler/k2/fir/ContributedBinding : com/squareup/anvil/compiler/k2/fir/ScopedContribution {
+	public fun <init> (Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;IZZLorg/jetbrains/kotlin/name/ClassId;Lcom/squareup/anvil/compiler/k2/fir/Qualifier;)V
+	public final fun getBindingKey ()Lcom/squareup/anvil/compiler/k2/fir/BindingKey;
+	public final fun getBindingModule ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getBoundType ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public fun getContributedType ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getIgnoreQualifier ()Z
+	public final fun getQualifier ()Lcom/squareup/anvil/compiler/k2/fir/Qualifier;
+	public final fun getRank ()I
+	public fun getReplaces ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public fun getScopeType ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public final fun isMultibinding ()Z
+}
+
+public final class com/squareup/anvil/compiler/k2/fir/ContributedModule : com/squareup/anvil/compiler/k2/fir/ContributedTo {
+	public fun <init> (Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;)V
+	public fun getContributedType ()Lorg/jetbrains/kotlin/name/ClassId;
+	public fun getReplaces ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public fun getScopeType ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+}
+
+public final class com/squareup/anvil/compiler/k2/fir/ContributedSubcomponent : com/squareup/anvil/compiler/k2/fir/ScopedContribution {
+	public fun <init> (Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Ljava/util/List;Ljava/util/List;)V
+	public fun getContributedType ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getExclude ()Ljava/util/List;
+	public final fun getModules ()Ljava/util/List;
+	public final fun getParentScopeType ()Lorg/jetbrains/kotlin/name/ClassId;
+	public fun getReplaces ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public fun getScopeType ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+}
+
+public final class com/squareup/anvil/compiler/k2/fir/ContributedSupertype : com/squareup/anvil/compiler/k2/fir/ContributedTo {
+	public fun <init> (Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;)V
+	public fun getContributedType ()Lorg/jetbrains/kotlin/name/ClassId;
+	public fun getReplaces ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public fun getScopeType ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+}
+
+public abstract interface class com/squareup/anvil/compiler/k2/fir/ContributedTo : com/squareup/anvil/compiler/k2/fir/ScopedContribution {
+}
+
+public abstract class com/squareup/anvil/compiler/k2/fir/FlushingSupertypeProcessor : com/squareup/anvil/compiler/k2/fir/SupertypeProcessor {
+	public fun <init> ()V
+	public fun addSupertypes (Lorg/jetbrains/kotlin/fir/declarations/FirClassLikeDeclaration;Ljava/util/List;Lorg/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension$TypeResolveService;)Ljava/util/List;
+	public abstract fun generateAnnotation (Lorg/jetbrains/kotlin/fir/declarations/FirClassLikeDeclaration;)Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationCall;
+}
+
+public abstract interface class com/squareup/anvil/compiler/k2/fir/HasAnvilFirContext {
+	public abstract fun getAnvilFirContext ()Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;
+}
+
+public final class com/squareup/anvil/compiler/k2/fir/MergedComponent : com/squareup/anvil/compiler/k2/fir/ScopedMerge {
+	public fun <init> (Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;)V
+	public fun getContainingDeclaration ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public final fun getDependencies ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public fun getExclude ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public final fun getMergeAnnotationCall ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public final fun getModules ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public fun getScopeType ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public fun getTargetType ()Lorg/jetbrains/kotlin/name/ClassId;
+}
+
+public final class com/squareup/anvil/compiler/k2/fir/PendingTopLevelClass {
+	public fun <init> (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/GeneratedDeclarationKey;Lorg/jetbrains/kotlin/descriptors/ClassKind;Lorg/jetbrains/kotlin/descriptors/Visibility;Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;Lorg/jetbrains/kotlin/fir/caches/FirCachesFactory;Lorg/jetbrains/kotlin/fir/extensions/FirExtension;)V
+	public final fun getAnnotations ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public final fun getClassId ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getClassKind ()Lorg/jetbrains/kotlin/descriptors/ClassKind;
+	public final fun getGeneratedClass ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public final fun getKey ()Lorg/jetbrains/kotlin/GeneratedDeclarationKey;
+	public final fun getVisibility ()Lorg/jetbrains/kotlin/descriptors/Visibility;
+}
+
+public final class com/squareup/anvil/compiler/k2/fir/Qualifier {
+	public static final field Companion Lcom/squareup/anvil/compiler/k2/fir/Qualifier$Companion;
+	public fun <init> (Lorg/jetbrains/kotlin/name/ClassId;Ljava/lang/String;)V
+	public final fun getType ()Lorg/jetbrains/kotlin/name/ClassId;
+	public final fun getValue ()Ljava/lang/String;
+}
+
+public final class com/squareup/anvil/compiler/k2/fir/Qualifier$Companion {
+}
+
+public abstract interface annotation class com/squareup/anvil/compiler/k2/fir/RequiresTypesResolutionPhase : java/lang/annotation/Annotation {
+}
+
+public abstract interface class com/squareup/anvil/compiler/k2/fir/ScopedContribution {
+	public abstract fun getContributedType ()Lorg/jetbrains/kotlin/name/ClassId;
+	public abstract fun getReplaces ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public abstract fun getScopeType ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+}
+
+public abstract interface class com/squareup/anvil/compiler/k2/fir/ScopedMerge {
+	public abstract fun getContainingDeclaration ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public abstract fun getExclude ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public abstract fun getScopeType ()Lorg/jetbrains/kotlin/fir/caches/FirLazyValue;
+	public abstract fun getTargetType ()Lorg/jetbrains/kotlin/name/ClassId;
+}
+
+public abstract class com/squareup/anvil/compiler/k2/fir/SupertypeProcessor : com/squareup/anvil/compiler/k2/fir/AnvilFirProcessor {
+	public fun <init> ()V
+	public fun addSupertypes (Lorg/jetbrains/kotlin/fir/declarations/FirClassLikeDeclaration;Ljava/util/List;Lorg/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension$TypeResolveService;)Ljava/util/List;
+	public fun computeAdditionalSupertypesForGeneratedNestedClass (Lorg/jetbrains/kotlin/fir/declarations/FirRegularClass;Lorg/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension$TypeResolveService;)Ljava/util/List;
+	public abstract fun shouldProcess (Lorg/jetbrains/kotlin/fir/declarations/FirClassLikeDeclaration;)Z
+}
+
+public abstract class com/squareup/anvil/compiler/k2/fir/TopLevelClassProcessor : com/squareup/anvil/compiler/k2/fir/AnvilFirProcessor {
+	public fun <init> ()V
+	public abstract fun generateTopLevelClassLikeDeclaration (Lorg/jetbrains/kotlin/name/ClassId;Lorg/jetbrains/kotlin/fir/extensions/FirExtension;)Lcom/squareup/anvil/compiler/k2/fir/PendingTopLevelClass;
+	public abstract fun getTopLevelClassIds ()Ljava/util/Set;
+	public abstract fun hasPackage (Lorg/jetbrains/kotlin/name/FqName;)Z
 }
 

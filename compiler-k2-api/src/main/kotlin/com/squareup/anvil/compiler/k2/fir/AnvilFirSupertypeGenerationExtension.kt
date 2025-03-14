@@ -4,7 +4,7 @@ import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 
 public abstract class AnvilFirSupertypeGenerationExtension(
-  override val anvilFirContext: AnvilFirContext,
+  public val anvilFirContext: AnvilFirContext,
   session: FirSession,
 ) : FirSupertypeGenerationExtension(session),
   AnvilFirExtension {

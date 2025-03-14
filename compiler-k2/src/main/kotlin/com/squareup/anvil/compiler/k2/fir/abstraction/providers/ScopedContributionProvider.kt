@@ -5,18 +5,24 @@ import com.squareup.anvil.annotations.ContributesBinding
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionSessionComponent
-import com.squareup.anvil.compiler.k2.fir.contributions.ContributedBinding
-import com.squareup.anvil.compiler.k2.fir.contributions.ContributedModule
-import com.squareup.anvil.compiler.k2.fir.contributions.ContributedSupertype
+import com.squareup.anvil.compiler.k2.fir.ContributedBinding
+import com.squareup.anvil.compiler.k2.fir.ContributedModule
+import com.squareup.anvil.compiler.k2.fir.ContributedSupertype
+import com.squareup.anvil.compiler.k2.fir.MergedComponent
+import com.squareup.anvil.compiler.k2.fir.RequiresTypesResolutionPhase
 import com.squareup.anvil.compiler.k2.utils.fir.boundTypeArgumentOrNull
+import com.squareup.anvil.compiler.k2.utils.fir.classListArgumentAt
 import com.squareup.anvil.compiler.k2.utils.fir.contributesToAnnotations
 import com.squareup.anvil.compiler.k2.utils.fir.getContributesBindingAnnotations
 import com.squareup.anvil.compiler.k2.utils.fir.rankArgumentOrNull
 import com.squareup.anvil.compiler.k2.utils.fir.replacesArgumentOrNull
+import com.squareup.anvil.compiler.k2.utils.fir.requireAnnotationCall
 import com.squareup.anvil.compiler.k2.utils.fir.requireClassId
 import com.squareup.anvil.compiler.k2.utils.fir.requireScopeArgument
 import com.squareup.anvil.compiler.k2.utils.fir.requireTargetClassId
 import com.squareup.anvil.compiler.k2.utils.fir.resolveConeType
+import com.squareup.anvil.compiler.k2.utils.names.ClassIds
+import com.squareup.anvil.compiler.k2.utils.names.Names
 import com.squareup.anvil.compiler.k2.utils.names.bindingModuleSibling
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.caches.getValue
@@ -24,6 +30,7 @@ import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
 import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.resolve.getSuperTypes
+import org.jetbrains.kotlin.fir.resolve.providers.firProvider
 import org.jetbrains.kotlin.fir.utils.exceptions.withFirSymbolEntry
 import org.jetbrains.kotlin.utils.exceptions.errorWithAttachment
 import kotlin.properties.Delegates
@@ -39,41 +46,43 @@ public class ScopedContributionProvider(
 
   private var typeResolveService: FirSupertypeGenerationExtension.TypeResolveService by Delegates.notNull()
 
-  public val contributedModules: List<ContributedModule> by cachedLazy {
+  public val contributedModules: List<ContributedModule> by lazyValue {
     session.anvilFirSymbolProvider.contributesModulesSymbols.flatMap { symbol ->
       symbol.contributesToAnnotations(session).map { annotation ->
 
         ContributedModule(
-          scopeType = cachedLazy {
+          scopeType = lazyValue {
             annotation.requireScopeArgument(typeResolveService).requireClassId()
           },
           contributedType = symbol.classId,
-          replaces = cachedLazy { annotation.replacesClassIds() },
+          replaces = lazyValue { annotation.replacesClassIds() },
         )
       }
     }
   }
-  public val contributedSupertypes: List<ContributedSupertype> by cachedLazy {
+
+  public val contributedSupertypes: List<ContributedSupertype> by lazyValue {
     session.anvilFirSymbolProvider.contributesSupertypeSymbols
       .flatMap { symbol ->
         symbol.contributesToAnnotations(session).map { annotation ->
 
           ContributedSupertype(
-            scopeType = cachedLazy {
+            scopeType = lazyValue {
               annotation.requireScopeArgument(typeResolveService).requireClassId()
             },
             contributedType = symbol.classId,
-            replaces = cachedLazy { annotation.replacesClassIds() },
+            replaces = lazyValue { annotation.replacesClassIds() },
           )
         }
       }
   }
-  private val contributedBindingsAndBindingModules = cachedLazy {
+
+  private val contributedBindingsAndBindingModules = lazyValue {
     session.anvilFirSymbolProvider.contributesBindingSymbols.flatMap { symbol ->
 
       symbol.getContributesBindingAnnotations(session).flatMap { annotation ->
 
-        val boundType = cachedLazy {
+        val boundType = lazyValue {
           annotation.boundTypeArgumentOrNull(session)
             ?.resolveConeType(typeResolveService)
             ?.requireClassId()
@@ -89,10 +98,10 @@ public class ScopedContributionProvider(
             }
         }
 
-        val scopeType = cachedLazy {
+        val scopeType = lazyValue {
           annotation.requireScopeArgument(typeResolveService).requireClassId()
         }
-        val replaces = cachedLazy { annotation.replacesClassIds() }
+        val replaces = lazyValue { annotation.replacesClassIds() }
 
         listOf(
           ContributedBinding(
@@ -122,16 +131,52 @@ public class ScopedContributionProvider(
   public val contributedBindingModules: List<ContributedModule> by contributedBindingsAndBindingModules.map {
     it.filterIsInstance<ContributedModule>()
   }
+  public val mergedComponents: List<MergedComponent> by lazyValue {
+    session.anvilFirSymbolProvider.mergeComponentSymbols.map { symbol ->
 
-  internal val contributesTo by cachedLazy {
+      val mergeAnnotation = symbol.requireAnnotationCall(
+        classId = ClassIds.anvilMergeComponent,
+        session = session,
+        resolveArguments = true,
+      )
+
+      MergedComponent(
+        scopeType = lazyValue {
+          mergeAnnotation.requireScopeArgument(typeResolveService).requireClassId()
+        },
+        targetType = symbol.classId,
+        modules = lazyValue {
+          mergeAnnotation.classListArgumentAt(Names.modules, 1)
+            ?.map { it.requireTargetClassId(typeResolveService) }
+            .orEmpty()
+        },
+        dependencies = lazyValue {
+          mergeAnnotation.classListArgumentAt(Names.dependencies, 2)
+            ?.map { it.requireTargetClassId(typeResolveService) }
+            .orEmpty()
+        },
+        exclude = lazyValue {
+          mergeAnnotation.classListArgumentAt(Names.exclude, 3)
+            ?.map { it.requireTargetClassId(typeResolveService) }
+            .orEmpty()
+        },
+        containingDeclaration = lazyValue {
+          session.firProvider.getFirClassifierByFqName(symbol.classId)!!
+        },
+        mergeAnnotationCall = lazyValue { mergeAnnotation },
+      )
+    }
   }
+
   private var typeResolverSet = false
   internal fun isInitialized() = typeResolverSet
   internal fun bindTypeResolveService(
     typeResolveService: FirSupertypeGenerationExtension.TypeResolveService,
   ) {
-    typeResolverSet = true
-    this.typeResolveService = typeResolveService
+    if (!typeResolverSet) {
+      typeResolverSet = true
+      this.typeResolveService = typeResolveService
+    }
   }
 
   private fun FirAnnotationCall.replacesClassIds() = replacesArgumentOrNull(session)

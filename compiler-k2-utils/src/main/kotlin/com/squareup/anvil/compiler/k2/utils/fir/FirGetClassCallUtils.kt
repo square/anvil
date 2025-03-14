@@ -15,6 +15,11 @@ import org.jetbrains.kotlin.utils.exceptions.checkWithAttachment
 import org.jetbrains.kotlin.utils.exceptions.errorWithAttachment
 
 /** For `kotlin.Unit::class`, returns `kotlin.Unit`. */
+public fun FirGetClassCall.requireTargetClassId(
+  typeResolveService: TypeResolveService,
+): ClassId = resolveConeType(typeResolveService).requireClassId()
+
+/** For `kotlin.Unit::class`, returns `kotlin.Unit`. */
 public fun FirGetClassCall.requireTargetClassId(): ClassId = requireTargetType().requireClassId()
 
 public fun FirGetClassCall.requireTargetType(): ConeKotlinType {

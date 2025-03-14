@@ -120,11 +120,19 @@ public abstract interface annotation class com/squareup/anvil/annotations/intern
 	public abstract fun value ()[Lcom/squareup/anvil/annotations/internal/InternalBindingMarker;
 }
 
-public abstract interface annotation class com/squareup/anvil/annotations/internal/InternalContributedModule : java/lang/annotation/Annotation {
+public abstract interface annotation class com/squareup/anvil/annotations/internal/InternalContributedComponentHints : java/lang/annotation/Annotation {
 	public abstract fun hints ()[Ljava/lang/String;
 }
 
-public abstract interface annotation class com/squareup/anvil/annotations/internal/InternalContributedModule$Container : java/lang/annotation/Annotation {
-	public abstract fun value ()[Lcom/squareup/anvil/annotations/internal/InternalContributedModule;
+public abstract interface annotation class com/squareup/anvil/annotations/internal/InternalContributedComponentHints$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/internal/InternalContributedComponentHints;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/internal/InternalContributedModuleHints : java/lang/annotation/Annotation {
+	public abstract fun hints ()[Ljava/lang/String;
+}
+
+public abstract interface annotation class com/squareup/anvil/annotations/internal/InternalContributedModuleHints$Container : java/lang/annotation/Annotation {
+	public abstract fun value ()[Lcom/squareup/anvil/annotations/internal/InternalContributedModuleHints;
 }
 

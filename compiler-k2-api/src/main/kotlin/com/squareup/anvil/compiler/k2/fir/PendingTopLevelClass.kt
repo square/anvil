@@ -1,6 +1,5 @@
-package com.squareup.anvil.compiler.k2.fir.abstraction
+package com.squareup.anvil.compiler.k2.fir
 
-import com.squareup.anvil.compiler.k2.fir.contributions.wrapInSyntheticFile
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.descriptors.ClassKind
 import org.jetbrains.kotlin.descriptors.Visibility
@@ -14,17 +13,17 @@ import org.jetbrains.kotlin.fir.plugin.createTopLevelClass
 import org.jetbrains.kotlin.name.ClassId
 
 @OptIn(ExperimentalTopLevelDeclarationsGenerationApi::class)
-internal class PendingTopLevelClass(
-  val classId: ClassId,
-  val key: GeneratedDeclarationKey,
-  val classKind: ClassKind,
-  val visibility: Visibility,
-  val annotations: FirLazyValue<List<FirAnnotation>>,
+public class PendingTopLevelClass(
+  public val classId: ClassId,
+  public val key: GeneratedDeclarationKey,
+  public val classKind: ClassKind,
+  public val visibility: Visibility,
+  public val annotations: FirLazyValue<List<FirAnnotation>>,
   cachesFactory: FirCachesFactory,
   firExtension: FirExtension,
 ) {
 
-  val generatedClass: FirLazyValue<FirRegularClass> = cachesFactory.createLazyValue {
+  public val generatedClass: FirLazyValue<FirRegularClass> = cachesFactory.createLazyValue {
     firExtension.createTopLevelClass(
       classId = classId,
       key = key,
@@ -34,6 +33,5 @@ internal class PendingTopLevelClass(
     }.apply {
       replaceAnnotations(this@PendingTopLevelClass.annotations.getValue())
     }
-      .wrapInSyntheticFile(firExtension.session)
   }
 }

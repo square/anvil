@@ -4,9 +4,9 @@ import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionSessionComponent
-import com.squareup.anvil.compiler.k2.fir.contributions.ContributedModule
+import com.squareup.anvil.compiler.k2.fir.ContributedModule
+import com.squareup.anvil.compiler.k2.fir.ContributedSupertype
 import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
-import com.squareup.anvil.compiler.k2.utils.fir.requireAnnotation
 import com.squareup.anvil.compiler.k2.utils.fir.requireArgumentAt
 import com.squareup.anvil.compiler.k2.utils.fir.requireRegularClassSymbol
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
@@ -17,6 +17,7 @@ import org.jetbrains.kotlin.fir.caches.FirLazyValue
 import org.jetbrains.kotlin.fir.caches.firCachesFactory
 import org.jetbrains.kotlin.fir.caches.getValue
 import org.jetbrains.kotlin.fir.declarations.evaluateAs
+import org.jetbrains.kotlin.fir.declarations.getAnnotationByClassId
 import org.jetbrains.kotlin.fir.declarations.unwrapVarargValue
 import org.jetbrains.kotlin.fir.expressions.FirLiteralExpression
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
@@ -40,26 +41,28 @@ public class AnvilFirDependencyHintProvider(
   private fun <V> createLazyValue(createValue: () -> V): FirLazyValue<V> =
     cachesFactory.createLazyValue(createValue)
 
-  private val dependencyHintClassSymbols by createLazyValue {
-
+  private val dependencyHintClassSymbols = createLazyValue {
+    // All hint classes are located in the `anvil.hint` package regardless of their module or type,
+    // and they are all top-level "classes" (really interfaces). The dependency symbol name provider
+    // gives us all their simple names.  We can then reconstruct their ClassIds,
+    // and use those ClassIds to load their symbols.
+    // This method for finding hints is important in two ways:
+    //   1. Those dependency symbols will never be loaded unless they're looked up by name,
+    //      which means that this is the only way to get what we need.
+    //   2. This is how the compiler handles reference linking for incremental compilation.  Changes
+    //      to the dependency hint class will trigger recompilation of the module that references it.
     session.dependenciesSymbolProvider.symbolNamesProvider
       .getTopLevelClassifierNamesInPackage(FqNames.anvilHintPackage)
       .orEmpty()
       .map { ClassId(FqNames.anvilHintPackage, it).requireRegularClassSymbol(session) }
   }
 
-  private val allScopedContributions = cachesFactory.createLazyValue(::parseDependencyHints)
+  public val allDependencyContributedModules: List<ContributedModule> by dependencyHintClassSymbols.map { allHintSymbols ->
+    allHintSymbols.flatMap { clazzSymbol ->
 
-  public fun getContributions(): List<ContributedModule> = allScopedContributions.getValue()
-
-  private fun parseDependencyHints(): List<ContributedModule> = dependencyHintClassSymbols
-    .flatMap { clazzSymbol ->
-
-      val annotation = clazzSymbol.requireAnnotation(
-        ClassIds.anvilInternalContributedModuleHints,
-        session,
-        resolveArguments = true,
-      )
+      val annotation =
+        clazzSymbol.getAnnotationByClassId(ClassIds.anvilInternalContributedModuleHints, session)
+          ?: return@flatMap emptyList()
 
       annotation.requireArgumentAt(
         name = Names.hints,
@@ -90,9 +93,53 @@ public class AnvilFirDependencyHintProvider(
           )
         }
     }
+  }
+
+  public val allDependencyContributedComponents: List<ContributedSupertype>
+    by dependencyHintClassSymbols.map { allHintSymbols ->
+      allHintSymbols.flatMap { clazzSymbol ->
+
+        val annotation =
+          clazzSymbol.getAnnotationByClassId(
+            ClassIds.anvilInternalContributedComponentHints,
+            session,
+          )
+            ?: return@flatMap emptyList()
+
+        annotation.requireArgumentAt(
+          name = Names.hints,
+          index = 1,
+          unwrapNamedArguments = true,
+        ).unwrapVarargValue()
+          .map { expression ->
+            val hint = expression.evaluateAs<FirLiteralExpression>(session)
+              .sure { "can't evaluate expression: $expression" }.value as String
+
+            val allNames = hint.split('|')
+              .map { ClassId.topLevel(FqName(it.trim())) }
+
+            checkWithAttachment(
+              allNames.size >= 2,
+              {
+                "Expected at least two names in contributed component hint"
+              },
+            ) {
+              withFirEntry("annotation", annotation)
+              withEntry("contributed component hint", hint)
+            }
+
+            ContributedSupertype(
+              scopeType = cachesFactory.createLazyValue { allNames[0] },
+              contributedType = allNames[1],
+              replaces = cachesFactory.createLazyValue { allNames.drop(2) },
+            )
+          }
+      }
+    }
 
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
-    register(AnvilPredicates.contributedModule)
+    register(AnvilPredicates.hasAnvilInternalContributedModuleHints)
+    register(AnvilPredicates.hasAnvilInternalContributedComponentHints)
   }
 }
 

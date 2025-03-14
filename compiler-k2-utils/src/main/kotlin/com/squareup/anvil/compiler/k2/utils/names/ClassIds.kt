@@ -50,6 +50,10 @@ public object ClassIds {
   public val anvilInternalContributedModuleHints: ClassId =
     classId("com.squareup.anvil.annotations.internal", "InternalContributedModuleHints")
 
+  /** `com.squareup.anvil.annotations.internal.InternalContributedComponentHints` */
+  public val anvilInternalContributedComponentHints: ClassId =
+    classId("com.squareup.anvil.annotations.internal", "InternalContributedComponentHints")
+
   /** `com.squareup.anvil.annotations.internal.InternalContributedModuleHints` */
   public val anvilInternalAnvilApi: ClassId =
     classId("com.squareup.anvil.annotations.internal", "InternalAnvilApi")
@@ -94,36 +98,17 @@ public object ClassIds {
   /** `dagger.Subcomponent` */
   public val daggerSubcomponent: ClassId = classId("dagger", "Subcomponent")
 
-  /*
-  dagger.assisted.Assisted
-  dagger.assisted.AssistedFactory
-  dagger.assisted.AssistedInject
-
-  dagger.Binds
-  dagger.BindsInstance
-  dagger.BindsOptionalOf
-  dagger.Component
-  dagger.MapKey
-  dagger.Module
-  dagger.Provides
-  dagger.Reusable
-  dagger.Subcomponent
-
-  dagger.multibindings.ClassKey
-  dagger.multibindings.ElementsIntoSet
-  dagger.multibindings.IntKey
-  dagger.multibindings.IntoMap
-  dagger.multibindings.IntoSet
-  dagger.multibindings.LazyClassKey
-  dagger.multibindings.LongKey
-  dagger.multibindings.Multibinds
-  dagger.multibindings.StringKey
-   */
-
   public fun anvilContributedModules(moduleTypes: List<ClassId>): ClassId {
     return ClassId(
       FqNames.anvilHintPackage,
       Name.identifier("AnvilModuleHints_${md5Hash(moduleTypes.map { it.asString() })}"),
+    )
+  }
+
+  public fun anvilContributedComponents(componentTypes: List<ClassId>): ClassId {
+    return ClassId(
+      FqNames.anvilHintPackage,
+      Name.identifier("AnvilComponentHints_${md5Hash(componentTypes.map { it.asString() })}"),
     )
   }
 

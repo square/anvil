@@ -4,11 +4,11 @@ import com.rickbusarow.kase.stdlib.div
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.TestNames
 import com.squareup.anvil.compiler.testing.classgraph.allMergedModulesForComponent
+import com.squareup.anvil.compiler.testing.classgraph.componentInterface
 import com.squareup.anvil.compiler.testing.classgraph.fqNames
 import io.kotest.matchers.shouldBe
 import org.jetbrains.kotlin.name.FqName
 import org.junit.jupiter.api.TestFactory
-import kotlin.streams.asSequence
 
 class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2 && !it.useKapt }) {
 
@@ -83,6 +83,14 @@ class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2
 
       val hintPackage = scanResult.getPackageInfo("anvil.hint")
 
+      // hintPackage.classInfo.names shouldBe listOf(
+      //   "anvil.hint.AnvilModuleHints_7395f7a5",
+      //   "anvil.hint.AnvilModuleHints_b9fd254f",
+      //   "anvil.hint.AnvilModuleHints_c8e109e7",
+      //   "anvil.hint.AnvilModuleHints_db380a0a",
+      //   "anvil.hint.AnvilModuleHints_ee672a89",
+      // )
+
       scanResult
         .allMergedModulesForComponent(TestNames.componentInterface.asFqNameString())
         .fqNames() shouldBe listOf(
@@ -94,66 +102,55 @@ class AnnotationMergingTest : CompilationModeTest(MODE_DEFAULTS.filter { it.isK2
       ).map(::FqName)
     }
   }
-    // TODO (rbusarow) delete me
-    .let {
-      check(System.getenv("CI") == null) { "delete me" }
-
-      it.asSequence()
-        .toList()
-        .takeLast(1)
-    }
 
   @TestFactory
-  fun `canary things`() = testFactory {
+  fun `contributed supertypes from dependency compilations are merged`() = testFactory {
+
+    val dep1 = compile2(
+      """
+        package com.squareup.test.dep1 
+
+        @com.squareup.anvil.annotations.ContributesTo(Unit::class)
+        interface DependencySuper1
+      """.trimIndent(),
+      workingDir = workingDir / "dep1",
+    )
+
+    val dep2 = compile2(
+      """
+        package com.squareup.test.dep2
+
+        @com.squareup.anvil.annotations.ContributesTo(Unit::class)
+        interface DependencySuper2
+      """.trimIndent(),
+      workingDir = workingDir / "dep2",
+    )
 
     compile2(
       """
         package com.squareup.test
 
-        @dagger.Module
-        @com.squareup.anvil.annotations.ContributesTo(Unit::class) interface LocalProjectModule
+        @com.squareup.anvil.annotations.ContributesTo(Unit::class)
+        interface LocalSuper
 
-        // @com.squareup.anvil.annotations.ContributesBinding(Unit::class)
-        // class LocalAImpl @javax.inject.Inject constructor() : LocalA
-        // interface LocalA
-
-        // @com.squareup.anvil.annotations.MergeComponent(Unit::class) interface ComponentInterface
+        @com.squareup.anvil.annotations.MergeComponent(Unit::class)
+        interface ComponentInterface
       """.trimIndent(),
+      configuration = {
+        it.copy(
+          compilationClasspath = it.compilationClasspath
+            .plus(dep1.jar)
+            .plus(dep2.jar),
+        )
+      },
       workingDir = workingDir / "consumer",
     ) {
 
-      scanResult
-        .allMergedModulesForComponent(TestNames.componentInterface.asFqNameString())
-        .fqNames() shouldBe listOf(
-        "com.squareup.test.dep1.DependencyModule1",
-        "com.squareup.test.dep2.DependencyModule2",
-        "com.squareup.test.dep2.Dep2AImpl_BindingModule",
-        "com.squareup.test.LocalProjectModule",
-        "com.squareup.test.LocalAImpl_BindingModule",
-      ).map(::FqName)
+      scanResult.componentInterface.interfaces.names.sorted() shouldBe listOf(
+        "com.squareup.test.LocalSuper",
+        "com.squareup.test.dep1.DependencySuper1",
+        "com.squareup.test.dep2.DependencySuper2",
+      )
     }
   }
-    .asSequence()
-    .toList()
-    .takeLast(1)
-
-  @TestFactory
-  fun `canary things 2`() = testFactory {
-
-    compile2(
-      """
-        package com.squareup.test
-
-        annotation class Dinosaur
-  
-        @Dinosaur
-        class Canary1
-      """.trimIndent(),
-      workingDir = workingDir / "consumer",
-    ) {
-    }
-  }
-    .asSequence()
-    .toList()
-    .takeLast(1)
 }

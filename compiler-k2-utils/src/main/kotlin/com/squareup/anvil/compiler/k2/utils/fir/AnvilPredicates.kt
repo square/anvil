@@ -30,8 +30,13 @@ public object AnvilPredicates {
       .or(hasAnvilContributesMultibinding)
       .or(hasAnvilContributesSubcomponent)
 
+  /*
+  Anvil hint annotations
+   */
   public val hasAnvilInternalContributedModuleHints: LookupPredicate
     get() = ClassIds.anvilInternalContributedModuleHints.lookupPredicateAnnotated()
+  public val hasAnvilInternalContributedComponentHints: LookupPredicate
+    get() = ClassIds.anvilInternalContributedComponentHints.lookupPredicateAnnotated()
 
   /*
   Anvil Merge annotations

@@ -1,4 +1,4 @@
-package com.squareup.anvil.compiler.k2.fir.abstraction
+package com.squareup.anvil.compiler.k2.fir
 
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.descriptors.Visibility
@@ -32,6 +32,5 @@ internal class PendingTopLevelProperty(
     }.apply {
       replaceAnnotations(this@PendingTopLevelProperty.annotations.getValue())
     }
-    // .wrapInSyntheticFile(firExtension.session)
   }
 }
