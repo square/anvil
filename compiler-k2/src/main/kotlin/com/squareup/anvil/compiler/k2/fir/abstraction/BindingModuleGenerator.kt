@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.k2.fir.abstraction
 
 import com.google.auto.service.AutoService
+import com.squareup.anvil.compiler.k2.fir.AbstractAnvilFirProcessorFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext2
 import com.squareup.anvil.compiler.k2.fir.AnvilFirProcessor
 import com.squareup.anvil.compiler.k2.fir.PendingTopLevelClass
@@ -29,11 +30,8 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
 
 @AutoService(AnvilFirProcessor.Factory::class)
-public class BindingModuleGeneratorFactory : AnvilFirProcessor.Factory {
-  override fun create(anvilFirContext: AnvilFirContext2): AnvilFirProcessor {
-    return BindingModuleGenerator(anvilFirContext)
-  }
-}
+public class BindingModuleGeneratorFactory :
+  AbstractAnvilFirProcessorFactory(::BindingModuleGenerator)
 
 internal class BindingModuleGenerator(
   override val anvilFirContext: AnvilFirContext2,

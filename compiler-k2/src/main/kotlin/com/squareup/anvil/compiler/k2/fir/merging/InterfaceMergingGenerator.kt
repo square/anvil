@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.k2.fir.merging
 
 import com.google.auto.service.AutoService
+import com.squareup.anvil.compiler.k2.fir.AbstractAnvilFirProcessorFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext2
 import com.squareup.anvil.compiler.k2.fir.AnvilFirProcessor
 import com.squareup.anvil.compiler.k2.fir.RequiresTypesResolutionPhase
@@ -19,11 +20,8 @@ import org.jetbrains.kotlin.fir.types.FirResolvedTypeRef
 import org.jetbrains.kotlin.fir.types.classId
 
 @AutoService(AnvilFirProcessor.Factory::class)
-public class InterfaceMergingGeneratorFactory : AnvilFirProcessor.Factory {
-  override fun create(anvilFirContext: AnvilFirContext2): AnvilFirProcessor {
-    return InterfaceMergingGenerator(anvilFirContext)
-  }
-}
+public class InterfaceMergingGeneratorFactory :
+  AbstractAnvilFirProcessorFactory(::InterfaceMergingGenerator)
 
 /**
  * This extension finds all contributed component interfaces and adds them as super types to Dagger

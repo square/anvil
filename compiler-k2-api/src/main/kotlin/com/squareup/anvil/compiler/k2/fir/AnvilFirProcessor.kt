@@ -52,6 +52,13 @@ public sealed class AnvilFirProcessor : HasAnvilFirContext {
   }
 }
 
+public abstract class AbstractAnvilFirProcessorFactory(
+  private val initializer: (AnvilFirContext2) -> AnvilFirProcessor,
+) : AnvilFirProcessor.Factory {
+  final override fun create(anvilFirContext: AnvilFirContext2): AnvilFirProcessor =
+    initializer(anvilFirContext)
+}
+
 public abstract class TopLevelClassProcessor : AnvilFirProcessor() {
 
   @ExperimentalTopLevelDeclarationsGenerationApi

@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.k2.fir.abstraction
 
 import com.google.auto.service.AutoService
+import com.squareup.anvil.compiler.k2.fir.AbstractAnvilFirProcessorFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext2
 import com.squareup.anvil.compiler.k2.fir.AnvilFirProcessor
 import com.squareup.anvil.compiler.k2.fir.PendingTopLevelClass
@@ -30,11 +31,8 @@ import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.types.ConstantValueKind
 
 @AutoService(AnvilFirProcessor.Factory::class)
-public class AnvilContributedModuleHintGeneratorFactory : AnvilFirProcessor.Factory {
-  override fun create(anvilFirContext: AnvilFirContext2): AnvilFirProcessor {
-    return AnvilContributedModuleHintGenerator(anvilFirContext)
-  }
-}
+public class AnvilContributedModuleHintGeneratorFactory :
+  AbstractAnvilFirProcessorFactory(::AnvilContributedModuleHintGenerator)
 
 internal class AnvilContributedModuleHintGenerator(
   override val anvilFirContext: AnvilFirContext2,

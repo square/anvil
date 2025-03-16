@@ -1,6 +1,7 @@
 package com.squareup.anvil.compiler.k2.fir.merging
 
 import com.google.auto.service.AutoService
+import com.squareup.anvil.compiler.k2.fir.AbstractAnvilFirProcessorFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirContext2
 import com.squareup.anvil.compiler.k2.fir.AnvilFirProcessor
 import com.squareup.anvil.compiler.k2.fir.FlushingSupertypeProcessor
@@ -28,11 +29,8 @@ import org.jetbrains.kotlin.psi.KtCollectionLiteralExpression
 import org.jetbrains.kotlin.toKtPsiSourceElement
 
 @AutoService(AnvilFirProcessor.Factory::class)
-public class AnnotationMergingGeneratorFactory : AnvilFirProcessor.Factory {
-  override fun create(anvilFirContext: AnvilFirContext2): AnvilFirProcessor {
-    return AnnotationMergingGenerator(anvilFirContext)
-  }
-}
+public class AnnotationMergingGeneratorFactory :
+  AbstractAnvilFirProcessorFactory(::AnnotationMergingGenerator)
 
 /**
  * This generator merges all contributed Dagger modules on the classpath and includes them on the
