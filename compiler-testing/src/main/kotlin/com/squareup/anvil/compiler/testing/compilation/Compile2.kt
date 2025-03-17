@@ -1,6 +1,8 @@
 package com.squareup.anvil.compiler.testing.compilation
 
 import com.rickbusarow.kase.stdlib.div
+import com.squareup.anvil.annotations.internal.InternalAnvilApi
+import com.squareup.anvil.compiler.k2.fir.AdditionalProcessorsHolder
 import com.squareup.anvil.compiler.testing.CompilationEnvironment
 import dagger.internal.codegen.ComponentProcessor
 import io.kotest.matchers.shouldBe
@@ -126,13 +128,10 @@ public class Compile2Compilation(
     parseCommandLineArguments<K2JVMCompilerArguments>(baseArgs.toArgumentStrings())
 
     try {
-      if (config.firExtensions.isNotEmpty()) {
-        // Register the FIR extensions, if any, via thread-local.
-        Compile2CompilerPluginRegistrar.threadLocalParams.set(
-          Compile2CompilerPluginRegistrar.Compile2RegistrarParams(
-            firExtensionFactories = config.firExtensions,
-          ),
-        )
+      if (config.firProcessors.isNotEmpty()) {
+        // Register the custom FIR processors, if any, via thread-local.
+        @OptIn(InternalAnvilApi::class)
+        AdditionalProcessorsHolder.additionalProcessors.set(config.firProcessors)
       }
 
       // KAPT invocation happens first, generating stubs and Java/Kotlin sources if necessary.
@@ -184,7 +183,8 @@ public class Compile2Compilation(
         compilerMessages = messageRenderer.messages(),
       )
     } finally {
-      Compile2CompilerPluginRegistrar.threadLocalParams.remove()
+      @OptIn(InternalAnvilApi::class)
+      AdditionalProcessorsHolder.additionalProcessors.remove()
     }
   }
 

@@ -1,8 +1,5 @@
 package com.squareup.anvil.compiler.k2.fir.abstraction.providers
 
-import com.google.auto.service.AutoService
-import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
-import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionSessionComponent
 import com.squareup.anvil.compiler.k2.fir.ContributedModule
 import com.squareup.anvil.compiler.k2.fir.ContributedSupertype
@@ -21,7 +18,6 @@ import org.jetbrains.kotlin.fir.declarations.getAnnotationByClassId
 import org.jetbrains.kotlin.fir.declarations.unwrapVarargValue
 import org.jetbrains.kotlin.fir.expressions.FirLiteralExpression
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
-import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
 import org.jetbrains.kotlin.fir.resolve.providers.dependenciesSymbolProvider
 import org.jetbrains.kotlin.fir.utils.exceptions.withFirEntry
 import org.jetbrains.kotlin.name.ClassId
@@ -31,10 +27,8 @@ import org.jetbrains.kotlin.utils.sure
 
 public val FirSession.anvilFirDependencyHintProvider: AnvilFirDependencyHintProvider by FirSession.sessionComponentAccessor()
 
-public class AnvilFirDependencyHintProvider(
-  anvilFirContext: AnvilFirContext,
-  session: FirSession,
-) : AnvilFirExtensionSessionComponent(anvilFirContext, session) {
+public class AnvilFirDependencyHintProvider(session: FirSession) :
+  AnvilFirExtensionSessionComponent(session) {
 
   private val cachesFactory = session.firCachesFactory
 
@@ -140,14 +134,5 @@ public class AnvilFirDependencyHintProvider(
   override fun FirDeclarationPredicateRegistrar.registerPredicates() {
     register(AnvilPredicates.hasAnvilInternalContributedModuleHints)
     register(AnvilPredicates.hasAnvilInternalContributedComponentHints)
-  }
-}
-
-@AutoService(AnvilFirExtensionFactory::class)
-public class AnvilFirDependencyHintProviderFactory : AnvilFirExtensionSessionComponent.Factory {
-  override fun create(anvilFirContext: AnvilFirContext): FirExtensionSessionComponent.Factory {
-    return FirExtensionSessionComponent.Factory { session ->
-      AnvilFirDependencyHintProvider(anvilFirContext, session)
-    }
   }
 }

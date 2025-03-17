@@ -1,28 +1,31 @@
 package com.squareup.anvil.compiler.k2.fir.abstraction.providers
 
-import com.squareup.anvil.compiler.k2.fir.AnvilFirContext2
+import com.squareup.anvil.annotations.internal.InternalAnvilApi
+import com.squareup.anvil.compiler.k2.fir.AdditionalProcessorsHolder
+import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionSessionComponent
 import com.squareup.anvil.compiler.k2.fir.AnvilFirProcessor
 import com.squareup.anvil.compiler.k2.fir.FlushingSupertypeProcessor
 import com.squareup.anvil.compiler.k2.fir.SupertypeProcessor
 import com.squareup.anvil.compiler.k2.fir.TopLevelClassProcessor
+import com.squareup.anvil.compiler.k2.fir.anvilContext
 import org.jetbrains.kotlin.fir.FirSession
-import org.jetbrains.kotlin.fir.caches.FirLazyValue
-import org.jetbrains.kotlin.fir.caches.firCachesFactory
 import org.jetbrains.kotlin.fir.caches.getValue
-import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
 import java.util.ServiceLoader
 
 public val FirSession.anvilFirProcessorProvider: AnvilFirProcessorProvider by FirSession.sessionComponentAccessor()
 
-public class AnvilFirProcessorProvider(
-  anvilFirContext: AnvilFirContext2,
-) : FirExtensionSessionComponent(anvilFirContext.session) {
+public class AnvilFirProcessorProvider(session: FirSession) :
+  AnvilFirExtensionSessionComponent(session) {
 
-  private val cachesFactory = session.firCachesFactory
+  @OptIn(InternalAnvilApi::class)
+  private val processors by lazyValue {
 
-  private val processors by createLazyValue {
-    ServiceLoader.load(AnvilFirProcessor.Factory::class.java)
-      .map { it.create(anvilFirContext) }
+    val loaded = ServiceLoader.load(AnvilFirProcessor.Factory::class.java)
+
+    val threadLocal = AdditionalProcessorsHolder.additionalProcessors.get()
+
+    loaded.plus(threadLocal)
+      .map { it.create(session.anvilContext) }
       .sortedBy { it::class.qualifiedName }
       .groupBy {
         when (it) {
@@ -33,20 +36,18 @@ public class AnvilFirProcessorProvider(
       }
   }
 
-  public val topLevelClassProcessors: List<TopLevelClassProcessor> by createLazyValue {
+  public val topLevelClassProcessors: List<TopLevelClassProcessor> by lazyValue {
     @Suppress("UNCHECKED_CAST")
     processors[TopLevelClassProcessor::class].orEmpty() as List<TopLevelClassProcessor>
   }
 
-  public val supertypeProcessors: List<SupertypeProcessor> by createLazyValue {
+  public val supertypeProcessors: List<SupertypeProcessor> by lazyValue {
     @Suppress("UNCHECKED_CAST")
     processors[SupertypeProcessor::class].orEmpty() as List<SupertypeProcessor>
   }
-  public val flushingSupertypeProcessors: List<FlushingSupertypeProcessor> by createLazyValue {
+
+  public val flushingSupertypeProcessors: List<FlushingSupertypeProcessor> by lazyValue {
     @Suppress("UNCHECKED_CAST")
     processors[FlushingSupertypeProcessor::class].orEmpty() as List<FlushingSupertypeProcessor>
   }
-
-  private fun <V> createLazyValue(createValue: () -> V): FirLazyValue<V> =
-    cachesFactory.createLazyValue(createValue)
 }

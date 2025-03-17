@@ -140,7 +140,7 @@ public final class com/squareup/anvil/compiler/k2/fir/internal/MessageCollectorB
 public final class com/squareup/anvil/compiler/k2/fir/merging/AnnotationMergingGenerator : com/squareup/anvil/compiler/k2/fir/FlushingSupertypeProcessor {
 	public fun <init> (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;)V
 	public fun generateAnnotation (Lorg/jetbrains/kotlin/fir/declarations/FirClassLikeDeclaration;)Lorg/jetbrains/kotlin/fir/expressions/FirAnnotationCall;
-	public fun getAnvilFirContext ()Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;
+	public fun getAnvilContext ()Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;
 	public fun shouldProcess (Lorg/jetbrains/kotlin/fir/declarations/FirClassLikeDeclaration;)Z
 }
 
@@ -151,7 +151,7 @@ public final class com/squareup/anvil/compiler/k2/fir/merging/AnnotationMergingG
 public final class com/squareup/anvil/compiler/k2/fir/merging/InterfaceMergingGenerator : com/squareup/anvil/compiler/k2/fir/SupertypeProcessor {
 	public fun <init> (Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;)V
 	public fun addSupertypes (Lorg/jetbrains/kotlin/fir/declarations/FirClassLikeDeclaration;Ljava/util/List;Lorg/jetbrains/kotlin/fir/extensions/FirSupertypeGenerationExtension$TypeResolveService;)Ljava/util/List;
-	public fun getAnvilFirContext ()Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;
+	public fun getAnvilContext ()Lcom/squareup/anvil/compiler/k2/fir/AnvilFirContext2;
 	public fun shouldProcess (Lorg/jetbrains/kotlin/fir/declarations/FirClassLikeDeclaration;)Z
 }
 
@@ -164,4 +164,3 @@ public final class com/squareup/anvil/compiler/k2/ir/GeneratedDeclarationsIrBody
 	public fun generate (Lorg/jetbrains/kotlin/ir/declarations/IrModuleFragment;Lorg/jetbrains/kotlin/backend/common/extensions/IrPluginContext;)V
 	public fun resolveSymbol (Lorg/jetbrains/kotlin/ir/symbols/IrSymbol;Lorg/jetbrains/kotlin/ir/builders/TranslationPluginContext;)Lorg/jetbrains/kotlin/ir/declarations/IrDeclaration;
 }
-

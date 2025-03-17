@@ -1,8 +1,5 @@
 package com.squareup.anvil.compiler.k2.fir.abstraction.providers
 
-import com.google.auto.service.AutoService
-import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
-import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionSessionComponent
 import com.squareup.anvil.compiler.k2.utils.fir.AnvilPredicates
 import com.squareup.anvil.compiler.k2.utils.fir.hasAnnotation
@@ -10,16 +7,14 @@ import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.caches.getValue
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
-import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
 import org.jetbrains.kotlin.fir.symbols.FirBasedSymbol
 import org.jetbrains.kotlin.fir.symbols.impl.FirRegularClassSymbol
 
 public val FirSession.anvilFirSymbolProvider: AnvilFirSymbolProvider by FirSession.sessionComponentAccessor()
 
 public class AnvilFirSymbolProvider(
-  anvilFirContext: AnvilFirContext,
   session: FirSession,
-) : AnvilFirExtensionSessionComponent(anvilFirContext, session) {
+) : AnvilFirExtensionSessionComponent(session) {
 
   /*
   Anvil Contributes annotations
@@ -79,14 +74,5 @@ public class AnvilFirSymbolProvider(
     register(AnvilPredicates.hasAnyAnvilMerge)
     register(AnvilPredicates.hasAnyDaggerAnnotation)
     register(AnvilPredicates.hasInjectAnnotation)
-  }
-}
-
-@AutoService(AnvilFirExtensionFactory::class)
-public class AnvilFirSymbolProviderFactory : AnvilFirExtensionSessionComponent.Factory {
-  override fun create(anvilFirContext: AnvilFirContext): FirExtensionSessionComponent.Factory {
-    return FirExtensionSessionComponent.Factory { session ->
-      AnvilFirSymbolProvider(anvilFirContext, session)
-    }
   }
 }

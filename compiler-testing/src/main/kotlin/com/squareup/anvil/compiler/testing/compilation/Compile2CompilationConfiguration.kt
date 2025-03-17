@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler.testing.compilation
 
 import com.rickbusarow.kase.stdlib.div
 import com.rickbusarow.kase.stdlib.letIf
-import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
+import com.squareup.anvil.compiler.k2.fir.AnvilFirProcessor
 import com.squareup.anvil.compiler.testing.BuildConfig
 import com.squareup.anvil.compiler.testing.CompilationMode
 import org.jetbrains.kotlin.config.LanguageVersion
@@ -29,7 +29,7 @@ import java.io.File
  * @property compilationClasspath Classpath files required for compilation.
  * @property compilerPluginClasspath Classpath files for any compiler plugins (including Anvil).
  * @property kaptPluginClasspath Classpath files for KAPT annotation processors (if [useKapt] is true).
- * @property firExtensions Optional FIR plugin extensions for one-off compiler tests.
+ * @property firProcessors Optional FIR plugin extensions for one-off compiler tests.
  */
 public data class Compile2CompilationConfiguration(
   val rootDir: File,
@@ -50,7 +50,7 @@ public data class Compile2CompilationConfiguration(
   val compilationClasspath: List<File>,
   val compilerPluginClasspath: List<File>,
   val kaptPluginClasspath: List<File>,
-  val firExtensions: List<AnvilFirExtensionFactory<*>>,
+  val firProcessors: List<AnvilFirProcessor.Factory>,
 ) {
 
   public companion object {
@@ -60,7 +60,7 @@ public data class Compile2CompilationConfiguration(
      * suitable for typical test usage.
      *
      * @param sourceFiles a list of .kt or .java files to be compiled
-     * @param firExtensions optional FIR extension factories for custom processing
+     * @param firProcessors optional FIR extension factories for custom processing
      * @param workingDir The directory to serve as [rootDir].
      * @param useKapt Whether to enable KAPT support in the resulting configuration.
      * @param previousCompilation a previous [Compile2Result] to add to the classpath for this compilation
@@ -68,7 +68,7 @@ public data class Compile2CompilationConfiguration(
      */
     public fun default(
       sourceFiles: List<File>,
-      firExtensions: List<AnvilFirExtensionFactory<*>>,
+      firProcessors: List<AnvilFirProcessor.Factory>,
       workingDir: File,
       useKapt: Boolean,
       mode: CompilationMode,
@@ -105,7 +105,7 @@ public data class Compile2CompilationConfiguration(
         },
         jdkHome = javaHomeOrNull(),
         moduleName = workingDir.name,
-        firExtensions = firExtensions,
+        firProcessors = firProcessors,
 
         // Classpath for the compiler itself.
         compilationClasspath = compilationClasspath,

@@ -7,7 +7,7 @@ import com.rickbusarow.kase.ParamTestEnvironmentFactory
 import com.rickbusarow.kase.TestEnvironment
 import com.rickbusarow.kase.asClueCatching
 import com.rickbusarow.kase.stdlib.createSafely
-import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
+import com.squareup.anvil.compiler.k2.fir.AnvilFirProcessor
 import com.squareup.anvil.compiler.testing.compilation.Compile2Compilation
 import com.squareup.anvil.compiler.testing.compilation.Compile2CompilationConfiguration
 import com.squareup.anvil.compiler.testing.compilation.Compile2Result
@@ -49,7 +49,7 @@ public interface CompilationEnvironment : TestEnvironment {
    *
    * @param kotlinSources one or more Kotlin source strings
    * @param javaSources optional Java source strings
-   * @param firExtensions optional FIR extension factories for advanced compiler customization
+   * @param firProcessors optional FIR extension factories for advanced compiler customization
    * @param configuration an optional config transform to modify the default [Compile2CompilationConfiguration]
    * @param expectedExitCode automatically asserted against each compilation phase's result
    * @param exec invoked with the [Compile2Result] after compilation
@@ -63,7 +63,7 @@ public interface CompilationEnvironment : TestEnvironment {
   public fun compile2(
     @Language("kotlin") vararg kotlinSources: String,
     javaSources: List<String> = emptyList(),
-    firExtensions: List<AnvilFirExtensionFactory<*>> = emptyList(),
+    firProcessors: List<AnvilFirProcessor.Factory> = emptyList(),
     configuration: (Compile2CompilationConfiguration) -> Compile2CompilationConfiguration = { it },
     expectedExitCode: ExitCode = ExitCode.OK,
     previousCompilation: Compile2Result? = null,
@@ -94,7 +94,7 @@ public interface CompilationEnvironment : TestEnvironment {
 
     return compile2(
       sourceFiles = kotlinFiles + javaFiles,
-      firExtensions = firExtensions,
+      firProcessors = firProcessors,
       configuration = configuration,
       expectedExitCode = expectedExitCode,
       previousCompilation = previousCompilation,
@@ -117,9 +117,9 @@ public interface CompilationEnvironment : TestEnvironment {
    *     utilities for scanning or packaging them (e.g., `jar` creation).
    *
    * @param sourceFiles a list of .kt or .java files to be compiled
-   * @param firExtensions optional FIR extension factories for custom processing
+   * @param firProcessors optional FIR extension factories for custom processing
    * @param configuration a lambda to customize the [Compile2CompilationConfiguration] before compilation
-   * @param firExtensions optional FIR extension factories for advanced compiler customization
+   * @param firProcessors optional FIR extension factories for advanced compiler customization
    * @param configuration an optional config transform to modify the default [Compile2CompilationConfiguration]
    * @param expectedExitCode automatically asserted against each compilation phase's result
    * @param previousCompilation a previous [Compile2Result] to add to the classpath for this compilation
@@ -134,7 +134,7 @@ public interface CompilationEnvironment : TestEnvironment {
    */
   public fun compile2(
     sourceFiles: List<File>,
-    firExtensions: List<AnvilFirExtensionFactory<*>> = emptyList(),
+    firProcessors: List<AnvilFirProcessor.Factory> = emptyList(),
     configuration: (Compile2CompilationConfiguration) -> Compile2CompilationConfiguration = { it },
     expectedExitCode: ExitCode = ExitCode.OK,
     previousCompilation: Compile2Result? = null,
@@ -145,7 +145,7 @@ public interface CompilationEnvironment : TestEnvironment {
 
     val config = Compile2CompilationConfiguration.default(
       sourceFiles = sourceFiles,
-      firExtensions = firExtensions,
+      firProcessors = firProcessors,
       workingDir = workingDir,
       useKapt = mode.useKapt,
       previousCompilation = previousCompilation,

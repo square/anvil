@@ -75,7 +75,7 @@ abstract class BasePlugin : Plugin<Project> {
         if (target.hasAnnotationDependency(sourceSetName)) {
           freeCompilerArgs.addAll(
             "-opt-in=com.squareup.anvil.annotations.ExperimentalAnvilApi",
-            "-opt-in=com.squareup.anvil.annotations.internal.InternalAnvilApi",
+            "-opt-in=com.squareup.anvil.compiler.k2.fir.internal.InternalAnvilApi",
           )
         }
 

@@ -1,9 +1,6 @@
 package com.squareup.anvil.compiler.k2.fir.abstraction.providers
 
-import com.google.auto.service.AutoService
 import com.squareup.anvil.annotations.ContributesBinding
-import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
-import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionFactory
 import com.squareup.anvil.compiler.k2.fir.AnvilFirExtensionSessionComponent
 import com.squareup.anvil.compiler.k2.fir.ContributedBinding
 import com.squareup.anvil.compiler.k2.fir.ContributedModule
@@ -27,7 +24,6 @@ import com.squareup.anvil.compiler.k2.utils.names.bindingModuleSibling
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.caches.getValue
 import org.jetbrains.kotlin.fir.expressions.FirAnnotationCall
-import org.jetbrains.kotlin.fir.extensions.FirExtensionSessionComponent
 import org.jetbrains.kotlin.fir.extensions.FirSupertypeGenerationExtension
 import org.jetbrains.kotlin.fir.resolve.getSuperTypes
 import org.jetbrains.kotlin.fir.resolve.providers.firProvider
@@ -38,14 +34,13 @@ import kotlin.properties.Delegates
 @RequiresTypesResolutionPhase
 public val FirSession.scopedContributionProvider: ScopedContributionProvider by FirSession.sessionComponentAccessor()
 
-@RequiresTypesResolutionPhase
-public class ScopedContributionProvider(
-  anvilFirContext: AnvilFirContext,
-  session: FirSession,
-) : AnvilFirExtensionSessionComponent(anvilFirContext, session) {
+public class ScopedContributionProvider(session: FirSession) :
+  AnvilFirExtensionSessionComponent(session) {
 
+  @RequiresTypesResolutionPhase
   private var typeResolveService: FirSupertypeGenerationExtension.TypeResolveService by Delegates.notNull()
 
+  @RequiresTypesResolutionPhase
   public val contributedModules: List<ContributedModule> by lazyValue {
     session.anvilFirSymbolProvider.contributesModulesSymbols.flatMap { symbol ->
       symbol.contributesToAnnotations(session).map { annotation ->
@@ -61,6 +56,7 @@ public class ScopedContributionProvider(
     }
   }
 
+  @RequiresTypesResolutionPhase
   public val contributedSupertypes: List<ContributedSupertype> by lazyValue {
     session.anvilFirSymbolProvider.contributesSupertypeSymbols
       .flatMap { symbol ->
@@ -77,6 +73,7 @@ public class ScopedContributionProvider(
       }
   }
 
+  @RequiresTypesResolutionPhase
   private val contributedBindingsAndBindingModules = lazyValue {
     session.anvilFirSymbolProvider.contributesBindingSymbols.flatMap { symbol ->
 
@@ -125,12 +122,17 @@ public class ScopedContributionProvider(
     }
   }
 
+  @RequiresTypesResolutionPhase
   public val contributedBindings: List<ContributedBinding> by contributedBindingsAndBindingModules.map {
     it.filterIsInstance<ContributedBinding>()
   }
+
+  @RequiresTypesResolutionPhase
   public val contributedBindingModules: List<ContributedModule> by contributedBindingsAndBindingModules.map {
     it.filterIsInstance<ContributedModule>()
   }
+
+  @RequiresTypesResolutionPhase
   public val mergedComponents: List<MergedComponent> by lazyValue {
     session.anvilFirSymbolProvider.mergeComponentSymbols.map { symbol ->
 
@@ -170,6 +172,8 @@ public class ScopedContributionProvider(
 
   private var typeResolverSet = false
   internal fun isInitialized() = typeResolverSet
+
+  @OptIn(RequiresTypesResolutionPhase::class)
   internal fun bindTypeResolveService(
     typeResolveService: FirSupertypeGenerationExtension.TypeResolveService,
   ) {
@@ -182,14 +186,4 @@ public class ScopedContributionProvider(
   private fun FirAnnotationCall.replacesClassIds() = replacesArgumentOrNull(session)
     ?.map { it.requireTargetClassId() }
     .orEmpty()
-}
-
-@AutoService(AnvilFirExtensionFactory::class)
-public class ScopedContributionProviderFactory : AnvilFirExtensionSessionComponent.Factory {
-  @OptIn(RequiresTypesResolutionPhase::class)
-  override fun create(anvilFirContext: AnvilFirContext): FirExtensionSessionComponent.Factory {
-    return FirExtensionSessionComponent.Factory { session ->
-      ScopedContributionProvider(anvilFirContext, session)
-    }
-  }
 }

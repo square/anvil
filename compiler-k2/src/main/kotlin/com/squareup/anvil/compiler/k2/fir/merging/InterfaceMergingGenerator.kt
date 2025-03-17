@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler.k2.fir.merging
 
 import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.k2.fir.AbstractAnvilFirProcessorFactory
-import com.squareup.anvil.compiler.k2.fir.AnvilFirContext2
+import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirProcessor
 import com.squareup.anvil.compiler.k2.fir.RequiresTypesResolutionPhase
 import com.squareup.anvil.compiler.k2.fir.SupertypeProcessor
@@ -28,7 +28,7 @@ public class InterfaceMergingGeneratorFactory :
  * components annotated with `@MergeComponent`
  */
 public class InterfaceMergingGenerator(
-  override val anvilFirContext: AnvilFirContext2,
+  override val anvilContext: AnvilFirContext,
 ) : SupertypeProcessor() {
 
   private val mergedComponentIds by lazyValue {

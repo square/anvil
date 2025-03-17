@@ -54,7 +54,7 @@ public object ClassIds {
   public val anvilInternalContributedComponentHints: ClassId =
     classId("com.squareup.anvil.annotations.internal", "InternalContributedComponentHints")
 
-  /** `com.squareup.anvil.annotations.internal.InternalContributedModuleHints` */
+  /** `com.squareup.anvil.annotations.internal.InternalAnvilApi` */
   public val anvilInternalAnvilApi: ClassId =
     classId("com.squareup.anvil.annotations.internal", "InternalAnvilApi")
 

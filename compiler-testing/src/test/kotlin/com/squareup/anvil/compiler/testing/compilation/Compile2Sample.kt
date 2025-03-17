@@ -1,6 +1,8 @@
 package com.squareup.anvil.compiler.testing.compilation
 
-import com.squareup.anvil.compiler.k2.fir.AnvilFirSupertypeGenerationExtension
+import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
+import com.squareup.anvil.compiler.k2.fir.AnvilFirProcessor
+import com.squareup.anvil.compiler.k2.fir.SupertypeProcessor
 import com.squareup.anvil.compiler.testing.CompilationModeTest
 import com.squareup.anvil.compiler.testing.TestNames
 import com.squareup.anvil.compiler.testing.classgraph.injectClass
@@ -52,29 +54,27 @@ class Compile2Sample : CompilationModeTest() {
     
         class InjectClass
         """,
-      firExtensions = listOf(myCustomGenerator()),
+      firProcessors = listOf(myCustomGenerator()),
     ) {
 
       scanResult.injectClass.interfaces.names shouldBe listOf("com.squareup.test.ParentInterface")
     }
   }
 
-  private fun myCustomGenerator(): AnvilFirSupertypeGenerationExtension.Factory =
-    AnvilFirSupertypeGenerationExtension.Factory { ctx ->
-      FirSupertypeGenerationExtension.Factory { session ->
+  private fun myCustomGenerator(): AnvilFirProcessor.Factory =
+    AnvilFirProcessor.Factory { ctx ->
+      object : SupertypeProcessor() {
+        override val anvilContext: AnvilFirContext = ctx
+        override fun shouldProcess(declaration: FirClassLikeDeclaration): Boolean {
+          return declaration.classId == TestNames.injectClass
+        }
 
-        object : AnvilFirSupertypeGenerationExtension(ctx, session) {
-          override fun needTransformSupertypes(
-            declaration: FirClassLikeDeclaration,
-          ): Boolean = declaration.classId == TestNames.injectClass
-
-          override fun computeAdditionalSupertypes(
-            classLikeDeclaration: FirClassLikeDeclaration,
-            resolvedSupertypes: List<FirResolvedTypeRef>,
-            typeResolver: TypeResolveService,
-          ): List<ConeKotlinType> = listOf(
-            TestNames.parentInterface.constructClassLikeType(),
-          )
+        override fun addSupertypes(
+          classLikeDeclaration: FirClassLikeDeclaration,
+          resolvedSupertypes: List<FirResolvedTypeRef>,
+          typeResolver: FirSupertypeGenerationExtension.TypeResolveService,
+        ): List<ConeKotlinType> {
+          return listOf(TestNames.parentInterface.constructClassLikeType())
         }
       }
     }

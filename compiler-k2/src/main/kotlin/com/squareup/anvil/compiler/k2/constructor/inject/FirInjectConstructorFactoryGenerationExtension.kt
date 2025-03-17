@@ -1,13 +1,12 @@
 package com.squareup.anvil.compiler.k2.constructor.inject
 
-import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
-import com.squareup.anvil.compiler.k2.fir.AnvilFirDeclarationGenerationExtension
 import com.squareup.anvil.compiler.k2.utils.names.ClassIds
 import org.jetbrains.kotlin.GeneratedDeclarationKey
 import org.jetbrains.kotlin.fir.FirSession
 import org.jetbrains.kotlin.fir.declarations.utils.isCompanion
 import org.jetbrains.kotlin.fir.expressions.builder.buildPropertyAccessExpression
 import org.jetbrains.kotlin.fir.extensions.ExperimentalTopLevelDeclarationsGenerationApi
+import org.jetbrains.kotlin.fir.extensions.FirDeclarationGenerationExtension
 import org.jetbrains.kotlin.fir.extensions.FirDeclarationPredicateRegistrar
 import org.jetbrains.kotlin.fir.extensions.MemberGenerationContext
 import org.jetbrains.kotlin.fir.extensions.NestedClassGenerationContext
@@ -48,10 +47,8 @@ import org.jetbrains.kotlin.name.SpecialNames
  *   }
  * }
  */
-internal class FirInjectConstructorFactoryGenerationExtension(
-  anvilFirContext: AnvilFirContext,
-  session: FirSession,
-) : AnvilFirDeclarationGenerationExtension(anvilFirContext, session) {
+internal class FirInjectConstructorFactoryGenerationExtension(session: FirSession) :
+  FirDeclarationGenerationExtension(session) {
 
   private val factoriesToGenerate: Map<ClassId, InjectConstructorGenerationModel> by lazy {
     session.predicateBasedProvider.getSymbolsByPredicate(injectAnnotationPredicate)

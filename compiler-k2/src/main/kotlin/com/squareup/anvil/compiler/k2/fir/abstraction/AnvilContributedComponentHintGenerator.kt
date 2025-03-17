@@ -2,7 +2,7 @@ package com.squareup.anvil.compiler.k2.fir.abstraction
 
 import com.google.auto.service.AutoService
 import com.squareup.anvil.compiler.k2.fir.AbstractAnvilFirProcessorFactory
-import com.squareup.anvil.compiler.k2.fir.AnvilFirContext2
+import com.squareup.anvil.compiler.k2.fir.AnvilFirContext
 import com.squareup.anvil.compiler.k2.fir.AnvilFirProcessor
 import com.squareup.anvil.compiler.k2.fir.PendingTopLevelClass
 import com.squareup.anvil.compiler.k2.fir.RequiresTypesResolutionPhase
@@ -35,7 +35,7 @@ public class AnvilContributedComponentHintGeneratorFactory :
   AbstractAnvilFirProcessorFactory(::AnvilContributedComponentHintGenerator)
 
 internal class AnvilContributedComponentHintGenerator(
-  override val anvilFirContext: AnvilFirContext2,
+  override val anvilContext: AnvilFirContext,
 ) : TopLevelClassProcessor() {
 
   @OptIn(RequiresTypesResolutionPhase::class)

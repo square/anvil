@@ -19,6 +19,8 @@ dependencies {
   compileOnly(libs.auto.service.annotations)
   api(libs.kotlin.compiler)
 
+  compileOnly(project(":annotations"))
+
   testImplementation(libs.junit.jupiter.api)
   testImplementation(libs.kase)
   testImplementation(libs.kotest.assertions.api)

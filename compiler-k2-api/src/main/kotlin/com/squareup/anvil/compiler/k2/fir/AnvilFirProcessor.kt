@@ -26,7 +26,7 @@ import org.jetbrains.kotlin.name.Name
 
 public sealed class AnvilFirProcessor : HasAnvilFirContext {
 
-  protected val session: FirSession get() = anvilFirContext.session
+  protected val session: FirSession get() = anvilContext.session
   protected val cachesFactory: FirCachesFactory get() = session.firCachesFactory
 
   protected inline fun <T, R> FirLazyValue<T>.map(
@@ -48,14 +48,14 @@ public sealed class AnvilFirProcessor : HasAnvilFirContext {
   ): FirLazyValue<List<T>> = lazySymbols(predicate).map { it.filterIsInstance<T>() }
 
   public fun interface Factory {
-    public fun create(anvilFirContext: AnvilFirContext2): AnvilFirProcessor
+    public fun create(anvilFirContext: AnvilFirContext): AnvilFirProcessor
   }
 }
 
 public abstract class AbstractAnvilFirProcessorFactory(
-  private val initializer: (AnvilFirContext2) -> AnvilFirProcessor,
+  private val initializer: (AnvilFirContext) -> AnvilFirProcessor,
 ) : AnvilFirProcessor.Factory {
-  final override fun create(anvilFirContext: AnvilFirContext2): AnvilFirProcessor =
+  final override fun create(anvilFirContext: AnvilFirContext): AnvilFirProcessor =
     initializer(anvilFirContext)
 }
 
