@@ -1,0 +1,124 @@
+shared:
+  author-bot: &author_bot
+    - or:
+        - author=rb-org-bot[bot]
+        - author=dependabot[bot]
+        - author=renovate[bot]
+  author-rbusarow: &author_rbusarow
+    - author=RBusarow
+  base-main: &base_main
+    - base=main
+  label-approved: &label_approved
+    - label=approved
+  label-automerge: &label_automerge
+    - label=automerge
+  label-dnm:
+    - label=do-not-merge
+  not-label-dnm: &not_label_dnm
+    - label!=do-not-merge
+  label-rebase: &label_rebase
+    - label=rebase
+  name-approved: &name_approved approved
+  name-automerge: &name_automerge automerge
+  name-rb-org-bot: &name_rb_org_bot rb-org-bot[bot]
+  name-merge-bot: &name_merge_bot rbusarow-bot
+  name-rebase: &name_rebase rebase
+  success-ci: &success_ci
+    - check-success=all-checks
+
+queue_rules:
+  - name:
+      duplicated Queue PRs for rebase-merge when CI passes and approved from Re-queue
+      any PR with a 'requeue' label
+    queue_conditions:
+      - label=requeue
+      - and: *label_automerge
+      - and: *base_main
+      - and: *not_label_dnm
+    merge_conditions: []
+    merge_method: fast-forward
+    update_method: rebase
+    autosquash: true
+  - name: Queue PRs for rebase-merge when CI passes and approved
+    queue_conditions:
+      - and: *label_automerge
+      - and: *base_main
+      - and: *not_label_dnm
+    merge_conditions: []
+    merge_method: fast-forward
+    update_method: rebase
+    autosquash: true
+    merge_bot_account: *name_merge_bot
+    update_bot_account: *name_merge_bot
+
+pull_request_rules:
+  - name: Remove automerge label once merged
+    conditions:
+      - merged
+      - and: *label_automerge
+    actions:
+      label:
+        remove:
+          - *name_automerge
+
+  - name: Auto-approve RBusarow PRs
+    conditions:
+      - and: *success_ci
+      - and: *author_rbusarow
+    actions:
+      review:
+        type: APPROVE
+        message: Automatically approving RBusarow pull request
+
+  - name: Auto-approve bot PRs
+    conditions:
+      - and: *success_ci
+      - or: *author_bot
+    actions:
+      review:
+        type: APPROVE
+        message: Automatically approving bot pull request
+
+  - name: Auto-approve any PR with an 'approved' label
+    conditions:
+      - and: *success_ci
+      - and: *label_approved
+    actions:
+      rebase:
+        autosquash: true
+        bot_account: *name_merge_bot
+      label:
+        remove:
+          - *name_approved
+
+  - name: Rebase any PR with a 'rebase' label
+    conditions:
+      - and: *label_rebase
+    actions:
+      rebase:
+        autosquash: true
+        bot_account: *name_merge_bot
+      label:
+        remove:
+          - *name_rebase
+
+  - name: Re-queue any PR with a 'requeue' label
+    conditions:
+      - label=requeue
+    actions:
+      label:
+        remove:
+          - requeue
+  - name:
+      Queue PRs for rebase-merge when CI passes and approved + Re-queue any PR with
+      a 'requeue' label
+    conditions: []
+    actions:
+      queue:
+priority_rules:
+  - name:
+      priority for queue `duplicated Queue PRs for rebase-merge when CI passes and
+      approved from Re-queue any PR with a 'requeue' label`
+    conditions:
+      - label=requeue
+    priority: 2250
