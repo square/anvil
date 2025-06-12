@@ -38,7 +38,7 @@ open class PublishConventionPlugin : Plugin<Project> {
     @Suppress("UnstableApiUsage")
     mavenPublishing.pomFromGradleProperties()
     mavenPublishing.signAllPublications()
-    mavenPublishing.publishToMavenCentral(SonatypeHost.S01, automaticRelease = true)
+    mavenPublishing.publishToMavenCentral(SonatypeHost.CENTRAL_PORTAL, automaticRelease = true)
 
     target.plugins.withId("org.jetbrains.kotlin.jvm") {
       when {
