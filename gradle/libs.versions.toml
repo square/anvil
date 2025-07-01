@@ -29,12 +29,12 @@ jvm-toolchain = "17"
 jvm-target-library = "8"
 jvm-target-minimal = "11"
 kase = "0.11.1"
-kct = "0.5.1"
+kct = "0.7.1"
 kgx = "0.1.12"
 kotest = "5.9.1"
-kotlin = "2.0.21"
+kotlin = "2.1.21"
 kotlinx-binaryCompatibility = "0.17.0"
-kotlinpoet = "2.0.0"
+kotlinpoet = "2.2.0"
 ktlint = "1.0.1"
 ktlintPlugin = "12.1.2"
 mavenPublish = "0.33.0"
@@ -117,7 +117,7 @@ kotlin-compiler = { module = "org.jetbrains.kotlin:kotlin-compiler-embeddable", 
 kotlin-dokka = { module = "org.jetbrains.dokka:dokka-gradle-plugin", version.ref = "dokka" }
 kotlin-gradlePlugin = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin", version.ref = "kotlin" }
 kotlin-gradlePluginApi = { module = "org.jetbrains.kotlin:kotlin-gradle-plugin-api", version.ref = "kotlin" }
-kotlin-metadata = "org.jetbrains.kotlinx:kotlinx-metadata-jvm:0.9.0"
+kotlin-metadata = { module = "org.jetbrains.kotlin:kotlin-metadata-jvm", version.ref = "kotlin" }
 kotlin-reflect = { module = "org.jetbrains.kotlin:kotlin-reflect", version.ref = "kotlin" }
 kotlin-test = { module = "org.jetbrains.kotlin:kotlin-test-junit", version.ref = "kotlin" }
 

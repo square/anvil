@@ -20,7 +20,7 @@ jobs:
           java-version: '17'
           check-latest: true
 
-      - name: Publish Release 1.9
+      - name: Publish Release
         run: ./gradlew clean publish --no-build-cache --no-daemon --stacktrace --no-parallel
         env:
           ORG_GRADLE_PROJECT_mavenCentralUsername: ${{ secrets.SONATYPE_CENTRAL_USERNAME }}

@@ -5,6 +5,9 @@
 ### Added
 
 ### Changed
+- Upgrade Kotlin to `2.1.21`
+- Upgrade kotlin-metadata to `2.1.21`. This will remain in sync with the Kotlin version for all future releases.
+- Upgrade KotlinPoet to `2.2.0`
 
 ### Deprecated
 
