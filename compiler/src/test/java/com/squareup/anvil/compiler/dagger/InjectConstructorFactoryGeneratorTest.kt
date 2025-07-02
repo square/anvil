@@ -1107,7 +1107,7 @@ public class InjectClass_Factory(
         .invoke(null)
       assertThat(newInstance).isNotNull()
 
-      val getInstance = (factoryInstance as Factory<*>).get()
+      val getInstance = (factoryInstance as Factory<*>).get()!!
 
       assertThat(getInstance.getPropertyValue("name")).isEqualTo(name)
       assertThat(getInstance.getPropertyValue("middle1")).isEqualTo(middle1)
@@ -1163,7 +1163,7 @@ public class InjectClass_Factory(
         .invoke(null)
       assertThat(newInstance).isNotNull()
 
-      val getInstance = (factoryInstance as Factory<*>).get()
+      val getInstance = (factoryInstance as Factory<*>).get()!!
 
       assertThat(getInstance.getPropertyValue("base1")).isEqualTo(base1)
       assertThat(getInstance.getPropertyValue("base2")).isEqualTo(base2)
@@ -1233,7 +1233,7 @@ public class InjectClass_Factory(
         .invoke(null)
       assertThat(newInstance).isNotNull()
 
-      val getInstance = (factoryInstance as Factory<*>).get()
+      val getInstance = (factoryInstance as Factory<*>).get()!!
 
       assertThat(getInstance.getPropertyValue("name")).isEqualTo(name)
       assertThat(getInstance.getPropertyValue("base1")).isEqualTo(base1)
@@ -1320,7 +1320,7 @@ public class InjectClass_Factory(
         .invoke(null)
       assertThat(newInstance).isNotNull()
 
-      val getInstance = (factoryInstance as Factory<*>).get()
+      val getInstance = (factoryInstance as Factory<*>).get()!!
 
       assertThat(getInstance.getPropertyValue("name")).isEqualTo(name)
       assertThat(getInstance.getPropertyValue("middle1")).isEqualTo(middle1)
@@ -1433,7 +1433,7 @@ public class InjectClass_Factory(
 
       val newInstance = staticMethods.single { it.name == "newInstance" }
         .invoke(null, "a")
-      val getInstance = (factoryInstance as Factory<*>).get()
+      val getInstance = (factoryInstance as Factory<*>).get()!!
 
       assertThat(newInstance).isNotNull()
       assertThat(getInstance).isNotNull()
@@ -1695,7 +1695,7 @@ public final class MyClass_Factory implements Factory<MyClass> {
       assertThat(factoryInstance::class.java).isEqualTo(factoryClass)
 
       val newInstance = staticMethods.single { it.name == "newInstance" }.invoke(null)
-      val getInstance = (factoryInstance as Factory<*>).get()
+      val getInstance = (factoryInstance as Factory<*>).get()!!
 
       assertThat(newInstance).isNotNull()
       assertThat(getInstance).isNotNull()

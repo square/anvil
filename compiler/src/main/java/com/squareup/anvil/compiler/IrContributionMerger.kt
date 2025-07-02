@@ -31,10 +31,10 @@ import org.jetbrains.kotlin.ir.types.classFqName
 import org.jetbrains.kotlin.ir.types.classOrFail
 import org.jetbrains.kotlin.ir.types.classOrNull
 import org.jetbrains.kotlin.ir.types.starProjectedType
-import org.jetbrains.kotlin.ir.types.superTypes
 import org.jetbrains.kotlin.ir.types.typeWith
 import org.jetbrains.kotlin.ir.util.defaultType
 import org.jetbrains.kotlin.ir.util.functions
+import org.jetbrains.kotlin.ir.util.superTypes
 import org.jetbrains.kotlin.ir.visitors.IrElementTransformerVoid
 import org.jetbrains.kotlin.name.FqName
 import org.jetbrains.kotlin.name.Name
@@ -389,9 +389,9 @@ internal class IrContributionMerger(
       typeArguments = emptyList(),
     )
       .apply {
-        putValueArgument(
+        arguments.add(
           index = 0,
-          valueArgument = irVararg(
+          element = irVararg(
             elementType = pluginContext.irBuiltIns.kClassClass.starProjectedType,
             values = contributedModules
               .map {
@@ -408,9 +408,9 @@ internal class IrContributionMerger(
             .mapNotNull { it.argumentOrNull(name)?.argumentExpression as? IrVararg }
             .ifEmpty { return }
 
-          putValueArgument(
+          arguments.add(
             index = 1,
-            valueArgument = irVararg(
+            element = irVararg(
               elementType = varargArguments[0].varargElementType,
               // These are always IrExpression instances too
               values = varargArguments.flatMap { it.elements }
