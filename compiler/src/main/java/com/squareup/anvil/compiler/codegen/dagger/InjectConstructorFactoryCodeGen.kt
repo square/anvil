@@ -196,7 +196,7 @@ internal object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
                   constructorParameters.forEach { parameter ->
                     addParameter(
                       name = parameter.name,
-                      type = parameter.originalTypeName,
+                      type = parameter.getOriginalTypeName(),
                     )
                   }
                   val argumentsWithoutModule = constructorParameters.joinToString { it.name }

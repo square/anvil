@@ -15,6 +15,7 @@ import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
 import dagger.internal.Factory
+import dagger.internal.Provider
 import org.intellij.lang.annotations.Language
 import org.junit.Ignore
 import org.junit.Test
@@ -22,7 +23,6 @@ import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import java.io.File
-import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class InjectConstructorFactoryGeneratorTest(

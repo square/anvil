@@ -8,6 +8,7 @@
 - Upgrade Kotlin to `2.1.21`
 - Upgrade kotlin-metadata to `2.1.21`. This will remain in sync with the Kotlin version for all future releases.
 - Upgrade KotlinPoet to `2.2.0`
+- Upgrade Dagger to `2.56.2`. This includes updating Anvil's Dagger factory generation code to match changes in Dagger `2.54+` for using the `dagger.internal.Provider` type, which helps prepare for jakarta support. This applies if you use Anvil's `generateDaggerFactories` or `generateDaggerFactoriesOnly` options. This is expected to be a breaking change if you have any `@Component`s built using older Dagger versions.
 
 ### Deprecated
 

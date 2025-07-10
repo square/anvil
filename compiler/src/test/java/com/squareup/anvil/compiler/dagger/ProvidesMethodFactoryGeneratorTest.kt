@@ -19,6 +19,7 @@ import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import dagger.Lazy
 import dagger.internal.Factory
+import dagger.internal.Provider
 import org.intellij.lang.annotations.Language
 import org.junit.Assume.assumeFalse
 import org.junit.Test
@@ -27,7 +28,6 @@ import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
 import java.io.File
 import java.util.Date
-import javax.inject.Provider
 
 @Suppress("UNCHECKED_CAST")
 @RunWith(Parameterized::class)

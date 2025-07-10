@@ -54,7 +54,6 @@ internal val assistedFqName = Assisted::class.fqName
 internal val assistedFactoryFqName = AssistedFactory::class.fqName
 internal val assistedInjectFqName = AssistedInject::class.fqName
 internal val providerFqName = Provider::class.fqName
-internal val providerClassName = Provider::class.asClassName()
 internal val jvmSuppressWildcardsFqName = JvmSuppressWildcards::class.fqName
 internal val jvmFieldFqName = JvmField::class.fqName
 internal val publishedApiFqName = PublishedApi::class.fqName
