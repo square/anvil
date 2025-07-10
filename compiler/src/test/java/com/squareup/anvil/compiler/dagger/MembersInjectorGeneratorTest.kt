@@ -17,6 +17,7 @@ import com.tschuchort.compiletesting.KotlinCompilation
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
 import dagger.Lazy
 import dagger.MembersInjector
+import dagger.internal.Provider
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -25,7 +26,6 @@ import org.junit.runners.Parameterized.Parameters
 import java.io.File
 import java.lang.reflect.Method
 import javax.inject.Named
-import javax.inject.Provider
 import kotlin.reflect.KClass
 import kotlin.test.assertFailsWith
 

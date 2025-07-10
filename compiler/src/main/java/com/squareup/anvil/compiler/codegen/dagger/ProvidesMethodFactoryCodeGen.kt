@@ -346,7 +346,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
                   parameters.forEach { parameter ->
                     addParameter(
                       name = parameter.name,
-                      type = parameter.originalTypeName,
+                      type = parameter.getOriginalTypeName(),
                     )
                   }
 

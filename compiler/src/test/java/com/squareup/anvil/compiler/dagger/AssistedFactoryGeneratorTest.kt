@@ -18,12 +18,12 @@ import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode.OK
+import dagger.internal.Provider
 import org.intellij.lang.annotations.Language
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.junit.runners.Parameterized
 import org.junit.runners.Parameterized.Parameters
-import javax.inject.Provider
 
 @RunWith(Parameterized::class)
 class AssistedFactoryGeneratorTest(
@@ -139,7 +139,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -190,7 +190,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -237,7 +237,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -285,7 +285,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -329,7 +329,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -375,7 +375,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -421,7 +421,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -467,7 +467,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -513,7 +513,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -558,7 +558,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -603,7 +603,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -646,7 +646,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -693,7 +693,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -737,7 +737,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -781,7 +781,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -827,7 +827,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -940,7 +940,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -984,7 +984,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -1045,7 +1045,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -1095,7 +1095,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -1144,7 +1144,7 @@ public final class AssistedServiceFactory_Impl<T extends CharSequence> implement
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -1254,7 +1254,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -1440,7 +1440,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -1493,7 +1493,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -1539,7 +1539,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -1585,7 +1585,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -1634,7 +1634,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -1678,7 +1678,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -2029,7 +2029,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -2099,7 +2099,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }
@@ -2167,7 +2167,7 @@ public final class AssistedServiceFactory_Impl implements AssistedServiceFactory
       assertThat(staticMethods).hasSize(2)
 
       val factoryProvider = staticMethods.single { it.name == "create" }
-        .invoke(null, generatedFactoryInstance) as Provider<*>
+        .invoke(null, generatedFactoryInstance) as javax.inject.Provider<*>
       assertThat(factoryProvider.get()::class.java).isEqualTo(factoryImplClass)
 
       val newFactoryProvider = staticMethods.single { it.name == "createFactoryProvider" }

@@ -143,7 +143,10 @@ internal object AssistedInjectCodeGen : AnvilApplicabilityChecker {
             .returns(classType)
             .apply {
               parametersAssisted.forEach { parameter ->
-                addParameter(parameter.name, parameter.originalTypeName)
+                addParameter(
+                  parameter.name,
+                  parameter.getOriginalTypeName(useInternalWrapperTypes = false),
+                )
               }
 
               val argumentList = constructorParameters.asArgumentList(
@@ -198,7 +201,7 @@ internal object AssistedInjectCodeGen : AnvilApplicabilityChecker {
                   constructorParameters.forEach { parameter ->
                     addParameter(
                       name = parameter.name,
-                      type = parameter.originalTypeName,
+                      type = parameter.getOriginalTypeName(useInternalWrapperTypes = false),
                     )
                   }
                   val argumentsWithoutModule = constructorParameters.joinToString { it.name }

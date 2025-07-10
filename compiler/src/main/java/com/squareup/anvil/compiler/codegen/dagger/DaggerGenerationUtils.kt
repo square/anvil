@@ -29,10 +29,13 @@ import com.squareup.kotlinpoet.TypeName
 import com.squareup.kotlinpoet.asClassName
 import dagger.Lazy
 import dagger.internal.ProviderOfLazy
-import javax.inject.Provider
 
-internal fun TypeName.wrapInProvider(): ParameterizedTypeName {
-  return Provider::class.asClassName().parameterizedBy(this)
+internal fun TypeName.wrapInJavaxProvider(): ParameterizedTypeName {
+  return javax.inject.Provider::class.asClassName().parameterizedBy(this)
+}
+
+internal fun TypeName.wrapInInternalProvider(): ParameterizedTypeName {
+  return dagger.internal.Provider::class.asClassName().parameterizedBy(this)
 }
 
 internal fun TypeName.wrapInLazy(): ParameterizedTypeName {
@@ -72,7 +75,7 @@ private fun ParameterReference.toConstructorParameter(
     name = uniqueName,
     originalName = name,
     typeName = typeName,
-    providerTypeName = typeName.wrapInProvider(),
+    providerTypeName = typeName.wrapInInternalProvider(),
     lazyTypeName = typeName.wrapInLazy(),
     isWrappedInProvider = isWrappedInProvider,
     isWrappedInLazy = isWrappedInLazy,
@@ -274,7 +277,7 @@ private fun MemberPropertyReference.toMemberInjectParameter(
     .filter { it.isQualifier() }
     .map { it.toAnnotationSpec() }
 
-  val providerTypeName = typeName.wrapInProvider()
+  val providerTypeName = typeName.wrapInInternalProvider()
 
   return MemberInjectParameter(
     name = uniqueName,
@@ -292,7 +295,7 @@ private fun MemberPropertyReference.toMemberInjectParameter(
     accessName = accessName,
     qualifierAnnotationSpecs = qualifierAnnotations,
     injectedFieldSignature = fqName,
-    resolvedProviderTypeName = resolvedTypeName?.wrapInProvider() ?: providerTypeName,
+    resolvedProviderTypeName = resolvedTypeName?.wrapInInternalProvider() ?: providerTypeName,
   )
 }
 

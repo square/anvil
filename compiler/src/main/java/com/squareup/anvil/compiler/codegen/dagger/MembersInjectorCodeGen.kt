@@ -208,7 +208,7 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
                         }
                         .addAnnotations(parameter.qualifierAnnotationSpecs)
                         .addParameter("instance", classType)
-                        .addParameter(name, parameter.originalTypeName)
+                        .addParameter(name, parameter.getOriginalTypeName())
                         .addStatement("instance.${parameter.originalName} = $name")
                         .build(),
                     )

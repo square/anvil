@@ -27,13 +27,24 @@ internal sealed interface Parameter {
     private val assistedIdentifier: String,
   )
 
-  val originalTypeName: TypeName
-    get() = when {
-      isLazyWrappedInProvider -> lazyTypeName.wrapInProvider()
-      isWrappedInProvider -> providerTypeName
+  /**
+   * @param useInternalWrapperTypes: Indicates if internal wrapper types should still be used around
+   * the base type. E.g. returning dagger.internal.Provider<String> instead of the source value
+   * javax.inject.Provider<String>. Defaults to true because in most instances we're handling
+   * generated code that the user won't be using directly.
+   */
+  fun getOriginalTypeName(useInternalWrapperTypes: Boolean = true): TypeName {
+    return when {
+      isLazyWrappedInProvider -> lazyTypeName.wrapInJavaxProvider()
+      isWrappedInProvider -> if (useInternalWrapperTypes) {
+        providerTypeName
+      } else {
+        typeName.wrapInJavaxProvider()
+      }
       isWrappedInLazy -> lazyTypeName
       else -> typeName
     }
+  }
 }
 
 /**
