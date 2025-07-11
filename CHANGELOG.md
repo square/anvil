@@ -5,10 +5,6 @@
 ### Added
 
 ### Changed
-- Upgrade Kotlin to `2.1.21`
-- Upgrade kotlin-metadata to `2.1.21`. This will remain in sync with the Kotlin version for all future releases.
-- Upgrade KotlinPoet to `2.2.0`
-- Upgrade Dagger to `2.56.2`. This includes updating Anvil's Dagger factory generation code to match changes in Dagger `2.54+` for using the `dagger.internal.Provider` type, which helps prepare for jakarta support. This applies if you use Anvil's `generateDaggerFactories` or `generateDaggerFactoriesOnly` options. This is expected to be a breaking change if you have any `@Component`s built using older Dagger versions.
 
 ### Deprecated
 
@@ -21,6 +17,16 @@
 ### Custom Code Generator
 
 ### Other Notes & Contributions
+
+## [2.6.0] - 2025-07-10
+
+### Changed
+- Upgrade Kotlin to `2.1.21`
+- Upgrade kotlin-metadata to `2.1.21`. This will remain in sync with the Kotlin version for all future releases.
+- Upgrade KotlinPoet to `2.2.0`
+- Upgrade Dagger to `2.56.2`
+  - This includes updating Anvil's Dagger factory generation code to match changes in Dagger `2.54+` for using the `dagger.internal.Provider` type, which helps prepare for jakarta support. This applies if you use Anvil's `generateDaggerFactories` or `generateDaggerFactoriesOnly` options and is expected to be a breaking change if you have any `@Component`s built using older Dagger versions.
+- Development snapshots are now published to the [Central Portal Snapshots repository](https://central.sonatype.com/repository/maven-snapshots/).
 
 ## [2.5.1] - 2025-01-24
 
@@ -882,7 +888,8 @@ anvil {
 
 - Initial release.
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.5.1...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.6.0...HEAD
+[2.6.0]: https://github.com/square/anvil/releases/tag/v2.6.0
 [2.5.1]: https://github.com/square/anvil/releases/tag/v2.5.1
 [2.5.0]: https://github.com/square/anvil/releases/tag/v2.5.0
 [2.5.0-beta11]: https://github.com/square/anvil/releases/tag/v2.5.0-beta11
