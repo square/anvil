@@ -5,6 +5,7 @@
 ### Added
 
 ### Changed
+- Upgrade Kotlin to `2.2.0`
 
 ### Deprecated
 

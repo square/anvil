@@ -58,7 +58,7 @@ public final class com/squareup/anvil/compiler/internal/UtilsKt {
 
 public abstract interface class com/squareup/anvil/compiler/internal/reference/AnnotatedReference {
 	public abstract fun getAnnotations ()Ljava/util/List;
-	public abstract fun isAnnotatedWith (Lorg/jetbrains/kotlin/name/FqName;)Z
+	public fun isAnnotatedWith (Lorg/jetbrains/kotlin/name/FqName;)Z
 }
 
 public final class com/squareup/anvil/compiler/internal/reference/AnnotatedReference$DefaultImpls {
@@ -164,6 +164,7 @@ public abstract interface class com/squareup/anvil/compiler/internal/reference/A
 	public abstract fun getTopLevelPropertyReferences (Lorg/jetbrains/kotlin/psi/KtFile;)Ljava/util/List;
 	public abstract fun resolveClassIdOrNull (Lorg/jetbrains/kotlin/name/ClassId;)Lorg/jetbrains/kotlin/name/FqName;
 	public abstract fun resolveFqNameOrNull (Lorg/jetbrains/kotlin/name/FqName;Lorg/jetbrains/kotlin/incremental/components/LookupLocation;)Lorg/jetbrains/kotlin/descriptors/ClassDescriptor;
+	public static synthetic fun resolveFqNameOrNull$default (Lcom/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor;Lorg/jetbrains/kotlin/name/FqName;Lorg/jetbrains/kotlin/incremental/components/LookupLocation;ILjava/lang/Object;)Lorg/jetbrains/kotlin/descriptors/ClassDescriptor;
 	public abstract fun resolvePropertyReferenceOrNull (Lorg/jetbrains/kotlin/name/FqName;)Lcom/squareup/anvil/compiler/internal/reference/PropertyReference;
 	public abstract fun resolveTypeAliasFqNameOrNull (Lorg/jetbrains/kotlin/name/FqName;)Lorg/jetbrains/kotlin/descriptors/TypeAliasDescriptor;
 }
@@ -297,9 +298,9 @@ public final class com/squareup/anvil/compiler/internal/reference/ClassReference
 public abstract interface class com/squareup/anvil/compiler/internal/reference/FunctionReference {
 	public abstract fun getFqName ()Lorg/jetbrains/kotlin/name/FqName;
 	public abstract fun getModule ()Lcom/squareup/anvil/compiler/internal/reference/AnvilModuleDescriptor;
-	public abstract fun getName ()Ljava/lang/String;
+	public fun getName ()Ljava/lang/String;
 	public abstract fun getParameters ()Ljava/util/List;
-	public abstract fun returnType ()Lcom/squareup/anvil/compiler/internal/reference/TypeReference;
+	public fun returnType ()Lcom/squareup/anvil/compiler/internal/reference/TypeReference;
 	public abstract fun returnTypeOrNull ()Lcom/squareup/anvil/compiler/internal/reference/TypeReference;
 	public abstract fun visibility ()Lcom/squareup/anvil/compiler/internal/reference/Visibility;
 }
@@ -481,7 +482,7 @@ public abstract interface class com/squareup/anvil/compiler/internal/reference/P
 	public abstract fun getName ()Ljava/lang/String;
 	public abstract fun getSetterAnnotations ()Ljava/util/List;
 	public abstract fun isLateinit ()Z
-	public abstract fun type ()Lcom/squareup/anvil/compiler/internal/reference/TypeReference;
+	public fun type ()Lcom/squareup/anvil/compiler/internal/reference/TypeReference;
 	public abstract fun typeOrNull ()Lcom/squareup/anvil/compiler/internal/reference/TypeReference;
 	public abstract fun visibility ()Lcom/squareup/anvil/compiler/internal/reference/Visibility;
 }

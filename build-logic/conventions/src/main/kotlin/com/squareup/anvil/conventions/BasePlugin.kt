@@ -59,9 +59,13 @@ abstract class BasePlugin : Plugin<Project> {
 
     target.tasks.withType(KotlinCompile::class.java).configureEach { task ->
       task.compilerOptions {
+        // Disabled for now because of a languageVersion 1.9 warning that cannot be suppressed and
+        // causes nearly all tests to fail. See the following links for context + tracking the fix:
+        // https://kotlinlang.slack.com/archives/C7L3JB43G/p1750705742065189?thread_ts=1750704310.270049&cid=C7L3JB43G
+        // https://youtrack.jetbrains.com/issue/KT-78277/Dont-use-MessageCollector-for-reporting-diagnostics-across-the-compiler
+        // TODO: Re-enable warnings as errors once KT-78277 is resolved
         allWarningsAsErrors.set(
-          target.libs.versions.config.warningsAsErrors.get().toBoolean() ||
-            extension.warningsAsErrors.get(),
+          false
         )
 
         val sourceSetName = task.sourceSetName.getOrElse(

@@ -65,9 +65,10 @@ public final class com/squareup/anvil/compiler/api/ComponentMergingBackend : jav
 }
 
 public abstract interface class com/squareup/anvil/compiler/api/FileWithContent : java/lang/Comparable {
-	public abstract fun compareTo (Lcom/squareup/anvil/compiler/api/FileWithContent;)I
-	public abstract fun component1 ()Ljava/io/File;
-	public abstract fun component2 ()Ljava/lang/String;
+	public fun compareTo (Lcom/squareup/anvil/compiler/api/FileWithContent;)I
+	public synthetic fun compareTo (Ljava/lang/Object;)I
+	public fun component1 ()Ljava/io/File;
+	public fun component2 ()Ljava/lang/String;
 	public abstract fun getContent ()Ljava/lang/String;
 	public abstract fun getFile ()Ljava/io/File;
 }
