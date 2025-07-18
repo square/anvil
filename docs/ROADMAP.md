@@ -1,3 +1,5 @@
+### NOTE: Anvil is deprecated and will only be supported for K1 going forward, and development will end when K2 becomes a requirement. See [Anvil Moves to Maintenance Mode](https://github.com/square/anvil/issues/1149) for the full context. The remainder of this doc is left here for historical purposes.
+
 # **Intro**
 
 The last year has been an eventful one for Anvil, with much of the focus on fixing incremental compilation issues and fortifying our integration test capabilities. There has also been a lot of discussion and investigations around the different paths forward in terms of both K2 support and the long-term vision of the library. This doc aims to provide some transparency around where things have settled, where we’re headed, and why various choices were made.
