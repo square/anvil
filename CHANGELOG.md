@@ -5,7 +5,6 @@
 ### Added
 
 ### Changed
-- Upgrade Kotlin to `2.2.0`
 
 ### Deprecated
 
@@ -18,6 +17,12 @@
 ### Custom Code Generator
 
 ### Other Notes & Contributions
+
+## [2.6.1] - 2025-07-18
+
+### Changed
+- Upgrade Kotlin to `2.2.0`
+- Update README and ROADMAP docs to note Anvil's deprecation
 
 ## [2.6.0] - 2025-07-10
 
@@ -889,7 +894,8 @@ anvil {
 
 - Initial release.
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.6.0...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.6.1...HEAD
+[2.6.1]: https://github.com/square/anvil/releases/tag/v2.6.1
 [2.6.0]: https://github.com/square/anvil/releases/tag/v2.6.0
 [2.5.1]: https://github.com/square/anvil/releases/tag/v2.5.1
 [2.5.0]: https://github.com/square/anvil/releases/tag/v2.5.0
