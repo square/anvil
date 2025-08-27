@@ -32,7 +32,7 @@ kase = "0.11.1"
 kct = "0.8.0"
 kgx = "0.1.12"
 kotest = "5.9.1"
-kotlin = "2.2.0"
+kotlin = "2.2.10"
 kotlinx-binaryCompatibility = "0.17.0"
 kotlinpoet = "2.2.0"
 ktlint = "1.0.1"
@@ -76,6 +76,7 @@ androidx-test-rules = { module = "androidx.test:rules", version.ref = "androidx-
 androidx-test-runner = { module = "androidx.test:runner", version.ref = "androidx-test-runner" }
 
 agp = { module = "com.android.tools.build:gradle", version.ref = "agp" }
+agp-api = { module = "com.android.tools.build:gradle-api", version.ref = "agp" }
 
 auto-service-annotations = { module = "com.google.auto.service:auto-service-annotations", version.ref = "autoService" }
 auto-service-processor = { module = "com.google.auto.service:auto-service", version.ref = "autoService" }

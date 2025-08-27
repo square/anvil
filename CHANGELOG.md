@@ -5,8 +5,10 @@
 ### Added
 
 ### Changed
+- Upgrade Kotlin to `2.2.10`
 
 ### Deprecated
+- `AndroidVariantFilter.androidVariant` is now nullable and deprecated. We're no longer guaranteed that the variant will be available when creating the filter, and the base type is slated to be removed in a future release of AGP.
 
 ### Removed
 
