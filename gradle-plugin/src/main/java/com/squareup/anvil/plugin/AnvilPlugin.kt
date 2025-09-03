@@ -34,6 +34,7 @@ import org.jetbrains.kotlin.gradle.tasks.AbstractKotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import java.io.File
+import java.util.Locale.getDefault
 import java.util.concurrent.ConcurrentHashMap
 
 @Suppress("DEPRECATION")
@@ -486,20 +487,31 @@ internal class Variant private constructor(
       val project = kotlinCompilation.target.project
       val extension = project.extensions.getByType(AnvilExtension::class.java)
       val androidVariant = (kotlinCompilation as? KotlinJvmAndroidCompilation)?.androidVariant
+      val isAndroidCompilation = kotlinCompilation is KotlinJvmAndroidCompilation
 
-      val androidSourceSets = if (androidVariant != null) {
+      val androidSourceSets = if (isAndroidCompilation) {
         val sourceSetsByName = project.extensions.getByType(BaseExtension::class.java)
           .sourceSets
           .associateBy { it.name }
 
-        androidVariant.sourceSets.mapNotNull { sourceSetsByName[it.name] }
+        if (androidVariant != null) {
+          androidVariant.sourceSets.mapNotNull { sourceSetsByName[it.name] }
+        } else {
+          kotlinCompilation.kotlinSourceSets.mapNotNull { sourceSet ->
+            // Source sets get prefixed with Android and we just want the base version
+            val sourceSetName = sourceSet.name.removePrefix("android").replaceFirstChar {
+              it.lowercase(getDefault())
+            }
+            sourceSetsByName[sourceSetName]
+          }
+        }
       } else {
         null
       }
 
       val commonFilter = CommonFilter(kotlinCompilation.name, extension)
-      val variantFilter = if (androidVariant != null) {
-        AndroidVariantFilter(commonFilter, androidVariant)
+      val variantFilter = if (isAndroidCompilation) {
+        AndroidVariantFilter(commonFilter, kotlinCompilation.androidVariant)
       } else {
         JvmVariantFilter(commonFilter)
       }
@@ -544,11 +556,15 @@ internal fun KotlinCompilation<*>.sourceSetName() =
     // are concatenated differently than in the KGP and Java source sets.
     // In KGP and Java, we get `debugAndroidTest`, but in AGP we get `androidTestDebug`.
     // The KAPT configuration names are derived from the AGP name.
-    is KotlinJvmAndroidCompilation ->
-      comp.androidVariant.sourceSets
+    is KotlinJvmAndroidCompilation -> {
+      comp.androidVariant?.sourceSets
         // For ['debug', 'androidTest', 'debugAndroidTest'], the last name is always the one we want.
-        .last()
-        .name
+        ?.last()
+        ?.name
+        ?: comp.kotlinSourceSets.last().name.removePrefix("android").replaceFirstChar {
+          it.lowercase(getDefault())
+        }
+    }
     is KotlinJvmCompilation -> comp.name
     else -> name
   }

@@ -115,5 +115,8 @@ public class JvmVariantFilter internal constructor(
 public class AndroidVariantFilter internal constructor(
   commonFilter: CommonFilter,
   @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
-  public val androidVariant: BaseVariantDeprecated,
+  @Deprecated(
+    message = "This field will be removed in a future release. The base type (and ability to access it when creating variant filters) is being removed in a future release of KGP+AGP. See AGP's [AndroidComponentsExtension.onVariants] API for a potential replacement.",
+  )
+  public val androidVariant: BaseVariantDeprecated?,
 ) : VariantFilter by commonFilter

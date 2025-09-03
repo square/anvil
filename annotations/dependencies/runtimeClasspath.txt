@@ -1,2 +1,2 @@
-org.jetbrains.kotlin:kotlin-stdlib:2.2.0
+org.jetbrains.kotlin:kotlin-stdlib:2.2.10
 org.jetbrains:annotations:13.0
