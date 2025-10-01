@@ -116,6 +116,7 @@ internal object InjectConstructorFactoryCodeGen : AnvilApplicabilityChecker {
           if (allParameters.isNotEmpty()) {
             primaryConstructor(
               FunSpec.constructorBuilder()
+                .addModifiers(PRIVATE)
                 .apply {
                   allParameters.forEach { parameter ->
                     addParameter(parameter.name, parameter.providerTypeName)

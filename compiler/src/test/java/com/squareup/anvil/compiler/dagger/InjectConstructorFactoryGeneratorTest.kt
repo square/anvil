@@ -9,6 +9,7 @@ import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.getPropertyValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
+import com.squareup.anvil.compiler.singleConstructor
 import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
@@ -82,7 +83,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     ) {
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -146,7 +147,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
   private final Provider<Integer> p1_52215Provider;
 
-  public InjectClass_Factory(Provider<String> stringProvider, Provider<Integer> p1_52215Provider) {
+  private InjectClass_Factory(Provider<String> stringProvider, Provider<Integer> p1_52215Provider) {
     this.stringProvider = stringProvider;
     this.p1_52215Provider = p1_52215Provider;
   }
@@ -181,7 +182,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     ) {
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java, Provider::class.java)
         .inOrder()
@@ -233,7 +234,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
   private final Provider<String> stringProvider3;
 
-  public InjectClass_Factory(Provider<String> stringProvider, Provider<String> stringProvider2,
+  private InjectClass_Factory(Provider<String> stringProvider, Provider<String> stringProvider2,
       Provider<List<String>> stringListProvider, Provider<String> stringProvider3) {
     this.stringProvider = stringProvider;
     this.stringProvider2 = stringProvider2;
@@ -286,7 +287,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     ) {
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -344,7 +345,7 @@ import javax.inject.Provider;
 public final class InjectClass_Factory implements Factory<InjectClass> {
   private final Provider<String> stringProvider;
 
-  public InjectClass_Factory(Provider<String> stringProvider) {
+  private InjectClass_Factory(Provider<String> stringProvider) {
     this.stringProvider = stringProvider;
   }
 
@@ -386,7 +387,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     ) {
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
 
@@ -435,7 +436,7 @@ import javax.inject.Provider;
 public final class InjectClass_Factory implements Factory<InjectClass> {
   private final Provider<Provider<String>> stringProvider;
 
-  public InjectClass_Factory(Provider<Provider<String>> stringProvider) {
+  private InjectClass_Factory(Provider<Provider<String>> stringProvider) {
     this.stringProvider = stringProvider;
   }
 
@@ -477,7 +478,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     ) {
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
 
@@ -527,7 +528,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
   private final Provider<Set<String>> setMultibindingProvider;
 
-  public InjectClass_Factory(Provider<File> fileProvider, Provider<Path> pathProvider,
+  private InjectClass_Factory(Provider<File> fileProvider, Provider<Path> pathProvider,
       Provider<Set<String>> setMultibindingProvider) {
     this.fileProvider = fileProvider;
     this.pathProvider = pathProvider;
@@ -568,7 +569,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     ) {
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java, Provider::class.java, Provider::class.java)
         .inOrder()
@@ -643,7 +644,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
   private final Provider<Set<String>> setProvider;
 
-  public InjectClass_Factory(
+  private InjectClass_Factory(
       Provider<Pair<Pair<String, Integer>, ? extends List<String>>> pairProvider,
       Provider<Set<String>> setProvider) {
     this.pairProvider = pairProvider;
@@ -682,7 +683,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     ) {
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java, Provider::class.java)
         .inOrder()
@@ -770,7 +771,7 @@ public final class OuterClass_InjectClass_Factory implements Factory<OuterClass.
       val injectClass = classLoader.loadClass("com.squareup.test.OuterClass\$InjectClass")
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -811,7 +812,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
   private final Provider<Set<Function1<List<String>, List<String>>>> setProvider;
 
-  public InjectClass_Factory(Provider<String> stringProvider,
+  private InjectClass_Factory(Provider<String> stringProvider,
       Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
     this.stringProvider = stringProvider;
     this.setProvider = setProvider;
@@ -850,7 +851,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     ) {
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java, Provider::class.java)
         .inOrder()
@@ -896,7 +897,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
   private final Provider<Set<Function1<List<String>, List<String>>>> setProvider;
 
-  public InjectClass_Factory(Provider<String> stringProvider,
+  private InjectClass_Factory(Provider<String> stringProvider,
       Provider<Set<Function1<List<String>, List<String>>>> setProvider) {
     this.stringProvider = stringProvider;
     this.setProvider = setProvider;
@@ -931,7 +932,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
     ) {
       val factoryClass = classLoader.loadClass("com.squareup.test.injectClass").factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
         .inOrder()
@@ -1018,7 +1019,7 @@ public class InjectClass_Factory(
 
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java, Provider::class.java)
 
@@ -1076,7 +1077,7 @@ public class InjectClass_Factory(
 
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -1141,7 +1142,7 @@ public class InjectClass_Factory(
 
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -1208,7 +1209,7 @@ public class InjectClass_Factory(
 
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -1289,7 +1290,7 @@ public class InjectClass_Factory(
 
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -1410,7 +1411,7 @@ public class InjectClass_Factory(
 
       val factoryClass = injectClass.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -1462,7 +1463,7 @@ import javax.inject.Provider;
 public final class InjectClass_Factory implements Factory<InjectClass> {
   private final Provider<otherClass.inner> innerProvider;
 
-  public InjectClass_Factory(Provider<otherClass.inner> innerProvider) {
+  private InjectClass_Factory(Provider<otherClass.inner> innerProvider) {
     this.innerProvider = innerProvider;
   }
 
@@ -1495,7 +1496,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       }
       """,
     ) {
-      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      val constructor = injectClass.factoryClass().singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
@@ -1543,7 +1544,7 @@ public class InjectClass_Factory(
       )
       """,
     ) {
-      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      val constructor = injectClass.factoryClass().singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
@@ -1593,7 +1594,7 @@ public class InjectClass_Factory(
       )
       """,
     ) {
-      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      val constructor = injectClass.factoryClass().singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
@@ -1686,7 +1687,7 @@ public final class MyClass_Factory implements Factory<MyClass> {
       val factoryClass =
         classLoader.loadClass("com.squareup.test.MyClass\$innerClass").factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -1757,7 +1758,7 @@ import javax.inject.Provider;
 public final class InjectClass_Factory implements Factory<InjectClass> {
   private final Provider<InjectClass.Dependencies> dependenciesProvider;
 
-  public InjectClass_Factory(Provider<InjectClass.Dependencies> dependenciesProvider) {
+  private InjectClass_Factory(Provider<InjectClass.Dependencies> dependenciesProvider) {
     this.dependenciesProvider = dependenciesProvider;
   }
 
@@ -1788,7 +1789,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       }
       """,
     ) {
-      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      val constructor = injectClass.factoryClass().singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val constructorDependencies = classLoader
@@ -1853,7 +1854,7 @@ import javax.inject.Provider;
 public final class InjectClass_Factory implements Factory<InjectClass> {
   private final Provider<ParentOne.Dependencies> dProvider;
 
-  public InjectClass_Factory(Provider<ParentOne.Dependencies> dProvider) {
+  private InjectClass_Factory(Provider<ParentOne.Dependencies> dProvider) {
     this.dProvider = dProvider;
   }
 
@@ -1887,7 +1888,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       class InjectClass @Inject constructor(d: Dependencies) : ParentTwo(d)
       """,
     ) {
-      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      val constructor = injectClass.factoryClass().singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val constructorDependencies = classLoader
@@ -1919,7 +1920,7 @@ import javax.inject.Provider;
 public final class InjectClass_Factory implements Factory<InjectClass> {
   private final Provider<Set<InjectClass.Interceptor>> interceptorsProvider;
 
-  public InjectClass_Factory(Provider<Set<InjectClass.Interceptor>> interceptorsProvider) {
+  private InjectClass_Factory(Provider<Set<InjectClass.Interceptor>> interceptorsProvider) {
     this.interceptorsProvider = interceptorsProvider;
   }
 
@@ -1952,7 +1953,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       }
       """,
     ) {
-      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      val constructor = injectClass.factoryClass().singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
@@ -2010,7 +2011,7 @@ public final class InjectClass_Inner_Factory implements Factory<InjectClass.Inne
       """,
     ) {
       val constructor = classLoader.loadClass("com.squareup.test.InjectClass\$Inner")
-        .factoryClass().declaredConstructors.single()
+        .factoryClass().singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
@@ -2033,7 +2034,7 @@ import javax.inject.Provider;
 })
 public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
   private final Provider<T> creatorProvider;
-  public InjectClass_Factory(Provider<T> creatorProvider) {
+  private InjectClass_Factory(Provider<T> creatorProvider) {
     this.creatorProvider = creatorProvider;
   }
   @Override
@@ -2060,7 +2061,7 @@ public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
       """,
     ) {
       val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
-        .factoryClass().declaredConstructors.single()
+        .factoryClass().singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
@@ -2115,7 +2116,7 @@ public final class InjectClass_Factory<T> implements Factory<InjectClass<T>> {
       """,
     ) {
       val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
-        .factoryClass().declaredConstructors.single()
+        .factoryClass().singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
     }
   }
@@ -2140,7 +2141,7 @@ import javax.inject.Provider;
 public final class InjectClass_Factory implements Factory<InjectClass> {
   private final Provider<Map<Class<? extends CharSequence>, Provider<String>>> delegatesProvider;
 
-  public InjectClass_Factory(
+  private InjectClass_Factory(
       Provider<Map<Class<? extends CharSequence>, Provider<String>>> delegatesProvider) {
     this.delegatesProvider = delegatesProvider;
   }
@@ -2175,7 +2176,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       """,
     ) {
       val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
-        .factoryClass().declaredConstructors.single()
+        .factoryClass().singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
@@ -2190,7 +2191,7 @@ import javax.inject.Provider;
 public final class InjectClass_Factory<T extends CharSequence> implements Factory<InjectClass<T>> {
     private final Provider<T> elementProvider;
 
-    public InjectClass_Factory(Provider<T> var1) {
+    private InjectClass_Factory(Provider<T> var1) {
         this.elementProvider = var1;
     }
 
@@ -2219,7 +2220,7 @@ public final class InjectClass_Factory<T extends CharSequence> implements Factor
       """,
     ) {
       val constructor = classLoader.loadClass("com.squareup.test.InjectClass")
-        .factoryClass().declaredConstructors.single()
+        .factoryClass().singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
@@ -2275,7 +2276,7 @@ public class InjectClass_Factory<T>(
       assertThat(typeParams)
         .containsExactly("T", listOf("java.lang.Appendable", "java.lang.CharSequence"))
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2358,7 +2359,7 @@ public class InjectClass_Factory<T, R : Set<String>>(
           listOf("java.util.Set<? extends java.lang.String>"),
         )
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -2438,7 +2439,7 @@ public class InjectClass_Factory<T>(
       assertThat(typeParams)
         .containsExactly("T", listOf("com.squareup.test.Other", "java.lang.Appendable"))
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
     }
   }
@@ -2493,7 +2494,7 @@ public class InjectClass_Factory<T : List<String>>(
       assertThat(typeParams)
         .containsExactly("T", listOf("java.util.List<? extends java.lang.String>"))
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
 
@@ -2522,7 +2523,7 @@ public class InjectClass_Factory<T : List<String>>(
     ) {
       val factoryClass = classLoader.loadClass("InjectClass").factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2624,7 +2625,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
 
   private final Provider<String> string3Provider;
 
-  public InjectClass_Factory(Provider<String> classArrayStringProvider,
+  private InjectClass_Factory(Provider<String> classArrayStringProvider,
       Provider<String> classStringProvider, Provider<String> enumArrayStringProvider,
       Provider<String> enumStringProvider, Provider<String> intStringProvider,
       Provider<String> string1Provider, Provider<String> string2Provider,
@@ -2702,7 +2703,7 @@ public final class InjectClass_Factory implements Factory<InjectClass> {
       annotation class StringQualifier(val value: String)
       """,
     ) {
-      val constructor = injectClass.factoryClass().declaredConstructors.single()
+      val constructor = injectClass.factoryClass().singleConstructor()
       assertThat(constructor.parameterTypes.toList()).hasSize(8)
     }
   }

@@ -14,6 +14,7 @@ import com.squareup.anvil.compiler.internal.testing.createInstance
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.moduleFactoryClass
 import com.squareup.anvil.compiler.mergedModules
+import com.squareup.anvil.compiler.singleConstructor
 import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation.ExitCode
@@ -61,7 +62,7 @@ import javax.annotation.Generated;
 public final class DaggerModule1_ProvideStringFactory implements Factory<String> {
   private final DaggerModule1 module;
 
-  public DaggerModule1_ProvideStringFactory(DaggerModule1 module) {
+  private DaggerModule1_ProvideStringFactory(DaggerModule1 module) {
     this.module = module;
   }
 
@@ -92,7 +93,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -131,7 +132,7 @@ import javax.annotation.Generated;
 public final class DaggerModule1_ProvideFactoryFactory implements Factory<com.squareup.anvil.compiler.dagger.Factory> {
   private final DaggerModule1 module;
 
-  public DaggerModule1_ProvideFactoryFactory(DaggerModule1 module) {
+  private DaggerModule1_ProvideFactoryFactory(DaggerModule1 module) {
     this.module = module;
   }
 
@@ -163,7 +164,7 @@ public final class DaggerModule1_ProvideFactoryFactory implements Factory<com.sq
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFactory")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -201,7 +202,7 @@ import javax.annotation.Generated;
 public final class DaggerModule1_ProvideStringFactory implements Factory<String> {
   private final DaggerModule1 module;
 
-  public DaggerModule1_ProvideStringFactory(DaggerModule1 module) {
+  private DaggerModule1_ProvideStringFactory(DaggerModule1 module) {
     this.module = module;
   }
 
@@ -235,7 +236,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -276,7 +277,7 @@ import javax.annotation.Generated;
 public final class DaggerModule1_ProvideFileFactory implements Factory<File> {
   private final DaggerModule1 module;
 
-  public DaggerModule1_ProvideFileFactory(DaggerModule1 module) {
+  private DaggerModule1_ProvideFileFactory(DaggerModule1 module) {
     this.module = module;
   }
 
@@ -310,7 +311,7 @@ public final class DaggerModule1_ProvideFileFactory implements Factory<File> {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFile")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -350,7 +351,7 @@ import javax.annotation.Generated;
 public final class DaggerModule1_ProvideFileFactory implements Factory<File> {
   private final DaggerModule1 module;
 
-  public DaggerModule1_ProvideFileFactory(DaggerModule1 module) {
+  private DaggerModule1_ProvideFileFactory(DaggerModule1 module) {
     this.module = module;
   }
 
@@ -384,7 +385,7 @@ public final class DaggerModule1_ProvideFileFactory implements Factory<File> {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFile")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -424,7 +425,7 @@ import javax.annotation.Generated;
 public final class DaggerModule1_ProvideStringListFactory implements Factory<List<String>> {
   private final DaggerModule1 module;
 
-  public DaggerModule1_ProvideStringListFactory(DaggerModule1 module) {
+  private DaggerModule1_ProvideStringListFactory(DaggerModule1 module) {
     this.module = module;
   }
 
@@ -455,7 +456,7 @@ public final class DaggerModule1_ProvideStringListFactory implements Factory<Lis
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideStringList")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -496,7 +497,7 @@ import kotlin.Pair;
 public final class DaggerModule1_ProvidePairFactory implements Factory<Pair<Pair<String, Integer>, List<String>>> {
   private final DaggerModule1 module;
 
-  public DaggerModule1_ProvidePairFactory(DaggerModule1 module) {
+  private DaggerModule1_ProvidePairFactory(DaggerModule1 module) {
     this.module = module;
   }
 
@@ -529,7 +530,7 @@ public final class DaggerModule1_ProvidePairFactory implements Factory<Pair<Pair
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("providePair")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -569,7 +570,7 @@ import javax.annotation.Generated;
 public final class DaggerModule1_ProvideStringFactory implements Factory<String> {
   private final DaggerModule1 module;
 
-  public DaggerModule1_ProvideStringFactory(DaggerModule1 module) {
+  private DaggerModule1_ProvideStringFactory(DaggerModule1 module) {
     this.module = module;
   }
 
@@ -604,7 +605,7 @@ import javax.annotation.Generated;
 public final class DaggerModule1_ProvideIntFactory implements Factory<Integer> {
   private final DaggerModule1 module;
 
-  public DaggerModule1_ProvideIntFactory(DaggerModule1 module) {
+  private DaggerModule1_ProvideIntFactory(DaggerModule1 module) {
     this.module = module;
   }
 
@@ -640,7 +641,7 @@ public final class DaggerModule1_ProvideIntFactory implements Factory<Integer> {
       ) {
         val factoryClass = daggerModule1.moduleFactoryClass(providerMethodName)
 
-        val constructor = factoryClass.declaredConstructors.single()
+        val constructor = factoryClass.singleConstructor()
         assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
         val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -712,7 +713,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -742,7 +743,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString\$main")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -811,7 +812,7 @@ public final class DaggerModule1_ProvideString$mainFactory implements Factory<St
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString\$main")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -844,7 +845,7 @@ public final class DaggerModule1_ProvideString$mainFactory implements Factory<St
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString\$main", companion = true)
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -876,7 +877,7 @@ public final class DaggerModule1_ProvideString$mainFactory implements Factory<St
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString\$with_dashes")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -907,7 +908,7 @@ public final class DaggerModule1_ProvideString$mainFactory implements Factory<St
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -948,7 +949,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
   private final Provider<CharSequence> param2Provider;
 
-  public DaggerModule1_ProvideStringFactory(DaggerModule1 module, Provider<String> param1Provider,
+  private DaggerModule1_ProvideStringFactory(DaggerModule1 module, Provider<String> param1Provider,
       Provider<CharSequence> param2Provider) {
     this.module = module;
     this.param1Provider = param1Provider;
@@ -990,7 +991,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(daggerModule1, Provider::class.java, Provider::class.java)
         .inOrder()
@@ -1038,7 +1039,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
   private final Provider<List<String>> param3Provider;
 
-  public DaggerModule1_ProvideStringFactory(DaggerModule1 module, Provider<String> param1Provider,
+  private DaggerModule1_ProvideStringFactory(DaggerModule1 module, Provider<String> param1Provider,
       Provider<CharSequence> param2Provider, Provider<List<String>> param3Provider) {
     this.module = module;
     this.param1Provider = param1Provider;
@@ -1085,7 +1086,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           daggerModule1,
@@ -1141,7 +1142,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
   private final Provider<List<String>> param3Provider;
 
-  public DaggerModule1_ProvideStringFactory(DaggerModule1 module, Provider<String> param1Provider,
+  private DaggerModule1_ProvideStringFactory(DaggerModule1 module, Provider<String> param1Provider,
       Provider<CharSequence> param2Provider, Provider<List<String>> param3Provider) {
     this.module = module;
     this.param1Provider = param1Provider;
@@ -1188,7 +1189,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           daggerModule1,
@@ -1236,7 +1237,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(daggerModule1, Provider::class.java)
         .inOrder()
@@ -1285,7 +1286,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
   private final Provider<Pair<Pair<String, Integer>, ? extends List<String>>> param2Provider;
 
-  public DaggerModule1_ProvideStringFactory(DaggerModule1 module,
+  private DaggerModule1_ProvideStringFactory(DaggerModule1 module,
       Provider<List<String>> param1Provider,
       Provider<Pair<Pair<String, Integer>, ? extends List<String>>> param2Provider) {
     this.module = module;
@@ -1330,7 +1331,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(daggerModule1, Provider::class.java, Provider::class.java)
         .inOrder()
@@ -1378,7 +1379,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
   private final Provider<CharSequence> param2Provider;
 
-  public DaggerModule1_ProvideStringFactory(Provider<String> param1Provider,
+  private DaggerModule1_ProvideStringFactory(Provider<String> param1Provider,
       Provider<CharSequence> param2Provider) {
     this.param1Provider = param1Provider;
     this.param2Provider = param2Provider;
@@ -1419,7 +1420,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java, Provider::class.java)
         .inOrder()
@@ -1506,7 +1507,7 @@ public final class DaggerModule1_Companion_ProvideStringFactory implements Facto
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString", companion = true)
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java, Provider::class.java)
         .inOrder()
@@ -1544,7 +1545,7 @@ import org.jetbrains.annotations.Nullable;
 public final class DaggerModule1_ProvideStringFactory implements Factory<String> {
   private final DaggerModule1 module;
 
-  public DaggerModule1_ProvideStringFactory(DaggerModule1 module) {
+  private DaggerModule1_ProvideStringFactory(DaggerModule1 module) {
     this.module = module;
   }
 
@@ -1581,7 +1582,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -1654,7 +1655,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -1696,7 +1697,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
 
   private final Provider<CharSequence> param2Provider;
 
-  public DaggerModule1_ProvideStringFactory(DaggerModule1 module, Provider<String> param1Provider,
+  private DaggerModule1_ProvideStringFactory(DaggerModule1 module, Provider<String> param1Provider,
       Provider<CharSequence> param2Provider) {
     this.module = module;
     this.param1Provider = param1Provider;
@@ -1744,7 +1745,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(daggerModule1, Provider::class.java, Provider::class.java)
         .inOrder()
@@ -1834,7 +1835,7 @@ public final class DaggerModule1_Companion_ProvideStringFactory implements Facto
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString", companion = true)
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -1901,7 +1902,7 @@ public final class ComponentInterface_InnerModule_ProvideStringFactory implement
     ) {
       val factoryClass = innerModule.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -1935,7 +1936,7 @@ public final class ComponentInterface_InnerModule_ProvideStringFactory implement
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideInnerClass")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
     }
   }
@@ -1995,7 +1996,7 @@ public final class ComponentInterface_InnerModule_Companion_ProvideStringFactory
     ) {
       val factoryClass = innerModule.moduleFactoryClass("provideString", companion = true)
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2077,7 +2078,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<String>
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2143,7 +2144,7 @@ public final class DaggerModule1_ProvideStringFactory implements Factory<Set<Str
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2214,7 +2215,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Funct
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFunction")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2297,7 +2298,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<F
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideFunction")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2423,7 +2424,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
         .java
         .moduleFactoryClass("provideParentInterface")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2482,7 +2483,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideClass")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
     }
   }
@@ -2505,7 +2506,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideRunner")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
     }
   }
@@ -2529,7 +2530,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideDate")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2588,7 +2589,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideThing")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2618,7 +2619,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideThing")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2647,7 +2648,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideThing")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2689,7 +2690,7 @@ public final class DaggerComponentInterface implements ComponentInterface {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("user")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2718,7 +2719,7 @@ import javax.annotation.processing.Generated;
 public final class DaggerModule1_GetStringFactory implements Factory<String> {
   private final DaggerModule1 module;
 
-  public DaggerModule1_GetStringFactory(DaggerModule1 module) {
+  private DaggerModule1_GetStringFactory(DaggerModule1 module) {
     this.module = module;
   }
 
@@ -2751,7 +2752,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2820,7 +2821,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2892,7 +2893,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString", companion = true)
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -2928,7 +2929,7 @@ import org.jetbrains.annotations.Nullable;
 public final class DaggerModule1_GetStringFactory implements Factory<String> {
   private final DaggerModule1 module;
 
-  public DaggerModule1_GetStringFactory(DaggerModule1 module) {
+  private DaggerModule1_GetStringFactory(DaggerModule1 module) {
     this.module = module;
   }
 
@@ -2963,7 +2964,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -3034,7 +3035,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -3072,7 +3073,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("provideType")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -3104,7 +3105,7 @@ public final class DaggerModule1_GetStringFactory implements Factory<String> {
       val daggerModule1 = classLoader.loadClass("DaggerModule1")
       val factoryClass = daggerModule1.moduleFactoryClass("provideString")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -3373,7 +3374,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("isValidCache")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -3411,7 +3412,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("is_valid_cache")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -3449,7 +3450,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("getIssues")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(daggerModule1)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -3486,7 +3487,7 @@ public final class DaggerModule1_ProvideFunctionFactory implements Factory<Set<S
     ) {
       val factoryClass = daggerModule1.moduleFactoryClass("isValidCache")
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }

@@ -32,6 +32,7 @@ import dagger.Subcomponent
 import org.intellij.lang.annotations.Language
 import org.junit.Assume.assumeTrue
 import java.io.File
+import java.lang.reflect.Constructor
 import kotlin.reflect.KClass
 import kotlin.reflect.full.declaredMemberProperties
 import kotlin.reflect.full.hasAnnotation
@@ -354,6 +355,15 @@ fun Class<*>.contributedProperties(): List<KClass<*>>? {
     .sortedBy { it.name }
     .map { field -> field.use { it.get(null) } }
     .filterIsInstance<KClass<*>>()
+}
+
+/**
+ * Assumes that there is only one constructor. For MembersInjector factories in particular, we
+ * make their constructor private to match behavior in Dagger 2.57, but under the hood Kotlin
+ * generates a public synthetic constructor with additional parameters that we must filter out.
+ */
+internal fun Class<*>.singleConstructor(): Constructor<*> {
+  return declaredConstructors.single { !it.isSynthetic }
 }
 
 internal fun assumeMergeComponent(annotationClass: KClass<*>) {

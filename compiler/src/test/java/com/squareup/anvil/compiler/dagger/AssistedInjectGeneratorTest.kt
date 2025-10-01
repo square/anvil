@@ -7,6 +7,7 @@ import com.squareup.anvil.compiler.internal.testing.AnvilCompilationMode
 import com.squareup.anvil.compiler.internal.testing.factoryClass
 import com.squareup.anvil.compiler.internal.testing.invokeGet
 import com.squareup.anvil.compiler.internal.testing.isStatic
+import com.squareup.anvil.compiler.singleConstructor
 import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
@@ -47,7 +48,7 @@ import javax.inject.Provider;
 public final class AssistedService_Factory {
   private final Provider<Integer> integerProvider;
 
-  public AssistedService_Factory(Provider<Integer> integerProvider) {
+  private AssistedService_Factory(Provider<Integer> integerProvider) {
     this.integerProvider = integerProvider;
   }
 
@@ -79,7 +80,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -111,7 +112,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -150,7 +151,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -182,7 +183,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -215,7 +216,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).isEmpty()
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -294,7 +295,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -327,7 +328,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -360,7 +361,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -393,7 +394,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -425,7 +426,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -458,7 +459,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -491,7 +492,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -529,7 +530,7 @@ public final class AssistedService_Factory {
         .loadClass("com.squareup.test.Outer\$AssistedService")
         .factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }
@@ -564,7 +565,7 @@ import javax.inject.Provider;
 public final class AssistedService_Factory {
   private final Provider<Integer> p0_52215Provider;
 
-  public AssistedService_Factory(Provider<Integer> p0_52215Provider) {
+  private AssistedService_Factory(Provider<Integer> p0_52215Provider) {
     this.p0_52215Provider = p0_52215Provider;
   }
 
@@ -596,7 +597,7 @@ public final class AssistedService_Factory {
     ) {
       val factoryClass = assistedService.factoryClass()
 
-      val constructor = factoryClass.declaredConstructors.single()
+      val constructor = factoryClass.singleConstructor()
       assertThat(constructor.parameterTypes.toList()).containsExactly(Provider::class.java)
 
       val staticMethods = factoryClass.declaredMethods.filter { it.isStatic }

@@ -276,6 +276,7 @@ internal object AssistedFactoryCodeGen : AnvilApplicabilityChecker {
 
           primaryConstructor(
             FunSpec.constructorBuilder()
+              .addModifiers(PRIVATE)
               .addParameter(DELEGATE_FACTORY_NAME, generatedFactoryTypeName)
               .build(),
           )

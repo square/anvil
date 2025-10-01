@@ -121,6 +121,7 @@ internal object AssistedInjectCodeGen : AnvilApplicabilityChecker {
 
           primaryConstructor(
             FunSpec.constructorBuilder()
+              .addModifiers(PRIVATE)
               .apply {
                 parametersNotAssisted.forEach { parameter ->
                   addParameter(parameter.name, parameter.providerTypeName)
