@@ -11,6 +11,7 @@ import com.squareup.anvil.compiler.internal.testing.getValue
 import com.squareup.anvil.compiler.internal.testing.isStatic
 import com.squareup.anvil.compiler.internal.testing.membersInjector
 import com.squareup.anvil.compiler.nestedInjectClass
+import com.squareup.anvil.compiler.singleConstructor
 import com.squareup.anvil.compiler.testParams
 import com.tschuchort.compiletesting.JvmCompilationResult
 import com.tschuchort.compiletesting.KotlinCompilation
@@ -84,7 +85,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
 
   private final Provider<Map<String, Boolean>> p0Provider2;
 
-  public InjectClass_MembersInjector(Provider<String> stringProvider,
+  private InjectClass_MembersInjector(Provider<String> stringProvider,
       Provider<String> qualifiedStringProvider, Provider<CharSequence> charSequenceProvider,
       Provider<List<String>> listProvider,
       Provider<Pair<Pair<String, Integer>, ? extends Set<String>>> pairProvider,
@@ -219,7 +220,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
     ) {
       val membersInjector = injectClass.membersInjector()
 
-      val constructor = membersInjector.declaredConstructors.single()
+      val constructor = membersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -233,8 +234,9 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
         )
 
       @Suppress("RedundantLambdaArrow")
-      val membersInjectorInstance = constructor
-        .newInstance(
+      val membersInjectorInstance = membersInjector.staticCreateMethod()
+        .invoke(
+          null,
           Provider { "a" },
           Provider { "b" },
           Provider<CharSequence> { "c" },
@@ -315,7 +317,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
 
   private final Provider<String> string3Provider;
 
-  public InjectClass_MembersInjector(Provider<String> classArrayStringProvider,
+  private InjectClass_MembersInjector(Provider<String> classArrayStringProvider,
       Provider<String> classStringProvider, Provider<String> enumArrayStringProvider,
       Provider<String> enumStringProvider, Provider<String> intStringProvider,
       Provider<String> string1Provider, Provider<String> string2Provider,
@@ -678,13 +680,13 @@ public final class ParentClass_NestedInjectClass_MembersInjector implements Memb
     ) {
       val membersInjector = nestedInjectClass.membersInjector()
 
-      val constructor = membersInjector.declaredConstructors.single()
+      val constructor = membersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
 
       @Suppress("RedundantLambdaArrow")
-      val membersInjectorInstance = constructor
-        .newInstance(Provider { "a" }) as MembersInjector<Any>
+      val membersInjectorInstance = membersInjector.staticCreateMethod()
+        .invoke(null, Provider { "a" }) as MembersInjector<Any>
 
       val injectInstanceConstructor = nestedInjectClass.createInstance()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
@@ -750,15 +752,16 @@ public final class ParentClass_NestedInjectClass_MembersInjector implements Memb
 
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
           Provider::class.java,
         )
 
-      val membersInjectorInstance = constructor
-        .newInstance(
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(
+          null,
           Provider { "a" },
           Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
@@ -807,7 +810,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
 
   private final Provider<String> stringProvider3;
 
-  public InjectClass_MembersInjector(Provider<String> stringProvider,
+  private InjectClass_MembersInjector(Provider<String> stringProvider,
       Provider<String> stringProvider2, Provider<List<String>> stringListProvider,
       Provider<String> stringProvider3) {
     this.stringProvider = stringProvider;
@@ -878,7 +881,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
     ) {
       val membersInjector = injectClass.membersInjector()
 
-      val constructor = membersInjector.declaredConstructors.single()
+      val constructor = membersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -887,8 +890,9 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
           Provider::class.java,
         )
 
-      val membersInjectorInstance = constructor
-        .newInstance(
+      val membersInjectorInstance = membersInjector.staticCreateMethod()
+        .invoke(
+          null,
           Provider { "a" },
           Provider { "b" },
           Provider { listOf("c") },
@@ -939,7 +943,7 @@ import javax.inject.Provider;
 public final class InjectClass_MembersInjector implements MembersInjector<InjectClass> {
   private final Provider<String> stringProvider;
 
-  public InjectClass_MembersInjector(Provider<String> stringProvider) {
+  private InjectClass_MembersInjector(Provider<String> stringProvider) {
     this.stringProvider = stringProvider;
   }
 
@@ -982,12 +986,12 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
     ) {
       val membersInjector = injectClass.membersInjector()
 
-      val constructor = membersInjector.declaredConstructors.single()
+      val constructor = membersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
 
-      val membersInjectorInstance = constructor
-        .newInstance(Provider { "a" })
+      val membersInjectorInstance = membersInjector.staticCreateMethod()
+        .invoke(null, Provider { "a" })
         as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -1026,7 +1030,7 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
 
   private final Provider<NonExistentClass> pathProvider;
 
-  public InjectClass_MembersInjector(Provider<NonExistentClass> fileProvider,
+  private InjectClass_MembersInjector(Provider<NonExistentClass> fileProvider,
       Provider<NonExistentClass> pathProvider) {
     this.fileProvider = fileProvider;
     this.pathProvider = pathProvider;
@@ -1088,12 +1092,12 @@ public final class InjectClass_MembersInjector implements MembersInjector<Inject
     ) {
       val membersInjector = injectClass.membersInjector()
 
-      val constructor = membersInjector.declaredConstructors.single()
+      val constructor = membersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java, Provider::class.java)
 
-      val membersInjectorInstance = constructor
-        .newInstance(Provider { File("") }, Provider { File("").toPath() })
+      val membersInjectorInstance = membersInjector.staticCreateMethod()
+        .invoke(null, Provider { File("") }, Provider { File("").toPath() })
         as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -1210,12 +1214,12 @@ public final class OuterClass_InjectClass_MembersInjector implements MembersInje
       val injectClass = classLoader.loadClass("com.squareup.test.OuterClass\$InjectClass")
       val membersInjector = injectClass.membersInjector()
 
-      val constructor = membersInjector.declaredConstructors.single()
+      val constructor = membersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java, Provider::class.java, Provider::class.java)
 
-      val membersInjectorInstance = constructor
-        .newInstance(Provider { "a" }, Provider<CharSequence> { "b" }, Provider { listOf("c") })
+      val membersInjectorInstance = membersInjector.staticCreateMethod()
+        .invoke(null, Provider { "a" }, Provider<CharSequence> { "b" }, Provider { listOf("c") })
         as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
@@ -1268,7 +1272,7 @@ public final class OuterClass_InjectClass_MembersInjector implements MembersInje
 
       private final Provider<String> nameProvider;
 
-      public InjectClass_MembersInjector(Provider<List<Integer>> base1Provider,
+      private InjectClass_MembersInjector(Provider<List<Integer>> base1Provider,
           Provider<List<String>> base2Provider, Provider<Set<Integer>> middle1Provider,
           Provider<Set<String>> middle2Provider, Provider<String> nameProvider) {
         this.base1Provider = base1Provider;
@@ -1334,7 +1338,7 @@ public final class OuterClass_InjectClass_MembersInjector implements MembersInje
     ) {
       val membersInjector = injectClass.membersInjector()
 
-      val injectorConstructor = membersInjector.declaredConstructors.single()
+      val injectorConstructor = membersInjector.singleConstructor()
       assertThat(injectorConstructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -1399,7 +1403,7 @@ import javax.inject.Provider;
 public final class InjectClass_MembersInjector<T> implements MembersInjector<InjectClass<T>> {
   private final Provider<String> stringProvider;
 
-  public InjectClass_MembersInjector(Provider<String> stringProvider) {
+  private InjectClass_MembersInjector(Provider<String> stringProvider) {
     this.stringProvider = stringProvider;
   }
 
@@ -1431,7 +1435,7 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
     ) {
       val membersInjector = injectClass.membersInjector()
 
-      val constructor = membersInjector.declaredConstructors.single()
+      val constructor = membersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
     }
@@ -1461,14 +1465,15 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
         .membersInjector()
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
           Provider::class.java,
         )
 
-      val membersInjectorInstance = constructor.newInstance(
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod().invoke(
+        null,
         Provider { 123 },
         Provider { "foo" },
       ) as MembersInjector<Any>
@@ -1502,7 +1507,7 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
     ) {
       val membersInjector = injectClass.membersInjector()
 
-      val constructor = membersInjector.declaredConstructors.single()
+      val constructor = membersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
     }
@@ -1540,15 +1545,16 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
         .membersInjector()
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
           Provider::class.java,
         )
 
-      val membersInjectorInstance = constructor
-        .newInstance(
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(
+          null,
           Provider { listOf("a", "b") },
           Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
@@ -1606,7 +1612,7 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
         .membersInjector()
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -1614,8 +1620,9 @@ public final class InjectClass_MembersInjector<T> implements MembersInjector<Inj
           Provider::class.java,
         )
 
-      val membersInjectorInstance = constructor
-        .newInstance(
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(
+          null,
           Provider { listOf("a", "b") },
           Provider { listOf(1, 2) },
           Provider { listOf(true) },
@@ -1658,7 +1665,7 @@ import javax.inject.Provider;
 public final class InjectClass_MembersInjector<T, U, V> implements MembersInjector<InjectClass<T, U, V>> {
   private final Provider<String> stringProvider;
 
-  public InjectClass_MembersInjector(Provider<String> stringProvider) {
+  private InjectClass_MembersInjector(Provider<String> stringProvider) {
     this.stringProvider = stringProvider;
   }
 
@@ -1690,7 +1697,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     ) {
       val membersInjector = injectClass.membersInjector()
 
-      val constructor = membersInjector.declaredConstructors.single()
+      val constructor = membersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
     }
@@ -1724,13 +1731,13 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
       val injectClass = classLoader.loadClass("InjectClass")
       val membersInjector = injectClass.membersInjector()
 
-      val constructor = membersInjector.declaredConstructors.single()
+      val constructor = membersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
 
       @Suppress("RedundantLambdaArrow")
-      val membersInjectorInstance = constructor
-        .newInstance(Provider { "a" }) as MembersInjector<Any>
+      val membersInjectorInstance = membersInjector.staticCreateMethod()
+        .invoke(null, Provider { "a" }) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
@@ -1790,15 +1797,16 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
           Provider::class.java,
         )
 
-      val membersInjectorInstance = constructor
-        .newInstance(
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(
+          null,
           Provider { "a" },
           Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
@@ -1871,7 +1879,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -1879,8 +1887,9 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
           Provider::class.java,
         )
 
-      val membersInjectorInstance = constructor
-        .newInstance(
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(
+          null,
           Provider { "a" },
           Provider { listOf("b") },
           Provider { listOf(1, 2) },
@@ -1963,7 +1972,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -1972,8 +1981,9 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
           Provider::class.java,
         )
 
-      val membersInjectorInstance = constructor
-        .newInstance(
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(
+          null,
           Provider { "a" },
           Provider { listOf('b', 'c') },
           Provider { listOf("d") },
@@ -2059,7 +2069,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -2068,8 +2078,9 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
           Provider::class.java,
         )
 
-      val membersInjectorInstance = constructor
-        .newInstance(
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(
+          null,
           Provider { "a" },
           Provider { "b" },
           Provider { listOf("b") },
@@ -2137,7 +2148,7 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
@@ -2145,8 +2156,9 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
           Provider::class.java,
         )
 
-      val membersInjectorInstance = constructor
-        .newInstance(
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(
+          null,
           Provider { "a" },
           Provider { "b" },
           Provider { listOf(1, 2) },
@@ -2201,12 +2213,12 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
 
-      val membersInjectorInstance = constructor
-        .newInstance(Provider { listOf("a") }) as MembersInjector<Any>
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(null, Provider { listOf("a") }) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
@@ -2252,12 +2264,12 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     ) {
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
 
-      val membersInjectorInstance = constructor
-        .newInstance(Provider { mapOf("a" to 1) }) as MembersInjector<Any>
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(null, Provider { mapOf("a" to 1) }) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
@@ -2315,15 +2327,16 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
           Provider::class.java,
         )
 
-      val membersInjectorInstance = constructor
-        .newInstance(
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(
+          null,
           Provider { "a" },
           Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
@@ -2397,15 +2410,16 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
 
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(
           Provider::class.java,
           Provider::class.java,
         )
 
-      val membersInjectorInstance = constructor
-        .newInstance(
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(
+          null,
           Provider { "a" },
           Provider { listOf(1, 2) },
         ) as MembersInjector<Any>
@@ -2520,12 +2534,12 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     ) {
       val membersInjector = injectClass.membersInjector()
 
-      val constructor = membersInjector.declaredConstructors.single()
+      val constructor = membersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java, Provider::class.java)
 
-      val membersInjectorInstance = constructor
-        .newInstance(Provider { "a" }, Provider { "b" }) as MembersInjector<Any>
+      val membersInjectorInstance = membersInjector.staticCreateMethod()
+        .invoke(null, Provider { "a" }, Provider { "b" }) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
@@ -2575,12 +2589,12 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     ) {
       val injectClassMembersInjector = injectClass.membersInjector()
 
-      val constructor = injectClassMembersInjector.declaredConstructors.single()
+      val constructor = injectClassMembersInjector.singleConstructor()
       assertThat(constructor.parameterTypes.toList())
         .containsExactly(Provider::class.java)
 
-      val membersInjectorInstance = constructor
-        .newInstance(Provider { "a" }) as MembersInjector<Any>
+      val membersInjectorInstance = injectClassMembersInjector.staticCreateMethod()
+        .invoke(null, Provider { "a" }) as MembersInjector<Any>
 
       val injectInstanceConstructor = injectClass.createInstance()
       membersInjectorInstance.injectMembers(injectInstanceConstructor)
@@ -2601,6 +2615,12 @@ public final class InjectClass_MembersInjector<T, U, V> implements MembersInject
     return declaredMethods
       .filter { it.isStatic }
       .single { it.name == "inject${memberName.capitalize()}" }
+  }
+
+  private fun Class<*>.staticCreateMethod(): Method {
+    return declaredMethods
+      .filter { it.isStatic }
+      .single { it.name == "create" }
   }
 
   private fun compile(

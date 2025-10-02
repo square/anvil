@@ -134,6 +134,7 @@ internal object MembersInjectorCodeGen : AnvilApplicabilityChecker {
             }
             primaryConstructor(
               FunSpec.constructorBuilder()
+                .addModifiers(PRIVATE)
                 .apply {
                   parameters.forEach { parameter ->
                     addParameter(parameter.name, parameter.resolvedProviderTypeName)

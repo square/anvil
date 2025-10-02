@@ -21,7 +21,7 @@ public val Member.isAbstract: Boolean get() = Modifier.isAbstract(modifiers)
 @Suppress("UNCHECKED_CAST")
 public fun <T : Any> Class<T>.createInstance(
   vararg initargs: Any?,
-): T = declaredConstructors.single().use { it.newInstance(*initargs) } as T
+): T = declaredConstructors.single { !it.isSynthetic }.use { it.newInstance(*initargs) } as T
 
 @ExperimentalAnvilApi
 public inline fun <T, E : AccessibleObject> E.use(block: (E) -> T): T {

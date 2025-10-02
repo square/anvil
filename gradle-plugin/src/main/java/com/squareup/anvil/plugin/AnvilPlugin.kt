@@ -8,6 +8,7 @@ import com.android.build.gradle.BaseExtension
 import com.android.build.gradle.LibraryExtension
 import com.android.build.gradle.TestExtension
 import com.android.build.gradle.TestedExtension
+import com.android.build.gradle.internal.core.InternalBaseVariant
 import org.gradle.api.Action
 import org.gradle.api.GradleException
 import org.gradle.api.Project
@@ -85,7 +86,7 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
     }
   }
 
-  @Suppress("TYPEALIAS_EXPANSION_DEPRECATION")
+  @Suppress("TYPEALIAS_EXPANSION_DEPRECATION", "ObjectLiteralToLambda")
   private fun extendAndroidConfigurations(
     target: Project,
     commonConfiguration: Configuration,
@@ -131,14 +132,18 @@ internal open class AnvilPlugin : KotlinCompilerPluginSupportPlugin {
           // Essentially, an `Action<BaseVariant>` is okay but `(BaseVariant) -> Unit` is not.
           // If any types from AGP are in a signature,
           // then `AnvilPlugin` can only be applied to projects with AGP in their build classpath.
-          variants.configureEach { variant ->
-            val configuration = getConfiguration(target, buildType = variant.name)
-            when (variant) {
-              is UnitTestVariantDeprecated -> configuration.extendsFrom(testConfiguration)
-              is TestVariantDeprecated -> configuration.extendsFrom(androidTestVariant)
-              else -> configuration.extendsFrom(commonConfiguration)
-            }
-          }
+          variants.configureEach(
+            object : Action<InternalBaseVariant> {
+              override fun execute(variant: InternalBaseVariant) {
+                val configuration = getConfiguration(target, buildType = variant.name)
+                when (variant) {
+                  is UnitTestVariantDeprecated -> configuration.extendsFrom(testConfiguration)
+                  is TestVariantDeprecated -> configuration.extendsFrom(androidTestVariant)
+                  else -> configuration.extendsFrom(commonConfiguration)
+                }
+              }
+            },
+          )
         }
       }
     }

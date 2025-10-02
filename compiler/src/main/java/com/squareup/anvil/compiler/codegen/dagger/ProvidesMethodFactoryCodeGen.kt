@@ -264,6 +264,7 @@ internal object ProvidesMethodFactoryCodeGen : AnvilApplicabilityChecker {
           if (!canGenerateAnObject) {
             primaryConstructor(
               FunSpec.constructorBuilder()
+                .addModifiers(PRIVATE)
                 .apply {
                   if (!isObject) {
                     addParameter("module", moduleClass)

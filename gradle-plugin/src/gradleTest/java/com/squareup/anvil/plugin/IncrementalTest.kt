@@ -753,7 +753,7 @@ class IncrementalTest : BaseGradleTest() {
 
       // now we have constructor parameters
       rootAnvilMainGenerated.injectClassFactory shouldExistWithTextContaining """
-        public class InjectClass_Factory(
+        public class InjectClass_Factory private constructor(
           private val name: Provider<String>,
         ) : Factory<InjectClass>
       """.trimIndent()
@@ -1338,7 +1338,7 @@ class IncrementalTest : BaseGradleTest() {
         .resolve("com/squareup/test/lib/AssistedClass_Factory_Impl.kt")
 
       assistedClassFactoryImpl shouldExistWithTextContaining """
-        public class AssistedClass_Factory_Impl(
+        public class AssistedClass_Factory_Impl private constructor(
           private val delegateFactory: AssistedClass_Factory,
         ) : AssistedClass.Factory {
           override fun create(arg1: String): AssistedClass = delegateFactory.get(arg1)
@@ -1357,7 +1357,7 @@ class IncrementalTest : BaseGradleTest() {
       }
 
       assistedClassFactoryImpl shouldExistWithTextContaining """
-        public class AssistedClass_Factory_Impl(
+        public class AssistedClass_Factory_Impl private constructor(
           private val delegateFactory: AssistedClass_Factory,
         ) : AssistedClass.Factory {
           override fun create(arg1: String, arg2: String): AssistedClass = delegateFactory.get(arg1, arg2)
