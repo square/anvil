@@ -173,7 +173,7 @@ jobs:
       fail-fast: false
       matrix:
         kotlin-version: [ 2.2.20 ]
-        agp-version: [ 7.2.0, 7.3.1 ]
+        agp-version: [ 7.3.1 ]
 
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
