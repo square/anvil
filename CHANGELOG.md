@@ -5,12 +5,8 @@
 ### Added
 
 ### Changed
-- Upgrade Kotlin to `2.2.20`
-- Upgrade Dagger to `2.57.2`
-- Constructors for generated `Factory`s and `MembersInjector`s are now private to match changes in Dagger 2.57. This is a breaking change if you relied on the generated constructors and can instead call their static `create` methods.
 
 ### Deprecated
-- `AndroidVariantFilter.androidVariant` is now nullable and deprecated. We're no longer guaranteed that the variant will be available when creating the filter, and the base type is slated to be removed in a future release of AGP.
 
 ### Removed
 
@@ -21,6 +17,16 @@
 ### Custom Code Generator
 
 ### Other Notes & Contributions
+
+## [2.7.0] - 2025-10-02
+
+### Changed
+- Upgrade Kotlin to `2.2.20`
+- Upgrade Dagger to `2.57.2`
+- Constructors for generated `Factory`s and `MembersInjector`s are now private to match changes in Dagger 2.57. This is a breaking change if you relied on the generated constructors and can instead call their static `create` methods.
+
+### Deprecated
+- `AndroidVariantFilter.androidVariant` is now nullable and deprecated. We're no longer guaranteed that the variant will be available when creating the filter, and the base type is slated to be removed in a future release of AGP.
 
 ## [2.6.1] - 2025-07-18
 
@@ -898,7 +904,8 @@ anvil {
 
 - Initial release.
 
-[Unreleased]: https://github.com/square/anvil/compare/v2.6.1...HEAD
+[Unreleased]: https://github.com/square/anvil/compare/v2.7.0...HEAD
+[2.7.0]: https://github.com/square/anvil/releases/tag/v2.7.0
 [2.6.1]: https://github.com/square/anvil/releases/tag/v2.6.1
 [2.6.0]: https://github.com/square/anvil/releases/tag/v2.6.0
 [2.5.1]: https://github.com/square/anvil/releases/tag/v2.5.1
